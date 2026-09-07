@@ -41,6 +41,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { buildFilterParams, filterParamsEqual, toWildcardParam, withDefaultRealm } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
+import { CONTAINER_STATE_VALUES, containerStateLabel } from "@utils/value-label.utils";
 import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 
 // `realm` is the realm of the assigned user: the backend resolves `user` together with `realm` into
@@ -60,12 +61,10 @@ const exactMatchKeys = new Set(["user", "realm", "type", "state", "assigned"]);
 // TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.
 const CONTAINER_TYPE_FILTER_KEYS = new Set<string>(["type", "types"]);
 
-export const CONTAINER_STATE_OPTIONS = [
-  { value: "active", label: $localize`:@@common.activeState:active` },
-  { value: "disabled", label: $localize`:@@common.deactivated:deactivated` },
-  { value: "lost", label: $localize`:@@container.lost:lost` },
-  { value: "damaged", label: $localize`:@@container.damaged:damaged` }
-] as const;
+export const CONTAINER_STATE_OPTIONS = CONTAINER_STATE_VALUES.map((value) => ({
+  value,
+  label: containerStateLabel(value)
+}));
 
 export type TemplateComparisonResult = Record<
   string,

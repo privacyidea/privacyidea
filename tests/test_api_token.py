@@ -37,7 +37,7 @@ from privacyidea.lib.caconnectors.msca import MSCAConnector
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.container import (init_container, add_token_to_container,
                                        find_container_by_serial, find_container_for_token)
-from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError, TokenAdminError
 from privacyidea.lib.event import set_event, delete_event, EventConfiguration
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, enable_policy,
@@ -50,12 +50,14 @@ from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
                                    get_tokens_from_serial_or_user, enable_token,
                                    check_serial_pass, unassign_token, init_token,
                                    assign_token, token_exist, add_tokeninfo)
+from privacyidea.lib.token.const import LOST_TOKEN_FOR
+from privacyidea.lib.token.lifecycle import lost_token
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
-from privacyidea.models import db
+from privacyidea.models import db, Token
 from .base import MyApiTestCase, PWFILE2
 from .mscamock import CAServiceMock
 from .test_lib_tokens_certificate import REQUEST, CERTIFICATE
@@ -690,6 +692,271 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         delete_policy("policy")
         remove_token(token1.get_serial())
+
+    def test_08_helpdesk_copy_token_realm_scope(self):
+        """
+        A helpdesk admin restricted to realm1 can only copy between tokens of realm1. Both the
+        source and the destination token have to be in an allowed realm.
+        """
+        set_policy(name="policy", scope=SCOPE.ADMIN,
+                   action=f"{PolicyAction.COPYTOKENUSER},{PolicyAction.COPYTOKENPIN}", realm=self.realm1)
+
+        own_realm_source = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+        own_realm_target = init_token({"type": "hotp"}, tokenrealms=[self.realm1])
+        other_realm = init_token({"type": "hotp"}, user=User("hans", self.realm2))
+
+        # Reading the owner of a token in realm2 is not allowed
+        self.request_denied_assert_403("/token/copyuser", {"from": other_realm.get_serial(),
+                                                           "to": own_realm_target.get_serial()}, self.at)
+        self.assertIsNone(own_realm_target.user)
+
+        # Writing the owner onto a token in realm2 is not allowed either
+        self.request_denied_assert_403("/token/copyuser", {"from": own_realm_source.get_serial(),
+                                                           "to": other_realm.get_serial()}, self.at)
+        self.assertEqual("hans", other_realm.user.login)
+
+        # The same applies to the PIN
+        self.request_denied_assert_403("/token/copypin", {"from": other_realm.get_serial(),
+                                                          "to": own_realm_target.get_serial()}, self.at)
+        self.request_denied_assert_403("/token/copypin", {"from": own_realm_source.get_serial(),
+                                                          "to": other_realm.get_serial()}, self.at)
+
+        # Both tokens in realm1 are copied
+        self.request_assert_200("/token/copypin", {"from": own_realm_source.get_serial(),
+                                                   "to": own_realm_target.get_serial()}, self.at)
+        self.request_assert_200("/token/copyuser", {"from": own_realm_source.get_serial(),
+                                                    "to": own_realm_target.get_serial()}, self.at)
+        self.assertEqual("cornelius", get_one_token(serial=own_realm_target.get_serial()).user.login)
+
+        delete_policy("policy")
+        for token in (own_realm_source, own_realm_target, other_realm):
+            remove_token(token.get_serial())
+
+    def test_08b_copy_onto_a_token_of_the_unassigned_pool(self):
+        """
+        A token without an owner and without realms belongs to no realm yet, so a realm
+        restricted admin may copy onto it, just as they may assign a user to it.
+        """
+        set_policy(name="policy", scope=SCOPE.ADMIN, realm=self.realm1,
+                   action=f"{PolicyAction.COPYTOKENUSER},{PolicyAction.COPYTOKENPIN}")
+
+        source = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+        for action in ["copypin", "copyuser"]:
+            unassigned = init_token({"type": "hotp"})
+            self.request_assert_200(f"/token/{action}", {"from": source.get_serial(),
+                                                         "to": unassigned.get_serial()}, self.at)
+            remove_token(unassigned.get_serial())
+
+        # A token that carries a realm of its own is still checked against it
+        other_realm = init_token({"type": "hotp"}, tokenrealms=[self.realm2])
+        self.request_denied_assert_403("/token/copyuser", {"from": source.get_serial(),
+                                                           "to": other_realm.get_serial()}, self.at)
+
+        delete_policy("policy")
+        remove_token(source.get_serial())
+        remove_token(other_realm.get_serial())
+
+    def test_08c_copy_user_of_a_token_without_owner(self):
+        """
+        A source token without an owner has nothing to copy and is rejected instead of
+        failing while the owner is read.
+        """
+        source = init_token({"type": "hotp"})
+        target = init_token({"type": "hotp"})
+        with self.app.test_request_context("/token/copyuser", method="POST",
+                                           data={"from": source.get_serial(),
+                                                 "to": target.get_serial()},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.json)
+            self.assertIn("no owner", res.json["result"]["error"]["message"])
+        remove_token(source.get_serial())
+        remove_token(target.get_serial())
+
+    def test_09_copy_token_unknown_serial_keeps_token_error(self):
+        """
+        A serial that does not resolve to exactly one token is reported by the copy function
+        itself, not by the policy check.
+        """
+        source = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+
+        for url, data, error_code in [("/token/copypin", {"from": "DOESNOTEXIST", "to": source.get_serial()}, 1016),
+                                      ("/token/copypin", {"from": source.get_serial(), "to": "DOESNOTEXIST"}, 1017),
+                                      ("/token/copyuser", {"from": "DOESNOTEXIST", "to": source.get_serial()}, 1016),
+                                      ("/token/copyuser", {"from": source.get_serial(), "to": "DOESNOTEXIST"}, 1017)]:
+            with self.app.test_request_context(url, method="POST", data=data,
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertEqual(error_code, res.json["result"]["error"]["code"], res.json)
+
+        # A missing serial parameter is rejected before the copy is attempted
+        for url in ["/token/copypin", "/token/copyuser"]:
+            with self.app.test_request_context(url, method="POST", data={"from": source.get_serial()},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.json)
+                self.assertIn("'to'", res.json["result"]["error"]["message"])
+
+        remove_token(source.get_serial())
+
+    def test_10_lost_token_realm_scope(self):
+        """
+        The losttoken right is checked against the realms of the lost token, so a helpdesk
+        admin restricted to realm1 can not start the process for a token of realm2.
+        """
+        set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.LOSTTOKEN, realm=self.realm1)
+
+        own_realm = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+        other_realm = init_token({"type": "hotp"}, user=User("hans", self.realm2))
+
+        self.request_denied_assert_403(f"/token/lost/{other_realm.get_serial()}", {}, self.at)
+        self.assertFalse(token_exist(f"lost{other_realm.get_serial()}"))
+
+        self.request_assert_200(f"/token/lost/{own_realm.get_serial()}", {}, self.at)
+        self.assertTrue(token_exist(f"lost{own_realm.get_serial()}"))
+
+        delete_policy("policy")
+        for serial in [own_realm.get_serial(), other_realm.get_serial(),
+                       f"lost{own_realm.get_serial()}"]:
+            remove_token(serial)
+
+    def test_11_lost_token_never_adopts_an_existing_token(self):
+        """
+        The replacement is always a newly created token. A token that already occupies the
+        derived serial keeps its owner, its realms and its type.
+        """
+        lost = init_token({"type": "hotp"}, user=User("hans", self.realm2))
+        bystander = init_token({"type": "pw", "otpkey": "bystandersecret",
+                                "serial": f"lost{lost.get_serial()}"},
+                               user=User("cornelius", self.realm1))
+
+        result = self.request_assert_200(f"/token/lost/{lost.get_serial()}", {}, self.at)
+        replacement_serial = result.get("result").get("value").get("serial")
+        self.assertNotEqual(bystander.get_serial(), replacement_serial)
+
+        # The bystander token is untouched
+        bystander = get_one_token(serial=bystander.get_serial())
+        self.assertEqual("cornelius", bystander.user.login)
+        self.assertEqual([self.realm1], bystander.token.get_realms())
+
+        # The replacement belongs to the owner of the lost token
+        replacement = get_one_token(serial=replacement_serial)
+        self.assertEqual("hans", replacement.user.login)
+        self.assertEqual("pw", replacement.type)
+
+        for serial in [lost.get_serial(), bystander.get_serial(), replacement_serial]:
+            remove_token(serial)
+
+    def test_12_lost_token_twice_disables_the_earlier_replacement(self):
+        """
+        Running the process again issues a new replacement and disables the one before it, so
+        that a password which was handed out earlier can no longer be used.
+        """
+        lost = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+
+        first = self.request_assert_200(f"/token/lost/{lost.get_serial()}", {}, self.at)
+        second = self.request_assert_200(f"/token/lost/{lost.get_serial()}", {}, self.at)
+        first_serial = first.get("result").get("value").get("serial")
+        second_serial = second.get("result").get("value").get("serial")
+
+        # Each run creates its own token, so neither password overwrites the other
+        self.assertEqual(f"lost{lost.get_serial()}", first_serial)
+        self.assertEqual(f"lost{lost.get_serial()}_2", second_serial)
+        self.assertNotEqual(first.get("result").get("value").get("password"),
+                            second.get("result").get("value").get("password"))
+
+        # Only the latest replacement can be used
+        self.assertFalse(get_one_token(serial=first_serial).token.active)
+        self.assertTrue(get_one_token(serial=second_serial).token.active)
+        self.assertEqual(lost.get_serial(),
+                         get_one_token(serial=second_serial).get_tokeninfo(LOST_TOKEN_FOR))
+
+        for serial in [lost.get_serial(), first_serial, second_serial]:
+            remove_token(serial)
+
+    def test_12c_lost_token_leaves_a_foreign_replacement_alone(self):
+        """
+        Only the replacements of the same lost token are disabled, not those issued for another
+        token of the same user.
+        """
+        first_lost = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+        second_lost = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+
+        first = self.request_assert_200(f"/token/lost/{first_lost.get_serial()}", {}, self.at)
+        second = self.request_assert_200(f"/token/lost/{second_lost.get_serial()}", {}, self.at)
+        first_serial = first.get("result").get("value").get("serial")
+        second_serial = second.get("result").get("value").get("serial")
+
+        self.assertTrue(get_one_token(serial=first_serial).token.active)
+        self.assertTrue(get_one_token(serial=second_serial).token.active)
+
+        for serial in [first_lost.get_serial(), second_lost.get_serial(),
+                       first_serial, second_serial]:
+            remove_token(serial)
+
+    def test_12b_lost_token_serial_fits_the_database_column(self):
+        """
+        The derived serial stays within the length of the serial column, also when a suffix
+        is added for an already taken one.
+        """
+        max_length = Token.__table__.c.serial.type.length
+        long_serial = "L" * (max_length - len("lost"))
+        lost = init_token({"type": "hotp", "serial": long_serial},
+                          user=User("cornelius", self.realm1))
+
+        serials = []
+        for _run in range(2):
+            result = self.request_assert_200(f"/token/lost/{lost.get_serial()}", {}, self.at)
+            serial = result.get("result").get("value").get("serial")
+            self.assertLessEqual(len(serial), max_length, serial)
+            self.assertTrue(token_exist(serial), serial)
+            serials.append(serial)
+        self.assertNotEqual(serials[0], serials[1])
+
+        remove_token(lost.get_serial())
+        for serial in serials:
+            remove_token(serial)
+
+    def test_12d_lost_token_with_an_explicitly_requested_serial(self):
+        """
+        A serial that is passed to the lib function has to be free as well, because the
+        replacement is always a new token, and it is linked and activated like any other.
+        """
+        lost = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+        occupied = init_token({"type": "pw", "otpkey": "occupied", "serial": "REPLACEMENT01"},
+                              user=User("hans", self.realm2))
+
+        # The occupied serial is rejected instead of being taken over
+        self.assertRaises(TokenAdminError, lost_token, lost.get_serial(),
+                          new_serial=occupied.get_serial())
+        occupied = get_one_token(serial=occupied.get_serial())
+        self.assertEqual("hans", occupied.user.login)
+
+        # A free serial is used and linked to the lost token
+        lost_token(lost.get_serial(), new_serial="REPLACEMENT02")
+        replacement = get_one_token(serial="REPLACEMENT02")
+        self.assertTrue(replacement.token.active)
+        self.assertEqual(lost.get_serial(), replacement.get_tokeninfo(LOST_TOKEN_FOR))
+
+        for serial in [lost.get_serial(), occupied.get_serial(), "REPLACEMENT02"]:
+            remove_token(serial)
+
+    def test_13_lost_token_with_occupied_serial_of_other_type(self):
+        """
+        A token of a different type at the derived serial does not break the process, because
+        no attempt is made to initialize that token.
+        """
+        lost = init_token({"type": "hotp"}, user=User("cornelius", self.realm1))
+        blocker = init_token({"type": "hotp", "serial": f"lost{lost.get_serial()}"})
+
+        result = self.request_assert_200(f"/token/lost/{lost.get_serial()}", {}, self.at)
+        replacement_serial = result.get("result").get("value").get("serial")
+        self.assertEqual(f"lost{lost.get_serial()}_2", replacement_serial)
+        self.assertEqual("hotp", get_one_token(serial=blocker.get_serial()).type)
+
+        for serial in [lost.get_serial(), blocker.get_serial(), replacement_serial]:
+            remove_token(serial)
 
 
 class APIAttestationTestCase(MyApiTestCase):
