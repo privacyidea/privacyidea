@@ -153,7 +153,9 @@ subject has done.
    yourself a way back in - *user role is not one of [admin-internal]* keeps the
    internal administrators able to log in. A ``DENY`` stores no state, so none of
    the ``pi-manage conditionalaccess`` reset commands can lift it; undoing an
-   unscoped one means disabling the policy in the database.
+   unscoped one means disabling the policy itself, with
+   ``pi-manage conditionalaccess disable-policy <name>`` if it has locked you out
+   of the WebUI, see :ref:`conditional_access_policies_cli`.
 
 .. _conditional_access_policies_actions:
 
@@ -254,4 +256,35 @@ many users share an address - shared egress such as NAT or CGNAT can put
 hundreds of users behind one address.
 
 Filter the authentication log on *dry run* outcomes to see what a policy would
-have done, then disable dry run once the threshold fits.
+have done, then disable dry run once the threshold fits. Dry run can also be
+switched on and off from the command line, which defuses a policy that has
+locked everybody out without losing what it records.
+
+.. _conditional_access_policies_cli:
+
+Managing policies on the command line
+-------------------------------------
+
+The policies can also be managed with :ref:`pi-manage <pimanage>`, which is what
+you need when a policy has locked you out of the WebUI itself - an unscoped
+``DENY``, say::
+
+   pi-manage conditionalaccess list-policies
+   pi-manage conditionalaccess disable-policy <name|id>
+   pi-manage conditionalaccess enable-policy <name|id>
+   pi-manage conditionalaccess enable-dry-run <name|id>
+   pi-manage conditionalaccess disable-dry-run <name|id>
+   pi-manage conditionalaccess delete-policy <name|id> [--yes]
+
+``list-policies`` prints one line per policy - name, id, enabled and dry-run
+state, priority and target - lowest priority number first, which is the order
+the policies are evaluated in. Every other command takes either the name or the
+id, whichever is quicker to type.
+
+``disable-policy`` is the way back in: the policy is no longer evaluated, so it
+cannot refuse the next request. ``enable-dry-run`` is the gentler variant - the
+policy stays enabled and keeps recording what it *would* do, but nothing is
+enforced. Both leave the locks and blocks the policy has already written in
+force, so clear those as well, see :ref:`conditional_access_policies_lifting`.
+``delete-policy`` removes the policy with its stages and actions for good and
+asks for confirmation first, so pass ``--yes`` when calling it from a script.

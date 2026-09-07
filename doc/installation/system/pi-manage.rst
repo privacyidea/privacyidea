@@ -148,6 +148,23 @@ Policies
 
 You can use ``pi-manage config policy`` to enable, disable, create and delete policies.
 
+Conditional Access
+------------------
+
+``pi-manage conditionalaccess`` manages the :ref:`conditional access
+<conditional_access>` policies and the locks and IP blocks they produce. It is
+the escape hatch when a policy has locked you out of the WebUI itself: you can
+list the policies, disable one, put it into dry run or delete it, and lift the
+locks and blocks that are in force::
+
+   pi-manage conditionalaccess list-policies
+   pi-manage conditionalaccess disable-policy <name|id>
+   pi-manage conditionalaccess list-locked-users
+   pi-manage conditionalaccess clear-blocks
+
+See :ref:`conditional_access_policies_lifting` and
+:ref:`conditional_access_policies_cli` for the complete list.
+
 
 Exporting and Importing the Configuration
 -----------------------------------------

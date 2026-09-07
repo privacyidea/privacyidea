@@ -30,11 +30,14 @@ from sqlalchemy.orm.session import close_all_sessions
 from privacyidea.app import create_app
 from privacyidea.cli.pimanage import cli as pi_manage
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
+from privacyidea.lib.conditional_access.policy import create_conditional_access_policy
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
 from privacyidea.models import db, Challenge, AuthenticationLog, ConditionalAccessOutcome
-from privacyidea.models.conditional_access_policy import BlockList, UserLockState
+from privacyidea.models.conditional_access_policy import (BlockList, ConditionalAccessPolicy,
+                                                          ConditionalAccessPolicyStage, UserLockState)
 from privacyidea.models.utils import utc_now
 from .base import CliTestCase
 from ..base import PWFILE
@@ -1179,3 +1182,144 @@ class PIManageConditionalAccessTestCase(CliTestCase):
         res = runner.invoke(pi_manage, ["conditionalaccess", "purge-expired-locks"])
         self.assertIn("Removed 1 stale user lock(s).", res.output, res)
         self.assertEqual(1, UserLockState.query.count())
+
+
+class PIManageConditionalAccessPolicyTestCase(CliTestCase):
+    """
+    Tests for the ``pi-manage conditionalaccess`` policy commands — the escape hatch for
+    switching off a policy that is refusing everybody, without the WebUI.
+    """
+
+    def tearDown(self):
+        # Deleted through the ORM, so the stage/action/counter-type children go with the policy: a bulk
+        # delete would leave them behind (SQLite does not enforce the FK cascade) and the next test's
+        # policy would collide with them.
+        for policy in ConditionalAccessPolicy.query.all():
+            db.session.delete(policy)
+        db.session.commit()
+        super().tearDown()
+
+    @staticmethod
+    def _create_policy(name="lockdown", priority=1, enabled=True, dry_run=False,
+                       threshold=0, action=ConditionalAccessAction.DENY) -> int:
+        return create_conditional_access_policy(
+            name=name, time_window_seconds=3600,
+            counter_types_to_track=[str(AuthEventType.PASSWORD_FAIL)],
+            stages=[{"failure_threshold": threshold,
+                     "actions": [{"action_type": str(action), "action_value": None}]}],
+            target=ConditionalAccessTarget.USER, priority=priority,
+            enabled=enabled, dry_run=dry_run)
+
+    def test_01_help_lists_policy_subcommands(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess"])
+        for command in ("list-policies", "enable-policy", "disable-policy",
+                        "enable-dry-run", "disable-dry-run", "delete-policy"):
+            self.assertIn(command, res.output, res)
+
+    def test_02_list_policies(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-policies"])
+        self.assertIn("No conditional-access policies.", res.output, res)
+
+        policy_id = self._create_policy(priority=7)
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-policies"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Name", res.output, res)
+        rows = [line for line in res.output.splitlines() if line.startswith("lockdown")]
+        self.assertEqual(1, len(rows), res.output)
+        self.assertListEqual(["lockdown", str(policy_id), "yes", "no", "7", "user"], rows[0].split())
+
+    def test_03_list_policies_in_evaluation_order(self):
+        runner = self.app.test_cli_runner()
+        self._create_policy(name="second", priority=20)
+        self._create_policy(name="first", priority=10)
+        res = runner.invoke(pi_manage, ["conditionalaccess", "list-policies"])
+        self.assertLess(res.output.index("first"), res.output.index("second"), res.output)
+
+    def test_04_disable_and_enable_policy_by_name(self):
+        runner = self.app.test_cli_runner()
+        policy_id = self._create_policy()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", "lockdown"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn(f"Disabled conditional-access policy 'lockdown' (id {policy_id}).", res.output, res)
+        self.assertFalse(db.session.get(ConditionalAccessPolicy, policy_id).enabled)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", "lockdown"])
+        self.assertIn("is already disabled", res.output, res)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "enable-policy", "lockdown"])
+        self.assertIn(f"Enabled conditional-access policy 'lockdown' (id {policy_id}).", res.output, res)
+        self.assertTrue(db.session.get(ConditionalAccessPolicy, policy_id).enabled)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "enable-policy", "lockdown"])
+        self.assertIn("is already enabled", res.output, res)
+
+    def test_05_disable_policy_by_id(self):
+        runner = self.app.test_cli_runner()
+        policy_id = self._create_policy()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", str(policy_id)])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertFalse(db.session.get(ConditionalAccessPolicy, policy_id).enabled)
+
+    def test_06_numeric_name_wins_over_the_id(self):
+        # A policy may legitimately be named "1"; the name must not be shadowed by another policy's id.
+        runner = self.app.test_cli_runner()
+        by_id = self._create_policy(name="by-id", priority=1)
+        by_name = self._create_policy(name=str(by_id), priority=2)
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", str(by_id)])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertFalse(db.session.get(ConditionalAccessPolicy, by_name).enabled)
+        self.assertTrue(db.session.get(ConditionalAccessPolicy, by_id).enabled)
+
+    def test_07_unknown_policy_fails(self):
+        runner = self.app.test_cli_runner()
+        for identifier in ("ghost", "4711"):
+            res = runner.invoke(pi_manage, ["conditionalaccess", "disable-policy", identifier])
+            self.assertEqual(1, res.exit_code, res.output)
+            self.assertIn(f"No conditional-access policy with the name or id '{identifier}'", res.output, res)
+
+    def test_08_toggle_dry_run(self):
+        runner = self.app.test_cli_runner()
+        policy_id = self._create_policy()
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "enable-dry-run", "lockdown"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("is now in dry run", res.output, res)
+        self.assertTrue(db.session.get(ConditionalAccessPolicy, policy_id).dry_run)
+        # Dry run leaves the policy enabled: it is still evaluated and logged, just not enforced.
+        self.assertTrue(db.session.get(ConditionalAccessPolicy, policy_id).enabled)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "enable-dry-run", "lockdown"])
+        self.assertIn("is already in dry run", res.output, res)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-dry-run", "lockdown"])
+        self.assertIn("is no longer in dry run", res.output, res)
+        self.assertFalse(db.session.get(ConditionalAccessPolicy, policy_id).dry_run)
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "disable-dry-run", "lockdown"])
+        self.assertIn("is not in dry run", res.output, res)
+
+    def test_09_delete_policy(self):
+        runner = self.app.test_cli_runner()
+        policy_id = self._create_policy()
+
+        # Without --yes the confirmation aborts, and the policy survives.
+        res = runner.invoke(pi_manage, ["conditionalaccess", "delete-policy", "lockdown"], input="n\n")
+        self.assertEqual(1, res.exit_code, res.output)
+        self.assertIsNotNone(db.session.get(ConditionalAccessPolicy, policy_id))
+
+        res = runner.invoke(pi_manage, ["conditionalaccess", "delete-policy", "lockdown", "--yes"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn(f"Deleted conditional-access policy 'lockdown' (id {policy_id}).", res.output, res)
+        self.assertIsNone(db.session.get(ConditionalAccessPolicy, policy_id))
+
+    def test_10_delete_policy_removes_stages_and_actions(self):
+        runner = self.app.test_cli_runner()
+        policy_id = self._create_policy()
+        stage_ids = [stage.id for stage in db.session.get(ConditionalAccessPolicy, policy_id).stages]
+        res = runner.invoke(pi_manage, ["conditionalaccess", "delete-policy", str(policy_id), "--yes"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(0, ConditionalAccessPolicyStage.query.filter(
+            ConditionalAccessPolicyStage.id.in_(stage_ids)).count())

@@ -17,15 +17,24 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """
 ``pi-manage conditionalaccess`` — inspect and clear the conditional-access
-lock state (locked users and blocked IPs).
+lock state (locked users and blocked IPs), and switch off the policies that
+produce it.
 
 This is the operational escape hatch for the conditional-access engine: it works without
 the WebUI, so an administrator who has been locked out (or who blocked a shared
-proxy IP) can recover from the command line.
+proxy IP) can recover from the command line. Lifting a lock only undoes what a
+policy has already done - a policy that keeps refusing requests (a ``DENY`` at
+threshold 0, say) has to be disabled, put into dry run or deleted, which is what
+the ``*-policy`` and ``*-dry-run`` commands are for.
 """
 import click
 from flask.cli import AppGroup
+from sqlalchemy import select
 
+from privacyidea.lib.conditional_access.policy import (delete_conditional_access_policy,
+                                                       enable_conditional_access_policy,
+                                                       list_conditional_access_policies,
+                                                       update_conditional_access_policy)
 from privacyidea.lib.conditional_access.state import (block_ip, list_blocklist,
                                                               list_locked_users, lock_user,
                                                               purge_expired_blocklist,
@@ -34,14 +43,130 @@ from privacyidea.lib.conditional_access.state import (block_ip, list_blocklist,
                                                               unlock_user_by_id, unlock_user_by_username)
 from privacyidea.lib.user import User
 from privacyidea.models import db
-from privacyidea.models.conditional_access_policy import BlockList, UserLockState
+from privacyidea.models.conditional_access_policy import (BlockList, ConditionalAccessPolicy,
+                                                          UserLockState)
 
 conditional_access_cli = AppGroup("conditionalaccess",
-                                  help="Inspect and clear conditional-access locks and IP blocks")
+                                  help="Manage conditional-access policies and clear the locks and IP "
+                                       "blocks they produced")
 
 
 def _format_expiry(expires_at):
     return expires_at.isoformat() if expires_at else "permanent"
+
+
+def _yes_no(value) -> str:
+    return "yes" if value else "no"
+
+
+def _resolve_policy(identifier: str) -> ConditionalAccessPolicy:
+    """
+    Look a policy up by name, falling back to its id.
+
+    The name is what an administrator reads off ``list-policies`` and is unique, so it
+    wins; the numeric id is tried only when no policy carries that name, which keeps a
+    policy whose name happens to be a number reachable by both.
+    """
+    policy = db.session.scalar(select(ConditionalAccessPolicy).where(ConditionalAccessPolicy.name == identifier))
+    if not policy and identifier.isdigit():
+        policy = db.session.get(ConditionalAccessPolicy, int(identifier))
+    if not policy:
+        raise click.ClickException(f"No conditional-access policy with the name or id '{identifier}'. "
+                                   f"Run 'pi-manage conditionalaccess list-policies' to see them.")
+    return policy
+
+
+def _policy_label(policy: ConditionalAccessPolicy) -> str:
+    return f"'{policy.name}' (id {policy.id})"
+
+
+@conditional_access_cli.command("list-policies", help="List the conditional-access policies in evaluation order.")
+def list_policies():
+    # The same table shape as "pi-manage config policy list", listing what identifies a policy and what
+    # the commands below change. The stages, conditions and everything else belong to the policy detail
+    # view in the WebUI or the API, not to a one-line-per-policy overview.
+    policies = list_conditional_access_policies()
+    if not policies:
+        click.echo("No conditional-access policies.")
+        return
+    click.echo(f"{'Name':30} {'ID':5} {'Enabled':8} {'Dry run':8} {'Priority':9} Target")
+    click.echo(71 * "=")
+    for policy in policies:
+        # The id is listed next to the name because every command below takes either, and the id is the
+        # shorter thing to type when the name is long or carries spaces.
+        click.echo(f"{policy['name']:30} {policy['id']:<5} {_yes_no(policy['enabled']):8} "
+                   f"{_yes_no(policy['dry_run']):8} {policy['priority']:<9} {policy['target']}")
+
+
+@conditional_access_cli.command("enable-policy", help="Enable a single policy, given by its name or id.")
+@click.argument("policy")
+def enable_policy(policy):
+    row = _resolve_policy(policy)
+    label = _policy_label(row)
+    if row.enabled:
+        click.echo(f"Conditional-access policy {label} is already enabled.")
+        return
+    enable_conditional_access_policy(row.id, enable=True)
+    click.echo(f"Enabled conditional-access policy {label}.")
+
+
+@conditional_access_cli.command("disable-policy",
+                                help="Disable a single policy, given by its name or id. The policy stops being "
+                                     "evaluated; locks and blocks it already wrote stay in force.")
+@click.argument("policy")
+def disable_policy(policy):
+    # The way back in from an over-strict policy: it is no longer evaluated, so it cannot refuse
+    # the next request. What it already wrote is separate state - clear that with clear-locks/clear-blocks.
+    row = _resolve_policy(policy)
+    label = _policy_label(row)
+    if not row.enabled:
+        click.echo(f"Conditional-access policy {label} is already disabled.")
+        return
+    enable_conditional_access_policy(row.id, enable=False)
+    click.echo(f"Disabled conditional-access policy {label}. Locks and blocks it already wrote stay in "
+               f"force; clear them with clear-locks / clear-blocks.")
+
+
+@conditional_access_cli.command("enable-dry-run",
+                                help="Put a policy into dry run: it is still evaluated and logged, but nothing "
+                                     "is enforced.")
+@click.argument("policy")
+def enable_dry_run(policy):
+    row = _resolve_policy(policy)
+    label = _policy_label(row)
+    if row.dry_run:
+        click.echo(f"Conditional-access policy {label} is already in dry run.")
+        return
+    update_conditional_access_policy(row.id, dry_run=True)
+    click.echo(f"Conditional-access policy {label} is now in dry run: nothing it decides is enforced.")
+
+
+@conditional_access_cli.command("disable-dry-run",
+                                help="Take a policy out of dry run, so its actions are enforced again.")
+@click.argument("policy")
+def disable_dry_run(policy):
+    row = _resolve_policy(policy)
+    label = _policy_label(row)
+    if not row.dry_run:
+        click.echo(f"Conditional-access policy {label} is not in dry run.")
+        return
+    update_conditional_access_policy(row.id, dry_run=False)
+    click.echo(f"Conditional-access policy {label} is no longer in dry run: its actions are enforced again.")
+
+
+@conditional_access_cli.command("delete-policy",
+                                help="Delete a single policy, given by its name or id, with all its stages and "
+                                     "actions.")
+@click.argument("policy")
+@click.option("--yes", is_flag=True, help="Do not ask for confirmation.")
+def delete_policy(policy, yes):
+    row = _resolve_policy(policy)
+    label = _policy_label(row)
+    # The configuration is gone for good, so confirm by default; --yes is there for scripts.
+    if not yes:
+        click.confirm(f"Delete conditional-access policy {label}?", abort=True)
+    delete_conditional_access_policy(row.id)
+    click.echo(f"Deleted conditional-access policy {label}.")
 
 
 @conditional_access_cli.command("list-blocked-ips", help="List the currently blocked IPs.")
