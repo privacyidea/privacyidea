@@ -184,6 +184,66 @@ against the channel row's total. Reads ``GET
    final delivery: the synchronous return value is ``True`` once the
    job has been queued, regardless of what the worker eventually does.
 
+Authentication activity
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: authentication activity, dashboard metrics
+
+The *Authentication Activity* panel charts how authentication went over a
+chosen window. It counts authentication **attempts** rather than log
+entries: the several entries of one challenge-response login are reduced to
+the event that classifies the whole attempt, so a completed 2FA login counts
+once as a success instead of once as pending and once as successful. See
+:ref:`authentication_log_statistics` for the exact rule and its edges.
+
+One row of bars per classification, with its count beside it and, where a
+share means anything, that too:
+
+* **Overall** - every attempt in the bucket, whatever it ended as. It
+  carries no percentage: an event type the endpoint cannot classify counts
+  here and in none of the rows below, so a share of the whole would read
+  100% at best and more than that wherever such an event type is in the
+  window.
+* **Successful**, **Failed** and **Pending** - the three classifications,
+  their shares taken against all attempts, pending included, so that the
+  three add up to the whole. An attempt counts as pending while its latest
+  entry is a challenge or enrollment with nothing logged after it, and its
+  bucket is where the attempt *started* rather than where it expired.
+
+*Successful* and *Failed* are charted to begin with. The button in the panel
+header chooses which rows to draw and the last one cannot be taken off; the
+choice lasts as long as the page is open and is not stored.
+
+Below the bars, *1 h*, *24 h*, *7 d* and *30 d* choose the window and how
+finely it is bucketed - five minutes, an hour, six hours, a day. The day
+windows are cut on local midnights and take today in as far as it has got,
+so *7 d* covers the last seven whole days plus today, four buckets to a day
+and one for *30 d*. The slider beside the buttons narrows the selection to
+whole buckets inside the fetched window:
+every count, share and reason in the panel then answers for the selected
+span rather than for the window around it.
+
+*Failure Reasons* lists the event types behind the failures of that span,
+most common first. A reason links to the authentication log filtered on that
+event type and on the selected span; a bar links to the log filtered on its
+own bucket's span alone.
+
+.. note::
+
+   A bar's drill-down deliberately carries no event-type filter. This panel
+   counts attempts, each reduced to the one event that classifies it, while
+   the log lists the entries an attempt is made of: an attempt that ended in
+   success can hold a ``PIN_FAIL`` entry on the way there, so a log filtered
+   to the failure event types would list entries belonging to attempts the
+   panel counted as successful.
+
+The panel reads ``GET /authenticationlog/statistics`` and is offered to
+administrators holding ``authentication_log_read``
+(see :ref:`policy_authentication_log_read`); its title links to the full
+log. A policy scoped to realms, resolvers or users narrows what is counted
+the same way it narrows the log listing, so a scoped administrator's bars
+only cover the attempts they may read.
+
 Conditional access
 ~~~~~~~~~~~~~~~~~~
 
@@ -203,18 +263,29 @@ policies are configured to do and what they are currently enforcing:
   restrict nobody, and are what the purge action on the *Locked Users*
   and *Blocklist* pages removes.
 * **Blocks and locks over time** - a histogram of when restrictions were
-  imposed (blocked IPs and the recent locks), bucketed across the shown
-  window, with a range slider on top of it. The icon button at each end of
-  the slider opens presets for that end of the window (*Last 24 hours* ...
-  *Everything on record* on the left, *Up to now* / *Up to 24 hours ago* /
-  *Up to 7 days ago* on the right); the thumbs narrow the selection inside
-  the window. The header counts what falls in the selected range.
+  imposed, read from the conditional-access outcomes recorded on the
+  authentication log. Only the request that *imposed* a restriction counts,
+  not the many that were later turned away because a user was already
+  locked - those are authentication failures, and the *Authentication
+  activity* panel is where they are counted. Dry-run outcomes are left out
+  as well: they record what a policy would have done.
+
+  The *Users* / *IPs* buttons choose which kinds of restriction are charted
+  (both to begin with, and the last one cannot be taken off): user locks,
+  permanent ones included, and IP blocks. The window buttons and the slider
+  work as they do on the *Authentication activity* panel, and the section
+  header reads how many restrictions fall inside the selected span. A bar
+  links to the authentication log filtered on that bucket's span - on time
+  alone, deliberately: what explains a lock is the run of failures before
+  it, and those carry no outcome of their own.
 * **Restrictions in force** - every restriction still in force that was
-  imposed inside the selected range, blocked IPs and locked users in one
+  imposed inside the selected span, blocked IPs and locked users in one
   list, most recent first. An IP links to the authentication log
   pre-filtered on that source IP, a user to the *Locked Users* page; a
-  footer names how many further restrictions the list does not show
-  (those outside the range, and any beyond the 100 lock records read).
+  footer names how many further restrictions the list does not show (those
+  outside the span, and any beyond the 100 lock records read). With no
+  histogram to brush over - an administrator without the log's right, say -
+  the list is not narrowed at all.
 
 Every row links to the page it summarises. The three areas are governed
 by separate rights (``conditional_access_policy_read``, ``user_lock_read``,
@@ -224,6 +295,14 @@ the regular endpoints
 ``GET /conditionalaccess/policy``, ``GET /conditionalaccess/lock/users``
 (once per lock state, for the counts only) and
 ``GET /conditionalaccess/blocklist``.
+
+The history is the exception: it hangs off the authentication-log entries
+that caused it, so it is read under ``authentication_log_read`` rather than
+under any of the three, from
+``GET /conditionalaccess/outcomes/statistics``. An administrator holding the
+conditional-access rights alone keeps the numbers and the restrictions list
+and simply gets no histogram; realm scoping applies to it as it does to the
+log itself.
 
 Locking a user or an IP by hand
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
