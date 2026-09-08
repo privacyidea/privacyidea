@@ -27,8 +27,7 @@ import { WEBAUTHN_TRUST_ANCHOR_DIR } from "@constants/token.constants";
   selector: "app-webauthn-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
-  templateUrl: "./webauthn-config.component.html",
-  styleUrl: "./webauthn-config.component.scss"
+  templateUrl: "./webauthn-config.component.html"
 })
 export class WebauthnConfigComponent {
   protected readonly WEBAUTHN_TRUST_ANCHOR_DIR = WEBAUTHN_TRUST_ANCHOR_DIR;

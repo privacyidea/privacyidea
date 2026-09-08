@@ -8,7 +8,9 @@
 @forward "cards";
 
 @include meta.load-css("mixins.scss");
-@include meta.load-css("buttons.scss");
+:root {
+  @include meta.load-css("buttons.scss");
+}
 @include meta.load-css("dialog.scss");
 @include meta.load-css("enroll.scss");
 @include meta.load-css("info.scss");

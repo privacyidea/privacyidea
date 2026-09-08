@@ -44,7 +44,6 @@ export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
   selector: "app-enroll-sshkey",
   imports: [FormField, MatFormField, MatInput, MatLabel, MatError],
   templateUrl: "./enroll-sshkey.component.html",
-  styleUrl: "./enroll-sshkey.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollSshkeyComponent) }
   ]

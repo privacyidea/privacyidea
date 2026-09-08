@@ -47,7 +47,6 @@ export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [MatFormField, MatInput, MatLabel, MatError, FormField],
   templateUrl: "./enroll-yubico.component.html",
-  styleUrl: "./enroll-yubico.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollYubicoComponent) }
   ]

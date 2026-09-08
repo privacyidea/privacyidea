@@ -24,7 +24,6 @@ import { DialogAction } from "@models/dialog";
 @Component({
   selector: "app-search-token-dialog",
   templateUrl: "./search-token-dialog.html",
-  styleUrl: "./search-token-dialog.scss",
   standalone: true,
   imports: [DialogWrapperComponent]
 })

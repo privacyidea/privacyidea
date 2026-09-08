@@ -25,8 +25,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 @Component({
   selector: "app-token-enrolled-text",
   imports: [],
-  templateUrl: "./token-enrolled-text.component.html",
-  styleUrl: "./token-enrolled-text.component.scss"
+  templateUrl: "./token-enrolled-text.component.html"
 })
 export class TokenEnrolledTextComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

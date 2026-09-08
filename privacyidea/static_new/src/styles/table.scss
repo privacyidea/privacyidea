@@ -278,21 +278,21 @@ table {
   border: 2px solid #999;
 }
 
-.mat-mdc-paginator-page-size {
+.mat-mdc-paginator-page-size.mat-mdc-paginator-page-size {
   margin-right: 0;
 }
 
-.mat-mdc-paginator-page-size-label {
+.mat-mdc-paginator-page-size-label.mat-mdc-paginator-page-size-label {
   margin: 0;
   white-space: nowrap;
 }
 
-.mat-mdc-paginator-range-label {
+.mat-mdc-paginator-range-label.mat-mdc-paginator-range-label {
   margin: 0 16px;
   white-space: nowrap;
 }
 
-.mat-mdc-paginator-container {
+.mat-mdc-paginator-container.mat-mdc-paginator-container {
   padding: 0 0 0 16px;
   flex-wrap: nowrap !important;
   --mat-paginator-container-size: 0px;
@@ -461,7 +461,9 @@ th:nth-child(even) {
   height: auto;
 }
 
-.mat-mdc-table {
+// Lets the table shrink below its content width. Material's own .mat-mdc-table sets min-width to
+// 100% and is injected after this stylesheet, so the repeated class is what wins the tie.
+.mat-mdc-table.mat-mdc-table {
   min-width: 0;
 }
 

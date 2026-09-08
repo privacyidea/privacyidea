@@ -35,7 +35,6 @@ export interface TanEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [],
   templateUrl: "./enroll-tan.component.html",
-  styleUrl: "./enroll-tan.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollTanComponent) }
   ]

@@ -42,7 +42,6 @@ import { lastValueFrom } from "rxjs";
   standalone: true,
   imports: [],
   templateUrl: "./enroll-push.component.html",
-  styleUrl: "./enroll-push.component.scss",
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollPushComponent) }]
 })
 export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {

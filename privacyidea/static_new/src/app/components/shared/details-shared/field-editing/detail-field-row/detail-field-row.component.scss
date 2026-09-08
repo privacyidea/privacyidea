@@ -1,6 +1,3 @@
-@use "styles";
-@use "table";
-
 // Flatten so the projected key/value participate directly in the enclosing
 // .details-field-list grid, whether this shell is a direct list child or nested
 // inside a component whose own host is already the grid row.

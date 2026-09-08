@@ -32,8 +32,7 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
   selector: "app-challenges-table-actions",
   standalone: true,
   imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, OverflowNavDirective],
-  templateUrl: "./challenges-table-actions.component.html",
-  styleUrls: ["./challenges-table-actions.component.scss"]
+  templateUrl: "./challenges-table-actions.component.html"
 })
 export class ChallengesTableActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);

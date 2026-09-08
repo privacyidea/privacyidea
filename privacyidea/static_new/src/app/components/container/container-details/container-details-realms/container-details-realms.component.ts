@@ -35,8 +35,7 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
     DetailsListDisplayComponent,
     EditButtonsComponent
   ],
-  templateUrl: "./container-details-realms.component.html",
-  styleUrl: "./container-details-realms.component.scss"
+  templateUrl: "./container-details-realms.component.html"
 })
 export class ContainerDetailsRealmsComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);

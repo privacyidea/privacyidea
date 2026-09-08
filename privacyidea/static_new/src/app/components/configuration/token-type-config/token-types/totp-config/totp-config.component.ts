@@ -30,8 +30,7 @@ import { labeledOptions } from "@utils/value-label.utils";
   selector: "app-totp-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, ClearButtonComponent],
-  templateUrl: "./totp-config.component.html",
-  styleUrl: "./totp-config.component.scss"
+  templateUrl: "./totp-config.component.html"
 })
 export class TotpConfigComponent {
   protected readonly TOTP_TIME_STEP = TOTP_TIME_STEP;

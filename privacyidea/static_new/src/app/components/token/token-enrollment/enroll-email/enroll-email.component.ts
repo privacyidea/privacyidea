@@ -44,7 +44,6 @@ export interface EmailEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [MatCheckbox, MatFormField, MatInput, MatLabel, MatError, FormField],
   templateUrl: "./enroll-email.component.html",
-  styleUrl: "./enroll-email.component.scss",
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollEmailComponent) }]
 })
 export class EnrollEmailComponent extends EnrollTokenBase<EmailEnrollmentData> implements OnInit {

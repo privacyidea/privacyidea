@@ -45,7 +45,6 @@ export interface VascoEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [FormField, MatFormField, MatInput, MatLabel, MatCheckbox, MatError],
   templateUrl: "./enroll-vasco.component.html",
-  styleUrl: "./enroll-vasco.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollVascoComponent) }
   ]

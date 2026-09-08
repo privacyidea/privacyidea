@@ -35,8 +35,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 @Component({
   selector: "app-container-details-token-actions",
   templateUrl: "./container-details-token-actions.component.html",
-  imports: [MatIcon, MatButton, MatDivider, MatMenuModule],
-  styleUrl: "./container-details-token-actions.component.scss"
+  imports: [MatIcon, MatButton, MatDivider, MatMenuModule]
 })
 export class ContainerDetailsTokenActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);

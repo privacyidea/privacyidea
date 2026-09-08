@@ -30,8 +30,7 @@ import { labeledOptions } from "@utils/value-label.utils";
   selector: "app-daypassword-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, ClearButtonComponent],
-  templateUrl: "./daypassword-config.component.html",
-  styleUrl: "./daypassword-config.component.scss"
+  templateUrl: "./daypassword-config.component.html"
 })
 export class DaypasswordConfigComponent {
   formData = input.required<Record<string, string | number | boolean | undefined>>();

@@ -35,8 +35,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-container-details-states",
   standalone: true,
   imports: [NgClass, EditButtonsComponent, DetailFieldRowComponent, DetailsMultiSelectCellComponent],
-  templateUrl: "./container-details-states.component.html",
-  styleUrl: "./container-details-states.component.scss"
+  templateUrl: "./container-details-states.component.html"
 })
 export class ContainerDetailsStatesComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);

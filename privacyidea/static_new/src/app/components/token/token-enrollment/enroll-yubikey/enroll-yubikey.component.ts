@@ -36,7 +36,6 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 @Component({
   selector: "app-enroll-yubikey",
   templateUrl: "./enroll-yubikey.component.html",
-  styleUrls: ["./enroll-yubikey.component.scss"],
   standalone: true,
   imports: [MatFormFieldModule, MatInputModule, MatOptionModule, FormField],
   providers: [
