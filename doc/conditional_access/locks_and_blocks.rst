@@ -6,8 +6,8 @@ Locks and blocks
 
 A lock or a block created by a policy stays in force until it expires or an
 administrator lifts it. Both are listed in the WebUI, where they can also be
-lifted, and individual addresses or whole networks can be exempted from ever
-being blocked.
+lifted. Individual addresses or whole networks can be exempted from ever being
+blocked, see :ref:`conditional_access_never_block`.
 
 A **Cause** column says whether a conditional access policy or an administrator imposed the
 restriction now in force - *Policy* or *Manual* - and can be filtered on. It
@@ -29,7 +29,7 @@ copy taken when the restriction was written, see
 Lifting locks and blocks
 ------------------------
 
-*Logs → Locked users* and *Logs → Blocklist* show the restrictions in force,
+*Logs → Locked Users* and *Logs → IP Blocklist* show the restrictions in force,
 with the permanent ones marked. An entry can be lifted individually or in bulk.
 Expired records restrict nobody; they are kept for the record and can be purged
 from the same pages.
@@ -73,8 +73,8 @@ Locking or blocking by hand
 .. index:: manual lock, manual block
 
 A restriction does not have to come from a policy. The *User Lock State* card on
-a user's details page offers a **Lock** action and the *Blocklist* page a **Block
-IP** action; both ask whether the restriction lasts until an administrator lifts
+a user's details page offers a **Lock** action and the *IP Blocklist* page a
+**Block IP** action; both ask whether the restriction lasts until an administrator lifts
 it (the default) or for a chosen duration. On the command line::
 
    pi-manage conditionalaccess lock-user <login> --realm <realm> [--duration <seconds>]
@@ -93,9 +93,8 @@ never-block list is refused with an explanation rather than silently skipped,
 which is the other way round from the engine, see
 :ref:`conditional_access_never_block`.
 
-Imposing a restriction has rights of its own, ``user_lock_set`` and
-``blocklist_set``, kept apart from the ``*_reset`` rights because clearing a
-restriction is recoverable and imposing one is not.
+Imposing a restriction has rights of its own, :ref:`policy_user_lock_set` and
+:ref:`policy_blocklist_set`, kept apart from the ``*_reset`` rights.
 
 
 .. _conditional_access_never_block:
@@ -104,19 +103,11 @@ Never blocking an address
 -------------------------
 
 Blocking the wrong address can lock out everybody. ``127.0.0.0/8`` and
-``::1/128`` are therefore never blocked. Add further addresses in
-``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` in the :ref:`configuration file <cfgfile>`,
-either as a list of entries or as one string separated by commas or whitespace;
-each entry is a CIDR network or a bare IP address. An entry that cannot be parsed
-is logged and ignored, so a typo falls back to the loopback defaults rather than
-breaking authentication.
-
-.. note:: This is deliberately a server-configuration setting rather than one in
-   the :ref:`system_config`: it is the safety net that keeps an administrator from
-   locking themselves out, so it must not be reachable through the very API a
-   mistaken ``BLOCK_IP`` policy - or an attacker - could be acting through.
-   Changing it needs file access to the server and takes effect when the service
-   is reloaded.
+``::1/128`` are therefore never blocked. Further addresses and networks are
+added in ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, a server-configuration setting
+with no WebUI or API - deliberately, since it is the safety net that keeps an
+administrator from locking themselves out. See
+:ref:`ini_conditional_access_never_block` for the setting itself.
 
 The exemption is checked both when a block is created and when an existing one
 is enforced, so adding an address immediately stops a block already in force

@@ -265,7 +265,7 @@ policies are configured to do and what they are currently enforcing:
   non-zero count is highlighted red, a zero count green.
 * **Expired records** - locks and blocks whose time has run out. They
   restrict nobody, and are what the purge action on the *Locked Users*
-  and *Blocklist* pages removes.
+  and *IP Blocklist* pages removes.
 * **Blocks and locks over time** - a histogram of when restrictions were
   imposed, read from the conditional-access outcomes recorded on the
   authentication log. Only the request that *imposed* a restriction counts,
@@ -291,14 +291,16 @@ policies are configured to do and what they are currently enforcing:
   histogram to brush over - an administrator without the log's right, say -
   the list is not narrowed at all.
 
-Every row links to the page it summarises. The three areas are governed
+Every top-level row - *Enforcing policies*, *Users locked*, *IPs blocked* -
+links to the page it summarises; their *permanent*/*dry run only*/*disabled*
+sub-counts and *Expired records* do not. The three areas are governed
 by separate rights (``conditional_access_policy_read``, ``user_lock_read``,
 ``blocklist_read``); the panel shows only the areas an administrator may
 read and is offered as soon as any one of the three is granted. It reads
 the regular endpoints
 ``GET /conditionalaccess/policy``, ``GET /conditionalaccess/lock/users``
-(once per lock state, for the counts only) and
-``GET /conditionalaccess/blocklist``.
+(once per lock state for the counts, plus once more for the records behind
+*Restrictions in force* above) and ``GET /conditionalaccess/blocklist``.
 
 The history is the exception: it hangs off the authentication-log entries
 that caused it, so it is read under ``authentication_log_read`` rather than
@@ -315,10 +317,10 @@ Locking a user or an IP by hand
 
 A restriction does not have to come from a Conditional Access policy. The
 *User Lock State* card on a user's details page offers a **Lock** action, and
-the *Blocklist* page a **Block IP** action; both ask whether the restriction
+the *IP Blocklist* page a **Block IP** action; both ask whether the restriction
 lasts until an administrator lifts it (the default) or for a chosen duration.
 
-The *Locked Users* and *Blocklist* pages show a *Cause* column reading *Manual*
+The *Locked Users* and *IP Blocklist* pages show a *Cause* column reading *Manual*
 or *Policy*, and the locked-users list can be filtered on it. What a manual
 restriction does at authentication time, how its cause moves when a policy
 strengthens it, why a manual write is authoritative where a policy's is not, and
