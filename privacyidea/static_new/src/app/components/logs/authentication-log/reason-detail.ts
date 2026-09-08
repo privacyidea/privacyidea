@@ -92,7 +92,7 @@ export function parseReasonDetail(info: unknown, usedSerials: string[] = []): Re
   }));
   const other = findings.filter((finding) => !usedSerials.includes(finding.serial));
   // Without named serials there is nothing to contrast: every finding is the explanation, so it stays in *used* and
-  // the dialog renders it as the one table it did before the split existed.
+  // the dialog renders it as a single table.
   return usedSerials.length
     ? { used, other, namesTokens: true, policies }
     : { used: findings, other: [], namesTokens: false, policies };
