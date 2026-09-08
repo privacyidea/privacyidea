@@ -57,6 +57,7 @@ import { RouterLink } from "@angular/router";
 import { ConditionalAccessCell } from "./cells/conditional-access-cell/conditional-access-cell";
 import { hasInfoContent, InfoCell } from "./cells/info-cell/info-cell";
 import { ReasonCell } from "./cells/reason-cell/reason-cell";
+import { isRecord } from "./reason-detail";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SourceIpCell } from "./cells/source-ip-cell/source-ip-cell";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
@@ -169,11 +170,12 @@ const INFO_COLUMN_KEYS = ["conditional_access_outcomes", "other_info"];
 
 // The serials cut off an entry's serial column, which the backend preserves under other_info.truncated rather than
 // discarding (see _store_overflow in lib/conditional_access/authentication_log.py). A free-form JSON column, so
-// every level is checked rather than trusted.
+// every level is checked rather than trusted - isRecord (./reason-detail) does the same check for the other free-form
+// column on this row, other_info.reason_detail.
 function truncatedSerial(info: AuthenticationLogEntry["other_info"]): string | null {
   const truncated = info?.["truncated"];
-  if (typeof truncated !== "object" || truncated === null || Array.isArray(truncated)) return null;
-  const serial = (truncated as Record<string, unknown>)["serial"];
+  if (!isRecord(truncated)) return null;
+  const serial = truncated["serial"];
   return typeof serial === "string" ? serial : null;
 }
 

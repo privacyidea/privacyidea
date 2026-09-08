@@ -105,6 +105,8 @@ function asText(value: unknown): string {
   return typeof value === "object" ? JSON.stringify(value) : String(value);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+// Exported for authentication-log.ts's truncatedSerial, which checks the same shape one level down in a sibling
+// free-form column of the same row.
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
