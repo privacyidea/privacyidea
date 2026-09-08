@@ -42,6 +42,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { POLICY_VOCABULARY_ACTIONS, valueDisplayLabel } from "@utils/value-label.utils";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
@@ -96,10 +97,15 @@ export class PoliciesTableComponent {
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
 
   readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
+  readonly filterOptions: FilterOption<PolicyDetail>[] = createPolicyFilterOptions((name, scope, value) =>
+    valueDisplayLabel(value, this.policyService.getDetailsOfAction(name, scope)?.value, {
+      vocabulary: POLICY_VOCABULARY_ACTIONS.has(name)
+    })
+  );
   readonly filter = linkedSignal<string, FilterValueGeneric<PolicyDetail>>({
     source: () => (this.contentService.queryParams()["filter"] ?? "").replace(/^"(.*)"$/s, "$1"),
     computation: (raw) => {
-      const filter = new FilterValueGeneric<PolicyDetail>({ availableFilters: policyFilterOptions });
+      const filter = new FilterValueGeneric<PolicyDetail>({ availableFilters: this.filterOptions });
       return raw ? filter.setByString(raw) : filter;
     }
   });
@@ -171,7 +177,7 @@ export class PoliciesTableComponent {
   }
 
   onFilterClick(columnKey: string): void {
-    const option = policyFilterOptions.find((o) => o.key === columnKey);
+    const option = this.filterOptions.find((o) => o.key === columnKey);
     if (!option) return;
     const nextFilter = option.toggle ? option.toggle(this.filter()) : this.filter().toggleKey(option.key);
     this.onFilterUpdate(nextFilter);
@@ -179,7 +185,7 @@ export class PoliciesTableComponent {
   }
 
   getFilterIconName(columnKey: string): string {
-    const actionType = policyFilterOptions.find((o) => o.key === columnKey)?.getActionType?.(this.filter()) ?? "add";
+    const actionType = this.filterOptions.find((o) => o.key === columnKey)?.getActionType?.(this.filter()) ?? "add";
     switch (actionType) {
       case "add":
         return "filter_alt";
@@ -193,11 +199,11 @@ export class PoliciesTableComponent {
   }
 
   getFilterTooltipText(columnKey: string): string {
-    return policyFilterOptions.find((o) => o.key === columnKey)?.hint ?? "";
+    return this.filterOptions.find((o) => o.key === columnKey)?.hint ?? "";
   }
 
   isFilterable(columnKey: string): boolean {
-    return policyFilterOptions.some((o) => o.key === columnKey);
+    return this.filterOptions.some((o) => o.key === columnKey);
   }
 
   togglePolicyActive(policy: PolicyDetail): void {
@@ -233,10 +239,15 @@ function matchesPriority(priority: number, val: string): boolean {
   return compare(priority, Number(rest));
 }
 
-function matchesActions(item: PolicyDetail, term: string): boolean {
+type PolicyActionLabelResolver = (name: string, scope: string, value: string | boolean) => string;
+
+function matchesActions(item: PolicyDetail, term: string, labelOf: PolicyActionLabelResolver): boolean {
   if (!item.action) return false;
   return Object.entries(item.action).some(
-    ([name, value]) => name.toLowerCase().includes(term) || String(value).toLowerCase().includes(term)
+    ([name, value]) =>
+      name.toLowerCase().includes(term) ||
+      String(value).toLowerCase().includes(term) ||
+      labelOf(name, item.scope, value).toLowerCase().includes(term)
   );
 }
 
@@ -257,78 +268,80 @@ function matchesConditions(item: PolicyDetail, term: string): boolean {
   );
 }
 
-const policyFilterOptions: FilterOption<PolicyDetail>[] = [
-  new FilterOption<PolicyDetail>({
-    key: "priority",
-    label: $localize`:@@policy.priority:Priority`,
-    matches: (item, filter) => {
-      const val = filter.getFilterOfKey("priority");
-      return !val || matchesPriority(item.priority, val);
-    },
-    globalMatches: (item, term) => String(item.priority).includes(term)
-  }),
-  new FilterOption<PolicyDetail>({
-    key: "active",
-    label: $localize`:@@common.active:Active`,
-    toggle: (filter) => {
-      const v = filter.getFilterOfKey("active")?.toLowerCase();
-      if (v === "true") return filter.setValueOfKey("active", "false");
-      if (v === "false") return filter.removeKey("active");
-      return filter.setValueOfKey("active", "true");
-    },
-    getActionType: (filter) => {
-      const v = filter.getFilterOfKey("active")?.toLowerCase();
-      return v === "true" ? "change" : v === "false" ? "remove" : "add";
-    },
-    matches: (item, filter) => {
-      const v = filter.getFilterOfKey("active")?.toLowerCase();
-      return v === "true" ? item.active === true : v === "false" ? item.active === false : true;
-    },
-    globalMatches: (item, term) => String(item.active).includes(term)
-  }),
-  new FilterOption<PolicyDetail>({
-    key: "name",
-    label: $localize`:@@policy.policyName:Policy Name`,
-    matches: (item, filter) => {
-      const val = filter.getFilterOfKey("name");
-      return !val || item.name.toLowerCase().includes(val.toLowerCase());
-    },
-    globalMatches: (item, term) => item.name.toLowerCase().includes(term)
-  }),
-  new FilterOption<PolicyDetail>({
-    key: "scope",
-    label: $localize`:@@common.scope:Scope`,
-    matches: (item, filter) => {
-      const val = filter.getFilterOfKey("scope");
-      return !val || item.scope.toLowerCase().includes(val.toLowerCase());
-    },
-    globalMatches: (item, term) => item.scope.toLowerCase().includes(term)
-  }),
-  new FilterOption<PolicyDetail>({
-    key: "description",
-    label: $localize`:@@common.description:Description`,
-    matches: (item, filter) => {
-      const val = filter.getFilterOfKey("description");
-      return !val || (item.description?.toLowerCase().includes(val.toLowerCase()) ?? false);
-    },
-    globalMatches: (item, term) => item.description?.toLowerCase().includes(term) ?? false
-  }),
-  new FilterOption<PolicyDetail>({
-    key: "actions",
-    label: $localize`:@@common.actions:Actions`,
-    matches: (item, filter) => {
-      const val = filter.getFilterOfKey("actions")?.toLowerCase();
-      return !val || matchesActions(item, val);
-    },
-    globalMatches: (item, term) => matchesActions(item, term)
-  }),
-  new FilterOption<PolicyDetail>({
-    key: "conditions",
-    label: $localize`:@@common.conditions:Conditions`,
-    matches: (item, filter) => {
-      const val = filter.getFilterOfKey("conditions")?.toLowerCase();
-      return !val || matchesConditions(item, val);
-    },
-    globalMatches: (item, term) => matchesConditions(item, term)
-  })
-];
+function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOption<PolicyDetail>[] {
+  return [
+    new FilterOption<PolicyDetail>({
+      key: "priority",
+      label: $localize`:@@policy.priority:Priority`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("priority");
+        return !val || matchesPriority(item.priority, val);
+      },
+      globalMatches: (item, term) => String(item.priority).includes(term)
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "active",
+      label: $localize`:@@common.active:Active`,
+      toggle: (filter) => {
+        const v = filter.getFilterOfKey("active")?.toLowerCase();
+        if (v === "true") return filter.setValueOfKey("active", "false");
+        if (v === "false") return filter.removeKey("active");
+        return filter.setValueOfKey("active", "true");
+      },
+      getActionType: (filter) => {
+        const v = filter.getFilterOfKey("active")?.toLowerCase();
+        return v === "true" ? "change" : v === "false" ? "remove" : "add";
+      },
+      matches: (item, filter) => {
+        const v = filter.getFilterOfKey("active")?.toLowerCase();
+        return v === "true" ? item.active === true : v === "false" ? item.active === false : true;
+      },
+      globalMatches: (item, term) => String(item.active).includes(term)
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "name",
+      label: $localize`:@@policy.policyName:Policy Name`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("name");
+        return !val || item.name.toLowerCase().includes(val.toLowerCase());
+      },
+      globalMatches: (item, term) => item.name.toLowerCase().includes(term)
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "scope",
+      label: $localize`:@@common.scope:Scope`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("scope");
+        return !val || item.scope.toLowerCase().includes(val.toLowerCase());
+      },
+      globalMatches: (item, term) => item.scope.toLowerCase().includes(term)
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "description",
+      label: $localize`:@@common.description:Description`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("description");
+        return !val || (item.description?.toLowerCase().includes(val.toLowerCase()) ?? false);
+      },
+      globalMatches: (item, term) => item.description?.toLowerCase().includes(term) ?? false
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "actions",
+      label: $localize`:@@common.actions:Actions`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("actions")?.toLowerCase();
+        return !val || matchesActions(item, val, labelOf);
+      },
+      globalMatches: (item, term) => matchesActions(item, term, labelOf)
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "conditions",
+      label: $localize`:@@common.conditions:Conditions`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("conditions")?.toLowerCase();
+        return !val || matchesConditions(item, val);
+      },
+      globalMatches: (item, term) => matchesConditions(item, term)
+    })
+  ];
+}

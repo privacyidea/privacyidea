@@ -21,6 +21,7 @@ import { ElementRef } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
 import { MockPolicyService } from "@testing/mock-services";
@@ -51,7 +52,7 @@ describe("PolicyActionItemComponent", () => {
     })
       .overrideComponent(PolicyActionItemComponent, {
         set: {
-          imports: [MockSelectorButtonsComponent, MatSelectModule]
+          imports: [MockSelectorButtonsComponent, MatSelectModule, HighlightPipe]
         }
       })
       .compileComponents();
@@ -192,6 +193,50 @@ describe("PolicyActionItemComponent", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(focusSpy).toHaveBeenCalled();
+  });
+
+  it("adds the raw value when a labelled option is picked from the select", () => {
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      actionName: "otppin",
+      detail: { type: "str", desc: "otppin", value: ["tokenpin", "userstore", "disable", "none"] }
+    });
+    fixture.detectChanges();
+
+    const select = fixture.debugElement.query(By.directive(MatSelect));
+    select.componentInstance.open();
+    fixture.detectChanges();
+
+    const options = fixture.debugElement.queryAll(By.css("mat-option"));
+    expect(options.map((option) => [option.componentInstance.value, option.nativeElement.textContent.trim()])).toEqual([
+      ["tokenpin", "Token PIN"],
+      ["userstore", "User store"],
+      ["disable", "Disabled"],
+      ["none", "None"]
+    ]);
+
+    const spy = jest.spyOn(component.actionAdd, "emit");
+    options[1].nativeElement.click();
+    fixture.detectChanges();
+
+    expect(component.currentAction().value).toBe("userstore");
+
+    fixture.debugElement.query(By.css("button[mat-icon-button]")).nativeElement.click();
+
+    expect(spy).toHaveBeenCalledWith({ name: "otppin", value: "userstore" });
+  });
+
+  it("passes raw values and display labels to the selector buttons in separate inputs", () => {
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      detail: { type: "str", desc: "switch", value: ["0", "1"] }
+    });
+    fixture.detectChanges();
+
+    const selectorButtons = fixture.debugElement.query(By.directive(MockSelectorButtonsComponent));
+
+    expect(selectorButtons.componentInstance.values()).toEqual(["0", "1"]);
+    expect(selectorButtons.componentInstance.labels()).toEqual(["Off", "On"]);
   });
 
   it("should handle multi-value actions with mat-select if > 3 values", () => {

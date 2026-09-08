@@ -245,6 +245,10 @@ export class EventEditPageComponent implements OnDestroy {
 
   getSaveParameters(): EventHandlerSaveParams {
     const eventParams = toEventHandlerSaveParams(deepCopy(this.editEvent()));
+    // The edit form always carries the complete option set of the selected action, so the stored
+    // options have to be replaced even when the action has none. Without this flag, a request
+    // without any "option.*" parameter leaves the stored options untouched.
+    eventParams.clear_options = true;
     eventParams.handlermodule = this.eventService.selectedHandlerModule();
     // The default of the handler module is not written into the edited binding, so it is resolved here
     eventParams.abort_on_error = this.abortOnError();

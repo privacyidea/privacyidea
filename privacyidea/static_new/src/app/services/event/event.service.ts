@@ -100,6 +100,7 @@ export interface EventHandlerSaveParams {
   event: string[];
   action: string;
   conditions: Record<string, unknown>;
+  clear_options?: boolean;
 
   [key: string]: unknown;
 }

@@ -302,7 +302,8 @@ describe("EventEditPageComponent — edit mode", () => {
       conditions: { condA: "true" },
       position: "post",
       ordering: 0,
-      abort_on_error: false
+      abort_on_error: false,
+      clear_options: true
     };
     expect(mockEventService.saveEventHandler).toHaveBeenCalledWith(convertedParams);
     expect(reloadSpy).toHaveBeenCalled();
@@ -441,7 +442,8 @@ describe("EventEditPageComponent — create new mode", () => {
       conditions: { condA: "true" },
       position: "pre",
       ordering: 0,
-      abort_on_error: false
+      abort_on_error: false,
+      clear_options: true
     };
     expect(mockEventService.saveEventHandler).toHaveBeenCalledWith(convertedParams);
     expect(reloadSpy).toHaveBeenCalled();

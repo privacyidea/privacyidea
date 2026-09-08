@@ -115,7 +115,7 @@
                             value: element[column.key]
                           })
                         ">
-                        {{ element[column.key] }}
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
                       </span>
                     </div>
                   }
