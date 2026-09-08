@@ -164,6 +164,8 @@ export interface AuthenticationLogServiceInterface {
   endpoints: () => string[];
   oldestTimestamp: () => string | null;
 
+  fetchOldestTimestamp(): Observable<PiResponse<AuthenticationLogPage>>;
+
   fetchStatistics(
     startTime: string,
     endTime: string,
@@ -326,6 +328,16 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
     if (!this.oldestEntryResource.hasValue()) return null;
     return this.oldestEntryResource.value()?.result?.value?.auth_logs?.[0]?.timestamp ?? null;
   });
+
+  // A one-off read of the single oldest entry, for callers outside the authentication-log route where
+  // oldestEntryResource deliberately does not fetch - the dashboard widgets' "all" range, which has to learn where
+  // the log begins before it can ask fetchStatistics for a window at all.
+  fetchOldestTimestamp(): Observable<PiResponse<AuthenticationLogPage>> {
+    return this.http.get<PiResponse<AuthenticationLogPage>>(this.authenticationLogBaseUrl, {
+      headers: this.authService.getHeaders(),
+      params: { page: 1, page_size: 1, sort_column: "timestamp", sort_order: "asc" }
+    });
+  }
 
   // A one-off read for callers outside the authentication-log route, where the resources above deliberately do not
   // fetch. An Observable rather than an httpResource because the dashboard widget drives the window itself and caches

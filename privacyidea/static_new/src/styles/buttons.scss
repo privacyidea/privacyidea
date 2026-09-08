@@ -94,7 +94,8 @@ $button-low-contrast-variant: linear-gradient(
 
   @include hover-or-active(
     var(--background-blue-inset),
-    inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-primary-dark)#{","} inset calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-primary-light-active),
+    inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-primary-dark) #{","} inset
+      calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-primary-light-active),
     true
   );
 }
@@ -543,4 +544,44 @@ $button-low-contrast-variant: linear-gradient(
 .button-width-xl {
   width: var(--button-width-xl);
   min-width: var(--button-width-xl);
+}
+
+// The dashboard's time-range presets sit beside a chart rather than in a form row - the authentication-activity
+// widget seats them in the narrow column it keeps for its row labels (144px, where four form-sized buttons would need
+// about 180px), and the conditional-access widget beside its slider. The label's own padding is where the difference
+// comes from, and Material hardcodes it (`padding: 0 12px`) with no token to set it by - so it is overridden here,
+// a widget's own stylesheet having no way through the component boundary.
+.chart-range-presets .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+  padding: 0 4px;
+}
+
+// Every button in a dashboard preset group shares the group's width evenly, rather than each sizing to its own
+// label: with "1 h" beside "30 d" the toggles would otherwise line up unevenly, and the narrower ones would be the
+// harder targets to hit.
+.chart-range-presets .mat-button-toggle-group {
+  display: flex;
+}
+
+.chart-range-presets .mat-button-toggle {
+  flex: 1 1 0;
+  // Flex items default to a content-based minimum width (min-width: auto), which for this nowrap label wins over
+  // flex-basis: 0 and leaves the widest label's toggle wider than the rest. Zeroing it lets flex-grow alone decide.
+  min-width: 0;
+}
+
+// Every dashboard preset group sized up from the shared 0-floor above, each by its own class so a group only grows
+// as far as the column it sits in allows. The conditional-access widget's two groups answer to nothing above them;
+// the authentication-activity widget's does (see .auth-range-presets and $label-column in its own stylesheet), which
+// is why it gets the same floor as ca-range-presets rather than a bigger one of its own. The extra class carries
+// more specificity than the shared rule above so it wins without !important.
+.chart-range-presets.ca-range-presets .mat-button-toggle {
+  min-width: 32px;
+}
+
+.chart-range-presets.ca-kind-presets .mat-button-toggle {
+  min-width: 72px;
+}
+
+.chart-range-presets.auth-range-presets .mat-button-toggle {
+  min-width: 32px;
 }

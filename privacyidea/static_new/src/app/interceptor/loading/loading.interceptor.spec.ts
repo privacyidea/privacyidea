@@ -47,20 +47,18 @@ describe("loadingInterceptor", () => {
     expect(shared$).toBeTruthy();
   });
 
-  it("calls addLoading with uuid, url and the returned shared observable", () => {
+  it("calls addLoading with uuid and url synchronously, with no subscription of its own to the request", () => {
     const req = new HttpRequest("GET", "/api/items");
     const src$ = new Subject<HttpEvent<unknown>>();
     const next = jest.fn().mockReturnValue(src$.asObservable());
 
-    const shared$ = run(req, next);
+    run(req, next);
 
-    expect(next).toHaveBeenCalledTimes(1);
     expect(loadingService.addLoading).toHaveBeenCalledTimes(1);
-
-    const arg = loadingService.addLoading.mock.calls[0][0];
-    expect(arg.key).toBe("mock-uuid");
-    expect(arg.url).toBe("/api/items");
-    expect(arg.observable).toBe(shared$);
+    expect(loadingService.addLoading).toHaveBeenCalledWith("mock-uuid", "/api/items");
+    // src$ has no subscribers yet: building the returned observable does not itself subscribe to it, so a real
+    // subscription of our own here - the thing that used to keep a cancelled request running - would show up as one.
+    expect(src$.observed).toBe(false);
   });
 
   it("removes loading on completion (finalize)", () => {
