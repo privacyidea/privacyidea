@@ -1087,6 +1087,40 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user, serials={enrolled_serial},
                                         transaction_id=enrollment_transaction_id, endpoint=self.endpoint_path)
 
+    def test_answering_another_users_transaction_names_only_the_answering_users_token(self):
+        # A user answering a transaction that is not theirs: their row names their own token and nothing else.
+        # check_user_pass only ever loads the requesting user's tokens, so no token of the challenged user can reach
+        # the classification - what the row says is that this user's token holds no challenge for that transaction
+        # (CHALLENGE_UNKNOWN_TRANSACTION). The audit side of the same request is asserted in
+        # test_api_audit_robustness.test_08_challenge_of_another_user_is_not_named.
+        other_user = User("selfservice", self.realm1)
+        other_serial = "AUTHLOG_HOTP_OTHER_OWNER"
+        init_token({"serial": other_serial, "type": "hotp", "otpkey": self.otpkey, "pin": "otherpin"},
+                   user=other_user)
+        self._enable_challenge_response()
+        try:
+            transaction_id = self._trigger_challenge()
+            self._assert_failed(self._post("/validate/check", {"user": other_user.login,
+                                                               "transaction_id": transaction_id,
+                                                               "pass": "755224"}))
+        finally:
+            delete_policy("authlog_cr")
+            remove_token(other_serial)
+
+        # Both rows share one attempt_id (the default of assert_authentication_log): the attempt is read off the
+        # challenge the answer names, and that challenge exists - it just belongs to somebody else. So the foreign
+        # answer is correlated into the challenged user's attempt, which is what a PER_ATTEMPT count sees.
+        entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                             AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
+                                        serials={self.serial}, transaction_id=transaction_id,
+                                        endpoint=self.endpoint_path)
+        assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=other_user,
+                                        serials={other_serial}, transaction_id=transaction_id,
+                                        endpoint=self.endpoint_path,
+                                        reason=AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
+                                        reasons={other_serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION})
+
     # --- Serial auth (serial provided instead of user) ---
 
     def test_serial_otponly_success(self):
