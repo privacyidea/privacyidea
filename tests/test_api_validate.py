@@ -3452,6 +3452,19 @@ class ValidateAPITestCase(MyApiTestCase):
 
         delete_policy("hide_error_message")
 
+    def test_50_options_request_is_not_shaped(self):
+        """
+        Flask answers OPTIONS itself without dispatching to the view, but
+        after_request still runs. The shaping must not collapse that reply into
+        the empty 400 of the RADIUS adapter, or CORS preflight and method
+        discovery break for /validate/radiuscheck.
+        """
+        with self.app.test_request_context('/validate/radiuscheck', method="OPTIONS"):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
+            self.assertEqual(b'', res.data)
+            self.assertSetEqual({"GET", "HEAD", "OPTIONS", "POST"}, set(res.allow))
+
     def _assert_unspecific_message_with_401(self, response):
         self.assertEqual(401, response.status_code, response.json)
         result = response.json.get("result")

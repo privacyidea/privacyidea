@@ -562,6 +562,10 @@ def shape_validate_error_response(request, response):
     :param response: the response object
     :return: the (possibly replaced) response
     """
+    # Flask answers OPTIONS itself, without dispatching to the view, so there is
+    # no authentication outcome to shape - only the Allow header, which must survive.
+    if request.method == "OPTIONS":
+        return response
     rule = getattr(getattr(request, "url_rule", None), "rule", None)
     if rule == "/validate/radiuscheck":
         return construct_radius_response(request, response)
