@@ -27,13 +27,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { EventHandler, EventService } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
-import {
-  MockDialogService,
-  MockNotificationService,
-  MockPiResponse,
-  MockTableUtilsService
-} from "@testing/mock-services";
+import { MockDialogService, MockNotificationService, MockTableUtilsService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
@@ -661,87 +655,37 @@ describe("EventComponent", () => {
     let notificationService: MockNotificationService;
     let dialogService: MockDialogService;
     let first: EventHandler;
+    let second: EventHandler;
 
     beforeEach(() => {
       notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
       dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
       first = makeHandler(1, "first", 1);
-      mockEventService.eventHandlers.set([first, makeHandler(2, "second", 2)]);
+      second = makeHandler(2, "second", 2);
+      mockEventService.eventHandlers.set([first, second]);
       fixture.detectChanges();
     });
 
-    it("saves a free ordering without asking", () => {
+    it("saves the ordering that was entered", () => {
       component.commitOrdering(first, inputWith("5"));
 
-      expect(dialogService.openDialog).not.toHaveBeenCalled();
-      expect(mockEventService.updateOrderings).toHaveBeenCalledWith([{ handler: first, ordering: 5 }]);
+      expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 5);
       expect(notificationService.success).toHaveBeenCalledWith("Updated the ordering of first.");
     });
 
-    describe("an ordering that is taken", () => {
-      let dialogRef: MockMatDialogRef<unknown, boolean>;
+    it("lets two handlers share an ordering, without asking", () => {
+      component.commitOrdering(first, inputWith(String(second.ordering)));
 
-      beforeEach(() => {
-        dialogRef = new MockMatDialogRef<unknown, boolean>();
-        dialogService.openDialog.mockReturnValue(dialogRef);
-      });
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, second.ordering);
+      expect(notificationService.warning).not.toHaveBeenCalled();
+    });
 
-      it("names the handlers that move up, before anything is saved", () => {
-        component.commitOrdering(first, inputWith("2"));
+    it("never touches another handler", () => {
+      component.commitOrdering(first, inputWith("5"));
 
-        expect(dialogService.openDialog).toHaveBeenCalledTimes(1);
-        expect(mockEventService.updateOrderings).not.toHaveBeenCalled();
-
-        const data = dialogService.openDialog.mock.calls[0][0].data;
-        expect(data.title).toBe("Ordering Already Used");
-        expect(data.message).toBe(
-          "The ordering 2 is already used. These event handlers move up by one to make room: second."
-        );
-        expect(data.confirmAction.label).toBe("Save");
-      });
-
-      it("names every handler of a longer chain and saves them all", () => {
-        // 1, 2, 3 in a row: moving the last one onto 1 has to push both others up.
-        const middle = makeHandler(2, "second", 2);
-        const top = makeHandler(3, "third", 3);
-        mockEventService.eventHandlers.set([first, middle, top]);
-
-        component.commitOrdering(top, inputWith("1"));
-
-        expect(dialogService.openDialog.mock.calls[0][0].data.message).toBe(
-          "The ordering 1 is already used. These event handlers move up by one to make room: first, second."
-        );
-
-        dialogRef.close(true);
-
-        expect(mockEventService.updateOrderings).toHaveBeenCalledWith([
-          { handler: top, ordering: 1 },
-          { handler: first, ordering: 2 },
-          { handler: middle, ordering: 3 }
-        ]);
-      });
-
-      it("saves the whole chain once the user confirms", () => {
-        component.commitOrdering(first, inputWith("2"));
-        dialogRef.close(true);
-
-        expect(mockEventService.updateOrderings).toHaveBeenCalledWith([
-          { handler: first, ordering: 2 },
-          { handler: expect.objectContaining({ name: "second" }), ordering: 3 }
-        ]);
-        expect(notificationService.success).toHaveBeenCalledWith("Updated the ordering of first.");
-      });
-
-      it("restores the previous ordering when the user cancels", () => {
-        const input = inputWith("2");
-
-        component.commitOrdering(first, input);
-        dialogRef.close(undefined);
-
-        expect(mockEventService.updateOrderings).not.toHaveBeenCalled();
-        expect(input.value).toBe("1");
-        expect(notificationService.info).toHaveBeenCalledWith("The ordering of first was left unchanged.");
-      });
+      expect(mockEventService.updateOrdering).toHaveBeenCalledTimes(1);
+      expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 5);
     });
 
     it("reloads the list after saving", () => {
@@ -752,26 +696,16 @@ describe("EventComponent", () => {
       expect(reload).toHaveBeenCalled();
     });
 
-    it("reports nothing as saved when the backend rejects the update", () => {
-      mockEventService.updateOrderings.mockReturnValueOnce(of([undefined]));
+    it("restores the field and reports the failure when the backend rejects the write", () => {
+      mockEventService.updateOrdering.mockReturnValueOnce(of(undefined));
+      const input = inputWith("5");
 
-      component.commitOrdering(first, inputWith("5"));
+      component.commitOrdering(first, input);
 
       expect(notificationService.success).not.toHaveBeenCalled();
-      expect(notificationService.warning).not.toHaveBeenCalled();
+      expect(input.value).toBe("1");
       expect(notificationService.error).toHaveBeenCalledWith(
         "The new ordering was not saved. The event handlers are unchanged."
-      );
-    });
-
-    it("warns when only part of the chain was saved", () => {
-      mockEventService.updateOrderings.mockReturnValueOnce(of([MockPiResponse.fromValue<number>(1), undefined]));
-
-      component.commitOrdering(first, inputWith("5"));
-
-      expect(notificationService.success).not.toHaveBeenCalled();
-      expect(notificationService.warning).toHaveBeenCalledWith(
-        "Only part of the new ordering was saved. Please check the orderings of the event handlers."
       );
     });
 
@@ -787,7 +721,7 @@ describe("EventComponent", () => {
 
       component.commitOrdering(first, input);
 
-      expect(mockEventService.updateOrderings).not.toHaveBeenCalled();
+      expect(mockEventService.updateOrdering).not.toHaveBeenCalled();
       expect(input.value).toBe("1");
       expect(notificationService.warning).toHaveBeenCalledWith(
         "The ordering has to be a whole number between 0 and 2147483647."
@@ -797,20 +731,20 @@ describe("EventComponent", () => {
     it("accepts the largest ordering the column can hold", () => {
       component.commitOrdering(first, inputWith("2147483647"));
 
-      expect(mockEventService.updateOrderings).toHaveBeenCalledWith([{ handler: first, ordering: 2147483647 }]);
-    });
-
-    it("saves nothing when the ordering did not change", () => {
-      component.commitOrdering(first, inputWith("1"));
-
-      expect(mockEventService.updateOrderings).not.toHaveBeenCalled();
-      expect(notificationService.warning).not.toHaveBeenCalled();
+      expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 2147483647);
     });
 
     it("accepts zero as an ordering", () => {
       component.commitOrdering(first, inputWith("0"));
 
-      expect(mockEventService.updateOrderings).toHaveBeenCalledWith([{ handler: first, ordering: 0 }]);
+      expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 0);
+    });
+
+    it("saves nothing when the ordering did not change", () => {
+      component.commitOrdering(first, inputWith("1"));
+
+      expect(mockEventService.updateOrdering).not.toHaveBeenCalled();
+      expect(notificationService.warning).not.toHaveBeenCalled();
     });
 
     it("sorts the ordering by number, not as text", () => {
@@ -828,159 +762,82 @@ describe("EventComponent", () => {
       expect(component.eventHandlerDataSource().data.map((handler) => handler.ordering)).toEqual([10, 2, 1]);
     });
 
-    it("renders plain numbers with an edit button, not input fields", () => {
-      grantRights(["eventhandling_read", "eventhandling_write"]);
-
-      expect(fixture.nativeElement.querySelector('input[type="number"]')).toBeNull();
-      expect(fixture.nativeElement.querySelectorAll(".ordering-edit-button").length).toBe(2);
-    });
-
-    it("swaps the number for an input field once editing starts", () => {
-      grantRights(["eventhandling_read", "eventhandling_write"]);
-
-      component.startOrderingEdit(first);
-      fixture.detectChanges();
-
-      const inputs = fixture.nativeElement.querySelectorAll('input[type="number"]') as NodeListOf<HTMLInputElement>;
-      expect(inputs.length).toBe(1);
-      expect(inputs[0].value).toBe("1");
-      // The other row keeps its pencil, so only one field is open at a time.
-      expect(fixture.nativeElement.querySelectorAll(".ordering-edit-button").length).toBe(1);
-    });
-
-    it("returns to the plain number when editing is discarded", () => {
-      grantRights(["eventhandling_read", "eventhandling_write"]);
-      component.startOrderingEdit(first);
-      fixture.detectChanges();
-
-      component.cancelOrderingEdit();
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('input[type="number"]')).toBeNull();
-      expect(mockEventService.updateOrderings).not.toHaveBeenCalled();
-    });
-
-    it("closes the field after saving", () => {
-      component.startOrderingEdit(first);
-
-      component.commitOrdering(first, inputWith("5"));
-
-      expect(component.editedOrderingId()).toBeNull();
-    });
-
-    it("keeps the field open when the typed ordering is unusable", () => {
-      component.startOrderingEdit(first);
-
-      component.commitOrdering(first, inputWith("-1"));
-
-      expect(component.editedOrderingId()).toBe(first.id);
-    });
-
-    it("closes the field when the ordering was not changed at all", () => {
-      component.startOrderingEdit(first);
-
-      component.commitOrdering(first, inputWith("1"));
-
-      expect(component.editedOrderingId()).toBeNull();
-      expect(mockEventService.updateOrderings).not.toHaveBeenCalled();
-    });
-
     describe("driven through the rendered cell", () => {
-      const editButton = (): HTMLButtonElement => fixture.nativeElement.querySelector(".ordering-edit-button");
-      const orderingInput = (): HTMLInputElement => fixture.nativeElement.querySelector('input[aria-label="Ordering"]');
-      const buttonLabelled = (label: string): HTMLButtonElement =>
-        fixture.nativeElement.querySelector(`button[aria-label="${label}"]`);
+      const orderingInputs = (): HTMLInputElement[] =>
+        Array.from(fixture.nativeElement.querySelectorAll('input[aria-label="Ordering"]'));
 
       beforeEach(() => {
         grantRights(["eventhandling_read", "eventhandling_write"]);
       });
 
-      it("opens the field when the pencil is clicked", () => {
-        editButton().click();
-        fixture.detectChanges();
-
-        expect(orderingInput()).not.toBeNull();
-        expect(component.editedOrderingId()).toBe(first.id);
+      it("shows the ordering of every row in a field of its own", () => {
+        expect(orderingInputs().map((input) => input.value)).toEqual(["1", "2"]);
       });
 
-      it("saves when the save button is clicked", () => {
-        editButton().click();
-        fixture.detectChanges();
-        orderingInput().value = "5";
+      it("saves the row that was changed once it is left", () => {
+        const input = orderingInputs()[1];
+        input.value = "0";
 
-        buttonLabelled("Save Ordering").click();
+        input.dispatchEvent(new Event("blur", { bubbles: true }));
 
-        expect(mockEventService.updateOrderings).toHaveBeenCalledWith([{ handler: first, ordering: 5 }]);
+        expect(mockEventService.updateOrdering).toHaveBeenCalledWith(second, 0);
       });
 
-      it("discards when the discard button is clicked", () => {
-        editButton().click();
-        fixture.detectChanges();
-        orderingInput().value = "5";
+      it("does not save while the spinner is being stepped", () => {
+        const input = orderingInputs()[0];
 
-        buttonLabelled("Discard").click();
-        fixture.detectChanges();
+        // What a browser fires for each click on a spinner arrow.
+        for (const value of ["2", "3", "4"]) {
+          input.value = value;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
 
-        expect(mockEventService.updateOrderings).not.toHaveBeenCalled();
-        expect(orderingInput()).toBeNull();
+        expect(mockEventService.updateOrdering).not.toHaveBeenCalled();
+
+        input.dispatchEvent(new Event("blur", { bubbles: true }));
+
+        expect(mockEventService.updateOrdering).toHaveBeenCalledTimes(1);
+        expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 4);
       });
 
-      it("puts the cursor in the field, so the number can be typed straight away", async () => {
-        editButton().click();
-        fixture.detectChanges();
-        await fixture.whenStable();
+      it("does not save while digits are being typed", () => {
+        const input = orderingInputs()[0];
+        input.value = "1";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.value = "12";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
 
-        expect(document.activeElement).toBe(orderingInput());
+        expect(mockEventService.updateOrdering).not.toHaveBeenCalled();
+
+        input.dispatchEvent(new Event("blur", { bubbles: true }));
+
+        expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 12);
       });
 
-      it("moves the open field when the pencil of another row is clicked", () => {
-        editButton().click();
-        fixture.detectChanges();
-        expect(component.editedOrderingId()).toBe(1);
+      it("saves a value committed with Enter exactly once", () => {
+        const input = orderingInputs()[0];
+        input.focus();
+        input.value = "7";
 
-        // Only the still-closed row has a pencil left.
-        editButton().click();
-        fixture.detectChanges();
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
 
-        expect(component.editedOrderingId()).toBe(2);
-        expect(fixture.nativeElement.querySelectorAll('input[aria-label="Ordering"]').length).toBe(1);
+        expect(document.activeElement).not.toBe(input);
+        expect(mockEventService.updateOrdering).toHaveBeenCalledTimes(1);
+        expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 7);
       });
 
-      it("saves on Enter and discards on Escape", () => {
-        editButton().click();
-        fixture.detectChanges();
-        orderingInput().value = "5";
+      it("saves nothing when the field is left untouched", () => {
+        orderingInputs()[0].dispatchEvent(new Event("blur", { bubbles: true }));
 
-        orderingInput().dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-        expect(mockEventService.updateOrderings).toHaveBeenCalledWith([{ handler: first, ordering: 5 }]);
-
-        fixture.detectChanges();
-        editButton().click();
-        fixture.detectChanges();
-        orderingInput().dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-        fixture.detectChanges();
-
-        expect(orderingInput()).toBeNull();
-        expect(mockEventService.updateOrderings).toHaveBeenCalledTimes(1);
+        expect(mockEventService.updateOrdering).not.toHaveBeenCalled();
       });
     });
 
-    it("keeps the field open when a conflict dialog is cancelled, so the value can be corrected", () => {
-      const dialogRef = new MockMatDialogRef<unknown, boolean>();
-      dialogService.openDialog.mockReturnValue(dialogRef);
-      component.startOrderingEdit(first);
-
-      component.commitOrdering(first, inputWith("2"));
-      dialogRef.close(undefined);
-
-      expect(component.editedOrderingId()).toBe(first.id);
-    });
-
-    it("renders neither an input nor an edit button for read-only admins", () => {
+    it("renders plain numbers without a field for read-only admins", () => {
       grantRights(["eventhandling_read"]);
 
-      expect(fixture.nativeElement.querySelector('input[type="number"]')).toBeNull();
-      expect(fixture.nativeElement.querySelector(".ordering-edit-button")).toBeNull();
+      expect(fixture.nativeElement.querySelector('input[aria-label="Ordering"]')).toBeNull();
       expect(fixture.nativeElement.textContent).toContain("first");
     });
   });

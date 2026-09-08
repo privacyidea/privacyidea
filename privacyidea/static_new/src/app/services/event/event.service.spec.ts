@@ -29,14 +29,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of, Subject } from "rxjs";
-import {
-  EventHandler,
-  EventHandlerSaveParams,
-  EventService,
-  planOrderingInsert,
-  toEventHandlerOrderingParams,
-  toEventHandlerSaveParams
-} from "./event.service";
+import { EventHandler, EventHandlerSaveParams, EventService, toEventHandlerSaveParams } from "./event.service";
 
 describe("EventService", () => {
   let service: EventService;
@@ -665,100 +658,7 @@ describe("EventService", () => {
     });
   });
 
-  describe("planOrderingInsert", () => {
-    const handler = (id: number, ordering: number): EventHandler => ({
-      id,
-      name: `handler-${id}`,
-      active: true,
-      handlermodule: "UserNotification",
-      ordering,
-      position: "post",
-      abort_on_error: false,
-      event: ["token_init"],
-      action: "sendmail",
-      options: {},
-      conditions: {}
-    });
-    const plan = (handlers: EventHandler[], moved: EventHandler, ordering: number) =>
-      planOrderingInsert(handlers, moved, ordering).map((update) => [update.handler.id, update.ordering]);
-
-    it("only moves the edited handler when the ordering is free", () => {
-      const list = [handler(1, 1), handler(2, 2), handler(3, 7)];
-
-      expect(plan(list, list[2], 4)).toEqual([[3, 4]]);
-    });
-
-    it("pushes the handler that held the ordering up by one", () => {
-      const list = [handler(1, 1), handler(2, 2), handler(3, 7)];
-
-      expect(plan(list, list[2], 2)).toEqual([
-        [3, 2],
-        [2, 3]
-      ]);
-    });
-
-    it("cascades while the orderings above are taken and stops at the first free one", () => {
-      const list = [handler(1, 1), handler(2, 2), handler(3, 3), handler(4, 7)];
-
-      // 7 moves onto 2, which pushes 2 to 3 and 3 to 4. 4 is free, so 1 stays put.
-      expect(plan(list, list[3], 2)).toEqual([
-        [4, 2],
-        [2, 3],
-        [3, 4]
-      ]);
-    });
-
-    it("stops at a gap instead of renumbering everything above it", () => {
-      const list = [handler(1, 1), handler(2, 2), handler(3, 4), handler(4, 5)];
-
-      // Moving 5 onto 1 fills the gap at 3, so the handler at 4 keeps its ordering.
-      expect(plan(list, list[3], 1)).toEqual([
-        [4, 1],
-        [1, 2],
-        [2, 3]
-      ]);
-    });
-
-    it("keeps the displaced handlers in their original order", () => {
-      const list = [handler(1, 5), handler(2, 6), handler(3, 7), handler(4, 20)];
-
-      expect(plan(list, list[3], 5)).toEqual([
-        [4, 5],
-        [1, 6],
-        [2, 7],
-        [3, 8]
-      ]);
-    });
-
-    it("resolves an ordering that two stored handlers already share", () => {
-      const list = [handler(1, 1), handler(2, 5), handler(3, 5)];
-
-      expect(plan(list, list[0], 5)).toEqual([
-        [1, 5],
-        [2, 6],
-        [3, 7]
-      ]);
-    });
-
-    it("leaves the handlers below the target alone", () => {
-      const list = [handler(1, 0), handler(2, 1), handler(3, 2), handler(4, 9)];
-
-      const moved = plan(list, list[3], 1).map(([id]) => id);
-      expect(moved).not.toContain(1);
-    });
-
-    it("accepts zero as the target ordering", () => {
-      const list = [handler(1, 0), handler(2, 1), handler(3, 9)];
-
-      expect(plan(list, list[2], 0)).toEqual([
-        [3, 0],
-        [1, 1],
-        [2, 2]
-      ]);
-    });
-  });
-
-  describe("updateOrderings", () => {
+  describe("updateOrdering", () => {
     const handler: EventHandler = {
       id: 7,
       name: "notify",
@@ -773,32 +673,38 @@ describe("EventService", () => {
       conditions: {}
     };
 
-    it("posts one handler at a time, starting at the highest ordering", () => {
-      const other: EventHandler = { ...handler, id: 8, name: "other", ordering: 5, options: {} };
-      const done: unknown[] = [];
+    it("writes the new ordering of that one handler", () => {
+      const responses: unknown[] = [];
 
-      service
-        .updateOrderings([
-          { handler, ordering: 5 },
-          { handler: other, ordering: 6 }
-        ])
-        .subscribe((responses) => done.push(...responses));
+      service.updateOrdering(handler, 4).subscribe((response) => responses.push(response));
 
-      const first = httpMock.expectOne(service.eventBaseUrl);
-      expect(first.request.body).toMatchObject({ id: "8", ordering: 6 });
+      const request = httpMock.expectOne(service.eventBaseUrl);
+      expect(request.request.body).toMatchObject({ id: "7", ordering: 4 });
+      request.flush({ result: { value: 7 } });
 
-      httpMock.verify();
-      first.flush({ result: { value: 8 } });
-
-      const second = httpMock.expectOne(service.eventBaseUrl);
-      expect(second.request.body).toMatchObject({ id: "7", ordering: 5 });
-      second.flush({ result: { value: 7 } });
-
-      expect(done.length).toBe(2);
+      expect(responses.length).toBe(1);
     });
 
-    it("leaves the options, the conditions and the abort_on_error flag out of a reorder", () => {
-      service.updateOrderings([{ handler, ordering: 4 }]).subscribe();
+    it("leaves the ordering of the other handlers alone", () => {
+      service.updateOrdering(handler, 4).subscribe();
+
+      httpMock.expectOne(service.eventBaseUrl).flush({ result: { value: 7 } });
+      httpMock.verify();
+    });
+
+    it("writes an ordering another handler already holds", () => {
+      service.updateOrdering(handler, 4).subscribe();
+      httpMock.expectOne(service.eventBaseUrl).flush({ result: { value: 7 } });
+
+      service.updateOrdering({ ...handler, id: 8, name: "other" }, 4).subscribe();
+
+      const second = httpMock.expectOne(service.eventBaseUrl);
+      expect(second.request.body).toMatchObject({ id: "8", ordering: 4 });
+      second.flush({ result: { value: 8 } });
+    });
+
+    it("leaves the options, the conditions and the abort_on_error flag out of the request", () => {
+      service.updateOrdering(handler, 4).subscribe();
 
       const request = httpMock.expectOne(service.eventBaseUrl);
       expect(request.request.body).toEqual({
@@ -814,49 +720,28 @@ describe("EventService", () => {
       request.flush({ result: { value: 7 } });
     });
 
-    it("sends the handler as it is currently listed instead of the planned copy", async () => {
+    it("sends the handler as it is currently listed instead of the caller's copy", async () => {
       TestBed.tick();
       const listRequest = httpMock.expectOne(`${service.eventBaseUrl}/`);
       listRequest.flush({ result: { value: [{ ...handler, name: "renamed", action: "sendsms" }] } });
       TestBed.tick();
       await Promise.resolve();
 
-      service.updateOrderings([{ handler, ordering: 4 }]).subscribe();
+      service.updateOrdering(handler, 4).subscribe();
 
       const request = httpMock.expectOne(service.eventBaseUrl);
       expect(request.request.body).toMatchObject({ id: "7", name: "renamed", action: "sendsms", ordering: 4 });
       request.flush({ result: { value: 7 } });
     });
 
-    it("drops the remaining requests once one of them fails", () => {
-      const other: EventHandler = { ...handler, id: 8, name: "other", ordering: 5 };
-      let responses: (unknown | undefined)[] | undefined;
+    it("reports a rejected write as undefined", () => {
+      let response: unknown = "untouched";
 
-      service
-        .updateOrderings([
-          { handler, ordering: 5 },
-          { handler: other, ordering: 6 }
-        ])
-        .subscribe((result) => (responses = result));
+      service.updateOrdering(handler, 4).subscribe((result) => (response = result));
 
-      const first = httpMock.expectOne(service.eventBaseUrl);
-      expect(first.request.body).toMatchObject({ id: "8", ordering: 6 });
-      first.flush({ result: { error: { message: "denied" } } }, { status: 403, statusText: "Forbidden" });
+      httpMock.expectOne(service.eventBaseUrl).flush("nope", { status: 500, statusText: "Server Error" });
 
-      httpMock.expectNone(service.eventBaseUrl);
-      expect(responses).toEqual([undefined]);
-    });
-
-    it("toEventHandlerOrderingParams omits the id of an unsaved handler", () => {
-      expect(toEventHandlerOrderingParams({ ...handler, id: null }, 2).id).toBeUndefined();
-    });
-
-    it("does not call the backend without updates", () => {
-      let emitted: unknown[] | undefined;
-      service.updateOrderings([]).subscribe((result) => (emitted = result));
-
-      httpMock.expectNone(service.eventBaseUrl);
-      expect(emitted).toEqual([]);
+      expect(response).toBeUndefined();
     });
   });
 });

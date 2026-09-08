@@ -23,7 +23,6 @@ import {
   EventCondition,
   EventHandler,
   EventHandlerModuleDefaults,
-  EventHandlerOrderingUpdate,
   EventServiceInterface
 } from "@services/event/event.service";
 import { Observable, of } from "rxjs";
@@ -42,9 +41,9 @@ export class MockEventService implements EventServiceInterface {
 
   saveEventHandler = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(1)));
 
-  updateOrderings = jest.fn(
-    (updates: EventHandlerOrderingUpdate[]): Observable<(PiResponse<number> | undefined)[]> =>
-      of(updates.map(() => MockPiResponse.fromValue<number>(1)))
+  updateOrdering = jest.fn(
+    (handler: EventHandler, _: number): Observable<PiResponse<number> | undefined> =>
+      of(MockPiResponse.fromValue<number>(handler.id ?? 1))
   );
 
   enableEvent = jest.fn().mockResolvedValue({});

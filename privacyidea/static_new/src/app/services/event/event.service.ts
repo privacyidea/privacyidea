@@ -26,8 +26,8 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { from, lastValueFrom, Observable, of, throwError } from "rxjs";
-import { catchError, concatMap, takeWhile, toArray } from "rxjs/operators";
+import { lastValueFrom, Observable, of, throwError } from "rxjs";
+import { catchError } from "rxjs/operators";
 
 export interface EventHandler {
   id: number | null;
@@ -103,7 +103,7 @@ export interface EventHandlerSaveParams {
   position: string;
   event: string[];
   action: string;
-  // POST /event keeps the stored value of these when they are not sent, so a reorder can leave them out
+  // POST /event keeps the stored value of these when they are not sent, so an ordering save can leave them out
   abort_on_error?: boolean;
   conditions?: Record<string, unknown>;
   clear_options?: boolean;
@@ -123,12 +123,6 @@ export function toEventHandlerSaveParams(handler: EventHandler): EventHandlerSav
   return params;
 }
 
-/**
- * The parameters of a reorder. POST /event replaces the whole binding, so the fields the endpoint requires
- * or defaults have to be resent unchanged. The conditions, the options and the abort_on_error flag are left
- * out on purpose: the endpoint keeps their stored values, so a reorder cannot overwrite them with a value
- * that has gone stale since the handler list was read.
- */
 export function toEventHandlerOrderingParams(handler: EventHandler, ordering: number): EventHandlerSaveParams {
   return {
     id: handler.id == null ? undefined : String(handler.id),
@@ -140,33 +134,6 @@ export function toEventHandlerOrderingParams(handler: EventHandler, ordering: nu
     active: handler.active,
     ordering
   };
-}
-
-export interface EventHandlerOrderingUpdate {
-  handler: EventHandler;
-  ordering: number;
-}
-
-export function planOrderingInsert(
-  handlers: EventHandler[],
-  handler: EventHandler,
-  ordering: number
-): EventHandlerOrderingUpdate[] {
-  const updates: EventHandlerOrderingUpdate[] = [{ handler, ordering }];
-  const others = handlers.filter((other) => other.id !== handler.id).sort((a, b) => a.ordering - b.ordering);
-
-  let taken = ordering;
-  for (const other of others) {
-    if (other.ordering < ordering) {
-      continue;
-    }
-    if (other.ordering > taken) {
-      break;
-    }
-    taken += 1;
-    updates.push({ handler: other, ordering: taken });
-  }
-  return updates;
 }
 
 export interface EventServiceInterface {
@@ -191,7 +158,7 @@ export interface EventServiceInterface {
 
   saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined>;
 
-  updateOrderings(updates: EventHandlerOrderingUpdate[]): Observable<(PiResponse<number> | undefined)[]>;
+  updateOrdering(handler: EventHandler, ordering: number): Observable<PiResponse<number> | undefined>;
 
   enableEvent(eventId: number | null): Promise<object | undefined>;
 
@@ -391,25 +358,10 @@ export class EventService implements EventServiceInterface {
     });
   }
 
-  updateOrderings(updates: EventHandlerOrderingUpdate[]): Observable<(PiResponse<number> | undefined)[]> {
-    if (updates.length === 0) {
-      return of([]);
-    }
-    return from([...updates].reverse()).pipe(
-      concatMap(({ handler, ordering }) =>
-        this.saveEventHandler(toEventHandlerOrderingParams(this.listedHandler(handler), ordering))
-      ),
-      // A reorder that stops halfway can leave two handlers on the same ordering, so the remaining writes are
-      // dropped as soon as one fails. The failed response is kept, so the caller sees how far the plan got.
-      takeWhile((response) => response?.result?.value !== undefined, true),
-      toArray()
-    );
+  updateOrdering(handler: EventHandler, ordering: number): Observable<PiResponse<number> | undefined> {
+    return this.saveEventHandler(toEventHandlerOrderingParams(this.listedHandler(handler), ordering));
   }
 
-  /**
-   * The handler as it is currently listed, so a reorder does not resend field values that were read before
-   * another administrator edited the handler. Falls back to the planned handler if it is no longer listed.
-   */
   private listedHandler(handler: EventHandler): EventHandler {
     if (handler.id == null) {
       return handler;

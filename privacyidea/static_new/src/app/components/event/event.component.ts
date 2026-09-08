@@ -41,22 +41,12 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { MessageConfirmationDialogComponent } from "@components/shared/dialog/message-confirmation-dialog/message-confirmation-dialog.component";
-import { AutofocusDirective } from "@components/shared/directives/app-autofocus.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService } from "@services/auth/auth.service";
-import { DialogService } from "@services/dialog/dialog.service";
-import {
-  EMPTY_EVENT,
-  EventHandler,
-  EventHandlerOrderingUpdate,
-  EventService,
-  MAX_ORDERING,
-  planOrderingInsert
-} from "@services/event/event.service";
+import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { of } from "rxjs";
@@ -68,7 +58,6 @@ import { of } from "rxjs";
     MatTableModule,
     MatButtonModule,
     ScrollToTopDirective,
-    AutofocusDirective,
     MatIcon,
     MatSlideToggle,
     ClearableInputComponent,
@@ -88,7 +77,6 @@ export class EventComponent {
   protected readonly authService = inject(AuthService);
   protected readonly eventService = inject(EventService);
   protected readonly notificationService = inject(NotificationService);
-  private readonly dialogService = inject(DialogService);
   protected readonly EMPTY_EVENT = EMPTY_EVENT;
   private readonly router = inject(Router);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -114,7 +102,6 @@ export class EventComponent {
     return keys;
   });
 
-  editedOrderingId = signal<number | null>(null);
   detailedView = signal(false);
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -214,14 +201,6 @@ export class EventComponent {
     }
   }
 
-  startOrderingEdit(eventHandler: EventHandler): void {
-    this.editedOrderingId.set(eventHandler.id);
-  }
-
-  cancelOrderingEdit(): void {
-    this.editedOrderingId.set(null);
-  }
-
   commitOrdering(eventHandler: EventHandler, input: HTMLInputElement): void {
     const ordering = Number(input.value);
     // The upper bound is the largest value the ordering column holds, so an out-of-range value is rejected
@@ -234,60 +213,20 @@ export class EventComponent {
       return;
     }
     if (ordering === eventHandler.ordering) {
-      this.cancelOrderingEdit();
       return;
     }
 
-    const updates = planOrderingInsert(this.eventService.eventHandlers() ?? [], eventHandler, ordering);
-    const displaced = updates.slice(1);
-    if (displaced.length === 0) {
-      this.saveOrderings(eventHandler, updates);
-      return;
-    }
-
-    const displacedNames = displaced.map((update) => update.handler.name).join(", ");
-    this.dialogService
-      .openDialog({
-        component: MessageConfirmationDialogComponent,
-        data: {
-          title: $localize`:@@event.orderingAlreadyUsed:Ordering Already Used`,
-          message: $localize`:@@event.orderingAlreadyUsedMessage:The ordering ${ordering}:ORDERING: is already used. These event handlers move up by one to make room: ${displacedNames}:HANDLERS:.`,
-          confirmAction: { type: "confirm", label: $localize`:@@common.save:Save`, value: true, primary: true }
-        }
-      })
-      .afterClosed()
-      .subscribe((confirmed) => {
-        if (!confirmed) {
-          input.value = String(eventHandler.ordering);
-          this.notificationService.info(
-            $localize`:@@event.orderingLeftUnchanged:The ordering of ${eventHandler.name}:HANDLER: was left unchanged.`
-          );
-          return;
-        }
-        this.saveOrderings(eventHandler, updates);
-      });
-  }
-
-  private saveOrderings(eventHandler: EventHandler, updates: EventHandlerOrderingUpdate[]): void {
-    this.cancelOrderingEdit();
-    this.eventService.updateOrderings(updates).subscribe((responses) => {
+    this.eventService.updateOrdering(eventHandler, ordering).subscribe((response) => {
       this.eventService.allEventsResource.reload();
-      const failed = responses.filter((response) => response?.result?.value === undefined).length;
-      if (failed === 0) {
-        this.notificationService.success(
-          $localize`:@@event.orderingUpdated:Updated the ordering of ${eventHandler.name}:HANDLER:.`
-        );
-        return;
-      }
-      // The service stops after the first failure, so nothing was written if that was the very first request
-      if (failed === responses.length) {
+      if (response?.result?.value === undefined) {
+        input.value = String(eventHandler.ordering);
         this.notificationService.error(
           $localize`:@@event.orderingNotSaved:The new ordering was not saved. The event handlers are unchanged.`
         );
         return;
       }
-      this.notificationService.warning(
-        $localize`:@@event.orderingPartiallySaved:Only part of the new ordering was saved. Please check the orderings of the event handlers.`
+      this.notificationService.success(
+        $localize`:@@event.orderingUpdated:Updated the ordering of ${eventHandler.name}:HANDLER:.`
       );
     });
   }
