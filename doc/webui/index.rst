@@ -214,14 +214,18 @@ share means anything, that too:
 header chooses which rows to draw and the last one cannot be taken off; the
 choice lasts as long as the page is open and is not stored.
 
-Below the bars, *1 h*, *24 h*, *7 d* and *30 d* choose the window and how
-finely it is bucketed - five minutes, an hour, six hours, a day. The day
-windows are cut on local midnights and take today in as far as it has got,
-so *7 d* covers the last seven whole days plus today, four buckets to a day
-and one for *30 d*. The slider beside the buttons narrows the selection to
-whole buckets inside the fetched window:
-every count, share and reason in the panel then answers for the selected
-span rather than for the window around it.
+Below the bars, *1 h*, *24 h*, *7 d*, *30 d* and *All* choose the window
+and how finely it is bucketed - five minutes, an hour, six hours, a day.
+The day windows are cut on local midnights and take today in as far as it
+has got, so *7 d* covers the last seven whole days plus today, four
+buckets to a day and one for *30 d*. *All* runs from the log's own first
+entry to now, an extra request the panel makes to find where that is
+before it can ask for the window itself; its bucket count is capped the
+same way any other window's is, so a log that spans a long time is cut
+coarser rather than rejected for asking too many buckets. The slider
+beside the buttons narrows the selection to whole buckets inside the
+fetched window: every count, share and reason in the panel then answers
+for the selected span rather than for the window around it.
 
 *Failure Reasons* lists the event types behind the failures of that span,
 most common first. A reason links to the authentication log filtered on that
