@@ -54,6 +54,7 @@ import {
   EventHandler,
   EventHandlerOrderingUpdate,
   EventService,
+  MAX_ORDERING,
   planOrderingInsert
 } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -223,9 +224,13 @@ export class EventComponent {
 
   commitOrdering(eventHandler: EventHandler, input: HTMLInputElement): void {
     const ordering = Number(input.value);
-    if (!Number.isInteger(ordering) || ordering < 0 || input.value.trim() === "") {
+    // The upper bound is the largest value the ordering column holds, so an out-of-range value is rejected
+    // here instead of failing in the database
+    if (!Number.isInteger(ordering) || ordering < 0 || ordering > MAX_ORDERING || input.value.trim() === "") {
       input.value = String(eventHandler.ordering);
-      this.notificationService.warning($localize`The ordering has to be a whole number, 0 or higher.`);
+      this.notificationService.warning(
+        $localize`:@@event.orderingHasToBeAWholeNumber:The ordering has to be a whole number between 0 and ${MAX_ORDERING}:MAXIMUM:.`
+      );
       return;
     }
     if (ordering === eventHandler.ordering) {
@@ -245,16 +250,18 @@ export class EventComponent {
       .openDialog({
         component: MessageConfirmationDialogComponent,
         data: {
-          title: $localize`Ordering Already Used`,
-          message: $localize`The ordering ${ordering} is already used. These event handlers move up by one to make room: ${displacedNames}.`,
-          confirmAction: { type: "confirm", label: $localize`Save`, value: true, primary: true }
+          title: $localize`:@@event.orderingAlreadyUsed:Ordering Already Used`,
+          message: $localize`:@@event.orderingAlreadyUsedMessage:The ordering ${ordering}:ORDERING: is already used. These event handlers move up by one to make room: ${displacedNames}:HANDLERS:.`,
+          confirmAction: { type: "confirm", label: $localize`:@@common.save:Save`, value: true, primary: true }
         }
       })
       .afterClosed()
       .subscribe((confirmed) => {
         if (!confirmed) {
           input.value = String(eventHandler.ordering);
-          this.notificationService.info($localize`The ordering of ${eventHandler.name} was left unchanged.`);
+          this.notificationService.info(
+            $localize`:@@event.orderingLeftUnchanged:The ordering of ${eventHandler.name}:HANDLER: was left unchanged.`
+          );
           return;
         }
         this.saveOrderings(eventHandler, updates);
@@ -267,14 +274,21 @@ export class EventComponent {
       this.eventService.allEventsResource.reload();
       const failed = responses.filter((response) => response?.result?.value === undefined).length;
       if (failed === 0) {
-        this.notificationService.success($localize`Updated the ordering of ${eventHandler.name}.`);
+        this.notificationService.success(
+          $localize`:@@event.orderingUpdated:Updated the ordering of ${eventHandler.name}:HANDLER:.`
+        );
         return;
       }
-      if (failed < responses.length) {
-        this.notificationService.warning(
-          $localize`Only part of the new ordering was saved. Please check the orderings of the event handlers.`
+      // The service stops after the first failure, so nothing was written if that was the very first request
+      if (failed === responses.length) {
+        this.notificationService.error(
+          $localize`:@@event.orderingNotSaved:The new ordering was not saved. The event handlers are unchanged.`
         );
+        return;
       }
+      this.notificationService.warning(
+        $localize`:@@event.orderingPartiallySaved:Only part of the new ordering was saved. Please check the orderings of the event handlers.`
+      );
     });
   }
 

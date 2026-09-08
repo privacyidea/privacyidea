@@ -110,3 +110,10 @@
 .ordering-edit-button:focus-visible {
   opacity: 1;
 }
+
+// Without a pointer there is no hover state to reveal the button, so it stays visible
+@media (hover: none) {
+  .ordering-edit-button {
+    opacity: 1;
+  }
+}

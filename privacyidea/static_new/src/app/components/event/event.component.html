@@ -187,7 +187,7 @@
                 @case ("ordering") {
                   @if (!authService.actionAllowed("eventhandling_write")) {
                     <span>{{ element.ordering }}</span>
-                  } @else if (editedOrderingId() === element.id) {
+                  } @else if (element.id !== null && editedOrderingId() === element.id) {
                     <div class="ordering-edit">
                       <mat-form-field
                         class="input-width-xs"
@@ -199,7 +199,7 @@
                           [value]="element.ordering"
                           appAutofocus
                           aria-label="Ordering"
-                          i18n-aria-label
+                          i18n-aria-label="@@event.orderingAria"
                           matInput
                           min="0"
                           step="1"
@@ -208,14 +208,14 @@
                       <button
                         (click)="commitOrdering(element, orderingInput)"
                         aria-label="Save Ordering"
-                        i18n-aria-label
+                        i18n-aria-label="@@event.saveOrderingAria"
                         mat-icon-button>
                         <mat-icon>save</mat-icon>
                       </button>
                       <button
                         (click)="cancelOrderingEdit()"
                         aria-label="Discard"
-                        i18n-aria-label
+                        i18n-aria-label="@@event.discardOrderingAria"
                         mat-icon-button>
                         <mat-icon>cancel</mat-icon>
                       </button>
@@ -227,7 +227,7 @@
                         (click)="startOrderingEdit(element)"
                         aria-label="Edit Ordering"
                         class="ordering-edit-button"
-                        i18n-aria-label
+                        i18n-aria-label="@@event.editOrderingAria"
                         mat-icon-button>
                         <mat-icon>edit</mat-icon>
                       </button>

@@ -27,7 +27,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { from, lastValueFrom, Observable, of, throwError } from "rxjs";
-import { catchError, concatMap, toArray } from "rxjs/operators";
+import { catchError, concatMap, takeWhile, toArray } from "rxjs/operators";
 
 export interface EventHandler {
   id: number | null;
@@ -42,6 +42,11 @@ export interface EventHandler {
   options: Record<string, string> | null;
   conditions: Record<string, string>;
 }
+
+/**
+ * The largest ordering a binding can be given: the ordering is stored in a signed 32 bit integer column.
+ */
+export const MAX_ORDERING = 2147483647;
 
 export const EMPTY_EVENT: EventHandler = {
   id: null,
@@ -96,10 +101,11 @@ export interface EventHandlerSaveParams {
   handlermodule: string | null;
   ordering: number;
   position: string;
-  abort_on_error: boolean;
   event: string[];
   action: string;
-  conditions: Record<string, unknown>;
+  // POST /event keeps the stored value of these when they are not sent, so a reorder can leave them out
+  abort_on_error?: boolean;
+  conditions?: Record<string, unknown>;
   clear_options?: boolean;
 
   [key: string]: unknown;
@@ -115,6 +121,25 @@ export function toEventHandlerSaveParams(handler: EventHandler): EventHandlerSav
     params["option." + optionKey] = optionValue;
   }
   return params;
+}
+
+/**
+ * The parameters of a reorder. POST /event replaces the whole binding, so the fields the endpoint requires
+ * or defaults have to be resent unchanged. The conditions, the options and the abort_on_error flag are left
+ * out on purpose: the endpoint keeps their stored values, so a reorder cannot overwrite them with a value
+ * that has gone stale since the handler list was read.
+ */
+export function toEventHandlerOrderingParams(handler: EventHandler, ordering: number): EventHandlerSaveParams {
+  return {
+    id: handler.id == null ? undefined : String(handler.id),
+    name: handler.name,
+    handlermodule: handler.handlermodule,
+    action: handler.action,
+    event: handler.event,
+    position: handler.position,
+    active: handler.active,
+    ordering
+  };
 }
 
 export interface EventHandlerOrderingUpdate {
@@ -371,9 +396,25 @@ export class EventService implements EventServiceInterface {
       return of([]);
     }
     return from([...updates].reverse()).pipe(
-      concatMap(({ handler, ordering }) => this.saveEventHandler(toEventHandlerSaveParams({ ...handler, ordering }))),
+      concatMap(({ handler, ordering }) =>
+        this.saveEventHandler(toEventHandlerOrderingParams(this.listedHandler(handler), ordering))
+      ),
+      // A reorder that stops halfway can leave two handlers on the same ordering, so the remaining writes are
+      // dropped as soon as one fails. The failed response is kept, so the caller sees how far the plan got.
+      takeWhile((response) => response?.result?.value !== undefined, true),
       toArray()
     );
+  }
+
+  /**
+   * The handler as it is currently listed, so a reorder does not resend field values that were read before
+   * another administrator edited the handler. Falls back to the planned handler if it is no longer listed.
+   */
+  private listedHandler(handler: EventHandler): EventHandler {
+    if (handler.id == null) {
+      return handler;
+    }
+    return this.eventHandlers()?.find((listed) => listed.id === handler.id) ?? handler;
   }
 
   saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined> {
@@ -385,7 +426,7 @@ export class EventService implements EventServiceInterface {
     return this.http.post<PiResponse<number>>(this.eventBaseUrl, params, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to save event handler.", error.error);
-        const message = error.error.result?.error?.message || "";
+        const message = error.error?.result?.error?.message || "";
         this.notificationService.error(
           $localize`:@@event.failedToSaveEventHandler:Failed to save event handler. ${message}:MESSAGE:`
         );

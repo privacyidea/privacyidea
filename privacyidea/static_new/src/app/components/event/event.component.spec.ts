@@ -759,6 +759,9 @@ describe("EventComponent", () => {
 
       expect(notificationService.success).not.toHaveBeenCalled();
       expect(notificationService.warning).not.toHaveBeenCalled();
+      expect(notificationService.error).toHaveBeenCalledWith(
+        "The new ordering was not saved. The event handlers are unchanged."
+      );
     });
 
     it("warns when only part of the chain was saved", () => {
@@ -776,7 +779,9 @@ describe("EventComponent", () => {
       ["a negative number", "-1"],
       ["a fraction", "1.5"],
       ["an empty field", "   "],
-      ["text", "abc"]
+      ["text", "abc"],
+      ["a value the ordering column cannot hold", "2147483648"],
+      ["exponent notation", "1e21"]
     ])("rejects %s and restores the previous ordering", (_label, typed) => {
       const input = inputWith(typed);
 
@@ -784,7 +789,15 @@ describe("EventComponent", () => {
 
       expect(mockEventService.updateOrderings).not.toHaveBeenCalled();
       expect(input.value).toBe("1");
-      expect(notificationService.warning).toHaveBeenCalledWith("The ordering has to be a whole number, 0 or higher.");
+      expect(notificationService.warning).toHaveBeenCalledWith(
+        "The ordering has to be a whole number between 0 and 2147483647."
+      );
+    });
+
+    it("accepts the largest ordering the column can hold", () => {
+      component.commitOrdering(first, inputWith("2147483647"));
+
+      expect(mockEventService.updateOrderings).toHaveBeenCalledWith([{ handler: first, ordering: 2147483647 }]);
     });
 
     it("saves nothing when the ordering did not change", () => {

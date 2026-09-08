@@ -34,6 +34,7 @@ import {
   EventHandlerSaveParams,
   EventService,
   planOrderingInsert,
+  toEventHandlerOrderingParams,
   toEventHandlerSaveParams
 } from "./event.service";
 
@@ -790,10 +791,64 @@ describe("EventService", () => {
       first.flush({ result: { value: 8 } });
 
       const second = httpMock.expectOne(service.eventBaseUrl);
-      expect(second.request.body).toMatchObject({ id: "7", ordering: 5, "option.subject": "Hello" });
+      expect(second.request.body).toMatchObject({ id: "7", ordering: 5 });
       second.flush({ result: { value: 7 } });
 
       expect(done.length).toBe(2);
+    });
+
+    it("leaves the options, the conditions and the abort_on_error flag out of a reorder", () => {
+      service.updateOrderings([{ handler, ordering: 4 }]).subscribe();
+
+      const request = httpMock.expectOne(service.eventBaseUrl);
+      expect(request.request.body).toEqual({
+        id: "7",
+        name: "notify",
+        handlermodule: "UserNotification",
+        action: "sendmail",
+        event: ["token_init"],
+        position: "post",
+        active: true,
+        ordering: 4
+      });
+      request.flush({ result: { value: 7 } });
+    });
+
+    it("sends the handler as it is currently listed instead of the planned copy", async () => {
+      TestBed.tick();
+      const listRequest = httpMock.expectOne(`${service.eventBaseUrl}/`);
+      listRequest.flush({ result: { value: [{ ...handler, name: "renamed", action: "sendsms" }] } });
+      TestBed.tick();
+      await Promise.resolve();
+
+      service.updateOrderings([{ handler, ordering: 4 }]).subscribe();
+
+      const request = httpMock.expectOne(service.eventBaseUrl);
+      expect(request.request.body).toMatchObject({ id: "7", name: "renamed", action: "sendsms", ordering: 4 });
+      request.flush({ result: { value: 7 } });
+    });
+
+    it("drops the remaining requests once one of them fails", () => {
+      const other: EventHandler = { ...handler, id: 8, name: "other", ordering: 5 };
+      let responses: (unknown | undefined)[] | undefined;
+
+      service
+        .updateOrderings([
+          { handler, ordering: 5 },
+          { handler: other, ordering: 6 }
+        ])
+        .subscribe((result) => (responses = result));
+
+      const first = httpMock.expectOne(service.eventBaseUrl);
+      expect(first.request.body).toMatchObject({ id: "8", ordering: 6 });
+      first.flush({ result: { error: { message: "denied" } } }, { status: 403, statusText: "Forbidden" });
+
+      httpMock.expectNone(service.eventBaseUrl);
+      expect(responses).toEqual([undefined]);
+    });
+
+    it("toEventHandlerOrderingParams omits the id of an unsaved handler", () => {
+      expect(toEventHandlerOrderingParams({ ...handler, id: null }, 2).id).toBeUndefined();
     });
 
     it("does not call the backend without updates", () => {
