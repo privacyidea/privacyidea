@@ -55,7 +55,8 @@ import {
 } from "@angular/material/table";
 import { RouterLink } from "@angular/router";
 import { ConditionalAccessCell } from "./cells/conditional-access-cell/conditional-access-cell";
-import { InfoCell } from "./cells/info-cell/info-cell";
+import { hasInfoContent, InfoCell } from "./cells/info-cell/info-cell";
+import { ReasonCell } from "./cells/reason-cell/reason-cell";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SourceIpCell } from "./cells/source-ip-cell/source-ip-cell";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
@@ -295,6 +296,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     ClearableInputComponent,
     ConditionalAccessCell,
     InfoCell,
+    ReasonCell,
     MultiSelectFilterComponent,
     MultiSelectMenuComponent,
     MatDivider,
@@ -549,9 +551,9 @@ export class AuthenticationLog {
   });
   // An info-like column only earns its width when something is actually in it: it is widened for the current page when
   // at least one entry has content for it, and otherwise stays as narrow as the table wants.
-  readonly hasInfoValues = computed(() =>
-    this.dataSource().data.some((entry) => entry.other_info && Object.keys(entry.other_info).length > 0)
-  );
+  // The Info cell decides what it renders (it skips what another column shows), so it also answers whether a page has
+  // any Info content to claim the column's width for.
+  readonly hasInfoValues = computed(() => this.dataSource().data.some((entry) => hasInfoContent(entry.other_info)));
   readonly hasOutcomeValues = computed(() =>
     this.dataSource().data.some((entry) => (entry.conditional_access_outcomes?.length ?? 0) > 0)
   );

@@ -291,7 +291,7 @@ describe("AuthenticationLog", () => {
     expect(badges[0].classList).toContain("role-badge-admin-internal");
   });
 
-  it("lists every reason of an entry, not just the first", () => {
+  it("lists every reason of an entry, not just the first, and offers its detail where one was recorded", () => {
     // A request whose tokens failed differently carries one reason per finding, ordered by precedence.
     service.authenticationLogResource.set(
       MockPiResponse.fromValue({
@@ -300,7 +300,8 @@ describe("AuthenticationLog", () => {
             id: 1,
             event_type: "NO_USABLE_TOKEN",
             timestamp: "2026-06-22T10:00:00+00:00",
-            reasons: ["TOKEN_DISABLED", "WRONG_OTP"]
+            reasons: ["TOKEN_DISABLED", "WRONG_OTP"],
+            other_info: { reason_detail: { reasons: { PIOO0001: "TOKEN_DISABLED", PIOO0002: "WRONG_OTP" } } }
           },
           { id: 2, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:01:00+00:00", reasons: [] }
         ],
@@ -311,10 +312,12 @@ describe("AuthenticationLog", () => {
       })
     );
     fixture.detectChanges();
-    const rendered = Array.from(
-      fixture.nativeElement.querySelectorAll<HTMLElement>(".reason-entry")
-    ).map((element) => element.textContent!.trim());
+    const rendered = Array.from(fixture.nativeElement.querySelectorAll<HTMLElement>(".reason-entry")).map((element) =>
+      element.textContent!.trim()
+    );
     expect(rendered).toEqual(["TOKEN_DISABLED", "WRONG_OTP"]);
+    // Only the row whose reasons were detailed gets the button that opens them.
+    expect(fixture.nativeElement.querySelectorAll(".reason-detail-button").length).toBe(1);
   });
 
   it("hasInfoValues only reports true when an entry on the page actually carries something to show", () => {
@@ -327,6 +330,8 @@ describe("AuthenticationLog", () => {
     component.dataSource.set(new MatTableDataSource(rows));
     expect(component.hasInfoValues()).toBe(false);
 
+    // The reason detail is the one key the Info cell skips (the Reasons column offers it as a dialog), so a row
+    // carrying only that has nothing for this column to claim its 300px for.
     component.dataSource.set(
       new MatTableDataSource([
         ...rows,
@@ -334,6 +339,19 @@ describe("AuthenticationLog", () => {
           id: 3,
           event_type: "PIN_FAIL",
           timestamp: "2026-08-03T09:00:02Z",
+          other_info: { reason_detail: { reasons: { PIOO0001: "WRONG_OTP" } } }
+        }
+      ])
+    );
+    expect(component.hasInfoValues()).toBe(false);
+
+    component.dataSource.set(
+      new MatTableDataSource([
+        ...rows,
+        {
+          id: 4,
+          event_type: "PIN_FAIL",
+          timestamp: "2026-08-03T09:00:03Z",
           other_info: { truncated: { serial: "TOK…" } }
         }
       ])
