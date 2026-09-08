@@ -461,6 +461,17 @@ class log_with:
         sensitive_positions = {index for index, name in enumerate(parameter_names)
                                if is_sensitive_key(name)}
 
+        # Also resolved once: the line a function is defined on cannot change while the process
+        # runs, but reading it costs a source file read and parse. Doing that per call made DEBUG
+        # logging pathologically expensive - the three tests that drive the whole API at DEBUG took
+        # two minutes between them, nearly all of it in inspect.getsourcelines.
+        try:
+            definition_line = inspect.getsourcelines(func)[1] + 1
+        except (OSError, TypeError):
+            # No source available (a C function, or a function built at runtime). The code object
+            # still knows where it started, which is what getsourcelines would have reported.
+            definition_line = getattr(getattr(func, "__code__", None), "co_firstlineno", 0) + 1
+
         @functools.wraps(func)
         def log_wrapper(*args, **kwds):
             """
@@ -500,8 +511,7 @@ class log_with:
                 log_args = ()
                 log_kwds = {}
             try:
-                import inspect
-                lno = inspect.getsourcelines(func)[1] + 1
+                lno = definition_line
                 if self.log_entry:
                     self.logger.debug(self.ENTRY_MESSAGE.format(
                         func.__name__, log_args, log_kwds),
@@ -517,8 +527,7 @@ class log_with:
             f_result = func(*args, **kwds)
 
             try:
-                import inspect
-                lno = inspect.getsourcelines(func)[1] + 1
+                lno = definition_line
                 if self.log_exit:
                     # Functions that pass request data along return it, so a result hides the same
                     # keys as an argument. Without this, a parameter dict that was hidden on the

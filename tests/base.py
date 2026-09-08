@@ -133,6 +133,18 @@ def _reset_database() -> None:
     the schema had been created would leave every later class on that worker
     querying tables that no longer exist.
 
+    PostgreSQL is emptied with ``TRUNCATE`` rather than ``DELETE``. It is not
+    only about speed: ``DELETE`` leaves the heap in place, and because an
+    ``UPDATE`` writes a new tuple, a row updated after the wipe can end up
+    physically behind a row inserted later. ``get_tokens()`` has no ``ORDER
+    BY``, so tests that read ``tokens[0]`` then see the wrong token - the
+    two-step push enrollment updates its row and stopped coming first.
+    ``TRUNCATE`` recreates the heap, which is what dropping and rebuilding the
+    table used to provide. MySQL/MariaDB cannot use it here, because
+    privacyIDEA's sequences are SEQUENCE-engine tables and ``TRUNCATE`` refuses
+    them; InnoDB returns rows in primary-key order anyway, so ``DELETE`` is
+    equivalent there.
+
     Rows are deleted child-table first (``sorted_tables`` is parent-first) so
     foreign keys stay satisfied. MySQL/MariaDB additionally get the FK check
     switched off, because privacyIDEA has cycles that no single ordering
@@ -152,8 +164,12 @@ def _reset_database() -> None:
     if is_mysql:
         connection.execute(text("SET FOREIGN_KEY_CHECKS=0"))
     try:
-        for table in reversed(db.metadata.sorted_tables):
-            connection.execute(table.delete())
+        if dialect == "postgresql":
+            table_list = ", ".join(f'"{table.name}"' for table in db.metadata.sorted_tables)
+            connection.execute(text(f"TRUNCATE TABLE {table_list} RESTART IDENTITY CASCADE"))
+        else:
+            for table in reversed(db.metadata.sorted_tables):
+                connection.execute(table.delete())
         if dialect != "sqlite":
             for sequence_name in _declared_sequences():
                 connection.execute(text(f"ALTER SEQUENCE {sequence_name} RESTART"))
