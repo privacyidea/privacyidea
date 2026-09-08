@@ -107,6 +107,11 @@ AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
 DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
+# Caps so that neither a client header nor a long policy text can overflow the 2000
+# characters the encrypted challenge data has to fit into.
+MAX_CLIENT_TAG_LENGTH = 256
+MAX_STORED_QUESTION_LENGTH = 512
+MAX_STORED_TITLE_LENGTH = 128
 # The decline reasons this server version understands. A signed but unrecognized
 # reason still declines, but is logged as app/server vocabulary drift.
 KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
@@ -248,28 +253,17 @@ def _get_presence_options(options) -> list:
     return available_presence_options
 
 
-def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: str, private_key_pem: str,
-                           options: dict, presence_options: list = None) -> dict:
+def _build_mobile_notification(token: TokenClass, options: dict) -> dict:
     """
-    Create the dictionary to be sent to the smartphone as challenge
+    Build the notification the user sees on the smartphone: the question from the
+    push_text_on_mobile policy with its tags filled in, and the title. Needs the request
+    of the authenticating client, so it only yields the client's tags while that request
+    is being handled.
 
-    :param token: The token object for which to create the smartphone data
-    :type token: A tokenclass object
-    :param challenge: base32 encoded random data string
-    :type challenge: str
-    :param registration_url: The privacyIDEA URL, to which the Push token communicates
-    :type registration_url: str
+    :param token: The token object for which to build the notification
     :param options: the options dictionary
-    :type options: dict
-    :param presence_options: Require the user to confirm with the correct button from the list of options.
-    :type presence_options: list
-    :return: the created smartphone_data dictionary
-    :rtype: dict
+    :return: a dict with the keys "question" and "title"
     """
-    sslverify = get_action_values_from_options(SCOPE.AUTH, PushAction.SSL_VERIFY,
-                                               options) or "1"
-    if sslverify not in ["0", "1"]:
-        sslverify = "1"
     default_message = str(DEFAULT_MOBILE_TEXT)
 
     message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
@@ -301,6 +295,8 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
                            recipient={"givenname": user.info.get("givenname") if user else "",
                                       "surname": user.info.get("surname") if user else ""},
                            challenge=options.get("challenge"))
+    for tag in ("ua_string", "ua_browser", "action"):
+        tags[tag] = tags[tag][:MAX_CLIENT_TAG_LENGTH]
     try:
         message_on_mobile = message_on_mobile.format(**tags)
     except Exception as e:
@@ -312,11 +308,41 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
     log.debug(f"Sending to mobile: {message_on_mobile}")
 
     title = get_action_values_from_options(SCOPE.AUTH, PushAction.MOBILE_TITLE, options) or "privacyIDEA"
+    return {"question": message_on_mobile, "title": title}
+
+
+def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: str, private_key_pem: str,
+                           options: dict, presence_options: list = None,
+                           notification: dict = None) -> dict:
+    """
+    Create the dictionary to be sent to the smartphone as challenge
+
+    :param token: The token object for which to create the smartphone data
+    :type token: A tokenclass object
+    :param challenge: base32 encoded random data string
+    :type challenge: str
+    :param registration_url: The privacyIDEA URL, to which the Push token communicates
+    :type registration_url: str
+    :param options: the options dictionary
+    :type options: dict
+    :param presence_options: Require the user to confirm with the correct button from the list of options.
+    :type presence_options: list
+    :param notification: The question and title stored with the challenge. Without it they
+        are built from the current request.
+    :type notification: dict
+    :return: the created smartphone_data dictionary
+    :rtype: dict
+    """
+    sslverify = get_action_values_from_options(SCOPE.AUTH, PushAction.SSL_VERIFY,
+                                               options) or "1"
+    if sslverify not in ["0", "1"]:
+        sslverify = "1"
+    notification = notification or _build_mobile_notification(token, options)
     smartphone_data = {
         "nonce": challenge,
-        "question": message_on_mobile,
+        "question": notification["question"],
         "serial": token.token.serial,
-        "title": title,
+        "title": notification["title"],
         "sslverify": sslverify,
         "url": registration_url
     }
@@ -1099,7 +1125,8 @@ class PushTokenClass(TokenClass):
                     presence_options = challenge_data.get("options")
                 # then return the necessary smartphone data to answer the challenge
                 smartphone_data = _build_smartphone_data(token, challenge.challenge, registration_url, private_key,
-                                                         options, presence_options)
+                                                         options, presence_options,
+                                                         notification=challenge_data.get("notification"))
                 open_challenges.append(smartphone_data)
             # return the challenges as a list in the result value
             result = open_challenges
@@ -1298,6 +1325,12 @@ class PushTokenClass(TokenClass):
         if fb_identifier:
             challenge = b32encode_and_unicode(geturandom())
             if options.get("session") != ChallengeSession.ENROLLMENT:
+                # Render and store it while the request of the authenticating client is still
+                # at hand: a poll brings the request of the smartphone instead.
+                data = data or {}
+                notification = _build_mobile_notification(self, options)
+                data["notification"] = {"question": notification["question"][:MAX_STORED_QUESTION_LENGTH],
+                                        "title": notification["title"][:MAX_STORED_TITLE_LENGTH]}
                 if fb_identifier != POLL_ONLY:
                     # We only push to Firebase if this token is NOT POLL_ONLY.
                     fb_gateway = create_sms_instance(fb_identifier)
@@ -1306,7 +1339,8 @@ class PushTokenClass(TokenClass):
                     private_key_pem = self.get_tokeninfo(PRIVATE_KEY_SERVER)
                     smartphone_data = _build_smartphone_data(self,
                                                              challenge, registration_url,
-                                                             private_key_pem, options, current_presence_options)
+                                                             private_key_pem, options, current_presence_options,
+                                                             notification=data["notification"])
                     log.debug(f"Sending to firebase the smartphone_data: {smartphone_data}")
                     res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 

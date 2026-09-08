@@ -2023,6 +2023,52 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         delete_policy("push_config")
 
 
+    def test_26_polled_notification_names_the_triggering_client(self):
+        """
+        The tags of the triggering client have to survive until the smartphone polls.
+
+        This goes through the real stack on both ends: /validate/check carries the client,
+        GET /ttype/push carries the smartphone. The ttype blueprint does not set
+        g.request_headers, so a notification rendered at poll time could not name the
+        client - it has to come from the challenge.
+        """
+        self.setUp_user_realms()
+        set_policy("push_26_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_26_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}=login from {{client_ip}} via {{ua_browser}} at {{action}}")
+        self._enroll_push_token()
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "realm": self.realm1,
+                                                 "pass": "push_pin"},
+                                           headers={"User-Agent": "TestPlugin/9.9"},
+                                           environ_base={"REMOTE_ADDR": "10.1.2.3"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            self.assertFalse(res.json["result"]["value"])
+
+        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        poll_sig = self.smartphone_private_key.sign(f"{self.serial_push}|{timestamp}".encode("utf8"),
+                                                    padding.PKCS1v15(), hashes.SHA256())
+        with self.app.test_request_context('/ttype/push', method='GET',
+                                           query_string={"serial": self.serial_push,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(poll_sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            challenges = res.json["result"]["value"]
+
+        self.assertEqual(1, len(challenges), challenges)
+        self.assertEqual("login from 10.1.2.3 via TestPlugin at /validate/check",
+                         challenges[0]["question"])
+
+        remove_token(self.serial_push)
+        delete_policy("push_26_text")
+        delete_policy("push_26_enroll")
+
+
 class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
     """
     Tests for the push decline_reason feature (cancelled vs unknown_trigger) and

@@ -26,7 +26,7 @@ from testfixtures import LogCapture
 from werkzeug.test import EnvironBuilder
 
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.crypto import geturandom
+from privacyidea.lib.crypto import encryptPassword, geturandom
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.error import ParameterError, PrivacyIDEAError, PolicyError
 from privacyidea.lib.framework import get_app_local_store
@@ -43,7 +43,9 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY,
                                               PushPresenceOptions, strip_pem_headers,
-                                              SERVER_PUSH_CAPABILITIES, _build_smartphone_data)
+                                              SERVER_PUSH_CAPABILITIES, _build_smartphone_data,
+                                              MAX_CLIENT_TAG_LENGTH, MAX_STORED_QUESTION_LENGTH,
+                                              MAX_STORED_TITLE_LENGTH, DEFAULT_MOBILE_TEXT)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
@@ -126,6 +128,26 @@ class PushTokenTestCase(MyTestCase):
         token.token.rollout_state = "enrolled"
         token.token.active = True
         return token
+
+    def _poll_request(self, serial):
+        """Build the signed request the smartphone sends to poll for challenges."""
+        timestamp = datetime.now(timezone.utc).isoformat()
+        signature = self.smartphone_private_key.sign(f"{serial}|{timestamp}".encode("utf8"),
+                                                     padding.PKCS1v15(), hashes.SHA256())
+        request = Request(EnvironBuilder(method="GET", headers={}).get_environ())
+        request.all_data = {"serial": serial, "timestamp": timestamp, "signature": b32encode(signature)}
+        return request
+
+    def _trigger_challenge(self, user_agent="TestPlugin/9.9", client_ip="10.1.2.3"):
+        """Trigger a push challenge through /validate/check as the given client."""
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1,
+                                                 "pass": "pushpin"},
+                                           headers={"User-Agent": user_agent},
+                                           environ_base={"REMOTE_ADDR": client_ip}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            return res.json["detail"]["transaction_id"]
 
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="push")
@@ -1852,6 +1874,290 @@ class PushTokenTestCase(MyTestCase):
         token.delete_token()
         token2.delete_token()
         delete_smsgateway(self.firebase_config_name)
+
+    TRIGGER_TEXT = "login from {client_ip} via {ua_browser} ({ua_string}) at {action}"
+
+    def _setup_notification_token(self, policy_suffix):
+        """A poll-only push token owned by cornelius, with a text using the client tags."""
+        self.setUp_user_realms()
+        set_policy(f"push_{policy_suffix}_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy(f"push_{policy_suffix}_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}={self.TRIGGER_TEXT}")
+        token = self._create_push_token()
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        return token
+
+    def _teardown_notification_token(self, token, policy_suffix):
+        delete_policy(f"push_{policy_suffix}_text")
+        delete_policy(f"push_{policy_suffix}_enroll")
+        remove_token(token.get_serial())
+
+    def test_16_poll_answers_with_the_triggering_clients_data(self):
+        # A poll-only token never renders for Firebase, so before the challenge carried the
+        # text, the client tags could only ever be empty in the polled notification.
+        token = self._setup_notification_token("16")
+        serial = token.get_serial()
+        self._trigger_challenge(user_agent="TestPlugin/9.9", client_ip="10.1.2.3")
+
+        expected = "login from 10.1.2.3 via TestPlugin (TestPlugin/9.9) at /validate/check"
+        stored = get_challenges(serial=serial)[0].get_data()["notification"]
+        self.assertEqual(expected, stored["question"])
+        self.assertEqual("privacyIDEA", stored["title"])
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        # The poll request carries the smartphone, not the client that triggered the challenge
+        self.assertIsNone(g.request_headers)
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        polled = res[1]["result"]["value"][0]
+        self.assertEqual(expected, polled["question"])
+        self.assertEqual("privacyIDEA", polled["title"])
+
+        self._teardown_notification_token(token, "16")
+
+    def test_16a_poll_renders_challenge_without_stored_notification(self):
+        # A challenge written by an earlier server version has no notification stored. The
+        # poll still answers - with the empty client tags it had before, not with an error.
+        token = self._setup_notification_token("16a")
+        serial = token.get_serial()
+        db_challenge = Challenge(serial, challenge=b32encode_and_unicode(geturandom()))
+        db_challenge.save()
+        self.assertEqual({}, get_challenges(serial=serial)[0].get_data())
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        self.assertEqual("login from  via  () at ", res[1]["result"]["value"][0]["question"])
+
+        self._teardown_notification_token(token, "16a")
+
+    def test_16b_long_client_header_cannot_break_the_challenge(self):
+        # The User-Agent is the client's to choose and may be kilobytes long. Since the
+        # rendered text is stored, it must not push the encrypted data over the 2000
+        # characters of the column - a truncated ciphertext would lose mode and
+        # correct_answer of the challenge.
+        token = self._setup_notification_token("16b")
+        serial = token.get_serial()
+        self._trigger_challenge(user_agent="TestPlugin/9.9 " + "x" * 8000)
+
+        stored = get_challenges(serial=serial)[0].get_data()
+        question = stored["notification"]["question"]
+        self.assertLessEqual(len(question), MAX_STORED_QUESTION_LENGTH)
+        self.assertIn("TestPlugin", question)
+        # The stored value ends where the cap cut the user agent, it is not the whole header
+        self.assertNotIn("x" * (MAX_CLIENT_TAG_LENGTH + 1), question)
+
+        self.assertLessEqual(len(encryptPassword(json.dumps(stored))), 2000)
+        # The challenge is still readable, so its own fields survived
+        self.assertEqual("push", stored["type"])
+
+        self._teardown_notification_token(token, "16b")
+
+    def test_16c_firebase_and_poll_show_the_same_text(self):
+        # Both ways to the phone have to show the same notification, so the text that goes
+        # to Firebase is the one that is stored - capped included.
+        token = self._setup_notification_token("16c")
+        serial = token.get_serial()
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, self.firebase_config_name)
+
+        with mock.patch("privacyidea.lib.tokens.pushtoken.create_sms_instance") as mock_gateway:
+            mock_gateway.return_value.submit_message.return_value = True
+            self._trigger_challenge(user_agent="TestPlugin/9.9", client_ip="10.1.2.3")
+            firebase_data = mock_gateway.return_value.submit_message.call_args[0][1]
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        polled = res[1]["result"]["value"][0]
+        self.assertEqual(firebase_data["question"], polled["question"])
+        self.assertEqual(firebase_data["title"], polled["title"])
+        self.assertIn("10.1.2.3", firebase_data["question"])
+
+        self._teardown_notification_token(token, "16c")
+
+    def test_16d_poll_signature_covers_the_stored_text(self):
+        # The stored text has to be signed as it is handed out, otherwise the app rejects
+        # the challenge and a correct text would never be seen.
+        token = self._setup_notification_token("16d")
+        serial = token.get_serial()
+        self._trigger_challenge()
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        polled = res[1]["result"]["value"][0]
+        self.assertEqual(get_challenges(serial=serial)[0].get_data()["notification"]["question"],
+                         polled["question"])
+
+        sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**polled)
+        server_pubkey = serialization.load_pem_public_key(to_bytes(self.server_public_key_pem),
+                                                          default_backend())
+        server_pubkey.verify(b32decode(polled["signature"]), sign_string.encode("utf8"),
+                             padding.PKCS1v15(), hashes.SHA256())
+
+        self._teardown_notification_token(token, "16d")
+
+    def test_16e_long_policy_text_is_capped_when_stored(self):
+        # A text that is long by policy rather than by header hits the second cap
+        self.setUp_user_realms()
+        set_policy("push_16e_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_16e_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}={'A' * 700},"
+                          f"{PushAction.MOBILE_TITLE}={'T' * 200}")
+        token = self._create_push_token()
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        serial = token.get_serial()
+        self._trigger_challenge()
+
+        challenge_data = get_challenges(serial=serial)[0].get_data()
+        stored = challenge_data["notification"]
+        self.assertEqual(MAX_STORED_QUESTION_LENGTH, len(stored["question"]))
+        self.assertEqual(MAX_STORED_TITLE_LENGTH, len(stored["title"]))
+        self.assertLessEqual(len(encryptPassword(json.dumps(challenge_data))), 2000)
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        self.assertEqual(stored["question"], res[1]["result"]["value"][0]["question"])
+
+        delete_policy("push_16e_text")
+        delete_policy("push_16e_enroll")
+        remove_token(serial)
+
+    def test_16f_each_challenge_keeps_its_own_client(self):
+        # Two logins are open at the same time, so the text belongs to the challenge and
+        # not to the token.
+        token = self._setup_notification_token("16f")
+        serial = token.get_serial()
+        self._trigger_challenge(user_agent="FirstPlugin/1.0", client_ip="10.0.0.1")
+        self._trigger_challenge(user_agent="SecondPlugin/2.0", client_ip="10.0.0.2")
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        questions = sorted(c["question"] for c in res[1]["result"]["value"])
+        self.assertEqual(["login from 10.0.0.1 via FirstPlugin (FirstPlugin/1.0) at /validate/check",
+                          "login from 10.0.0.2 via SecondPlugin (SecondPlugin/2.0) at /validate/check"],
+                         questions)
+
+        self._teardown_notification_token(token, "16f")
+
+    def test_16g_code_to_phone_retrigger_without_earlier_challenge(self):
+        # A code_to_phone re-trigger whose transaction has no earlier challenge leaves the
+        # challenge data at None, which the notification must not stumble over.
+        token = self._setup_notification_token("16g")
+        serial = token.get_serial()
+        set_policy("push_16g_code", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+
+        token.create_challenge(transactionid="01234567890123456789",
+                               options={"g": g, "push_triggered": True})
+
+        stored = get_challenges(serial=serial)[0].get_data()
+        self.assertIn("notification", stored)
+        self.assertEqual("login from  via  () at ", stored["notification"]["question"])
+
+        delete_policy("push_16g_code")
+        self._teardown_notification_token(token, "16g")
+
+    def test_16h_presence_challenge_keeps_options_and_notification(self):
+        # The notification shares the challenge data with the presence options, so neither
+        # may push out the other.
+        token = self._setup_notification_token("16h")
+        serial = token.get_serial()
+        set_policy("push_16h_presence", scope=SCOPE.AUTH, action=f"{PushAction.REQUIRE_PRESENCE}=1")
+        self._trigger_challenge()
+
+        stored = get_challenges(serial=serial)[0].get_data()
+        self.assertEqual(PushMode.REQUIRE_PRESENCE, stored["mode"])
+        self.assertIn(stored["correct_answer"], stored["options"])
+        self.assertIn("10.1.2.3", stored["notification"]["question"])
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        polled = res[1]["result"]["value"][0]
+        self.assertEqual(",".join(stored["options"]), polled["require_presence"])
+        self.assertEqual(stored["notification"]["question"], polled["question"])
+
+        delete_policy("push_16h_presence")
+        self._teardown_notification_token(token, "16h")
+
+    def test_16i_stored_text_survives_a_client_specific_policy(self):
+        # The poll matches policies against the smartphone, so a text policy bound to the
+        # authenticating client would not be found there. The stored text does not care.
+        self.setUp_user_realms()
+        set_policy("push_16i_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_16i_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}={self.TRIGGER_TEXT}", client="10.1.2.3")
+        token = self._create_push_token()
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        serial = token.get_serial()
+
+        self._trigger_challenge(client_ip="10.1.2.3")
+        triggered_nonce = get_challenges(serial=serial)[0].challenge
+        # A challenge without a stored text, as an earlier server version left it behind
+        legacy = Challenge(serial, challenge=b32encode_and_unicode(geturandom()))
+        legacy.save()
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.client_ip = "192.168.0.99"
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        polled = {c["nonce"]: c["question"] for c in res[1]["result"]["value"]}
+        self.assertEqual("login from 10.1.2.3 via TestPlugin (TestPlugin/9.9) at /validate/check",
+                         polled[triggered_nonce])
+        # The policy does not match the polling client, so the challenge without a stored
+        # text falls back to the default - this is what every challenge looked like before.
+        self.assertEqual(str(DEFAULT_MOBILE_TEXT), polled[legacy.challenge])
+
+        delete_policy("push_16i_text")
+        delete_policy("push_16i_enroll")
+        remove_token(serial)
+
+    def test_16j_enrollment_challenge_gets_no_notification(self):
+        # An enrollment challenge is not a login request, so there is no client to name
+        token = self._setup_notification_token("16j")
+        serial = token.get_serial()
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+
+        token.create_challenge(options={"g": g, "session": ChallengeSession.ENROLLMENT})
+
+        self.assertNotIn("notification", get_challenges(serial=serial)[0].get_data())
+        self._teardown_notification_token(token, "16j")
+
+    def test_16k_unformattable_text_falls_back_to_the_default(self):
+        # A text the policy cannot format must not fail the authentication - the default
+        # is what reaches the phone, and what is stored.
+        self.setUp_user_realms()
+        set_policy("push_16k_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_16k_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}=login from {{nope}}")
+        token = self._create_push_token()
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        serial = token.get_serial()
+        self._trigger_challenge()
+
+        stored = get_challenges(serial=serial)[0].get_data()["notification"]
+        self.assertEqual(str(DEFAULT_MOBILE_TEXT), stored["question"])
+
+        delete_policy("push_16k_text")
+        delete_policy("push_16k_enroll")
+        remove_token(serial)
 
     @responses.activate
     def test_20_api_authenticate_two_tokens(self):
