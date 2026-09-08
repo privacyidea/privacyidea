@@ -422,6 +422,11 @@ $button-low-contrast-variant: linear-gradient(
   );
 }
 
+// The Material rule for an outlined button (.mat-mdc-outlined-button:not(:disabled)) sets the label
+// and outline colour with the same specificity as the class rules here, and it is injected at
+// runtime with the button component, so which of the two wins depends on the order the stylesheets
+// happen to land in. Setting Material's own tokens takes that order out of the picture: its rule
+// then paints the destructive colour itself, wherever the button is used.
 .action-button-delete-primary {
   @include action-button(
     var(--red-base),
@@ -433,6 +438,7 @@ $button-low-contrast-variant: linear-gradient(
     $border: false,
     $primary: true
   );
+  --mat-button-outlined-label-text-color: var(--mat-sys-surface-container-lowest);
 }
 
 .action-button-delete-secondary {
@@ -444,6 +450,8 @@ $button-low-contrast-variant: linear-gradient(
     $ripple-mdc: var(--rose-bg),
     $layer: var(--rose-bg)
   );
+  --mat-button-outlined-label-text-color: var(--red-base);
+  --mat-button-outlined-outline-color: var(--red-base);
 }
 
 .filter-button {

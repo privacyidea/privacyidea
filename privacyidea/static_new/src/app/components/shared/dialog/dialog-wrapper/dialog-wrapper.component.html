@@ -35,7 +35,7 @@
             [class.action-button-delete-primary]="action.type === 'destruct' && action.primary"
             [class.action-button-delete-secondary]="action.type === 'destruct' && !action.primary"
             [class.action-button-primary]="action.primary && action.type !== 'destruct'"
-            [class.action-button-secondary]="!action.primary"
+            [class.action-button-secondary]="!action.primary && action.type !== 'destruct'"
             [class.button-width-s]="!action.className"
             [disabled]="action.disabled"
             [ngClass]="action.className || ''"

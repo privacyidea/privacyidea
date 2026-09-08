@@ -87,8 +87,10 @@ export class MockSystemService implements SystemServiceInterface {
     throw new Error("Method not implemented.");
   }
 
-  saveSystemConfig = jest.fn(() => of(MockPiResponse.fromValue<Record<string, "insert" | "update">>({})));
-  deleteSystemConfig = jest.fn(() => of(MockPiResponse.fromValue(true)));
+  saveSystemConfig = jest.fn((_: Record<string, unknown>) =>
+    of(MockPiResponse.fromValue<Record<string, "insert" | "update">>({}))
+  );
+  deleteSystemConfig = jest.fn((_: string) => of(MockPiResponse.fromValue(true)));
   deleteUserCache = jest.fn(() => of(MockPiResponse.fromValue({ status: true, deleted: 0 })));
 
   getCertificateHealth = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<CertificateHealthEntry[]>([])));
