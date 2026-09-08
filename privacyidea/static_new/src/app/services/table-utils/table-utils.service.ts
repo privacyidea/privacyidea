@@ -21,7 +21,16 @@ import { Sort } from "@angular/material/sort";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerDetailToken } from "@services/container/container.service";
-import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { tokenTypeLabel } from "@utils/token.utils";
+import {
+  AUTHENTICATION_VALUES,
+  booleanDisplayLabel,
+  containerStateLabel,
+  DisplayableValue,
+  ROLLOUT_STATE_VALUES,
+  tokenStateLabel,
+  valueDisplayLabel
+} from "@utils/value-label.utils";
 
 export interface FilterPair {
   key: string;
@@ -110,8 +119,6 @@ export interface TableUtilsServiceInterface {
 
   getChildClassForColumnKey(columnKey: string): string;
 
-  getDisplayTextForKeyAndRevoked(key: string, value: TableCellValue, revoked: boolean): string;
-
   getTdClassForKey(key: string): string[];
 
   getSpanClassForState(state: string, clickable: boolean): string;
@@ -129,10 +136,52 @@ export interface TableUtilsServiceInterface {
   clientsideSortTokenData(data: ContainerDetailToken[], s: Sort): ContainerDetailToken[];
 }
 
+function displayableCell(value: unknown): DisplayableValue | undefined {
+  return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : undefined;
+}
+
+/**
+ * Columns whose cell text is more than the raw value. A formatter returning undefined leaves the
+ * cell to the raw rendering, so every column keeps working without an entry here.
+ */
+const CELL_FORMATTERS = new Map<string, (element: TableRow) => string | undefined>([
+  [
+    "active",
+    (element) => {
+      const active = element["active"];
+      if (active === "") return "";
+      if (element["revoked"]) return tokenStateLabel("revoked");
+      if (element["locked"]) return tokenStateLabel("locked");
+      if (active) return tokenStateLabel("active");
+      if (active === false) return tokenStateLabel("deactivated");
+      return undefined;
+    }
+  ],
+  [
+    "rollout_state",
+    (element) => {
+      const state = element["rollout_state"];
+      return typeof state === "string" ? valueDisplayLabel(state, ROLLOUT_STATE_VALUES, { vocabulary: true }) : "";
+    }
+  ],
+  [
+    "tokentype",
+    (element) => {
+      const tokenType = element["tokentype"];
+      return typeof tokenType === "string" ? (tokenTypeLabel(tokenType) ?? tokenType) : undefined;
+    }
+  ],
+  ["success", (element) => booleanDisplayLabel(displayableCell(element["success"]), "predicate")],
+  [
+    "authentication",
+    (element) =>
+      valueDisplayLabel(displayableCell(element["authentication"]), AUTHENTICATION_VALUES, { vocabulary: true })
+  ]
+]);
+
 @Injectable()
 export class TableUtilsService implements TableUtilsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
-  private readonly tokenService: TokenServiceInterface = inject(TokenService);
   pageSizeOptions = signal([5, 10, 25, 50]);
 
   // A keyword such as "machineid & resolver" is a label for two keys that are filtered together.
@@ -191,31 +240,27 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getTooltipForColumn(columnKey: string, element: TableRow): string {
-    if (element["locked"]) return "Locked";
-    if (element["revoked"]) return "Revoked";
+    if (element["locked"]) return tokenStateLabel("locked");
+    if (element["revoked"]) return tokenStateLabel("revoked");
 
     switch (columnKey) {
       case "active":
         if (element["active"] === "") return "";
-        return element["active"] ? "Deactivate Token" : "Activate Token";
+        return element["active"]
+          ? $localize`:@@token.deactivateToken:Deactivate Token`
+          : $localize`:@@token.activateToken:Activate Token`;
 
       case "failcount":
-        return element["failcount"] ? "Reset Fail Counter" : "";
+        return element["failcount"] ? $localize`:@@token.resetFailCounter:Reset Fail Counter` : "";
     }
     return "";
   }
 
   getDisplayText(columnKey: string, element: TableRow): string {
-    switch (columnKey) {
-      case "active":
-        if (element["active"] === "") return "";
-        if (element["revoked"]) return "revoked";
-        if (element["locked"]) return "locked";
-        if (element["active"]) return "active";
-        if (element["active"] === false) return "deactivated";
-        break;
-    }
-    const cell = element[columnKey];
+    const formatted = CELL_FORMATTERS.get(columnKey)?.(element);
+    if (formatted !== undefined) return formatted;
+    // Own properties only - a column named "toString" must not render Object.prototype's member.
+    const cell = Object.hasOwn(element, columnKey) ? element[columnKey] : undefined;
     return cell == null ? "" : String(cell);
   }
 
@@ -260,7 +305,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return "details-table-item";
   }
 
-  getDivClassForKey(key: string) {
+  getDivClassForKey(key: string): string {
     if (key === "description") {
       return "details-scrollable-container";
     } else if (key === "maxfail" || key === "count_window" || key === "sync_window") {
@@ -293,17 +338,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     return "";
   }
 
-  getDisplayTextForKeyAndRevoked(key: string, value: TableCellValue, revoked: boolean): string {
-    if (value === "") {
-      return "";
-    }
-    if (key === "active") {
-      return revoked ? "revoked" : value ? "active" : "deactivated";
-    }
-    return value == null ? "" : String(value);
-  }
-
-  getTdClassForKey(key: string) {
+  getTdClassForKey(key: string): string[] {
     const classes = ["width-241"];
     if (key === "description") {
       classes.push("height-127");
@@ -336,14 +371,8 @@ export class TableUtilsService implements TableUtilsServiceInterface {
     }
   }
 
-  getDisplayTextForState(state: string) {
-    if (state === "active") {
-      return "active";
-    } else if (state === "disabled") {
-      return "deactivated";
-    } else {
-      return state;
-    }
+  getDisplayTextForState(state: string): string {
+    return containerStateLabel(state);
   }
 
   pickColumns<const K extends readonly ColumnKey[]>(...keys: K) {

@@ -98,12 +98,12 @@ export class MockEventService implements EventServiceInterface {
     MockPiResponse.fromValue<Record<string, EventCondition>>({})
   );
 
-  moduleConditions: Signal<Record<string, EventCondition>> = computed(() => ({
+  moduleConditions = signal<Record<string, EventCondition>>({
     condA: { type: "bool", desc: "descA" },
     condB: { type: "str", desc: "descB" },
     condC: { type: "int", desc: "descC", value: ["1", "2", "3"] },
     condD: { type: "multi", desc: "descD", value: [{ name: "option1" }, { name: "option2" }], group: "group1" }
-  }));
+  });
 
   moduleConditionsByGroup: Signal<Record<string, Record<string, EventCondition>>> = computed(() => ({
     group1: {
