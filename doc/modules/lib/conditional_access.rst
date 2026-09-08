@@ -23,6 +23,13 @@ Authentication log
    :members:
    :undoc-members:
 
+Statistics over the log
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.authentication_log_statistics
+   :members:
+   :undoc-members:
+
 Conditional access outcome log
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

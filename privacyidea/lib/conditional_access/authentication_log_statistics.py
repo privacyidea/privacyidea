@@ -41,9 +41,10 @@ from privacyidea.lib.conditional_access.authentication_log import (Authenticatio
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.error import ParameterError
 
-# Bins the statistics query splits its window into. Each bin becomes one SUM(CASE ...) column, so the cap bounds the
-# width of the generated statement rather than the rows it reads.
+#: Bins a statistics query splits its window into when the caller names no number.
 DEFAULT_STATISTICS_BINS = 48
+#: Upper bound on the bins the statistics query splits its window into. Each bin becomes one SUM(CASE ...) column, so
+#: the cap bounds the width of the generated statement rather than the rows it reads.
 MAX_STATISTICS_BINS = 100
 
 

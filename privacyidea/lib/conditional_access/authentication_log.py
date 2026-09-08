@@ -59,13 +59,6 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
 }
 DEFAULT_PAGE_SIZE = 15
 
-# Bins the statistics query splits its window into. Each bin becomes one SUM(CASE ...) column, so the cap bounds the
-# width of the generated statement rather than the rows it reads.
-DEFAULT_STATISTICS_BINS = 48
-#: Upper bound on the bins the statistics query splits its window into, capping the width of the
-#: generated statement.
-MAX_STATISTICS_BINS = 100
-
 
 class AuthLogUserRole(str, Enum):
     """
