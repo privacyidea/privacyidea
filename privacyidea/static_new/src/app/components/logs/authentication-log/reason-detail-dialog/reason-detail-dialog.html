@@ -26,6 +26,23 @@
   title="Reason Details">
   <!-- Each half is shown only when the request recorded it: the token layer records the per-serial findings, a policy
     layer the rules that decided, and most requests produce one of the two. -->
+  @if (data.policies.length) {
+    <section class="reason-detail-section">
+      <h4
+        class="reason-detail-heading"
+        i18n>Deciding policies</h4>
+      <p
+        class="reason-detail-hint"
+        i18n>
+        The policies whose decision produced this outcome.
+      </p>
+      <ul class="reason-detail-policies">
+        @for (policy of data.policies; track policy) {
+          <li>{{ policy }}</li>
+        }
+      </ul>
+    </section>
+  }
   @if (data.tokens.length) {
     <section class="reason-detail-section">
       <h4
@@ -56,23 +73,6 @@
           }
         </tbody>
       </table>
-    </section>
-  }
-  @if (data.policies.length) {
-    <section class="reason-detail-section">
-      <h4
-        class="reason-detail-heading"
-        i18n>Deciding policies</h4>
-      <p
-        class="reason-detail-hint"
-        i18n>
-        The policies whose decision produced this outcome.
-      </p>
-      <ul class="reason-detail-policies">
-        @for (policy of data.policies; track policy) {
-          <li>{{ policy }}</li>
-        }
-      </ul>
     </section>
   }
 </app-dialog-wrapper>
