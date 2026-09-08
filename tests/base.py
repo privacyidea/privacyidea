@@ -2,12 +2,13 @@
 import pathlib
 import unittest
 import mock
-from sqlalchemy import Sequence, text
+from sqlalchemy import Sequence, select, text
+from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
-from privacyidea.models import db, save_config_timestamp
+from privacyidea.models import Token, db, save_config_timestamp
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
@@ -118,6 +119,22 @@ def _declared_sequences() -> list:
                    if isinstance(getattr(column, "default", None), Sequence)})
 
 
+def _schema_present() -> bool:
+    """Is the schema already built in this worker's database?
+
+    Reads one row from the table every test touches. A failure means the tables
+    are gone - either this is the first class on the worker, or a class in
+    ``tests/cli`` dropped them - and leaves the transaction unusable on
+    PostgreSQL, so it is rolled back before the caller builds the schema.
+    """
+    try:
+        db.session.execute(select(Token.id).limit(1)).first()
+        return True
+    except DatabaseError:
+        db.session.rollback()
+        return False
+
+
 def _reset_database() -> None:
     """Give the next test class an empty database without rebuilding the schema.
 
@@ -127,11 +144,13 @@ def _reset_database() -> None:
     changes. Creating it once per xdist worker and deleting the rows in between
     leaves each class with the same empty tables for about 45 ms.
 
-    ``create_all()`` still runs every time, because it is nearly free once the
-    tables are there (26 ms against 730 ms to build them) and several classes in
-    ``tests/cli`` call ``db.drop_all()`` in their own teardown. Remembering that
-    the schema had been created would leave every later class on that worker
-    querying tables that no longer exist.
+    The schema is only built when it is actually missing, which one cheap query
+    answers. It cannot simply be built once and remembered: several classes in
+    ``tests/cli`` call ``db.drop_all()`` in their own teardown, and a remembered
+    "already built" would leave every later class on that worker querying tables
+    that no longer exist. Asking the database each time costs about a
+    millisecond and stays correct however the tables went away, where calling
+    ``create_all()`` unconditionally cost ~300 ms per class under parallel load.
 
     PostgreSQL is emptied with ``TRUNCATE`` rather than ``DELETE``. It is not
     only about speed: ``DELETE`` leaves the heap in place, and because an
@@ -157,7 +176,8 @@ def _reset_database() -> None:
     do: ``Sequence`` is ignored there and an emptied table hands out rowid 1
     again by itself.
     """
-    db.create_all()
+    if not _schema_present():
+        db.create_all()
     connection = db.session.connection()
     dialect = db.engine.dialect.name
     is_mysql = dialect in ("mysql", "mariadb")
