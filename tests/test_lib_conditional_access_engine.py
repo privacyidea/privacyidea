@@ -1702,6 +1702,29 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._seed_events(AuthEventType.PASSWORD_FAIL, 1)  # count 10 -> the milder stage no longer decides
         self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user)).decision)
 
+    def test_access_decision_retriggering_deny_resumes_once_the_count_decays_back_into_its_range(self):
+        # The hand-over above is not one-way: once the events that pushed the count past the milder stage's range
+        # age out of the window, a re-triggering DENY at that stage resumes deciding - the same live-count reading
+        # that applies to LOCK_USER (see test_retrigger_resumes_once_the_count_decays_back_into_its_range) applies
+        # to the pre-auth decision too. The milder stage here only emails, so nothing here refuses the request and
+        # stops it from being counted (see the DENY-specific de-escalation note in doc/conditional_access/policies).
+        now = utc_now()
+        self._make_policy(
+            name="deny", counter_type=AuthEventType.PASSWORD_FAIL, window=100,
+            stages=(StageDefinition(10, [StageActionDefinition(ConditionalAccessAction.EMAIL_ADMIN,
+                                                                  {"smtp_identifier": "nosuch"})]),
+                    StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.DENY,
+                                                                 retrigger_above_threshold=True)])))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 10, timestamp=now)
+        self.assertEqual(AccessDecision.CONTINUE, evaluate_access_decision(CAContext(self.user), now=now).decision)
+
+        # 250s later: the ten events are now outside the 100s window (count decays to 0). Three fresh failures bring
+        # the count back to 3 - the milder stage's own (re-triggering) threshold - and DENY fires again even though
+        # the more severe stage already owned the count once.
+        later = now + timedelta(seconds=250)
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3, timestamp=later)
+        self.assertEqual(AccessDecision.DENY, evaluate_access_decision(CAContext(self.user), now=later).decision)
+
     def test_access_decision_denies_on_combined_count(self):
         # The pre-auth decision also counts all tracked types together: 2 + 2 = 4 crosses the threshold of 3,
         # so the request is denied.
