@@ -189,10 +189,17 @@ jobs:
         # the intra-file ordering the unittest-style suite currently relies on.
         # Collect coverage only on the lowest Python version to avoid redundant
         # reports and reduce overhead on all other matrix jobs.
+        # Migration tests are excluded - they have their own workflow. So are
+        # the backup round-trip tests: they shell out to the dump and restore
+        # commands of the database, which only the migration workflow installs
+        # in the version matching its service container. Whatever client the
+        # runner image happens to carry would either refuse to work (pg_dump
+        # rejects a server newer than itself) or be the wrong one for the
+        # server (the preinstalled MySQL dumper against a MariaDB service).
         if [ "$COVERAGE" = "true" ] && [ "$PYTHON_VERSION" = "$MIN_PYTHON_VERSION" ]; then
-          python -b -m pytest -v -n "$WORKERS" --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration" tests/
+          python -b -m pytest -v -n "$WORKERS" --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration and not backup" tests/
         else
-          python -b -m pytest -v -n "$WORKERS" --dist=loadfile -m "not migration" tests/
+          python -b -m pytest -v -n "$WORKERS" --dist=loadfile -m "not migration and not backup" tests/
         fi
 
     - name: Codecov upload
