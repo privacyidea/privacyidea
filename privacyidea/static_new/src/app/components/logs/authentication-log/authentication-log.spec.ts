@@ -239,6 +239,24 @@ describe("AuthenticationLog", () => {
     expect(component.usedSerials(entry("SOMETHING_NEW", "PISP0001"))).toEqual([]);
   });
 
+  it("takes along the serials cut off the column", () => {
+    // The backend caps the column and keeps the rest under other_info.truncated, so a row naming more serials than
+    // fit would otherwise file those tokens as ones that had no part in the outcome.
+    const withOverflow = (other_info: Record<string, unknown> | null) =>
+      ({ event_type: "PASSWORD_FAIL", serial: "PISP0001,PISP0002", other_info }) as AuthenticationLogEntry;
+
+    expect(component.usedSerials(withOverflow({ truncated: { serial: "PISP0003,PISP0004" } }))).toEqual([
+      "PISP0001",
+      "PISP0002",
+      "PISP0003",
+      "PISP0004"
+    ]);
+    // other_info is free-form, so anything of an unexpected shape leaves the column's own serials standing.
+    expect(component.usedSerials(withOverflow(null))).toEqual(["PISP0001", "PISP0002"]);
+    expect(component.usedSerials(withOverflow({ truncated: "PISP0003" }))).toEqual(["PISP0001", "PISP0002"]);
+    expect(component.usedSerials(withOverflow({ truncated: { serial: 3 } }))).toEqual(["PISP0001", "PISP0002"]);
+  });
+
   it("exposes the three user-role filter options", () => {
     expect(component.userRoleOptions).toEqual([
       { label: "User", value: "user" },

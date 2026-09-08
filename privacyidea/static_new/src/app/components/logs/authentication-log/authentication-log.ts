@@ -167,6 +167,16 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
 // their rendering logic.
 const INFO_COLUMN_KEYS = ["conditional_access_outcomes", "other_info"];
 
+// The serials cut off an entry's serial column, which the backend preserves under other_info.truncated rather than
+// discarding (see _store_overflow in lib/conditional_access/authentication_log.py). A free-form JSON column, so
+// every level is checked rather than trusted.
+function truncatedSerial(info: AuthenticationLogEntry["other_info"]): string | null {
+  const truncated = info?.["truncated"];
+  if (typeof truncated !== "object" || truncated === null || Array.isArray(truncated)) return null;
+  const serial = (truncated as Record<string, unknown>)["serial"];
+  return typeof serial === "string" ? serial : null;
+}
+
 // The Conditional access column filters on three keys at once, hence a header menu instead of the single-key toggle
 // other columns use; the keys mirror the backend's _FILTER_PARAMS (api/authentication_log.py) and are also typeable in
 // the main filter input as advanced filters.
@@ -823,8 +833,13 @@ export class AuthenticationLog {
   // token the outcome is *about* - the one that authenticated, the ones challenged, the one just enrolled - which
   // says nothing about anyone's findings. Decided here because this component already owns the outcome lookup (see
   // getEventTypeClass), and an event type it has no outcome for yields nothing rather than a guess.
+  //
+  // The serials cut off the column are taken along: a row naming more of them than fit keeps the rest in other_info
+  // (see truncatedSerial), and without them the dialog would file those tokens as ones that had no part in the
+  // outcome - the very thing the split exists to avoid.
   usedSerials(entry: AuthenticationLogEntry): string[] {
-    return this.outcomeByEventType().get(entry.event_type) === "failure" ? this.splitSerials(entry.serial) : [];
+    if (this.outcomeByEventType().get(entry.event_type) !== "failure") return [];
+    return [...this.splitSerials(entry.serial), ...this.splitSerials(truncatedSerial(entry.other_info))];
   }
 
   // Whether *column* renders a list (Info / Conditional access) rather than a scalar, and whether the current page has
