@@ -58,3 +58,13 @@
   margin: 0;
   padding-left: 20px;
 }
+
+// Named tokens with no finding of their own: serials alone, rather than a table with an empty column.
+.reason-detail-serials {
+  margin: 0;
+  padding-left: 20px;
+
+  li {
+    white-space: nowrap;
+  }
+}

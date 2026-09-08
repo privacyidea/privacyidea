@@ -16,11 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgTemplateOutlet } from "@angular/common";
 import { Component } from "@angular/core";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
-import { ReasonDetail } from "../reason-detail";
+import { ReasonDetailDialogData } from "../reason-detail";
 
 /**
  * What is behind one authentication-log entry's reasons: which of the user's tokens was found to be what, and which
@@ -31,13 +32,22 @@ import { ReasonDetail } from "../reason-detail";
  * serial and reason, which is how an admin reads them - "which token failed, and why" - and a table is exactly what
  * the twelve-column log has no room for.
  *
+ * The findings are shown in the two groups the entry itself distinguishes (see ReasonDetail): the tokens the attempt
+ * was made against, and those that had no part in it. Read as one list, a wrong password beside a disabled token
+ * looks like a token problem.
+ *
  * Read-only, so it closes rather than returning anything.
  */
 @Component({
   selector: "app-reason-detail-dialog",
   standalone: true,
-  imports: [DialogWrapperComponent],
+  imports: [DialogWrapperComponent, NgTemplateOutlet],
   templateUrl: "./reason-detail-dialog.html",
   styleUrl: "./reason-detail-dialog.scss"
 })
-export class ReasonDetailDialog extends AbstractDialogComponent<ReasonDetail> {}
+export class ReasonDetailDialog extends AbstractDialogComponent<ReasonDetailDialogData> {
+  // Whether the used tokens have findings of their own, which decides between the serial/reason table and a plain
+  // list of serials. A wrong first factor records none (PASSWORD_FAIL and PIN_FAIL already name the credential), and
+  // a column of dashes would only look like missing data; a wrong OTP records WRONG_OTP, which is worth reading.
+  readonly showsUsedReasons = this.data.used.some((token) => !!token.reason);
+}

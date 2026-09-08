@@ -117,9 +117,34 @@ describe("ReasonCell", () => {
     expect(dialogService.openDialog).toHaveBeenCalledWith(
       expect.objectContaining({
         component: ReasonDetailDialog,
-        data: { tokens: [{ serial: "OATH0001", reason: "WRONG_OTP" }], policies: ["deny_vpn"] }
+        data: {
+          used: [{ serial: "OATH0001", reason: "WRONG_OTP" }],
+          other: [],
+          namesTokens: false,
+          policies: ["deny_vpn"],
+          eventType: ""
+        }
       })
     );
+  });
+
+  it("splits the detail by the tokens the entry names", () => {
+    // The table passes them for a failed entry only.
+    fixture.componentRef.setInput("reasons", []);
+    fixture.componentRef.setInput("info", {
+      reason_detail: { reasons: { TOTP002: "TOKEN_DISABLED" } }
+    });
+    fixture.componentRef.setInput("usedSerials", ["OATH0001"]);
+    fixture.detectChanges();
+
+    expect(component.detail()).toEqual({
+      used: [{ serial: "OATH0001", reason: "" }],
+      other: [{ serial: "TOTP002", reason: "TOKEN_DISABLED" }],
+      namesTokens: true,
+      policies: []
+    });
+    // A row with a detail but no reason of its own still points at the dialog.
+    expect(component.showsPlaceholder()).toBe(true);
   });
 
   it("names what the button opens, since it carries no visible text", () => {

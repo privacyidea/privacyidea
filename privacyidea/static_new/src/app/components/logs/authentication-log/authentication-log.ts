@@ -818,6 +818,15 @@ export class AuthenticationLog {
     return outcome ? (OUTCOME_CLASS[outcome] ?? "") : "";
   }
 
+  // The tokens a *failed* entry names, i.e. the ones the attempt was made against (see AUTH_EVENT_SERIALS_KEY), which
+  // the Reasons cell splits its findings by. Only a failure: on a success or a challenge the same column names the
+  // token the outcome is *about* - the one that authenticated, the ones challenged, the one just enrolled - which
+  // says nothing about anyone's findings. Decided here because this component already owns the outcome lookup (see
+  // getEventTypeClass), and an event type it has no outcome for yields nothing rather than a guess.
+  usedSerials(entry: AuthenticationLogEntry): string[] {
+    return this.outcomeByEventType().get(entry.event_type) === "failure" ? this.splitSerials(entry.serial) : [];
+  }
+
   // Whether *column* renders a list (Info / Conditional access) rather than a scalar, and whether the current page has
   // anything to put in it - together they decide the width treatment.
   isInfoColumn(column: string): boolean {

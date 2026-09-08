@@ -48,11 +48,16 @@ export class ReasonCell {
   // The entry's other_info, which is where the detail behind those reasons is recorded. The whole record rather than
   // the detail alone, so the table hands the cell a column and this cell owns what it reads out of it.
   readonly info = input<AuthenticationLogEntry["other_info"]>(null);
+  // The tokens the attempt was made against, which split the detail's findings (see ReasonDetail). The table passes
+  // them for a failed entry only, since it is the one that knows each event type's outcome.
+  readonly usedSerials = input<string[]>([]);
+  // Named by the dialog where a used token has no finding of its own (see ReasonDetailDialogData).
+  readonly eventType = input<string>("");
 
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   // Null for an entry whose reasons nobody detailed, which is what leaves the cell without its button.
-  readonly detail = computed<ReasonDetail | null>(() => parseReasonDetail(this.info()));
+  readonly detail = computed<ReasonDetail | null>(() => parseReasonDetail(this.info(), this.usedSerials()));
 
   // A request can end with a detail but no reason of its own: the token that decided the outcome records none when the
   // event type already names the cause - a wrong PIN is logged as PIN_FAIL, and the findings of the tokens the request
@@ -64,6 +69,9 @@ export class ReasonCell {
   readonly detailLabel = $localize`Show which token was found to be what`;
 
   openDetail(detail: ReasonDetail): void {
-    this.dialogService.openDialog({ component: ReasonDetailDialog, data: detail });
+    this.dialogService.openDialog({
+      component: ReasonDetailDialog,
+      data: { ...detail, eventType: this.eventType() }
+    });
   }
 }
