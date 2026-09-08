@@ -23,6 +23,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   BlockIpRequest,
   BlocklistEntry,
+  ConditionalAccessOutcomeStatistics,
   ConditionalAccessStateServiceInterface,
   LockedUsersPage,
   LockedUserEntry,
@@ -31,6 +32,10 @@ import {
   SetUserLockRequest
 } from "@services/conditional-access-state/conditional-access-state.service";
 import { Observable, of } from "rxjs";
+
+function daysAgo(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString();
+}
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockConditionalAccessStateService implements ConditionalAccessStateServiceInterface {
@@ -135,6 +140,25 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
   );
   purgeBlocklist = jest.fn().mockImplementation((): Observable<number> => of(0));
 
+  // The outcome history, handed back verbatim like every other canned response here. Nothing is derived from the
+  // request: how a window is cut into buckets is the endpoint's business, and a mock that reproduced that arithmetic
+  // would keep agreeing with itself however the real bucketing changed.
+  //
+  // The default window is the last thirty days - what the widget asks for by default, and wide enough for the lock
+  // and block fixtures to fall inside it.
+  outcomeStatistics: ConditionalAccessOutcomeStatistics = {
+    window: { start_time: daysAgo(30), end_time: daysAgo(0), total: 0 },
+    bins: { count: 4, starts: [daysAgo(30), daysAgo(20), daysAgo(10), daysAgo(1)] },
+    outcomes: []
+  };
+
+  fetchOutcomeStatistics = jest
+    .fn()
+    .mockImplementation(
+      (): Observable<PiResponse<ConditionalAccessOutcomeStatistics>> =>
+        of(MockPiResponse.fromValue<ConditionalAccessOutcomeStatistics>(this.outcomeStatistics))
+    );
+
   setUserLockStatus(value: LockedUserEntry | null): void {
     this.userLockResource.set(MockPiResponse.fromValue<LockedUserEntry | null>(value));
   }
@@ -153,6 +177,10 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
 
   setLockedUsersResourceUndefined(): void {
     this.lockedUsersResource.set(undefined);
+  }
+
+  setOutcomeStatistics(statistics: ConditionalAccessOutcomeStatistics): void {
+    this.outcomeStatistics = statistics;
   }
 
   setBlocklistEntries(entries: BlocklistEntry[]): void {

@@ -20,6 +20,13 @@ import { Component, computed, input } from "@angular/core";
 
 import { AuthenticationLogEntry } from "@services/authentication-log/authentication-log.service";
 
+import { REASON_DETAIL_INFO_KEY } from "../../reason-detail";
+
+// other_info keys another column shows, and this one therefore skips. The reason detail is a nested map explaining the
+// row's reasons: folded into this column it could only be a one-line JSON dump, so the Reasons column offers it as a
+// dialog instead (see ReasonCell) and nothing is lost by leaving it out here.
+const KEYS_SHOWN_ELSEWHERE: readonly string[] = [REASON_DETAIL_INFO_KEY];
+
 // Fragments that are an acronym rather than a word, so a humanized key reads "Source IP" and not "Source ip".
 const INFO_KEY_ACRONYMS: Record<string, string> = {
   // transaction_id, attempt_id
@@ -44,11 +51,23 @@ export interface InfoEntry {
 }
 
 /**
+ * Whether the Info cell would render anything for this entry: an `other_info` with at least one key the cell actually
+ * shows. Asked by the table before it sizes the Info column, so a row whose only key is one the cell skips (see
+ * KEYS_SHOWN_ELSEWHERE) does not make the column claim its width for an empty cell.
+ */
+export function hasInfoContent(info: AuthenticationLogEntry["other_info"]): boolean {
+  return !!info && Object.keys(info).some((key) => !KEYS_SHOWN_ELSEWHERE.includes(key));
+}
+
+/**
  * The authentication log's Info cell: `other_info` as "Key: value" rows.
  *
  * Scalars are shown as they are, and one level of nesting - a dict (the `truncated` overflow, the only thing the
  * backend puts here) or a list - becomes a bulleted sub-list under its key. Anything deeper is folded into compact
  * JSON, which is honest for a payload nothing writes today and better than silently dropping it.
+ *
+ * What another column already shows is skipped (see KEYS_SHOWN_ELSEWHERE), so the same value is not read twice - once
+ * here as JSON and once there in a form that fits it.
  *
  * Deliberately generic, and deliberately *not* shared with the Conditional access cell: this one walks arbitrary JSON,
  * while an outcome has one known shape. They share their looks (../info-list), not their rendering.
@@ -68,7 +87,8 @@ export class InfoCell {
     // The guard is not redundant with the input's type: the table's skeleton rows are built by column key and set every
     // column to "", so the declared type is a promise the loading state breaks.
     if (!this.isPlainObject(info)) return [];
-    return Object.entries(info).map(([key, raw]) => {
+    const shown = Object.entries(info).filter(([key]) => !KEYS_SHOWN_ELSEWHERE.includes(key));
+    return shown.map(([key, raw]) => {
       const label = this.humanizeKey(key);
       if (this.isPlainObject(raw)) {
         return { key: label, children: this.rows(raw) };

@@ -20,11 +20,11 @@
   <div class="detail-text">
     <span
       class="detail-label"
-      [matTooltip]="selectableAction().actionName">
-      {{ selectableAction().label }}
-    </span>
-    @if (selectableAction().detail.desc) {
-      <span class="detail-description">{{ selectableAction().detail.desc }}</span>
+      [innerHTML]="selectableAction().label | highlight: highlight()"></span>
+    @if (selectableAction().detail.desc; as description) {
+      <span
+        class="detail-description"
+        [innerHTML]="description | highlight: highlight() : true"></span>
     }
   </div>
 

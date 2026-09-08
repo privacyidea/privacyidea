@@ -18,7 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { InfoCell } from "./info-cell";
+import { hasInfoContent, InfoCell } from "./info-cell";
 
 describe("InfoCell", () => {
   let component: InfoCell;
@@ -108,6 +108,27 @@ describe("InfoCell", () => {
     expect(entriesFor("")).toEqual([]);
     expect(entriesFor(["a", "b"])).toEqual([]);
     expect(entriesFor(undefined)).toEqual([]);
+  });
+
+  it("skips the reason detail, which the Reasons column shows as a dialog", () => {
+    // The one key another column owns: here it could only be a one-line JSON dump of a nested map.
+    expect(
+      entriesFor({
+        serial: "TOTP001",
+        reason_detail: { reasons: { TOTP001: "WRONG_OTP" }, policies: ["deny_vpn"] }
+      })
+    ).toEqual([{ key: "Serial", value: "TOTP001" }]);
+    expect(entriesFor({ reason_detail: { reasons: { TOTP001: "WRONG_OTP" } } })).toEqual([]);
+  });
+
+  it("reports content only for an other_info this cell would actually render something for", () => {
+    // What the table sizes the Info column on, so a row whose only key is the skipped one must not claim its width.
+    expect(hasInfoContent(null)).toBe(false);
+    expect(hasInfoContent(undefined)).toBe(false);
+    expect(hasInfoContent({})).toBe(false);
+    expect(hasInfoContent({ reason_detail: { reasons: { TOTP001: "WRONG_OTP" } } })).toBe(false);
+    expect(hasInfoContent({ serial: "TOTP001" })).toBe(true);
+    expect(hasInfoContent({ reason_detail: {}, serial: "TOTP001" })).toBe(true);
   });
 
   it("shows a list in the DOM as bullets under its key", () => {

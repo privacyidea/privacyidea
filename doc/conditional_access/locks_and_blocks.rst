@@ -60,6 +60,11 @@ only to disambiguate a uid shared between resolvers. The two
    address to ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, see
    :ref:`conditional_access_never_block`.
 
+Lifting a lock only undoes what a policy has already done - it will do it again
+on the next request. Switching the policy itself off, which is what a ``DENY``
+needs (it stores nothing that could be lifted), is described in
+:ref:`conditional_access_policies_cli`.
+
 .. _conditional_access_manual_restrictions:
 
 Locking or blocking by hand

@@ -116,6 +116,24 @@ export interface BlocklistEntry {
   error_message: string | null;
 }
 
+// One action type of the outcome history: how many times conditional access did that thing, bucketed over the
+// window. `action_type` is a ConditionalAccessAction value - LOCK_USER, BLOCK_IP, EMAIL_*, DENY - and `counts` holds
+// one entry per bin, in bin order and always as long as `bins.count`.
+export interface ConditionalAccessOutcomeSeries {
+  action_type: string;
+  counts: number[];
+  total: number;
+}
+
+// The history of what conditional access *did* over one window, from the outcome rows rather than from the live lock
+// and block state: a lock that has since expired or been purged is still counted here. `window` and `bins` are shaped
+// exactly as the authentication log's own statistics shape them.
+export interface ConditionalAccessOutcomeStatistics {
+  window: { start_time: string; end_time: string; total: number };
+  bins: { count: number; starts: string[] };
+  outcomes: ConditionalAccessOutcomeSeries[];
+}
+
 export interface ConditionalAccessStateServiceInterface {
   userLockResource: HttpResourceRef<PiResponse<LockedUserEntry | null> | undefined>;
   userLockStatus: Signal<LockedUserEntry | null>;
@@ -132,6 +150,12 @@ export interface ConditionalAccessStateServiceInterface {
   purgeUserLocks(): Observable<number>;
   blocklistResource: HttpResourceRef<PiResponse<BlocklistEntry[]> | undefined>;
   fetchBlocklist(includeExpired?: boolean): Observable<PiResponse<BlocklistEntry[]>>;
+  fetchOutcomeStatistics(
+    startTime: string,
+    endTime: string,
+    bins: number,
+    actionTypes: readonly string[]
+  ): Observable<PiResponse<ConditionalAccessOutcomeStatistics>>;
   removeBlocklistEntry(entry: BlocklistEntry): Observable<boolean>;
   addBlocklistEntry(request: BlockIpRequest): Observable<BlocklistEntry | null>;
   purgeBlocklist(): Observable<number>;
@@ -352,6 +376,34 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
       headers: this.authService.getHeaders(),
       params: { include_expired: includeExpired }
     });
+  }
+
+  // The history of what conditional access did over a window, bucketed server-side. An Observable rather than an
+  // httpResource because the dashboard widget drives the window itself and caches the response in the
+  // DashboardDataStore, as it does for the authentication log's own statistics.
+  //
+  // Enforced outcomes only: a dry-run row records what a policy *would* have done, so counting those would chart
+  // locks that never happened. Note the endpoint needs the authentication-log read right, not the lock or blocklist
+  // one - the outcomes hang off the log entries that caused them.
+  fetchOutcomeStatistics(
+    startTime: string,
+    endTime: string,
+    bins: number,
+    actionTypes: readonly string[]
+  ): Observable<PiResponse<ConditionalAccessOutcomeStatistics>> {
+    return this.http.get<PiResponse<ConditionalAccessOutcomeStatistics>>(
+      this.conditionalAccessBaseUrl + "outcomes/statistics",
+      {
+        headers: this.authService.getHeaders(),
+        params: {
+          start_time: startTime,
+          end_time: endTime,
+          bins,
+          action_types: actionTypes.join(","),
+          dry_run: false
+        }
+      }
+    );
   }
 
   removeBlocklistEntry(entry: BlocklistEntry): Observable<boolean> {

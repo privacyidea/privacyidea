@@ -22,19 +22,20 @@ before any token logic runs, and the full loop where repeated failures trip a
 policy stage and lock the user.
 """
 from unittest import mock
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.error import Error
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
-from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, get_authentication_logs
+from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, get_authentication_logs,
+                                                                   log_authentication_event)
 from privacyidea.lib.conditional_access.engine import is_user_locked, is_ip_blocked
 from privacyidea.lib.conditional_access.engine import get_user_lock, get_ip_block
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
 from privacyidea.lib.conditional_access.engine import _upsert_user_lock_state
 from privacyidea.lib.conditional_access.policy import create_conditional_access_policy, default_error_message
-from privacyidea.lib.conditional_access.outcome_log import get_outcomes
+from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policies.actions import PolicyAction
@@ -140,6 +141,30 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             self.assertEqual(200, response.status_code, response)
             return response.json
 
+    def _outcome_statistics(self, query_string: dict | None = None, status: int = 200) -> dict:
+        """Read the outcome history over a window around now, since the rows written here take the current time."""
+        query = {"start_time": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
+                 "end_time": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()}
+        query.update(query_string or {})
+        with self.app.test_request_context("/conditionalaccess/outcomes/statistics", method="GET",
+                                           query_string=query, headers={"Authorization": self.at}):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(status, response.status_code, response.json)
+            return response.json
+
+    @staticmethod
+    def _lock_outcome_in(realm: str) -> int:
+        """Write one request in *realm* that locked its user, i.e. an entry plus its LOCK_USER outcome."""
+        event_id = log_authentication_event(event_type=AuthEventType.MFA_FAIL, resolver="res1", uid="u1", realm=realm)
+        record_outcomes([ConditionalAccessOutcome(action_type=str(ConditionalAccessAction.LOCK_USER),
+                                                  policy_name="p", threshold=3, event_count=3)], event_id)
+        db.session.commit()
+        return event_id
+
+    @staticmethod
+    def _outcome_totals(body: dict) -> dict:
+        return {series["action_type"]: series["total"] for series in body["result"]["value"]["outcomes"]}
+
     def _lock_user(self, lock_expires_at, error_message: str | None = None, user: User | None = None) -> None:
         _upsert_user_lock_state(user or self.user, lock_expires_at=lock_expires_at,
                                    error_message=error_message)
@@ -223,6 +248,80 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertFalse(body["result"]["value"], body)
         self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
+
+    def test_outcome_statistics_counts_the_lock_and_not_the_requests_it_turns_away(self):
+        # End to end over the real engine: the second failure trips the stage and writes the LOCK_USER outcome, and
+        # every request after it is turned away and logged as USER_LOCKED. Counting the event types would report five
+        # "locks" for the one lock that was imposed, which is why the histogram reads the outcomes instead.
+        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600)
+        for _ in range(5):
+            self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        self.assertTrue(is_user_locked(self.user))
+
+        body = self._outcome_statistics()
+
+        self.assertDictEqual({str(ConditionalAccessAction.LOCK_USER): 1}, self._outcome_totals(body))
+        self.assertEqual(1, body["result"]["value"]["window"]["total"])
+        # The rejections are in the log all the same - they are simply not what this counts.
+        rejections = [entry for entry in get_authentication_logs()
+                      if entry.event_type == str(AuthEventType.USER_LOCKED)]
+        self.assertEqual(3, len(rejections))
+
+    def test_outcome_statistics_buckets_the_lock_and_offers_the_window_back(self):
+        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=1, duration=600)
+        self._check({"user": "cornelius", "pass": "wrongpin123456"})
+
+        value = self._outcome_statistics({"bins": 4})["result"]["value"]
+
+        self.assertEqual(4, value["bins"]["count"])
+        self.assertEqual(4, len(value["bins"]["starts"]))
+        series = value["outcomes"][0]
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), series["action_type"])
+        # One lock, in whichever bucket "now" fell into.
+        self.assertEqual(1, sum(series["counts"]))
+        self.assertEqual(4, len(series["counts"]))
+
+    def test_outcome_statistics_separates_a_dry_run_from_a_lock_that_happened(self):
+        # A dry-run policy records what it *would* have done; charting that alongside the real ones would draw locks
+        # that never existed.
+        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=1, duration=600, dry_run=True)
+        self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        self.assertFalse(is_user_locked(self.user))
+
+        self.assertDictEqual({}, self._outcome_totals(self._outcome_statistics({"dry_run": "false"})))
+        self.assertDictEqual({str(ConditionalAccessAction.LOCK_USER): 1},
+                             self._outcome_totals(self._outcome_statistics({"dry_run": "true"})))
+
+    def test_outcome_statistics_counts_only_the_locks_the_admin_may_read(self):
+        # Written directly rather than tripped through /validate/check, because the point is two realms and the test
+        # user lives in one. An outcome carries no realm of its own - the request it belongs to does - so this is also
+        # what proves the scope is applied to the parent row.
+        self._lock_outcome_in(self.realm1)
+        self._lock_outcome_in("otherrealm")
+
+        # Unscoped, the admin reads both: without this the assertion below could pass on an empty window.
+        self.assertDictEqual({str(ConditionalAccessAction.LOCK_USER): 2},
+                             self._outcome_totals(self._outcome_statistics()))
+
+        set_policy("ca_authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
+                   realm=self.realm1)
+        try:
+            body = self._outcome_statistics()
+            self.assertDictEqual({str(ConditionalAccessAction.LOCK_USER): 1}, self._outcome_totals(body))
+            self.assertEqual(1, body["result"]["value"]["window"]["total"])
+        finally:
+            delete_policy("ca_authlog_realm")
+
+    def test_outcome_statistics_is_gated_by_the_log_read_action(self):
+        # The same right the log listing needs, which already hands these outcomes out alongside their entries.
+        set_policy("ca_other_admin", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        try:
+            body = self._outcome_statistics(status=403)
+            self.assertFalse(body["result"]["status"], body)
+            self.assertIn(f"the action {PolicyAction.AUTHENTICATION_LOG_READ} is not allowed",
+                          body["result"]["error"]["message"], body)
+        finally:
+            delete_policy("ca_other_admin")
 
     def test_the_request_that_trips_the_lock_reports_it(self):
         # The lock is written during this very request - and any EMAIL_* action is sent now, not on the

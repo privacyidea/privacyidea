@@ -222,10 +222,11 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
         token_owner_attributes = UserAttributes()
 
     if user_attributes.role == "admin":
-        if action == PolicyAction.ASSIGN:
+        if action in [PolicyAction.ASSIGN, PolicyAction.COPYTOKENUSER, PolicyAction.COPYTOKENPIN]:
             # Assigning a user to a token is only possible if the token has no owner yet.
             # To avoid helpdesk admins (for a specific resolver) lose access on their tokens while changing the owner
-            # of a token, they are allowed to assign their users to tokens without owner.
+            # of a token, they are allowed to assign their users to tokens without owner. Copying an owner or a PIN
+            # onto a token of the unassigned pool is the same kind of operation and is treated the same way.
             # Note: the policies are still filtered by the token realms.
             user_attributes.username = token_owner_attributes.username or None
             user_attributes.realm = token_owner_attributes.realm or None
