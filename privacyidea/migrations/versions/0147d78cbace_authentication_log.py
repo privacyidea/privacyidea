@@ -7,7 +7,7 @@ Create Date: 2026-06-01 08:37:51.884173
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import mysql
+from sqlalchemy.dialects import mysql, oracle
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # Same type the model uses: BigInteger everywhere, but INTEGER on SQLite so the
@@ -52,7 +52,12 @@ def upgrade():
             sa.Column('username', _unicode_case_sensitive(255), nullable=True),
             sa.Column('user_role', _unicode_case_sensitive(30), nullable=True),
             sa.Column('event_type', _unicode_case_sensitive(40), nullable=False),
-            sa.Column('timestamp', sa.DateTime(), nullable=False),
+            # Microseconds on every backend, because the attempt reduction in lib.conditional_access.engine orders
+            # an attempt's rows by (timestamp, id).
+            sa.Column('timestamp',
+                      sa.DateTime().with_variant(mysql.DATETIME(fsp=6), "mysql", "mariadb")
+                      .with_variant(oracle.TIMESTAMP(), "oracle"),
+                      nullable=False),
             sa.Column('source_ip', _unicode_case_sensitive(50), nullable=True),
             sa.Column('peer_ip', _unicode_case_sensitive(50), nullable=True),
             sa.Column('source_ip_source', _unicode_case_sensitive(40), nullable=True),
