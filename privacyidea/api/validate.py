@@ -142,7 +142,7 @@ from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
-                        log_authentication, pop_auth_event_reason)
+                        log_authentication, pop_auth_event_reason, pop_auth_event_serials)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                 AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY,
                                                                 AUTH_EVENT_REASON_DETAIL_KEY, build_reason_detail,
@@ -828,16 +828,22 @@ def _handle_serial_auth(context: dict, serial: str):
         success, details = check_serial_pass(serial, password, options=context["options"])
         context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None)
         context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
+        event_serials = pop_auth_event_serials(details)
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
         success, details = check_otp(serial, password)
         # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure.
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL
+        # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
+        # a message, so without this the row would name no token although the request named exactly one.
+        event_serials = [serial]
 
     context["result"] = success
     context["details"] = details
 
-    if "serial" in details:
+    if event_serials:
+        context["serial_list"].extend(event_serials)
+    elif "serial" in details:
         context["serial_list"].append(details["serial"])
 
 
@@ -884,11 +890,17 @@ def _handle_standard_auth(context: dict):
     context[AUTH_EVENT_TYPE_KEY] = event_type
     # Why it came out that way, classified by the token layer alongside the event itself.
     context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
+    # The tokens a failure was made against, which the response names at most one of (see AUTH_EVENT_SERIALS_KEY).
+    event_serials = pop_auth_event_serials(details)
     # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
     context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
 
     # Extract serials for logging
-    if 'multi_challenge' in details:
+    if event_serials:
+        # Preferred over the response's own serial, which names only the token a *single*-token outcome is about. Only
+        # a failure records any, so a challenge below still names every token it challenged.
+        context["serial_list"].extend(event_serials)
+    elif 'multi_challenge' in details:
         context["serial_list"].extend([c["serial"] for c in details["multi_challenge"]])
     elif "serial" in details:
         context["serial_list"].append(details["serial"])

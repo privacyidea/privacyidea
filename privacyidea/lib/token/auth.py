@@ -13,6 +13,7 @@ from privacyidea.lib.challengeresponsedecorators import (generic_challenge_respo
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            AuthEventReason, AUTH_EVENT_REASON_KEY,
                                                                            AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                           AUTH_EVENT_SERIALS_KEY,
                                                                            build_reason_detail,
                                                                            CHALLENGE_LAPSED_KEY,
                                                                            NO_FIRST_FACTOR_KEY, reduce_request_events,
@@ -764,6 +765,20 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
         if ordered_reasons:
             reply_dict[AUTH_EVENT_REASON_KEY] = ordered_reasons
         reply_dict[AUTH_EVENT_REASON_DETAIL_KEY] = build_reason_detail(reasons=token_reasons)
+
+    # Which tokens the failure was made against, for the log row's serial column: the tokens that produced the winning
+    # event, which for a wrong first factor is every usable token the credential was checked against and whose
+    # failcounter went up with it. Recorded independently of the reasons above - a token that produced the event
+    # without a finding of its own still belongs on the row, and a single-token user has no findings at all.
+    outcome_serials = event_producers
+    if challenge_response_token_list:
+        # The reason filter above, applied to the tokens rather than to their findings: a token that only reported a
+        # stale transaction next to a live challenge is not one the answer was made against. Where no token held a
+        # live challenge such a token is named, because then it is the whole story.
+        outcome_serials = {serial for serial in outcome_serials
+                           if token_reasons.get(serial) != str(AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION)}
+    if reduced_event and outcome_of(reduced_event) == AuthEventOutcome.FAILURE and outcome_serials:
+        reply_dict[AUTH_EVENT_SERIALS_KEY] = sorted(outcome_serials)
 
     return res, reply_dict
 

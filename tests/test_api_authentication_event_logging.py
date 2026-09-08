@@ -210,10 +210,11 @@ class _AuthLogContractTests(_ContractHost):
             self._assert_failed(self._authenticate("wrongpassword755224"))
         finally:
             delete_policy("authlog_otppin")
-        # PASSWORD_FAIL already names the credential that failed, so the row carries no reason of its own.
+        # PASSWORD_FAIL already names the credential that failed, so the row carries no reason of its own - but it
+        # does name the token the password was checked against.
         entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
         assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=self.user, reason=[],
-                                        endpoint=self.endpoint_path)
+                                        serials={self.serial}, endpoint=self.endpoint_path)
 
     def test_force_challenge_response_keeps_the_userstore_classification(self):
         # force_challenge_response skips the authentication attempt, but is_challenge_request already ran check_pin -
@@ -231,7 +232,7 @@ class _AuthLogContractTests(_ContractHost):
             delete_policy("authlog_force_cr")
         entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
         assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=self.user, reason=[],
-                                        endpoint=self.endpoint_path)
+                                        serials={self.serial}, endpoint=self.endpoint_path)
 
     def test_challenge_response_does_not_turn_a_wrong_otp_into_a_password_failure(self):
         # check_pin runs twice per request with challenge-response enabled: is_challenge_request asks with the whole
@@ -256,7 +257,7 @@ class _AuthLogContractTests(_ContractHost):
         self._assert_failed(self._authenticate("wrongpin755224"))
         entries = assert_authentication_log([AuthEventType.PIN_FAIL])
         assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=self.user, reason=[],
-                                        endpoint=self.endpoint_path)
+                                        serials={self.serial}, endpoint=self.endpoint_path)
 
     def test_wrong_otp_is_mfa_fail(self):
         # PIN correct, OTP wrong
@@ -300,7 +301,8 @@ class _AuthLogContractTests(_ContractHost):
         finally:
             delete_policy("authlog_otppin")
         entries = assert_authentication_log([AuthEventType.PIN_FAIL])
-        assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=self.user, endpoint=self.endpoint_path)
+        assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=self.user, serials={self.serial},
+                                        endpoint=self.endpoint_path)
 
     # --- Challenge response ---
 
@@ -387,8 +389,11 @@ class _AuthLogContractTests(_ContractHost):
         # failed challenge answer -> CHALLENGE_ANSWERED_FAIL (not PIN_FAIL).
         self._assert_failed(self._authenticate(f"{self.pin}755224", transaction_id="9" * 20))
         entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
-        # TODO: Should we have the serial here in the log?
+        # No token held a live challenge for this transaction, so the one reporting the unknown transaction is the
+        # whole story rather than the bystander it is beside a live challenge (see
+        # test_unknown_transaction_is_dropped_from_the_row_next_to_a_live_wrong_response).
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_ANSWERED_FAIL], user=self.user,
+                                        serials={self.serial},
                                         transaction_id="9" * 20, reason=AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION,
                                         reasons={self.serial: AuthEventReason.CHALLENGE_UNKNOWN_TRANSACTION},
                                         endpoint=self.endpoint_path)
@@ -652,9 +657,55 @@ class _AuthLogContractTests(_ContractHost):
         self._assert_failed(self._authenticate("wrongpin755224"))
 
         entries = assert_authentication_log([AuthEventType.PIN_FAIL])
+        # Naming the token the PIN was checked against is what makes the exhausted token's finding read as context
+        # rather than as the explanation.
         assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=self.user, reason=[],
+                                        serials={self.serial},
                                         reasons={self.second_serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED},
                                         endpoint=self.endpoint_path)
+
+    def test_a_named_token_keeps_its_own_finding_beside_an_unusable_one(self):
+        # A named token is not always without a finding: the token the OTP was checked against has one (WRONG_OTP),
+        # the disabled one beside it never got that far. Both are in the map; only the serial says which was used.
+        self._add_second_token(pin=self.pin)
+        get_one_token(serial=self.second_serial).enable(False)
+
+        self._assert_failed(self._authenticate(f"{self.pin}000000"))
+
+        entries = assert_authentication_log([AuthEventType.MFA_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL], user=self.user, serials={self.serial},
+                                        reason=AuthEventReason.WRONG_OTP, endpoint=self.endpoint_path,
+                                        reasons={self.serial: AuthEventReason.WRONG_OTP,
+                                                 self.second_serial: AuthEventReason.TOKEN_DISABLED})
+
+    def test_every_token_the_password_was_checked_against_is_named(self):
+        # otppin=userstore checks the same password against every usable token the user owns, and each takes the
+        # failcount increment, so the row names all of them. No token is in a state worth reporting, so there are no
+        # findings either - the serials are the only thing saying what the failure was made against.
+        self._add_second_token(pin=self.pin)
+        set_policy("authlog_otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN}=userstore")
+        try:
+            self._assert_failed(self._authenticate("wrongpassword755224"))
+        finally:
+            delete_policy("authlog_otppin")
+
+        entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.PASSWORD_FAIL], user=self.user, reason=[],
+                                        serials={self.serial, self.second_serial}, endpoint=self.endpoint_path)
+
+    def test_every_pin_matching_token_is_named_on_a_wrong_otp(self):
+        # Two tokens with the same PIN both match the first factor and both fail on the OTP, so the row names both.
+        # The response names a token only when a single one matched.
+        self._add_second_token(pin=self.pin)
+
+        self._assert_failed(self._authenticate(f"{self.pin}000000"))
+
+        entries = assert_authentication_log([AuthEventType.MFA_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.MFA_FAIL], user=self.user,
+                                        serials={self.serial, self.second_serial},
+                                        reason=AuthEventReason.WRONG_OTP, endpoint=self.endpoint_path,
+                                        reasons={self.serial: AuthEventReason.WRONG_OTP,
+                                                 self.second_serial: AuthEventReason.WRONG_OTP})
 
     def test_a_successful_login_carries_no_reason(self):
         # A second, unusable token must not put a reason on the row of a login that succeeded: the reason explains a
@@ -1025,25 +1076,26 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         transaction_id=enrollment_transaction_id, endpoint=self.endpoint_path)
 
     # --- Serial auth (serial provided instead of user) ---
-    # TODO: Serial should be added to logs (context) if passed as request parameter
 
     def test_serial_otponly_success(self):
         # serial + otponly validates only the OTP (no PIN); a correct value is LOGIN_SUCCESS.
-        # This classification is set by the API handler (check_otp), not the lib layer.
+        # This classification is set by the API handler (check_otp), not the lib layer - and so is the serial, which
+        # check_otp does not report back.
         body = self._check({"serial": self.serial, "pass": "755224", "otponly": "1"})
         self.assertTrue(body["result"]["value"], body)
         entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
         assert_authentication_log_entry(entries[AuthEventType.LOGIN_SUCCESS], user=self.user,
-                                        endpoint=self.endpoint_path)
+                                        serials={self.serial}, endpoint=self.endpoint_path)
 
     def test_serial_otp_only_fail(self):
-        # serial + otponly verifies only the token (no PIN/password), so a wrong value is TOKEN_ONLY_FAIL.
+        # serial + otponly verifies only the token (no PIN/password), so a wrong value is TOKEN_ONLY_FAIL - against
+        # the one token the request named, which the row records like every other failure.
         body = self._check({"serial": self.serial, "pass": "000000", "otponly": "1"})
         self.assertFalse(body["result"]["value"], body)
 
         entries = assert_authentication_log([AuthEventType.TOKEN_ONLY_FAIL])
         assert_authentication_log_entry(entries[AuthEventType.TOKEN_ONLY_FAIL], user=self.user,
-                                        endpoint=self.endpoint_path)
+                                        serials={self.serial}, endpoint=self.endpoint_path)
 
     def test_serial_pass_success(self):
         # serial + pin+otp (no otponly) goes through check_serial_pass -> check_token_list -> LOGIN_SUCCESS.
