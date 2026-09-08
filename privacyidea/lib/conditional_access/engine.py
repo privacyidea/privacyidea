@@ -34,7 +34,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            CountMode,
                                                                            RestrictionCause)
-from privacyidea.lib.conditional_access.authentication_log import _naive_utc
+from privacyidea.lib.conditional_access.authentication_log import naive_utc
 from privacyidea.lib.conditional_access.conditions import (condition_sql_filters,
                                                            conditions_match_row,
                                                            policy_conditions_are_scopable,
@@ -466,7 +466,7 @@ def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str]
     the strict bound also keeps a same-instant failure from being masked by the success). The forensic log is
     untouched - only the *counted* range is narrowed.
     """
-    window_end = _naive_utc(window_end) if window_end is not None else utc_now()
+    window_end = naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
     type_values = [str(t) for t in event_types]
     lower_bound = AuthenticationLog.timestamp >= window_start
@@ -582,7 +582,7 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_s
         empty counts every row of the subject.
     :return: the number of distinct targeted accounts
     """
-    window_end = _naive_utc(window_end) if window_end is not None else utc_now()
+    window_end = naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
     type_values = [str(t) for t in event_types]
     distinct_accounts = (select(AuthenticationLog.username, AuthenticationLog.realm, AuthenticationLog.resolver)
@@ -686,7 +686,7 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
     an attempt reduced from a subset of its own rows is misclassified, not narrowed. Conditions arrive as *row_filter*
     instead and are applied to the reduced representative (see :func:`_count_matching_attempts`).
     """
-    window_end = _naive_utc(window_end) if window_end is not None else utc_now()
+    window_end = naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
     rows = get_ca_session().scalars(
         select(AuthenticationLog)
@@ -914,7 +914,7 @@ def get_user_lock(user: "User", now: datetime | None = None, *,
         # Permanent lock; only an admin reset clears it.
         return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None,
                                  target=ConditionalAccessTarget.USER, error_message=state.error_message)
-    now = _naive_utc(now) if now is not None else utc_now()
+    now = naive_utc(now) if now is not None else utc_now()
     if state.lock_expires_at <= now:
         if clear_expired:
             _delete_user_lock_state(state)
@@ -1053,7 +1053,7 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
         # Permanent block; only an admin reset clears it.
         return RestrictionStatus(permanent=True, expires_at=None, seconds_remaining=None,
                                  target=ConditionalAccessTarget.SOURCE_IP, error_message=state.error_message)
-    now = _naive_utc(now) if now is not None else utc_now()
+    now = naive_utc(now) if now is not None else utc_now()
     if state.block_expires_at <= now:
         if clear_expired:
             _delete_ip_block(state)
@@ -1128,7 +1128,7 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     :return: the :class:`AccessDecisionResult` for this request: the decision, plus the outcomes to record on
         whichever authentication-log row this request ends up writing
     """
-    now = _naive_utc(now) if now is not None else utc_now()
+    now = naive_utc(now) if now is not None else utc_now()
     policies = get_ca_session().scalars(
         select(ConditionalAccessPolicy)
         .options(selectinload(ConditionalAccessPolicy.conditions))
@@ -1291,7 +1291,7 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     """
     if not event_type:
         return ConditionalAccessEvaluation()
-    now = _naive_utc(now) if now is not None else utc_now()
+    now = naive_utc(now) if now is not None else utc_now()
     event_type = str(event_type)
     # Selects only enabled policies tracking the current event type via an indexed equality filter on the normalized
     # conditional_access_policy_counter_types table; (policy_id, counter_type) is unique, so a policy matches at most

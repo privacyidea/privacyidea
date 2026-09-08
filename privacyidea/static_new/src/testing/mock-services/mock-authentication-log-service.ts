@@ -99,6 +99,18 @@ export class MockAuthenticationLogService implements AuthenticationLogServiceInt
     .fn()
     .mockReturnValue(of(MockPiResponse.fromValue<AuthenticationLogStatistics>(emptyStatistics())));
 
+  fetchOldestTimestamp = jest.fn().mockReturnValue(
+    of(
+      MockPiResponse.fromValue<AuthenticationLogPage>({
+        auth_logs: [],
+        count: 0,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    )
+  );
+
   clearFilter = jest.fn().mockImplementation(() => {
     this.authenticationLogFilter.set(new FilterValue());
   });

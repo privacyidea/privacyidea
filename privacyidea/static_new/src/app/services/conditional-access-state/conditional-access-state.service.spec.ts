@@ -114,6 +114,22 @@ describe("ConditionalAccessStateService", () => {
     content.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
   };
 
+  it("asks for enforced restriction outcomes over the given window", () => {
+    const actions = ["LOCK_USER", "BLOCK_IP"];
+    service.fetchOutcomeStatistics("2026-08-05T00:00:00Z", "2026-09-04T00:00:00Z", 32, actions).subscribe();
+
+    const req = httpMock.expectOne((r) => r.url === BASE + "outcomes/statistics");
+    expect(req.request.method).toBe("GET");
+    expect(req.request.params.get("start_time")).toBe("2026-08-05T00:00:00Z");
+    expect(req.request.params.get("end_time")).toBe("2026-09-04T00:00:00Z");
+    expect(req.request.params.get("bins")).toBe("32");
+    expect(req.request.params.get("action_types")).toBe("LOCK_USER,BLOCK_IP");
+    // Enforced only: a dry-run outcome records what a policy would have done, and charting those would draw locks
+    // that never happened.
+    expect(req.request.params.get("dry_run")).toBe("false");
+    req.flush({});
+  });
+
   it("is created", () => {
     expect(service).toBeTruthy();
   });

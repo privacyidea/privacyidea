@@ -27,7 +27,25 @@
   <!-- Each part is shown only when the request recorded it: the token layer records the per-serial findings, a policy
     layer the rules that decided, and most requests produce one of the two. The findings come in the two groups the
     entry distinguishes (see ReasonDetail), since read as one list a wrong password beside a disabled token makes
-    being disabled look like the reason the login failed. -->
+    being disabled look like the reason the login failed. Policies are shown first: the policy decision is what
+    determines the outcome, the per-token reasons are side notes. -->
+  @if (data.policies.length) {
+    <section class="reason-detail-section">
+      <h4
+        class="reason-detail-heading"
+        i18n>Deciding policies</h4>
+      <p
+        class="reason-detail-hint"
+        i18n>
+        The policies whose decision produced this outcome.
+      </p>
+      <ul class="reason-detail-policies">
+        @for (policy of data.policies; track policy) {
+          <li>{{ policy }}</li>
+        }
+      </ul>
+    </section>
+  }
   @if (data.used.length) {
     <section class="reason-detail-section">
       <!-- What the entry named, not whether a second group happens to exist: an entry naming the tokens it was made
@@ -83,23 +101,6 @@
         Tokens this request never got to check, so they had no part in the outcome.
       </p>
       <ng-container *ngTemplateOutlet="findings; context: { $implicit: data.other }" />
-    </section>
-  }
-  @if (data.policies.length) {
-    <section class="reason-detail-section">
-      <h4
-        class="reason-detail-heading"
-        i18n>Deciding policies</h4>
-      <p
-        class="reason-detail-hint"
-        i18n>
-        The policies whose decision produced this outcome.
-      </p>
-      <ul class="reason-detail-policies">
-        @for (policy of data.policies; track policy) {
-          <li>{{ policy }}</li>
-        }
-      </ul>
     </section>
   }
 
