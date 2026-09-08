@@ -31,6 +31,7 @@ import {
   ACTIVITY_RANGES,
   ActivityRange,
   activityRangeById,
+  ALL_RANGE_ID,
   bucketsAreCalendarDays,
   DEFAULT_ACTIVITY_RANGE,
   inclusiveBucketEnd
@@ -58,7 +59,7 @@ import {
 } from "@services/conditional-access/conditional-access-policy.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { formatLocalDateTime } from "@utils/date-format.utils";
-import { forkJoin, of } from "rxjs";
+import { forkJoin, Observable, of, switchMap } from "rxjs";
 
 // Cap on how many lock records the widget fetches for the list; beyond it the widget defers to the locked-users page,
 // as its footer states.
@@ -593,12 +594,31 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
       this.store.invalidate(this.historyKey);
     }
     this.historyKey = key;
-    this.historyRef.set(
-      this.store.load(key, () => {
-        // The window is computed per invocation, not once when the factory is registered:
-        // DashboardDataStore.refreshAll() replays the stored factory, and a captured window would make every later
-        // refresh ask for the same stale one.
-        const window = range.window(new Date());
+    this.historyRef.set(this.store.load(key, () => this.fetchHistoryForRange(range)));
+  }
+
+  // Builds the outcome-statistics request for one range. Every preset but "all" already knows its window; "all" has
+  // none of its own - it runs back to the log's first entry, the same one the authentication-activity widget opens
+  // its own "all" range on, since a conditional-access outcome hangs off a log entry rather than a record of its
+  // own - so that entry is fetched first and the window built from it, before the same endpoint every other range
+  // calls is asked for the chart itself.
+  //
+  // Computed per invocation, not once when the factory is registered: DashboardDataStore.refreshAll() replays the
+  // stored factory, and a captured window would make every later refresh ask for the same stale one.
+  private fetchHistoryForRange(range: ActivityRange): Observable<PiResponse<ConditionalAccessOutcomeStatistics>> {
+    if (range.id !== ALL_RANGE_ID) {
+      const window = range.window(new Date());
+      return this.stateService.fetchOutcomeStatistics(
+        window.start.toISOString(),
+        window.end.toISOString(),
+        window.bins,
+        RESTRICTION_ACTIONS
+      );
+    }
+    return this.authenticationLogService.fetchOldestTimestamp().pipe(
+      switchMap((oldest) => {
+        const oldestTimestamp = oldest.result?.value?.auth_logs?.[0]?.timestamp;
+        const window = range.window(new Date(), oldestTimestamp ? new Date(oldestTimestamp) : null);
         return this.stateService.fetchOutcomeStatistics(
           window.start.toISOString(),
           window.end.toISOString(),

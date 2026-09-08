@@ -41,10 +41,40 @@ export interface ActivityRange {
   label: string;
   // The window to ask for, given the present. Every range cuts it into buckets of a round unit of time - five
   // minutes, an hour, six hours, a day - rather than into an arbitrary slice of itself.
-  window: (now: Date) => ActivityWindow;
+  //
+  // *oldest* is only read by the "all" range, whose window has no fixed span of its own: it runs back to the log's
+  // own first entry, which nothing here knows without an extra request. Every other range ignores it.
+  window: (now: Date, oldest?: Date | null) => ActivityWindow;
   // Whether a bucket is *meant* to be one whole calendar day. Whether it is one is a question about the window as
   // well - see bucketsAreCalendarDays, which is what a label has to ask before naming a bar by its date alone.
   dayBuckets: boolean;
+}
+
+// Names the "all" preset, whose window a caller has to build itself (see the note on ActivityRange.window): unlike
+// every other range, fetching it takes a request of its own first, to learn where the log begins.
+export const ALL_RANGE_ID = "all";
+
+// The widest window "all" ever asks for, however far back the first entry sits: the endpoint rejects a bin count
+// above MAX_STATISTICS_BINS (see get_authentication_log_statistics_endpoint), so this asks for exactly that many.
+const ALL_RANGE_BINS = 100;
+
+// A window with no round span of its own - it runs from the log's first entry to now, whatever that stretch happens
+// to be - so the bucket size falls out of it instead of being picked up front like the other presets'. Still cut on
+// whole seconds throughout, for the same reason rollingWindow and dailyWindow are: a boundary with milliseconds on it
+// is not one the log's own time filter can be opened on.
+function allWindow(maxBins: number): (now: Date, oldest?: Date | null) => ActivityWindow {
+  return (now, oldest) => {
+    const end = Math.floor(now.getTime() / MS_PER_SECOND) * MS_PER_SECOND;
+    // No first entry yet - nothing has been fetched (the lookup is still in flight) or the log is empty - falls back
+    // to a day, the same span "24 h" opens on, so there is a window to chart until the real one arrives.
+    const oldestMs = oldest ? Math.floor(oldest.getTime() / MS_PER_SECOND) * MS_PER_SECOND : end - MS_PER_DAY;
+    const spanSeconds = Math.max(1, Math.round((end - oldestMs) / MS_PER_SECOND));
+    // Never more buckets than the span has seconds, so a log only moments old still gets whole-second buckets rather
+    // than ones smaller than the log's own resolution.
+    const bins = Math.min(maxBins, spanSeconds);
+    const bucketSeconds = Math.floor(spanSeconds / bins);
+    return { start: new Date(end - bins * bucketSeconds * MS_PER_SECOND), end: new Date(end), bins };
+  };
 }
 
 // Local midnight, `days` days back. Stepped by calendar date rather than by 24-hour blocks, so a daylight-saving
@@ -91,7 +121,8 @@ export const ACTIVITY_RANGES: readonly ActivityRange[] = [
   { id: "1h", label: $localize`1 h`, window: rollingWindow(MS_PER_HOUR, 5 * MS_PER_MINUTE), dayBuckets: false },
   { id: "24h", label: $localize`24 h`, window: rollingWindow(MS_PER_DAY, MS_PER_HOUR), dayBuckets: false },
   { id: "7d", label: $localize`7 d`, window: dailyWindow(7, 6 * MS_PER_HOUR), dayBuckets: false },
-  { id: "30d", label: $localize`30 d`, window: dailyWindow(30, MS_PER_DAY), dayBuckets: true }
+  { id: "30d", label: $localize`30 d`, window: dailyWindow(30, MS_PER_DAY), dayBuckets: true },
+  { id: ALL_RANGE_ID, label: $localize`All`, window: allWindow(ALL_RANGE_BINS), dayBuckets: false }
 ];
 
 // A bucket's exclusive end, said the way the authentication log's own filter says it. The log takes both bounds

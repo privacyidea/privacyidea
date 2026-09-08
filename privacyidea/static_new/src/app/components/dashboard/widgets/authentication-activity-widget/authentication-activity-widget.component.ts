@@ -34,6 +34,7 @@ import {
   ACTIVITY_RANGES,
   ActivityRange,
   activityRangeById,
+  ALL_RANGE_ID,
   bucketsAreCalendarDays,
   DEFAULT_ACTIVITY_RANGE,
   inclusiveBucketEnd
@@ -49,6 +50,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { toFilterDisplay } from "@utils/date-format.utils";
+import { Observable, switchMap } from "rxjs";
 
 const LOG_READ: PolicyAction = "authentication_log_read";
 
@@ -407,11 +409,28 @@ challenge-response login count once, classified by how the attempt ended.`;
       this.store.invalidate(this.storeKey);
     }
     this.storeKey = key;
-    this.dataRef.set(
-      this.store.load(key, () => {
-        // Computed per invocation, not once when the factory is registered: DashboardDataStore.refreshAll() replays
-        // the stored factory, and a captured window would make every later refresh ask for the same stale range.
-        const window = range.window(new Date());
+    this.dataRef.set(this.store.load(key, () => this.fetchForRange(range)));
+  }
+
+  // Builds the statistics request for one range. Every preset but "all" already knows its window; "all" has none of
+  // its own - it runs back to the log's first entry - so it is fetched first and the window is built from it, before
+  // the same statistics endpoint every other range calls is asked for the chart itself.
+  //
+  // Computed per invocation, not once when the factory is registered: DashboardDataStore.refreshAll() replays the
+  // stored factory, and a captured window would make every later refresh ask for the same stale range.
+  private fetchForRange(range: ActivityRange): Observable<PiResponse<AuthenticationLogStatistics>> {
+    if (range.id !== ALL_RANGE_ID) {
+      const window = range.window(new Date());
+      return this.authenticationLogService.fetchStatistics(
+        window.start.toISOString(),
+        window.end.toISOString(),
+        window.bins
+      );
+    }
+    return this.authenticationLogService.fetchOldestTimestamp().pipe(
+      switchMap((oldest) => {
+        const oldestTimestamp = oldest.result?.value?.auth_logs?.[0]?.timestamp;
+        const window = range.window(new Date(), oldestTimestamp ? new Date(oldestTimestamp) : null);
         return this.authenticationLogService.fetchStatistics(
           window.start.toISOString(),
           window.end.toISOString(),

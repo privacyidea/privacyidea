@@ -22,7 +22,9 @@
 // two leading columns for the presets, so they are named here rather than repeated - the track only lines up with the
 // bars for as long as both rows agree on them.
 $row-gap: 8px;
-$label-column: 60px;
+// Widened from 60px to fit the brush row's five presets at their own enlarged minimum width (see .auth-range-presets
+// in styles/buttons.scss) without the group spilling past the column the chart-row above reserves for it.
+$label-column: 90px;
 $value-column: 76px;
 $leading-columns: $label-column + $row-gap + $value-column;
 
@@ -49,6 +51,12 @@ $slider-height: 48px;
   flex: 0 0 $leading-columns;
   align-self: flex-start;
   margin-top: ($slider-height - $toggle-height) * 0.5;
+}
+
+// A little extra clearance from the track beside it, now that equal-width buttons pull the group's own right edge
+// closer to the row's gap.
+.range-row > .chart-range-presets > mat-button-toggle-group {
+  margin-right: 16px;
 }
 
 // The frame renders these in its header, but they are declared here, so view encapsulation keeps the frame's own
