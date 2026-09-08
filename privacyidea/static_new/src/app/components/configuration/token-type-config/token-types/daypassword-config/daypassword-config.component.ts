@@ -34,8 +34,8 @@ import { labeledOptions } from "@utils/value-label.utils";
   styleUrl: "./daypassword-config.component.scss"
 })
 export class DaypasswordConfigComponent {
-  formData = input.required<Record<string, string | number | boolean>>();
-  formDataChange = output<Record<string, string | number | boolean>>();
+  formData = input.required<Record<string, string | number | boolean | undefined>>();
+  formDataChange = output<Record<string, string | number | boolean | undefined>>();
   hashLibs = input.required<string[]>();
   readonly hashLibOptions = computed(() => labeledOptions(this.hashLibs(), { vocabulary: true }));
 
