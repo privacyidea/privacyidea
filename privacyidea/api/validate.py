@@ -145,7 +145,8 @@ from .lib.utils import (get_required, get_auth_error_status_code, send_error, se
                         log_authentication, pop_auth_event_reason, pop_auth_event_serials)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                 AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY,
-                                                                AUTH_EVENT_REASON_DETAIL_KEY, build_reason_detail,
+                                                                AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                AUTH_EVENT_SERIALS_KEY, build_reason_detail,
                                                                 LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.request_context import continue_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
@@ -555,6 +556,9 @@ def check():
         AUTH_EVENT_TYPE_KEY: None,
         AUTH_EVENT_REASON_KEY: [],
         AUTH_EVENT_REASON_DETAIL_KEY: None,
+        # Kept apart from ``serial_list``, which also feeds the audit entry (see _finalize_auth_response): the tokens
+        # a failure was made against belong on the authentication-log row alone.
+        AUTH_EVENT_SERIALS_KEY: [],
         # Build the token options from the request, but strip the internal keys
         "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
@@ -828,7 +832,7 @@ def _handle_serial_auth(context: dict, serial: str):
         success, details = check_serial_pass(serial, password, options=context["options"])
         context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None)
         context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
-        event_serials = pop_auth_event_serials(details)
+        context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
         success, details = check_otp(serial, password)
@@ -836,14 +840,12 @@ def _handle_serial_auth(context: dict, serial: str):
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL
         # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
         # a message, so without this the row would name no token although the request named exactly one.
-        event_serials = [serial]
+        context[AUTH_EVENT_SERIALS_KEY] = [serial]
 
     context["result"] = success
     context["details"] = details
 
-    if event_serials:
-        context["serial_list"].extend(event_serials)
-    elif "serial" in details:
+    if "serial" in details:
         context["serial_list"].append(details["serial"])
 
 
@@ -891,16 +893,12 @@ def _handle_standard_auth(context: dict):
     # Why it came out that way, classified by the token layer alongside the event itself.
     context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
     # The tokens a failure was made against, which the response names at most one of (see AUTH_EVENT_SERIALS_KEY).
-    event_serials = pop_auth_event_serials(details)
+    context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
     # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
     context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
 
     # Extract serials for logging
-    if event_serials:
-        # Preferred over the response's own serial, which names only the token a *single*-token outcome is about. Only
-        # a failure records any, so a challenge below still names every token it challenged.
-        context["serial_list"].extend(event_serials)
-    elif 'multi_challenge' in details:
+    if 'multi_challenge' in details:
         context["serial_list"].extend([c["serial"] for c in details["multi_challenge"]])
     elif "serial" in details:
         context["serial_list"].append(details["serial"])
@@ -1036,7 +1034,9 @@ def _log_authentication_event(context):
         context[AUTH_EVENT_TYPE_KEY],
         request,
         user=context["user"],
-        serial=",".join(context["serial_list"]) or None,
+        # The tokens the failure was made against where the token layer named any, else what the response named.
+        # Only this row gets them: ``serial_list`` also feeds the audit entry, whose serial integrations parse.
+        serial=",".join(context[AUTH_EVENT_SERIALS_KEY] or context["serial_list"]) or None,
         transaction_id=logged_txn,
         reasons=context.get(AUTH_EVENT_REASON_KEY),
         reason_detail=context.get(AUTH_EVENT_REASON_DETAIL_KEY),

@@ -44,7 +44,7 @@ from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_one_token, revoke_token
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import Challenge, db
+from privacyidea.models import Audit, Challenge, db
 from .authlog_utils import AuthLogTestCase, assert_authentication_log, assert_authentication_log_entry
 
 
@@ -663,6 +663,18 @@ class _AuthLogContractTests(_ContractHost):
                                         serials={self.serial},
                                         reasons={self.second_serial: AuthEventReason.TOKEN_FAILCOUNT_EXCEEDED},
                                         endpoint=self.endpoint_path)
+
+    def test_the_audit_entry_keeps_naming_only_what_the_response_named(self):
+        # The tokens a failure was made against go on the authentication-log row alone. The audit log's serial is a
+        # separate, long-standing field that integrations parse, and a wrong first factor names no token there.
+        self._add_second_token(pin=self.pin)
+
+        self._assert_failed(self._authenticate("wrongpin755224"))
+
+        entries = assert_authentication_log([AuthEventType.PIN_FAIL])
+        assert_authentication_log_entry(entries[AuthEventType.PIN_FAIL], user=self.user, reason=[],
+                                        serials={self.serial, self.second_serial}, endpoint=self.endpoint_path)
+        assert [None] == [entry.serial or None for entry in Audit.query.all()]
 
     def test_a_named_token_keeps_its_own_finding_beside_an_unusable_one(self):
         # A named token is not always without a finding: the token the OTP was checked against has one (WRONG_OTP),
