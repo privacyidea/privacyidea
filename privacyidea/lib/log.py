@@ -461,16 +461,21 @@ class log_with:
         sensitive_positions = {index for index, name in enumerate(parameter_names)
                                if is_sensitive_key(name)}
 
-        # Also resolved once: the line a function is defined on cannot change while the process
-        # runs, but reading it costs a source file read and parse. Doing that per call made DEBUG
-        # logging pathologically expensive - the three tests that drive the whole API at DEBUG took
-        # two minutes between them, nearly all of it in inspect.getsourcelines.
-        try:
-            definition_line = inspect.getsourcelines(func)[1] + 1
-        except (OSError, TypeError):
-            # No source available (a C function, or a function built at runtime). The code object
-            # still knows where it started, which is what getsourcelines would have reported.
-            definition_line = getattr(getattr(func, "__code__", None), "co_firstlineno", 0) + 1
+        # Resolved on the first DEBUG call and then remembered. The line a function is defined on
+        # cannot change while the process runs, but reading it costs a source file read and parse,
+        # and doing that per call made DEBUG logging pathologically expensive. Resolving it at
+        # decoration time instead would move the cost onto every import: there are ~476 decorated
+        # functions, which measured 123 ms of startup that a process never logging at DEBUG would
+        # pay for nothing.
+        definition_line = None
+
+        def resolve_definition_line() -> int:
+            try:
+                return inspect.getsourcelines(func)[1] + 1
+            except (OSError, TypeError):
+                # No source available (a C function, or one built at runtime). The code object
+                # still knows where it started, which is what getsourcelines would have reported.
+                return getattr(getattr(func, "__code__", None), "co_firstlineno", 0) + 1
 
         @functools.wraps(func)
         def log_wrapper(*args, **kwds):
@@ -486,9 +491,12 @@ class log_with:
             :type kwds: dict
             :return: The wrapped function
             """
+            nonlocal definition_line
             # Exit early if self.logger disregards DEBUG messages.
             if not self.logger.isEnabledFor(logging.DEBUG):
                 return func(*args, **kwds)
+            if definition_line is None:
+                definition_line = resolve_definition_line()
 
             try:
                 # The denylist applies to every decorated function, so a secret is hidden no
