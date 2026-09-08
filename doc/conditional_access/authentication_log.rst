@@ -242,8 +242,9 @@ request path:
 
 Every authentication reaches the server as a request, so an entry written by an
 authentication always names its endpoint; the column is empty only for an entry
-staged outside a view. The same value is what an *Endpoint* condition of a lockout
-policy is matched against, see :ref:`lockout_policies`, so a policy can be
+staged outside a view. The same value is what an *Endpoint* condition of a
+conditional access policy is matched against, see
+:ref:`conditional_access_policies`, so a policy can be
 limited to the endpoints it should watch: counting the failed authentications
 of an application without counting WebUI logins, for instance.
 
@@ -362,10 +363,11 @@ pruned automatically. Set up a cron job to enforce your retention period, using
 
    pi-manage authlog cleanup --age 365
 
-This deletes all entries older than one year, together with the
-conditional-access outcomes recorded on them. Add ``--chunksize`` to delete in
-batches on a large table, and ``--dryrun`` to see how many entries would be
-removed without deleting anything.
+``--age`` is required and counts in days, so this deletes all entries older
+than one year, together with the classified reasons and the conditional-access
+outcomes recorded on them. Add ``--chunksize`` to delete in batches on a large
+table, and ``--dryrun`` to see how many entries would be removed without
+deleting anything.
 
 .. note:: Deleting entries also removes them from the counts a conditional
    access policy makes. Keep the retention period comfortably longer than the
