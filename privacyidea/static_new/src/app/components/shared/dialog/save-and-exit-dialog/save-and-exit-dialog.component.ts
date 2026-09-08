@@ -59,8 +59,7 @@ export class SaveAndExitDialogComponent extends AbstractDialogComponent<
     {
       label: this.data.discardButtonText || $localize`:@@common.discard:Discard`,
       value: "discard",
-      type: "destruct",
-      primary: true
+      type: "destruct"
     }
   ]);
 

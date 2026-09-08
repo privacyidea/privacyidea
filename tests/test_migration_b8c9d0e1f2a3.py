@@ -21,7 +21,7 @@ import os
 
 import pytest
 
-from tests.migration_test_utils import MigrationTestBase, is_postgres
+from tests.migration_test_utils import MigrationTestBase, quote_identifier
 
 pytestmark = [
     pytest.mark.migration,
@@ -102,7 +102,7 @@ class TestMigrationB8c9d0e1f2a3(MigrationTestBase):
         }])
 
     def _fetch_token_column(self, engine, token_id: int, column: str):
-        col = f'"{column}"' if is_postgres() else f"`{column}`"
+        col = quote_identifier(column)
         return self._fetch_scalar(engine, f"SELECT {col} FROM token WHERE id = :tid",
                                   {"tid": token_id})
 
