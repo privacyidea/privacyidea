@@ -2,6 +2,7 @@
 import pathlib
 import unittest
 import mock
+from sqlalchemy import Sequence, text
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
@@ -104,6 +105,64 @@ class PristineSqliteFixtures:
                 fixture_file.write(data)
 
 
+def _declared_sequences() -> list:
+    """Names of every ``Sequence`` the models attach to a primary key.
+
+    privacyIDEA allocates ids from real database sequences rather than from
+    AUTO_INCREMENT, so emptying the tables is not enough to make the next class
+    start from id 1 again — the sequences have to be restarted too.
+    """
+    return sorted({column.default.name
+                   for table in db.metadata.tables.values()
+                   for column in table.columns
+                   if isinstance(getattr(column, "default", None), Sequence)})
+
+
+def _reset_database() -> None:
+    """Give the next test class an empty database without rebuilding the schema.
+
+    ``db.create_all()`` over the ~57 tables and the matching ``db.drop_all()``
+    cost about 1.9 s per test class against MariaDB, and there are ~325 classes,
+    so the suite spent a fifth of its time recreating a schema that never
+    changes. Creating it once per xdist worker and deleting the rows in between
+    leaves each class with the same empty tables for about 45 ms.
+
+    ``create_all()`` still runs every time, because it is nearly free once the
+    tables are there (26 ms against 730 ms to build them) and several classes in
+    ``tests/cli`` call ``db.drop_all()`` in their own teardown. Remembering that
+    the schema had been created would leave every later class on that worker
+    querying tables that no longer exist.
+
+    Rows are deleted child-table first (``sorted_tables`` is parent-first) so
+    foreign keys stay satisfied. MySQL/MariaDB additionally get the FK check
+    switched off, because privacyIDEA has cycles that no single ordering
+    satisfies.
+
+    The sequences behind the primary keys are restarted as well, so a class
+    still sees ids counting from 1 the way a freshly built schema gave it.
+    Several tests assert on a specific id, and deleting rows alone leaves the
+    sequences where the previous class left them. On SQLite there is nothing to
+    do: ``Sequence`` is ignored there and an emptied table hands out rowid 1
+    again by itself.
+    """
+    db.create_all()
+    connection = db.session.connection()
+    dialect = db.engine.dialect.name
+    is_mysql = dialect in ("mysql", "mariadb")
+    if is_mysql:
+        connection.execute(text("SET FOREIGN_KEY_CHECKS=0"))
+    try:
+        for table in reversed(db.metadata.sorted_tables):
+            connection.execute(table.delete())
+        if dialect != "sqlite":
+            for sequence_name in _declared_sequences():
+                connection.execute(text(f"ALTER SEQUENCE {sequence_name} RESTART"))
+    finally:
+        if is_mysql:
+            connection.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+    db.session.commit()
+
+
 class MyTestCase(unittest.TestCase):
     app = None
     app_context = None
@@ -137,7 +196,7 @@ class MyTestCase(unittest.TestCase):
         cls.app = create_app('testing', pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
-        db.create_all()
+        _reset_database()
 
         # save the current timestamp to the database to avoid hanging cached data
         save_config_timestamp()
@@ -329,7 +388,6 @@ class MyTestCase(unittest.TestCase):
     def tearDownClass(cls):
         call_finalizers()
         close_all_sessions()
-        db.drop_all()
         db.engine.dispose()
         cls.app_context.pop()
 
