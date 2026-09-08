@@ -83,7 +83,7 @@ from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, send_result, get_all_params, INTERNAL_OPTION_KEYS,
                                        verify_auth_token, get_optional, get_required, log_authentication,
                                        get_auth_token_from_request, logged_in_user_from_token,
-                                       pop_auth_event_reason)
+                                       pop_auth_event_reason, pop_auth_event_serials)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
                                   db_admin_exists)
@@ -308,6 +308,8 @@ def get_auth_token():
     # A token can deliberately suppress its terminal event (push_wait timeout)
     terminal_event_suppressed = False
     serials = None
+    # The authentication log's own serial, where it is not the one the response named (see AUTH_EVENT_SERIALS_KEY).
+    log_serials = None
     # Log-only transaction_id (push_wait success): correlates the terminal row without being exposed in the response.
     log_transaction_id = None
     # Passkey login
@@ -529,6 +531,9 @@ def get_auth_token():
             auth_event_type = details.pop(AUTH_EVENT_TYPE_KEY, None)
             # Why it came out that way, classified alongside the event (see AuthEventReason).
             auth_reasons, auth_reason_detail = pop_auth_event_reason(details)
+            # The tokens a failure was made against (see AUTH_EVENT_SERIALS_KEY). Kept apart from the audit entry's
+            # ``serials`` below, which stays what the response named: that column is output integrations parse.
+            log_serials = ",".join(pop_auth_event_serials(details)) or None
             # Pop the log-only transaction_id (push_wait success) so it never reaches the client, mirroring
             # /validate/check; it stands in for the challenge transaction_id the response doesn't carry.
             log_transaction_id = details.pop(LOG_TRANSACTION_ID_KEY, None)
@@ -581,6 +586,8 @@ def get_auth_token():
                 # happened here.
                 auth_reasons = []
                 auth_reason_detail = None
+                # Same for the tokens they were found on: a local admin owns none.
+                log_serials = None
                 # A local admin has no user attributes; its login name is logged separately.
                 user = User()
 
@@ -590,7 +597,7 @@ def get_auth_token():
                 # not count it as a failure (mirrors _finalize_auth_response()
                 # in validate.py).
                 g.audit_object.log({"authentication": AUTH_RESPONSE.CHALLENGE})
-                log_authentication(auth_event_type, request, user=user, serial=serials,
+                log_authentication(auth_event_type, request, user=user, serial=log_serials or serials,
                                    transaction_id=details.get("transaction_id"),
                                    reasons=auth_reasons, reason_detail=auth_reason_detail)
                 return send_result(False, rid=2, details=details)
@@ -605,7 +612,7 @@ def get_auth_token():
         auth_event_type = AuthEventType.LOGIN_SUCCESS if (
                 admin_auth or user_auth) else AuthEventType.UNKNOWN_FAIL_REASON
     log_authentication(auth_event_type, request, user=user,
-                       serial=serials or details.get("serial"),
+                       serial=log_serials or serials or details.get("serial"),
                        transaction_id=(get_optional(request.all_data, "transaction_id")
                                        or details.get("transaction_id") or log_transaction_id),
                        username=login_name,

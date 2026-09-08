@@ -348,7 +348,9 @@
                 @case ("reason") {
                   <app-reason-cell
                     [reasons]="element.reasons"
-                    [info]="element.other_info" />
+                    [info]="element.other_info"
+                    [usedSerials]="usedSerials(element)"
+                    [eventType]="element.event_type" />
                 }
                 @case ("serial") {
                   @for (serial of splitSerials(element.serial); track serial) {

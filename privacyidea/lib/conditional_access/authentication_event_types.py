@@ -56,6 +56,17 @@ AUTH_EVENT_REASON_DETAIL_KEY = "authentication_event_reason_detail"
 # rest of other_info stays what a token reported about itself and neither has to know about the other.
 REASON_DETAIL_INFO_KEY = "reason_detail"
 
+# Key carrying the serials of the tokens the classified event came from, from lib to api, for the log row's ``serial``
+# column - stripped at the same boundary as the keys above. Internal because the response names at most the one token
+# it is about (see check_token_list) while the log names every one: a wrong first factor is checked against each of
+# the user's usable tokens, and each takes the failcount increment (IncFailCountOnFalsePin), so a row naming none of
+# them could not explain why those failcounters rose.
+#
+# Set for a failed outcome only, and empty where no token produced the event (the NO_USABLE_TOKEN fallback) - which is
+# what tells the WebUI whether the row's findings (see AUTH_EVENT_REASON_DETAIL_KEY) are its explanation or the
+# context beside it.
+AUTH_EVENT_SERIALS_KEY = "authentication_event_serials"
+
 
 # Key set on token.auth_details when the token logged its own outcome and no terminal event should be added on top.
 # A push_wait timeout sets this: the unanswered challenge is recorded only as CHALLENGE_TRIGGERED, not an MFA_FAIL.
@@ -71,7 +82,7 @@ LOG_TRANSACTION_ID_KEY = "log_transaction_id"
 # CHALLENGE_LAPSED_KEY, SUPPRESS_TERMINAL_EVENT_KEY) are deliberately not here: that dict is the token layer's own
 # state and is never handed to a client - a key that starts travelling in a reply belongs in this set.
 INTERNAL_CLASSIFICATION_KEYS = frozenset({AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY, AUTH_EVENT_REASON_DETAIL_KEY,
-                                          LOG_TRANSACTION_ID_KEY})
+                                          AUTH_EVENT_SERIALS_KEY, LOG_TRANSACTION_ID_KEY})
 
 
 def strip_internal_classification(details):

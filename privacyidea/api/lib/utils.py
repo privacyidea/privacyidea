@@ -40,6 +40,7 @@ from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                           AUTH_EVENT_REASON_KEY,
                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                          AUTH_EVENT_SERIALS_KEY,
                                                                           REASON_DETAIL_INFO_KEY,
                                                                           strip_internal_classification)
 from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, ClientLabelSource,
@@ -335,6 +336,24 @@ def pop_auth_event_reason(details: dict | None) -> tuple[list[str], dict | None]
     detail = details.pop(AUTH_EVENT_REASON_DETAIL_KEY, None)
     reasons = list(reason) if isinstance(reason, (list, tuple)) else ([reason] if reason else [])
     return [str(item) for item in reasons if item], (detail or None)
+
+
+def pop_auth_event_serials(details: dict | None) -> list[str]:
+    """
+    Take the serials of the tokens the classified failure was made against off *details*, the way the reasons
+    themselves are taken off it (see :func:`pop_auth_event_reason` and
+    :data:`~privacyidea.lib.conditional_access.authentication_event_types.AUTH_EVENT_SERIALS_KEY`). Only a failed
+    outcome carries any, so a success or a challenge gets an empty list and keeps naming its token as it already does.
+
+    :param details: the reply/details dict a lib call returned, or None
+    :return: the serials, or an empty list when the layer below recorded none
+    """
+    if not details:
+        return []
+    serials = details.pop(AUTH_EVENT_SERIALS_KEY, None)
+    if not serials:
+        return []
+    return [str(serial) for serial in serials] if isinstance(serials, (list, tuple)) else [str(serials)]
 
 
 def log_authentication(event_type: AuthEventType | None, request: Request | None = None, user: User | None = None,

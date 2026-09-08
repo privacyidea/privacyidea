@@ -57,6 +57,7 @@ import { RouterLink } from "@angular/router";
 import { ConditionalAccessCell } from "./cells/conditional-access-cell/conditional-access-cell";
 import { hasInfoContent, InfoCell } from "./cells/info-cell/info-cell";
 import { ReasonCell } from "./cells/reason-cell/reason-cell";
+import { isRecord } from "./reason-detail";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SourceIpCell } from "./cells/source-ip-cell/source-ip-cell";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
@@ -166,6 +167,17 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
 // width/scroll behavior (decided here, since it depends on the whole page) and their look (cells/_info-list.scss), not
 // their rendering logic.
 const INFO_COLUMN_KEYS = ["conditional_access_outcomes", "other_info"];
+
+// The serials cut off an entry's serial column, which the backend preserves under other_info.truncated rather than
+// discarding (see _store_overflow in lib/conditional_access/authentication_log.py). A free-form JSON column, so
+// every level is checked rather than trusted - isRecord (./reason-detail) does the same check for the other free-form
+// column on this row, other_info.reason_detail.
+function truncatedSerial(info: AuthenticationLogEntry["other_info"]): string | null {
+  const truncated = info?.["truncated"];
+  if (!isRecord(truncated)) return null;
+  const serial = truncated["serial"];
+  return typeof serial === "string" ? serial : null;
+}
 
 // The Conditional access column filters on three keys at once, hence a header menu instead of the single-key toggle
 // other columns use; the keys mirror the backend's _FILTER_PARAMS (api/authentication_log.py) and are also typeable in
@@ -816,6 +828,20 @@ export class AuthenticationLog {
   getEventTypeClass(value: string): string {
     const outcome = this.outcomeByEventType().get(value);
     return outcome ? (OUTCOME_CLASS[outcome] ?? "") : "";
+  }
+
+  // The tokens a *failed* entry names, i.e. the ones the attempt was made against (see AUTH_EVENT_SERIALS_KEY), which
+  // the Reasons cell splits its findings by. Only a failure: on a success or a challenge the same column names the
+  // token the outcome is *about* - the one that authenticated, the ones challenged, the one just enrolled - which
+  // says nothing about anyone's findings. Decided here because this component already owns the outcome lookup (see
+  // getEventTypeClass), and an event type it has no outcome for yields nothing rather than a guess.
+  //
+  // The serials cut off the column are taken along: a row naming more of them than fit keeps the rest in other_info
+  // (see truncatedSerial), and without them the dialog would file those tokens as ones that had no part in the
+  // outcome - the very thing the split exists to avoid.
+  usedSerials(entry: AuthenticationLogEntry): string[] {
+    if (this.outcomeByEventType().get(entry.event_type) !== "failure") return [];
+    return [...this.splitSerials(entry.serial), ...this.splitSerials(truncatedSerial(entry.other_info))];
   }
 
   // Whether *column* renders a list (Info / Conditional access) rather than a scalar, and whether the current page has

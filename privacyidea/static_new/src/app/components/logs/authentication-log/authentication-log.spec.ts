@@ -225,6 +225,38 @@ describe("AuthenticationLog", () => {
     expect(component.getEventTypeClass("SOMETHING_NEW")).toBe("");
   });
 
+  it("names the tokens an entry was made against only for a failed entry", () => {
+    // The serial column means different things per outcome: the tokens a failure was made against, which the Reasons
+    // dialog contrasts its findings with, versus the token a success or challenge is about.
+    const entry = (event_type: string, serial: string | null) => ({ event_type, serial }) as AuthenticationLogEntry;
+
+    expect(component.usedSerials(entry("PASSWORD_FAIL", "PISP0001,PISP0002"))).toEqual(["PISP0001", "PISP0002"]);
+    expect(component.usedSerials(entry("LOGIN_SUCCESS", "PISP0001"))).toEqual([]);
+    expect(component.usedSerials(entry("CHALLENGE_TRIGGERED", "PISP0001"))).toEqual([]);
+    // An entry naming no token, which is what leaves NO_USABLE_TOKEN's findings standing as the explanation.
+    expect(component.usedSerials(entry("NO_USABLE_TOKEN", null))).toEqual([]);
+    // An event type this page has no outcome for yields nothing rather than a guess.
+    expect(component.usedSerials(entry("SOMETHING_NEW", "PISP0001"))).toEqual([]);
+  });
+
+  it("takes along the serials cut off the column", () => {
+    // The backend caps the column and keeps the rest under other_info.truncated, so a row naming more serials than
+    // fit would otherwise file those tokens as ones that had no part in the outcome.
+    const withOverflow = (other_info: Record<string, unknown> | null) =>
+      ({ event_type: "PASSWORD_FAIL", serial: "PISP0001,PISP0002", other_info }) as AuthenticationLogEntry;
+
+    expect(component.usedSerials(withOverflow({ truncated: { serial: "PISP0003,PISP0004" } }))).toEqual([
+      "PISP0001",
+      "PISP0002",
+      "PISP0003",
+      "PISP0004"
+    ]);
+    // other_info is free-form, so anything of an unexpected shape leaves the column's own serials standing.
+    expect(component.usedSerials(withOverflow(null))).toEqual(["PISP0001", "PISP0002"]);
+    expect(component.usedSerials(withOverflow({ truncated: "PISP0003" }))).toEqual(["PISP0001", "PISP0002"]);
+    expect(component.usedSerials(withOverflow({ truncated: { serial: 3 } }))).toEqual(["PISP0001", "PISP0002"]);
+  });
+
   it("exposes the three user-role filter options", () => {
     expect(component.userRoleOptions).toEqual([
       { label: "User", value: "user" },

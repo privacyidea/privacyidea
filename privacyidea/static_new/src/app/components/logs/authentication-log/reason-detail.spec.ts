@@ -29,23 +29,76 @@ describe("parseReasonDetail", () => {
         client_label: "vpn"
       })
     ).toEqual({
-      tokens: [
+      // No serial named, so there is nothing to contrast and every finding is the explanation.
+      used: [
         { serial: "OATH0001", reason: "WRONG_OTP" },
         { serial: "TOTP002", reason: "TOKEN_DISABLED" }
       ],
+      other: [],
+      namesTokens: false,
       policies: ["deny_vpn"]
     });
   });
 
   it("keeps the half the request recorded, since each layer records only its own", () => {
     expect(parseReasonDetail({ reason_detail: { reasons: { OATH0001: "WRONG_OTP" } } })).toEqual({
-      tokens: [{ serial: "OATH0001", reason: "WRONG_OTP" }],
+      used: [{ serial: "OATH0001", reason: "WRONG_OTP" }],
+      other: [],
+      namesTokens: false,
       policies: []
     });
     expect(parseReasonDetail({ reason_detail: { policies: ["auth_max_fail"] } })).toEqual({
-      tokens: [],
+      used: [],
+      other: [],
+      namesTokens: false,
       policies: ["auth_max_fail"]
     });
+  });
+
+  it("splits the findings by the tokens the entry names", () => {
+    // The tokens the attempt was made against explain the outcome; one the request never got to check is context.
+    expect(
+      parseReasonDetail({ reason_detail: { reasons: { OATH0001: "WRONG_OTP", TOTP002: "TOKEN_DISABLED" } } }, [
+        "OATH0001"
+      ])
+    ).toEqual({
+      used: [{ serial: "OATH0001", reason: "WRONG_OTP" }],
+      other: [{ serial: "TOTP002", reason: "TOKEN_DISABLED" }],
+      namesTokens: true,
+      policies: []
+    });
+  });
+
+  it("records that an entry names its tokens even where no other token was found wanting", () => {
+    // What the group is does not depend on a second group existing (see the dialog's heading).
+    expect(parseReasonDetail({ reason_detail: { reasons: { OATH0001: "WRONG_OTP" } } }, ["OATH0001"])).toEqual({
+      used: [{ serial: "OATH0001", reason: "WRONG_OTP" }],
+      other: [],
+      namesTokens: true,
+      policies: []
+    });
+  });
+
+  it("names a token the entry used without a finding of its own", () => {
+    // The normal shape of a wrong first factor: PASSWORD_FAIL names the credential, so the token records no reason
+    // - and is exactly the one an admin is looking for.
+    expect(
+      parseReasonDetail({ reason_detail: { reasons: { TOTP002: "TOKEN_DISABLED" } } }, ["OATH0001", "WAN003"])
+    ).toEqual({
+      used: [
+        { serial: "OATH0001", reason: "" },
+        { serial: "WAN003", reason: "" }
+      ],
+      other: [{ serial: "TOTP002", reason: "TOKEN_DISABLED" }],
+      namesTokens: true,
+      policies: []
+    });
+  });
+
+  it("reports nothing to show for an entry that only names tokens", () => {
+    // The serials are already a column of the log, so a dialog repeating them adds nothing.
+    expect(parseReasonDetail({ reason_detail: {} }, ["OATH0001"])).toBeNull();
+    expect(parseReasonDetail({ client_label: "vpn" }, ["OATH0001"])).toBeNull();
   });
 
   it("reports nothing to show for an entry whose reasons nobody detailed", () => {
@@ -64,7 +117,9 @@ describe("parseReasonDetail", () => {
     expect(parseReasonDetail({ reason_detail: "WRONG_OTP" })).toBeNull();
     expect(parseReasonDetail({ reason_detail: { reasons: "WRONG_OTP" } })).toBeNull();
     expect(parseReasonDetail({ reason_detail: { reasons: { OATH0001: "WRONG_OTP" }, policies: "deny_vpn" } })).toEqual({
-      tokens: [{ serial: "OATH0001", reason: "WRONG_OTP" }],
+      used: [{ serial: "OATH0001", reason: "WRONG_OTP" }],
+      other: [],
+      namesTokens: false,
       policies: []
     });
   });
@@ -74,11 +129,13 @@ describe("parseReasonDetail", () => {
     expect(
       parseReasonDetail({ reason_detail: { reasons: { OATH0001: { code: 3 }, TOTP002: 7, WAN003: null } } })
     ).toEqual({
-      tokens: [
+      used: [
         { serial: "OATH0001", reason: '{"code":3}' },
         { serial: "TOTP002", reason: "7" },
         { serial: "WAN003", reason: "" }
       ],
+      other: [],
+      namesTokens: false,
       policies: []
     });
   });

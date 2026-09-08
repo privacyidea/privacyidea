@@ -142,10 +142,11 @@ from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import (get_required, get_auth_error_status_code, send_error, send_result,
-                        log_authentication, pop_auth_event_reason)
+                        log_authentication, pop_auth_event_reason, pop_auth_event_serials)
 from ..lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                 AUTH_EVENT_TYPE_KEY, AUTH_EVENT_REASON_KEY,
-                                                                AUTH_EVENT_REASON_DETAIL_KEY, build_reason_detail,
+                                                                AUTH_EVENT_REASON_DETAIL_KEY,
+                                                                AUTH_EVENT_SERIALS_KEY, build_reason_detail,
                                                                 LOG_TRANSACTION_ID_KEY)
 from ..lib.conditional_access.request_context import continue_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
@@ -555,6 +556,9 @@ def check():
         AUTH_EVENT_TYPE_KEY: None,
         AUTH_EVENT_REASON_KEY: [],
         AUTH_EVENT_REASON_DETAIL_KEY: None,
+        # Kept apart from ``serial_list``, which also feeds the audit entry (see _finalize_auth_response): the tokens
+        # a failure was made against belong on the authentication-log row alone.
+        AUTH_EVENT_SERIALS_KEY: [],
         # Build the token options from the request, but strip the internal keys
         "options": {k: v for k, v in request.all_data.items() if k not in INTERNAL_OPTION_KEYS}
     }
@@ -828,11 +832,15 @@ def _handle_serial_auth(context: dict, serial: str):
         success, details = check_serial_pass(serial, password, options=context["options"])
         context[AUTH_EVENT_TYPE_KEY] = details.pop(AUTH_EVENT_TYPE_KEY, None)
         context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
+        context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
         context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
     else:
         success, details = check_otp(serial, password)
         # otponly verifies only the token (no PIN/password as first factor): a wrong value is a token-only failure.
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if success else AuthEventType.TOKEN_ONLY_FAIL
+        # The one token the request named and check_otp verified. Recorded here because check_otp reports back only
+        # a message, so without this the row would name no token although the request named exactly one.
+        context[AUTH_EVENT_SERIALS_KEY] = [serial]
 
     context["result"] = success
     context["details"] = details
@@ -884,6 +892,8 @@ def _handle_standard_auth(context: dict):
     context[AUTH_EVENT_TYPE_KEY] = event_type
     # Why it came out that way, classified by the token layer alongside the event itself.
     context[AUTH_EVENT_REASON_KEY], context[AUTH_EVENT_REASON_DETAIL_KEY] = pop_auth_event_reason(details)
+    # The tokens a failure was made against, which the response names at most one of (see AUTH_EVENT_SERIALS_KEY).
+    context[AUTH_EVENT_SERIALS_KEY] = pop_auth_event_serials(details)
     # Log-only transaction_id (push_wait): correlate the terminal row without exposing it in the response.
     context[LOG_TRANSACTION_ID_KEY] = details.pop(LOG_TRANSACTION_ID_KEY, None)
 
@@ -1024,7 +1034,9 @@ def _log_authentication_event(context):
         context[AUTH_EVENT_TYPE_KEY],
         request,
         user=context["user"],
-        serial=",".join(context["serial_list"]) or None,
+        # The tokens the failure was made against where the token layer named any, else what the response named.
+        # Only this row gets them: ``serial_list`` also feeds the audit entry, whose serial integrations parse.
+        serial=",".join(context[AUTH_EVENT_SERIALS_KEY] or context["serial_list"]) or None,
         transaction_id=logged_txn,
         reasons=context.get(AUTH_EVENT_REASON_KEY),
         reason_detail=context.get(AUTH_EVENT_REASON_DETAIL_KEY),
