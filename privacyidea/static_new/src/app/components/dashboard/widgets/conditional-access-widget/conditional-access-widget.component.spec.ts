@@ -209,7 +209,7 @@ describe("ConditionalAccessWidgetComponent", () => {
     expect(ConditionalAccessWidgetComponent.icon).toBe("security");
     expect(ConditionalAccessWidgetComponent.defaultSize).toEqual({ cols: 6, rows: 11 });
     expect(ConditionalAccessWidgetComponent.minSize).toEqual({ cols: 6, rows: 5 });
-    expect(ConditionalAccessWidgetComponent.maxSize).toEqual({ cols: 16, rows: 12 });
+    expect(ConditionalAccessWidgetComponent.maxSize).toEqual({ cols: 16, rows: Number.POSITIVE_INFINITY });
   });
 
   it("should require any one of the three conditional-access read rights", () => {

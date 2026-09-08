@@ -112,7 +112,7 @@ export class AuthenticationActivityWidgetComponent extends DashboardWidget {
   static override readonly titleLinkAction = LOG_READ;
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 8 };
   static override readonly minSize: WidgetSize = { cols: 4, rows: 7 };
-  static override readonly maxSize: WidgetSize = { cols: 12, rows: 12 };
+  static override readonly maxSize: WidgetSize = { cols: 12, rows: Number.POSITIVE_INFINITY };
 
   // Read by the widget frame, which renders these in its header.
   override readonly headerActions = viewChild<TemplateRef<unknown>>("headerActions");

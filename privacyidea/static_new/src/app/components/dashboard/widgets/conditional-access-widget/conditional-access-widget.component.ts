@@ -174,7 +174,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   // Tall by default: the count rows and the highlights below them only pay off when they are visible at once.
   static override readonly defaultSize: WidgetSize = { cols: 6, rows: 11 };
   static override readonly minSize: WidgetSize = { cols: 6, rows: 5 };
-  static override readonly maxSize: WidgetSize = { cols: 16, rows: 12 };
+  static override readonly maxSize: WidgetSize = { cols: 16, rows: Number.POSITIVE_INFINITY };
 
   protected readonly routePaths = ROUTE_PATHS;
 
