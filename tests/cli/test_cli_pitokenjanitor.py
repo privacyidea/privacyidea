@@ -33,6 +33,7 @@ from privacyidea.lib.token import init_token, get_one_token
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.token import TokenOwner
+from ..base import _reset_database
 
 
 @pytest.fixture(scope="function")
@@ -40,14 +41,13 @@ def app():
     """Create and configure app instance for testing"""
     app = create_app(config_name="testing", config_file="", silent=True)
     with app.app_context():
-        db.create_all()
+        _reset_database()
 
     yield app
 
     with app.app_context():
         call_finalizers()
         close_all_sessions()
-        db.drop_all()
         db.engine.dispose()
 
 

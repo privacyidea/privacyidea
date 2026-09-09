@@ -224,11 +224,14 @@ def pass_hash(password):
     :type password: str
     :return: The hash string of the password
     """
-    DEFAULT_HASH_ALGO_PARAMS.update(get_app_config_value("PI_HASH_ALGO_PARAMS",
-                                                         default={}))
+    # Merge into a copy: updating DEFAULT_HASH_ALGO_PARAMS in place would let the first app that
+    # configures PI_HASH_ALGO_PARAMS decide the parameters for every app created later in the same
+    # process, since the module-level default is shared.
+    hash_algo_params = dict(DEFAULT_HASH_ALGO_PARAMS)
+    hash_algo_params.update(get_app_config_value("PI_HASH_ALGO_PARAMS", default={}))
     pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
                                                  default=DEFAULT_HASH_ALGO_LIST),
-                            **DEFAULT_HASH_ALGO_PARAMS)
+                            **hash_algo_params)
     pw_dig = pass_ctx.hash(password)
     return pw_dig
 
