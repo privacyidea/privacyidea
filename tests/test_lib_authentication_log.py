@@ -27,6 +27,8 @@ from privacyidea.lib.conditional_access.authentication_log import (
     AuthenticationLogVisibilityScope,
     AuthLogUserRole,
     PendingAuthEvent,
+    _MAX_OVERFLOW_LENGTH,
+    _describe_overflow,
     cleanup_authentication_log,
     delete_authentication_log_event,
     delete_authentication_logs,
@@ -537,7 +539,7 @@ class AuthenticationLogTestCase(MyTestCase):
 
     def test_overflow_is_preserved_in_other_info(self):
         # The part of a value that does not fit the column is preserved as the cut-off remainder under
-        # other_info["truncated"][column] instead of being lost.
+        # other_info["truncated"][column], so a name cut mid-way can still be reconstructed.
         max_resolver = authentication_log_column_length["resolver"]
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS,
                                             resolver="R" * max_resolver + "OVERFLOW")
@@ -545,6 +547,30 @@ class AuthenticationLogTestCase(MyTestCase):
         assert entry is not None
         self.assertEqual("R" * max_resolver, entry.resolver)
         self.assertEqual({"truncated": {"resolver": "OVERFLOW"}}, entry.other_info)
+
+    def test_long_overflow_is_capped_with_a_count(self):
+        # A remainder longer than _MAX_OVERFLOW_LENGTH is kept up to that length and the rest counted, so a value the
+        # client chose - its client_id label, the login name and realm of a user that does not resolve - cannot decide
+        # how large the row's unbounded JSON is. 100 KB in, a bounded row out.
+        columns = ("client_label", "username", "realm")
+        event_id = log_authentication_event(event_type=AuthEventType.USER_UNKNOWN,
+                                            **{column: "X" * 100000 for column in columns})
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        expected = {}
+        for column in columns:
+            max_length = authentication_log_column_length[column]
+            self.assertEqual("X" * max_length, getattr(entry, column), column)
+            dropped = 100000 - max_length - _MAX_OVERFLOW_LENGTH
+            expected[column] = f"{'X' * _MAX_OVERFLOW_LENGTH}...({dropped} more characters)"
+        self.assertEqual({"truncated": expected}, entry.other_info)
+
+    def test_capped_overflow_of_a_list_keeps_whole_items(self):
+        # The kept part of an overflow is cut on the column's separator too, so a capped serial overflow still names
+        # whole serials: 40 serials of 8 characters overflow the cap inside the 29th, which is left out entirely.
+        overflow = ",".join(["TOK00001"] * 40)
+        self.assertEqual(f"{','.join(['TOK00001'] * 28)}...({len(overflow) - 252} more characters)",
+                         _describe_overflow(overflow, ","))
 
     def test_overflow_merges_with_caller_other_info(self):
         # Overflow is folded into the caller's other_info under "truncated" without clobbering the caller's own keys.
