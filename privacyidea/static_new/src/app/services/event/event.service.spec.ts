@@ -29,7 +29,7 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockDialogService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of, Subject } from "rxjs";
-import { EventHandler, EventHandlerSaveParams, EventService } from "./event.service";
+import { EventHandler, EventHandlerSaveParams, EventService, toEventHandlerSaveParams } from "./event.service";
 
 describe("EventService", () => {
   let service: EventService;
@@ -624,6 +624,124 @@ describe("EventService", () => {
       expect(service.moduleConditionsByGroup()["miscellaneous"]).toEqual({
         condition3: { desc: "", type: "str" }
       });
+    });
+  });
+  describe("ordering updates", () => {
+    const handler: EventHandler = {
+      id: 7,
+      name: "notify",
+      active: true,
+      handlermodule: "UserNotification",
+      ordering: 3,
+      position: "post",
+      abort_on_error: false,
+      event: ["token_init"],
+      action: "sendmail",
+      options: { subject: "Hello", emailconfig: "smtp1" },
+      conditions: { tokentype: "hotp" }
+    };
+
+    it("toEventHandlerSaveParams flattens the options the backend would otherwise drop", () => {
+      const params = toEventHandlerSaveParams(handler);
+
+      expect(params["option.subject"]).toBe("Hello");
+      expect(params["option.emailconfig"]).toBe("smtp1");
+      expect(params).not.toHaveProperty("options");
+      expect(params.id).toBe("7");
+      expect(params.conditions).toEqual({ tokentype: "hotp" });
+      expect(params.action).toBe("sendmail");
+      expect(params.position).toBe("post");
+    });
+
+    it("toEventHandlerSaveParams omits the id of an unsaved handler", () => {
+      expect(toEventHandlerSaveParams({ ...handler, id: null }).id).toBeUndefined();
+    });
+  });
+
+  describe("updateOrdering", () => {
+    const handler: EventHandler = {
+      id: 7,
+      name: "notify",
+      active: true,
+      handlermodule: "UserNotification",
+      ordering: 3,
+      position: "post",
+      abort_on_error: false,
+      event: ["token_init"],
+      action: "sendmail",
+      options: { subject: "Hello" },
+      conditions: {}
+    };
+
+    it("writes the new ordering of that one handler", () => {
+      const responses: unknown[] = [];
+
+      service.updateOrdering(handler, 4).subscribe((response) => responses.push(response));
+
+      const request = httpMock.expectOne(service.eventBaseUrl);
+      expect(request.request.body).toMatchObject({ id: "7", ordering: 4 });
+      request.flush({ result: { value: 7 } });
+
+      expect(responses.length).toBe(1);
+    });
+
+    it("leaves the ordering of the other handlers alone", () => {
+      service.updateOrdering(handler, 4).subscribe();
+
+      httpMock.expectOne(service.eventBaseUrl).flush({ result: { value: 7 } });
+      httpMock.verify();
+    });
+
+    it("writes an ordering another handler already holds", () => {
+      service.updateOrdering(handler, 4).subscribe();
+      httpMock.expectOne(service.eventBaseUrl).flush({ result: { value: 7 } });
+
+      service.updateOrdering({ ...handler, id: 8, name: "other" }, 4).subscribe();
+
+      const second = httpMock.expectOne(service.eventBaseUrl);
+      expect(second.request.body).toMatchObject({ id: "8", ordering: 4 });
+      second.flush({ result: { value: 8 } });
+    });
+
+    it("leaves the options, the conditions and the abort_on_error flag out of the request", () => {
+      service.updateOrdering(handler, 4).subscribe();
+
+      const request = httpMock.expectOne(service.eventBaseUrl);
+      expect(request.request.body).toEqual({
+        id: "7",
+        name: "notify",
+        handlermodule: "UserNotification",
+        action: "sendmail",
+        event: ["token_init"],
+        position: "post",
+        active: true,
+        ordering: 4
+      });
+      request.flush({ result: { value: 7 } });
+    });
+
+    it("sends the handler as it is currently listed instead of the caller's copy", async () => {
+      TestBed.tick();
+      const listRequest = httpMock.expectOne(`${service.eventBaseUrl}/`);
+      listRequest.flush({ result: { value: [{ ...handler, name: "renamed", action: "sendsms" }] } });
+      TestBed.tick();
+      await Promise.resolve();
+
+      service.updateOrdering(handler, 4).subscribe();
+
+      const request = httpMock.expectOne(service.eventBaseUrl);
+      expect(request.request.body).toMatchObject({ id: "7", name: "renamed", action: "sendsms", ordering: 4 });
+      request.flush({ result: { value: 7 } });
+    });
+
+    it("reports a rejected write as undefined", () => {
+      let response: unknown = "untouched";
+
+      service.updateOrdering(handler, 4).subscribe((result) => (response = result));
+
+      httpMock.expectOne(service.eventBaseUrl).flush("nope", { status: 500, statusText: "Server Error" });
+
+      expect(response).toBeUndefined();
     });
   });
 });

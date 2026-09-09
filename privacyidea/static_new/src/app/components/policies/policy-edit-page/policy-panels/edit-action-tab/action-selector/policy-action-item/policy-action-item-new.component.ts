@@ -27,6 +27,13 @@ import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import {
+  labeledOptions,
+  POLICY_VOCABULARY_ACTIONS,
+  valueDisplayLabel,
+  valueDisplayLabels,
+  ValueLabelOptions
+} from "@utils/value-label.utils";
 
 export interface SelectableAction {
   label: string;
@@ -75,6 +82,20 @@ export class PolicyActionItemComponent {
       return { name: actionName, value: defaultValue };
     }
   });
+
+  private readonly labelOptions = computed<ValueLabelOptions>(() => ({
+    vocabulary: POLICY_VOCABULARY_ACTIONS.has(this.selectableAction().actionName)
+  }));
+
+  readonly valueLabels = computed<string[] | undefined>(() =>
+    valueDisplayLabels(this.selectableAction().detail?.value, this.labelOptions())
+  );
+
+  /** Label of a single value, for the multi select which sorts its items itself. */
+  readonly valueLabelOf = (value: string | number | boolean): string =>
+    valueDisplayLabel(value, this.selectableAction().detail?.value, this.labelOptions());
+
+  readonly valueOptions = computed(() => labeledOptions(this.selectableAction().detail?.value, this.labelOptions()));
 
   selectedItems = computed<(string | number)[]>(() => {
     const value = this.currentAction()?.value;
