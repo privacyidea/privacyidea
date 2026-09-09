@@ -56,8 +56,7 @@ from urllib.parse import quote
 from flask import g, current_app, Request
 from flask_babel import _, lazy_gettext
 
-from privacyidea.api.lib.utils import (get_all_params, log_authentication, hardening_action_active,
-                                       GENERIC_AUTH_FAILURE)
+from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                           build_reason_detail)
 from privacyidea.lib.conditional_access.request_context import get_ca_context, claimed_ca_message
