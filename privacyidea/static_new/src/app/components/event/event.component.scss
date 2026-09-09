@@ -71,4 +71,16 @@
   td.mat-mdc-cell.mat-column-ordering {
     width: calc(var(--input-width-xs) + 16px);
   }
+
+  // A form field at its default height fills the row from border to border, so the
+  // ordering input is shortened and inset to sit inside the cell instead of filling it.
+  // Its filled background is dropped as well, leaving the underline and the hover tint
+  // to mark the value as editable.
+  td.mat-mdc-cell.mat-column-ordering mat-form-field {
+    --mat-form-field-container-height: 40px;
+    --mat-form-field-container-vertical-padding: 8px;
+    --mat-form-field-filled-container-color: transparent;
+
+    margin: 4px 0;
+  }
 }
