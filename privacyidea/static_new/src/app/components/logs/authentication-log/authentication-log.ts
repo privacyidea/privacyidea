@@ -168,7 +168,12 @@ const columnKeysMap: { key: string; label: string; filterable: boolean; sortable
 // their rendering logic.
 const INFO_COLUMN_KEYS = ["conditional_access_outcomes", "other_info"];
 
-// The serials cut off an entry's serial column, which the backend preserves under other_info.truncated rather than
+// The marker the backend appends when an overflow was itself too long to keep whole ("...(500 more characters)", see
+// _describe_overflow in lib/conditional_access/authentication_log.py). It names no token, so it is dropped before the
+// overflow is read as a serial list.
+const OVERFLOW_MARKER = /\.\.\.\(\d+ more characters\)$/;
+
+// The serials cut off an entry's serial column, which the backend records under other_info.truncated rather than
 // discarding (see _store_overflow in lib/conditional_access/authentication_log.py). A free-form JSON column, so
 // every level is checked rather than trusted - isRecord (./reason-detail) does the same check for the other free-form
 // column on this row, other_info.reason_detail.
@@ -176,7 +181,7 @@ function truncatedSerial(info: AuthenticationLogEntry["other_info"]): string | n
   const truncated = info?.["truncated"];
   if (!isRecord(truncated)) return null;
   const serial = truncated["serial"];
-  return typeof serial === "string" ? serial : null;
+  return typeof serial === "string" ? serial.replace(OVERFLOW_MARKER, "") : null;
 }
 
 // The Conditional access column filters on three keys at once, hence a header menu instead of the single-key toggle
