@@ -15,22 +15,6 @@
   --expansion-panel-header-padding: 8px 12px;
 }
 
-.search-input {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-size: 1rem;
-  padding: 8px 0;
-  width: 100%;
-}
-
-.search-input:focus {
-  border-bottom-color: var(--mat-sys-primary);
-  outline: none;
-}
-
 .add-action-details {
   display: flex;
   flex-direction: column;
@@ -61,27 +45,4 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.selectors-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.selector-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-
-  .selector-label {
-    font-weight: 500;
-    margin: 0;
-    white-space: nowrap;
-  }
-
-  .flex-1 {
-    flex: 1;
-  }
 }

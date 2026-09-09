@@ -7,3 +7,8 @@
   width: min(calc(var(--input-width-xxl) + 2 * 16px), calc(100vw - 4 * 16px));
   margin-inline: auto;
 }
+
+.action-search-field {
+  flex: 1 1 var(--input-width-m);
+  min-width: var(--input-width-s);
+}

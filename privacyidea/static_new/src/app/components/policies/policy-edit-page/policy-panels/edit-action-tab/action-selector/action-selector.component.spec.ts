@@ -20,9 +20,12 @@
 import { CommonModule } from "@angular/common";
 import { Component, input, model, ViewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { MatButtonModule } from "@angular/material/button";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatSelect, MatSelectModule } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
 import { PolicyDetail, PolicyService, ScopedPolicyActions } from "@services/policies/policies.service";
-import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { ActionSelectorComponent } from "./action-selector.component";
 import { PolicyActionItemComponent, SelectableAction } from "./policy-action-item/policy-action-item-new.component";
@@ -40,7 +43,7 @@ class MockPolicyActionItemComponent {
 
 @Component({
   standalone: true,
-  imports: [ActionSelectorComponent, ClearableInputComponent],
+  imports: [ActionSelectorComponent],
   template: ` <app-action-selector [policy]="policy()" /> `
 })
 class TestHostComponent {
@@ -81,7 +84,14 @@ describe("ActionSelectorComponent", () => {
     })
       .overrideComponent(ActionSelectorComponent, {
         set: {
-          imports: [CommonModule, MockPolicyActionItemComponent, MockSelectorButtonsComponent, ClearableInputComponent]
+          imports: [
+            CommonModule,
+            MockPolicyActionItemComponent,
+            MatButtonModule,
+            MatIconModule,
+            MatFormFieldModule,
+            MatSelectModule
+          ]
         }
       })
       .compileComponents();
@@ -111,13 +121,33 @@ describe("ActionSelectorComponent", () => {
     expect(component.actionGroupNamesFiltered()).toContain("tokenGroup");
   });
 
-  it("should handle scope change", () => {
-    const spy = jest.spyOn(component.scopeChange, "emit");
-    component.selectActionScope("admin");
-    TestBed.tick();
+  it("should offer every group of the current scope in a dropdown", () => {
+    (component["policyService"].filteredPolicyActionGroups as jest.Mock).mockReturnValue({
+      admin: {
+        tokenGroup: { enrollTOTP: { type: "bool" as const, desc: "Enroll TOTP." } },
+        systemGroup: { configread: { type: "bool" as const, desc: "Read config." } }
+      }
+    });
+    hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
     fixture.detectChanges();
 
-    expect(spy).toHaveBeenCalledWith("admin");
+    const select = fixture.debugElement.query(By.directive(MatSelect));
+    select.componentInstance.open();
+    fixture.detectChanges();
+
+    const options = fixture.debugElement.queryAll(By.css("mat-option"));
+    expect(options.map((option) => option.componentInstance.value)).toEqual(["tokenGroup", "systemGroup"]);
+    expect(component.selectedActionGroup()).toBe("tokenGroup");
+  });
+
+  it("should hide the group dropdown while the scope holds a single group", () => {
+    (component["policyService"].filteredPolicyActionGroups as jest.Mock).mockReturnValue({
+      admin: { tokenGroup: { enrollTOTP: { type: "bool" as const, desc: "Enroll TOTP." } } }
+    });
+    hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(MatSelect))).toBeNull();
   });
 
   describe("actionsFiltered", () => {

@@ -19,7 +19,12 @@
 
 import { CommonModule } from "@angular/common";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatButtonModule } from "@angular/material/button";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
 import { MockSelectorButtonsComponent } from "@testing/mock-components/mock-selector-buttons.component";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
@@ -42,7 +47,15 @@ describe("PolicyActionItemEditComponent", () => {
     })
       .overrideComponent(PolicyActionItemEditComponent, {
         set: {
-          imports: [CommonModule, MockSelectorButtonsComponent]
+          imports: [
+            CommonModule,
+            MockSelectorButtonsComponent,
+            MatButtonModule,
+            MatIconModule,
+            MatFormFieldModule,
+            MatSelectModule,
+            HighlightPipe
+          ]
         }
       })
       .compileComponents();
@@ -71,6 +84,33 @@ describe("PolicyActionItemEditComponent", () => {
     fixture.componentRef.setInput("actionDetail", { type: "bool", desc: "" });
     fixture.detectChanges();
     expect(component.isBooleanAction()).toBe(true);
+  });
+
+  it("should offer three or more values in a dropdown", () => {
+    expect(fixture.debugElement.query(By.directive(MockSelectorButtonsComponent))).toBeNull();
+
+    const select = fixture.debugElement.query(By.directive(MatSelect));
+    select.componentInstance.open();
+    fixture.detectChanges();
+
+    const options = fixture.debugElement.queryAll(By.css("mat-option"));
+    expect(options.map((option) => option.componentInstance.value)).toEqual(["val1", "val2", "val3"]);
+  });
+
+  it("should offer fewer than three values as buttons", () => {
+    fixture.componentRef.setInput("actionDetail", { type: "str", desc: "switch", value: ["val1", "val2"] });
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(MockSelectorButtonsComponent))).not.toBeNull();
+    expect(fixture.debugElement.query(By.directive(MatSelect))).toBeNull();
+  });
+
+  it("should highlight the search term in the action name", () => {
+    fixture.componentRef.setInput("highlight", "action");
+    fixture.detectChanges();
+
+    const label = fixture.debugElement.query(By.css(".detail-label")).nativeElement as HTMLElement;
+    expect(label.querySelector(".highlight")?.textContent).toBe("action");
   });
 
   it("should emit onUpdateAction when updateAction is called", () => {

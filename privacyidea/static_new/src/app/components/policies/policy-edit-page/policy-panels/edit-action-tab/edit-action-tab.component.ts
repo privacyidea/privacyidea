@@ -23,6 +23,7 @@ import {
   inject,
   input,
   linkedSignal,
+  model,
   output,
   signal,
   Signal,
@@ -46,6 +47,8 @@ export class EditActionTabComponent {
   readonly policy = input.required<PolicyDetail>();
   readonly policyScopeChange = output<string | undefined>();
   readonly actionsUpdate = output<Record<string, string | boolean>>();
+
+  readonly actionFilter = model<string>("");
 
   readonly selectedAction: WritableSignal<{ name: string; value: string | boolean } | null> = linkedSignal({
     source: () => ({
@@ -79,9 +82,5 @@ export class EditActionTabComponent {
     if (this.selectedAction()?.name === action.name) {
       this.selectedAction.set(null);
     }
-  }
-
-  onPolicyScopeChange($event: string | undefined) {
-    this.policyScopeChange.emit($event);
   }
 }

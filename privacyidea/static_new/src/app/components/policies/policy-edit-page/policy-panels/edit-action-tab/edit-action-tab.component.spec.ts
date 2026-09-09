@@ -19,6 +19,7 @@
 
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail } from "@services/policies/policies.service";
 import { EditActionTabComponent } from "./edit-action-tab.component";
@@ -31,6 +32,7 @@ import { EditActionTabComponent } from "./edit-action-tab.component";
 class MockAddedActionsListComponent {
   isEditMode = input.required<boolean>();
   actions = input.required<{ name: string; value: string | boolean }[]>();
+  actionFilter = input<string>("");
   actionsChange = output<{ name: string; value: string | boolean }[]>();
   actionRemove = output<string>();
 }
@@ -42,6 +44,8 @@ class MockAddedActionsListComponent {
 })
 class MockActionSelectorComponent {
   policy = input.required<PolicyDetail>();
+  actionFilter = input<string>("");
+  actionFilterChange = output<string>();
   actionAdd = output<{ action: { name: string; value: string | boolean }; newScope?: string | null }>();
 }
 
@@ -135,6 +139,17 @@ describe("EditActionTabComponent", () => {
       })
     );
     expect(scopeChangeSpy).toHaveBeenCalledWith(newScope);
+  });
+
+  it("should hand the search term to both action lists", () => {
+    component.actionFilter.set("token");
+    fixture.detectChanges();
+
+    const addedList = fixture.debugElement.query(By.directive(MockAddedActionsListComponent));
+    const selector = fixture.debugElement.query(By.directive(MockActionSelectorComponent));
+
+    expect((addedList.componentInstance as MockAddedActionsListComponent).actionFilter()).toBe("token");
+    expect((selector.componentInstance as MockActionSelectorComponent).actionFilter()).toBe("token");
   });
 
   it("should reset selectedAction when the policy scope changes (linkedSignal)", () => {

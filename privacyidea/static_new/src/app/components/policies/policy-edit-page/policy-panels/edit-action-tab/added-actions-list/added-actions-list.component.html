@@ -8,12 +8,16 @@
       </mat-panel-title>
     </mat-expansion-panel-header>
     <div class="policy-action-list">
-      @for (action of actions(); track action.name) {
+      @for (action of filteredActions(); track action.name) {
         <app-policy-action-item-edit
           [action]="action"
           [actionDetail]="getDetailsOfAction(action.name)"
+          [highlight]="actionFilter()"
           (removeAction)="removeActionFromSelectedPolicy(action.name)"
           (updateAction)="updateActionInSelectedPolicy(action.name, $event)" />
+      }
+      @if (actionFilter() && filteredActions().length === 0) {
+        <p i18n="@@policy.noActionsMatch">No actions match the search filter.</p>
       }
     </div>
   </mat-expansion-panel>

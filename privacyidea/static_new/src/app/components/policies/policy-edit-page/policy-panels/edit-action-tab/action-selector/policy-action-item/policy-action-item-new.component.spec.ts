@@ -239,6 +239,17 @@ describe("PolicyActionItemComponent", () => {
     expect(selectorButtons.componentInstance.labels()).toEqual(["Off", "On"]);
   });
 
+  it("should offer three values in a dropdown instead of buttons", () => {
+    fixture.componentRef.setInput("selectableAction", {
+      ...defaultAction,
+      detail: { type: "str", desc: "three", value: ["1", "2", "3"] }
+    });
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(MockSelectorButtonsComponent))).toBeNull();
+    expect(fixture.debugElement.query(By.css("mat-select"))).not.toBeNull();
+  });
+
   it("should handle multi-value actions with mat-select if > 3 values", () => {
     fixture.componentRef.setInput("selectableAction", {
       ...defaultAction,

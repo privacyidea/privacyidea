@@ -42,6 +42,23 @@
         <mat-icon>save</mat-icon>
         <span i18n="@@common.save">Save</span>
       </button>
+
+      @if (activeTab() === "actions") {
+        <mat-form-field
+          class="action-search-field"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@policy.searchActionsLabel">Search actions</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="actionFilter.set('')"
+            [showClearButton]="actionFilter() !== ''">
+            <input
+              matInput
+              type="text"
+              [value]="actionFilter()"
+              (input)="actionFilter.set($any($event.target).value)" />
+          </app-clearable-input>
+        </mat-form-field>
+      }
     </div>
   </div>
 
@@ -53,5 +70,7 @@
 
   <app-policy-panel-edit
     [policy]="editedPolicy()"
+    [(activeTab)]="activeTab"
+    [(actionFilter)]="actionFilter"
     (policyEdit)="addPolicyEdit($event)"></app-policy-panel-edit>
 </div>

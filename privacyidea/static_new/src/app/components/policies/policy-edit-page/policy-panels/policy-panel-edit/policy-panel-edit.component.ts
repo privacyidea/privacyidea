@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, model, output } from "@angular/core";
 
 import { EditActionTabComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/edit-action-tab.component";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
@@ -27,6 +27,7 @@ import { PolicyDetail } from "@services/policies/policies.service";
 import { PolicyDescriptionEditComponent } from "./policy-description/policy-description-edit.component";
 import { PolicyNameEditComponent } from "./policy-name-edit/policy-name-edit.component";
 import { PolicyPriorityEditComponent } from "./policy-priority-edit/policy-priority-edit.component";
+import { PolicyScopeEditComponent } from "./policy-scope-edit/policy-scope-edit.component";
 
 export type PolicyTab = "actions" | "conditions";
 
@@ -39,7 +40,8 @@ export type PolicyTab = "actions" | "conditions";
     EditConditionsTabComponent,
     PolicyDescriptionEditComponent,
     PolicyPriorityEditComponent,
-    PolicyNameEditComponent
+    PolicyNameEditComponent,
+    PolicyScopeEditComponent
   ],
   templateUrl: "./policy-panel-edit.component.html",
   styleUrl: "./policy-panel-edit.component.scss"
@@ -57,7 +59,8 @@ export class PolicyPanelEditComponent {
    */
   readonly policyEdit = output<Partial<PolicyDetail>>();
 
-  readonly activeTab = signal<PolicyTab>("actions");
+  readonly activeTab = model<PolicyTab>("actions");
+  readonly actionFilter = model<string>("");
 
   readonly tabValues: PolicyTab[] = ["actions", "conditions"];
   readonly tabLabels = [$localize`:@@common.actions:Actions`, $localize`:@@common.conditions:Conditions`];
@@ -83,6 +86,7 @@ export class PolicyPanelEditComponent {
    * Helper to check if the current draft has unsaved changes.
    */
   readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
+  readonly policyHasActions = computed(() => Object.keys(this.editedPolicy().action ?? {}).length > 0);
 
   public setActiveTab(tab: PolicyTab): void {
     this.activeTab.set(tab);

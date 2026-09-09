@@ -17,19 +17,29 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="policy-flex-row">
-  <div class="flex-body">
-    @if (actions().length > 0) {
-      <app-added-actions-list
-        [isEditMode]="true"
-        [actions]="actions()"
-        [scope]="policy().scope"
-        [actionFilter]="actionFilter()"
-        (actionsChange)="onActionsChange($event)" />
-    }
-    <app-action-selector
-      [policy]="policy()"
-      [(actionFilter)]="actionFilter"
-      (actionAdd)="onActionAdd($event)" />
-  </div>
+<div
+  class="action-scope-container"
+  [matTooltip]="disabled() ? lockedHint : ''">
+  <mat-form-field>
+    <mat-label i18n="@@common.scope">Scope</mat-label>
+    <mat-select
+      [value]="scope()"
+      [disabled]="disabled()"
+      [panelClass]="'single-column-panel'"
+      (selectionChange)="scopeChange.emit($event.value)">
+      <mat-option
+        class="select-option"
+        [value]="''"
+        i18n="@@policy.allScopes"
+        >All scopes</mat-option
+      >
+      @for (scopeName of allPolicyScopes(); track scopeName) {
+        <mat-option
+          class="select-option"
+          [value]="scopeName"
+          >{{ scopeName }}</mat-option
+        >
+      }
+    </mat-select>
+  </mat-form-field>
 </div>

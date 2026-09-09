@@ -19,9 +19,17 @@
 
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatButtonModule } from "@angular/material/button";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { By } from "@angular/platform-browser";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
+import { PolicyTab } from "@components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-panel-edit.component";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -33,7 +41,11 @@ import { of } from "rxjs";
 @Component({ selector: "app-policy-panel-edit", standalone: true, template: "" })
 class MockPanel {
   policy = input.required<PolicyDetail>();
+  activeTab = input<PolicyTab>("actions");
+  actionFilter = input<string>("");
   policyEdit = output<Partial<PolicyDetail>>();
+  activeTabChange = output<PolicyTab>();
+  actionFilterChange = output<string>();
 }
 
 function createTestBed(paramName: string | null) {
@@ -54,7 +66,19 @@ function createTestBed(paramName: string | null) {
       { provide: PendingChangesService, useClass: MockPendingChangesService }
     ]
   })
-    .overrideComponent(PolicyEditPageComponent, { set: { imports: [MockPanel] } })
+    .overrideComponent(PolicyEditPageComponent, {
+      set: {
+        imports: [
+          MockPanel,
+          MatButtonModule,
+          MatIconModule,
+          MatFormFieldModule,
+          MatInputModule,
+          ClearableInputComponent,
+          StickyHeaderDirective
+        ]
+      }
+    })
     .compileComponents();
 }
 
@@ -102,6 +126,15 @@ describe("PolicyEditPageComponent – create mode", () => {
     // TODO: Not only name, but also scope and at least one action should be required
     component.addPolicyEdit({ name: "ValidName" });
     expect(component.canSave()).toBe(true);
+  });
+
+  it("shows the action search only on the actions tab", () => {
+    expect(fixture.debugElement.query(By.css(".action-search-field"))).not.toBeNull();
+
+    component.activeTab.set("conditions");
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.css(".action-search-field"))).toBeNull();
   });
 
   it("onAction does not call onSave if value is not submit", () => {

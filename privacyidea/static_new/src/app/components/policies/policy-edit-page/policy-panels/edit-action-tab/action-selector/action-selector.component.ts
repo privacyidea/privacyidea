@@ -24,17 +24,16 @@ import {
   inject,
   input,
   linkedSignal,
+  model,
   output,
-  signal,
   viewChildren,
   WritableSignal
 } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
-import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { MatSelectModule } from "@angular/material/select";
 import {
   policyActionMatchesFilter,
   PolicyDetail,
@@ -51,10 +50,9 @@ import { PolicyActionItemComponent, SelectableAction } from "./policy-action-ite
     MatIconModule,
     MatButtonModule,
     MatExpansionModule,
-    SelectorButtonsComponent,
-    PolicyActionItemComponent,
-    ClearableInputComponent,
-    MatButtonToggleModule
+    MatFormFieldModule,
+    MatSelectModule,
+    PolicyActionItemComponent
   ],
   templateUrl: "./action-selector.component.html",
   styleUrls: ["./action-selector.component.scss"]
@@ -64,9 +62,8 @@ export class ActionSelectorComponent {
 
   readonly policy = input.required<PolicyDetail>();
   readonly actionAdd = output<{ action: { name: string; value: string | boolean }; newScope?: string | null }>();
-  readonly scopeChange = output<string | undefined>();
 
-  readonly allPolicyScopes = this.policyService.allPolicyScopes;
+  readonly actionFilter = model<string>("");
 
   readonly selectedActionGroup: WritableSignal<string> = linkedSignal({
     source: () => this.actionGroupNamesFiltered(),
@@ -75,13 +72,6 @@ export class ActionSelectorComponent {
       if (previousGroup && groupNames.includes(previousGroup)) return previousGroup;
       return groupNames.length > 0 ? groupNames[0] : "";
     }
-  });
-
-  readonly actionFilter = signal<string>("");
-
-  readonly policyHasNoActions = computed(() => {
-    const policy = this.policy();
-    return !policy?.action || Object.keys(policy.action).length === 0;
   });
 
   readonly addedActionNames = computed(() => {
@@ -171,9 +161,5 @@ export class ActionSelectorComponent {
         nextItem.focusFirstInput();
       }
     });
-  }
-
-  selectActionScope(scope?: string) {
-    this.scopeChange.emit(scope);
   }
 }
