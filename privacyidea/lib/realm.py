@@ -173,6 +173,43 @@ def get_default_realm():
     return get_config_object().default_realm
 
 
+def _warn_conditional_access_policies_referencing_realm(realm_name: str):
+    """
+    Log a warning naming every conditional-access policy whose ``USER_REALM``
+    condition references ``realm_name``, since deleting it changes what that
+    condition matches without the policy being edited at all:
+
+    * ``IN [realm_name, ...]`` fails safe - the realm is simply gone from the
+      set, so the condition matches fewer (never more) requests than before.
+    * ``NOT_IN [realm_name, ...]`` fails open - no user can ever have a
+      deleted realm again, so the condition starts matching *every* request,
+      silently widening a DENY/LOCK_USER policy to the whole installation.
+
+    Evaluation deliberately never re-validates a condition's value against the
+    current realm list (see :func:`~privacyidea.lib.conditional_access.policy.
+    _validate_condition_value`), so nothing else surfaces this - this is only a
+    log warning, not a blocker, to avoid coupling realm deletion to the CA
+    module for something that cannot be enforced retroactively anyway.
+    """
+    from ..models.conditional_access_policy import ConditionalAccessPolicy, ConditionalAccessPolicyCondition
+    from .conditional_access.conditions import ConditionOperator, ConditionType
+
+    stmt = select(ConditionalAccessPolicy.name, ConditionalAccessPolicyCondition.operator,
+                  ConditionalAccessPolicyCondition.value).join(
+        ConditionalAccessPolicyCondition,
+        ConditionalAccessPolicyCondition.policy_id == ConditionalAccessPolicy.id).where(
+        ConditionalAccessPolicyCondition.condition_type == ConditionType.USER_REALM)
+    for policy_name, operator, value in db.session.execute(stmt).all():
+        if value and realm_name in value:
+            if operator == ConditionOperator.NOT_IN:
+                log.warning(f"Conditional-access policy '{policy_name}' excludes realm '{realm_name}' via "
+                            f"NOT_IN. Deleting this realm will widen the policy to match every request, "
+                            f"since no user can have a deleted realm.")
+            else:
+                log.warning(f"Conditional-access policy '{policy_name}' references realm '{realm_name}' "
+                            f"({operator}). Deleting this realm will change what the policy matches.")
+
+
 @log_with(log)
 def delete_realm(realm_name: str, delete_custom_attributes: bool = False):
     """
@@ -218,6 +255,8 @@ def delete_realm(realm_name: str, delete_custom_attributes: bool = False):
             f"Realm '{realm_name}' contains custom user attributes ({keys}). "
             f"Deleting the realm will also delete these custom user attributes.",
             id=Error.REALM_DELETE_CUSTOM_ATTRIBUTES)
+
+    _warn_conditional_access_policies_referencing_realm(realm_name)
 
     # Check if there is a default realm
     def_realm = get_default_realm()
