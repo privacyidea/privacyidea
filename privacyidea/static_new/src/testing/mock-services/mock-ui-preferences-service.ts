@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { signal } from "@angular/core";
-import { LANDING_PAGES, LandingPage } from "@core/landing-page";
+import { DEFAULT_LANDING_PAGE, LANDING_PAGES, LandingPage } from "@core/landing-page";
 import { UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 import { of } from "rxjs";
 
@@ -33,7 +33,10 @@ export class MockUiPreferencesService implements UiPreferencesServiceInterface {
   setLandingPage = jest.fn((page: LandingPage) => {
     this.landingPage.set(page);
   });
-  resetLandingPage = jest.fn(() => of(null));
+  resetLandingPage = jest.fn(() => {
+    this.landingPage.set(DEFAULT_LANDING_PAGE);
+    return of(null);
+  });
   landingPage$ = jest.fn(() => of(this.landingPage()));
   normalizeLocaleUrl = jest.fn();
   sync = jest.fn();
