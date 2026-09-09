@@ -19,9 +19,9 @@
 import { ROUTE_PATHS } from "@app/route_paths";
 
 /** The pages a logged-in admin may pick as their landing page after login. */
-export type LandingPage = "dashboard" | "tokens" | "users" | "audit";
+export type LandingPage = "dashboard" | "tokens" | "users" | "audit" | "conditional-access";
 
-export const LANDING_PAGES: LandingPage[] = ["dashboard", "tokens", "users", "audit"];
+export const LANDING_PAGES: LandingPage[] = ["dashboard", "tokens", "users", "audit", "conditional-access"];
 
 export const DEFAULT_LANDING_PAGE: LandingPage = "tokens";
 
@@ -29,7 +29,8 @@ export const LANDING_PAGE_ROUTES: Record<LandingPage, string> = {
   dashboard: ROUTE_PATHS.DASHBOARD,
   tokens: ROUTE_PATHS.TOKENS,
   users: ROUTE_PATHS.USERS,
-  audit: ROUTE_PATHS.AUDIT
+  audit: ROUTE_PATHS.AUDIT,
+  "conditional-access": ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS
 };
 
 export function isLandingPage(value: unknown): value is LandingPage {
