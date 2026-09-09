@@ -251,8 +251,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         # check, if the user has two tokens, now
         tokens = get_tokens(user=User("selfservice", self.realm1))
         self.assertEqual(2, len(tokens))
-        self.assertEqual("push", tokens[0].type)
-        self.assertEqual("spass", tokens[1].type)
+        # get_tokens has no ORDER BY, so the tokens are identified by type rather than by
+        # position. PostgreSQL returns them in the order the rows happen to sit in the table.
+        self.assertEqual({"push", "spass"}, {token.type for token in tokens})
         # authenticate with spass
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -360,9 +361,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         # check, if the user has two tokens, now
         tokens = get_tokens(user=User("selfservice", self.realm1))
         self.assertEqual(2, len(tokens))
-        self.assertEqual("push", tokens[0].type)
-        self.assertFalse(tokens[0].is_active())
-        self.assertEqual("hotp", tokens[1].type)
+        # get_tokens has no ORDER BY, so the tokens are identified by type rather than by
+        # position. PostgreSQL returns them in the order the rows happen to sit in the table.
+        tokens_by_type = {token.type: token for token in tokens}
+        self.assertEqual({"push", "hotp"}, set(tokens_by_type))
+        self.assertFalse(tokens_by_type["push"].is_active())
 
         # authenticate with hotp
         with self.app.test_request_context('/validate/check',

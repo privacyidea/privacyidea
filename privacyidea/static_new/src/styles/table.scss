@@ -5,9 +5,12 @@ $scrollable-padding-right: 16px;
 $realm-margin-top: 17px;
 $realm-list-margin-top: 7px;
 
-$table-bg: var(--table-color);
+// --surface-raised (the ancestor card background) is a depth-tinted gradient, not a flat color, so
+// no flat swatch can match it at every pixel once Depth is above "flat" - transparent is the only
+// value that stays seamless with the card at every depth level.
+$table-bg: transparent;
 $link-color: var(--mat-sys-primary);
-$paginator-bg: var(--table-color);
+$paginator-bg: transparent;
 $highlight-padding: 2px 6px;
 $icon-font-size: 22px;
 $fix-width: 20rem;
@@ -315,7 +318,25 @@ a {
   cursor: pointer;
 }
 
-td:nth-child(even),
+// The table itself is transparent so it blends with the ancestor card's gradient (see $table-bg
+// above), but a sticky header cell scrolls over the rows beneath it and can't stay see-through -
+// give it an opaque fallback so scrolled content never shows through it. Matches Material's own
+// ".mat-mdc-table .mat-mdc-header-cell { background: inherit; }" selector so this outranks it.
+.mat-mdc-table .mat-mdc-header-cell {
+  background: light-dark(#f3f3f3, #1b1b1b) !important;
+}
+
+// One extra class-level selector than the fallback above, so this wins the tie and keeps the
+// even/odd header stripe alternating instead of the fallback flattening every header cell to one
+// color.
+.mat-mdc-table .mat-mdc-header-cell:nth-child(even) {
+  background: var(--mat-sys-surface-variant) !important;
+}
+
+td:nth-child(even) {
+  background: var(--mat-sys-surface-variant);
+}
+
 th:nth-child(even) {
   background: var(--mat-sys-surface-variant);
 }

@@ -53,7 +53,7 @@ import re
 import traceback
 from urllib.parse import quote
 
-from flask import g, current_app, make_response, Request
+from flask import g, current_app, Request
 from flask_babel import _, lazy_gettext
 
 from privacyidea.api.lib.utils import get_all_params, hardening_action_active
@@ -212,8 +212,16 @@ def sign_response(request, response):
         log.debug(traceback.format_exc())
         return response
 
-    # Save the request data
-    g.request_data = get_all_params(request)
+    # Save the request data. This runs in the after-request path, so it must
+    # never raise: a malformed request body (e.g. invalid JSON) makes
+    # get_all_params() raise a BadRequest, which would otherwise abort response
+    # finalization. We only need the request data to echo back the nonce, so
+    # fall back to no params (and thus no nonce) instead.
+    try:
+        g.request_data = get_all_params(request)
+    except Exception as exx:
+        log.debug(f"Could not read request params while signing the response: {exx!s}")
+        g.request_data = {}
     request.all_data = copy.deepcopy(g.request_data)
     # response can be either a Response object or a Tuple (Response, ErrorID)
     response_value = 200
@@ -1024,32 +1032,6 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
     return content
 
 
-def hide_specific_error_message(request, response):
-    """
-    If `hide_specific_error_message` policy is enabled and response contains a rejected authentication,
-    overwrite the `detail` object to contain a generic message and the threadid.
-    # TODO this does not solve the problem that we do not consistently return 401 for failed authentications.
-    """
-    if not response or not response.json:
-        return response
-
-    result = response.json.get("result")
-    if not result.get("value") and result.get("authentication") == AUTH_RESPONSE.REJECT:
-        hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
-                                  user_object=request.User if hasattr(request, 'User') else None).any()
-        if hide_message:
-            content = response.json
-            threadid = content.get("detail", {}).get("threadid")
-            detail = {"message": str(_("Authentication failed."))}
-            if threadid:
-                detail["threadid"] = threadid
-            # Overwrite the whole detail object so that it always has the same content
-            content["detail"] = detail
-            response.set_data(json.dumps(content))
-
-    return response
-
-
 def multichallenge_enroll_via_validate(request, response):
     """
     This is a post decorator to allow enrolling tokens via /validate/check.
@@ -1170,33 +1152,6 @@ def multichallenge_enroll_via_validate(request, response):
     response.set_data(json.dumps(content))
 
     return response
-
-
-def construct_radius_response(request, response):
-    """
-    This decorator implements the /validate/radiuscheck endpoint.
-    In case this URL was requested, a successful authentication
-    results in an empty response with a HTTP 204 status code.
-    An unsuccessful authentication results in an empty response
-    with a HTTP 400 status code.
-
-    This needs to be the last decorator, since the JSON response is then lost.
-
-    :return:
-    """
-    if request.url_rule.rule == '/validate/radiuscheck':
-        return_code = 400  # generic 400 error by default
-        if response.json['result']['status']:
-            if response.json['result']['value']:
-                # user was successfully authenticated
-                return_code = 204
-        # send empty body
-        resp = make_response('', return_code)
-        # tell other policies there is no JSON content
-        resp.mimetype = 'text/plain'
-        return resp
-    else:
-        return response
 
 
 def mangle_challenge_response(request, response):
