@@ -98,6 +98,25 @@ request as successfully answered.
 In some cases the push notification does not reach the smartphone. Since
 version 3.4 the smartphone can also poll for active challenges.
 
+Declining login
+...............
+
+Instead of accepting, the user can decline the request. The app signs a reason
+together with its answer and thus distinguishes two cases: the user did not
+trigger this login at all (``unknown_trigger``), or triggered it and aborted
+(``cancelled``). The first marks the challenge as *declined*, the second as
+*cancelled*, which ``/validate/polltransaction`` reports as the
+``challenge_status``, so that the application can react accordingly.
+
+Every answer is written to the audit log. The ``action_detail`` of the entry of
+the answer (``POST /ttype/push``) names the transaction and the resulting status
+-- ``accept``, ``declined``, ``cancelled``, or ``confirmed`` for the smartphone
+step of code_to_phone -- plus the reason the app sent with a refusal. The
+authentication that fails because of a refusal names transaction and status as
+well. An app sending a reason this server version does not know declines the
+challenge like an app that sends no reason at all; the value it did send is only
+visible in the audit entry of the answer.
+
 Login to application
 ....................
 

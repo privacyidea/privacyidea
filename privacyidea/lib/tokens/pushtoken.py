@@ -371,6 +371,22 @@ def _load_public_key(pubkey_pem: str) -> Any:
     return serialization.load_pem_public_key(to_bytes(pubkey_pem), default_backend())
 
 
+def _log_challenge_answer(g: Any, transaction_id: str, status: str, reason: str | None = None) -> None:
+    """
+    Note the smartphone's answer to a push challenge - "accept", "confirmed" (code_to_phone,
+    where the user still has to submit the display code), "declined" or "cancelled" - in the
+    audit entry of the current request. It goes to ``action_detail`` because the authentication
+    endpoints overwrite ``info`` with their result message when the request ends.
+    """
+    audit_object = getattr(g, "audit_object", None)
+    if not audit_object:
+        return
+    detail = f"transaction_id: {transaction_id}, status: {status}"
+    if reason:
+        detail += f", reason: {reason}"
+    audit_object.log({"action_detail": detail})
+
+
 @dataclass
 class _PushChallengeState:
     """
@@ -825,7 +841,7 @@ class PushTokenClass(TokenClass):
         return True
 
     @classmethod
-    def _handle_auth_response(cls, serial: str, request_data: dict) -> tuple[bool, dict]:
+    def _handle_auth_response(cls, g: Any, serial: str, request_data: dict) -> tuple[bool, dict]:
         log.debug("Handling the authentication response from the smartphone.")
         signature = get_optional(request_data, "signature")
         decline = is_true(get_optional(request_data, "decline", default=False))
@@ -837,6 +853,9 @@ class PushTokenClass(TokenClass):
         challenges = get_challenges(serial=serial)
         result = False
         details = {}
+        answer_status = None
+        answer_reason = None
+        answer_transaction_id = None
 
         if challenges:
             # There are valid challenges, so we check this signature
@@ -869,12 +888,16 @@ class PushTokenClass(TokenClass):
                         # server version does not know yet (app/server skew) - still a plain
                         # decline, but logged so the vocabulary drift is visible.
                         if decline_reason == PushDeclineReason.CANCELLED:
-                            challenge.set_session(ChallengeSession.CANCELLED)
+                            session = ChallengeSession.CANCELLED
                         else:
                             if decline_reason and decline_reason not in KNOWN_DECLINE_REASONS:
                                 log.info(f"Unknown push decline_reason {decline_reason!r} for token {serial}; "
                                          "recording as a plain decline.")
-                            challenge.set_session(ChallengeSession.DECLINED)
+                            session = ChallengeSession.DECLINED
+                        challenge.set_session(session)
+                        answer_status = CHALLENGE_REFUSAL_STATUS[session]
+                        answer_reason = decline_reason
+                        answer_transaction_id = challenge.transaction_id
                     else:
                         # Verify the presence_answer which is stored in the challenge data.
                         if (challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE and presence_answer):
@@ -906,6 +929,10 @@ class PushTokenClass(TokenClass):
                                 DEFAULT_MOBILE_TEXT_CODE_TO_PHONE)
                         else:
                             challenge.set_otp_status(True)
+                        if result:
+                            answer_status = ("confirmed" if challenge_data.get("mode") == PushMode.CODE_TO_PHONE
+                                             else "accept")
+                            answer_transaction_id = challenge.transaction_id
                     if result:
                         # The smartphone answered (accepted, declined or - for
                         # code_to_phone - confirmed) within the answer window.
@@ -933,6 +960,8 @@ class PushTokenClass(TokenClass):
                     # uncaught ObjectDeletedError if that row was deleted concurrently too. A unique
                     # nonce matches at most one challenge, so break: there is nothing left to check.
                     break
+        if result and answer_status:
+            _log_challenge_answer(g, answer_transaction_id, answer_status, answer_reason)
         return result, details
 
     @classmethod
@@ -976,7 +1005,7 @@ class PushTokenClass(TokenClass):
         if all(k in request_data for k in ("fbtoken", "pubkey")):
             return cls._handle_enrollment_step2(serial, request_data)
         elif "signature" in request_data and "new_fb_token" not in request_data:
-            return cls._handle_auth_response(serial, request_data)
+            return cls._handle_auth_response(g, serial, request_data)
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
             return cls._handle_firebase_update(serial, request_data)
         else:
@@ -1431,6 +1460,7 @@ class PushTokenClass(TokenClass):
                 # challenge_status carrying the fine distinction, mirroring the polling flow.
                 if challenge_status:
                     reply = {"challenge_status": challenge_status}
+                    _log_challenge_answer(g, transaction_id, challenge_status)
 
         elif code_to_phone_enabled and options.get("transaction_id"):
             # Step 2 of code_to_phone: the user submits the display_code shown after
@@ -1531,7 +1561,10 @@ class PushTokenClass(TokenClass):
         transaction_id = options.get('transaction_id') or options.get('state')
         if transaction_id is None:
             return -1
-        return self._scan_challenge_response(transaction_id, passw).otp_counter
+        state = self._scan_challenge_response(transaction_id, passw)
+        if state.refused_status:
+            _log_challenge_answer(options.get("g"), transaction_id, state.refused_status)
+        return state.otp_counter
 
     @classmethod
     def enroll_via_validate(cls, g: Any, content: dict, user_obj: User, message: str = None) -> None:

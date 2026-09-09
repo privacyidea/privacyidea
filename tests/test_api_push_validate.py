@@ -955,6 +955,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertTrue(res.json.get("result").get("status"), res.json)
             # This fails since the wrong presence_answer was given
             self.assertFalse(res.json.get("result").get("value"), res.json)
+        # A rejected answer records no outcome, so the audit entry stays empty
+        self.assertEqual("", self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
         # Finalize authentication still fails since the wrong answer is given
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -985,6 +987,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             self.assertTrue(res.json.get("result").get("status"), res.json)
             self.assertTrue(res.json.get("result").get("value"), res.json)
+        # A correct presence answer is an accept, not a code_to_phone confirmation
+        self.assertEqual(f"transaction_id: {transaction_id}, status: accept",
+                         self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
         # Finalize authentication
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -1196,6 +1201,10 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             # Check that there is a second message for showing the code to the user on the phone
             self.assertIn("message", detail)
             self.assertEqual(expected_message, detail["message"])
+
+        # The confirmation is audited as such: the challenge is not answered yet
+        self.assertEqual(f"transaction_id: {transaction_id}, status: confirmed",
+                         self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
 
         # Verify challenge data was updated
         challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
@@ -1834,6 +1843,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         self.assertTrue(smartphone.response["result"]["value"], smartphone.response)
         # The declined push_wait challenge is cleaned up
         self.assertEqual([], get_challenges(serial=self.serial_push))
+        self.assertIn("status: declined",
+                      self.find_most_recent_audit_entry(action="POST /validate/check")["action_detail"])
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -1869,6 +1880,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
 
         self.assertTrue(smartphone.response["result"]["value"], smartphone.response)
         self.assertEqual([], get_challenges(serial=self.serial_push))
+        self.assertIn("status: cancelled",
+                      self.find_most_recent_audit_entry(action="POST /validate/check")["action_detail"])
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -2019,6 +2032,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 self.assertEqual(200, res.status_code, res)
                 self.assertFalse(res.json["result"]["value"], res.json)
 
+        # The answer was rolled back, so the audit log must not claim an outcome
+        self.assertEqual("", self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
+
         remove_token(self.serial_push)
         delete_policy("push_config")
 
@@ -2062,6 +2078,10 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             return res.json
+
+    def _audit_action_detail(self, action: str) -> str:
+        """Return the action_detail of the most recent audit entry for ``action``."""
+        return self.find_most_recent_audit_entry(action=action)["action_detail"]
 
     def _poll_status(self, transaction_id: str) -> str:
         """Return the challenge_status reported by /validate/polltransaction."""
@@ -2311,6 +2331,76 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
         self.assertEqual(ChallengeSession.DECLINED, challenge.get_session(), challenge)
         self.assertEqual("declined", self._poll_status(transaction_id))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_10_audit_logs_the_refusal_and_its_reason(self):
+        """
+        The audit entry of the smartphone's answer names the transaction, the resulting status
+        and the raw reason the app sent - an unknown reason included, which is what makes the
+        app/server drift visible. A legacy decline without a reason logs the status only.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+
+        for reason, expected in [
+                (PushDeclineReason.UNKNOWN_TRIGGER, f"status: declined, reason: {PushDeclineReason.UNKNOWN_TRIGGER}"),
+                (PushDeclineReason.CANCELLED, f"status: cancelled, reason: {PushDeclineReason.CANCELLED}"),
+                ("from_a_newer_app", "status: declined, reason: from_a_newer_app"),
+                (None, "status: declined")]:
+            with self.subTest(decline_reason=reason):
+                transaction_id, nonce = self._trigger_challenge()
+                result = self._post_decline(nonce, f"|{reason}" if reason else "",
+                                            {"decline_reason": reason} if reason else {})
+                self.assertTrue(result["result"]["value"], result)
+                self.assertEqual(f"transaction_id: {transaction_id}, {expected}",
+                                 self._audit_action_detail("POST /ttype/<ttype>"))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_11_audit_logs_the_accepted_answer(self):
+        """
+        An accepted answer is logged as well, so the entry tells an approval from a refusal
+        instead of leaving the reader to infer it from an empty column.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"serial": self.serial_push,
+                                                 "signature": self._sign(f"{nonce}|{self.serial_push}")}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json["result"]["value"], res.json)
+
+        self.assertEqual(f"transaction_id: {transaction_id}, status: accept",
+                         self._audit_action_detail("POST /ttype/<ttype>"))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_12_audit_logs_the_refusal_on_validate_check(self):
+        """
+        The /validate/check that fails because of the refusal names transaction and status,
+        instead of only reporting a response that did not match the challenge.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+        self._post_decline(nonce, f"|{PushDeclineReason.UNKNOWN_TRIGGER}",
+                           {"decline_reason": PushDeclineReason.UNKNOWN_TRIGGER})
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "x",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertFalse(res.json["result"]["value"], res.json)
+
+        self.assertEqual(f"transaction_id: {transaction_id}, status: declined",
+                         self._audit_action_detail("POST /validate/check"))
 
         remove_token(self.serial_push)
         delete_policy("push_config")
