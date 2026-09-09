@@ -39,8 +39,11 @@ from unittest.mock import patch
 import pytest
 import redis as redis_lib
 
+from passlib.hash import pbkdf2_sha512
+
 from privacyidea.lib.authcache import add_to_cache, delete_from_cache, verify_in_cache
 from privacyidea.lib.cache.auth import _ttl_seconds, cache_enabled
+from privacyidea.lib.cache.auth import add_to_cache as redis_add_to_cache
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import PolicyClass, SCOPE, delete_policy, set_policy
@@ -265,6 +268,17 @@ class RedisAuthCacheTestCase(MyTestCase):
         # Neither the argon2 hash nor its recognisable prefix may be readable
         self.assertNotIn("argon2", records[0])
         self.assertNotIn("first_auth", records[0])
+
+    def test_11a_an_entry_of_another_configured_algorithm_verifies(self):
+        # The entries are read with every algorithm of PI_HASH_ALGO_LIST, exactly as on the
+        # database path, so an installation that reorders the list keeps its cached entries.
+        with auth_cache_in_store(self._real_client):
+            redis_add_to_cache(self.username, self.realm, self.resolver,
+                               pbkdf2_sha512.using(rounds=1000).hash(self.password))
+            first_auth, last_auth = self._windows()
+            self.assertTrue(verify_in_cache(self.username, self.realm, self.resolver,
+                                            self.password, first_auth=first_auth,
+                                            last_auth=last_auth))
 
     def test_12_deleting_removes_the_matching_entry_only(self):
         with auth_cache_in_store(self._real_client):

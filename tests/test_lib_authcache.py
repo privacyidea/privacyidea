@@ -9,7 +9,8 @@ from privacyidea.lib.authcache import (add_to_cache, delete_from_cache,
                                        update_cache, verify_in_cache,
                                        _hash_password,
                                        cleanup)
-from passlib.hash import argon2
+from passlib.hash import argon2, pbkdf2_sha512
+from privacyidea.lib.crypto import verify_pass_hash
 from privacyidea.models import AuthCache
 import datetime
 
@@ -38,7 +39,7 @@ class AuthCacheTestCase(MyTestCase):
 
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         self.assertEqual(auth.username, self.username)
-        self.assertTrue(argon2.verify(self.password, auth.authentication))
+        self.assertTrue(verify_pass_hash(self.password, auth.authentication))
 
         self.assertTrue(auth.first_auth > teststart)
         self.assertEqual(auth.last_auth, auth.first_auth)
@@ -142,6 +143,41 @@ class AuthCacheTestCase(MyTestCase):
 
         r = verify_in_cache("grandpa", self.realm, self.resolver, "old password")
         self.assertFalse(r)
+
+    def test_05a_the_configured_hash_parameters_are_used(self):
+        # The cache hashes with the algorithm and the parameters that PI_HASH_ALGO_LIST and
+        # PI_HASH_ALGO_PARAMS configure, so an installation that tunes them tunes this too.
+        hash_algo_params = self.app.config["PI_HASH_ALGO_PARAMS"]
+        stored_hash = _hash_password(self.password)
+        self.assertTrue(stored_hash.startswith("$argon2"), stored_hash)
+        for parameter, value in (("m", hash_algo_params["argon2__memory_cost"]),
+                                 ("t", hash_algo_params["argon2__rounds"]),
+                                 ("p", hash_algo_params["argon2__parallelism"])):
+            self.assertIn(f"{parameter}={value}", stored_hash, stored_hash)
+
+    def test_05b_entries_hashed_with_other_parameters_still_verify(self):
+        # A hash carries the parameters it was made with, so entries that an installation
+        # wrote before its parameters changed are still usable.
+        cleanup(100000000)
+        other_parameters = argon2.using(rounds=2, memory_cost=16, parallelism=1)
+        AuthCache("grandpa", self.realm, self.resolver, other_parameters.hash(self.password),
+                  first_auth=datetime.datetime.utcnow() - datetime.timedelta(minutes=10),
+                  last_auth=datetime.datetime.utcnow() - datetime.timedelta(minutes=2)).save()
+
+        self.assertTrue(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
+
+    def test_05c_entries_of_another_configured_algorithm_still_verify(self):
+        # Every algorithm of PI_HASH_ALGO_LIST can be read, not only the first one, so
+        # reordering the list does not invalidate the entries that are already stored.
+        cleanup(100000000)
+        self.assertIn("pbkdf2_sha512", self.app.config.get("PI_HASH_ALGO_LIST",
+                                                           ["argon2", "pbkdf2_sha512"]))
+        AuthCache("grandpa", self.realm, self.resolver,
+                  pbkdf2_sha512.using(rounds=1000).hash(self.password),
+                  first_auth=datetime.datetime.utcnow() - datetime.timedelta(minutes=10),
+                  last_auth=datetime.datetime.utcnow() - datetime.timedelta(minutes=2)).save()
+
+        self.assertTrue(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
 
     def test_06_delete_other_invalid_entries(self):
         # Test deletion of expired entries

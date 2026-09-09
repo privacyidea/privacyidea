@@ -22,19 +22,20 @@
 import datetime
 import logging
 
-from passlib.hash import argon2
 from sqlalchemy import update, select, delete
 
 from ..models import AuthCache, db
 from ..models.utils import utc_now
 from .cache import auth as redis_auth_cache
+from .crypto import pass_hash, verify_pass_hash
 
-ROUNDS = 9
 log = logging.getLogger(__name__)
 
 
 def _hash_password(password):
-    return argon2.using(rounds=ROUNDS).hash(password)
+    # The same hash algorithm and parameters the rest of privacyIDEA uses for passwords
+    # and PINs, so PI_HASH_ALGO_LIST and PI_HASH_ALGO_PARAMS apply here as well.
+    return pass_hash(password)
 
 
 def add_to_cache(username: str, realm: str, resolver: str, password: str,
@@ -108,11 +109,11 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
                 delete_entry = True
             elif last_valid_cache_time and cached_auth.first_auth < last_valid_cache_time:
                 delete_entry = True
-            elif argon2.verify(password, cached_auth.authentication):
+            elif verify_pass_hash(password, cached_auth.authentication):
                 delete_entry = True
 
         except ValueError:
-            log.debug(f"Old (non-argon2) authcache entry for user {username!s}@{realm!s}.")
+            log.debug(f"Unreadable authcache entry for user {username!s}@{realm!s}.")
             # Also delete old entries
             delete_entry = True
         if delete_entry:
@@ -178,9 +179,9 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
 
     for cached_auth in cached_auths:
         try:
-            result = argon2.verify(password, cached_auth.authentication)
+            result = verify_pass_hash(password, cached_auth.authentication)
         except ValueError:
-            log.debug(f"Old (non-argon2) authcache entry for user {username!s}@{realm!s}.")
+            log.debug(f"Unreadable authcache entry for user {username!s}@{realm!s}.")
             result = False
 
         if result and max_auths > 0:

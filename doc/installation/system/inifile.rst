@@ -120,6 +120,11 @@ can be set, for example::
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
+Both entries apply wherever privacyIDEA hashes a password or a PIN: token PINs,
+administrator passwords, password reset codes and the entries of the authentication
+cache (see :ref:`policy_auth_cache`). Existing hashes carry the parameters they were
+created with, so they can still be verified after a change.
+
 Security
 --------
 
