@@ -17,6 +17,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
+from privacyidea.models.utils import utc_now
+
 # revision identifiers, used by Alembic.
 revision = 'f4a7c8e2b910'
 down_revision = 'e0f1a2b3c4d5'
@@ -39,11 +41,15 @@ def upgrade():
         raise
 
     try:
+        # Bound from Python's utc_now(), not the SQL CURRENT_TIMESTAMP: the column is compared against utc_now()
+        # everywhere else (see engine._effective_window_seconds), and CURRENT_TIMESTAMP is the DB server's own
+        # clock/timezone, which need not be UTC.
         connection = op.get_bind()
         connection.execute(sa.text(
-            "UPDATE conditional_access_policies SET enforced_since = CURRENT_TIMESTAMP "
+            "UPDATE conditional_access_policies SET enforced_since = :enforced_since "
             "WHERE dry_run = :dry_run"
-        ).bindparams(sa.bindparam("dry_run", False, type_=sa.Boolean())))
+        ).bindparams(sa.bindparam("enforced_since", utc_now(), type_=sa.DateTime()),
+                     sa.bindparam("dry_run", False, type_=sa.Boolean())))
     except Exception as exx:
         print(f"Could not backfill 'enforced_since' for existing conditional-access policies: {exx}")
         raise
