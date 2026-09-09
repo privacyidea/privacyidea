@@ -337,7 +337,11 @@ def _conditional_access_identity():
     Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
     (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
     cover every request that can reach the gate. Falls back to the (empty) request user when no owner can be
-    resolved, so the IP-block check still applies.
+    resolved, so the IP-block check still applies. That costs a user-scoped check only on a request that cannot
+    authenticate anyway: the authenticating path repeats this lookup without ``silent_fail``
+    (:func:`~privacyidea.lib.token.check_serial_pass`), so a serial that does not resolve to exactly one token
+    raises there instead of authenticating - and the authentication-log row resolves the owner from the serial
+    itself, so an attempt that does reach a token is still counted.
     """
     if request.User:
         return request.User
@@ -348,6 +352,10 @@ def _conditional_access_identity():
         if serial:
             token = get_one_token(serial=serial, silent_fail=True)
         elif credential_id:
+            # Only the credential-id lookup, while _handle_fido2_auth also falls back to the transaction id: a
+            # webauthn token predating the credential-id hash is invisible here but resolvable there. Unreachable in
+            # practice - a passkey is hashed at enrollment, the webauthn second leg carries the user - and not worth
+            # a challenge lookup plus otpkey decrypt on every request.
             token = get_fido2_token_by_credential_id(credential_id)
     except Exception as ex:
         log.debug(f"Conditional-access pre-check could not resolve a token owner: {ex!r}")

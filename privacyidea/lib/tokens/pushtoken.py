@@ -1033,13 +1033,23 @@ class PushTokenClass(TokenClass):
         """
         Resolve the owner of the push token addressed by *serial* for the
         conditional-access pre-check. Returns an empty :class:`User` when the
-        serial is missing or the token has no resolvable owner.
+        serial is missing or the token has no resolvable owner - deliberately: the
+        answer is verified by its signature, so identity resolution must never be
+        what refuses it (a directory outage would fail a valid answer, with no
+        recovery path from the phone).
+
+        That fallback bypasses nothing, because this gate is not what grants the
+        login: the polling ``/validate/check`` carries the user and is gated on the
+        resolved identity. Only ``push_wait`` has no second gate - its trigger leg
+        is gated at request start, so a lock created during the wait is caught by
+        neither.
         """
         if not serial:
             return User()
         try:
             return get_one_token(serial=serial).user or User()
-        except Exception:
+        except Exception as ex:
+            log.debug(f"Conditional-access pre-check could not resolve the owner of token {serial}: {ex!r}")
             return User()
 
     def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode) -> dict | None:
