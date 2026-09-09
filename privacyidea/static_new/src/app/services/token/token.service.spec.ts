@@ -23,6 +23,7 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { PiResponse } from "@app/app.component";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { environment } from "@env/environment";
@@ -1128,10 +1129,8 @@ describe("TokenService", () => {
 
       tokenService
         .enrollToken({
-          data: {} as unknown as import("./token.service").TokenEnrollmentData,
-          mapper: { toApiPayload: () => ({}) } as unknown as import("./token.service").TokenApiPayloadMapper<
-            import("./token.service").TokenEnrollmentData
-          >
+          data: {} as unknown as TokenEnrollmentData,
+          mapper: { toApiPayload: () => ({}) } as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         })
         .subscribe({
           error: (e) => {
@@ -1151,7 +1150,7 @@ describe("TokenService", () => {
       });
       postSpy.mockReturnValue(throwError(() => boom));
 
-      tokenService.verifyToken({} as unknown as import("./token.service").TokenEnrollmentData).subscribe({
+      tokenService.verifyToken({} as unknown as TokenEnrollmentData).subscribe({
         error: (e) => {
           expect(e).toBe(boom);
           expect(notificationService.error).toHaveBeenCalledWith("Failed to verify token. vt");
