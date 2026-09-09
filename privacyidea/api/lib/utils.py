@@ -34,13 +34,13 @@ from urllib.parse import unquote
 
 import jwt
 from flask import (jsonify,
-                   current_app, request, g, Response)
+                   current_app, request, g, Response, make_response)
 
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_from_config, SYSCONF
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
-                                   get_client_ip, get_plugin_info_from_useragent)
+                                   get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE)
 # Re-exported from privacyidea.lib.params for backwards-compatibility with
 # callers that import these names from privacyidea.api.lib.utils.
 from privacyidea.lib.params import (  # noqa: F401
@@ -67,17 +67,17 @@ TRUSTED_JWT_ALGOS = ["ES256", "ES384", "ES512",
                      "PS256", "PS384", "PS512"]
 
 INTERNAL_OPTION_KEYS = frozenset({
-    "session",                   # stamps a challenge as enrollment -> enroll_via_validate
-    "data",                      # email/SMS concurrent_challenges OTP cache
-    "initTime",                  # overrides server time -> strips the TOTP time window
-    "radius_result",             # short-circuits the real RADIUS Access-Request
-    "radius_state",              # RADIUS intra-request state
+    "session",  # stamps a challenge as enrollment -> enroll_via_validate
+    "data",  # email/SMS concurrent_challenges OTP cache
+    "initTime",  # overrides server time -> strips the TOTP time window
+    "radius_result",  # short-circuits the real RADIUS Access-Request
+    "radius_state",  # RADIUS intra-request state
     # NOTE: "challenge" is intentionally NOT stripped — it is a legitimate OCRA/DisplayTAN
     # client input (the transaction to sign, read by ocratoken.create_challenge); on the
     # transaction_id path check_challenge_response overwrites it from the stored challenge,
     # so it cannot be used to bypass authentication.
-    "push_triggered",            # set by create_challenges_from_tokens
-    "valid_token_num",           # server-set count of already-valid tokens (check_token_list -> pushtoken)
+    "push_triggered",  # set by create_challenges_from_tokens
+    "valid_token_num",  # server-set count of already-valid tokens (check_token_list -> pushtoken)
 })
 
 # The following user-agents (with versions) do not need extra unquoting
@@ -89,7 +89,6 @@ NO_UNQUOTE_USER_AGENTS = {
 }
 
 SESSION_KEY_LENGTH = 32
-
 
 
 def send_result(obj, rid=1, details=None, **kwargs) -> Response:
@@ -548,3 +547,97 @@ def get_auth_error_status_code(error: Exception) -> int:
     if not _is_authentication_endpoint(request):
         return mapped_code
     return 401 if hardening_action_active(g, request, PolicyAction.HIDE_AUTH_ERROR_STATUS) else mapped_code
+
+
+def hide_specific_error_message(request, response):
+    """
+    Mask the specific reason of a failed authentication when the
+    ``hide_specific_error_message`` policy (AUTH scope) matches the request
+    user.
+
+    This is the single implementation of the masking behaviour. It is applied
+    once, centrally, from the shared after-request handler
+    (:func:`privacyidea.api.before_after.shape_validate_error_response`) for the
+    ``/validate/check`` and ``/auth`` endpoints, so it has to handle every shape
+    a failed-authentication response can take:
+
+    * a *rejected* authentication returned by the view - ``result.status`` is
+      ``True``, ``result.value`` is falsy and ``result.authentication`` is
+      ``REJECT`` - where only the ``detail`` object exists, and
+    * an *error* response built by an error handler - ``result.status`` is
+      ``False`` - where both ``result.error`` and ``detail`` exist.
+
+    A successful authentication or an open challenge is left untouched. The
+    message is replaced by a generic string and the error code (if present) is
+    remapped to the generic ``AUTHENTICATE`` id, so a masked failure is
+    indistinguishable from any other unspecified authentication failure. The
+    original, specific message is expected to have been written to the audit log
+    already, so the administrator still sees the real reason.
+
+    :param request: the request object
+    :param response: the response object
+    :return: the (in-place modified) response
+    """
+    if not response.is_json:
+        return response
+    content = response.json
+    if not isinstance(content, dict):
+        return response
+    result = content.get("result") or {}
+    rejected = not result.get("value") and result.get("authentication") == AUTH_RESPONSE.REJECT
+    errored = result.get("status") is False
+    if not (rejected or errored):
+        return response
+
+    user_object = request.User if hasattr(request, "User") else None
+    hide = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
+                      user_object=user_object).any()
+    if not hide:
+        return response
+
+    message = str(_("Authentication failed."))
+    error = result.get("error")
+    if isinstance(error, dict):
+        error["message"] = message
+        # Remap to the generic AUTHENTICATE id, so a masked failure is
+        # indistinguishable from any other unspecified auth failure.
+        error["code"] = Error.AUTHENTICATE
+    # Overwrite the whole detail object, so it always has the same content and
+    # future additions cannot accidentally leak information either.
+    threadid = (content.get("detail") or {}).get("threadid") or threading.current_thread().ident
+    content["detail"] = {"message": message, "threadid": threadid}
+    response.set_data(json.dumps(content))
+    return response
+
+
+def construct_radius_response(request, response):
+    """
+    Shape a ``/validate/radiuscheck`` response into the RADIUS adapter format:
+    an empty body with HTTP ``204`` for a successful authentication and an empty
+    HTTP ``400`` for every other outcome (a failed authentication or any error,
+    including a server fault).
+
+    A RADIUS adapter only consumes the status code, so the JSON body is dropped
+    entirely. This is the single implementation, applied centrally from the
+    shared after-request handler; it is a no-op for any other route.
+
+    :param request: the request object
+    :param response: the response object
+    :return: the (possibly replaced) response
+    """
+    url_rule = getattr(request, "url_rule", None)
+    if url_rule is None or url_rule.rule != "/validate/radiuscheck":
+        return response
+    return_code = 400  # generic 400 error by default
+    if response.is_json:
+        content = response.json
+        if isinstance(content, dict):
+            result = content.get("result") or {}
+            if result.get("status") and result.get("value"):
+                # user was successfully authenticated
+                return_code = 204
+    # send empty body
+    resp = make_response("", return_code)
+    # tell other handlers (e.g. sign_response) there is no JSON content
+    resp.mimetype = "text/plain"
+    return resp

@@ -17,6 +17,26 @@ services:
       timeout: 5s
       retries: 10
 
+  mariadb-lts-test:
+    # DB URI: mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3307/privacyidea_test
+    # 10.11 is the maintained 10.x LTS (and the version Ubuntu 24.04 ships), so
+    # it is the 10.x most installations run.
+    image: mariadb:10.11
+    container_name: pi-mariadb-lts-test
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: privacyidea_test
+      MARIADB_USER: privacyidea
+      MARIADB_PASSWORD: privacyidea
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   mysql-test:
     # DB URI: mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3308/privacyidea_test
     image: mysql:8.4
