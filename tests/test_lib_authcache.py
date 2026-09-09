@@ -180,13 +180,26 @@ class AuthCacheTestCase(MyTestCase):
                   last_auth=datetime.datetime.utcnow() - datetime.timedelta(minutes=2)).save()
         self.assertEqual(1, AuthCache.query.count())
 
+    def _assert_entry_is_usable(self):
+        """
+        A wrong password leaves the stored entry alone and the right one verifies against it.
+
+        The wrong password comes first on purpose: a miss goes on to delete_from_cache(),
+        which reads the entry with the second of the two verifications. If that one could not
+        read the entry it would take it for an unreadable one and delete it, and the
+        verification below would then fail for a completely different reason.
+        """
+        self.assertFalse(verify_in_cache("grandpa", self.realm, self.resolver, "wrong password"))
+        self.assertEqual(1, AuthCache.query.count())
+        self.assertTrue(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
+
     def test_05b_entries_hashed_with_other_parameters_still_verify(self):
         # A hash carries the parameters it was made with, so entries that an installation
         # wrote before its parameters changed are still usable.
         other_parameters = argon2.using(rounds=2, memory_cost=16, parallelism=1)
         self._store_entry(other_parameters.hash(self.password))
 
-        self.assertTrue(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
+        self._assert_entry_is_usable()
 
     def test_05c_entries_of_another_configured_algorithm_still_verify(self):
         # Every algorithm of PI_HASH_ALGO_LIST can be read, not only the first one, so
@@ -195,7 +208,7 @@ class AuthCacheTestCase(MyTestCase):
         self.assertIn("pbkdf2_sha512", algo_list)
         self._store_entry(pbkdf2_sha512.using(rounds=1000).hash(self.password))
 
-        self.assertTrue(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
+        self._assert_entry_is_usable()
 
     def test_05d_an_overlong_password_does_not_remove_the_entries(self):
         # A password beyond the size limit of the algorithm can not be hashed, so it can not

@@ -275,6 +275,14 @@ class RedisAuthCacheTestCase(MyTestCase):
             redis_add_to_cache(self.username, self.realm, self.resolver,
                                pbkdf2_sha512.using(rounds=1000).hash(self.password))
             first_auth, last_auth = self._windows()
+            # The wrong password comes first on purpose: a miss goes on to
+            # delete_from_cache(), which reads the entry with the second of the two
+            # verifications. If that one could not read the entry it would take it for an
+            # unreadable one and drop it, and the verification below would then fail for a
+            # completely different reason.
+            self.assertFalse(verify_in_cache(self.username, self.realm, self.resolver,
+                                             "wrong password", first_auth=first_auth,
+                                             last_auth=last_auth))
             self.assertTrue(verify_in_cache(self.username, self.realm, self.resolver,
                                             self.password, first_auth=first_auth,
                                             last_auth=last_auth))
