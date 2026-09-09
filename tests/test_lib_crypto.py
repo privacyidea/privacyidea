@@ -936,26 +936,6 @@ class SignObjectCacheTestCase(MyTestCase):
         self.assertIsNot(sign_object, get_sign_object(self.private_key_file, self.public_key_file,
                                                       check_private_key=False))
 
-    @staticmethod
-    def _write_keypair(private_key_file, public_key_file, private_key_length=None):
-        """
-        Write a new keypair to the given files.
-
-        :param private_key_length: If given, keep generating keys until the private key is
-            exactly this many bytes long. Two RSA keys of the same size usually have the same
-            length, but not always.
-        :return: The length of the private key that was written
-        """
-        while True:
-            # 1024 bits is enough to tell one key from another and keeps the suite cheap
-            public_key, private_key = generate_keypair(1024)
-            if private_key_length is None or len(private_key) == private_key_length:
-                break
-        for key_file, key in ((private_key_file, private_key), (public_key_file, public_key)):
-            with open(key_file, "w") as key_file_handle:
-                key_file_handle.write(key)
-        return len(private_key)
-
     def test_02_a_replaced_key_file_is_loaded_again(self):
         private_key_file, public_key_file = self._copy_key_files()
         sign_object = get_sign_object(private_key_file, public_key_file)
@@ -963,7 +943,10 @@ class SignObjectCacheTestCase(MyTestCase):
         old_signature = sign_object.sign("data to sign")
 
         # Replace the keys, as an administrator would who rotates the audit keys
-        self._write_keypair(private_key_file, public_key_file)
+        new_public_key, new_private_key = generate_keypair()
+        for key_file, key in ((private_key_file, new_private_key), (public_key_file, new_public_key)):
+            with open(key_file, "w") as key_file_handle:
+                key_file_handle.write(key)
 
         new_sign_object = get_sign_object(private_key_file, public_key_file)
         self.assertIsNot(sign_object, new_sign_object)
@@ -972,34 +955,30 @@ class SignObjectCacheTestCase(MyTestCase):
         self.assertTrue(new_sign_object.verify("data to sign", new_sign_object.sign("data to sign")))
         self.assertFalse(new_sign_object.verify("data to sign", old_signature))
 
-    def test_02a_a_replaced_key_file_of_the_same_size_and_age_is_loaded_again(self):
+    def test_02a_a_key_file_of_the_same_size_and_age_is_not_served_from_the_cache(self):
         # A key rotated with cp -p, rsync -a or a restored backup keeps its modification time,
         # and two RSA keys of the same size usually have the same file size. So neither of
-        # those may decide whether the cached key is still the one that is configured.
-        key_files = self._copy_key_files()
-        private_key_file, public_key_file = key_files
-        private_key_length = self._write_keypair(private_key_file, public_key_file)
-        stat_before = [os.stat(key_file) for key_file in key_files]
+        # those may decide whether the cached key is still the one that is configured. Here the
+        # replacement is not a usable key, which makes the point without a second key: what
+        # must not happen is that the cached object is handed out.
+        private_key_file, public_key_file = self._copy_key_files()
+        self.assertIsNotNone(get_sign_object(private_key_file, public_key_file))
+        file_stat = os.stat(private_key_file)
 
-        sign_object = get_sign_object(private_key_file, public_key_file)
-        old_signature = sign_object.sign("data to sign")
+        with open(private_key_file, "rb") as private_key_handle:
+            private_key = bytearray(private_key_handle.read())
+        # Change the key material in place, so the file keeps its length, and give the file
+        # back the modification time it had
+        private_key[len(private_key) // 2] ^= 0xFF
+        with open(private_key_file, "wb") as private_key_handle:
+            private_key_handle.write(private_key)
+        os.utime(private_key_file, ns=(file_stat.st_atime_ns, file_stat.st_mtime_ns))
 
-        # Write a different keypair of exactly the same length and give each file back the
-        # timestamps it had
-        self._write_keypair(private_key_file, public_key_file, private_key_length=private_key_length)
-        for key_file, file_stat in zip(key_files, stat_before):
-            os.utime(key_file, ns=(file_stat.st_atime_ns, file_stat.st_mtime_ns))
-
-        # Neither the size nor the modification time of either file changed
-        for key_file, file_stat in zip(key_files, stat_before):
-            stat_after = os.stat(key_file)
-            self.assertEqual(file_stat.st_size, stat_after.st_size, key_file)
-            self.assertEqual(file_stat.st_mtime_ns, stat_after.st_mtime_ns, key_file)
-
-        new_sign_object = get_sign_object(private_key_file, public_key_file)
-        self.assertIsNot(sign_object, new_sign_object)
-        self.assertFalse(new_sign_object.verify("data to sign", old_signature))
-        self.assertTrue(new_sign_object.verify("data to sign", new_sign_object.sign("data to sign")))
+        stat_after = os.stat(private_key_file)
+        self.assertEqual(file_stat.st_size, stat_after.st_size)
+        self.assertEqual(file_stat.st_mtime_ns, stat_after.st_mtime_ns)
+        with self.assertRaises(Exception):
+            get_sign_object(private_key_file, public_key_file)
 
     def test_03_a_missing_key_file_is_not_cached(self):
         private_key_file, public_key_file = self._copy_key_files()
