@@ -73,8 +73,8 @@ By default the installer generates 2048bit RSA keys.
 
 If you can assure that the private key has not been tampered with, the config
 entry ``PI_AUDIT_NO_PRIVATE_KEY_CHECK = True`` avoids a time-consuming check during
-loading of the private key. The key is loaded once per worker process, so this
-check is not part of the cost of an individual audit entry
+loading of the private key. The loaded key is kept for the lifetime of the worker
+process, so this check is not part of the cost of an individual audit entry
 (See also :ref:`faq_perf_crypto_audit`).
 
 The audit signing is performed in *lib.crypto:Sign.sign* using SHA2-256 as

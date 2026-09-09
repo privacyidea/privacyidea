@@ -206,8 +206,15 @@ class Audit(AuditBase):
         # Disable the costly checking of private RSA keys when loading them.
         self.check_private_key = not self.config.get(ConfigKey.AUDIT_NO_PRIVATE_KEY_CHECK, False)
         if self.sign_data:
+            public_key_file = self.config.get(ConfigKey.AUDIT_KEY_PUBLIC)
+            if not public_key_file:
+                # The module would still sign, but every entry it reads back would verify as
+                # FAIL, which is indistinguishable from a tampered log. A missing key file is
+                # a configuration error and has to be visible as one.
+                raise TypeError(f"{ConfigKey.AUDIT_KEY_PUBLIC} must name a file containing the "
+                                "public key to verify audit entries with.")
             self.sign_object = get_sign_object(self.config.get(ConfigKey.AUDIT_KEY_PRIVATE),
-                                               self.config.get(ConfigKey.AUDIT_KEY_PUBLIC),
+                                               public_key_file,
                                                check_private_key=self.check_private_key)
         # Read column_length from the config file
         config_column_length = self.config.get(ConfigKey.AUDIT_SQL_COLUMN_LENGTH, {})
