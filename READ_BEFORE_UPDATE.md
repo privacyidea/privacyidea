@@ -235,6 +235,16 @@
   pass a stale or misspelled user name to `GET /container/` and relied on getting an empty result need to handle the
   error.
 
+* **The initial token transfer of a smartphone container only takes over related tokens.** During the first
+  synchronization of a registered smartphone container, the policy `initially_add_tokens_to_container` lets the server
+  add the tokens the client reports to the container. Which of them are taken over is now restricted: a token that is
+  assigned to a user is only added if the user is an owner of the container, and an unassigned token is only added if it
+  shares a realm with the container. The latter keeps working what the policy is mainly used for — tokens that are
+  prepared in advance for a user that is not known yet. A token that has neither an owner nor a realm can not be related
+  to the container and is no longer taken over; if you prepare tokens that way, put the tokens and the container into a
+  realm. A token is now also removed from a previous container when it is taken over, since a token can only be part of
+  one container.
+
 * **HTTP API change** - the `resolver` and `userid` filters of `GET /token/` are now applied. Both parameters have
   always been accepted and documented, but they never became a condition of the query, so a request carrying one of them
   returned *all* tokens instead of the tokens of that resolver or of that user id. `resolver` is matched
