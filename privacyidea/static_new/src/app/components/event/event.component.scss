@@ -14,6 +14,17 @@
 }
 
 .event-handler-table {
+  // The shared table styles stripe the columns; the handlers read as rows, so the stripes
+  // are turned by 90 degrees to run along them instead.
+  th,
+  td {
+    background: table.$table-bg;
+  }
+
+  tr.mat-mdc-row:nth-child(odd) td {
+    background: var(--mat-sys-surface-variant);
+  }
+
   td.mat-mdc-footer-cell {
     padding-top: 8px;
     padding-bottom: 8px;
