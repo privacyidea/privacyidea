@@ -11,7 +11,8 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN_LENGTH
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.container import (delete_container_by_serial)
-from privacyidea.lib.container import (init_container, find_container_by_serial)
+from privacyidea.lib.container import (init_container, find_container_by_serial, find_container_for_token,
+                                       add_token_to_container)
 from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
 from privacyidea.lib.crypto import generate_keypair_ecc, decrypt_aes
 from privacyidea.lib.machine import attach_token
@@ -1936,18 +1937,28 @@ class APIContainerSynchronization(APIContainerTest):
 
         delete_policy("policy")
 
+    def container_token_relation(self, container_serial: str) -> tuple[User | None, list[str]]:
+        """
+        Returns the owner and the realms a token has to have to be related to the given container.
+        """
+        container = find_container_by_serial(container_serial)
+        container_owners = container.get_users()
+        owner = container_owners[0] if container_owners else None
+        return owner, [realm.name for realm in container.realms]
+
     def sync_with_initial_token_transfer_allowed(self, smartphone_serial=None):
         registration = self.register_smartphone_success(smartphone_serial)
         mock_smph = registration.mock_smph
         smartphone_serial = mock_smph.container_serial
+        owner, realms = self.container_token_relation(smartphone_serial)
 
         # Create Tokens
-        hotp_token = init_token({"genkey": True, "type": "hotp"})
+        hotp_token = init_token({"genkey": True, "type": "hotp"}, user=owner, tokenrealms=realms)
         _, _, otp_dict = hotp_token.get_multi_otp(2)
         hotp_otps = list(otp_dict["otp"].values())
-        spass_token = init_token({"type": "spass"})
-        totp = init_token({"genkey": True, "type": "totp"})
-        daypassword = init_token({"genkey": True, "type": "daypassword"})
+        spass_token = init_token({"type": "spass"}, user=owner, tokenrealms=realms)
+        totp = init_token({"genkey": True, "type": "totp"}, user=owner, tokenrealms=realms)
+        daypassword = init_token({"genkey": True, "type": "daypassword"}, user=owner, tokenrealms=realms)
 
         # Challenge
         scope = "https://pi.net/container/synchronize"
@@ -1991,7 +2002,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertIn(hotp_token.get_serial(), token_serials)
 
         # Second Sync
-        new_hotp = init_token({"genkey": True, "type": "hotp"})
+        new_hotp = init_token({"genkey": True, "type": "hotp"}, user=owner, tokenrealms=realms)
 
         # Challenge
         scope = "https://pi.net/container/synchronize"
@@ -2024,14 +2035,15 @@ class APIContainerSynchronization(APIContainerTest):
         registration = self.register_smartphone_success(smartphone_serial)
         mock_smph = registration.mock_smph
         smartphone_serial = mock_smph.container_serial
+        owner, realms = self.container_token_relation(smartphone_serial)
 
         # Create Tokens
-        hotp_token = init_token({"genkey": True, "type": "hotp"})
+        hotp_token = init_token({"genkey": True, "type": "hotp"}, user=owner, tokenrealms=realms)
         _, _, otp_dict = hotp_token.get_multi_otp(2)
         hotp_otps = list(otp_dict["otp"].values())
-        spass_token = init_token({"type": "spass"})
-        totp = init_token({"genkey": True, "type": "totp"})
-        daypassword = init_token({"genkey": True, "type": "daypassword"})
+        spass_token = init_token({"type": "spass"}, user=owner, tokenrealms=realms)
+        totp = init_token({"genkey": True, "type": "totp"}, user=owner, tokenrealms=realms)
+        daypassword = init_token({"genkey": True, "type": "daypassword"}, user=owner, tokenrealms=realms)
 
         # Challenge
         scope = "https://pi.net/container/synchronize"
@@ -2071,20 +2083,26 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(0, len(smartphone_tokens))
 
     def test_53_synchronize_initial_token_transfer_no_user_success(self):
+        self.setUp_user_realms()
         # Generic policy
         set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
-        self.sync_with_initial_token_transfer_allowed()
+        # The container has no owner, the tokens are related to it through the realm
+        smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
+        self.sync_with_initial_token_transfer_allowed(smartphone_serial)
         delete_policy("transfer_policy")
 
     def test_54_synchronize_initial_token_transfer_no_user_denied(self):
-        # No policy
-        self.sync_with_initial_token_transfer_denied()
-
-        # Policy for a specific realm
         self.setUp_user_realms()
+        self.setUp_user_realm2()
+        # No policy
+        smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
+        self.sync_with_initial_token_transfer_denied(smartphone_serial)
+
+        # Policy for a realm the container is not in
         set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER,
                    realm=self.realm1)
-        self.sync_with_initial_token_transfer_denied()
+        smartphone_serial = init_container({"type": "smartphone", "realm": self.realm2})["container_serial"]
+        self.sync_with_initial_token_transfer_denied(smartphone_serial)
         delete_policy("transfer_policy")
 
     def test_55_synchronize_initial_token_transfer_user_success(self):
@@ -2201,23 +2219,27 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_59_synchronize_smartphone_with_offline_tokens(self):
         # Registration
+        self.setUp_user_realms()
         set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
-        registration = self.register_smartphone_success()
+        smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
+        registration = self.register_smartphone_success(smartphone_serial)
         mock_smph = registration.mock_smph
         smartphone = find_container_by_serial(mock_smph.container_serial)
+        owner, realms = self.container_token_relation(smartphone_serial)
 
         # tokens
-        server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
+        server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"},
+                                  user=owner, tokenrealms=realms)
         server_token_otps = server_token.get_multi_otp(100)[2]["otp"]
-        client_token_no_serial = init_token({"genkey": "1", "type": "hotp"})
+        client_token_no_serial = init_token({"genkey": "1", "type": "hotp"}, user=owner, tokenrealms=realms)
         client_token_no_serial_otps = client_token_no_serial.get_multi_otp(100)[2]["otp"]
-        client_token_with_serial = init_token({"genkey": "1", "type": "hotp"})
+        client_token_with_serial = init_token({"genkey": "1", "type": "hotp"}, user=owner, tokenrealms=realms)
         client_token_with_serial_otps = client_token_with_serial.get_multi_otp(100)[2]["otp"]
-        shared_token = init_token({"genkey": "1", "type": "hotp"})
+        shared_token = init_token({"genkey": "1", "type": "hotp"}, user=owner, tokenrealms=realms)
         shared_token_otps = shared_token.get_multi_otp(100)[2]["otp"]
-        shared_token_no_serial = init_token({"genkey": "1", "type": "hotp"})
+        shared_token_no_serial = init_token({"genkey": "1", "type": "hotp"}, user=owner, tokenrealms=realms)
         shared_token_no_serial_otps = shared_token_no_serial.get_multi_otp(100)[2]["otp"]
-        online_token = init_token({"genkey": "1", "type": "hotp"})
+        online_token = init_token({"genkey": "1", "type": "hotp"}, user=owner, tokenrealms=realms)
 
         smartphone.add_token(server_token)
         smartphone.add_token(shared_token)
@@ -2299,26 +2321,30 @@ class APIContainerSynchronization(APIContainerTest):
 
     def test_60_rollover_and_synchronize_with_offline_tokens(self):
         # Registration
+        self.setUp_user_realms()
         set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
-        registration = self.register_smartphone_success()
+        smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
+        registration = self.register_smartphone_success(smartphone_serial)
         mock_smph = registration.mock_smph
         smartphone = find_container_by_serial(mock_smph.container_serial)
         smartphone.update_container_info([TokenContainerInfoData(key=RegistrationState.get_key(),
                                                                  value=RegistrationState.ROLLOVER_COMPLETED.value,
                                                                  info_type=PI_INTERNAL)])
+        owner, realms = self.container_token_relation(smartphone_serial)
 
         # tokens
-        server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"})
+        server_token = init_token({"genkey": "1", "type": "hotp", "otplen": 8, "hashlib": "sha256"},
+                                  user=owner, tokenrealms=realms)
         server_token_otps = server_token.get_multi_otp(100)[2]["otp"]
-        client_token_no_serial = init_token({"genkey": "1", "type": "hotp"})
+        client_token_no_serial = init_token({"genkey": "1", "type": "hotp"}, user=owner, tokenrealms=realms)
         client_token_no_serial_otps = client_token_no_serial.get_multi_otp(100)[2]["otp"]
-        client_token_with_serial = init_token({"genkey": "1", "type": "hotp"})
+        client_token_with_serial = init_token({"genkey": "1", "type": "hotp"}, user=owner, tokenrealms=realms)
         client_token_with_serial_otps = client_token_with_serial.get_multi_otp(100)[2]["otp"]
-        shared_token = init_token({"genkey": "1", "type": "hotp"})
+        shared_token = init_token({"genkey": "1", "type": "hotp"}, user=owner, tokenrealms=realms)
         shared_token_otps = shared_token.get_multi_otp(100)[2]["otp"]
-        shared_token_no_serial = init_token({"genkey": "1", "type": "hotp"})
+        shared_token_no_serial = init_token({"genkey": "1", "type": "hotp"}, user=owner, tokenrealms=realms)
         shared_token_no_serial_otps = shared_token_no_serial.get_multi_otp(100)[2]["otp"]
-        online_token = init_token({"genkey": "1", "type": "hotp"})
+        online_token = init_token({"genkey": "1", "type": "hotp"}, user=owner, tokenrealms=realms)
 
         smartphone.add_token(server_token)
         smartphone.add_token(shared_token)
@@ -2397,5 +2423,111 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual(103, shared_token_no_serial.token.count)
         self.assertTrue(update_tokens[shared_token_no_serial.get_serial()]["offline"])
         self.assertEqual(4, len(update_tokens_serials))
+
+        delete_policy("transfer_policy")
+
+    def initial_transfer_sync(self, mock_smph: MockSmartphone, smartphone_serial: str,
+                              token_serials: list[str]) -> None:
+        """
+        Runs an initial synchronization in which the client reports the given token serials.
+        """
+        scope = "https://pi.net/container/synchronize"
+        result = self.request_assert_success("container/challenge",
+                                             {"scope": scope, "container_serial": smartphone_serial}, None, "POST")
+        mock_smph.container = {"serial": smartphone_serial, "type": "smartphone",
+                               "tokens": [{"serial": serial} for serial in token_serials]}
+        params = mock_smph.synchronize(result["result"]["value"], scope)
+        self.request_assert_success("container/synchronize", params, None, "POST")
+
+    def test_61_initial_token_transfer_only_takes_over_tokens_of_the_container_owner(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+
+        smartphone_serial = init_container({"type": "smartphone", "user": "hans",
+                                            "realm": self.realm1})["container_serial"]
+        mock_smph = self.register_smartphone_success(smartphone_serial).mock_smph
+
+        own_token = init_token({"genkey": True, "type": "hotp"}, user=User("hans", self.realm1))
+        other_realm_token = init_token({"genkey": True, "type": "hotp"}, user=User("cornelius", self.realm2))
+        same_realm_token = init_token({"genkey": True, "type": "hotp"}, user=User("cornelius", self.realm1))
+
+        self.initial_transfer_sync(mock_smph, smartphone_serial,
+                                   [own_token.get_serial(), other_realm_token.get_serial(),
+                                    same_realm_token.get_serial()])
+
+        smartphone = find_container_by_serial(smartphone_serial)
+        token_serials = [token.get_serial() for token in smartphone.get_tokens()]
+        self.assertEqual([own_token.get_serial()], token_serials)
+        # The tokens of the other users keep their owner
+        self.assertEqual(User("cornelius", self.realm2), get_one_token(serial=other_realm_token.get_serial()).user)
+        self.assertEqual(User("cornelius", self.realm1), get_one_token(serial=same_realm_token.get_serial()).user)
+
+        delete_policy("transfer_policy")
+
+    def test_62_initial_token_transfer_takes_over_unassigned_tokens_of_the_container_realms(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+
+        smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
+        mock_smph = self.register_smartphone_success(smartphone_serial).mock_smph
+
+        # A token prepared for a user that is not known yet
+        realm_token = init_token({"genkey": True, "type": "hotp", "realm": self.realm1})
+        other_realm_token = init_token({"genkey": True, "type": "hotp", "realm": self.realm2})
+        realmless_token = init_token({"genkey": True, "type": "hotp"})
+
+        self.initial_transfer_sync(mock_smph, smartphone_serial,
+                                   [realm_token.get_serial(), other_realm_token.get_serial(),
+                                    realmless_token.get_serial()])
+
+        smartphone = find_container_by_serial(smartphone_serial)
+        token_serials = [token.get_serial() for token in smartphone.get_tokens()]
+        self.assertEqual([realm_token.get_serial()], token_serials)
+
+        delete_policy("transfer_policy")
+
+    def test_63_initial_token_transfer_moves_the_token_out_of_its_previous_container(self):
+        self.setUp_user_realms()
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        user = User("hans", self.realm1)
+
+        token = init_token({"genkey": True, "type": "hotp"}, user=user)
+        previous_serial = init_container({"type": "smartphone", "user": user.login,
+                                          "realm": self.realm1})["container_serial"]
+        add_token_to_container(previous_serial, token.get_serial())
+
+        smartphone_serial = init_container({"type": "smartphone", "user": user.login,
+                                            "realm": self.realm1})["container_serial"]
+        mock_smph = self.register_smartphone_success(smartphone_serial).mock_smph
+
+        self.initial_transfer_sync(mock_smph, smartphone_serial, [token.get_serial()])
+
+        self.assertEqual([token.get_serial()],
+                         [t.get_serial() for t in find_container_by_serial(smartphone_serial).get_tokens()])
+        self.assertEqual([], find_container_by_serial(previous_serial).get_tokens())
+        self.assertEqual(smartphone_serial, find_container_for_token(token.get_serial()).serial)
+
+        delete_policy("transfer_policy")
+
+    def test_64_initial_token_transfer_without_owner_and_realm_takes_over_nothing(self):
+        self.setUp_user_realms()
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+
+        # Without an owner and without a realm there is nothing that relates a token to the container
+        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
+        mock_smph = self.register_smartphone_success(smartphone_serial).mock_smph
+
+        user_token = init_token({"genkey": True, "type": "hotp"}, user=User("hans", self.realm1))
+        realm_token = init_token({"genkey": True, "type": "hotp", "realm": self.realm1})
+        realmless_token = init_token({"genkey": True, "type": "hotp"})
+
+        self.initial_transfer_sync(mock_smph, smartphone_serial,
+                                   [user_token.get_serial(), realm_token.get_serial(),
+                                    realmless_token.get_serial()])
+
+        self.assertEqual([], find_container_by_serial(smartphone_serial).get_tokens())
+        self.assertEqual(User("hans", self.realm1), get_one_token(serial=user_token.get_serial()).user)
 
         delete_policy("transfer_policy")

@@ -932,6 +932,26 @@ class TokenContainerClass:
         """
         raise NotImplementedError("Encryption is not implemented for this container type.")
 
+    def _is_token_transferable(self, token: TokenClass) -> bool:
+        """
+        Check whether a token the client reports belongs to this container and hence can be taken over during the
+        initial token transfer.
+
+        A token that is assigned to a user is taken over if the user is an owner of the container. An unassigned
+        token is taken over if it shares a realm with the container. This covers tokens that are prepared in advance
+        for a user that is not known yet. A token that is neither assigned to a user nor in any realm can not be
+        related to the container and is not taken over.
+
+        :param token: The token the client reported
+        :return: True if the token can be added to this container during the initial token transfer
+        """
+        token_owner = token.user
+        if token_owner:
+            return any(token_owner == container_owner for container_owner in self.get_users())
+
+        container_realms = {realm.name for realm in self.realms}
+        return bool(container_realms.intersection(token.get_realms()))
+
     def synchronize_container_details(self, container_client: dict,
                                       initial_transfer_allowed: bool = False) -> dict[str, dict[str, any]]:
         """
@@ -1028,6 +1048,9 @@ class TokenContainerClass:
         if initial_transfer_allowed and not is_true(container_info.get(INITIALLY_SYNCHRONIZED)):
             self.update_container_info([TokenContainerInfoData(key=INITIALLY_SYNCHRONIZED, value="True",
                                                                info_type=PI_INTERNAL)])
+            # Imported here since the container module imports this module
+            from privacyidea.lib.container import find_container_for_token
+
             server_missing_tokens = list(set(client_serials).difference(set(server_token_serials)))
             for serial in server_missing_tokens:
                 # Try to add the missing token to the container on the server
@@ -1037,11 +1060,25 @@ class TokenContainerClass:
                     log.info(f"Token {serial} from client does not exist on the server.")
                     continue
 
+                if not self._is_token_transferable(token):
+                    log.info(f"Client token {serial} is neither owned by an owner of the container {self.serial} nor "
+                             "in one of its realms. It is not added to the container.")
+                    continue
+
+                # Has to be read before the token is added, as it can only be part of one container
+                previous_container = find_container_for_token(serial)
+
                 try:
                     self.add_token(token)
                 except ParameterError as e:
                     log.info(f"Client token {serial} could not be added to the container: {e}")
                     continue
+
+                if previous_container and previous_container.serial != self.serial:
+                    previous_container.remove_token(serial)
+                    log.info(f"Adding token {serial} to container {self.serial}: "
+                             f"Token removed from previous container {previous_container.serial}.")
+
                 # add token to the same_serials list to update the token details
                 same_serials.append(serial)
 
