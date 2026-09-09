@@ -62,7 +62,6 @@ from urllib.parse import quote
 from uuid import uuid4
 
 import redis as redis_lib
-from passlib.exc import UnknownHashError
 
 from privacyidea.lib.cache.redis import _disable_redis, redis_client_for_feature, redis_feature_configured
 from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword, verify_pass_hash
@@ -310,9 +309,11 @@ def verify_in_cache(username: str, realm: str, resolver: str, password: str,
         try:
             if not verify_pass_hash(password, record["authentication"]):
                 continue
-        except UnknownHashError:
-            # Not a hash any configured algorithm can read - the same case the
-            # database path treats as an old entry and discards
+        except ValueError:
+            # Not a hash any configured algorithm can read, either unrecognised or
+            # malformed - the same case the database path treats as an old entry and
+            # discards. An over-long password does not arrive here, because
+            # verify_pass_hash() answers that with False.
             log.debug(f"Discarding an unreadable authentication cache entry for {username!s}@{realm!s}.")
             _forget(client, key, [entry_id])
             continue
@@ -393,8 +394,8 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
             try:
                 if verify_pass_hash(password, record["authentication"]):
                     doomed.append(entry_id)
-            except UnknownHashError:
-                # No configured algorithm can read the hash, so it can never verify again
+            except ValueError:
+                # The stored value can not be read, so it can never verify again
                 doomed.append(entry_id)
     _forget(client, key, doomed)
     return len(doomed)

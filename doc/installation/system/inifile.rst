@@ -130,8 +130,11 @@ with - but only as long as the algorithm that created it is still listed in
 .. note:: An authentication cache entry is stored in a column of 255 characters, which
    the hashes of the shipped algorithms fit into comfortably (Argon2 needs 97 and
    PBKDF2-SHA512 130). A configuration that produces a longer hash, for instance through
-   an unusually large salt or digest, does not fit and fails when an authentication is
-   cached.
+   an unusually large salt or digest, does not fit. PostgreSQL and MySQL or MariaDB in
+   strict mode reject it, so caching an authentication fails visibly; a MySQL or MariaDB
+   without strict mode truncates the value instead, and the entry it stores can then
+   never be verified - it is discarded and the authentication reaches the user store
+   again.
 
 Security
 --------

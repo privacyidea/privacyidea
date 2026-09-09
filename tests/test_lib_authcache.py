@@ -210,6 +210,27 @@ class AuthCacheTestCase(MyTestCase):
 
         self._assert_entry_is_usable()
 
+    def test_05ca_a_malformed_entry_is_discarded_rather_than_raising(self):
+        # An entry can be recognised as Argon2 and still be unreadable, for instance after
+        # the column truncated it. passlib raises a plain ValueError for that and
+        # UnknownHashError only for a value it cannot place at all, so both have to be
+        # treated as an entry that can never verify again.
+        self._store_entry(_hash_password(self.password)[:-6])
+
+        self.assertFalse(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
+        # The entry it could not read is gone, so the next authentication is not answered
+        # from a poisoned row
+        self.assertEqual(0, AuthCache.query.count())
+
+    def test_05e_an_overlong_password_is_not_cached_and_does_not_fail(self):
+        # The authentication has already succeeded when an entry is written, so a password
+        # the hash algorithm refuses to take must not turn it into an error. It is simply
+        # not cached.
+        self._clear_cache()
+
+        self.assertEqual(0, add_to_cache("grandpa", self.realm, self.resolver, "x" * 5000))
+        self.assertEqual(0, AuthCache.query.count())
+
     def test_05d_an_overlong_password_does_not_remove_the_entries(self):
         # A password beyond the size limit of the algorithm can not be hashed, so it can not
         # match. It says nothing about the stored entry, which has to survive the attempt.

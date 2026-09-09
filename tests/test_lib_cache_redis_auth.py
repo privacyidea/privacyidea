@@ -287,6 +287,24 @@ class RedisAuthCacheTestCase(MyTestCase):
                                             self.password, first_auth=first_auth,
                                             last_auth=last_auth))
 
+    def test_11b_a_malformed_entry_is_discarded_rather_than_raising(self):
+        # As on the database path: a value that is recognised as Argon2 but cannot be parsed
+        # raises a plain ValueError, not UnknownHashError, and has to be dropped too.
+        with auth_cache_in_store(self._real_client):
+            add_to_cache(self.username, self.realm, self.resolver, self.password)
+            first_auth, last_auth = self._windows()
+            self.assertTrue(verify_in_cache(self.username, self.realm, self.resolver,
+                                            self.password, first_auth=first_auth,
+                                            last_auth=last_auth))
+            # Corrupt the stored hash the way a truncating column would
+            self._flush_cache()
+            redis_add_to_cache(self.username, self.realm, self.resolver,
+                               pbkdf2_sha512.using(rounds=1000).hash(self.password)[:-6])
+            self.assertFalse(verify_in_cache(self.username, self.realm, self.resolver,
+                                             self.password, first_auth=first_auth,
+                                             last_auth=last_auth))
+            self.assertEqual({}, self._real_client.hgetall(self._key()))
+
     def test_12_deleting_removes_the_matching_entry_only(self):
         with auth_cache_in_store(self._real_client):
             add_to_cache(self.username, self.realm, self.resolver, self.password)

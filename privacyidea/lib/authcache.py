@@ -22,7 +22,7 @@
 import datetime
 import logging
 
-from passlib.exc import UnknownHashError
+from passlib.exc import PasswordSizeError
 from sqlalchemy import update, select, delete
 
 from ..models import AuthCache, db
@@ -55,7 +55,14 @@ def add_to_cache(username: str, realm: str, resolver: str, password: str,
     :return: the id of the database row, or 0 if the entry went to Redis, which
         has no row to identify
     """
-    auth_hash = _hash_password(password)
+    try:
+        auth_hash = _hash_password(password)
+    except PasswordSizeError:
+        # The authentication has already succeeded at this point. A password that the hash
+        # algorithm refuses to take simply does not get cached, it does not fail the request.
+        log.info(f"Not caching the authentication of {username!s}@{realm!s}: the password is "
+                 "longer than the hash algorithm accepts.")
+        return 0
     log.debug(f'Adding record to auth cache: ({username!r}, {realm!r}, {resolver!r})')
     if redis_auth_cache.add_to_cache(username, realm, resolver, auth_hash, max_age_seconds):
         return 0
@@ -113,8 +120,12 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
             elif verify_pass_hash(password, cached_auth.authentication):
                 delete_entry = True
 
-        except UnknownHashError:
-            # No configured algorithm can read the stored value, so it can never verify
+        except ValueError:
+            # The stored value can not be read: either no configured algorithm recognises
+            # it, or one does but the value is malformed. passlib raises UnknownHashError
+            # for the first and a plain ValueError for the second, and both mean the entry
+            # can never verify again. An over-long password does not arrive here, because
+            # verify_pass_hash() answers that with False.
             log.debug(f"Unreadable authcache entry for user {username!s}@{realm!s}.")
             delete_entry = True
         if delete_entry:
@@ -181,7 +192,9 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
     for cached_auth in cached_auths:
         try:
             result = verify_pass_hash(password, cached_auth.authentication)
-        except UnknownHashError:
+        except ValueError:
+            # Both an unrecognised and a malformed stored value land here, see
+            # delete_from_cache()
             log.debug(f"Unreadable authcache entry for user {username!s}@{realm!s}.")
             result = False
 
