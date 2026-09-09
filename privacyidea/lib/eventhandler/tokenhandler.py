@@ -38,6 +38,7 @@ You can attach token actions like enable, disable, delete, unassign,... of the
 """
 
 from privacyidea.lib.container import add_token_to_container
+from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.token import (get_token_types, set_validity_period_end,
@@ -49,7 +50,8 @@ from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    set_count_window, add_tokeninfo, get_tokeninfo,
                                    set_failcounter, delete_tokeninfo,
                                    get_one_token, set_max_failcount,
-                                   assign_tokengroup, unassign_tokengroup)
+                                   assign_tokengroup, unassign_tokengroup,
+                                   set_token_type_info)
 from privacyidea.lib.utils import (parse_date, is_true,
                                    parse_time_offset_from_now)
 from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
@@ -103,6 +105,49 @@ class VALIDITY:
     """
     START = "valid from"
     END = "valid till"
+
+
+def _write_tokeninfo_of_handler(serial: str, key: str, value: str) -> None:
+    """
+    Write a token info entry on behalf of a token event handler.
+
+    A handler is configured by an administrator and runs on the server, so it may write the entries a token
+    class maintains but allows to be set, e.g. the acceptance window of a TOTP token, which is the documented
+    way to widen that window while a token is synchronized for the first time. An entry that carries what the
+    token authenticates with is refused, and the handler logs it instead of failing.
+
+    Whether a key belongs to the token depends on its type, e.g. "timeWindow" is what a TOTP token accepts an
+    OTP within, while it is free-form on an HOTP token, so the free-form write is tried first and only a
+    refusal leads to the write of a maintained entry.
+
+    :param serial: The serial number of the token
+    :param key: The token info key to write
+    :param value: The value to write
+    """
+    try:
+        add_tokeninfo(serial, key, value)
+        return
+    except PolicyError as error:
+        refusal = str(error)
+    try:
+        if set_token_type_info(serial, {key: value}):
+            return
+    except ParameterError:
+        pass
+    log.warning(f"The event handler can not set the token info '{key}' of token {serial}: {refusal}")
+
+
+def _delete_tokeninfo_of_handler(serial: str, key: str) -> None:
+    """
+    Delete a token info entry on behalf of a token event handler, see _write_tokeninfo_of_handler().
+
+    :param serial: The serial number of the token
+    :param key: The token info key to delete
+    """
+    try:
+        delete_tokeninfo(serial, key)
+    except PolicyError as error:
+        log.warning(f"The event handler can not delete the token info '{key}' of token {serial}: {error!s}")
 
 
 class TokenEventHandler(BaseEventHandler):
@@ -530,26 +575,26 @@ class TokenEventHandler(BaseEventHandler):
                         except Exception:
                             username = "N/A"
                             realm = "N/A"
-                        add_tokeninfo(serial, handler_options.get("key"),
-                                      tokeninfo.format(
-                                          current_time=s_now,
-                                          now=s_now,
-                                          client_ip=g.client_ip,
-                                          username=username,
-                                          realm=realm,
-                                          ua_browser=request.user_agent.browser,
-                                          ua_string=request.user_agent.string))
+                        _write_tokeninfo_of_handler(serial, handler_options.get("key"),
+                                                    tokeninfo.format(
+                                                        current_time=s_now,
+                                                        now=s_now,
+                                                        client_ip=g.client_ip,
+                                                        username=username,
+                                                        realm=realm,
+                                                        ua_browser=request.user_agent.browser,
+                                                        ua_string=request.user_agent.string))
                     elif action.lower() == ACTION_TYPE.INCREASE_TOKENINFO:
                         try:
                             # We assume that the tokeninfo is an integer
                             increment = int(handler_options.get("increment") or 1)
                             current_value = int(get_tokeninfo(serial, handler_options.get("key")) or 0)
-                            add_tokeninfo(serial, handler_options.get("key"),
-                                          f"{current_value + increment}")
+                            _write_tokeninfo_of_handler(serial, handler_options.get("key"),
+                                                        f"{current_value + increment}")
                         except ValueError:
                             log.warning("Can not increase the tokeninfo {!s}".format(handler_options.get("key")))
                     elif action.lower() == ACTION_TYPE.DELETE_TOKENINFO:
-                        delete_tokeninfo(serial, handler_options.get("key"))
+                        _delete_tokeninfo_of_handler(serial, handler_options.get("key"))
                     elif action.lower() == ACTION_TYPE.SET_VALIDITY:
                         start_date = handler_options.get(VALIDITY.START)
                         end_date = handler_options.get(VALIDITY.END)
