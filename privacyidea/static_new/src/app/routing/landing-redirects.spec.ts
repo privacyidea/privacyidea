@@ -28,7 +28,7 @@ describe("logsLandingRedirect", () => {
   let authService: MockAuthService;
 
   const run = () =>
-    TestBed.runInInjectionContext(() => logsLandingRedirect({} as ActivatedRouteSnapshot, {} as never)) as string;
+    TestBed.runInInjectionContext(() => logsLandingRedirect({} as ActivatedRouteSnapshot)) as string;
 
   const allow = (...actions: string[]) =>
     (authService.actionAllowed as jest.Mock).mockImplementation((action: string) => actions.includes(action));
@@ -73,7 +73,7 @@ describe("logsLandingRedirect", () => {
       ],
       "none"
     );
-    const runWith = () => TestBed.runInInjectionContext(() => redirect({} as ActivatedRouteSnapshot, {} as never));
+    const runWith = () => TestBed.runInInjectionContext(() => redirect({} as ActivatedRouteSnapshot));
 
     allow("clienttype");
     expect(runWith()).toBe("second");

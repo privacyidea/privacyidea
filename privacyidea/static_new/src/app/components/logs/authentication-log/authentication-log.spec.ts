@@ -344,9 +344,9 @@ describe("AuthenticationLog", () => {
       })
     );
     fixture.detectChanges();
-    const rendered = Array.from(fixture.nativeElement.querySelectorAll<HTMLElement>(".reason-entry")).map((element) =>
-      element.textContent!.trim()
-    );
+    const rendered = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>(".reason-entry")
+    ).map((element) => element.textContent!.trim());
     expect(rendered).toEqual(["TOKEN_DISABLED", "WRONG_OTP"]);
     // Only the row whose reasons were detailed gets the button that opens them.
     expect(fixture.nativeElement.querySelectorAll(".reason-detail-button").length).toBe(1);
