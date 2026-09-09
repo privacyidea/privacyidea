@@ -89,10 +89,13 @@ Policy settings
 
   * ``USER_REALM`` - the realm of the authenticating user.
   * ``USER_ROLE`` - ``user``, ``admin-internal`` or ``admin-external``.
+  * ``ENDPOINT`` - the request path the authentication arrived at, see
+    :ref:`authentication_log_endpoints`.
 
   Each condition is either *is one of* or *is not one of* a list of values.
   Several conditions are combined with AND. Conditions also narrow what is
-  counted, not just whether the policy applies.
+  counted, not just whether the policy applies. Pre-authentication they read
+  what the request claims - see :ref:`conditional_access_policies_exceptions`.
 
   .. note:: A request that carries no value for a condition does not match
      *is one of*, but does match *is not one of*. An exception written as
@@ -164,10 +167,15 @@ over like any other, so *always* reaches up to the next threshold.
 
 .. warning:: A ``DENY`` at threshold 0 refuses **every** request the policy
    covers, whatever the subject has done. Scope it with conditions, and leave
-   yourself a way back in - *user role is not one of [admin-internal]* keeps the
-   internal administrators able to log in. A ``DENY`` stores no state, so none of
-   the ``pi-manage conditionalaccess`` reset commands can lift it; undoing an
-   unscoped one means disabling the policy itself, with
+   yourself a way back in. A ``user`` policy never decides an internal
+   administrator to begin with, as a local administrator has no resolved
+   identity to count against, so it is a ``source_ip`` policy that can shut you
+   out: exempt your own address in *ConditionalAccessNeverBlock*, which is never
+   denied either (see :ref:`conditional_access_never_block`), or write *user role
+   is not one of [admin-internal]* and read what that exemption costs in
+   :ref:`conditional_access_policies_exceptions`. A ``DENY`` stores no state, so
+   none of the ``pi-manage conditionalaccess`` reset commands can lift it;
+   undoing an unscoped one means disabling the policy itself, with
    ``pi-manage conditionalaccess disable-policy <name>`` if it has locked you out
    of the WebUI, see :ref:`conditional_access_policies_cli`.
 
@@ -219,6 +227,18 @@ blocked, nor mailed about.
 An exemption for a service account or a monitoring probe therefore goes on each
 policy it needs to be out of - which is also where an administrator reading that
 policy will look for it.
+
+.. warning:: An exemption written as *user role is not one of [admin-internal]*
+   also exempts everyone who merely **claims** to be an internal administrator.
+   The role is read from the login name before any password is checked, so a
+   login naming a local administrator is exempt whoever sent it, and the
+   attempts made under that name are neither refused nor counted by the policy.
+   The most guessable account in the installation is then the one account the
+   policy does not protect. Write the exemption only on the policies that need
+   it, and where an address will do, exempt the address in
+   *ConditionalAccessNeverBlock* (see :ref:`conditional_access_never_block`)
+   instead: an address is a fact of the connection rather than a claim of the
+   request.
 
 Which actions a policy may use depends on its target:
 
