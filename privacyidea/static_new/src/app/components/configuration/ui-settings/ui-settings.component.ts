@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
 import { forkJoin } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
@@ -70,6 +70,10 @@ export class UISettingsComponent {
   protected readonly showLoadingUrls = this.uiPreferencesService.showLoadingUrls;
   protected readonly landingPage = this.uiPreferencesService.landingPage;
   protected readonly availableLandingPages = this.uiPreferencesService.availableLandingPages;
+  // Set optimistically on pick so the control reflects it immediately; reset from the stored
+  // value again whenever that changes -- including when a failed write leaves it unchanged,
+  // which snaps the control back to what is actually persisted.
+  protected readonly selectedLandingPage: WritableSignal<LandingPage> = linkedSignal(() => this.landingPage());
   protected readonly landingPageLabels: Record<LandingPage, string> = {
     dashboard: $localize`:@@nav.dashboard:Dashboard`,
     tokens: $localize`:@@common.token:Token`,
@@ -133,6 +137,13 @@ export class UISettingsComponent {
   }
 
   protected selectLandingPage(page: LandingPage): void {
-    this.uiPreferencesService.setLandingPage(page);
+    this.selectedLandingPage.set(page);
+    this.uiPreferencesService.setLandingPage(page).subscribe((result) => {
+      // A failed write is swallowed into a `null` emission (see setLandingPage) after the
+      // service has already shown a toast -- snap the control back to what is actually stored.
+      if (result === null) {
+        this.selectedLandingPage.set(this.landingPage());
+      }
+    });
   }
 }

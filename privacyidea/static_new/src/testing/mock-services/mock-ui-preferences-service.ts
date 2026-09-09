@@ -32,6 +32,7 @@ export class MockUiPreferencesService implements UiPreferencesServiceInterface {
   });
   setLandingPage = jest.fn((page: LandingPage) => {
     this.landingPage.set(page);
+    return of(null);
   });
   resetLandingPage = jest.fn(() => {
     this.landingPage.set(DEFAULT_LANDING_PAGE);

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { computed, inject, Injectable, LOCALE_ID, Signal, signal } from "@angular/core";
-import { Observable, catchError, map, of, shareReplay } from "rxjs";
+import { Observable, catchError, map, of, shareReplay, timeout } from "rxjs";
 import {
   clearLocaleAttempt,
   isKnownLocale,
@@ -48,7 +48,7 @@ export interface UiPreferencesServiceInterface {
 
   setShowLoadingUrls(show: boolean): Observable<unknown>;
 
-  setLandingPage(page: LandingPage): void;
+  setLandingPage(page: LandingPage): Observable<unknown>;
 
   resetLandingPage(): Observable<unknown>;
 
@@ -144,19 +144,31 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
    */
   public landingPage$(): Observable<LandingPage> {
     return this.userSettingsService.getSettings().pipe(
+      // A request that never settles (dropped connection right after /auth) would otherwise
+      // leave a just-authenticated principal stuck with no feedback -- fall back to the
+      // policy-driven default the same way a request that errors outright already does.
+      timeout({ first: 5000 }),
       map(() => this.landingPage()),
       catchError(() => of(this.landingPage()))
     );
   }
 
-  /** Persists the picked landing page. */
-  public setLandingPage(page: LandingPage): void {
-    this.userSettingsService.setSetting("starting_page", page).subscribe({ error: () => undefined });
+  /**
+   * Persists the picked landing page. Reports once the write has settled -- same convention as
+   * setShowLoadingUrls -- so a caller can reset an optimistic UI update if it failed.
+   */
+  public setLandingPage(page: LandingPage): Observable<unknown> {
+    const write$ = this.userSettingsService.setSetting("starting_page", page).pipe(
+      catchError(() => of(null)),
+      shareReplay(1)
+    );
+    write$.subscribe();
+    return write$;
   }
 
   /** Reverts to the policy-driven default (dashboard, or the token list). */
   public resetLandingPage(): Observable<unknown> {
-    return this.userSettingsService.deleteSetting("starting_page");
+    return this.userSettingsService.deleteSetting("starting_page").pipe(catchError(() => of(null)));
   }
 
   private isLandingPageAvailable(page: LandingPage): boolean {

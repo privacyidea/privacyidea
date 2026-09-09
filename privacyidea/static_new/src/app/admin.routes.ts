@@ -17,14 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { inject } from "@angular/core";
 import { Routes } from "@angular/router";
-import { resolveLandingPath$ } from "@app/guards/auth.guard";
 import { dashboardGuard } from "@app/guards/dashboard.guard";
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
-import { AuthService } from "@services/auth/auth.service";
-import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
-import { map } from "rxjs";
 import { AuditComponent } from "@components/audit/audit.component";
 import { DashboardComponent } from "@components/dashboard/dashboard.component";
 import { ClientsComponent } from "@components/audit/clients/clients.component";
@@ -79,12 +74,6 @@ import { UserResolversComponent } from "@components/user/user-resolver/user-reso
 import { UserTableComponent } from "@components/user/user-table/user-table.component";
 
 export const routes: Routes = [
-  {
-    path: "",
-    pathMatch: "full",
-    redirectTo: () =>
-      resolveLandingPath$(inject(AuthService), inject(UiPreferencesService)).pipe(map((path) => path.slice(1)))
-  },
   {
     path: "dashboard",
     component: DashboardComponent,
