@@ -197,9 +197,9 @@ def own_entries_scope(login: str, realm: str) -> "AuthenticationLogVisibilitySco
         try:
             user = User(login=login, realm=realm)
         except Exception as ex:
-            # A resolver failure leaves the identity unknown, which fails closed below rather than erroring the read.
+            # A resolver failure leaves the identity unknown; fail closed rather than falling back to login matching.
             log.warning(f"Could not resolve {login}@{realm} for the visibility scope: {ex!r}")
-            user = None
+            return None
     if user and user.resolver and user.uid:
         return AuthenticationLogVisibilityScope(realms=[user.realm], resolvers=[user.resolver], usernames=[],
                                                 uids=[str(user.uid)])
