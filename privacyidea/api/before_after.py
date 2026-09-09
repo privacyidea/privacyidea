@@ -623,7 +623,7 @@ def shape_radius_response(request, response):
     Apply :func:`construct_radius_response` to ``/validate/radiuscheck``, shaping it into the RADIUS empty-body
     ``204``/``400`` form.
 
-    Applied from ``after_request`` for the same reason as :func:`mask_validate_error_response` - so an error
+    Applied from ``after_request`` for the same reason as :func:`mask_authentication_error_response` - so an error
     response built by an error handler is shaped too - but **after**
     :func:`~privacyidea.api.lib.conditional_access.surface_conditional_access_message`, because dropping the JSON
     body also drops the verdict conditional access still has to correct.
@@ -677,7 +677,7 @@ def auth_error(error):
 
         # The specific message is written to the audit log here; masking the
         # client-facing response (hide_specific_error_message) is applied
-        # centrally in shape_validate_error_response (see after_request).
+        # centrally in mask_authentication_error_response (see after_request).
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
     return send_error(error.message, error_code=error.id, details=error.details), get_auth_error_status_code(error)
