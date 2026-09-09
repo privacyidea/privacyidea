@@ -1108,6 +1108,18 @@ class AuthenticationLogStatisticsTestCase(MyTestCase):
                               str(AuthEventType.CHALLENGE_ANSWERED_FAIL): 1},
                              self._totals(self._statistics()))
 
+    def test_representative_is_the_newest_timestamp_not_the_highest_id(self):
+        # Row ids come from a plain autoincrement, so a multi-master cluster can commit a row on one node with a
+        # lower id than one committed earlier on another (see engine._row_order). The wrong answer here holds the
+        # lower id and the later timestamp: ranking by id would report the attempt as still in flight, and would
+        # drift from the engine, which counts it as a failure.
+        self._log(AuthEventType.CHALLENGE_ANSWERED_FAIL, at=self.window_start + timedelta(hours=2))
+        self._log(AuthEventType.CHALLENGE_CONTINUED, at=self.window_start + timedelta(hours=1))
+
+        self.assertDictEqual({str(AuthEventType.CHALLENGE_ANSWERED_FAIL): 1}, self._totals(self._statistics()))
+        self.assertEqual(1, count_user_attempts("res1", "u1", "r1", [AuthEventType.CHALLENGE_ANSWERED_FAIL],
+                                                24 * 3600, window_end=self.window_end))
+
     def test_enforcement_row_classifies_the_attempt_it_ended(self):
         self._log(AuthEventType.CHALLENGE_TRIGGERED)
         self._log(AuthEventType.USER_LOCKED)

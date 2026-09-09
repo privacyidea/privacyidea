@@ -26,6 +26,9 @@ keeping them beside the listing and the write path left one module carrying five
 The bucketing is deliberately a ``SUM(CASE ...)`` column per bin rather than a per-dialect date function, so one
 portable statement serves every supported database. :data:`MAX_STATISTICS_BINS` therefore bounds the *width* of the
 generated statement rather than the rows it reads.
+
+The attempt reduction uses a window function (``ROW_NUMBER``), because an attempt's
+representative is chosen by a column *pair* and no aggregate ranks on one.
 """
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -247,8 +250,9 @@ def get_authentication_log_statistics(start_time: datetime,
     would be counted as both a pending and a successful event. The rows sharing an ``attempt_id`` are therefore
     reduced to one representative each, by the same rule as
     :func:`~privacyidea.lib.conditional_access.engine._count_matching_attempts`: the ``LOGIN_SUCCESS`` row if the
-    attempt ever logged in, otherwise the latest row by ``id``. Insertion order, not an event-type ranking, is what
-    distinguishes a wrong answer *then* a continue (in progress) from a continue *then* a wrong answer (failed).
+    attempt ever logged in, otherwise the latest row by ``(timestamp, id)`` (see
+    :func:`~privacyidea.lib.conditional_access.engine._row_order`). Insertion order, not an event-type ranking, is
+    what distinguishes a wrong answer *then* a continue (in progress) from a continue *then* a wrong answer (failed).
 
     The reduction deliberately **diverges from the engine's in two ways**, because the engine feeds a threshold while
     this feeds a human:
@@ -318,22 +322,34 @@ def get_authentication_log_statistics(start_time: datetime,
                                                                        *conditions)
         reduced.append(or_(AuthenticationLog.attempt_id.in_(matching_attempts),
                            and_(AuthenticationLog.attempt_id.is_(None), *conditions)))
-    # Rows carrying an attempt_id group by it; rows without group by their own id and so count individually. A
-    # COALESCE of the two would have to cast the id to a string and mix collations, which MySQL rejects outright.
-    attempts = (select(func.max(case((AuthenticationLog.event_type == str(AuthEventType.LOGIN_SUCCESS),
-                                      AuthenticationLog.id))).label("success_id"),
-                       func.max(AuthenticationLog.id).label("latest_id"))
-                .where(*reduced)
-                .group_by(AuthenticationLog.attempt_id,
-                          case((AuthenticationLog.attempt_id.is_(None), AuthenticationLog.id)))
-                .subquery())
+    # Rank every row within its attempt so that rank 1 is the representative, by the engine's rule: a LOGIN_SUCCESS
+    # row first (a completed success is terminal), then the newest row by (timestamp, id) - see
+    # :func:`~privacyidea.lib.conditional_access.engine._row_order` for why the timestamp leads. A ROW_NUMBER window
+    # rather than two MAX aggregates and a join back, because a MAX cannot rank on a column pair: MySQL, MariaDB,
+    # PostgreSQL, SQLite and Oracle all support the window, and it also reads the representative's own row directly
+    # instead of looking it up by the aggregated id.
+    #
+    # Partitioning matches what the aggregate grouped by: rows carrying an attempt_id partition by it, rows without
+    # partition by their own id and so count individually. A COALESCE of the two would have to cast the id to a
+    # string and mix collations, which MySQL rejects outright. The ordering flag is a CASE rather than the boolean
+    # comparison itself, which Oracle has no type for, and the rank is not labelled "rank", which is a reserved word
+    # on MySQL 8 and a keyword on Oracle.
+    ranked = (select(AuthenticationLog.id.label("id"),
+                     func.row_number().over(
+                         partition_by=[AuthenticationLog.attempt_id,
+                                       case((AuthenticationLog.attempt_id.is_(None), AuthenticationLog.id))],
+                         order_by=[case((AuthenticationLog.event_type == str(AuthEventType.LOGIN_SUCCESS), 1),
+                                        else_=0).desc(),
+                                   AuthenticationLog.timestamp.desc(),
+                                   AuthenticationLog.id.desc()]).label("attempt_rank"))
+              .where(*reduced)
+              .subquery())
 
     stmt = (select(AuthenticationLog.event_type,
                    *[_bin_column(edges, index).label(f"bin_{index}") for index in range(bins)])
-            .select_from(attempts)
-            .join(AuthenticationLog,
-                  AuthenticationLog.id == func.coalesce(attempts.c.success_id, attempts.c.latest_id))
-            .where(*conditions)
+            .select_from(ranked)
+            .join(AuthenticationLog, AuthenticationLog.id == ranked.c.id)
+            .where(ranked.c.attempt_rank == 1, *conditions)
             .group_by(AuthenticationLog.event_type))
 
     known_outcomes = {str(event): str(outcome_of(event)) for event in AuthEventType}
