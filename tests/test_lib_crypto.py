@@ -892,8 +892,14 @@ class SignObjectTestCase(MyTestCase):
         self.assertTrue(so.verify(long_data, long_data_sig, verify_old_sigs=True))
 
 
-class DefaultHashAlgoListTestCase(MyTestCase):
+class DefaultHashAlgoListTestCase(OverrideConfigTestCase):
     """Check if the default hash algorithm list is used."""
+
+    class Config(TestingConfig):
+        # TestingConfig weakens the argon2 parameters so the suite is not dominated by the key
+        # derivation function. This class asserts the parameters a deployment actually gets, so it
+        # drops that override and takes the defaults from privacyidea.lib.crypto.
+        PI_HASH_ALGO_PARAMS = {}
 
     def test_01_default_hash_algorithm_list(self):
         password = "password"
