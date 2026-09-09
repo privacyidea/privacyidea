@@ -38,7 +38,7 @@
   // transparent like the odd body columns - fall back to the same opaque shade as every
   // other table's header (table.scss).
   th.col-odd {
-    background: light-dark(#f3f3f3, hsl(0, 0%, 12.5%)) !important;
+    background: light-dark(#f3f3f3, #1b1b1b) !important;
   }
 }
 
