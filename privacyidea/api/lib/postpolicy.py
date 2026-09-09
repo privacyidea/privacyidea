@@ -60,7 +60,7 @@ from privacyidea.api.lib.utils import get_all_params, hardening_action_active
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node)
-from privacyidea.lib.crypto import Sign
+from privacyidea.lib.crypto import get_sign_object
 from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
@@ -203,9 +203,7 @@ def sign_response(request, response):
     # Disable the costly checking of private RSA keys when loading them.
     check_private_key = not current_app.config.get(ConfigKey.RESPONSE_NO_PRIVATE_KEY_CHECK, False)
     try:
-        with open(private_key_file, 'rb') as file:
-            private_key = file.read()
-        sign_object = Sign(private_key, public_key=None, check_private_key=check_private_key)
+        sign_object = get_sign_object(private_key_file, check_private_key=check_private_key)
     except (OSError, ValueError, TypeError) as e:
         log.info('Could not load private key from '
                  f'file {private_key_file!s}: {e!r}!')
