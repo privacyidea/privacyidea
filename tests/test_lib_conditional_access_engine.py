@@ -64,6 +64,7 @@ from privacyidea.lib.conditional_access.engine import (
     _safe_format,
     _resolve_admin_recipients,
 )
+from privacyidea.lib.conditional_access.session import release_ca_connection
 from privacyidea.lib.conditional_access.state import lock_user
 from privacyidea.lib.conditional_access.policy import (StageDefinition, StageActionDefinition,
                                                                _build_stages)
@@ -998,6 +999,30 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         outcome = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes[0]
         self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcome.action_type)
         self.assertIsNone(outcome.info)
+
+    def test_leaving_dry_run_does_not_count_failures_from_the_trial(self):
+        # Failures accumulated while the policy was dry-run must not count once it starts enforcing - flipping
+        # dry_run off is the transition dry-run exists to make safe.
+        policy, _stages = self._make_policy(name="was_dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertFalse(is_user_locked(self.user))  # still dry-run: no lock
+
+        policy.dry_run = False
+        policy.enforced_since = utc_now()
+        db.session.commit()
+        # The engine reads policies on its own ca-session transaction (see session.get_ca_session); release it so
+        # the next evaluate() call starts a fresh one and observes the update just committed above.
+        release_ca_connection()
+
+        # The 3 failures from the trial are still within time_window_seconds, but must not count: only a new
+        # failure after enforced_since does.
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertFalse(is_user_locked(self.user))
+
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
 
     def test_dry_run_source_ip_policy_records_a_outcome_without_blocking(self):
         ip = "10.10.0.5"

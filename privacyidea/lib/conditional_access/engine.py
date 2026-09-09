@@ -819,6 +819,28 @@ def _count_scoping(policy: ConditionalAccessPolicy) -> "tuple[list | None, Calla
     return condition_sql_filters(policy), lambda row: conditions_match_row(policy, row)
 
 
+def _effective_window_seconds(policy: ConditionalAccessPolicy, window_end: datetime) -> float:
+    """
+    The policy's ``time_window_seconds``, floored at :attr:`~privacyidea.models.conditional_access_policy.
+    ConditionalAccessPolicy.enforced_since` when set: a policy that just left dry-run must not be judged against
+    failures that accumulated during the trial, so its very first enforced look-back window is narrowed to
+    ``[enforced_since, window_end]`` instead of the full configured width. Returned as a float (not truncated to
+    whole seconds): right after the transition the true window is sub-second wide, and rounding it down to 0 would
+    exclude the very failures the transition is meant to start counting. Once the configured window has elapsed
+    since ``enforced_since`` this returns the configured width unchanged. ``enforced_since`` in the future (a naive
+    clock skew) is clamped to an empty window rather than a negative one.
+
+    :param policy: the policy whose window is computed
+    :param window_end: the instant the window ends (already normalized to naive UTC by the caller)
+    :return: the window width in seconds to hand to the counters
+    """
+    window_seconds = policy.time_window_seconds
+    if policy.enforced_since is not None:
+        elapsed = (window_end - policy.enforced_since).total_seconds()
+        window_seconds = max(0.0, min(window_seconds, elapsed))
+    return window_seconds
+
+
 def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: datetime,
                   since_last_success: bool = False) -> int:
     """
@@ -840,13 +862,14 @@ def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: dat
     :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
     """
     sql_filters, row_filter = _count_scoping(policy)
+    window_seconds = _effective_window_seconds(policy, window_end)
     if policy.count_mode == CountMode.PER_ATTEMPT:
         return count_user_attempts(user.resolver, user.uid, user.realm,
-                                   policy.counter_types_to_track, policy.time_window_seconds,
+                                   policy.counter_types_to_track, window_seconds,
                                    window_end=window_end, since_last_success=since_last_success,
                                    row_filter=row_filter)
     return count_user_events(user.resolver, user.uid, user.realm,
-                             policy.counter_types_to_track, policy.time_window_seconds,
+                             policy.counter_types_to_track, window_seconds,
                              window_end=window_end, since_last_success=since_last_success,
                              extra_filters=sql_filters)
 
@@ -868,16 +891,17 @@ def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end
         (``PER_ATTEMPT``)
     """
     sql_filters, row_filter = _count_scoping(policy)
+    window_seconds = _effective_window_seconds(policy, window_end)
     if policy.count_mode == CountMode.PER_REQUEST:
         return count_ip_events(source_ip, policy.counter_types_to_track,
-                               policy.time_window_seconds, window_end=window_end,
+                               window_seconds, window_end=window_end,
                                extra_filters=sql_filters)
     if policy.count_mode == CountMode.PER_ATTEMPT:
         return count_ip_attempts(source_ip, policy.counter_types_to_track,
-                                 policy.time_window_seconds, window_end=window_end,
+                                 window_seconds, window_end=window_end,
                                  row_filter=row_filter)
     return count_distinct_users_for_ip(source_ip, policy.counter_types_to_track,
-                                       policy.time_window_seconds, window_end=window_end,
+                                       window_seconds, window_end=window_end,
                                        extra_filters=sql_filters)
 
 

@@ -126,6 +126,7 @@ from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ADMIN_RE
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
+from privacyidea.models.utils import utc_now
 from privacyidea.models.conditional_access_policy import (ConditionalAccessPolicy, ConditionalAccessPolicyCondition,
                                                ConditionalAccessPolicyStage, ConditionalAccessStageAction)
 
@@ -1139,6 +1140,11 @@ def update_conditional_access_policy(
     Existing locks/blocks written before the change are timed and expire on their
     own, so no stale state is left enforced.
 
+    Turning ``dry_run`` off (``True`` -> ``False``) sets ``enforced_since`` to now, so the count functions floor
+    their look-back window there and the policy is judged only on failures from this point on, not on whatever
+    accumulated during the trial - see
+    :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.enforced_since`.
+
     All fields are validated before anything is written. Only the fields the caller
     *sends* are validated, which is what keeps a policy stored before a validation
     rule existed - or written straight through the ORM - from being frozen: its
@@ -1212,7 +1218,13 @@ def update_conditional_access_policy(
             policy.enabled = bool(enabled)
             changed_fields.append("enabled")
         if dry_run is not None:
-            policy.dry_run = bool(dry_run)
+            dry_run = bool(dry_run)
+            if dry_run != policy.dry_run and not dry_run:
+                # Leaving dry-run: floor the next count at this instant, so the policy is judged on failures from
+                # here on rather than on whatever accumulated during the trial (see
+                # ConditionalAccessPolicy.enforced_since).
+                policy.enforced_since = utc_now()
+            policy.dry_run = dry_run
             changed_fields.append("dry_run")
         if reset_on_success is not None:
             policy.reset_on_success = reset_on_success
