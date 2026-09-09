@@ -30,18 +30,10 @@ It also contains the error handlers.
 
 import copy
 
-from .lib.utils import (
-    get_all_params,
-    get_before_request_config,
-    get_optional,
-    map_error_to_code,
-    get_auth_error_status_code,
-    send_error,
-    verify_auth_token,
-    get_auth_token_from_request,
-    logged_in_user_from_token,
-    GENERIC_AUTH_FAILURE,
-)
+from .lib.utils import (get_all_params, get_before_request_config, get_optional, map_error_to_code,
+                        get_auth_error_status_code, send_error, verify_auth_token, get_auth_token_from_request,
+                        logged_in_user_from_token, hide_specific_error_message, construct_radius_response,
+                        GENERIC_AUTH_FAILURE)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from .lib.conditional_access import surface_conditional_access_message
@@ -50,11 +42,9 @@ from ..lib.conditional_access.request_context import (peek_ca_context, reset_ca_
 from ..lib.framework import get_app_config_value
 from ..lib.clients import identify_client_by_key, touch_client
 from ..models import ClientStatus, db
-from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
 import logging
 from flask import request, g
-from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.log import redact_url
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
@@ -93,7 +83,7 @@ from .clients import clients_blueprint
 from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
-from ..lib.error import (PrivacyIDEAError, Error,
+from ..lib.error import (PrivacyIDEAError,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
@@ -571,6 +561,8 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
+    response = shape_validate_error_response(request, response)
+
     # Report what conditional access did to this request, if anything. Central rather than per endpoint for two
     # reasons: this also runs for a response an *error handler* built, where every post-policy is skipped, and no
     # gated endpoint can forget to opt in. One lookup and it is done for every request. First in this function, because
@@ -585,6 +577,48 @@ def after_request(response):
     # is active and no user is logged in.
     response = hide_version(request, response)
 
+    # No caching! Applied last, to the final response object, so a shaped
+    # replacement response still carries the no-cache guarantee.
+    response.headers['Cache-Control'] = 'no-cache'
+
+    return response
+
+
+def shape_validate_error_response(request, response):
+    """
+    Single source of truth for the two response-shaping policies of the
+    authentication endpoints. They must run on *every* response - normal returns
+    and the error responses built by the error handlers in this module alike -
+    but the ``@postpolicy`` chain of the view only runs when the view *returns*.
+
+    ``after_request`` is the single choke point every response flows through
+    (this is also how ``sign_response`` manages to sign error responses), so
+    both policies are applied here once instead of being duplicated as
+    ``@postpolicy`` decorators on the views and, for the error path, inline in
+    the error handlers:
+
+    * :func:`construct_radius_response` shapes ``/validate/radiuscheck`` into the
+      RADIUS empty-body ``204``/``400`` form.
+    * :func:`hide_specific_error_message` masks the specific failure reason on
+      ``/validate/check`` and ``/auth`` when the policy is active.
+
+    Both are no-ops for a successful authentication and only act on the route
+    they belong to, so unrelated endpoints (and ``/auth/rights``, ``/validate/*``
+    other than ``check``) are left untouched.
+
+    :param request: the request object
+    :param response: the response object
+    :return: the (possibly replaced) response
+    """
+    # Flask answers OPTIONS itself, without dispatching to the view, so there is
+    # no authentication outcome to shape - only the Allow header, which must survive.
+    if request.method == "OPTIONS":
+        return response
+    rule = getattr(getattr(request, "url_rule", None), "rule", None)
+    if rule == "/validate/radiuscheck":
+        return construct_radius_response(request, response)
+    if rule in ("/validate/check", "/auth"):
+        return hide_specific_error_message(request, response)
     return response
 
 
@@ -626,19 +660,9 @@ def auth_error(error):
             if "message" in error.details:
                 message = "{}|{}".format(message, error.details['message'])
 
-            hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
-                                      user_object=request.User if hasattr(request, 'User') else None).any()
-            if hide_message:
-                # Only the message is conditional access's to keep. The id says nothing about what an admin
-                # configured and everything about *why* the login failed, so it is remapped either way.
-                error.message = claimed_ca_message() or GENERIC_AUTH_FAILURE
-                # Remap to the generic AUTHENTICATE id, so a masked failure is
-                # indistinguishable from any other unspecified auth failure.
-                error.id = Error.AUTHENTICATE
-                # Replace the details completely, so future additions to the
-                # details cannot accidentally leak information either.
-                error.details = {"message": error.message}
-
+        # The specific message is written to the audit log here; masking the
+        # client-facing response (hide_specific_error_message) is applied
+        # centrally in shape_validate_error_response (see after_request).
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
     return send_error(error.message, error_code=error.id, details=error.details), get_auth_error_status_code(error)

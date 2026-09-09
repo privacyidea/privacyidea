@@ -461,6 +461,22 @@ class log_with:
         sensitive_positions = {index for index, name in enumerate(parameter_names)
                                if is_sensitive_key(name)}
 
+        # Resolved on the first DEBUG call and then remembered. The line a function is defined on
+        # cannot change while the process runs, but reading it costs a source file read and parse,
+        # and doing that per call made DEBUG logging pathologically expensive. Resolving it at
+        # decoration time instead would move the cost onto every import: there are ~476 decorated
+        # functions, which measured 123 ms of startup that a process never logging at DEBUG would
+        # pay for nothing.
+        definition_line = None
+
+        def resolve_definition_line() -> int:
+            try:
+                return inspect.getsourcelines(func)[1] + 1
+            except (OSError, TypeError):
+                # No source available (a C function, or one built at runtime). The code object
+                # still knows where it started, which is what getsourcelines would have reported.
+                return getattr(getattr(func, "__code__", None), "co_firstlineno", 0) + 1
+
         @functools.wraps(func)
         def log_wrapper(*args, **kwds):
             """
@@ -475,9 +491,12 @@ class log_with:
             :type kwds: dict
             :return: The wrapped function
             """
+            nonlocal definition_line
             # Exit early if self.logger disregards DEBUG messages.
             if not self.logger.isEnabledFor(logging.DEBUG):
                 return func(*args, **kwds)
+            if definition_line is None:
+                definition_line = resolve_definition_line()
 
             try:
                 # The denylist applies to every decorated function, so a secret is hidden no
@@ -500,8 +519,7 @@ class log_with:
                 log_args = ()
                 log_kwds = {}
             try:
-                import inspect
-                lno = inspect.getsourcelines(func)[1] + 1
+                lno = definition_line
                 if self.log_entry:
                     self.logger.debug(self.ENTRY_MESSAGE.format(
                         func.__name__, log_args, log_kwds),
@@ -517,8 +535,7 @@ class log_with:
             f_result = func(*args, **kwds)
 
             try:
-                import inspect
-                lno = inspect.getsourcelines(func)[1] + 1
+                lno = definition_line
                 if self.log_exit:
                     # Functions that pass request data along return it, so a result hides the same
                     # keys as an argument. Without this, a parameter dict that was hidden on the
