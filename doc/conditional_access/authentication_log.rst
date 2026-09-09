@@ -350,6 +350,16 @@ scoped administrator's counts only cover the attempts they may read. Users
 granted the right in the user scope see only their own entries, and the columns
 identifying the user are hidden for them.
 
+Whose entry is "their own" is decided by the account, not by the login name it
+carries: an entry belongs to the resolver, user id and realm it was recorded
+for. It therefore stays with the account when its login is renamed, and it is
+never handed to a different account that is later given a freed login name.
+Entries that resolved to no account at all - a login attempt for a name no
+resolver knows, for instance - are nobody's own and only an administrator sees
+them, as are the entries of an account that no longer resolves. A local
+administrator has no such identity, having neither realm nor resolver, so their
+own entries are matched by login name together with the internal-admin role.
+
 .. _authentication_log_cleanup:
 
 Cleaning up entries

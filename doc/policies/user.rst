@@ -217,7 +217,9 @@ type: ``bool``
 
 The user is allowed to read their own entries from the
 :ref:`authentication_log`. The columns identifying the user are hidden, since
-every entry is the user's own.
+every entry is the user's own. Their own entries are those recorded for their
+account - its resolver, user id and realm - rather than those carrying their
+login name, see :ref:`authentication_log`.
 
 .. versionadded:: 3.14
 

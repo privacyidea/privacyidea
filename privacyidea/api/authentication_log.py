@@ -35,7 +35,7 @@ from privacyidea.lib.conditional_access.conditions import AUTHENTICATING_ENDPOIN
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_optional_timestamp, get_required_timestamp
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import get_policy_visibility_scopes
+from privacyidea.lib.policies.helper import get_policy_visibility_scopes, own_entries_scope
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
@@ -93,8 +93,11 @@ def get_authentication_log_visibility_scopes() -> list[AuthenticationLogVisibili
     not fail loudly, it would quietly show one endpoint entries the other hides, so every one of them must derive the
     restriction the same way. Public for that reason: it is imported across the API layer rather than reimplemented.
 
-    A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative. A local
-    admin has no realm, so their own entries are matched by username plus the internal-admin role instead.
+    A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative. Those
+    are matched by the admin's resolver-stable identity (:func:`~privacyidea.lib.policies.helper.own_entries_scope`),
+    so the alternative is dropped rather than widened to a login name if that identity does not resolve. A local
+    admin has no such identity at all -- no realm, no resolver -- so their own entries are matched by username plus
+    the internal-admin role, which is what keeps a same-named realm user's entries out.
     """
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
     if g.logged_in_user["role"] != ROLE.ADMIN or visibility_scopes is None:
@@ -105,9 +108,9 @@ def get_authentication_log_visibility_scopes() -> list[AuthenticationLogVisibili
         return visibility_scopes + [
             AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[own_username],
                                              user_roles=[str(AuthLogUserRole.ADMIN_INTERNAL)])]
-    if own_username and own_realm:
-        return visibility_scopes + [
-            AuthenticationLogVisibilityScope(realms=[own_realm], resolvers=[], usernames=[own_username])]
+    own_scope = own_entries_scope(own_username, own_realm)
+    if own_scope:
+        return visibility_scopes + [own_scope]
     return visibility_scopes
 
 
@@ -121,7 +124,9 @@ def get_authentication_log():
 
     Requires the policy action :ref:`policy_authentication_log_read`. An **admin** with that action set in the admin
     scope may read the log; if the policy is scoped to realms, resolvers and/or users, only entries matching that
-    scope are returned. A **user** with the action set in the user scope may read only their own entries.
+    scope are returned. A **user** with the action set in the user scope may read only their own entries -- those of
+    their account, identified by resolver and user id rather than by their login name, so an entry that resolved to
+    no account is not among them however it was addressed.
 
     Each of ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``, ``reasons``,
     ``source_ips``, ``peer_ips``, ``source_ip_sources``, ``serials``, ``transaction_ids``, ``attempt_ids``,

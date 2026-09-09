@@ -157,8 +157,8 @@ def _visibility_condition(scopes: list) -> ColumnElement[bool]:
     it matches any scope (OR); an empty/unsatisfiable boundary returns ``false()``
     so it fails closed.
 
-    Realm, resolver and username are all enforced (username via the denormalized
-    ``UserLockState.username`` column, honoring the policy's
+    Realm, resolver, uid and username are all enforced (username via the
+    denormalized ``UserLockState.username`` column, honoring the policy's
     ``user_case_insensitive`` option like the auth log).
     """
     scope_conditions = []
@@ -168,6 +168,8 @@ def _visibility_condition(scopes: list) -> ColumnElement[bool]:
             dimensions.append(UserLockState.realm.in_(scope.realms))
         if scope.resolvers:
             dimensions.append(UserLockState.resolver.in_(scope.resolvers))
+        if scope.uids:
+            dimensions.append(UserLockState.uid.in_(scope.uids))
         if scope.usernames:
             if scope.username_case_insensitive:
                 dimensions.append(func.lower(UserLockState.username).in_(
@@ -192,6 +194,8 @@ def user_matches_scopes(user: User, scopes: list | None) -> bool:
         if scope.realms and user.realm not in scope.realms:
             continue
         if scope.resolvers and user.resolver not in scope.resolvers:
+            continue
+        if scope.uids and str(user.uid or "") not in scope.uids:
             continue
         if scope.usernames:
             login = user.login or ""

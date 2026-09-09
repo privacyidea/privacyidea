@@ -20,7 +20,7 @@ import logging
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
-from flask import g
+from flask import g, request
 
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
@@ -168,6 +168,45 @@ def get_admin_audit_params() -> dict:
     return admin_params
 
 
+def own_entries_scope(login: str, realm: str) -> "AuthenticationLogVisibilityScope | None":
+    """
+    Build the visibility scope for one principal's *own* records, bound to the resolver-stable identity
+    ``(resolver, uid, realm)`` rather than to the login name.
+
+    A login is not an identity: it can be renamed, and a freed one can be handed to a different account, which would
+    then read the previous account's authentication history. The identity is what the log records the subject as and
+    what the engine counts it by, so it is what this boundary matches on - a rename keeps the history, a reused login
+    inherits none.
+
+    ``None`` is returned if *login* does not resolve to an account in *realm* (no such account, an unreachable
+    resolver). Callers must fail closed on that rather than fall back to the login name: records that name no account
+    cannot be attributed to one.
+
+    :param login: the principal's login name
+    :param realm: the realm the principal is logged in to
+    :return: a scope matching exactly that account's records, or ``None`` if it does not resolve
+    """
+    from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
+    if not (login and realm):
+        return None
+    user = getattr(request, "User", None)
+    # before_request resolves a user-role caller's own account already (resolve_logged_in_user), so reusing it saves
+    # a second resolver lookup; login and realm are compared because request.User otherwise carries a subject taken
+    # from the request parameters.
+    if not (user and user.login == login and user.realm == realm.lower()):
+        try:
+            user = User(login=login, realm=realm)
+        except Exception as ex:
+            # A resolver failure leaves the identity unknown, which fails closed below rather than erroring the read.
+            log.warning(f"Could not resolve {login}@{realm} for the visibility scope: {ex!r}")
+            user = None
+    if user and user.resolver and user.uid:
+        return AuthenticationLogVisibilityScope(realms=[user.realm], resolvers=[user.resolver], usernames=[],
+                                                uids=[str(user.uid)])
+    log.info(f"{login}@{realm} resolves to no account, so no record is attributed to it.")
+    return None
+
+
 def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibilityScope"] | None:
     """
     Determine the visibility boundary for *action*: which records the logged-in principal may act on, expressed as
@@ -175,8 +214,9 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
     (``authentication_log_read``), the conditional-access lock state (``user_lock_read``), etc. — to only the
     entries a scoped admin is allowed to see.
 
-    A **user** may only ever act on their own entries, so a single scope built from the logged-in user's realm and
-    username is returned (never ``None``).
+    A **user** may only ever act on their own entries, so a single scope built from the logged-in user's identity is
+    returned (never ``None``) -- or an empty list, matching nothing, if that identity does not resolve (see
+    :func:`own_entries_scope`).
 
     For an **admin** the scopes are derived from the target scoping (realm, resolver, user) of that action's
     policies: one scope per scoping policy, combined OR across policies and AND across the dimensions a single policy
@@ -191,8 +231,8 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
     from privacyidea.lib.auth import ROLE
     from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
     if g.logged_in_user["role"] == ROLE.USER:
-        return [AuthenticationLogVisibilityScope(realms=[g.logged_in_user["realm"]], resolvers=[],
-                                                 usernames=[g.logged_in_user["username"]])]
+        own_scope = own_entries_scope(g.logged_in_user["username"], g.logged_in_user["realm"])
+        return [own_scope] if own_scope else []
     if g.logged_in_user["role"] != ROLE.ADMIN:
         return None
     scopes = []
