@@ -34,9 +34,10 @@ def _unicode_case_sensitive(length):
     The identity columns (resolver/uid/realm/username) are the user-lock visibility boundary: a
     user-scoped read policy filters on them. On MySQL/MariaDB the server-default collation is typically
     case-insensitive (*_ci), which would make that boundary match case-insensitively -- a fail-open
-    authorization risk. Pinning to utf8mb4_bin makes matching case-sensitive; SQLite, PostgreSQL and Oracle
-    already compare case-sensitively by default. Kept self-contained here so the migration stays a stable
-    snapshot.
+    authorization risk. error_message is pinned for the weaker reason that it is a filter value too, and a
+    filter must not answer differently per backend. Pinning to utf8mb4_bin makes matching case-sensitive;
+    SQLite, PostgreSQL and Oracle already compare case-sensitively by default. Kept self-contained here so
+    the migration stays a stable snapshot.
     """
     return sa.Unicode(length).with_variant(mysql.VARCHAR(length, charset="utf8mb4", collation="utf8mb4_bin"),
                                            "mysql", "mariadb")
@@ -79,7 +80,7 @@ def upgrade():
         sa.Column('username', _unicode_case_sensitive(255), nullable=True),
         sa.Column('lock_expires_at', sa.DateTime(), nullable=True),
         sa.Column('lock_cause', sa.Unicode(length=20), nullable=False, server_default='POLICY'),
-        sa.Column('error_message', sa.Unicode(length=500), nullable=True),
+        sa.Column('error_message', _unicode_case_sensitive(500), nullable=True),
         sa.Column('locked_at', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('resolver', 'uid', 'realm'),
     )

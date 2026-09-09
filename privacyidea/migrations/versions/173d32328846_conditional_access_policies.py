@@ -14,6 +14,7 @@ Create Date: 2026-06-03 00:00:00.000000
 """
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import mysql
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
@@ -38,6 +39,21 @@ INDEXES = {
         ('ix_conditional_access_stage_actions_stage_id', ['stage_id']),
     ],
 }
+
+
+def _unicode_case_sensitive(length: int) -> sa.Unicode:
+    """
+    A case-sensitive string column type (mirrors models.utils.case_sensitive_unicode).
+
+    MySQL/MariaDB's server-default collation is typically case-insensitive (*_ci) while SQLite, PostgreSQL and
+    Oracle compare case-sensitively, so an unpinned column would match differently per backend. Used for
+    error_message alone among these config columns: it is the wording the state tables snapshot and filter on
+    (user_lock_state.error_message), so all three copies of a message compare by the same rule. Pinning to
+    utf8mb4_bin gives that rule everywhere. Kept self-contained here (not imported from the model) so the
+    migration stays a stable snapshot.
+    """
+    return sa.Unicode(length).with_variant(mysql.VARCHAR(length, charset="utf8mb4", collation="utf8mb4_bin"),
+                                           "mysql", "mariadb")
 
 
 def _id_column():
@@ -140,7 +156,7 @@ def upgrade():
         _id_column(),
         sa.Column('policy_id', sa.Integer(), nullable=False),
         sa.Column('name', sa.Unicode(length=255), nullable=True),
-        sa.Column('error_message', sa.Unicode(length=500), nullable=True),
+        sa.Column('error_message', _unicode_case_sensitive(500), nullable=True),
         sa.Column('failure_threshold', sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(['policy_id'], ['conditional_access_policies.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),

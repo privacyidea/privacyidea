@@ -218,6 +218,16 @@ class UserLockStateTestCase(MyTestCase):
         self.assertEqual(1, len(matched))
         self.assertEqual("cornelius", matched[0]["username"])
 
+    def test_list_locked_users_wording_filter_matches_case_sensitively(self):
+        # An exact filter value matches case-sensitively on every backend: error_message is pinned to
+        # utf8mb4_bin, so MySQL/MariaDB's default (*_ci, and accent-insensitive too) cannot widen it. Only
+        # case_insensitive opts in - a wildcard value goes through ILIKE and is case-insensitive anyway.
+        self._lock(utc_now() + timedelta(seconds=600), error_message="Locked. Contact your administrator.")
+        self.assertListEqual([], list_locked_users(error_messages=["locked. contact your administrator."]))
+        matched = list_locked_users(error_messages=["locked. contact your administrator."], case_insensitive=True)
+        self.assertEqual(1, len(matched))
+        self.assertEqual("cornelius", matched[0]["username"])
+
     def test_list_locked_users_default_returns_all_states(self):
         # No states filter -> everything, including expired records.
         self._lock(utc_now() - timedelta(seconds=60))
