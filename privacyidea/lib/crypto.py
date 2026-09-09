@@ -45,6 +45,7 @@ This lib.crypto is tested in tests/test_lib_crypto.py
 import hmac
 import importlib
 import logging
+import os
 from dataclasses import dataclass
 from hashlib import sha256
 import secrets
@@ -54,6 +55,7 @@ import binascii
 import ctypes
 import base64
 import traceback
+from threading import Lock
 
 from cryptography.hazmat.primitives._serialization import NoEncryption
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey, EllipticCurvePrivateKey
@@ -851,6 +853,87 @@ class Sign:
             log.debug(f"{traceback.format_exc()!s}")
 
         return r
+
+
+_sign_object_lock = Lock()
+
+
+@dataclass
+class _CachedSignObject:
+    """
+    A Sign object together with the version of the key files it was loaded from.
+    """
+    key_file_version: tuple
+    sign_object: Sign
+
+
+def _read_key_file(key_file: str) -> bytes:
+    """
+    Read a key file, if one was given.
+
+    :param key_file: Name of a key file or None
+    :return: The contents of the file, or None if no file was given
+    """
+    if not key_file:
+        return None
+    with open(key_file, "rb") as key_file_handle:
+        return key_file_handle.read()
+
+
+def _get_key_file_version(key_file: str) -> tuple:
+    """
+    Return a value that changes whenever the given key file changes.
+
+    :param key_file: Name of a key file
+    :return: The modification time and the size of the file
+    """
+    file_stat = os.stat(key_file)
+    return file_stat.st_mtime_ns, file_stat.st_size
+
+
+def get_sign_object(private_key_file: str, public_key_file: str = None,
+                    check_private_key: bool = True) -> Sign:
+    """
+    Return a Sign object for the given key files and keep it in the app-local store.
+
+    Loading an RSA private key validates it, which takes about a hundred times longer than
+    creating the signature it enables. The audit log and the response signature use the same
+    key for every request, so the loaded key is kept in the app-local store and shared among
+    all threads of the application. This is safe because a loaded key holds no state between
+    operations: every signature builds its own context.
+
+    A key file that is replaced while the server is running is still picked up, because the
+    modification time and the size of the file are part of the cached entry.
+
+    Failures are not cached. Reading a key file is cheap compared to parsing the key, and a
+    key file that is temporarily unavailable must not disable signing until the next restart.
+
+    :param private_key_file: Name of the file containing the private key in PEM format
+    :param public_key_file: Name of the file containing the public key in PEM format. A Sign
+        object without a public key can sign, but it can not verify a signature.
+    :param check_private_key: Check the private key while loading it
+    :return: a Sign object
+    """
+    if not private_key_file:
+        # Without this, a missing PI_AUDIT_KEY_PRIVATE would yield a Sign object that has no
+        # key and signs everything with an empty signature.
+        raise TypeError("get_sign_object() needs the name of a file containing a private key.")
+    key_files = (private_key_file, public_key_file)
+    key_file_version = tuple(_get_key_file_version(key_file) if key_file else None
+                             for key_file in key_files)
+    cache_key = (private_key_file, public_key_file, check_private_key)
+    sign_objects = get_app_local_store().setdefault("sign_objects", {})
+    # Loading the key is the expensive part, so the lock is held while it happens. Otherwise
+    # every thread that arrives before the first one is done would load the key again.
+    with _sign_object_lock:
+        cached = sign_objects.get(cache_key)
+        if cached is None or cached.key_file_version != key_file_version:
+            sign_object = Sign(_read_key_file(private_key_file), _read_key_file(public_key_file),
+                               check_private_key=check_private_key)
+            cached = _CachedSignObject(key_file_version, sign_object)
+            sign_objects[cache_key] = cached
+            log.debug(f"Loaded the signing keys from {private_key_file!s} and {public_key_file!s}.")
+        return cached.sign_object
 
 
 def create_hsm_object(config):

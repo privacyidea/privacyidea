@@ -57,7 +57,7 @@ from sqlalchemy.sql.expression import FunctionElement
 
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auditmodules.base import Audit as AuditBase, Paginate
-from privacyidea.lib.crypto import Sign
+from privacyidea.lib.crypto import get_sign_object
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.pooling import get_engine
 from privacyidea.lib.utils import censor_connect_string
@@ -206,10 +206,9 @@ class Audit(AuditBase):
         # Disable the costly checking of private RSA keys when loading them.
         self.check_private_key = not self.config.get(ConfigKey.AUDIT_NO_PRIVATE_KEY_CHECK, False)
         if self.sign_data:
-            self.read_keys(self.config.get(ConfigKey.AUDIT_KEY_PUBLIC),
-                           self.config.get(ConfigKey.AUDIT_KEY_PRIVATE))
-            self.sign_object = Sign(self.private, self.public,
-                                    check_private_key=self.check_private_key)
+            self.sign_object = get_sign_object(self.config.get(ConfigKey.AUDIT_KEY_PRIVATE),
+                                               self.config.get(ConfigKey.AUDIT_KEY_PUBLIC),
+                                               check_private_key=self.check_private_key)
         # Read column_length from the config file
         config_column_length = self.config.get(ConfigKey.AUDIT_SQL_COLUMN_LENGTH, {})
         # fill the missing parts with the default from the models

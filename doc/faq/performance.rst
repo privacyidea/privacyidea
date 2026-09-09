@@ -90,9 +90,14 @@ The Audit-log
 ^^^^^^^^^^^^^
 
 Each entry in the :ref:`audit` log is digitally signed to detect tampering.
-If you can be sure that the private key in ``PI_AUDIT_KEY_PRIVATE`` has not been
-tampered with, you can set the config entry ``PI_AUDIT_NO_PRIVATE_KEY_CHECK = True``
-in :ref:`cfgfile` to improve the performance when loading the key.
+
+Loading the private key from ``PI_AUDIT_KEY_PRIVATE`` validates it, which takes
+considerably longer than creating a signature with it. The loaded key is kept for
+the lifetime of the worker process, so this happens once per process and not once
+per audit entry. If you can be sure that the private key has not been tampered
+with, the config entry ``PI_AUDIT_NO_PRIVATE_KEY_CHECK = True`` in :ref:`cfgfile`
+skips the validation, but it only saves the single check each worker process does
+when it writes its first audit entry.
 
 With the config entry ``PI_AUDIT_NO_SIGN = True`` the signing of the Audit-log
 can be deactivated completely.
@@ -101,8 +106,9 @@ The privacyIDEA Response
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 By default, privacyIDEA signs every JSON-Response with the private key in
-``PI_AUDIT_KEY_PRIVATE``. To improve the performance when loading the private
-key the config entry ``PI_RESPONSE_NO_PRIVATE_KEY_CHECK`` can be set to ``True``.
+``PI_AUDIT_KEY_PRIVATE``. The key is loaded and validated once per worker process,
+just like for the audit log, so the config entry
+``PI_RESPONSE_NO_PRIVATE_KEY_CHECK = True`` only skips that one validation.
 
 The signing of the response can be disabled completely by setting
 ``PI_NO_RESPONSE_SIGN`` to ``True``.

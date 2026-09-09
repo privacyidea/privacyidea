@@ -185,8 +185,10 @@ captures stderr - typically the webserver's error log.
 
 privacyIDEA digitally signs the responses with the private key in
 ``PI_AUDIT_KEY_PRIVATE``. If you can be sure that the private key has
-not been tampered with, you can set the parameter ``PI_AUDIT_NO_PRIVATE_KEY_CHECK``
-to ``True`` in order to improve the performance when loading the key.
+not been tampered with, you can set the parameter
+``PI_RESPONSE_NO_PRIVATE_KEY_CHECK`` to ``True`` in order to skip the validation
+of the key. The key is loaded once per worker process, so this only affects the
+first signed response of each process.
 
 You can disable the signing of the responses completely using the parameter
 ``PI_NO_RESPONSE_SIGN``. Set this to ``True`` to suppress the response signature.
@@ -249,7 +251,11 @@ effective if you also set ``PI_ENGINE_REGISTRY_CLASS`` to ``"shared"``.
 For signing and verifying each Audit entry, the RSA keys in ``PI_AUDIT_KEY_PRIVATE``
 and ``PI_AUDIT_KEY_PUBLIC`` are used. If you can be sure that the private key has
 not been tampered with, you can set the parameter ``PI_AUDIT_NO_PRIVATE_KEY_CHECK``
-to ``True`` in order to improve the performance when loading the key.
+to ``True`` in order to skip the validation of the key. The key is loaded once per
+worker process, so this only affects the first audit entry of each process.
+
+A key file that is replaced while the server is running is picked up without a
+restart.
 
 If you by any reason want to avoid signing audit entries entirely, you can
 set ``PI_AUDIT_NO_SIGN = True``. If ``PI_AUDIT_NO_SIGN`` is set to ``True``
