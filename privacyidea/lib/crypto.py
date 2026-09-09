@@ -887,6 +887,9 @@ def _get_key_file_version(key_file: str) -> tuple:
     :param key_file: Name of a key file
     :return: The modification time and the size of the file
     """
+    # os.stat() follows symlinks, which is what makes a mounted secret work: an orchestrator
+    # usually does not rewrite the key file in place, it points a symlink at a new version of
+    # the file, so the name privacyIDEA is configured with never changes itself.
     file_stat = os.stat(key_file)
     return file_stat.st_mtime_ns, file_stat.st_size
 

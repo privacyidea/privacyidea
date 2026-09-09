@@ -255,7 +255,16 @@ to ``True`` in order to skip the validation of the key. The key is loaded once p
 worker process, so this only affects the first audit entry of each process.
 
 A key file that is replaced while the server is running is picked up without a
-restart.
+restart, because the modification time and the size of the key files are checked
+whenever they are used. This includes a secret that is mounted into a container
+and updated by the orchestrator, where the mounted name is a symlink that is
+pointed at a new version of the file.
+
+.. note:: The audit keys are always configured as *file names*. A container
+   deployment therefore has to mount the keypair, for example as
+   ``/run/secrets/audit_key_private`` and ``/run/secrets/audit_key_public``,
+   which the Docker configuration picks up on its own. The key material itself
+   can not be passed in an environment variable.
 
 If you by any reason want to avoid signing audit entries entirely, you can
 set ``PI_AUDIT_NO_SIGN = True``. If ``PI_AUDIT_NO_SIGN`` is set to ``True``
