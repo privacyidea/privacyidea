@@ -451,6 +451,37 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         # Without the reset, both failed attempts (before and after the success) count.
         self.assertEqual(2, self._count_attempts([AuthEventType.MFA_FAIL], since_last_success=False))
 
+    def _seed_rows(self, rows: list[tuple[AuthEventType, datetime]], attempt_id: str) -> None:
+        """Insert one row per (event type, timestamp) pair sharing *attempt_id*, in the given order, so the row ids
+        ascend with that order whatever the timestamps say - which is how a multi-master cluster can hand out an id
+        that contradicts the commit order."""
+        for event_type, timestamp in rows:
+            db.session.add(AuthenticationLog(
+                event_type=str(event_type), resolver=self.user.resolver, uid=self.user.uid,
+                realm=self.user.realm, timestamp=timestamp, attempt_id=attempt_id))
+        db.session.commit()
+
+    def test_count_attempts_representative_is_the_newest_timestamp_not_the_highest_id(self):
+        # An attempt's latest row is the newest one by (timestamp, id), not by id alone: ids come from a plain
+        # autoincrement and a multi-master cluster can commit a row on one node with a lower id than one committed
+        # earlier on another (see engine._row_order). Here the wrong answer holds the lower id and the later
+        # timestamp, so ordering by id would classify the attempt by the continue and drop a real failure.
+        now = utc_now()
+        self._seed_rows([(AuthEventType.MFA_FAIL, now),
+                         (AuthEventType.CHALLENGE_CONTINUED, now - timedelta(seconds=5))], "inverted")
+        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL], window_end=now))
+        self.assertEqual(0, self._count_attempts([AuthEventType.CHALLENGE_CONTINUED], window_end=now))
+
+    def test_count_attempts_since_last_success_floors_on_the_timestamp_not_the_id(self):
+        # The same inversion at the reset point: the failure was committed through another node and carries a lower
+        # id than the success, but it happened after it, so it must survive the floor. Flooring by id would drop it
+        # and let the lock fire an attempt late.
+        now = utc_now()
+        self._seed_rows([(AuthEventType.MFA_FAIL, now)], "later-fail")
+        self._seed_rows([(AuthEventType.LOGIN_SUCCESS, now - timedelta(seconds=60))], "earlier-success")
+        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL], window_end=now,
+                                                 since_last_success=True))
+
     def test_count_attempts_since_last_success_no_success_counts_all(self):
         # With no successful attempt in the window the floor is inert: all failed attempts count.
         self._seed_attempt("a1", [AuthEventType.MFA_FAIL])
