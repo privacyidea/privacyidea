@@ -23,6 +23,8 @@ from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_one_token, get_tokens)
 from privacyidea.lib.token import init_token
 from privacyidea.lib.tokens.pushtoken import PushAction
+from privacyidea.lib.error import UserError
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from tests.test_lib_tokencontainer import MockSmartphone
 from .api_container_common import (
@@ -2488,26 +2490,30 @@ class APIContainerSynchronization(APIContainerTest):
 
         delete_policy("transfer_policy")
 
-    def test_63_initial_token_transfer_moves_the_token_out_of_its_previous_container(self):
+    def test_63_initial_token_transfer_keeps_a_token_in_its_container(self):
         self.setUp_user_realms()
         set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
         user = User("hans", self.realm1)
 
-        token = init_token({"genkey": True, "type": "hotp"}, user=user)
+        # A token that is in a container is moved by a container rollover, not by the initial transfer
+        container_token = init_token({"genkey": True, "type": "hotp"}, user=user)
         previous_serial = init_container({"type": "smartphone", "user": user.login,
                                           "realm": self.realm1})["container_serial"]
-        add_token_to_container(previous_serial, token.get_serial())
+        add_token_to_container(previous_serial, container_token.get_serial())
+        free_token = init_token({"genkey": True, "type": "hotp"}, user=user)
 
         smartphone_serial = init_container({"type": "smartphone", "user": user.login,
                                             "realm": self.realm1})["container_serial"]
         mock_smph = self.register_smartphone_success(smartphone_serial).mock_smph
 
-        self.initial_transfer_sync(mock_smph, smartphone_serial, [token.get_serial()])
+        self.initial_transfer_sync(mock_smph, smartphone_serial,
+                                   [container_token.get_serial(), free_token.get_serial()])
 
-        self.assertEqual([token.get_serial()],
-                         [t.get_serial() for t in find_container_by_serial(smartphone_serial).get_tokens()])
-        self.assertEqual([], find_container_by_serial(previous_serial).get_tokens())
-        self.assertEqual(smartphone_serial, find_container_for_token(token.get_serial()).serial)
+        self.assertEqual([free_token.get_serial()],
+                         [token.get_serial() for token in find_container_by_serial(smartphone_serial).get_tokens()])
+        self.assertEqual([container_token.get_serial()],
+                         [token.get_serial() for token in find_container_by_serial(previous_serial).get_tokens()])
+        self.assertEqual(previous_serial, find_container_for_token(container_token.get_serial()).serial)
 
         delete_policy("transfer_policy")
 
@@ -2529,5 +2535,33 @@ class APIContainerSynchronization(APIContainerTest):
 
         self.assertEqual([], find_container_by_serial(smartphone_serial).get_tokens())
         self.assertEqual(User("hans", self.realm1), get_one_token(serial=user_token.get_serial()).user)
+
+        delete_policy("transfer_policy")
+
+    def test_65_initial_token_transfer_continues_if_a_token_can_not_be_read(self):
+        self.setUp_user_realms()
+        set_policy("transfer_policy", scope=SCOPE.CONTAINER, action=PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        user = User("hans", self.realm1)
+
+        smartphone_serial = init_container({"type": "smartphone", "user": user.login,
+                                            "realm": self.realm1})["container_serial"]
+        mock_smph = self.register_smartphone_success(smartphone_serial).mock_smph
+
+        broken_token = init_token({"genkey": True, "type": "hotp"}, user=user)
+        working_token = init_token({"genkey": True, "type": "hotp"}, user=user)
+
+        # The owner of a token can not always be resolved, e.g. if its resolver was deleted
+        original_user = TokenClass.user
+        def failing_user(token_self):
+            if token_self.get_serial() == broken_token.get_serial():
+                raise UserError("The resolver 'resolver1' does not exist!")
+            return original_user.fget(token_self)
+
+        with mock.patch.object(TokenClass, "user", property(failing_user)):
+            self.initial_transfer_sync(mock_smph, smartphone_serial,
+                                       [broken_token.get_serial(), working_token.get_serial()])
+
+        smartphone = find_container_by_serial(smartphone_serial)
+        self.assertEqual([working_token.get_serial()], [token.get_serial() for token in smartphone.get_tokens()])
 
         delete_policy("transfer_policy")

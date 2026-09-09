@@ -1060,24 +1060,25 @@ class TokenContainerClass:
                     log.info(f"Token {serial} from client does not exist on the server.")
                     continue
 
-                if not self._is_token_transferable(token):
-                    log.info(f"Client token {serial} is neither owned by an owner of the container {self.serial} nor "
-                             "in one of its realms. It is not added to the container.")
-                    continue
-
-                # Has to be read before the token is added, as it can only be part of one container
-                previous_container = find_container_for_token(serial)
-
                 try:
-                    self.add_token(token)
-                except ParameterError as e:
-                    log.info(f"Client token {serial} could not be added to the container: {e}")
-                    continue
+                    if not self._is_token_transferable(token):
+                        log.info(f"Client token {serial} is neither owned by an owner of the container {self.serial} "
+                                 "nor in one of its realms. It is not added to the container.")
+                        continue
+                    # A token can only be part of one container. Taking it out of the one it is in is what a container
+                    # rollover is for, the initial transfer only picks up tokens that are not in a container yet.
+                    previous_container = find_container_for_token(serial)
+                    if previous_container:
+                        log.info(f"Client token {serial} is already part of the container "
+                                 f"{previous_container.serial}. It is not added to the container {self.serial}.")
+                        continue
 
-                if previous_container and previous_container.serial != self.serial:
-                    previous_container.remove_token(serial)
-                    log.info(f"Adding token {serial} to container {self.serial}: "
-                             f"Token removed from previous container {previous_container.serial}.")
+                    self.add_token(token)
+                except Exception as ex:
+                    # A single token must not abort the transfer: the container is marked as initially synchronized
+                    # above, hence the client can not repeat it.
+                    log.info(f"Client token {serial} could not be added to the container {self.serial}: {ex!r}")
+                    continue
 
                 # add token to the same_serials list to update the token details
                 same_serials.append(serial)

@@ -239,11 +239,11 @@
   synchronization of a registered smartphone container, the policy `initially_add_tokens_to_container` lets the server
   add the tokens the client reports to the container. Which of them are taken over is now restricted: a token that is
   assigned to a user is only added if the user is an owner of the container, and an unassigned token is only added if it
-  shares a realm with the container. The latter keeps working what the policy is mainly used for — tokens that are
+  shares a realm with the container. The realm rule preserves the main use case of the policy: tokens that are
   prepared in advance for a user that is not known yet. A token that has neither an owner nor a realm can not be related
   to the container and is no longer taken over; if you prepare tokens that way, put the tokens and the container into a
-  realm. A token is now also removed from a previous container when it is taken over, since a token can only be part of
-  one container.
+  realm. A token that is already part of another container is no longer taken over either — moving a container with
+  all its tokens to a new device is what a container rollover is for.
 
 * **HTTP API change** - the `resolver` and `userid` filters of `GET /token/` are now applied. Both parameters have
   always been accepted and documented, but they never became a condition of the query, so a request carrying one of them
