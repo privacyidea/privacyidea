@@ -20,7 +20,7 @@ import { CdkDragEnd, CdkDragMove, CdkDragStart } from "@angular/cdk/drag-drop";
 import { Component, provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
-import { DashboardWidget, WidgetInstance, WidgetSize } from "@models/dashboard";
+import { DashboardWidget, WidgetInstance, WidgetSize, WidgetTypeId } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService } from "@services/dashboard/widget-registry.service";
@@ -331,7 +331,14 @@ describe("DashboardComponent", () => {
     });
 
     it("should fall back to the floor minimum and an unbounded max for an unregistered widget type", () => {
-      const widget: WidgetInstance = { id: "unknown-1", type: "not-a-real-widget-type", x: 0, y: 0, cols: 6, rows: 4 };
+      const widget: WidgetInstance = {
+        id: "unknown-1",
+        type: "not-a-real-widget-type" as WidgetTypeId,
+        x: 0,
+        y: 0,
+        cols: 6,
+        rows: 4
+      };
       layoutService.widgets.set([...layoutService.widgets(), widget]);
 
       component['onResizeStart'](widget, "se", pointerEvent({ clientX: 0, clientY: 0 }));
@@ -353,7 +360,14 @@ describe("DashboardComponent", () => {
     });
 
     it("should report a widget of an unregistered type as not pinned", () => {
-      const widget: WidgetInstance = { id: "unknown-1", type: "not-a-real-widget-type", x: 0, y: 0, cols: 6, rows: 4 };
+      const widget: WidgetInstance = {
+        id: "unknown-1",
+        type: "not-a-real-widget-type" as WidgetTypeId,
+        x: 0,
+        y: 0,
+        cols: 6,
+        rows: 4
+      };
       expect(component['isPinned'](widget)).toBe(false);
     });
   });
