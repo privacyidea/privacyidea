@@ -7,12 +7,24 @@
   @include table.base-table-structure(".clients-table", ".clients-table-filter", ".table-scroll-container");
 }
 
-.col-even {
-  background-color: var(--mat-sys-light) !important;
-}
+// The clients table drops td cells for row-spanned columns, so the DOM
+// nth-child position no longer matches the logical column index. Disable the
+// generic position-based striping and stripe by the explicit colIdx class instead.
+.clients-table {
+  td:nth-child(even),
+  th:nth-child(even) {
+    background: transparent;
+  }
 
-.col-odd {
-  background-color: var(--mat-sys-surface-container-low) !important;
+  td.col-even,
+  th.col-even {
+    background: var(--mat-sys-surface-variant);
+  }
+
+  td.col-odd,
+  th.col-odd {
+    background: transparent;
+  }
 }
 
 .line-height {
