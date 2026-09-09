@@ -24,6 +24,7 @@ policy stage and lock the user.
 from unittest import mock
 from datetime import datetime, timedelta, timezone
 
+from privacyidea.api.lib import conditional_access as ca_gate
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.error import Error
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
@@ -1790,6 +1791,26 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # Teardown runs whether or not the request succeeded, so a request that ends in an error still logs its event.
         body = self._check({"user": "cornelius", "pass": "wrongpin000000"})
         self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(1, len(get_authentication_logs()))
+
+    def test_the_gate_hands_its_connection_back_before_the_request_continues(self):
+        # The pre-check reads on the conditional-access session, which shares db.session's pool. Holding that
+        # connection for the rest of a request it let through would occupy two of the pool per request, so the gate
+        # ends its transaction on the way out and the write at teardown opens a fresh one.
+        observed = []
+        release = ca_gate.release_ca_connection
+
+        def observing_release():
+            observed.append(get_ca_session().in_transaction())
+            release()
+            observed.append(get_ca_session().in_transaction())
+
+        with mock.patch.object(ca_gate, "release_ca_connection", observing_release):
+            body = self._check({"user": "cornelius", "pass": "wrongpin000000"})
+
+        self.assertFalse(body["result"]["value"], body)
+        self.assertListEqual([True, False], observed)
+        # Released, not closed: the row the request stages is still written.
         self.assertEqual(1, len(get_authentication_logs()))
 
 
