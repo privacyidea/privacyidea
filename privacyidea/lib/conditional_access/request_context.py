@@ -414,10 +414,11 @@ class ConditionalAccessContext:
 
         The evaluation counts events over the authentication log, so it must run **after** :meth:`flush` - otherwise
         the count would miss the very event that triggered it. That ordering also keeps the counts from reading a stale
-        snapshot: the pre-checks opened a read transaction, and under MySQL/MariaDB's REPEATABLE READ it would hide
-        rows a concurrent request committed since - but the flush commits, and a commit ends the transaction, so the
-        counts start from a fresh view on every backend. Should a caller ever reach here *without* a preceding commit,
-        that no longer holds and the read view has to be ended explicitly first.
+        snapshot: under MySQL/MariaDB's REPEATABLE READ an open read transaction hides rows a concurrent request
+        committed since it began, and the flush commits, so the counts start from a fresh view on every backend. The
+        pre-check leaves none open either, having released its connection
+        (:func:`~privacyidea.lib.conditional_access.session.release_ca_connection`). Should a caller ever reach here
+        *without* a preceding commit, that no longer holds and the read view has to be ended explicitly first.
 
         Every error is swallowed: this only writes state that the *next* request consults and must never affect the
         response that already completed.
