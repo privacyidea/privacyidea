@@ -19,7 +19,8 @@
 
 <div
   class="action-scope-container"
-  [matTooltip]="disabled() ? lockedHint : ''">
+  [matTooltip]="lockedHint"
+  [matTooltipDisabled]="!disabled()">
   <mat-form-field>
     <mat-label i18n="@@common.scope">Scope</mat-label>
     <mat-select
