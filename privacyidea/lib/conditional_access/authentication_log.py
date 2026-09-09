@@ -38,6 +38,7 @@ log = logging.getLogger(__name__)
 # Columns a paginated authentication-log query can sort by, keyed by the name the API accepts; every scalar column
 # is sortable, but ``other_info`` is excluded because JSON column ordering is neither meaningful nor portable, and
 # ``reasons`` because an entry has a list of them, in their own table (sorting rows by a collection is not defined).
+#: The columns a paginated authentication-log query may sort by, keyed by the name the API accepts.
 SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "id": AuthenticationLog.id,
     "timestamp": AuthenticationLog.timestamp,
@@ -167,7 +168,7 @@ def _truncate(column: str, value: Any, separator: str | None = None) -> _Truncat
     remainder is returned alongside the stored value rather than discarded.
 
     :param column: the column name, a key of
-        :data:`~privacyidea.models.authentication_log.authentication_log_column_length`
+        ``authentication_log_column_length`` in :mod:`privacyidea.models.authentication_log`
     :param value: the value to store, or None
     :param separator: if given, cut on the last separator that fits instead of mid-character, so neither the stored
         value nor the overflow holds a broken item (used for ``serial``, which may carry a separator-joined list, to

@@ -23,6 +23,13 @@ Authentication log
    :members:
    :undoc-members:
 
+Statistics over the log
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.authentication_log_statistics
+   :members:
+   :undoc-members:
+
 Conditional access outcome log
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -69,5 +76,19 @@ Per-request context
 ~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: privacyidea.lib.conditional_access.request_context
+   :members:
+   :undoc-members:
+
+Evaluation context
+~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.context
+   :members:
+   :undoc-members:
+
+Database session
+~~~~~~~~~~~~~~~~~
+
+.. automodule:: privacyidea.lib.conditional_access.session
    :members:
    :undoc-members:

@@ -26,6 +26,7 @@ privacyIDEA knows these scopes:
    container
    token
    hardening
+   conditional_access
 
 You can define as many policies as you wish to.
 The logic of the policies in the scopes is additive.

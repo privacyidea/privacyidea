@@ -179,8 +179,6 @@ Challenge-response
      belonging to another token, or never issued.
    ``CHALLENGE_EXPIRED``
      the challenge had lapsed when the response arrived.
-   ``CHALLENGE_DECLINED_ON_DEVICE``
-     the challenge was rejected on the device.
    ``TOKEN_NOT_FIT_FOR_CHALLENGE``
      the response matched, but the token may no longer complete the challenge:
      its state changed between the trigger and the answer. That check is the
@@ -188,6 +186,8 @@ Challenge-response
      names the state itself - one of the token states above, such as a token
      disabled or a failcounter filled up in the meantime. This reason is the
      fallback for a token type that refuses the answer without naming a state.
+   ``CHALLENGE_DECLINED_ON_DEVICE``
+     the challenge was rejected on the device.
 
 A successful authentication needs no reason, and neither does one still in
 flight. An entry is also without one where nothing determined a cause, so no
@@ -270,8 +270,10 @@ values, which the WebUI reads from ``GET /authenticationlog/endpoints`` and
 ``GET /authenticationlog/reasons``.
 
 A time range can be given in addition, and the result can be sorted by any
-column except the reasons, the conditional-access outcomes and the other info -
-each of those is a list per entry rather than a single value.
+column except the reasons, the conditional-access outcomes and the other info:
+the first two each hold a list per entry rather than a single value, and the
+other info is excluded because ordering by JSON content is neither meaningful
+nor portable.
 
 The *Conditional access* column filters on what conditional access did: the
 action type, the name of the policy that acted, and whether the outcome was a

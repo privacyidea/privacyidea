@@ -49,8 +49,9 @@ authentication log entries with ``authentication_log_read`` in the
 :ref:`user scope <user_policies>`.
 
 The following pages describe how a request is evaluated, how a policy is
-configured, what the authentication log records, and how a lock or a block is
-lifted again:
+configured, what the authentication log records, what a refused user is told,
+and how a lock or a block is lifted again. Nothing is said to the user unless an
+administrator configures it, see :ref:`conditional_access_error_messages`:
 
 .. toctree::
    :maxdepth: 1
@@ -58,4 +59,5 @@ lifted again:
    evaluation
    policies
    authentication_log
+   error_messages
    locks_and_blocks
