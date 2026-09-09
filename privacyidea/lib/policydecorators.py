@@ -194,7 +194,7 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
     The first two are decided from the request alone, so such a request is neither served
     from the cache nor stored in it. Answering one from the cache would accept an entry
     written by an earlier version, and looking one up without a credential also reaches
-    ``argon2.verify`` with ``None``, which raises.
+    the hash verification with ``None``, which raises.
 
     :param wrapped_function: usually "check_user_pass"
     :param user_object: User who tries to authenticate

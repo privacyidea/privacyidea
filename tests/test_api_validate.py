@@ -21,7 +21,7 @@ from testfixtures import log_capture
 
 from privacyidea.lib import _
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
-from privacyidea.lib.authcache import _hash_password
+from privacyidea.lib.crypto import verify_pass_hash
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
@@ -2366,9 +2366,11 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
 
-        # Check that there is no entry with this OTP value in the auth_cache
-        r = AuthCache.query.filter(AuthCache.authentication == _hash_password(OTPs[2])).first()
-        self.assertFalse(bool(r))
+        # Check that there is no entry with this OTP value in the auth_cache. A hash carries a
+        # random salt, so a stored entry never equals a freshly computed hash and has to be
+        # verified against instead.
+        self.assertFalse(any(verify_pass_hash(OTPs[2], entry.authentication)
+                             for entry in AuthCache.query.all()))
 
         # Authenticate again with the same OTP value will fail
         with self.app.test_request_context('/validate/check',

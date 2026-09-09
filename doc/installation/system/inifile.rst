@@ -122,8 +122,16 @@ Further information on possible parameters can be found in the
 
 Both entries apply wherever privacyIDEA hashes a password or a PIN: token PINs,
 administrator passwords, password reset codes and the entries of the authentication
-cache (see :ref:`policy_auth_cache`). Existing hashes carry the parameters they were
-created with, so they can still be verified after a change.
+cache (see :ref:`policy_auth_cache`). Changing ``PI_HASH_ALGO_PARAMS`` keeps the
+existing hashes verifiable, because every hash carries the parameters it was created
+with - but only as long as the algorithm that created it is still listed in
+``PI_HASH_ALGO_LIST``, as the note above says.
+
+.. note:: An authentication cache entry is stored in a column of 255 characters, which
+   the hashes of the shipped algorithms fit into comfortably (Argon2 needs 97 and
+   PBKDF2-SHA512 130). A configuration that produces a longer hash, for instance through
+   an unusually large salt or digest, does not fit and fails when an authentication is
+   cached.
 
 Security
 --------
@@ -706,7 +714,8 @@ Two consequences worth knowing:
   usually needs is no longer necessary.
 * The database-backed cache never bounded how many entries a user accumulated,
   and every lookup verifies the presented password against each of them with
-  Argon2 - so the cache got slower the more it was used. Per-entry expiry bounds
+  the configured key derivation function - so the cache got slower the more it
+  was used. Per-entry expiry bounds
   that set.
 
 Like the other workloads it degrades safely: if Redis cannot be reached the
@@ -798,9 +807,10 @@ What is stored differs per workload:
   ID, because Redis has to be able to look it up. Treat the key space as
   revealing who exists, and the values as unreadable without the encryption
   key.
-* Authentication cache entries are **encrypted** the same way. An entry holds an
-  Argon2 hash of the user's password, which could be attacked offline if it
-  leaked in the clear. Note that, exactly as with the database-backed cache, a
+* Authentication cache entries are **encrypted** the same way. An entry holds a
+  hash of the user's password, made with the algorithm and the parameters that
+  ``PI_HASH_ALGO_LIST`` and ``PI_HASH_ALGO_PARAMS`` configure, which could be
+  attacked offline if it leaked in the clear. Note that, exactly as with the database-backed cache, a
   password changed in the user store stays usable until its entry expires, so
   keep the :ref:`policy_auth_cache` window short enough to live with that.
 * Certificate health results are stored as plaintext. They hold no credentials,

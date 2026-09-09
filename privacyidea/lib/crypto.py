@@ -61,6 +61,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from passlib.context import CryptContext
+from passlib.exc import PasswordSizeError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException, ParameterError
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
@@ -250,7 +251,15 @@ def verify_pass_hash(password, hvalue):
     """
     pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
                                                  default=DEFAULT_HASH_ALGO_LIST))
-    return pass_ctx.verify(password, hvalue)
+    try:
+        return pass_ctx.verify(password, hvalue)
+    except PasswordSizeError:
+        # A password beyond the size limit of the algorithm can not be hashed, so it can not
+        # match any stored hash. This says something about the value that was presented and
+        # nothing about the hash it was compared against, so it must not reach a caller that
+        # reads an error as a broken hash.
+        log.info("The given password is longer than the hash algorithm accepts.")
+        return False
 
 
 def hash_with_pepper(password):

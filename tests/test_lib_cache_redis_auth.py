@@ -42,8 +42,7 @@ import redis as redis_lib
 from passlib.hash import pbkdf2_sha512
 
 from privacyidea.lib.authcache import add_to_cache, delete_from_cache, verify_in_cache
-from privacyidea.lib.cache.auth import _ttl_seconds, cache_enabled
-from privacyidea.lib.cache.auth import add_to_cache as redis_add_to_cache
+from privacyidea.lib.cache.auth import _ttl_seconds, cache_enabled, add_to_cache as redis_add_to_cache
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import PolicyClass, SCOPE, delete_policy, set_policy
@@ -222,8 +221,8 @@ class RedisAuthCacheTestCase(MyTestCase):
             first_auth = utc_now() + datetime.timedelta(minutes=1)
             self.assertFalse(verify_in_cache(self.username, self.realm, self.resolver, self.password,
                                              first_auth=first_auth))
-            # It was removed rather than left to cost an argon2 verification on
-            # every later attempt
+            # It was removed rather than left to cost a key derivation on every
+            # later attempt
             self.assertEqual({}, self._real_client.hgetall(self._key()))
 
     def test_08_an_entry_last_used_before_the_window_does_not_verify(self):

@@ -62,10 +62,10 @@ from urllib.parse import quote
 from uuid import uuid4
 
 import redis as redis_lib
+from passlib.exc import UnknownHashError
 
 from privacyidea.lib.cache.redis import _disable_redis, redis_client_for_feature, redis_feature_configured
-from privacyidea.lib.crypto import (FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword,
-                                    verify_pass_hash)
+from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword, verify_pass_hash
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.models.utils import utc_now
 
@@ -217,7 +217,7 @@ def add_to_cache(username: str, realm: str, resolver: str, auth_hash: str,
     :param username: The login name of the user
     :param realm: The realm of the user
     :param resolver: The resolver of the user
-    :param auth_hash: The Argon2 hash of the password that authenticated
+    :param auth_hash: The hash of the password that authenticated
     :param max_age_seconds: How long the entry may be used, from the policy
     :return: True if the entry was cached, False if the database has to do it
     """
@@ -274,8 +274,8 @@ def verify_in_cache(username: str, realm: str, resolver: str, password: str,
     already. On a match the entry's counter and last use are updated.
 
     Entries that are past ``first_auth`` are dropped while we are looking at
-    them. Without that, expired records would keep costing an Argon2
-    verification on every attempt until the whole key expires.
+    them. Without that, expired records would keep costing a key derivation on
+    every attempt until the whole key expires.
 
     :param username: The login name of the user
     :param realm: The realm of the user
@@ -310,7 +310,7 @@ def verify_in_cache(username: str, realm: str, resolver: str, password: str,
         try:
             if not verify_pass_hash(password, record["authentication"]):
                 continue
-        except ValueError:
+        except UnknownHashError:
             # Not a hash any configured algorithm can read - the same case the
             # database path treats as an old entry and discards
             log.debug(f"Discarding an unreadable authentication cache entry for {username!s}@{realm!s}.")
@@ -393,7 +393,7 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
             try:
                 if verify_pass_hash(password, record["authentication"]):
                     doomed.append(entry_id)
-            except ValueError:
+            except UnknownHashError:
                 # No configured algorithm can read the hash, so it can never verify again
                 doomed.append(entry_id)
     _forget(client, key, doomed)

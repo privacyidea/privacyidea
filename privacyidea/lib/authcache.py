@@ -22,6 +22,7 @@
 import datetime
 import logging
 
+from passlib.exc import UnknownHashError
 from sqlalchemy import update, select, delete
 
 from ..models import AuthCache, db
@@ -112,9 +113,9 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
             elif verify_pass_hash(password, cached_auth.authentication):
                 delete_entry = True
 
-        except ValueError:
+        except UnknownHashError:
+            # No configured algorithm can read the stored value, so it can never verify
             log.debug(f"Unreadable authcache entry for user {username!s}@{realm!s}.")
-            # Also delete old entries
             delete_entry = True
         if delete_entry:
             r += 1
@@ -180,7 +181,7 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
     for cached_auth in cached_auths:
         try:
             result = verify_pass_hash(password, cached_auth.authentication)
-        except ValueError:
+        except UnknownHashError:
             log.debug(f"Unreadable authcache entry for user {username!s}@{realm!s}.")
             result = False
 
