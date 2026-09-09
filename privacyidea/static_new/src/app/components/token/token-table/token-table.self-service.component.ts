@@ -20,7 +20,6 @@ import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatDialog } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -64,7 +63,6 @@ import { TokenTableComponent } from "./token-table.component";
 })
 export class TokenTableSelfServiceComponent extends TokenTableComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  private dialog = inject(MatDialog);
   override readonly tableState = new TableState({
     resource: this.tokenResource,
     count: () => this.totalLength(),
