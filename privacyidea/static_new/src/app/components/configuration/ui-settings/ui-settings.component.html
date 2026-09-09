@@ -122,56 +122,58 @@
       </mat-panel-description>
     </mat-expansion-panel-header>
 
-    <div class="settings-group settings-group-appearance">
-      <div class="settings-item settings-item-m settings-item-center">
-        <h4
-          class="settings-item-label margin-8"
-          i18n="@@uiSettings.corners"
-          >Corners</h4
-        >
-        <mat-button-toggle-group
-          (change)="selectCorners($event.value)"
-          [hideSingleSelectionIndicator]="true"
-          [value]="corners()"
-          aria-label="Corners"
-          i18n-aria-label="@@uiSettings.corners">
-          @for (level of cornerLevels; track level.value) {
-            <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      </div>
+    <div class="expansion-well">
+      <div class="settings-group settings-group-appearance">
+        <div class="settings-item settings-item-m settings-item-center">
+          <h4
+            class="settings-item-label margin-8"
+            i18n="@@uiSettings.corners"
+            >Corners</h4
+          >
+          <mat-button-toggle-group
+            (change)="selectCorners($event.value)"
+            [hideSingleSelectionIndicator]="true"
+            [value]="corners()"
+            aria-label="Corners"
+            i18n-aria-label="@@uiSettings.corners">
+            @for (level of cornerLevels; track level.value) {
+              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
 
-      <div class="settings-item settings-item-m settings-item-center">
-        <h4
-          class="settings-item-label margin-8"
-          i18n="@@uiSettings.depth"
-          >Depth</h4
-        >
-        <mat-button-toggle-group
-          (change)="selectDepth($event.value)"
-          [hideSingleSelectionIndicator]="true"
-          [value]="depth()"
-          aria-label="Depth"
-          i18n-aria-label="@@uiSettings.depth">
-          @for (level of depthLevels; track level.value) {
-            <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-      </div>
+        <div class="settings-item settings-item-m settings-item-center">
+          <h4
+            class="settings-item-label margin-8"
+            i18n="@@uiSettings.depth"
+            >Depth</h4
+          >
+          <mat-button-toggle-group
+            (change)="selectDepth($event.value)"
+            [hideSingleSelectionIndicator]="true"
+            [value]="depth()"
+            aria-label="Depth"
+            i18n-aria-label="@@uiSettings.depth">
+            @for (level of depthLevels; track level.value) {
+              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
 
-      <div class="settings-item settings-item-m settings-item-center">
-        <h4
-          class="settings-item-label margin-8"
-          i18n="@@uiSettings.lightSource"
-          >Light Source</h4
-        >
-        <app-light-source-dial
-          [items]="lightSourceDialItems"
-          [selected]="lightSource()"
-          groupName="light-source"
-          legend="Light source"
-          i18n-legend="@@uiSettings.lightSource2"
-          (pick)="selectLightSource($event)" />
+        <div class="settings-item settings-item-m settings-item-center">
+          <h4
+            class="settings-item-label margin-8"
+            i18n="@@uiSettings.lightSource"
+            >Light Source</h4
+          >
+          <app-light-source-dial
+            [items]="lightSourceDialItems"
+            [selected]="lightSource()"
+            groupName="light-source"
+            legend="Light source"
+            i18n-legend="@@uiSettings.lightSource2"
+            (pick)="selectLightSource($event)" />
+        </div>
       </div>
     </div>
   </mat-expansion-panel>
