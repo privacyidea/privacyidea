@@ -45,7 +45,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                           strip_internal_classification)
 from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, ClientLabelSource,
                                                                     PendingAuthEvent)
-from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context
+from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context, claimed_ca_message
 from privacyidea.lib.user import User
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_from_config, SYSCONF
@@ -904,7 +904,8 @@ def hide_specific_error_message(request, response):
       ``False`` - where both ``result.error`` and ``detail`` exist.
 
     A successful authentication or an open challenge is left untouched. The
-    message is replaced by a generic string and the error code (if present) is
+    message is replaced by a generic string - or, where a conditional-access
+    gate claimed one, by that message - and the error code (if present) is
     remapped to the generic ``AUTHENTICATE`` id, so a masked failure is
     indistinguishable from any other unspecified authentication failure. The
     original, specific message is expected to have been written to the audit log
@@ -931,7 +932,10 @@ def hide_specific_error_message(request, response):
     if not hide:
         return response
 
-    message = str(_("Authentication failed."))
+    # A conditional-access message is kept: an admin either wrote it on the stage or turned it on by policy, so it
+    # is not what this action is here to suppress. Taken from the claim rather than from the body, because a stage
+    # that only notified was *appended* to the token's own reason and that reason is exactly what this does suppress.
+    message = claimed_ca_message() or str(GENERIC_AUTH_FAILURE)
     error = result.get("error")
     if isinstance(error, dict):
         error["message"] = message
