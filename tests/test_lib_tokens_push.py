@@ -298,7 +298,7 @@ class PushTokenTestCase(MyTestCase):
                    action=f"{PushAction.FIREBASE_CONFIG}={gateway_identifier},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         token = self._create_push_token()
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
         responses.add(responses.POST, "https://push.example.com/send", status=200)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
@@ -326,7 +326,7 @@ class PushTokenTestCase(MyTestCase):
         self.addCleanup(delete_smsgateway, gateway_identifier)
         token = self._create_push_token()
         self.addCleanup(remove_token, token.get_serial())
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         g.audit_object = mock.MagicMock(audit_data={})
@@ -337,7 +337,7 @@ class PushTokenTestCase(MyTestCase):
     def test_02d_challenge_without_gateway_raises_on_exception(self):
         token = self._create_push_token()
         self.addCleanup(remove_token, token.get_serial())
-        token.delete_tokeninfo(PushAction.FIREBASE_CONFIG)
+        token.remove_tokeninfo(PushAction.FIREBASE_CONFIG)
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
         g.audit_object = mock.MagicMock(audit_data={})
