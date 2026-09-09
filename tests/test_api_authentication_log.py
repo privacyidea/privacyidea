@@ -709,6 +709,26 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             delete_policy("authlog_user")
             delete_realm("adminrealm")
 
+    def test_scoped_admin_keeps_its_policy_scope_when_its_own_identity_is_gone(self):
+        # The own-entries alternative is dropped, not widened to the login name, when the admin's account no longer
+        # resolves (here its realm deleted while the token is still valid) - and the read still succeeds on the
+        # policy scope rather than erroring.
+        helpdesk_token = self._login_helpdesk()
+        own_resolver, own_uid = self._identity("selfservice", "adminrealm")
+        in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                            uid="1", realm=self.realm1)
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=own_resolver, uid=own_uid,
+                                       realm="adminrealm", username="selfservice")
+        db.session.commit()
+        delete_realm("adminrealm")
+        set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
+        try:
+            ids = self._helpdesk_ids(helpdesk_token, {"page_size": 50})
+            self.assertSetEqual({in_scope}, ids)
+            self.assertNotIn(own, ids)
+        finally:
+            delete_policy("authlog_realm")
+
     def test_local_admin_always_sees_own_entries(self):
         # A restricted local (DB) admin has no realm; their own /auth events are recorded with realm/resolver NULL and
         # user_role=admin-internal, so they are matched by username + role, not by realm.
