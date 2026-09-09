@@ -134,10 +134,10 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
     by both entry points so neither can answer it differently from the other.
 
     A lock or block already in force refuses the request before the conditional-access DENY decision is evaluated,
-    so an ALLOW cannot override them. Every restriction in force that carries one is reported, while the
+    so no policy can override them. Every restriction in force that carries one is reported, while the
     authentication log is classified by the binding one (:func:`_binding_event_type`), because that row holds one
-    classification per request. A DENY refuses this single request without persisting state; ALLOW / CONTINUE
-    return ``None`` and the request continues. ``g.client_ip`` is the source IP checked.
+    classification per request. A DENY refuses this single request without persisting state; CONTINUE ("no policy
+    had an opinion") returns ``None`` and the request continues. ``g.client_ip`` is the source IP checked.
 
     Reads clear an expired row as they go, so a lock that has run out is not treated as one.
 

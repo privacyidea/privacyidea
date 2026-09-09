@@ -430,7 +430,7 @@ class AccessDecisionResult:
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
     # The error message of the stage that denied, read straight off it: a DENY decides this one request and
     # persists nothing, so unlike a lock there is no state row to copy it to and nothing to go stale.
-    # None for ALLOW and CONTINUE, which turn no request away.
+    # None for CONTINUE, which turns no request away.
     error_message: "str | None" = None
 
 
