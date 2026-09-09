@@ -60,7 +60,8 @@
 }
 
 .settings-group-appearance {
-  width: var(--card-width-m);
+  width: 100%;
+  justify-content: center;
 }
 
 .settings-item {
