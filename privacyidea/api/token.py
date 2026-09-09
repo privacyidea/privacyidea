@@ -113,7 +113,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
-                         delete_tokeninfo, import_token, set_token_type_info, is_settable_tokeninfo_key,
+                         delete_tokeninfo, import_token, set_token_type_info, get_settable_tokeninfo_keys,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
@@ -1346,13 +1346,16 @@ def set_api(serial=None):
     # Token info entries a token class maintains but that change over the lifetime of a token, e.g.
     # "remote.user" or "phone". A parameter counts as one when some token class declares it settable, so the
     # fixed fields above and any framework parameter are unaffected.
-    settable_info = {key: value for key, value in request.all_data.items()
-                     if key not in HANDLED_SET_FIELDS and is_settable_tokeninfo_key(key)}
+    settable_keys = get_settable_tokeninfo_keys(set(request.all_data) - HANDLED_SET_FIELDS)
+    settable_info = {key: value for key, value in request.all_data.items() if key in settable_keys}
     if settable_info:
-        for key, value in sorted(settable_info.items()):
+        # A key one token type declares settable is not written to a token of another type, so the audit
+        # follows the write and names the entries that were actually written
+        written_keys = set_token_type_info(serial, settable_info, user=user)
+        for key in sorted(set(written_keys)):
             # The value can be a secret, e.g. the shared secret of a RADIUS server, so only the key is audited
             g.audit_object.add_to_log({'action_detail': f"{key!s} set, "})
-        res += set_token_type_info(serial, settable_info, user=user)
+        res += len(written_keys)
 
     g.audit_object.log({"success": True})
     return send_result(res)

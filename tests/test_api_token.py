@@ -5638,6 +5638,12 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
         self.assertEqual("/path", token.get_tokeninfo("remote.path"))
         # The other entries of the namespace are untouched
         self.assertEqual("https://first", token.get_tokeninfo("remote.server"))
+        # Every written entry is named in the audit log, by key only, the value can be a secret
+        audit_entry = self.find_most_recent_audit_entry(action='POST /token/set')
+        action_detail = audit_entry.get('action_detail', '')
+        self.assertIn("remote.user set", action_detail, audit_entry)
+        self.assertIn("remote.path set", action_detail, audit_entry)
+        self.assertNotIn("seconduser", action_detail, audit_entry)
 
         # A key another token type declares settable is not written to this token
         with self.app.test_request_context('/token/set',
@@ -5648,8 +5654,12 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             self.assertEqual(0, res.json["result"]["value"])
         self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("radius.user"))
+        # The audit names the entries that were written, so an entry dropped for this token is not in it
+        audit_entry = self.find_most_recent_audit_entry(action='POST /token/set')
+        self.assertNotIn("radius.user", audit_entry.get('action_detail', ''), audit_entry)
 
-        # A key no token type declares settable is refused
+        # A key no token type declares settable is not a token info parameter at all: the endpoint
+        # can not tell it apart from an unrelated parameter, so it is ignored rather than refused
         with self.app.test_request_context('/token/set',
                                            method="POST",
                                            data={"serial": serial, "remotee.user": "someuser"},
