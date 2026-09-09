@@ -632,7 +632,7 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
     the whole attempt — is the :attr:`AuthEventType.LOGIN_SUCCESS` row if the attempt ever logged in (a completed
     success is terminal: a later stray answer replayed on the same, now-answered challenge maps to the same
     ``attempt_id`` but must not undo the success), otherwise the **latest** row by :func:`_row_order`. That is the
-    insertion order, which orders the multichallenge steps correctly independent of event type — e.g. a wrong answer
+    chronological order, which orders the multichallenge steps correctly independent of event type — e.g. a wrong answer
     *then* a continue reads as in-progress (latest = the continue), while a continue *then* a wrong answer reads as
     failed (latest = the fail), which an event-type ranking could not distinguish.
 
