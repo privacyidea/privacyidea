@@ -54,6 +54,7 @@ import binascii
 import ctypes
 import base64
 import traceback
+from threading import Lock
 
 from cryptography.hazmat.primitives._serialization import NoEncryption
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey, EllipticCurvePrivateKey
@@ -851,6 +852,95 @@ class Sign:
             log.debug(f"{traceback.format_exc()!s}")
 
         return r
+
+
+_sign_object_lock = Lock()
+
+
+@dataclass
+class _CachedSignObject:
+    """
+    A Sign object together with a fingerprint of the key material it was loaded from.
+    """
+    key_material_version: tuple
+    sign_object: Sign
+
+
+def _read_key_file(key_file: str | None) -> bytes | None:
+    """
+    Read a key file, if one was given.
+
+    :param key_file: Name of a key file or None
+    :return: The contents of the file, or None if no file was given
+    """
+    if not key_file:
+        return None
+    with open(key_file, "rb") as key_file_handle:
+        return key_file_handle.read()
+
+
+def get_sign_object(private_key_file: str, public_key_file: str | None = None,
+                    check_private_key: bool = True) -> Sign:
+    """
+    Return a Sign object for the given key files and keep it in the app-local store.
+
+    Loading an RSA private key validates it, which takes about a hundred times longer than
+    creating the signature it enables. The audit log and the response signature use the same
+    key for every request, so the loaded key is kept in the app-local store and shared among
+    all threads of the application. This is safe because a loaded key holds no state between
+    operations: every signature builds its own context.
+
+    The key files are read on every call and the cached key is used only while their contents
+    still hash to the same value, so a key file that is replaced while the server is running
+    is picked up. Reading a key file costs a thousandth of parsing it, which is why the
+    contents are compared instead of the modification time: tools that rotate a key preserve
+    the modification time (``cp -p``, ``rsync -a``, restoring a backup), and two RSA keys of
+    the same size usually have the same file size. The key material is also read through the
+    configured name every time, so a key file that can no longer be read stops being used
+    instead of being served from the cache.
+
+    Failures are not cached, and a failed load drops the entry it was meant to replace: a key
+    file that is temporarily unavailable must not disable signing until the next restart, and
+    must not keep the superseded key in use either.
+
+    :param private_key_file: Name of the file containing the private key in PEM format
+    :param public_key_file: Name of the file containing the public key in PEM format. A Sign
+        object without a public key can sign, but it can not verify a signature.
+    :param check_private_key: Check the private key while loading it
+    :return: a Sign object
+    """
+    if not private_key_file:
+        # Without this, a missing PI_AUDIT_KEY_PRIVATE would yield a Sign object that has no
+        # key and signs everything with an empty signature.
+        raise TypeError("get_sign_object() needs the name of a file containing a private key.")
+    private_key = _read_key_file(private_key_file)
+    public_key = _read_key_file(public_key_file)
+    # The fingerprint describes the very bytes that are parsed below, so a key file that
+    # changes while this runs can not end up stored under the wrong fingerprint.
+    key_material_version = tuple(sha256(key).digest() if key is not None else None
+                                 for key in (private_key, public_key))
+    cache_key = (private_key_file, public_key_file, check_private_key)
+    sign_objects = get_app_local_store().setdefault("sign_objects", {})
+    cached = sign_objects.get(cache_key)
+    if cached is not None and cached.key_material_version == key_material_version:
+        return cached.sign_object
+    # Loading the key is the expensive part, so it happens under the lock. Otherwise every
+    # thread that arrives before the first one is done would load the key again.
+    with _sign_object_lock:
+        cached = sign_objects.get(cache_key)
+        if cached is not None and cached.key_material_version == key_material_version:
+            return cached.sign_object
+        was_cached = cached is not None
+        # The key files no longer hold what this entry was built from, so it must not survive
+        # a load that fails.
+        sign_objects.pop(cache_key, None)
+        sign_object = Sign(private_key, public_key, check_private_key=check_private_key)
+        sign_objects[cache_key] = _CachedSignObject(key_material_version, sign_object)
+        if was_cached:
+            log.info(f"The signing key in {private_key_file!s} changed and was loaded again.")
+        else:
+            log.debug(f"Loaded the signing keys from {private_key_file!s} and {public_key_file!s}.")
+        return sign_object
 
 
 def create_hsm_object(config):

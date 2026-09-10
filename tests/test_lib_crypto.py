@@ -2,6 +2,9 @@
 This test file tests the lib.crypto and lib.security.default
 """
 import base64
+import os
+import shutil
+import tempfile
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
@@ -15,6 +18,7 @@ import binascii
 
 from privacyidea.config import TestingConfig
 from privacyidea.lib.error import HSMException, ParameterError
+from privacyidea.lib.framework import get_app_local_store
 from .base import MyTestCase, OverrideConfigTestCase
 # need to import pkcs11mock before PyKCS11, because it may be replaced by a mock module
 from .pkcs11mock import PKCS11Mock
@@ -23,7 +27,7 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     geturandom, get_alphanum_str, hash_with_pepper,
                                     verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64,
                                     get_hsm, init_hsm, set_hsm_password, hash,
-                                    encrypt, decrypt, Sign, generate_keypair,
+                                    encrypt, decrypt, Sign, get_sign_object, generate_keypair,
                                     generate_password, pass_hash, verify_pass_hash, generate_keypair_ecc,
                                     ecc_key_pair_to_b64url_str, b64url_str_key_pair_to_ecc_obj, sign_ecc,
                                     ecdh_key_exchange, encrypt_aes, decrypt_aes, verify_ecc)
@@ -890,6 +894,124 @@ class SignObjectTestCase(MyTestCase):
         long_data_sig = 991763198885165486007338893972384496025563436289154190056285376683148093829644985815692167116166669178171916463844829424162591848106824431299796818231239278958776853940831433819576852350691126984617641483209392489383319296267416823194661791079316704545017249491961092046751201670544843607206698682190381208022128216306635574292359600514603728560982584561531193227312370683851459162828981766836503134221347324867936277484738573153562229478151744446530191383660477390958159856842222437156763388859923477183453362567547792824054461704970820770533637185477922709297916275611571003099205429044820469679520819043851809079
         long_data = b'\x01\x02' * 5000
         self.assertTrue(so.verify(long_data, long_data_sig, verify_old_sigs=True))
+
+
+class SignObjectCacheTestCase(MyTestCase):
+    """ tests that the Sign object is loaded once per key file version and then shared """
+
+    def setUp(self):
+        super().setUp()
+        self.private_key_file = current_app.config.get("PI_AUDIT_KEY_PRIVATE")
+        self.public_key_file = current_app.config.get("PI_AUDIT_KEY_PUBLIC")
+
+    def _copy_key_files(self):
+        """
+        Copy the audit keys to a temporary directory, so a test may modify them.
+
+        :return: the names of the private and the public key file
+        """
+        key_directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, key_directory)
+        private_key_file = os.path.join(key_directory, "private.pem")
+        public_key_file = os.path.join(key_directory, "public.pem")
+        shutil.copy(self.private_key_file, private_key_file)
+        shutil.copy(self.public_key_file, public_key_file)
+        return private_key_file, public_key_file
+
+    def test_00_the_same_key_files_share_one_object(self):
+        sign_object = get_sign_object(self.private_key_file, self.public_key_file)
+        self.assertIs(sign_object, get_sign_object(self.private_key_file, self.public_key_file))
+        signature = sign_object.sign("data to sign")
+        self.assertTrue(sign_object.verify("data to sign", signature))
+
+    def test_01_different_arguments_are_different_objects(self):
+        sign_object = get_sign_object(self.private_key_file, self.public_key_file)
+        # The response signature asks for the private key alone, so it gets its own object
+        # instead of evicting the one the audit log uses.
+        private_only_object = get_sign_object(self.private_key_file)
+        self.assertIsNot(sign_object, private_only_object)
+        self.assertIs(private_only_object, get_sign_object(self.private_key_file))
+        self.assertIs(sign_object, get_sign_object(self.private_key_file, self.public_key_file))
+        # Whether the private key is checked is part of the object as well
+        self.assertIsNot(sign_object, get_sign_object(self.private_key_file, self.public_key_file,
+                                                      check_private_key=False))
+
+    def test_02_a_replaced_key_file_is_loaded_again(self):
+        private_key_file, public_key_file = self._copy_key_files()
+        sign_object = get_sign_object(private_key_file, public_key_file)
+        self.assertIs(sign_object, get_sign_object(private_key_file, public_key_file))
+        old_signature = sign_object.sign("data to sign")
+
+        # Replace the keys, as an administrator would who rotates the audit keys
+        new_public_key, new_private_key = generate_keypair()
+        for key_file, key in ((private_key_file, new_private_key), (public_key_file, new_public_key)):
+            with open(key_file, "w") as key_file_handle:
+                key_file_handle.write(key)
+
+        new_sign_object = get_sign_object(private_key_file, public_key_file)
+        self.assertIsNot(sign_object, new_sign_object)
+        # The new object signs and verifies with the new keys, and no longer accepts a
+        # signature the old key created
+        self.assertTrue(new_sign_object.verify("data to sign", new_sign_object.sign("data to sign")))
+        self.assertFalse(new_sign_object.verify("data to sign", old_signature))
+
+    def test_02a_a_key_file_of_the_same_size_and_age_is_not_served_from_the_cache(self):
+        # A key rotated with cp -p, rsync -a or a restored backup keeps its modification time,
+        # and two RSA keys of the same size usually have the same file size. So neither of
+        # those may decide whether the cached key is still the one that is configured. Here the
+        # replacement is not a usable key, which makes the point without a second key: what
+        # must not happen is that the cached object is handed out.
+        private_key_file, public_key_file = self._copy_key_files()
+        self.assertIsNotNone(get_sign_object(private_key_file, public_key_file))
+        file_stat = os.stat(private_key_file)
+
+        with open(private_key_file, "rb") as private_key_handle:
+            private_key = bytearray(private_key_handle.read())
+        # Change the key material in place, so the file keeps its length, and give the file
+        # back the modification time it had
+        private_key[len(private_key) // 2] ^= 0xFF
+        with open(private_key_file, "wb") as private_key_handle:
+            private_key_handle.write(private_key)
+        os.utime(private_key_file, ns=(file_stat.st_atime_ns, file_stat.st_mtime_ns))
+
+        stat_after = os.stat(private_key_file)
+        self.assertEqual(file_stat.st_size, stat_after.st_size)
+        self.assertEqual(file_stat.st_mtime_ns, stat_after.st_mtime_ns)
+        with self.assertRaises(Exception):
+            get_sign_object(private_key_file, public_key_file)
+
+    def test_03_a_missing_key_file_is_not_cached(self):
+        private_key_file, public_key_file = self._copy_key_files()
+        sign_object = get_sign_object(private_key_file, public_key_file)
+        # The same key files have to fail and then work again, otherwise this says nothing
+        # about whether the failure was cached
+        os.unlink(private_key_file)
+        with self.assertRaises(OSError):
+            get_sign_object(private_key_file, public_key_file)
+        shutil.copy(self.private_key_file, private_key_file)
+        new_sign_object = get_sign_object(private_key_file, public_key_file)
+        self.assertTrue(new_sign_object.verify("data to sign", new_sign_object.sign("data to sign")))
+        # The key files hold what they held before, so the object that was cached for them
+        # is still the right one
+        self.assertIs(sign_object, new_sign_object)
+
+    def test_04_an_unconfigured_private_key_raises(self):
+        # An unset PI_AUDIT_KEY_PRIVATE has to be an error. A Sign object without a private key
+        # signs everything with an empty signature instead.
+        with self.assertRaises(TypeError):
+            get_sign_object(None, self.public_key_file)
+
+    def test_05_a_broken_key_file_does_not_keep_serving_the_old_object(self):
+        private_key_file, public_key_file = self._copy_key_files()
+        self.assertIsNotNone(get_sign_object(private_key_file, public_key_file))
+        with open(private_key_file, "wb") as private_key_handle:
+            private_key_handle.write(b"This is not a private key")
+        for _ in range(2):
+            with self.assertRaises(Exception):
+                get_sign_object(private_key_file, public_key_file)
+        # The entry the broken key file superseded is gone, rather than being served on
+        with self.assertRaises(KeyError):
+            get_app_local_store()["sign_objects"][(private_key_file, public_key_file, True)]
 
 
 class DefaultHashAlgoListTestCase(OverrideConfigTestCase):

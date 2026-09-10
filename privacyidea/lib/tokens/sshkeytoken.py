@@ -102,6 +102,8 @@ class SSHkeyTokenClass(TokenClass):
     mode = [AuthenticationMode.AUTHENTICATE]
     using_pin = False
 
+    owned_tokeninfo_keys = SSH_KEY_INFO_KEYS
+
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
         self.set_type("sshkey")
@@ -186,9 +188,9 @@ class SSHkeyTokenClass(TokenClass):
         key = key_elem[1]
         key_comment = key_elem[2] if len(key_elem) > 2 else ""
 
-        self.add_tokeninfo("ssh_key", key, value_type="password")
-        self.add_tokeninfo("ssh_type", key_type)
-        self.add_tokeninfo("ssh_comment", key_comment)
+        self.write_tokeninfo("ssh_key", key, value_type="password")
+        self.write_tokeninfo("ssh_type", key_type)
+        self.write_tokeninfo("ssh_comment", key_comment)
 
         # call the parents function
         TokenClass.update(self, param)
@@ -207,34 +209,32 @@ class SSHkeyTokenClass(TokenClass):
         self._update_integrity_checksum()
 
     @check_token_locked
-    def add_tokeninfo(self, key: str, value: str, value_type: str = None, commit_db_session: bool = True):
+    def write_tokeninfo(self, key: str, value: str, value_type: str = None,
+                        commit_db_session: bool = True) -> None:
         """
         Add a token info entry and keep the SSH key integrity checksum in sync.
 
-        Overriding this method makes the token class the single enforcement
-        point for the checksum: any caller that changes the SSH key data
-        (``update()``, the generic ``settokeninfo`` endpoint, event handlers,
-        ...) goes through here, so the checksum can no longer be desynced by
-        writing directly to the token info.
+        Overriding the writer makes the token class the single enforcement
+        point for the checksum: every caller that changes the SSH key data
+        (``update()``, token import, ...) goes through here, so the checksum
+        can no longer be desynced by writing directly to the token info.
 
-        The same applies to the encryption of the public key: callers like the
-        generic ``settokeninfo`` endpoint do not pass a value type, which would
-        replace the encrypted key with its plaintext. The value type of the
-        public key is therefore enforced here as well.
+        The value type of the public key is enforced here as well, so the key
+        stays encrypted no matter which caller writes it.
         """
         if key == "ssh_key":
             value_type = "password"
-        super().add_tokeninfo(key, value, value_type=value_type, commit_db_session=commit_db_session)
+        super().write_tokeninfo(key, value, value_type=value_type, commit_db_session=commit_db_session)
         if key in SSH_KEY_INFO_KEYS:
             self._update_integrity_checksum()
 
-    def delete_tokeninfo(self, key: str = None):
+    def remove_tokeninfo(self, key: str = None) -> None:
         """
         Delete a token info entry and keep the SSH key integrity checksum in
         sync when one of the SSH key relevant entries (or all entries) is
         removed.
         """
-        super().delete_tokeninfo(key)
+        super().remove_tokeninfo(key)
         if key is None or key in SSH_KEY_INFO_KEYS:
             self._update_integrity_checksum()
 
