@@ -62,6 +62,7 @@ from privacyidea.lib.conditional_access.engine import (
     RestrictionStatus,
     _policy_count_ip,
     _safe_format,
+    _upsert_ip_block,
     _resolve_admin_recipients,
 )
 from privacyidea.lib.conditional_access.state import lock_user
@@ -546,6 +547,20 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         # A request without a resolvable source IP is never blocked.
         self.assertFalse(is_ip_blocked(None))
         self.assertFalse(is_ip_blocked(""))
+
+    def test_is_ip_blocked_finds_a_row_under_another_spelling_of_the_address(self):
+        # g.client_ip is request.remote_addr verbatim wherever no proxy override is configured, so the
+        # lookup cannot assume the spelling it is handed is the one the row was filed under.
+        db.session.add(BlockList(ip="2001:db8::1", block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        self.assertTrue(is_ip_blocked("2001:0DB8::0:1"))
+
+    def test_the_engine_files_a_block_under_the_canonical_identifier(self):
+        # Whatever spelling reaches the engine, one address is one row - and the row an admin then reads
+        # off the blocklist is the one they can pass back to the unblock endpoint.
+        self.assertTrue(_upsert_ip_block("2001:0DB8::0:1", block_expires_at=utc_now() + timedelta(seconds=600),
+                                         error_message=None))
+        self.assertEqual("2001:db8::1", db.session.query(BlockList).one().ip)
 
     # --- get_ip_block ---------------------------------------------------------
 
