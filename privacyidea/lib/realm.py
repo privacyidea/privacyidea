@@ -203,6 +203,8 @@ def _get_conditional_access_policies_referencing_realm(realm_name: str) -> list:
         ConditionalAccessPolicyCondition,
         ConditionalAccessPolicyCondition.policy_id == ConditionalAccessPolicy.id).where(
         ConditionalAccessPolicyCondition.condition_type == ConditionType.USER_REALM)
+    # value is always a list of exact-match strings (see _validate_condition_value), never a bare
+    # string, so this membership test cannot false-positive on a substring of another realm's name.
     policy_names = {policy_name for policy_name, value in db.session.execute(stmt).all()
                      if value and realm_name in value}
     return sorted(policy_names)
