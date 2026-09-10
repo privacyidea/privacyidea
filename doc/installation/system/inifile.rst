@@ -939,6 +939,13 @@ and ``::1/128``) is always on the list and cannot be removed. Blocking it would
 lock out a reverse proxy running on the same host, and when ``OverrideAuthorizationClient``
 is unset every client is seen as that proxy.
 
+An IPv4 entry also covers the IPv4-mapped form of the same address
+(``::ffff:10.0.0.1`` for ``10.0.0.1``), which is what a dual-stack listener
+reports for an IPv4 client, so an IPv4 network does not have to be listed twice.
+Tunnel encodings that merely carry an IPv4 address (6to4, Teredo) are not
+covered: unlike the mapped form, those are chosen by the client rather than by
+the operating system.
+
 Put the addresses of your reverse proxies, load balancers, NAT gateways and
 management networks here. Blocking shared infrastructure locks out everyone
 behind it.

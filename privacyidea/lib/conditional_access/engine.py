@@ -1023,6 +1023,17 @@ def is_ip_never_block(source_ip: str | None) -> bool:
     engine: it is loopback (built-in) or matches the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``
     allowlist from the server configuration. A falsy or unparsable IP is treated as never-block as
     well — fail safe: never block an address the engine cannot positively identify.
+
+    An IPv4-mapped address is checked in **both** forms, because a network of one family never contains an
+    address of the other: a dual-stack listener puts an IPv4 client in ``REMOTE_ADDR`` as
+    ``::ffff:192.0.2.1``, and comparing only that form matches neither the built-in ``127.0.0.0/8`` nor an
+    allowlisted IPv4 proxy or NAT range — the whole allowlist would be off for those deployments, which is
+    the one direction this guard must never fail in.
+
+    Only the mapped form is unwrapped, not the 6to4 or Teredo encodings ``ipaddress`` also recognizes: a
+    mapped address is how the operating system renders a real IPv4 peer, while a tunnel address is chosen by
+    the client, and unwrapping one would let a client encode an allowlisted address to make itself
+    unblockable.
     """
     if not source_ip:
         return True
@@ -1031,7 +1042,10 @@ def is_ip_never_block(source_ip: str | None) -> bool:
     except ValueError:
         log.warning(f"Could not parse source IP {source_ip!r}; treating it as never-block.")
         return True
-    return any(ip in network for network in _never_block_networks())
+    networks = _never_block_networks()
+    # ipv4_mapped exists on an IPv6Address only, and is None unless the address really carries an IPv4 one.
+    forms = [form for form in (ip, getattr(ip, "ipv4_mapped", None)) if form is not None]
+    return any(form in network for form in forms for network in networks)
 
 
 def get_ip_block(source_ip: str | None, now: datetime | None = None, *,

@@ -1404,6 +1404,25 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
     def test_normal_ip_is_not_never_block(self):
         self.assertFalse(is_ip_never_block("203.0.113.7"))
 
+    def test_an_ipv4_mapped_address_is_checked_as_its_ipv4_address_too(self):
+        # A dual-stack listener puts an IPv4 client in REMOTE_ADDR as ::ffff:127.0.0.1, and a network of one
+        # family never contains an address of the other - so comparing only the mapped form would leave the
+        # whole allowlist off for those deployments, the one direction this guard must not fail in.
+        self.assertTrue(is_ip_never_block("::ffff:127.0.0.1"))
+        self.assertFalse(is_ip_never_block("::ffff:203.0.113.7"))
+        with never_block_config("198.51.100.0/24"):
+            self.assertTrue(is_ip_never_block("::ffff:198.51.100.5"))
+            self.assertTrue(is_ip_never_block("198.51.100.5"))
+
+    def test_a_tunnel_encoded_address_is_not_unwrapped(self):
+        # 2002:7f00:1:: is the 6to4 encoding of 127.0.0.1, which ipaddress can decode as readily as the
+        # mapped form. It is deliberately not honored: a mapped address is how the OS renders a real IPv4
+        # peer, while a tunnel address is chosen by the client - who would otherwise be able to encode an
+        # allowlisted address and make themselves unblockable.
+        self.assertFalse(is_ip_never_block("2002:7f00:1::1"))
+        with never_block_config("198.51.100.0/24"):
+            self.assertFalse(is_ip_never_block("2002:c633:6405::1"))
+
     def test_empty_or_unparseable_ip_is_never_block(self):
         # Fail safe: never block an address the engine cannot positively identify.
         self.assertTrue(is_ip_never_block(None))
