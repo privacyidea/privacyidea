@@ -526,7 +526,9 @@ class LockSubject:
 
         A user's three are in the column order of ``ix_authlog_user_event_time`` / ``ix_authlog_user_time``, so
         the counts are index range scans. A local admin's pair matches neither index - their rows carry no
-        resolver, uid or realm at all - and is served by ``ix_authlog_admin_event_time`` instead.
+        resolver, uid or realm at all - and is served by ``ix_authlog_admin_event_time`` /
+        ``ix_authlog_admin_time``, which pair up the same way: the event count uses the one carrying
+        ``event_type``, the attempt count the one that ranges on ``timestamp`` directly.
         """
         if self.internal_admin:
             return [AuthenticationLog.username == self.username,
@@ -846,8 +848,8 @@ def count_subject_attempts(subject: LockSubject, event_types: list[str],
     window_end]``. This is the
     :attr:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode.PER_ATTEMPT` counterpart of
     :func:`count_subject_events`, so a multi-request challenge / multichallenge login counts once. The ``WHERE``
-    is the subject's own columns followed by ``timestamp``, matching ``ix_authlog_user_time`` for a user and the
-    leading columns of ``ix_authlog_admin_event_time`` for a local admin.
+    is the subject's own columns followed by ``timestamp``, matching ``ix_authlog_user_time`` for a user and
+    ``ix_authlog_admin_time`` for a local admin.
 
     :param subject: whose attempts are counted - a resolved user or a local database admin (see
         :class:`LockSubject`)
