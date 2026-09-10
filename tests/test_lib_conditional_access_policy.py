@@ -1084,31 +1084,52 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         reorder_conditional_access_policies(list(reversed(ids)))
         self.assertListEqual([("P5", 1), ("P4", 2), ("P3", 3), ("P2", 4), ("P1", 5)], self._order())
 
-    def test_20a_reorder_parks_above_every_live_priority(self):
-        # The parking values are transient, so they are observed at the flush that writes them. They have to be
-        # collision-free, which a negative value also is - and *inert*, which it is not: the flushes and the
-        # commit share one transaction so a parked value cannot survive, but if that ever stopped holding, a row
-        # parked below 1 would sort ahead of every real policy instead of behind them.
+    def _parked_values(self, order: list[int]) -> list[int]:
+        """
+        The values a reorder of *order* parks its rows on, captured at the flush that writes them - they are
+        transient by design, so this is the only place they can be observed.
+        """
         from sqlalchemy import event
 
-        parked = []
+        flushes = []
 
         def capture(session, flush_context):
-            parked.append(sorted(policy.priority for policy in session.dirty
-                                 if isinstance(policy, ConditionalAccessPolicy)))
+            flushes.append(sorted(policy.priority for policy in session.dirty
+                                  if isinstance(policy, ConditionalAccessPolicy)))
 
-        ids = self._numbered(10, 20, 30)
         event.listen(db.session, "after_flush", capture)
         try:
-            reorder_conditional_access_policies(list(reversed(ids)))
+            reorder_conditional_access_policies(order)
         finally:
             event.remove(db.session, "after_flush", capture)
+        self.assertTrue(flushes, "no flush was observed")
+        # The first flush is the parking one; the second writes the final priorities.
+        return flushes[0]
 
-        self.assertTrue(parked, "no flush was observed")
-        # The first flush is the parking one: every value it writes is above the highest live priority, so it
-        # cannot collide with an unlisted policy either.
-        self.assertListEqual([31, 32, 33], parked[0])
+    def test_20a_reorder_parks_above_every_live_priority(self):
+        # A parked value has to be collision-free, which a negative one also is - and *inert*, which it is not:
+        # the flushes and the commit share one transaction so a parked value cannot survive, but if that ever
+        # stopped holding, a row parked below 1 would sort ahead of every real policy instead of behind them.
+        ids = self._numbered(10, 20, 30)
+        parked = self._parked_values(list(reversed(ids)))
+        # Above the highest live priority, so the parking cannot collide with an unlisted policy either. The
+        # property, not the arithmetic: how far above is test_20b's business, and pinning exact values here
+        # would only assert the ids this fixture happens to get.
+        self.assertEqual(len(ids), len(set(parked)))
+        self.assertTrue(all(value > 30 for value in parked), parked)
         self.assertListEqual([("P30", 10), ("P20", 20), ("P10", 30)], self._order())
+
+    def test_20b_parking_values_are_disjoint_between_disjoint_reorders(self):
+        # Two admins rearranging unrelated policies do not conflict, which this function promises and which the
+        # parking has to keep: the value is built from the policy's own id, so the rows of one reorder park
+        # where no other reorder parks. An offset by position would put every reorder on the same values and
+        # serialize them on the unique priority index.
+        first, second, third, fourth = self._numbered(10, 20, 30, 40)
+        one = self._parked_values([second, first])
+        other = self._parked_values([fourth, third])
+        self.assertSetEqual(set(), set(one) & set(other))
+        # Both pairs swapped, and neither disturbed the other.
+        self.assertListEqual([("P20", 10), ("P10", 20), ("P40", 30), ("P30", 40)], self._order())
 
     def test_21_reorder_returns_nothing(self):
         # A write, not a read: the new order is observed through list_conditional_access_policies().

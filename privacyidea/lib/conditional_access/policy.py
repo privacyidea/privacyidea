@@ -1328,14 +1328,22 @@ def reorder_conditional_access_policies(policy_ids: list[int], expected_prioriti
     priorities = sorted(policy.priority for policy in policies)
     with _unique_conflict_as_400():
         # Parks every policy on a value no live row holds, then assigns the new ones, since uniqueness is checked
-        # per statement; the flushes force that statement order. Parking *above* every priority in the table
-        # rather than below zero: both are collision-free, but only one of them is harmless if it were ever to
-        # survive. The flushes and the commit share a transaction, so a parked value cannot be left behind - and
-        # if that ever stopped holding, a row parked at the top of the order is inert, where a negative one would
-        # sort first and quietly take precedence over every real policy.
+        # per statement; the flushes force that statement order. The parking value is built from two things,
+        # and needs both:
+        #
+        # *Above* every priority in the table, because a parked value has to be harmless if it were ever to
+        # survive. The flushes and the commit share a transaction, so one cannot be left behind - but if that
+        # ever stopped holding, a row parked at the top of the order is inert, where a value below 1 would sort
+        # first and quietly take precedence over every real policy.
+        #
+        # Plus the policy's own **id**, which is what keeps two concurrent reorders out of each other's way.
+        # Ids are unique, so the rows of one reorder park on values no other reorder parks on - the property
+        # that lets this function promise above that disjoint rearrangements do not conflict. An offset by
+        # position instead (1, 2, 3...) would have every reorder park on the same values and serialize them on
+        # the unique index, which for two admins reordering unrelated policies is a lock wait neither asked for.
         park_base = db.session.scalar(select(func.max(ConditionalAccessPolicy.priority))) or 0
-        for offset, policy in enumerate(policies, start=1):
-            policy.priority = park_base + offset
+        for policy in policies:
+            policy.priority = park_base + policy.id
         db.session.flush()
         for policy, priority in zip(policies, priorities):
             policy.priority = priority
