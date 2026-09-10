@@ -182,6 +182,8 @@ The body may contain the following tags
   * {container_url_img} is the data image source of the token container qr code.
   * {time} the current server time in the format HH:MM:SS.
   * {date} the current server date in the format YYYY-MM-DD
+  * {now} the current server timestamp including the date, the time and the time zone.
+    {current_time} is a deprecated alias for it.
   * {client_ip} the client IP of the client, which issued the original request.
   * {ua_browser} the user agent of the client, which issued the original request.
   * {ua_string} the complete user agent string (including version number), which issued the original request.
