@@ -29,7 +29,7 @@ describe("ConditionalAccessDryRunOffDialogComponent", () => {
   let fixture: ComponentFixture<ConditionalAccessDryRunOffDialogComponent>;
   let dialogRef: MockMatDialogRef<unknown, unknown>;
 
-  const data: ConditionalAccessDryRunOffDialogData = { policyName: "My Policy" };
+  const data: ConditionalAccessDryRunOffDialogData = { policyNames: ["My Policy"] };
 
   beforeEach(async () => {
     dialogRef = new MockMatDialogRef<unknown, unknown>();
@@ -69,5 +69,30 @@ describe("ConditionalAccessDryRunOffDialogComponent", () => {
   it("closes with undefined on cancel", () => {
     component.cancel();
     expect(dialogRef.close).toHaveBeenCalledWith(undefined);
+  });
+});
+
+describe("ConditionalAccessDryRunOffDialogComponent with multiple policies", () => {
+  let fixture: ComponentFixture<ConditionalAccessDryRunOffDialogComponent>;
+
+  const data: ConditionalAccessDryRunOffDialogData = { policyNames: ["Policy A", "Policy B"] };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [ConditionalAccessDryRunOffDialogComponent],
+      providers: [
+        { provide: MAT_DIALOG_DATA, useValue: data },
+        { provide: MatDialogRef, useValue: new MockMatDialogRef<unknown, unknown>() }
+      ]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(ConditionalAccessDryRunOffDialogComponent);
+    fixture.detectChanges();
+  });
+
+  it("lists every policy name", () => {
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
+    expect(text).toContain("Policy A");
+    expect(text).toContain("Policy B");
   });
 });

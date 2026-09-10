@@ -24,7 +24,9 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 import { DialogAction } from "@models/dialog";
 
 export interface ConditionalAccessDryRunOffDialogData {
-  policyName: string;
+  // One name shows inline in the sentence; more than one lists each on its own line instead
+  // (the single-name case reads worse in list form for the common single-policy toggle).
+  policyNames: string[];
 }
 
 // Whether the failure counters accumulated during the trial are cleared once the policy starts
@@ -43,11 +45,24 @@ export type ConditionalAccessDryRunOffDialogResult = { resetCounters: boolean } 
       [showCloseButton]="true"
       (actionTriggered)="confirm()">
       <div class="margin-right-16">
-        <p i18n>
-          Turning dry run off starts enforcing "{{ data.policyName }}" immediately. By default the
-          failure counters from the trial are reset, so the policy is judged only on failures from
-          now on.
-        </p>
+        @if (data.policyNames.length === 1) {
+          <p i18n>
+            Turning dry run off starts enforcing "{{ data.policyNames[0] }}" immediately. By default
+            the failure counters from the trial are reset, so the policy is judged only on failures
+            from now on.
+          </p>
+        } @else {
+          <p i18n>
+            Turning dry run off starts enforcing the following policies immediately. By default the
+            failure counters from the trial are reset, so each policy is judged only on failures
+            from now on.
+          </p>
+          <ul>
+            @for (name of data.policyNames; track name) {
+              <li>{{ name }}</li>
+            }
+          </ul>
+        }
         <mat-checkbox [checked]="keepCounters()" (change)="keepCounters.set($event.checked)">
           <span i18n>Keep the counters accumulated during the trial</span>
         </mat-checkbox>

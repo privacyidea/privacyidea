@@ -142,6 +142,19 @@ describe("ConditionalAccessComponent", () => {
     expect(policyServiceMock.savePolicy).not.toHaveBeenCalled();
   });
 
+  it("should ask via a dialog before turning a row's dry_run off, and reset counters by default", async () => {
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue({ resetCounters: true });
+    await component.onToggleDryRun({ ...samplePolicy, dry_run: true });
+    expect(dialogServiceMock.openDialogAsync).toHaveBeenCalled();
+    expect(policyServiceMock.setDryRun).toHaveBeenCalledWith(1, false, true);
+  });
+
+  it("should not disable dry_run for a row when the dialog is cancelled", async () => {
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue(undefined);
+    await component.onToggleDryRun({ ...samplePolicy, dry_run: true });
+    expect(policyServiceMock.setDryRun).not.toHaveBeenCalled();
+  });
+
   it("should join all stage thresholds for display", () => {
     const multiStage: ConditionalAccessPolicy = {
       ...samplePolicy,
@@ -271,15 +284,40 @@ describe("ConditionalAccessComponent", () => {
       expect(component.policySelection().length).toBe(1);
     });
 
-    it("should flip dry_run through the dialog on 'toggle'", () => {
+    it("should flip dry_run through the dialog on 'toggle'", async () => {
       const dryRunOff: ConditionalAccessPolicy = { ...samplePolicy, id: 1, dry_run: false };
       const dryRunOn: ConditionalAccessPolicy = { ...samplePolicy, id: 2, name: "Second", dry_run: true };
       component.policySelection.set([dryRunOff, dryRunOn]);
+      dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue({ resetCounters: true });
       component.toggleDryRunSelected();
       emitAction("toggle");
-      expect(policyServiceMock.setDryRun).toHaveBeenCalledWith(1, true);
-      expect(policyServiceMock.setDryRun).toHaveBeenCalledWith(2, false);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(policyServiceMock.setDryRun).toHaveBeenCalledWith(1, true, undefined);
+      expect(policyServiceMock.setDryRun).toHaveBeenCalledWith(2, false, true);
       expect(component.policySelection().length).toBe(0);
+    });
+
+    it("should ask once, up front, before disabling dry-run for a batch, and skip that ask when nothing leaves dry-run", async () => {
+      const dryRunOff: ConditionalAccessPolicy = { ...samplePolicy, id: 1, dry_run: false };
+      component.policySelection.set([dryRunOff]);
+      component.toggleDryRunSelected();
+      emitAction("toggle"); // dry_run: false -> true, nothing leaves dry-run
+      await Promise.resolve();
+      expect(dialogServiceMock.openDialogAsync).not.toHaveBeenCalled();
+      expect(policyServiceMock.setDryRun).toHaveBeenCalledWith(1, true, undefined);
+    });
+
+    it("should not disable dry-run for the batch when the reset dialog is cancelled", async () => {
+      const dryRunOn: ConditionalAccessPolicy = { ...samplePolicy, id: 2, name: "Second", dry_run: true };
+      component.policySelection.set([dryRunOn]);
+      dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue(undefined);
+      component.toggleDryRunSelected();
+      emitAction("toggle");
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(policyServiceMock.setDryRun).not.toHaveBeenCalled();
+      expect(component.policySelection().length).toBe(1);
     });
 
     it("should not open a dialog when nothing is selected", () => {

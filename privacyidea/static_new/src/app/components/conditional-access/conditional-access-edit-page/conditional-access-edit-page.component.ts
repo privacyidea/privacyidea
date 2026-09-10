@@ -569,7 +569,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       ConditionalAccessDryRunOffDialogResult
     >({
       component: ConditionalAccessDryRunOffDialogComponent,
-      data: { policyName: this.editPolicy().name }
+      data: { policyNames: [this.editPolicy().name] }
     });
     if (!result) {
       // Cancelled: leave the toggle (and dry_run) untouched.

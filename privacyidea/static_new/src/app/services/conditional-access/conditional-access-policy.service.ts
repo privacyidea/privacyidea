@@ -348,7 +348,7 @@ export interface ConditionalAccessPolicyServiceInterface {
 
   disablePolicy(id: number): Promise<void>;
 
-  setDryRun(id: number, dryRun: boolean): Promise<void>;
+  setDryRun(id: number, dryRun: boolean, resetCountersOnEnforce?: boolean): Promise<void>;
 }
 
 @Injectable()
@@ -744,7 +744,11 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   // given, so a policy carrying a value that is no longer valid - a deleted realm in a condition,
   // say - can still be switched on and off instead of being frozen until it is repaired. It also
   // cannot overwrite another admin's concurrent edit of the fields this toggle does not touch.
-  private async patchFlag(id: number, flag: { enabled: boolean } | { dry_run: boolean }, errorMessage: string) {
+  private async patchFlag(
+    id: number,
+    flag: { enabled: boolean } | { dry_run: boolean; reset_counters_on_enforce?: boolean },
+    errorMessage: string
+  ) {
     const headers = this.authService.getHeaders();
     try {
       await lastValueFrom(this.http.patch(`${this.baseUrl}/${id}`, flag, { headers }));
@@ -762,10 +766,10 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     await this.patchFlag(id, { enabled: false }, $localize`Failed to disable conditional-access policy.`);
   }
 
-  async setDryRun(id: number, dryRun: boolean): Promise<void> {
+  async setDryRun(id: number, dryRun: boolean, resetCountersOnEnforce?: boolean): Promise<void> {
     await this.patchFlag(
       id,
-      { dry_run: dryRun },
+      dryRun ? { dry_run: dryRun } : { dry_run: dryRun, reset_counters_on_enforce: resetCountersOnEnforce },
       dryRun
         ? $localize`Failed to switch the conditional-access policy to dry-run mode.`
         : $localize`Failed to switch the conditional-access policy to enforcing mode.`
