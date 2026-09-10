@@ -197,13 +197,4 @@ class CustomUserAttributesHandler(BaseEventHandler):
                                tokendescription=tokendescription,
                                time_offset=time_delta)
 
-        try:
-            attrvalue = attrvalue.format(**tags)
-        except Exception as e:
-            # An attribute value that can not be formatted (unknown tag, unbalanced
-            # brace, ...) must not fail the event handling. Keep the value as the
-            # administrator entered it, including a stripped time offset.
-            log.warning(f"Could not format the custom user attribute value: {e!r}. "
-                        f"Using the unformatted value.")
-            attrvalue = raw_value
-        return attrvalue
+        return BaseEventHandler._format_with_tags(attrvalue, tags, raw_value)

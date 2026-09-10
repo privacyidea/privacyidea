@@ -38,7 +38,7 @@ You can attach token actions like enable, disable, delete, unassign,... of the
 """
 
 from privacyidea.lib.container import add_token_to_container
-from privacyidea.lib.error import ParameterError, PolicyError
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.token import (get_token_types, set_validity_period_end,
@@ -56,6 +56,7 @@ from privacyidea.lib.utils import (parse_date, is_true,
                                    parse_time_offset_from_now,
                                    create_tag_dict)
 from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.user import User
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.tokengroup import get_tokengroups
@@ -512,7 +513,19 @@ class TokenEventHandler(BaseEventHandler):
         """
         text, time_delta = parse_time_offset_from_now(text)
         tokenowner = self._get_tokenowner(request)
-        serial, tokentype, tokendescription = self._get_token_data(serial, tokenowner)
+        tokentype = tokendescription = None
+        if serial:
+            # The handler can act on several tokens, so the tags describe the token
+            # that is handled and its owner, not the token or user of the request.
+            try:
+                token = get_one_token(serial=serial)
+                tokenowner = token.user or User()
+                tokentype = token.get_tokentype()
+                tokendescription = token.token.description
+            except ResourceNotFoundError:
+                log.info(f"Could not read the token {serial} for the tags.")
+        else:
+            serial, tokentype, tokendescription = self._get_token_data(serial, tokenowner)
         logged_in_user = g.logged_in_user if hasattr(g, "logged_in_user") else None
         tags = create_tag_dict(logged_in_user=logged_in_user,
                                request=request,
@@ -523,29 +536,6 @@ class TokenEventHandler(BaseEventHandler):
                                tokendescription=tokendescription,
                                time_offset=time_delta)
         return text, tags
-
-    @staticmethod
-    def _format_with_tags(text, tags, fallback):
-        """
-        Format the given text with the given tags.
-
-        A text that can not be formatted must not fail the event handling. Besides
-        an unknown tag, this also happens for a positional field, an unbalanced
-        brace or an index into a tag that is not set. In this case the fallback is
-        returned.
-
-        :param text: The text containing the tags, without a time offset
-        :param tags: The tag dictionary
-        :param fallback: The text to return if the formatting fails. This is the
-            text as the administrator entered it, including a time offset that
-            was stripped from ``text``.
-        :return: The formatted text
-        """
-        try:
-            return text.format(**tags)
-        except Exception as e:
-            log.warning(f"Could not format the text: {e!r}. Using the unformatted text.")
-            return fallback
 
     def do(self, action, options=None):
         """
