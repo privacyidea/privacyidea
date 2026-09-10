@@ -142,6 +142,13 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             self.assertEqual(200, response.status_code, response)
             return response.json
 
+    def _radiuscheck(self, data: dict) -> int:
+        """The status code is the whole answer at /validate/radiuscheck: 204 authenticated, 400 anything else."""
+        with self.app.test_request_context('/validate/radiuscheck', method='POST', data=data):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(b"", response.data, response.data)
+            return response.status_code
+
     def _outcome_statistics(self, query_string: dict | None = None, status: int = 200) -> dict:
         """Read the outcome history over a window around now, since the rows written here take the current time."""
         query = {"start_time": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
@@ -172,13 +179,15 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     @staticmethod
     def _make_lock_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
-                          dry_run: bool = False, priority: int = 1, error_message: str | None = None) -> None:
+                          dry_run: bool = False, priority: int = 1, error_message: str | None = None,
+                          reset_on_success: bool | None = None) -> None:
         create_conditional_access_policy(
             name="ca_lock", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
             stages=[{"failure_threshold": threshold, "error_message": error_message,
                      "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": duration}]}],
-            target=ConditionalAccessTarget.USER, dry_run=dry_run, priority=priority)
+            target=ConditionalAccessTarget.USER, dry_run=dry_run, priority=priority,
+            reset_on_success=reset_on_success)
 
     @staticmethod
     def _make_block_ip_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
@@ -628,6 +637,25 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(after["result"], tripping["result"], tripping)
         self.assertEqual(after["detail"], tripping["detail"], tripping)
         self.assertEqual(str(GENERIC_AUTH_FAILURE), tripping["detail"]["message"], tripping)
+
+    def test_a_tripping_request_is_refused_at_radiuscheck_too(self):
+        # /validate/radiuscheck answers with a status code and an empty body, so construct_radius_response drops the
+        # JSON body - and with it the verdict. It therefore has to run *after* the conditional-access response hook,
+        # or the request that writes a restriction is answered 204 while /validate/check answers the very same
+        # request with a rejection: the RADIUS client would authenticate the user on the request that locks them.
+        #
+        # A rate limit is the reachable shape of "authenticates and trips in one breath": LOGIN_SUCCESS is trackable
+        # and reset_on_success=False keeps the success from clearing the counter it just fed.
+        self._make_lock_policy(counter_type=AuthEventType.LOGIN_SUCCESS, threshold=2, duration=600,
+                               reset_on_success=False)
+        # First success: one event, below the threshold, so nothing is refused and the adapter is told "authenticated".
+        self.assertEqual(204, self._radiuscheck({"user": "cornelius", "pass": "pin755224"}))
+        self.assertFalse(is_user_locked(self.user))
+
+        # Second success reaches the threshold and locks. Same endpoint, same kind of request - the only difference
+        # is that this one tripped the restriction, and that has to reach the status code.
+        self.assertEqual(400, self._radiuscheck({"user": "cornelius", "pass": "pin287082"}))
+        self.assertTrue(is_user_locked(self.user))
 
     def test_hide_specific_error_message_still_masks_an_ordinary_token_failure(self):
         # The policy keeps doing its job on everything that is not conditional access's: a wrong PIN is still
