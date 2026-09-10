@@ -780,6 +780,27 @@ class SQLResolverTestCase(MyTestCase):
         with mock.patch.object(resolver.session, "execute", side_effect=Exception("the database is not reachable")):
             self.assertRaises(Exception, resolver.get_user_info_batch, ["1", "2"], attributes=["username"])
 
+    def test_13b_get_user_info_batch_rolls_the_session_back_on_a_db_error(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        # A lost connection leaves the transaction invalid, and the session is cached for the
+        # lifetime of the request. Without a rollback the one-by-one fallback the caller runs
+        # next would get PendingRollbackError for its first user instead of a reconnect, so
+        # that user would be marked unresolvable even though the backend is reachable again.
+        with mock.patch.object(resolver.session, "rollback") as mock_rollback:
+            with mock.patch.object(resolver.session, "execute",
+                                   side_effect=Exception("the database is not reachable")):
+                self.assertRaises(Exception, resolver.get_user_info_batch, ["1", "2"], attributes=["username"])
+        mock_rollback.assert_called_once()
+
+        # The same holds for the single-user lookup the fallback ends up in
+        with mock.patch.object(resolver.session, "rollback") as mock_rollback:
+            with mock.patch.object(resolver.session, "execute",
+                                   side_effect=Exception("the database is not reachable")):
+                self.assertRaises(Exception, resolver.get_user_info, "1", attributes=["username"])
+        mock_rollback.assert_called_once()
+
     def test_99_testconnection_fail(self):
         resolver = SQLResolver()
         self.parameters['Database'] = "does_not_exist"
