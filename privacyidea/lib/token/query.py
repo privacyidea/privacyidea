@@ -4,7 +4,7 @@
 
 import logging
 import traceback
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from typing import Any, NamedTuple
 
 from flask_sqlalchemy.session import Session
@@ -387,6 +387,56 @@ def _select_owners(token_ids: list[int]) -> list[TokenOwner]:
     ).unique().all()
 
 
+def _select_container_serials(token_ids: list[int]) -> list:
+    return db.session.execute(
+        select(TokenContainerToken.token_id, TokenContainer.serial)
+        .join(TokenContainer, TokenContainer.id == TokenContainerToken.container_id)
+        .where(TokenContainerToken.token_id.in_(token_ids))
+        .order_by(TokenContainerToken.container_id)
+    ).all()
+
+
+def _read_page_rows(token_ids: list[int], select_rows: Callable[[list[int]], list], what: str) -> list:
+    """
+    Read rows for a whole page of tokens, with one query per chunk of token IDs.
+
+    A chunk whose query fails (a transient DB error, e.g. a lock-wait timeout) is retried
+    once after a rollback, since most such failures clear on retry. A chunk that fails
+    twice falls back to querying its tokens one by one, so that a failure which does not
+    clear costs only the tokens it actually affects instead of the whole page -- mirroring
+    how ``_resolve_owner_logins`` recovers from a failed resolver batch lookup.
+
+    :param token_ids: The database IDs of the tokens
+    :param select_rows: Returns the rows for the given token IDs, or raises
+    :param what: What is being read, for the log messages ("owners", ...)
+    :return: the rows of every chunk, in order. The rows of a token that could not be read
+             even on its own are missing.
+    """
+    rows = []
+    for chunk in _chunked(token_ids):
+        try:
+            chunk_rows = select_rows(chunk)
+        except Exception as chunk_error:
+            log.error(f"Could not read the {what} of a page of tokens in one query: {chunk_error!s}")
+            log.debug(traceback.format_exc())
+            db.session.rollback()
+            try:
+                chunk_rows = select_rows(chunk)
+            except Exception as retry_error:
+                log.error(f"Retrying the {what} of the page in one query failed again: {retry_error!s}")
+                log.debug(traceback.format_exc())
+                db.session.rollback()
+                chunk_rows = []
+                for token_id in chunk:
+                    try:
+                        chunk_rows.extend(select_rows([token_id]))
+                    except Exception as token_error:
+                        log.error(f"Could not read the {what} of token {token_id}: {token_error!s}")
+                        db.session.rollback()
+        rows.extend(chunk_rows)
+    return rows
+
+
 def _get_owner_by_token_id(token_ids: list[int]) -> dict[int, TokenOwner]:
     """
     Return the owner of each of the given tokens, with one query for the whole page.
@@ -394,40 +444,13 @@ def _get_owner_by_token_id(token_ids: list[int]) -> dict[int, TokenOwner]:
     A token can have several owners, in which case the first one is returned, just like
     ``Token.first_owner`` does for a single token.
 
-    A chunk whose page-wide query fails (a transient DB error, e.g. a lock-wait timeout)
-    is retried once after a rollback, since most such failures clear on retry. A chunk
-    that fails twice falls back to looking its tokens up one by one, so that a failure
-    which does not clear marks only the tokens it actually affects instead of failing the
-    whole page -- mirroring how ``_resolve_owner_logins`` recovers from a failed resolver
-    batch lookup.
-
     :param token_ids: The database IDs of the tokens
     :return: dictionary mapping a token ID to its owner. Tokens without an owner (or whose
              owner could not be read even one by one) are not contained.
     """
     owner_by_token_id = {}
-    for chunk in _chunked(token_ids):
-        try:
-            owners = _select_owners(chunk)
-        except Exception as chunk_error:
-            log.error(f"Could not read the owners of a page of tokens in one query: {chunk_error!s}")
-            log.debug(traceback.format_exc())
-            db.session.rollback()
-            try:
-                owners = _select_owners(chunk)
-            except Exception as retry_error:
-                log.error(f"Retrying the page of tokens in one query failed again: {retry_error!s}")
-                log.debug(traceback.format_exc())
-                db.session.rollback()
-                owners = []
-                for token_id in chunk:
-                    try:
-                        owners.extend(_select_owners([token_id]))
-                    except Exception as token_error:
-                        log.error(f"Could not read the owner of token {token_id}: {token_error!s}")
-                        db.session.rollback()
-        for owner in owners:
-            owner_by_token_id.setdefault(owner.token_id, owner)
+    for owner in _read_page_rows(token_ids, _select_owners, "owners"):
+        owner_by_token_id.setdefault(owner.token_id, owner)
     return owner_by_token_id
 
 
@@ -441,18 +464,11 @@ def _get_container_serial_by_token_id(token_ids: list[int]) -> dict[int, str]:
 
     :param token_ids: The database IDs of the tokens
     :return: dictionary mapping a token ID to a container serial. Tokens that are in no container
-             are not contained.
+             (or whose container could not be read even one by one) are not contained.
     """
     container_serial_by_token_id = {}
-    for chunk in _chunked(token_ids):
-        rows = db.session.execute(
-            select(TokenContainerToken.token_id, TokenContainer.serial)
-            .join(TokenContainer, TokenContainer.id == TokenContainerToken.container_id)
-            .where(TokenContainerToken.token_id.in_(chunk))
-            .order_by(TokenContainerToken.container_id)
-        ).all()
-        for token_id, container_serial in rows:
-            container_serial_by_token_id.setdefault(token_id, container_serial)
+    for token_id, container_serial in _read_page_rows(token_ids, _select_container_serials, "container serials"):
+        container_serial_by_token_id.setdefault(token_id, container_serial)
     return container_serial_by_token_id
 
 

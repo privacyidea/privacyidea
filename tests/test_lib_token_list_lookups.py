@@ -301,3 +301,29 @@ class TokenListLookupTestCase(MyTestCase):
         usernames = {token["serial"]: token["username"] for token in result["tokens"]}
         self.assertEqual(NUM_TOKENS, len(set(usernames.values())), usernames)
         self.assertEqual("user00", usernames["LIST00"], usernames)
+
+    @ldap3mock.activate
+    def test_10_a_failing_container_batch_query_falls_back_per_token(self):
+        ldap3mock.setLDAPDirectory(LDAP_DIRECTORY)
+        original_execute = db.session.execute
+        batch_query_failed = False
+
+        def failing_batch_query(stmt, *args, **kwargs):
+            nonlocal batch_query_failed
+            # The page-wide container query is the one selecting the token ID next to the
+            # container serial, so this leaves every other statement of the page untouched.
+            columns = [d["name"] for d in getattr(stmt, "column_descriptions", [])]
+            if not batch_query_failed and columns == ["token_id", "serial"]:
+                batch_query_failed = True
+                raise Exception("the container query for the whole page failed")
+            return original_execute(stmt, *args, **kwargs)
+
+        # The page-wide container query fails once (transient DB error); it is retried, so the
+        # page still renders its containers instead of failing outright.
+        with mock.patch.object(db.session, "execute", side_effect=failing_batch_query):
+            result = get_tokens_paginate(serial=self.serial_wildcard, psize=NUM_TOKENS, page=1)
+
+        self.assertTrue(batch_query_failed)
+        self.assertEqual(NUM_TOKENS, len(result["tokens"]), result)
+        container_serials = {token["container_serial"] for token in result["tokens"]}
+        self.assertSetEqual({self.container_serial}, container_serials, container_serials)
