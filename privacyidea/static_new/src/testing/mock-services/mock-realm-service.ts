@@ -70,7 +70,7 @@ export class MockRealmService implements RealmServiceInterface {
     return of(MockPiResponse.fromValue<number>(1));
   });
 
-  getRealmDeleteWarnings = jest.fn().mockImplementation((_realm: string) => {
+  getRealmDeleteWarnings = jest.fn().mockImplementation(() => {
     return of(
       MockPiResponse.fromValue<RealmDeleteWarnings>({
         custom_attribute_keys: [],
