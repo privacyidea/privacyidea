@@ -2599,6 +2599,54 @@ class LDAPResolverTestCase(MyTestCase):
             self.assertEqual("Cooper", user_info["surname"])
             self.assertNotIn("groups", user_info)
 
+    def test_38a_group_name_attribute_shapes(self):
+        """ldap3 returns a group name as a list whenever the schema declares the attribute
+        multi-valued (``cn`` per RFC 4519) or NOSCHEMAS is set, and as a string otherwise."""
+        params = {'LDAPURI': 'ldap://localhost',
+                  'LDAPBASE': 'o=test',
+                  'BINDDN': 'cn=manager,ou=example,o=test',
+                  'BINDPW': 'ldaptest',
+                  'LOGINNAMEATTRIBUTE': 'cn',
+                  'LDAPSEARCHFILTER': '(cn=*)',
+                  'USERINFO': '{"username": "cn"}',
+                  'UIDTYPE': 'DN',
+                  'CACHE_TIMEOUT': '0',
+                  'recursive_group_search': True,
+                  'group_search_filter': '(&(objectClass=groupOfNames)(member=cn={username},{base_dn}))',
+                  'group_name_attribute': 'cn',
+                  'group_attribute_mapping_key': 'groups',
+                  'resolver': 'testpool',
+                  'type': 'ldapresolver'}
+        resolver = LDAPResolver()
+        resolver.loadConfig(params)
+        user_info = {"username": "alice"}
+
+        for description, attribute_values, expected in [
+                ("multi-valued attribute, one value each", [["admins"], ["ipausers"]],
+                 ["admins", "ipausers"]),
+                ("a group carrying several names", [["admins", "wheel"], ["ipausers"]],
+                 ["admins", "wheel", "ipausers"]),
+                ("single-valued attribute (AD)", ["admins", "ipausers"],
+                 ["admins", "ipausers"]),
+                ("attribute without a value", [[], None, ["admins"]], ["admins"]),
+                ("the same name from several entries", [["admins"], ["admins"]], ["admins"])]:
+            def mock_search(search_base, search_filter, attributes):
+                return [{"attributes": {"cn": value}} for value in attribute_values]
+
+            with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._search",
+                            wraps=mock_search):
+                groups = resolver._get_user_groups_recursive(user_info)
+            self.assertListEqual(expected, groups, description)
+
+        # the flattened list is what ends up in the user info under the configured key
+        def mock_search(search_base, search_filter, attributes):
+            return [{"attributes": {"cn": ["admins"]}}, {"attributes": {"cn": ["ipausers"]}}]
+
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._search",
+                        wraps=mock_search):
+            user_info = resolver._ldap_attributes_to_user_object({"cn": "alice"})
+        self.assertListEqual(["admins", "ipausers"], user_info["groups"])
+
     def test_39_create_search_filter(self):
         resolver = LDAPResolver()
         resolver.loadConfig({'LDAPURI': 'ldap://localhost',
