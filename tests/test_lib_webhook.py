@@ -8,8 +8,8 @@ from privacyidea.lib.crypto import CENSORED, decryptPassword
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
 from privacyidea.lib.webhook import (
     AuthType, ContentType, HttpMethod, DEFAULT_TIMEOUT,
-    delete_webhook, get_webhook, get_webhook_identifiers, get_webhook_object,
-    get_webhooks, set_webhook,
+    delete_webhook, export_webhook, get_webhook, get_webhook_identifiers,
+    get_webhook_object, get_webhooks, import_webhook, set_webhook,
 )
 from privacyidea.models.webhook import Webhook
 from .base import MyTestCase
@@ -285,6 +285,22 @@ class WebhookCrudTestCase(MyTestCase):
         self.assertEqual(get_webhook("hook")["headers"]["Authorization"],
                          "Bearer tok")
 
+    def test_censored_header_value_on_create_yields_an_empty_header(self):
+        """
+        There is nothing stored to keep when the header is new, so the row is
+        created empty rather than dropped: the header name and its 'encrypted'
+        flag are configuration too, and a header-authenticated webhook must not
+        silently end up without any header.
+        """
+        set_webhook("hook", url="https://example.com",
+                    auth_type=AuthType.HEADER,
+                    headers={"Authorization": CENSORED, "X-Env": "prod"},
+                    secret_headers={"Authorization"})
+
+        webhook = get_webhook("hook")
+        self.assertEqual(webhook["headers"], {"Authorization": "", "X-Env": "prod"})
+        self.assertEqual(webhook["secret_headers"], ["Authorization"])
+
     def test_toggling_header_encryption_off(self):
         """Un-checking 'encrypted' decrypts the stored value in place."""
         set_webhook("hook", url="https://example.com",
@@ -427,3 +443,192 @@ class WebhookCrudTestCase(MyTestCase):
     def test_delete_unknown_raises(self):
         with self.assertRaises(ResourceNotFoundError):
             delete_webhook("does-not-exist")
+
+
+class WebhookExportImportTestCase(MyTestCase):
+    """Registry export/import of webhook objects (`pi-manage config export`)."""
+
+    def _cleanup(self):
+        for wh in Webhook.query.all():
+            wh.delete()
+
+    def setUp(self):
+        super().setUp()
+        self._cleanup()
+
+    def tearDown(self):
+        self._cleanup()
+        super().tearDown()
+
+    @staticmethod
+    def _create_full_webhook(identifier="siem"):
+        set_webhook(
+            identifier,
+            url="https://siem.example.com/ingest",
+            description="Ship events to the SIEM",
+            http_method="PUT",
+            content_type=ContentType.JSON,
+            default_payload='{"event": "{action}"}',
+            auth_type=AuthType.BASIC,
+            username="pi",
+            password="s3cret",
+            verify_tls=False,
+            tls_ca_bundle="/etc/ssl/ca.pem",
+            client_certificate="/etc/ssl/client.pem",
+            client_key="/etc/ssl/client.key",
+            client_key_password="keypw",
+            http_proxy="http://proxy:3128",
+            https_proxy="http://proxy:3128",
+            timeout=7,
+            headers={"X-API-Key": "apikey", "X-Source": "privacyidea"},
+            secret_headers=["X-API-Key"],
+        )
+
+    # ------------------------------------------------------------------
+    # Export
+    # ------------------------------------------------------------------
+
+    def test_export_is_registered(self):
+        """The exporter must be reachable through `pi-manage config export`."""
+        from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
+        # Importing the CLI module must be enough to register both functions.
+        import privacyidea.cli.pimanage.pi_config  # noqa: F401
+
+        self.assertIn("webhook", EXPORT_FUNCTIONS)
+        self.assertIn("webhook", IMPORT_FUNCTIONS)
+
+    def test_export_all_keyed_by_identifier(self):
+        set_webhook("one", url="https://one.example.com")
+        set_webhook("two", url="https://two.example.com")
+
+        exported = export_webhook()
+        self.assertEqual(sorted(exported), ["one", "two"])
+        self.assertEqual(exported["one"]["url"], "https://one.example.com")
+
+    def test_export_drops_id_and_identifier(self):
+        """The payload must contain configuration only, not the object keys."""
+        set_webhook("hook", url="https://example.com")
+        config = export_webhook()["hook"]
+        self.assertNotIn("id", config)
+        self.assertNotIn("identifier", config)
+
+    def test_export_single_by_name(self):
+        set_webhook("one", url="https://one.example.com")
+        set_webhook("two", url="https://two.example.com")
+        self.assertEqual(list(export_webhook(name="two")), ["two"])
+
+    def test_export_unknown_name_is_empty(self):
+        set_webhook("one", url="https://one.example.com")
+        self.assertEqual(export_webhook(name="nope"), {})
+
+    def test_export_censors_all_secrets(self):
+        self._create_full_webhook()
+        config = export_webhook(censor=True)["siem"]
+
+        self.assertEqual(config["password"], CENSORED)
+        self.assertEqual(config["client_key_password"], CENSORED)
+        self.assertEqual(config["headers"]["X-API-Key"], CENSORED)
+        # Non-secret values stay readable.
+        self.assertEqual(config["username"], "pi")
+        self.assertEqual(config["headers"]["X-Source"], "privacyidea")
+
+    def test_export_without_censor_returns_decrypted_secrets(self):
+        """An uncensored export must be re-importable, so secrets are decrypted."""
+        self._create_full_webhook()
+        config = export_webhook()["siem"]
+
+        self.assertEqual(config["password"], "s3cret")
+        self.assertEqual(config["client_key_password"], "keypw")
+        self.assertEqual(config["headers"]["X-API-Key"], "apikey")
+
+    def test_export_empty_secrets_are_not_censored(self):
+        """An unset secret must stay empty, not become the placeholder."""
+        set_webhook("hook", url="https://example.com")
+        config = export_webhook(censor=True)["hook"]
+        self.assertEqual(config["password"], "")
+        self.assertEqual(config["client_key_password"], "")
+
+    # ------------------------------------------------------------------
+    # Import
+    # ------------------------------------------------------------------
+
+    def test_import_creates_webhook(self):
+        import_webhook({"new": {"url": "https://new.example.com",
+                                "http_method": "PATCH"}})
+        webhook = get_webhook("new")
+        self.assertEqual(webhook["url"], "https://new.example.com")
+        self.assertEqual(webhook["http_method"], "PATCH")
+
+    def test_import_single_by_name(self):
+        import_webhook({"one": {"url": "https://one.example.com"},
+                        "two": {"url": "https://two.example.com"}},
+                       name="two")
+        self.assertEqual(get_webhook_identifiers(), ["two"])
+
+    def test_import_ignores_unknown_keys(self):
+        """A hand-edited export must not abort the whole import."""
+        import_webhook({"new": {"url": "https://new.example.com",
+                                "id": 42,
+                                "identifier": "new",
+                                "not_a_parameter": "boom"}})
+        self.assertEqual(get_webhook("new")["url"], "https://new.example.com")
+
+    def test_uncensored_export_roundtrips(self):
+        """export -> delete -> import must restore the webhook byte for byte."""
+        self._create_full_webhook()
+        exported = export_webhook()
+        delete_webhook("siem")
+
+        import_webhook(exported)
+        self.assertEqual(export_webhook(), exported)
+
+    def test_uncensored_import_sets_new_secrets(self):
+        """Importing clear-text secrets over an existing webhook replaces them."""
+        self._create_full_webhook()
+        exported = export_webhook()
+        exported["siem"]["password"] = "rotated"
+        exported["siem"]["headers"]["X-API-Key"] = "rotated-key"
+
+        import_webhook(exported)
+        webhook = get_webhook("siem")
+        self.assertEqual(webhook["password"], "rotated")
+        self.assertEqual(webhook["headers"]["X-API-Key"], "rotated-key")
+        # ...and the rotated header is still stored encrypted.
+        self.assertIn("X-API-Key", webhook["secret_headers"])
+
+    def test_censored_import_preserves_existing_secrets(self):
+        """Re-importing a censored export must not wipe stored credentials."""
+        self._create_full_webhook()
+        censored = export_webhook(censor=True)
+        # Change something else so the import definitely writes the row.
+        censored["siem"]["description"] = "updated"
+
+        import_webhook(censored)
+        webhook = get_webhook("siem")
+        self.assertEqual(webhook["description"], "updated")
+        self.assertEqual(webhook["password"], "s3cret")
+        self.assertEqual(webhook["client_key_password"], "keypw")
+        self.assertEqual(webhook["headers"]["X-API-Key"], "apikey")
+        self.assertIn("X-API-Key", webhook["secret_headers"])
+
+    def test_censored_import_on_a_fresh_instance_leaves_secrets_empty(self):
+        """
+        A censored export carries no secret. Importing it where the webhook is
+        unknown must still work; the credential simply has to be entered once.
+        """
+        self._create_full_webhook()
+        censored = export_webhook(censor=True)
+        delete_webhook("siem")
+
+        import_webhook(censored)
+        webhook = get_webhook("siem")
+        self.assertEqual(webhook["url"], "https://siem.example.com/ingest")
+        self.assertEqual(webhook["password"], "")
+        self.assertEqual(webhook["client_key_password"], "")
+        # The non-secret header survives, the secret one is stored empty.
+        self.assertEqual(webhook["headers"]["X-Source"], "privacyidea")
+        self.assertEqual(webhook["headers"]["X-API-Key"], "")
+
+    def test_import_of_empty_data_is_a_noop(self):
+        import_webhook({})
+        self.assertEqual(get_webhook_identifiers(), [])

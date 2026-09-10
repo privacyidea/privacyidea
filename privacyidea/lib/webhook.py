@@ -14,6 +14,7 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import inspect
 import json
 import logging
 import ssl
@@ -30,6 +31,7 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.utils import fetch_one_resource
+from privacyidea.lib.utils.export import register_import, register_export
 from privacyidea.models import db
 from privacyidea.models.webhook import Webhook, WebhookHeader
 
@@ -240,9 +242,20 @@ def _apply_headers(webhook, headers, secret_headers):
         row = existing.get(key)
 
         if is_censored(value):
-            # The caller did not send the real value back. Keep it, but still
-            # honour a change of the "encrypted" checkbox.
-            if row is None or should_be_secret == bool(row.encrypted):
+            # The caller did not send the real value back.
+            if row is None:
+                # Nothing is stored yet, so there is no value to keep. Create
+                # the header with an empty value rather than dropping it: the
+                # name and the "encrypted" flag are configuration too, and this
+                # mirrors how a censored password behaves on create (the column
+                # exists and is empty). Silently discarding it would leave a
+                # header-authenticated webhook without any header at all.
+                WebhookHeader(webhook_id=webhook.id, key=key, value="",
+                              encrypted=should_be_secret)
+                continue
+            # Keep the stored value, but still honor a change of the
+            # "encrypted" checkbox.
+            if should_be_secret == bool(row.encrypted):
                 continue
             current = row.value or ""
             if should_be_secret:
@@ -761,3 +774,72 @@ def test_webhook(identifier, payload=None):
     :return: the result dict of :func:`fire_webhook`
     """
     return fire_webhook(identifier, payload=payload)
+
+
+# ---------------------------------------------------------------------------
+# Configuration export / import
+# ---------------------------------------------------------------------------
+
+#: Keys of a webhook dict that identify the object rather than describe its
+#: configuration, and therefore must not be written back on import.
+_NON_CONFIG_KEYS = ("id", "identifier")
+
+
+@register_export('webhook')
+def export_webhook(name=None, censor=False):
+    """
+    Export the given, or all, webhook definitions.
+
+    The result maps the webhook identifier to its configuration, which is
+    exactly the set of keyword arguments :func:`set_webhook` accepts, so
+    :func:`import_webhook` can feed it straight back.
+
+    :param name: export only this identifier (default: export all)
+    :param censor: if True, the basic-auth password, the client key password
+        and the values of headers marked as encrypted are replaced by the
+        ``__CENSORED__`` placeholder instead of being exported in clear text.
+        Such an export is safe to share, but can only be re-imported on the
+        instance it came from, where the placeholder means "keep the stored
+        secret".
+    :return: dict of identifier -> webhook configuration
+    """
+    result = {}
+    for webhook in get_webhooks(identifier=name, censor=censor):
+        identifier = webhook["identifier"]
+        for key in _NON_CONFIG_KEYS:
+            webhook.pop(key, None)
+        result[identifier] = webhook
+    return result
+
+
+@register_import('webhook')
+def import_webhook(data, name=None):
+    """
+    Import webhook definitions produced by :func:`export_webhook`.
+
+    A secret carrying the ``__CENSORED__`` placeholder is *not* imported:
+    :func:`set_webhook` keeps the stored value, so re-importing a censored
+    export never wipes an existing credential. On an instance that does not
+    know the webhook yet, such a secret simply stays empty and has to be
+    entered once.
+
+    :param data: dict of identifier -> webhook configuration
+    :param name: import only this identifier (default: import all)
+    """
+    log.debug(f"Import webhook config: {sorted(data)}")
+    known_parameters = set(inspect.signature(set_webhook).parameters) - {"identifier"}
+
+    for res_name, res_data in data.items():
+        if name and name != res_name:
+            continue
+        # Be tolerant about a hand-edited export: an unknown key would
+        # otherwise abort the whole import with a TypeError.
+        parameters = {}
+        for key, value in res_data.items():
+            if key in known_parameters:
+                parameters[key] = value
+            elif key not in _NON_CONFIG_KEYS:
+                log.warning(f"Ignoring unknown key {key!r} while importing "
+                            f"webhook {res_name!r}.")
+        wid = set_webhook(res_name, **parameters)
+        log.info(f"Import of webhook {res_name!r} finished, id: {wid}")

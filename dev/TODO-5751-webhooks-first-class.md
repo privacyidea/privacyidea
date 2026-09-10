@@ -287,21 +287,45 @@ net. The failure message printed by
 
 ---
 
-### 2.3 — Export / Import registration
+### 2.3 — Export / Import registration ✅
 
-- [ ] **File:** `privacyidea/lib/webhook.py`
-- [ ] `@register_export('webhook')` — export all webhook objects
-    - Censor secrets using `is_censored()` / `censor_dict()` / `__CENSORED__`
-      pattern (from `lib/smtpserver.py`)
-- [ ] `@register_import('webhook')` — import webhook objects
-    - Skip re-import of censored passwords (don't wipe existing credential)
-- [ ] Handle round-trip: censored export → import doesn't destroy secrets
+- [x] **File:** `privacyidea/lib/webhook.py`
+- [x] `@register_export('webhook')` — exports all (or one) webhook object as
+  `identifier -> configuration`, where the configuration is exactly the keyword arguments `set_webhook()` accepts
+    - `id` and `identifier` are stripped: they identify the object, they are not configuration
+    - `censor=True` replaces the basic-auth password, the client key password and the values of headers marked
+      `encrypted` with `__CENSORED__` (delegated to `get_webhooks(censor=...)`, so there is exactly one censoring
+      implementation)
+    - Without `censor`, secrets are returned **decrypted**, so a re-import does not encrypt them a second time
+- [x] `@register_import('webhook')` — imports webhook objects via `set_webhook()`
+    - A `__CENSORED__` secret is not written; `set_webhook()` keeps the stored value, so re-importing a censored export
+      never wipes an existing credential
+    - Unknown keys in a hand-edited export are logged and skipped instead of aborting the whole import with a
+      `TypeError`
+- [x] **File:** `privacyidea/cli/pimanage/pi_config.py` — import `privacyidea.lib.webhook` for its registration side
+  effect. Unlike every other configuration object, it is not pulled in transitively, so without this the type would
+  silently be missing from `pi-manage config export/import`
 
-**Tests:**
+> **Fixed along the way:** `_apply_headers()` dropped a header entirely when its
+> value arrived censored and no row existed yet (i.e. on create). The name and
+> the `encrypted` flag are configuration too, so the row is now created with an
+> empty value — mirroring how a censored password behaves — instead of leaving a
+> header-authenticated webhook with no header at all.
 
-- [ ] Export includes all webhooks, secrets censored
-- [ ] Import of censored export preserves existing secrets
-- [ ] Import of uncensored export sets new secrets
+**Tests:** ✅ `tests/test_lib_webhook.py::WebhookExportImportTestCase` — 15 tests, all passing
+
+- [x] Exporter and importer are registered (importing the CLI module suffices)
+- [x] Export is keyed by identifier; `id` / `identifier` are stripped
+- [x] Export of a single name; unknown name yields `{}`
+- [x] Export censors password, client key password and secret header values, leaves the rest readable
+- [x] Uncensored export returns decrypted secrets
+- [x] An unset secret stays empty instead of becoming the placeholder
+- [x] Import creates a webhook; import of a single name; empty data is a no-op
+- [x] Import ignores unknown keys
+- [x] export → delete → import round-trips identically
+- [x] Uncensored import sets new secrets (and keeps them encrypted at rest)
+- [x] Censored import preserves existing secrets while applying other changes
+- [x] Censored import on a fresh instance leaves secrets empty but keeps the configuration
 
 ---
 
