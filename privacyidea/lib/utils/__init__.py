@@ -1364,7 +1364,14 @@ def create_tag_dict(logged_in_user=None,
     from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
     now = (base_dt + (time_offset or timedelta())).strftime(AUTH_DATE_FORMAT)
     recipient = recipient or {}
-    user_info = tokenowner.get_specific_info(["givenname", "surname"]) if tokenowner else {}
+    user_info = {}
+    if tokenowner:
+        try:
+            user_info = tokenowner.get_specific_info(["givenname", "surname"])
+        except Exception as e:
+            # The user store may be unavailable. A tag that can not be determined is
+            # empty, it must not fail the request that the tags are created for.
+            log.warning(f"Could not read the user information of {tokenowner!r}: {e!r}")
     tags = dict(admin=logged_in_user.get("username") if logged_in_user else "",
                 realm=logged_in_user.get("realm") if logged_in_user else "",
                 action=request.path if request else "",

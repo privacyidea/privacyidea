@@ -4135,8 +4135,8 @@ class TokenEventTestCase(MyTestCase):
 
     def test_17_set_description_and_tokeninfo_tags(self):
         # The tags of "set description" and "set tokeninfo" are built with
-        # create_tag_dict(), but {username} and {realm} keep referring to the user
-        # of the request for backwards compatibility.
+        # create_tag_dict(): {username} and {userrealm} describe the token owner,
+        # {admin} and {realm} the acting administrator.
         self.setUp_user_realms()
         init_token({"serial": "SPASS03", "type": "spass"},
                    User("cornelius", self.realm1))
@@ -4152,19 +4152,19 @@ class TokenEventTestCase(MyTestCase):
         resp = Response()
         resp.data = """{"result": {"value": true}}"""
 
-        # {username} and {realm} must still be the user of the request, not the admin
+        # The owner tags describe the token owner, the admin tags the administrator
         options = {"g": g, "request": req, "response": resp,
                    "handler_def": {"options": {
                        "key": "who",
-                       "value": "{username}@{realm} ip={client_ip} "
-                                "serial={serial} type={tokentype} owner={userrealm}"},
+                       "value": "{username}@{userrealm} by {admin}@{realm} "
+                                "ip={client_ip} serial={serial} type={tokentype}"},
                        "conditions": {}}}
         t_handler = TokenEventHandler()
         self.assertTrue(t_handler.check_condition(options))
         self.assertTrue(t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options))
         who = get_tokens(serial="SPASS03")[0].get_tokeninfo("who")
-        self.assertEqual(f"cornelius@{self.realm1} ip=10.0.0.7 "
-                         f"serial=SPASS03 type=spass owner={self.realm1}", who)
+        self.assertEqual(f"cornelius@{self.realm1} by admin@super "
+                         f"ip=10.0.0.7 serial=SPASS03 type=spass", who)
 
         # The description supports the same tags, including {now} with an offset
         options["handler_def"]["options"] = {
@@ -4175,19 +4175,20 @@ class TokenEventTestCase(MyTestCase):
         self.assertTrue(desc.startswith("enrolled by cornelius at 20"), desc)
         self.assertNotIn("{now}", desc)
 
-        # An unknown tag must not fail the event handling, the text is kept as is
-        options["handler_def"]["options"] = {"description": "{does_not_exist}"}
+        # An unknown tag must not fail the event handling, the text is kept as the
+        # administrator entered it, including a time offset
+        options["handler_def"]["options"] = {"description": "{now}+5d {does_not_exist}"}
         self.assertTrue(t_handler.check_condition(options))
         self.assertTrue(t_handler.do(ACTION_TYPE.SET_DESCRIPTION, options=options))
-        self.assertEqual("{does_not_exist}",
+        self.assertEqual("{now}+5d {does_not_exist}",
                          get_tokens(serial="SPASS03")[0].token.description)
 
-        # Without a user in the request, {username} and {realm} fall back to "N/A"
+        # Without a user in the request, the owner is determined from the serial
         req.User = User()
-        options["handler_def"]["options"] = {"key": "who2", "value": "{username}/{realm}"}
+        options["handler_def"]["options"] = {"key": "who2", "value": "{username}@{userrealm}"}
         self.assertTrue(t_handler.check_condition(options))
         self.assertTrue(t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options))
-        self.assertEqual("N/A/N/A",
+        self.assertEqual(f"cornelius@{self.realm1}",
                          get_tokens(serial="SPASS03")[0].get_tokeninfo("who2"))
 
         remove_token(serial="SPASS03")
@@ -4357,6 +4358,7 @@ class CustomUserAttributesTestCase(MyTestCase):
         init_token({"serial": "SPASS02", "type": "spass"},
                    User("cornelius", self.realm1))
         g = FakeFlaskG()
+        g.audit_object = FakeAudit()
         builder = EnvironBuilder(method='POST',
                                  data={'serial': "SPASS02"},
                                  headers={})
@@ -4385,11 +4387,47 @@ class CustomUserAttributesTestCase(MyTestCase):
         # The rendered value must contain the current year of the timestamp
         self.assertIn(str(datetime.now().year), value, value)
 
-        # An unknown tag must not fail the handler, the raw value is kept
-        options["handler_def"]["options"]["attrvalue"] = "{does_not_exist}"
+        # An unknown tag must not fail the handler, the value is kept as the
+        # administrator entered it, including a time offset
+        options["handler_def"]["options"]["attrvalue"] = "{now}+2h {does_not_exist}"
         res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
         self.assertTrue(res)
-        self.assertEqual("{does_not_exist}", req.User.attributes.get("last_login"))
+        self.assertEqual("{now}+2h {does_not_exist}", req.User.attributes.get("last_login"))
+
+        # {serial} is taken from the response if the request does not carry one
+        req.all_data = {}
+        resp = Response(mimetype="application/json",
+                        response="""{"detail": {"serial": "SPASS02"},
+                                    "result": {"status": true, "value": true}}""",
+                        content_type="application/json")
+        options["response"] = resp
+        options["handler_def"]["options"]["attrvalue"] = "token {serial}"
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
+        self.assertEqual("token SPASS02", req.User.attributes.get("last_login"))
+
+        # Without any token in the event, {serial} is empty and the tokens of the
+        # user are not enumerated
+        init_token({"serial": "SPASS02B", "type": "spass"},
+                   User("cornelius", self.realm1))
+        del options["response"]
+        options["handler_def"]["options"]["attrvalue"] = "token '{serial}'"
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
+        self.assertEqual("token ''", req.User.attributes.get("last_login"))
+        remove_token(serial="SPASS02B")
+
+        # The user tags describe the user the attribute is written for. With the
+        # logged-in user, they do not depend on a user in the request.
+        req.User = User()
+        g.logged_in_user = {"username": "cornelius", "realm": self.realm1, "role": "user"}
+        options["handler_def"]["options"] = {"attrkey": "last_login",
+                                             "attrvalue": "{username}@{userrealm}",
+                                             "user": USER_TYPE.LOGGED_IN_USER}
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
+        user = User("cornelius", self.realm1)
+        self.assertEqual(f"cornelius@{self.realm1}", user.attributes.get("last_login"))
 
         remove_token(serial="SPASS02")
 

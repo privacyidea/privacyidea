@@ -96,10 +96,10 @@ client application and ``{ua_string}`` for the complete user agent, as well as
 ``{serial}``, ``{tokentype}``, ``{tokendescription}``, ``{username}``,
 ``{userrealm}``, ``{admin}``, ``{date}`` and ``{time}``.
 
-.. note:: ``{username}`` and ``{realm}`` refer to the user of the request, not to
-   the acting administrator. The realm of the token owner is additionally
-   available as ``{userrealm}``. A tag that can not be replaced does not fail the
-   event handling, the text is then written unchanged.
+.. note:: ``{username}`` and ``{userrealm}`` refer to the owner of the token, while
+   ``{admin}`` and ``{realm}`` refer to the acting administrator. A tag that can not
+   be replaced does not fail the event handling, the text is then written as it was
+   entered.
 
 set validity
 ............
@@ -170,10 +170,10 @@ client application and ``{ua_string}`` for the complete user agent, as well as
 ``{serial}``, ``{tokentype}``, ``{tokendescription}``, ``{username}``,
 ``{userrealm}``, ``{admin}``, ``{date}`` and ``{time}``.
 
-.. note:: ``{username}`` and ``{realm}`` refer to the user of the request, not to
-   the acting administrator. The realm of the token owner is additionally
-   available as ``{userrealm}``. A tag that can not be replaced does not fail the
-   event handling, the value is then written unchanged.
+.. note:: ``{username}`` and ``{userrealm}`` refer to the owner of the token, while
+   ``{admin}`` and ``{realm}`` refer to the acting administrator. A tag that can not
+   be replaced does not fail the event handling, the value is then written as it was
+   entered.
 
 .. note:: Some tokens have token specific required attributes that are stored
    in the tokeninfo. The TOTP token type has a ``timeStep`` attribute, the TOTP

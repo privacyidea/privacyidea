@@ -139,7 +139,7 @@ class CustomUserAttributesHandler(BaseEventHandler):
         attrkey = handler_options.get("attrkey")
         attrvalue = handler_options.get("attrvalue")
         if action.lower() == "set_custom_user_attributes":
-            attrvalue = self._render_attrvalue(attrvalue, options, request, g, tokenowner)
+            attrvalue = self._render_attrvalue(attrvalue, options, request, g, user)
             ret = user.set_attribute(attrkey, attrvalue)
         elif action.lower() == "delete_custom_user_attributes":
             ret = user.delete_attribute(attrkey)
@@ -150,7 +150,7 @@ class CustomUserAttributesHandler(BaseEventHandler):
         return ret
 
     @staticmethod
-    def _render_attrvalue(attrvalue, options, request, g, tokenowner):
+    def _render_attrvalue(attrvalue, options, request, g, user):
         """
         Substitute the supported tags in the attribute value.
 
@@ -159,7 +159,19 @@ class CustomUserAttributesHandler(BaseEventHandler):
         placeholders ``{now}`` and ``{current_time}`` are supported, including
         offsets such as ``{now}+2h``.
 
+        The tags that describe a user (``{username}``, ``{userrealm}``, ``{user}``,
+        ``{givenname}``, ``{surname}``) refer to the user the attribute is written
+        for, which is the token owner or the logged-in user, depending on the
+        ``user`` option of the handler.
+
+        ``{serial}`` is the token of the request. If the event carries no token,
+        the tag is empty; the tokens of the user are never enumerated for it.
+
         :param attrvalue: The raw attribute value (may contain tags)
+        :param options: The event handler options, used to read the response
+        :param request: The request object
+        :param g: The flask g object
+        :param user: The user the attribute is written for
         :return: The attribute value with all tags replaced
         """
         if not attrvalue or "{" not in attrvalue:
@@ -167,11 +179,13 @@ class CustomUserAttributesHandler(BaseEventHandler):
 
         # Resolve a possible time offset like {now}+2h and strip it from the string.
         # The offset is passed to create_tag_dict, which renders {now}/{current_time}.
+        raw_value = attrvalue
         attrvalue, time_delta = parse_time_offset_from_now(attrvalue)
 
-        owner = tokenowner if tokenowner and not tokenowner.is_empty() else None
-        serial = request.all_data.get("serial") if hasattr(request, "all_data") else None
-        serial, tokentype, tokendescription = BaseEventHandler._get_token_data(serial, owner)
+        owner = user if user and not user.is_empty() else None
+        content = BaseEventHandler._get_response_content(options.get("response"))
+        serial = BaseEventHandler._get_token_serials(request, content, g)
+        serial, tokentype, tokendescription = BaseEventHandler._get_token_data(serial, None)
         logged_in_user = g.logged_in_user if hasattr(g, "logged_in_user") else None
 
         tags = create_tag_dict(logged_in_user=logged_in_user,
@@ -187,8 +201,9 @@ class CustomUserAttributesHandler(BaseEventHandler):
             attrvalue = attrvalue.format(**tags)
         except Exception as e:
             # An attribute value that can not be formatted (unknown tag, unbalanced
-            # brace, ...) must not fail the event handling. Keep the raw value.
+            # brace, ...) must not fail the event handling. Keep the value as the
+            # administrator entered it, including a stripped time offset.
             log.warning(f"Could not format the custom user attribute value: {e!r}. "
                         f"Using the unformatted value.")
+            attrvalue = raw_value
         return attrvalue
-

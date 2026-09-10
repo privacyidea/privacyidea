@@ -522,38 +522,30 @@ class TokenEventHandler(BaseEventHandler):
                                tokentype=tokentype,
                                tokendescription=tokendescription,
                                time_offset=time_delta)
-        # For backwards compatibility, {username} and {realm} keep referring to the
-        # user of the request and not to the acting administrator. The realm of the
-        # token owner is additionally available as {userrealm}.
-        # Note: this used to read request.User.loginname, which does not exist, so
-        # both tags always rendered the literal string "N/A".
-        try:
-            tags["username"] = request.User.login or "N/A"
-            tags["realm"] = request.User.realm or "N/A"
-        except Exception:
-            tags["username"] = "N/A"
-            tags["realm"] = "N/A"
         return text, tags
 
     @staticmethod
-    def _format_with_tags(text, tags):
+    def _format_with_tags(text, tags, fallback):
         """
         Format the given text with the given tags.
 
         A text that can not be formatted must not fail the event handling. Besides
         an unknown tag, this also happens for a positional field, an unbalanced
-        brace or an index into a tag that is not set. In this case the unformatted
-        text is returned.
+        brace or an index into a tag that is not set. In this case the fallback is
+        returned.
 
-        :param text: The text containing the tags
+        :param text: The text containing the tags, without a time offset
         :param tags: The tag dictionary
+        :param fallback: The text to return if the formatting fails. This is the
+            text as the administrator entered it, including a time offset that
+            was stripped from ``text``.
         :return: The formatted text
         """
         try:
             return text.format(**tags)
         except Exception as e:
             log.warning(f"Could not format the text: {e!r}. Using the unformatted text.")
-            return text
+            return fallback
 
     def do(self, action, options=None):
         """
@@ -619,18 +611,18 @@ class TokenEventHandler(BaseEventHandler):
                         unassign_token(serial)
                     elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
                         description = handler_options.get("description") or ""
-                        description, tags = self._get_tags(g, request, serial, description)
+                        text, tags = self._get_tags(g, request, serial, description)
                         set_description(serial,
-                                        self._format_with_tags(description, tags))
+                                        self._format_with_tags(text, tags, description))
                     elif action.lower() == ACTION_TYPE.SET_COUNTWINDOW:
                         set_count_window(serial,
                                          int(handler_options.get("count window",
                                                                  50)))
                     elif action.lower() == ACTION_TYPE.SET_TOKENINFO:
                         tokeninfo = handler_options.get("value") or ""
-                        tokeninfo, tags = self._get_tags(g, request, serial, tokeninfo)
+                        text, tags = self._get_tags(g, request, serial, tokeninfo)
                         _write_tokeninfo_of_handler(serial, handler_options.get("key"),
-                                                    self._format_with_tags(tokeninfo, tags))
+                                                    self._format_with_tags(text, tags, tokeninfo))
                     elif action.lower() == ACTION_TYPE.INCREASE_TOKENINFO:
                         try:
                             # We assume that the tokeninfo is an integer

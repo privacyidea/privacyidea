@@ -35,6 +35,11 @@ deprecated alias for ``{now}``. In addition, the tags provided by all notificati
 handlers are available, for example ``{client_ip}``, ``{ua_browser}``,
 ``{ua_string}``, ``{serial}``, ``{username}``, ``{userrealm}`` and ``{tokentype}``.
 
+The tags that describe a user (``{username}``, ``{userrealm}``, ``{user}``,
+``{givenname}`` and ``{surname}``) refer to the user the attribute is written for,
+which is chosen with the **user** option below. ``{serial}`` is the token of the
+event; it is empty if the event carries no token.
+
 This allows, for instance, to store the timestamp of a successful authentication
 in a custom user attribute (``attrvalue = {now}``) and to reference it later in a
 time-based policy condition (``date_within_last``).
