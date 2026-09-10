@@ -35,7 +35,7 @@
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.trustAnchorDir">trust_anchor_dir</mat-label>
         <input
-          [value]="formData()[WEBAUTHN_TRUST_ANCHOR_DIR]"
+          [value]="trustAnchorDir()"
           (input)="updateFormData(WEBAUTHN_TRUST_ANCHOR_DIR, $any($event.target).value)"
           matInput
           placeholder="/etc/privacyidea/trusted_attestation_roots" />
@@ -61,12 +61,12 @@
       policy for any user.</p
     >
 
-    @if (formData()[WEBAUTHN_TRUST_ANCHOR_DIR] && !formData()[WEBAUTHN_TRUST_ANCHOR_DIR].startsWith("/")) {
+    @if (trustAnchorDir() && !trustAnchorDir().startsWith("/")) {
       <div class="alert alert-warning">
         <p i18n="@@tokenTypeConfig.trustAnchorDirMust">The trust_anchor_dir must be an absolute path.</p>
       </div>
     }
-    @if (formData()[WEBAUTHN_TRUST_ANCHOR_DIR] && formData()[WEBAUTHN_TRUST_ANCHOR_DIR].endsWith("/")) {
+    @if (trustAnchorDir() && trustAnchorDir().endsWith("/")) {
       <div class="alert alert-warning">
         <p i18n="@@tokenTypeConfig.trustAnchorDirMustNot">The trust_anchor_dir must not end with a "/".</p>
       </div>

@@ -59,7 +59,7 @@
         class="input-width-s">
         <mat-label i18n="@@tokenTypeConfig.defaultTimeWindow">Default Time Window</mat-label>
         <input
-          [value]="formData()[TOTP_TIME_WINDOW]"
+          [value]="formData()[TOTP_TIME_WINDOW] ?? ''"
           (input)="updateFormData(TOTP_TIME_WINDOW, $any($event.target).valueAsNumber)"
           matInput
           placeholder="180"
@@ -89,7 +89,7 @@
         class="input-width-s">
         <mat-label i18n="@@tokenTypeConfig.defaultTimeShift">Default Time Shift</mat-label>
         <input
-          [value]="formData()[TOTP_TIME_SHIFT]"
+          [value]="formData()[TOTP_TIME_SHIFT] ?? ''"
           (input)="updateFormData(TOTP_TIME_SHIFT, $any($event.target).valueAsNumber)"
           matInput
           placeholder="0"

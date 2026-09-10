@@ -1367,7 +1367,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-clients.component.html</context>
-          <context context-type="linenumber">115</context>
+          <context context-type="linenumber">116</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
@@ -1675,7 +1675,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">415</context>
+          <context context-type="linenumber">416</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
@@ -2012,7 +2012,7 @@
       </trans-unit>
       <trans-unit id="systemConfig.selectPredefined" datatype="html">
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>SMTP server configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/></source>
-        <target state="new">Seleziona una <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot;&gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configurazione del server SMTP<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> predefinita</target>
+        <target>Seleziona una <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configurazione del server SMTP<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> predefinita</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
           <context context-type="linenumber">179</context>
@@ -2247,7 +2247,7 @@
         <target>Inserisci un Client ID.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">303</context>
+          <context context-type="linenumber">304</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.failedGenerate" datatype="html">
@@ -2255,7 +2255,7 @@
         <target>Impossibile generare la chiave API.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">322</context>
+          <context context-type="linenumber">323</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tokenConfiguration" datatype="html">
@@ -2263,7 +2263,7 @@
         <target>Configurazione del token salvata correttamente.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">370</context>
+          <context context-type="linenumber">371</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.failedSaveToken" datatype="html">
@@ -2271,7 +2271,7 @@
         <target>Impossibile salvare la configurazione del token.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">377</context>
+          <context context-type="linenumber">378</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.errorSavingToken" datatype="html">
@@ -2279,7 +2279,7 @@
         <target>Errore durante il salvataggio della configurazione del token.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">382</context>
+          <context context-type="linenumber">383</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.daypassword" datatype="html">
@@ -2392,7 +2392,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.selectPredefinedSmtp" datatype="html">
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>SMTP server configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
-        <target state="new">Seleziona una <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot;&gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configurazione del server SMTP<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> predefinita. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+        <target>Seleziona una <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configurazione del server SMTP<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> predefinita. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/email-config/email-config.component.html</context>
           <context context-type="linenumber">47</context>
@@ -2552,7 +2552,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.selectPredefined" datatype="html">
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>RADIUS server configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
-        <target state="new">Seleziona una <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]&quot;&gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configurazione del server RADIUS<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> predefinita. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+        <target>Seleziona una <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configurazione del server RADIUS<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> predefinita. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/radius-config/radius-config.component.html</context>
           <context context-type="linenumber">46</context>
@@ -2644,7 +2644,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.selectPredefinedSms" datatype="html">
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>SMS Gateway configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
-        <target state="new">Seleziona una <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]&quot;&gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configurazione del gateway SMS<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> predefinita. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+        <target>Seleziona una <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configurazione del gateway SMS<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> predefinita. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/sms-config/sms-config.component.html</context>
           <context context-type="linenumber">51</context>
@@ -4080,7 +4080,7 @@
       </trans-unit>
       <trans-unit id="container.pleaseScanQrCode" datatype="html">
         <source>Please scan the QR code with the privacyIDEA Authenticator App or click this <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value ?? &apos;&apos; }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone to register your container. It will send the missing registration data to the configured endpoint.</source>
-        <target state="new">Scansiona il codice QR con l&apos;app privacyIDEA Authenticator o fai clic su questo <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> sul tuo smartphone per registrare il tuo container. Invierà i dati di registrazione mancanti all&apos;endpoint configurato.</target>
+        <target>Scansiona il codice QR con l'app privacyIDEA Authenticator o fai clic su questo <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value ?? &apos;&apos; }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> sul tuo smartphone per registrare il tuo container. Invierà i dati di registrazione mancanti all'endpoint configurato.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.component.html</context>
           <context context-type="linenumber">47</context>
@@ -4243,7 +4243,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/action-selector/action-selector.component.html</context>
-          <context context-type="linenumber">93</context>
+          <context context-type="linenumber">94</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component.html</context>
@@ -4631,7 +4631,7 @@
         <target>Gestore di eventi creato correttamente.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/event-edit-page.component.ts</context>
-          <context context-type="linenumber">271</context>
+          <context context-type="linenumber">275</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.eventHandlerUpdated" datatype="html">
@@ -4639,7 +4639,7 @@
         <target>Gestore di eventi aggiornato correttamente.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/event-edit-page.component.ts</context>
-          <context context-type="linenumber">272</context>
+          <context context-type="linenumber">276</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.events" datatype="html">
@@ -4851,7 +4851,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">412</context>
+          <context context-type="linenumber">413</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.conditions" datatype="html">
@@ -4955,7 +4955,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-clients.component.html</context>
-          <context context-type="linenumber">139</context>
+          <context context-type="linenumber">140</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-status/token-details-status.component.html</context>
@@ -6943,7 +6943,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">97</context>
+          <context context-type="linenumber">113</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.container" datatype="html">
@@ -6967,7 +6967,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">95</context>
+          <context context-type="linenumber">111</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
@@ -7618,7 +7618,7 @@
         <target>Nessuna azione corrisponde al filtro di ricerca.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/action-selector/action-selector.component.html</context>
-          <context context-type="linenumber">87</context>
+          <context context-type="linenumber">88</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.noActionsAvailable" datatype="html">
@@ -7626,7 +7626,7 @@
         <target>Nessuna azione disponibile per l&apos;ambito e il gruppo selezionati.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/action-selector/action-selector.component.html</context>
-          <context context-type="linenumber">96</context>
+          <context context-type="linenumber">97</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.selectOptions" datatype="html">
@@ -7638,7 +7638,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/added-actions-list/added-action-edit/policy-action-item-edit.component.html</context>
-          <context context-type="linenumber">36</context>
+          <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.noValuesAvailable" datatype="html">
@@ -7650,7 +7650,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/added-actions-list/added-action-edit/policy-action-item-edit.component.html</context>
-          <context context-type="linenumber">43</context>
+          <context context-type="linenumber">45</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.removeAction" datatype="html">
@@ -7658,7 +7658,7 @@
         <target>Rimuovi azione</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/added-actions-list/added-action-edit/policy-action-item-edit.component.html</context>
-          <context context-type="linenumber">94</context>
+          <context context-type="linenumber">96</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.actionsPolicy" datatype="html">
@@ -8127,7 +8127,7 @@
       </trans-unit>
       <trans-unit id="container.supportedToken" datatype="html">
         <source>Supported Token Types: <x id="START_BLOCK_IF" equiv-text="@if ( (containerService().selectedContainerType()?.token_types?.length ?? 0) &gt;= tokenService().tokenTypeOptions().length ) {"/> All <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService().selectedContainerType()?.token_types?.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService().selectedContainerType()?.token_types?.[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></source>
-        <target state="new">Tipi di token supportati: <x id="START_BLOCK_IF" equiv-text="@if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt;= tokenService().tokenTypeOptions().length) {"/> Tutti <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService().selectedContainerType()?.token_types?.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService().selectedContainerType()?.token_types?.[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></target>
+        <target>Tipi di token supportati: <x id="START_BLOCK_IF" equiv-text="@if ( (containerService().selectedContainerType()?.token_types?.length ?? 0) &gt;= tokenService().tokenTypeOptions().length ) {"/> Tutti <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService().selectedContainerType()?.token_types?.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService().selectedContainerType()?.token_types?.[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/container-create-form/container-create-form.component.html</context>
           <context context-type="linenumber">22</context>
@@ -9010,7 +9010,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.html</context>
-          <context context-type="linenumber">69</context>
+          <context context-type="linenumber">70</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-user/token-details-user.component.html</context>
@@ -14176,7 +14176,7 @@
         <target>gestore di eventi</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">414</context>
+          <context context-type="linenumber">415</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.error" datatype="html">
@@ -14300,7 +14300,7 @@
         <target>Ambiente HTTP</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">92</context>
+          <context context-type="linenumber">108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.httpRequestHeader" datatype="html">
@@ -14308,7 +14308,7 @@
         <target>Header della richiesta HTTP</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">93</context>
+          <context context-type="linenumber">109</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.requestData" datatype="html">
@@ -14316,7 +14316,7 @@
         <target>Dati della richiesta</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">94</context>
+          <context context-type="linenumber">110</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.containerInfo" datatype="html">
@@ -14324,7 +14324,7 @@
         <target>Informazioni sul container</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">96</context>
+          <context context-type="linenumber">112</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.tokenInfo" datatype="html">
@@ -14332,7 +14332,7 @@
         <target>Informazioni sul token</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">98</context>
+          <context context-type="linenumber">114</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.userInfo" datatype="html">
@@ -14340,7 +14340,7 @@
         <target>Informazioni sull&apos;utente</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">99</context>
+          <context context-type="linenumber">115</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.contains" datatype="html">
@@ -14348,7 +14348,7 @@
         <target>Contiene</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">126</context>
+          <context context-type="linenumber">142</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.doesNotContain" datatype="html">
@@ -14356,7 +14356,7 @@
         <target>Non contiene</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">127</context>
+          <context context-type="linenumber">143</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.equals" datatype="html">
@@ -14364,7 +14364,7 @@
         <target>Uguale a</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">128</context>
+          <context context-type="linenumber">144</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.doesNotEqual" datatype="html">
@@ -14372,7 +14372,7 @@
         <target>Diverso da</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">129</context>
+          <context context-type="linenumber">145</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.matchesRegex" datatype="html">
@@ -14380,7 +14380,7 @@
         <target>Corrisponde (Regex)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">130</context>
+          <context context-type="linenumber">146</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.doesNotMatchRegex" datatype="html">
@@ -14388,7 +14388,7 @@
         <target>Non corrisponde (Regex)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">131</context>
+          <context context-type="linenumber">147</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.in" datatype="html">
@@ -14396,7 +14396,7 @@
         <target>In</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">132</context>
+          <context context-type="linenumber">148</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.notIn" datatype="html">
@@ -14404,7 +14404,7 @@
         <target>Non in</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">133</context>
+          <context context-type="linenumber">149</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.stringContains" datatype="html">
@@ -14412,7 +14412,7 @@
         <target>La stringa contiene</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">134</context>
+          <context context-type="linenumber">150</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.stringDoesNot" datatype="html">
@@ -14420,7 +14420,7 @@
         <target>La stringa non contiene</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">135</context>
+          <context context-type="linenumber">151</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.withinLast" datatype="html">
@@ -14428,7 +14428,7 @@
         <target>Entro gli ultimi...</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">136</context>
+          <context context-type="linenumber">152</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.notWithinLast" datatype="html">
@@ -14436,7 +14436,7 @@
         <target>Non entro gli ultimi...</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">137</context>
+          <context context-type="linenumber">153</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.dateAfter" datatype="html">
@@ -14444,7 +14444,7 @@
         <target>Data dopo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">138</context>
+          <context context-type="linenumber">154</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.dateBefore" datatype="html">
@@ -14452,7 +14452,7 @@
         <target>Data prima</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">139</context>
+          <context context-type="linenumber">155</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.lessThan" datatype="html">
@@ -14460,7 +14460,7 @@
         <target>Minore di</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">140</context>
+          <context context-type="linenumber">156</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.greaterThan" datatype="html">
@@ -14468,7 +14468,7 @@
         <target>Maggiore di</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">141</context>
+          <context context-type="linenumber">157</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.raiseError" datatype="html">
@@ -14476,7 +14476,7 @@
         <target>Genera errore</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">153</context>
+          <context context-type="linenumber">169</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.conditionFalse" datatype="html">
@@ -14484,7 +14484,7 @@
         <target>La condizione è falsa</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">154</context>
+          <context context-type="linenumber">170</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.conditionTrue" datatype="html">
@@ -14492,7 +14492,7 @@
         <target>La condizione è vera</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">155</context>
+          <context context-type="linenumber">171</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policyCreated" datatype="html">
@@ -14500,7 +14500,7 @@
         <target>Policy creata correttamente.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">571</context>
+          <context context-type="linenumber">587</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.creatingPolicy" datatype="html">
@@ -14508,11 +14508,11 @@
         <target state="new">Creazione della policy fallita: <x id="DETAIL" equiv-text="error"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">575</context>
+          <context context-type="linenumber">591</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">583</context>
+          <context context-type="linenumber">599</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policyUpdated" datatype="html">
@@ -14520,7 +14520,7 @@
         <target>Policy aggiornata correttamente</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">686</context>
+          <context context-type="linenumber">702</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.savingPolicyFailed" datatype="html">
@@ -14528,7 +14528,7 @@
         <target state="new">Salvataggio della policy fallito</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">694</context>
+          <context context-type="linenumber">710</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.errorFetching" datatype="html">
@@ -17160,7 +17160,7 @@
         <target state="new">Failed to save event handler. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">338</context>
+          <context context-type="linenumber">339</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.canNotEnableEventHandler" datatype="html">
@@ -17168,7 +17168,7 @@
         <target state="new">Can not enable event handler due to missing ID</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">348</context>
+          <context context-type="linenumber">349</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.failedToEnableEventHandler" datatype="html">
@@ -17176,7 +17176,7 @@
         <target state="new">Failed to enable event handler!</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">359</context>
+          <context context-type="linenumber">360</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.canNotDisableEventHandler" datatype="html">
@@ -17184,7 +17184,7 @@
         <target state="new">Can not disable event handler due to missing ID</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">370</context>
+          <context context-type="linenumber">371</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.failedToDisableEventHandler" datatype="html">
@@ -17192,7 +17192,7 @@
         <target state="new">Failed to disable event handler!</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">381</context>
+          <context context-type="linenumber">382</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.failedToDeleteEventHandler" datatype="html">
@@ -17200,7 +17200,7 @@
         <target state="new">Failed to delete event handler. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">399</context>
+          <context context-type="linenumber">400</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.failedToDeleteEventHandler2" datatype="html">
@@ -17208,7 +17208,7 @@
         <target state="new">Failed to delete event handler: Missing ID.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">426</context>
+          <context context-type="linenumber">427</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.successfullyDeletedEventHandler" datatype="html">
@@ -17216,7 +17216,7 @@
         <target state="new">Successfully deleted event handler.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">433</context>
+          <context context-type="linenumber">434</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machineResolver.youAreNotAllowedTo" datatype="html">
@@ -19273,7 +19273,7 @@
       </trans-unit>
       <trans-unit id="2159130950882492111" datatype="html">
         <source>Cancel</source>
-        <target state="new">Cancel</target>
+        <target>Annulla</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/table-state/table-state.component.html</context>
           <context context-type="linenumber">38</context>
@@ -19317,7 +19317,7 @@
       </trans-unit>
       <trans-unit id="5870107995447361938" datatype="html">
         <source>Invalid transaction ID or serial number in enrollment detail for finalization.</source>
-        <target state="new">Invalid transaction ID or serial number in enrollment detail for finalization.</target>
+        <target>ID transazione o numero di serie non valido nel dettaglio della registrazione per la finalizzazione.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component.ts</context>
           <context context-type="linenumber">112</context>
@@ -19349,7 +19349,7 @@
       </trans-unit>
       <trans-unit id="7022070615528435141" datatype="html">
         <source>Delete</source>
-        <target state="new">Delete</target>
+        <target>Elimina</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.ts</context>
           <context context-type="linenumber">108</context>
@@ -19749,7 +19749,7 @@
       </trans-unit>
       <trans-unit id="valueLabelActive" datatype="html">
         <source>Active</source>
-        <target state="new">Active</target>
+        <target>Attivo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">43</context>
@@ -19881,7 +19881,7 @@
       </trans-unit>
       <trans-unit id="valueLabelLogout" datatype="html">
         <source>Logout</source>
-        <target state="new">Logout</target>
+        <target>Disconnetti</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">60</context>
@@ -19897,7 +19897,7 @@
       </trans-unit>
       <trans-unit id="valueLabelNone" datatype="html">
         <source>None</source>
-        <target state="new">None</target>
+        <target>Nessuno</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">62</context>
@@ -19945,7 +19945,7 @@
       </trans-unit>
       <trans-unit id="valueLabelVerify" datatype="html">
         <source>Verify</source>
-        <target state="new">Verify</target>
+        <target>Verifica</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">72</context>

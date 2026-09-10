@@ -23,6 +23,7 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { PiResponse } from "@app/app.component";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { environment } from "@env/environment";
@@ -35,7 +36,14 @@ import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockContentService, MockPiResponse, MockRealmService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
-import { BulkResult, TokenCountParams, TokenGroups, Tokens, TokenService } from "./token.service";
+import {
+  BulkResult,
+  isTokenInfoKeyWritable,
+  TokenCountParams,
+  TokenGroups,
+  Tokens,
+  TokenService
+} from "./token.service";
 
 class MockNotificationService {
   success = jest.fn();
@@ -290,7 +298,7 @@ describe("TokenService", () => {
       const infos = { hashlib: "sha1", "custom/1": "foo" };
       postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
 
-      tokenService.setTokenInfos("serial/1", infos).subscribe();
+      tokenService.setTokenInfos("serial/1", infos, [], ["hashlib"]).subscribe();
 
       expect(postSpy).toHaveBeenNthCalledWith(
         1,
@@ -304,6 +312,43 @@ describe("TokenService", () => {
         { value: "foo" },
         { headers: authService.getHeaders() }
       );
+    });
+
+    it("treats every entry as writable when the token restricts none", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.setTokenInfos("serial/1", { custom: "foo" }).subscribe();
+
+      expect(postSpy).toHaveBeenCalledTimes(1);
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}info/${encodeURIComponent("serial/1")}/custom`,
+        { value: "foo" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("completes with an empty result when every entry is one the token maintains", (done) => {
+      // The caller reloads the token in its next handler, so an empty request list still has to emit
+      tokenService.setTokenInfos("SER", { tokenkind: "hardware" }, ["tokenkind"], []).subscribe({
+        next: (responses) => {
+          expect(responses).toEqual([]);
+          expect(postSpy).not.toHaveBeenCalled();
+          done();
+        },
+        error: () => fail("expected the observable to emit")
+      });
+    });
+  });
+
+  describe("isTokenInfoKeyWritable()", () => {
+    it("restricts nothing when no keys are passed", () => {
+      expect(isTokenInfoKeyWritable("anything")).toBe(true);
+    });
+
+    it("allows an entry the token maintains only if it has its own endpoint", () => {
+      expect(isTokenInfoKeyWritable("tokenkind", ["tokenkind"], [])).toBe(false);
+      expect(isTokenInfoKeyWritable("hashlib", ["hashlib"], ["hashlib"])).toBe(true);
+      expect(isTokenInfoKeyWritable("a note", ["tokenkind"], [])).toBe(true);
     });
   });
 
@@ -1128,10 +1173,8 @@ describe("TokenService", () => {
 
       tokenService
         .enrollToken({
-          data: {} as unknown as import("./token.service").TokenEnrollmentData,
-          mapper: { toApiPayload: () => ({}) } as unknown as import("./token.service").TokenApiPayloadMapper<
-            import("./token.service").TokenEnrollmentData
-          >
+          data: {} as unknown as TokenEnrollmentData,
+          mapper: { toApiPayload: () => ({}) } as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
         })
         .subscribe({
           error: (e) => {
@@ -1151,7 +1194,7 @@ describe("TokenService", () => {
       });
       postSpy.mockReturnValue(throwError(() => boom));
 
-      tokenService.verifyToken({} as unknown as import("./token.service").TokenEnrollmentData).subscribe({
+      tokenService.verifyToken({} as unknown as TokenEnrollmentData).subscribe({
         error: (e) => {
           expect(e).toBe(boom);
           expect(notificationService.error).toHaveBeenCalledWith("Failed to verify token. vt");
@@ -1206,7 +1249,7 @@ describe("TokenService", () => {
           throwError(() => new HttpErrorResponse({ error: { result: { error: { message: "oops" } } }, status: 500 }))
         );
 
-      tokenService.setTokenInfos("SER", { hashlib: "sha1", custom: "x" }).subscribe({
+      tokenService.setTokenInfos("SER", { hashlib: "sha1", custom: "x" }, [], ["hashlib"]).subscribe({
         next: () => fail("expected error"),
         error: () => {
           expect(notificationService.error).toHaveBeenCalledWith("Failed to set token info. oops");

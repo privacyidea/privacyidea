@@ -33,10 +33,10 @@ import { labeledOptions } from "@utils/value-label.utils";
   styleUrl: "./hotp-config.component.scss"
 })
 export class HotpConfigComponent {
-  formData = input.required<Record<string, string>>();
+  formData = input.required<Record<string, string | undefined>>();
   hashLibs = input.required<string[]>();
   readonly hashLibOptions = computed(() => labeledOptions(this.hashLibs(), { vocabulary: true }));
-  formDataChange = output<Record<string, string>>();
+  formDataChange = output<Record<string, string | undefined>>();
 
   updateFormData(fieldName: string, value: string): void {
     const newValue = { ...this.formData(), [fieldName]: value };

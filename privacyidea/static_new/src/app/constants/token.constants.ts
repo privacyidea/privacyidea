@@ -62,6 +62,9 @@ export const TIQR_OCRASUITE = "tiqr.ocrasuite";
 export const REMOTE_SERVER = "remote.server";
 export const REMOTE_VERIFY_SSL = "remote.verify_ssl_certificate";
 
+// U2F Token
+export const U2F_APP_ID = "u2f.appId";
+
 // WebAuthn Token
 export const WEBAUTHN_TRUST_ANCHOR_DIR = "webauthn.trust_anchor_dir";
 

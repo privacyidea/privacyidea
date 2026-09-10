@@ -186,12 +186,12 @@ html {
     // contrasty, -3 the lightest. styles.scss hands the shallower depth slots (3, then 5) the
     // lighter steps and the deepest (8) the boldest, the same relationship the blurred shadow pair
     // has through --depth-scale.
-    --flat-border-shadow-1: hsl(0, 0%, 45%);
-    --flat-border-shadow-2: hsl(0, 0%, 55%);
-    --flat-border-shadow-3: hsl(0, 0%, 65%);
-    --flat-border-light-1: hsl(0, 0%, 32%);
-    --flat-border-light-2: hsl(0, 0%, 42%);
-    --flat-border-light-3: hsl(0, 0%, 52%);
+    --flat-border-shadow-1: hsl(0, 0%, 18%);
+    --flat-border-shadow-2: hsl(0, 0%, 26%);
+    --flat-border-shadow-3: hsl(0, 0%, 34%);
+    --flat-border-light-1: hsl(0, 0%, 12%);
+    --flat-border-light-2: hsl(0, 0%, 20%);
+    --flat-border-light-3: hsl(0, 0%, 28%);
 
     --mat-sys-primary-dark: hsl(198, 66%, 60%);
     --mat-sys-primary-base: hsl(198, 66%, 55%);
