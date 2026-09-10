@@ -149,7 +149,7 @@ DECISION_ACTIONS = frozenset({ConditionalAccessAction.DENY})
 # The actions a stage may carry more than once. Only the notifications: repeating EMAIL_ADMIN with a
 # different recipient_group (or a different subject and body) is the one case where a second copy of an
 # action does something the first cannot - see
-# :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email`, which resolves its recipients per
+# :func:`~privacyidea.lib.conditional_access.engine._send_action_email`, which resolves its recipients per
 # action. Every other action writes one piece of state or one verdict, so a second copy either does nothing
 # or silently overwrites the first.
 #: The actions a stage may carry more than once - the notifications, where a second copy reaches a
@@ -591,7 +591,7 @@ def _validate_counter_types(counter_types) -> list[str]:
 # The ``action_value`` keys each action type accepts, as the engine reads them.
 #
 # The timed restrictions take a duration; the email actions take the SMTP settings
-# :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email` reads. ``identifier`` is the
+# :func:`~privacyidea.lib.conditional_access.engine._send_action_email` reads. ``identifier`` is the
 # accepted alias for ``smtp_identifier``.
 _DURATION_KEYS = ("duration_seconds", "duration")
 _EMAIL_KEYS = frozenset({"smtp_identifier", "identifier", "recipient_group", "subject", "body",
@@ -628,7 +628,7 @@ def _validate_duration_action_value(action_type: str, action_value) -> None:
 def _validate_email_action_value(action_type: str, action_value) -> None:
     """
     Validate the ``action_value`` of an ``EMAIL_ADMIN`` / ``EMAIL_USER`` action: the object of SMTP settings
-    :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email` reads, with a non-empty ``subject``
+    :func:`~privacyidea.lib.conditional_access.engine._send_action_email` reads, with a non-empty ``subject``
     and ``body``.
 
     ``smtp_identifier`` is deliberately **not** required, even though the engine needs it to send: the SMTP

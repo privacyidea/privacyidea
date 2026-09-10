@@ -23,7 +23,7 @@ depends_on = None
 
 def _unicode_case_sensitive(length):
     """
-    A case-sensitive string column type (mirrors models.authentication_log._case_sensitive_unicode).
+    A case-sensitive string column type (mirrors models.utils.case_sensitive_unicode).
 
     On MySQL/MariaDB the server-default collation is typically case-insensitive (*_ci), which would make the
     authentication-log visibility boundary (realm/resolver/username) match case-insensitively -- a fail-open

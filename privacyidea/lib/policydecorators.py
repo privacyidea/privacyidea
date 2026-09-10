@@ -625,8 +625,8 @@ def auth_otppin(wrapped_function, *args, **kwds):
                         # once per request: is_challenge_request asks with the whole ``password+OTP`` string, which
                         # fails the user store, and ``authenticate`` then asks again with the split password, which
                         # passes. Without this, a correct password with a wrong OTP reads as PASSWORD_FAIL, and a
-                        # lockout policy counting PASSWORD_FAIL (the shipped Password Brute-Force template) counts the
-                        # wrong OTP against it.
+                        # conditional-access policy counting PASSWORD_FAIL (the shipped Password Brute-Force
+                        # template) counts the wrong OTP against it.
                         token.auth_details.pop(AUTH_EVENT_TYPE_KEY, None)
                 return authenticated_user is not None
 

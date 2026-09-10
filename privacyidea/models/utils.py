@@ -61,6 +61,13 @@ def case_sensitive_unicode(length: int):
 
     ``utf8mb4_bin`` makes equality case-sensitive on MySQL/MariaDB; SQLite, PostgreSQL and Oracle already compare
     case-sensitively by default. The migration declares the same collation on the table columns.
+
+    ``utf8mb4_bin`` is a *binary* collation, so it is accent- and normalization-sensitive as well: ``jose`` and
+    ``josé`` differ, and so do the NFC and NFD spellings of ``josé``. That is not a divergence but the point -
+    equality on SQLite, PostgreSQL and Oracle is byte-wise too, while MySQL's own default (``utf8mb4_general_ci``
+    and friends) is case- *and* accent-insensitive, which is the fail-open this pin exists to close. A boundary
+    that has to distinguish two spellings therefore does so on every backend, and one that must treat them alike
+    needs the explicit case-insensitive path rather than the collation.
     """
     return Unicode(length).with_variant(mysql.VARCHAR(length, charset="utf8mb4", collation="utf8mb4_bin"),
                                         "mysql", "mariadb")
