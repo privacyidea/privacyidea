@@ -44,7 +44,8 @@ from privacyidea.lib.conditional_access.authentication_log_statistics import (
     get_authentication_log_statistics,
     get_conditional_access_outcome_statistics,
 )
-from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, count_user_attempts, count_user_events
+from privacyidea.lib.conditional_access.engine import (ConditionalAccessAction, LockSubject,
+                                                       count_subject_attempts, count_subject_events)
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.error import ParameterError
@@ -1019,8 +1020,8 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self._entry_with_outcomes()
 
         with statements_against("conditional_access_outcome") as statements:
-            count_user_events("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
-            count_user_attempts("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
+            count_subject_events(LockSubject("res1", "u1", "realm1"), [str(AuthEventType.MFA_FAIL)], 3600)
+            count_subject_attempts(LockSubject("res1", "u1", "realm1"), [str(AuthEventType.MFA_FAIL)], 3600)
         self.assertListEqual([], statements)
 
     def test_deleting_one_entry_takes_its_outcomes(self):
@@ -1143,8 +1144,9 @@ class AuthenticationLogStatisticsTestCase(MyTestCase):
         self._log(AuthEventType.CHALLENGE_CONTINUED, at=self.window_start + timedelta(hours=1))
 
         self.assertDictEqual({str(AuthEventType.CHALLENGE_ANSWERED_FAIL): 1}, self._totals(self._statistics()))
-        self.assertEqual(1, count_user_attempts("res1", "u1", "r1", [AuthEventType.CHALLENGE_ANSWERED_FAIL],
-                                                24 * 3600, window_end=self.window_end))
+        self.assertEqual(1, count_subject_attempts(LockSubject("res1", "u1", "r1"),
+                                                   [AuthEventType.CHALLENGE_ANSWERED_FAIL],
+                                                   24 * 3600, window_end=self.window_end))
 
     def test_enforcement_row_classifies_the_attempt_it_ended(self):
         self._log(AuthEventType.CHALLENGE_TRIGGERED)
@@ -1171,8 +1173,8 @@ class AuthenticationLogStatisticsTestCase(MyTestCase):
 
         totals = self._totals(self._statistics())
         for event_type in (AuthEventType.PIN_FAIL, AuthEventType.LOGIN_SUCCESS, AuthEventType.MFA_FAIL):
-            self.assertEqual(count_user_attempts("res1", "u1", "r1", [event_type], 24 * 3600,
-                                                 window_end=self.window_end),
+            self.assertEqual(count_subject_attempts(LockSubject("res1", "u1", "r1"), [event_type], 24 * 3600,
+                                                    window_end=self.window_end),
                              totals.get(str(event_type), 0),
                              f"statistics and engine disagree on {event_type}")
 

@@ -80,9 +80,10 @@ from flask import request, g, Response
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication, build_ca_context,
                                       send_error, send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.engine import (get_user_lock, get_ip_block, evaluate_access_decision,
-                                                       render_error_message, restriction_messages, AccessDecision,
-                                                       ConditionalAccessAction, RestrictionStatus, StageMessage)
+from privacyidea.lib.conditional_access.engine import (get_subject_lock, get_ip_block, evaluate_access_decision,
+                                                       lock_subject, render_error_message, restriction_messages,
+                                                       AccessDecision, ConditionalAccessAction, RestrictionStatus,
+                                                       StageMessage)
 from privacyidea.lib.conditional_access.policy import default_error_message
 from privacyidea.lib.conditional_access.session import release_ca_connection
 from privacyidea.lib.conditional_access.request_context import (ConditionalAccessContext, PostEvaluation,
@@ -151,12 +152,18 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
         # rejection the same way.
         context = get_ca_context()
         context.use_default_error_message = show_default_ca_error_message(user)
-        lockout = get_user_lock(user, clear_expired=True)
+        # Assembled once and used for both halves of the decision, the lock lookup as well as the DENY evaluation:
+        # who this request authenticates is one question, and a local database admin - who has no user object to
+        # look a lock up by - is only identifiable from the whole context (see lock_subject).
+        ca_context = build_ca_context(user)
+        principal = lock_subject(ca_context)
+        lockout = get_subject_lock(principal, clear_expired=True)
         ip_block = get_ip_block(g.client_ip, clear_expired=True)
         binding = _binding_event_type(lockout, ip_block)
         if binding:
-            subject = f"locked user {user!r}" if binding is AuthEventType.USER_LOCKED else f"blocked IP {g.client_ip!r}"
-            log.info(f"Rejecting {request.path} for {subject}.")
+            refused = (f"locked {principal}" if binding is AuthEventType.USER_LOCKED
+                       else f"blocked IP {g.client_ip!r}")
+            log.info(f"Rejecting {request.path} for {refused}.")
             # Every restriction in force that carries an error message is reported, not only the binding one: an
             # account lock and an address block are independent facts, resolved differently, so telling the user
             # about one leaves them to discover the other by failing again. Worded the same on both, it is said once
@@ -166,7 +173,7 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
             return Rejection(binding, _audit_reason(lockout, ip_block),
                              " ".join(message.text for message in messages) or None,
                              _additional_event_types(binding, lockout, ip_block))
-        decision = evaluate_access_decision(build_ca_context(user))
+        decision = evaluate_access_decision(ca_context)
         # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it
         # against (and a dry-run DENY lets the request continue, so its row comes later). The context holds the
         # outcomes until the request stages the event they belong to - which, for an enforced DENY, is the row the
@@ -507,7 +514,7 @@ def _binding_event_type(lockout: RestrictionStatus | None,
     on - so one of the two has to stand for the rejection. What the *user* is told is a separate question with a
     separate answer: every restriction that carries one is reported (see :func:`_evaluate_rejection`).
 
-    :param lock: the :class:`RestrictionStatus` from :func:`get_user_lock`, or ``None``
+    :param lock: the :class:`RestrictionStatus` from :func:`get_subject_lock`, or ``None``
     :param ip_block: the :class:`RestrictionStatus` from :func:`get_ip_block`, or ``None``
     :return: the :class:`AuthEventType` to file the rejection under, or ``None`` if neither is in force
     """
@@ -592,9 +599,10 @@ def _reject_restricted_login(user: User) -> None:
     carry some message, which is the one thing this path cannot borrow from ``/validate``, where the rejection
     simply carries no detail.
 
-    An unresolved user / local DB admin has no ``(resolver, uid, realm)`` identity tuple and is therefore never locked.
-    ``internal_admin`` comes from the flag ``before_request`` already resolved, so a blocked local admin is recorded as
-    ``admin-internal`` rather than falling back to ``user``.
+    A local DB admin has no ``(resolver, uid, realm)`` identity tuple and is locked by login name instead (see
+    :func:`~privacyidea.lib.conditional_access.engine.lock_subject`); an unresolved user has neither and is never
+    locked. ``internal_admin`` comes from the flag ``before_request`` already resolved, so a refused local admin is
+    recorded as ``admin-internal`` rather than falling back to ``user``.
     """
     get_ca_context().rejection_shape = RejectionShape(as_error=True)
     rejection = _evaluate_rejection(user)

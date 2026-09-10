@@ -58,7 +58,8 @@ class CAContext:
     :ivar user: the authenticating user. ``user``-target policies key their count
         and their lock on this user's ``(resolver, uid, realm)`` tuple and
         therefore ignore an unresolved one; ``source_ip``-target policies act
-        regardless of it.
+        regardless of it. A local database admin has none at all, and is described by :attr:`username` and
+        :attr:`user_role` instead.
     :ivar source_ip: the resolved client IP, as used by the audit log.
         ``source_ip``-target policies count and block on it.
     :ivar endpoint: the endpoint the request authenticates against, as its path
@@ -76,6 +77,11 @@ class CAContext:
         exempt an emergency admin from a pre-auth DENY. See
         :func:`~privacyidea.api.lib.utils.build_ca_context` for where it comes
         from.
+    :ivar username: the login name, as the authentication log records it. For a **local database admin** this is
+        the whole identity - no user object, no resolver, no realm - so together with a :attr:`user_role` of
+        ``admin-internal`` it is what a ``user``-target policy counts and locks them by (see
+        :func:`~privacyidea.lib.conditional_access.engine.lock_subject`). For everyone else it merely repeats the
+        user's login, and for an unknown login it is the name that was tried.
     :ivar use_default_error_message: Whether a rejection with no error message of its own falls back to the
         default wording for what it did (the ``show_default_ca_error_message`` policy), rather than saying nothing.
         Not about the generic "Authentication failed." - that is what a rejection with nothing to say ends up
@@ -94,3 +100,5 @@ class CAContext:
     endpoint: str | None = None
     user_role: str | None = None
     use_default_error_message: bool = False
+    # Last, so the positional order callers build this with - (user, source_ip) - keeps meaning what it did.
+    username: str | None = None

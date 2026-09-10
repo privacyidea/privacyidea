@@ -34,7 +34,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            CountMode,
                                                                            RestrictionCause)
-from privacyidea.lib.conditional_access.authentication_log import naive_utc
+from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, naive_utc
 from privacyidea.lib.conditional_access.conditions import (condition_sql_filters,
                                                            conditions_match_row,
                                                            policy_conditions_are_scopable,
@@ -438,12 +438,125 @@ class AccessDecisionResult:
 def _resolved(user: "User") -> bool:
     """
     Return ``True`` only for a fully resolved user, i.e. one with a complete
-    ``(resolver, uid, realm)`` identity tuple. The lock state and the
-    authentication-log count are both keyed by that tuple, so an unresolved user
-    (e.g. ``USER_UNKNOWN``, which has ``uid=None``) is never counted or locked
-    here. TODO replace later with #5170
+    ``(resolver, uid, realm)`` identity tuple. An unresolved user (e.g.
+    ``USER_UNKNOWN``, which has ``uid=None``) has no such identity, and a local
+    database admin has none either - see :class:`LockSubject`, which is what the
+    engine counts and locks by. TODO replace later with #5170
     """
     return bool(user and user.uid and user.resolver and user.realm)
+
+
+#: The resolver and realm a local database admin's lock row carries. They have neither, and the empty pair is
+#: what tells their row apart from a user's, whose three key columns are all set by definition (see
+#: :class:`LockSubject`).
+_INTERNAL_ADMIN_RESOLVER = ""
+_INTERNAL_ADMIN_REALM = ""
+
+
+@dataclass(frozen=True)
+class LockSubject:
+    """
+    The principal a ``user``-target policy counts the failures of and writes the lock for.
+
+    Two kinds of principal can be locked, and they are identified differently - which is the whole reason this
+    type exists, the engine having previously keyed everything on a user's ``(resolver, uid, realm)`` and so been
+    able to see only the first:
+
+    * a **resolved user**, identified by that tuple, exactly as the authentication log stores it;
+    * a **local database admin**, who has no resolver, no uid and no realm - only a login name. Their log rows are
+      identified by ``username`` together with ``user_role='admin-internal'``, the same pair the log's own
+      visibility scoping identifies them by (see
+      :class:`~privacyidea.lib.conditional_access.authentication_log.AuthenticationLogVisibilityScope`).
+
+    The *state* row keys both shapes on the same three columns (see
+    :class:`~privacyidea.models.conditional_access_policy.UserLockState`): a local admin is stored with an empty
+    resolver and realm and the login name as the uid. That can never be mistaken for a user, whose row is only
+    ever written for a principal with all three set - which is what :func:`_resolved` means, and what the manual
+    :func:`~privacyidea.lib.conditional_access.state.lock_user` enforces as well. So only the *log filters* differ
+    between the shapes, and they are the one thing this is asked for on the counting path.
+
+    Build one through :meth:`for_user` or :meth:`for_internal_admin` rather than by hand: each answers ``None``
+    for a principal it cannot identify, which is how "nobody here to count or lock" reaches the callers.
+    """
+    resolver: str
+    uid: str
+    realm: str
+    #: The login name: the identity itself for a local admin, and for a user the login the state row denormalizes
+    #: so a management view can name them without a live resolver lookup.
+    username: str | None = None
+    #: Which of the two shapes this is. Not derived from the empty resolver/realm, so what a row means never has
+    #: to be inferred from what it lacks.
+    internal_admin: bool = False
+
+    @classmethod
+    def for_user(cls, user: "User | None") -> "LockSubject | None":
+        """
+        The subject for *user*, or ``None`` when they are not fully resolved (an unknown login, or a local admin,
+        who arrives here as an empty user) and so carry no identity tuple to count or lock by.
+        """
+        if not _resolved(user):
+            return None
+        return cls(resolver=user.resolver, uid=user.uid, realm=user.realm, username=user.login)
+
+    @classmethod
+    def for_internal_admin(cls, username: str | None) -> "LockSubject | None":
+        """
+        The subject for the local database admin *username*, or ``None`` with no name to key on.
+
+        *username* has to be the spelling the ``admin`` table stores, which is what
+        :func:`~privacyidea.api.lib.utils.log_authentication` records: both the count and the row match it
+        case-sensitively, while the lookup that authenticated them need not have.
+        """
+        if not username:
+            return None
+        return cls(resolver=_INTERNAL_ADMIN_RESOLVER, uid=username, realm=_INTERNAL_ADMIN_REALM,
+                   username=username, internal_admin=True)
+
+    @property
+    def state_key(self) -> tuple[str, str, str]:
+        """The :class:`~privacyidea.models.conditional_access_policy.UserLockState` primary key of this subject."""
+        return self.resolver, self.uid, self.realm
+
+    @property
+    def log_filters(self) -> list[ColumnElement[bool]]:
+        """
+        The ``authentication_log`` predicates that select this principal's rows.
+
+        A user's three are in the column order of ``ix_authlog_user_event_time`` / ``ix_authlog_user_time``, so
+        the counts are index range scans. A local admin's pair matches neither index - their rows carry no
+        resolver, uid or realm at all - and is served by ``ix_authlog_admin_event_time`` instead.
+        """
+        if self.internal_admin:
+            return [AuthenticationLog.username == self.username,
+                    AuthenticationLog.user_role == str(AuthLogUserRole.ADMIN_INTERNAL)]
+        return [AuthenticationLog.resolver == self.resolver,
+                AuthenticationLog.uid == self.uid,
+                AuthenticationLog.realm == self.realm]
+
+    def __str__(self) -> str:
+        """How the subject reads in a log message."""
+        if self.internal_admin:
+            return f"local admin {self.username!r}"
+        return f"user {self.username!r} ({self.resolver}/{self.realm})"
+
+
+def lock_subject(context: CAContext) -> "LockSubject | None":
+    """
+    The principal *context* describes for counting and locking, or ``None`` when it describes none a
+    ``user``-target policy could act on.
+
+    The resolved user comes first, and a local admin only where the request says the principal is one: the role,
+    which ``/auth`` verified (or, pre-auth, resolved from the name it was given), never the mere presence of a
+    login name. Every request carries one of those, the unknown logins that must stay uncountable here included.
+    """
+    if context is None:
+        return None
+    subject = LockSubject.for_user(context.user)
+    if subject is not None:
+        return subject
+    if context.user_role == str(AuthLogUserRole.ADMIN_INTERNAL):
+        return LockSubject.for_internal_admin(context.username)
+    return None
 
 
 def _types_label(types: "list[str]") -> str:
@@ -490,13 +603,12 @@ def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str]
     return get_ca_session().scalar(stmt) or 0
 
 
-def count_user_events(resolver: str, uid: str, realm: str,
-                      event_types: list[str],
-                      window_seconds: int, window_end: datetime | None = None,
-                      since_last_success: bool = False,
-                      extra_filters: "Sequence | None" = None) -> int:
+def count_subject_events(subject: LockSubject, event_types: list[str],
+                         window_seconds: int, window_end: datetime | None = None,
+                         since_last_success: bool = False,
+                         extra_filters: "Sequence | None" = None) -> int:
     """
-    Count the ``authentication_log`` rows for one user identity and event
+    Count the ``authentication_log`` rows for one principal and event
     type(s) within a sliding time window ``[window_end - window_seconds, window_end]``.
 
     *event_types* is a list of :class:`AuthEventType` values; events matching
@@ -504,8 +616,8 @@ def count_user_events(resolver: str, uid: str, realm: str,
     tracking ``[PASSWORD_FAIL, TOKEN_ONLY_FAIL]`` trips on the total of both
     rather than on either in isolation.
 
-    The ``WHERE`` column order matches the composite index
-    ``ix_authlog_user_event_time`` so this is an index range scan (the ``IN``
+    The ``WHERE`` column order matches the composite index the subject's shape is served by (see
+    :attr:`LockSubject.log_filters`) so this is an index range scan (the ``IN``
     over the event types still uses the same composite index).
 
     With *since_last_success* the count is floored at the user's most recent
@@ -517,9 +629,8 @@ def count_user_events(resolver: str, uid: str, realm: str,
     by stale failures on the next single typo). The forensic log is untouched —
     only the *counted* range is narrowed.
 
-    :param resolver: resolver name of the user
-    :param uid: resolver-local user id
-    :param realm: realm name of the user
+    :param subject: whose rows are counted - a resolved user or a local database admin (see
+        :class:`LockSubject`)
     :param event_types: the list of :class:`AuthEventType` values to
         count; rows matching any of them are counted together
     :param window_seconds: width of the look-back window in seconds
@@ -534,10 +645,7 @@ def count_user_events(resolver: str, uid: str, realm: str,
         empty counts every row of the subject.
     :return: the number of matching events
     """
-    return _count_events([AuthenticationLog.resolver == resolver,
-                          AuthenticationLog.uid == uid,
-                          AuthenticationLog.realm == realm,
-                          *(extra_filters or ())],
+    return _count_events([*subject.log_filters, *(extra_filters or ())],
                          event_types, window_seconds, window_end, since_last_success)
 
 
@@ -564,7 +672,7 @@ def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_s
     bounded by its own fail counter, and the many-tokens case is raw volume, left to generic rate-limiting rather
     than to this distinct-account signal.
 
-    Unlike :func:`count_user_events` there is **no** ``since_last_success`` reset: a successful login by one account
+    Unlike :func:`count_subject_events` there is **no** ``since_last_success`` reset: a successful login by one account
     must not clear a spraying signal aggregated across all accounts of the IP.
 
     A portable ``COUNT(*)`` over a ``SELECT DISTINCT`` subquery is used. The ``WHERE`` matches
@@ -726,21 +834,21 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
                                     row_filter=row_filter)
 
 
-def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[str],
-                        window_seconds: int, window_end: datetime | None = None,
-                        since_last_success: bool = False,
-                        row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
+def count_subject_attempts(subject: LockSubject, event_types: list[str],
+                           window_seconds: int, window_end: datetime | None = None,
+                           since_last_success: bool = False,
+                           row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
-    Count whole authentication *attempts* (not individual ``authentication_log`` rows) for one user identity whose
+    Count whole authentication *attempts* (not individual ``authentication_log`` rows) for one principal whose
     representative event matches *event_types*, within a sliding time window ``[window_end - window_seconds,
     window_end]``. This is the
     :attr:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode.PER_ATTEMPT` counterpart of
-    :func:`count_user_events`, so a multi-request challenge / multichallenge login counts once. The ``WHERE``
-    (resolver, uid, realm, timestamp) matches the ``ix_authlog_user_time`` index.
+    :func:`count_subject_events`, so a multi-request challenge / multichallenge login counts once. The ``WHERE``
+    is the subject's own columns followed by ``timestamp``, matching ``ix_authlog_user_time`` for a user and the
+    leading columns of ``ix_authlog_admin_event_time`` for a local admin.
 
-    :param resolver: resolver name of the user
-    :param uid: resolver-local user id
-    :param realm: realm name of the user
+    :param subject: whose attempts are counted - a resolved user or a local database admin (see
+        :class:`LockSubject`)
     :param event_types: the event types an attempt's representative must match (a list; may hold a single entry)
     :param window_seconds: width of the look-back window in seconds
     :param window_end: the instant the window ends; defaults to :func:`utc_now`. An aware value is normalized to
@@ -753,9 +861,7 @@ def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[s
         :func:`_count_attempts`). ``None`` counts every attempt of the subject.
     :return: the number of matching attempts
     """
-    return _count_attempts([AuthenticationLog.resolver == resolver,
-                            AuthenticationLog.uid == uid,
-                            AuthenticationLog.realm == realm],
+    return _count_attempts(subject.log_filters,
                            event_types, window_seconds, window_end, since_last_success,
                            row_filter=row_filter)
 
@@ -767,7 +873,7 @@ def count_ip_events(source_ip: str, event_types: list[str], window_seconds: int,
     window ``[window_end - window_seconds, window_end]``. This is the
     :attr:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode.PER_REQUEST` counterpart of
     :func:`count_distinct_users_for_ip`: raw per-IP request volume rather than the distinct-accounts signal - the IP
-    analogue of :func:`count_user_events` keyed on the source IP instead of the ``(resolver, uid, realm)`` triple.
+    analogue of :func:`count_subject_events` keyed on the source IP instead of the subject's own columns.
 
     Unlike the user counter there is **no** ``since_last_success`` reset: a successful login by one account must not
     clear a volume signal aggregated across everything the IP sent (same reasoning as
@@ -806,7 +912,7 @@ def count_ip_attempts(source_ip: str, event_types: list[str], window_seconds: in
     window_end]``. The
     :attr:`~privacyidea.lib.conditional_access.authentication_event_types.CountMode.PER_ATTEMPT` counterpart of
     :func:`count_ip_events`, so a multi-request challenge / multichallenge login counts once - the IP analogue of
-    :func:`count_user_attempts`.
+    :func:`count_subject_attempts`.
 
     As with :func:`count_ip_events` there is **no** ``since_last_success`` reset (see that function for why it is not
     exposed for an IP). The ``WHERE`` (source_ip, timestamp) matches the ``ix_authlog_ip_time`` index.
@@ -846,7 +952,7 @@ def _count_scoping(policy: ConditionalAccessPolicy) -> "tuple[list | None, Calla
     return condition_sql_filters(policy), lambda row: conditions_match_row(policy, row)
 
 
-def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: datetime,
+def _policy_count(policy: ConditionalAccessPolicy, subject: LockSubject, window_end: datetime,
                   since_last_success: bool = False) -> int:
     """
     Count a user-target policy's events (``PER_REQUEST``) or attempts (``PER_ATTEMPT``) over its window, per the
@@ -855,9 +961,9 @@ def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: dat
     :func:`_policy_count_ip`.)
 
     :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
-    :param user: the resolved user to count for
+    :param subject: the principal to count for (see :class:`LockSubject`)
     :param window_end: the instant the window ends (reference time)
-    :param since_last_success: True to floor the count at the user's last completed login in the window (a successful
+    :param since_last_success: True to floor the count at the subject's last completed login in the window (a successful
         login resets the counter); both callers - the pre-auth decision and the post-response evaluation - pass the
         policy's :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.reset_on_success`.
         Applies to both user modes —
@@ -868,14 +974,12 @@ def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: dat
     """
     sql_filters, row_filter = _count_scoping(policy)
     if policy.count_mode == CountMode.PER_ATTEMPT:
-        return count_user_attempts(user.resolver, user.uid, user.realm,
-                                   policy.counter_types_to_track, policy.time_window_seconds,
-                                   window_end=window_end, since_last_success=since_last_success,
-                                   row_filter=row_filter)
-    return count_user_events(user.resolver, user.uid, user.realm,
-                             policy.counter_types_to_track, policy.time_window_seconds,
-                             window_end=window_end, since_last_success=since_last_success,
-                             extra_filters=sql_filters)
+        return count_subject_attempts(subject, policy.counter_types_to_track, policy.time_window_seconds,
+                                      window_end=window_end, since_last_success=since_last_success,
+                                      row_filter=row_filter)
+    return count_subject_events(subject, policy.counter_types_to_track, policy.time_window_seconds,
+                                window_end=window_end, since_last_success=since_last_success,
+                                extra_filters=sql_filters)
 
 
 def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end: datetime) -> int:
@@ -908,11 +1012,11 @@ def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end
                                        extra_filters=sql_filters)
 
 
-def get_user_lock(user: "User", now: datetime | None = None, *,
-                  clear_expired: bool = False) -> "RestrictionStatus | None":
+def get_subject_lock(subject: "LockSubject | None", now: datetime | None = None, *,
+                     clear_expired: bool = False) -> "RestrictionStatus | None":
     """
-    Return information about *user*'s **current** lock, or ``None`` if the user
-    is not currently locked. Intended for the authentication pre-check hot path.
+    Return information about *subject*'s **current** lock, or ``None`` if they
+    are not currently locked. Intended for the authentication pre-check hot path.
 
     By default this is a **pure read**: a stale row whose ``lock_expires_at`` lies
     in the past simply reads as *not locked* and is left in place.
@@ -927,15 +1031,16 @@ def get_user_lock(user: "User", now: datetime | None = None, *,
 
     A row with ``lock_expires_at IS NULL`` is a permanent lock.
 
-    :param user: the user to check; an unresolved user is never locked
+    :param subject: the principal to check; ``None`` (nobody this could be keyed
+        on, e.g. an unknown login) is never locked
     :param now: the reference time; defaults to :func:`utc_now`
     :param clear_expired: delete the row if it is a stale (timed, expired) lock;
         off by default to keep this a pure read for non-auth callers
     :return: ``None`` if not locked, else a :class:`RestrictionStatus`
     """
-    if not _resolved(user):
+    if subject is None:
         return None
-    state = get_ca_session().get(UserLockState, (user.resolver, user.uid, user.realm))
+    state = get_ca_session().get(UserLockState, subject.state_key)
     if not state:
         return None
     if state.lock_expires_at is None:
@@ -953,11 +1058,22 @@ def get_user_lock(user: "User", now: datetime | None = None, *,
                              error_message=state.error_message)
 
 
+def get_user_lock(user: "User", now: datetime | None = None, *,
+                  clear_expired: bool = False) -> "RestrictionStatus | None":
+    """
+    :func:`get_subject_lock` for a caller holding a :class:`~privacyidea.lib.user.User` - the management layer and
+    everything that looks a user up by hand. An unresolved user is never locked, which is what
+    :meth:`LockSubject.for_user` answers ``None`` for; a local admin is not reachable this way at all, having no
+    user object to be passed in (see :func:`lock_subject`).
+    """
+    return get_subject_lock(LockSubject.for_user(user), now=now, clear_expired=clear_expired)
+
+
 def is_user_locked(user: "User", now: datetime | None = None, *, clear_expired: bool = False) -> bool:
     """
     Return whether *user* is currently locked. Thin boolean wrapper over
-    :func:`get_user_lock` for the authentication pre-check hot path; see that
-    function for the expiry, permanent-lock, and *clear_expired* semantics.
+    :func:`get_user_lock` for the authentication pre-check hot path; see
+    :func:`get_subject_lock` for the expiry, permanent-lock, and *clear_expired* semantics.
 
     :param user: the user to check; an unresolved user is never locked
     :param now: the reference time; defaults to :func:`utc_now`
@@ -1141,17 +1257,18 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     (``USER_REALM NOT_IN [...]``, ``USER_ROLE NOT_IN [...]``): a policy whose
     conditions do not match is never evaluated for that request.
 
-    Both targets can deny here: a ``user`` policy is keyed on the resolved
-    ``(resolver, uid, realm)`` user (an unresolved user - unknown login, local
-    admin - is never decided by a user policy), while a ``source_ip`` policy is
-    keyed on the context's source IP and therefore applies even when the user is
-    unresolved (the spraying/enumeration case). A never-block source IP is exempt
-    from an IP ``DENY``, mirroring the ``BLOCK_IP`` allowlist.
+    Both targets can deny here: a ``user`` policy is keyed on the principal the
+    request authenticates (:func:`lock_subject` - a resolved user, or a local
+    database admin by login name; an unknown login is neither and is never decided
+    by a user policy), while a ``source_ip`` policy is keyed on the context's
+    source IP and therefore applies even when nobody is identified at all (the
+    spraying/enumeration case). A never-block source IP is exempt from an IP
+    ``DENY``, mirroring the ``BLOCK_IP`` allowlist.
 
     :param context: what is known about the request under evaluation (see
         :class:`~privacyidea.lib.conditional_access.context.CAContext`); a
-        ``user`` policy needs its user resolved, a ``source_ip`` policy its
-        source IP
+        ``user`` policy needs a principal it can key on (:func:`lock_subject`),
+        a ``source_ip`` policy its source IP
     :param now: the reference time; defaults to :func:`utc_now`
     :return: the :class:`AccessDecisionResult` for this request: the decision, plus the outcomes to record on
         whichever authentication-log row this request ends up writing
@@ -1217,12 +1334,14 @@ def _policy_access_decision(policy: ConditionalAccessPolicy, context: CAContext,
         count = _policy_count_ip(policy, context.source_ip, now)
         subject_label = f"source IP {context.source_ip}"
     else:
-        # User-scoped: keyed on the resolved user, so an unresolved user is never decided by a user policy. The
+        # User-scoped: keyed on the principal this request authenticates - a resolved user or a local database
+        # admin - so a request that identifies neither (an unknown login) is never decided by a user policy. The
         # count honours the policy's reset_on_success, exactly as the post-response path does.
-        if not _resolved(context.user):
+        subject = lock_subject(context)
+        if subject is None:
             return AccessDecisionResult()
-        count = _policy_count(policy, context.user, now, since_last_success=policy.reset_on_success)
-        subject_label = repr(context.user)
+        count = _policy_count(policy, subject, now, since_last_success=policy.reset_on_success)
+        subject_label = str(subject)
 
     deciding_stage = _stage_in_range(policy, count)
     if deciding_stage is None or not _stage_denies(deciding_stage, count):
@@ -1317,8 +1436,10 @@ def _restrictions_in_force(context: CAContext, targets: set[ConditionalAccessTar
     :param targets: the targets this evaluation restricted, so an untouched row is never read
     """
     statuses: dict[ConditionalAccessTarget, RestrictionStatus | None] = {}
-    if ConditionalAccessTarget.USER in targets and context.user is not None:
-        statuses[ConditionalAccessTarget.USER] = get_user_lock(context.user)
+    if ConditionalAccessTarget.USER in targets:
+        # Read back under the same key the write used and the pre-check will use, which is the point of asking
+        # the context rather than reaching for its user: a local admin's lock is on neither.
+        statuses[ConditionalAccessTarget.USER] = get_subject_lock(lock_subject(context))
     if ConditionalAccessTarget.SOURCE_IP in targets and context.source_ip:
         statuses[ConditionalAccessTarget.SOURCE_IP] = get_ip_block(context.source_ip)
     messages = restriction_messages(*statuses.values(),
@@ -1344,7 +1465,7 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     user locked for every further failure until the policy escalates past it (see
     :func:`_action_fires` and :func:`_stage_in_range`). The count climbs by one per
     tracked failure and, for a policy with ``reset_on_success``, resets after a
-    successful login (see :func:`count_user_events`), so a fresh burst
+    successful login (see :func:`count_subject_events`), so a fresh burst
     re-triggers the fire-once actions too.
 
     The persistent side effects (lock state) are consulted by the *next* inbound
@@ -1504,7 +1625,7 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
     # realm and role.
     # A policy whose conditions cannot all be expressed as predicates counts unscoped.
     window = policy.time_window_seconds
-    user = context.user
+    subject = lock_subject(context)
     source_ip = context.source_ip
     if policy.target == ConditionalAccessTarget.SOURCE_IP:
         if not source_ip:
@@ -1517,10 +1638,10 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
         count = _policy_count_ip(policy, source_ip, now)
         subject_label = f"source IP {source_ip}"
     else:
-        if not _resolved(user):
-            # A user-target policy is keyed on the resolved (resolver, uid, realm)
-            # user, so an unresolved user (unknown login, local admin) is never
-            # locked. Source-IP policies above still run for such requests.
+        if subject is None:
+            # A user-target policy is keyed on the principal the request authenticates (see lock_subject), so a
+            # request identifying none - an unknown login - is never locked. Source-IP policies above still run
+            # for such requests.
             return ConditionalAccessEvaluation()
         # With the policy's reset_on_success (the default) the lock counts consecutive
         # failures since the user's last completed login: a successful authentication
@@ -1532,8 +1653,8 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
         # The count is the *combined* total over all of the policy's tracked types,
         # not just the current request's event_type, so a policy tracking several
         # failure types trips on their sum.
-        count = _policy_count(policy, user, now, since_last_success=policy.reset_on_success)
-        subject_label = repr(user)
+        count = _policy_count(policy, subject, now, since_last_success=policy.reset_on_success)
+        subject_label = str(subject)
 
     # The stage that owns this count (see _stage_in_range) is the only one whose actions can fire - a stage below
     # it cannot reach its own threshold again (the count has moved past it), and a stage above it has not been
@@ -1568,7 +1689,7 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
              f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
              f"{count} event(s) of {_types_label(policy.counter_types_to_track)} in {window}s.")
     tags = _base_action_tags(policy, triggered_stage, context, event_type, count, now)
-    return _execute_stage_actions(policy, triggered_stage, pending_actions, context, now, count, tags)
+    return _execute_stage_actions(policy, triggered_stage, pending_actions, context, subject, now, count, tags)
 
 
 def _action_expiry(stage_action: ConditionalAccessStageAction, now: datetime) -> datetime | None:
@@ -1649,7 +1770,9 @@ def _base_action_tags(policy: ConditionalAccessPolicy, stage: ConditionalAccessP
     """
     user = context.user
     return {
-        "username": user.login if user else "",
+        # The login off the user object where there is one, and the context's own otherwise: a local admin has no
+        # user object at all, and an unresolved login has one that never carried the name (see AuthPrincipal).
+        "username": (user.login if user else "") or context.username or "",
         "realm": (user.realm if user else "") or "",
         "resolver": (user.resolver if user else "") or "",
         "client_ip": context.source_ip or "",
@@ -1752,7 +1875,8 @@ def _send_action_email(action_type: "ConditionalAccessAction", stage_action: Con
 
 def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAccessPolicyStage,
                            actions: Sequence[ConditionalAccessStageAction], context: CAContext,
-                           now: datetime, count: int, tags: dict) -> "ConditionalAccessEvaluation":
+                           subject: "LockSubject | None", now: datetime, count: int,
+                           tags: dict) -> "ConditionalAccessEvaluation":
     """
     Execute the given *actions* of a triggered *stage* (the stage's pending
     actions, i.e. those whose per-action threshold condition is met). Each action
@@ -1771,6 +1895,10 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
     still runs and is still recorded. The stage tripped; only the block is withheld.
 
     :param policy: the triggering policy, for the outcomes
+    :param subject: whom a ``LOCK_USER`` action locks (see :class:`LockSubject`). ``None`` where the request
+        identifies nobody to lock, which only a ``source_ip`` policy reaches: it counts and blocks an IP whoever
+        is behind it, so its stage still runs and a lock action on it - which the CRUD layer does not allow, and
+        only a hand-written row could carry - is skipped rather than written against an empty identity.
     :param count: the count that tripped the stage, for the outcomes
     :return: a :class:`ConditionalAccessEvaluation` with this stage's message when it only notified, one outcome
         per action that ran, and the targets those actions restricted (all empty if every action was skipped).
@@ -1817,20 +1945,24 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
         decides = decides or action_type is ConditionalAccessAction.DENY
 
         try:
-            if action_type == ConditionalAccessAction.LOCK_USER:
-                duration = parse_lock_duration_seconds(action.action_value)
-                if duration is None:
-                    log.warning(f"LOCK_USER action {action.id} on stage {stage.id} has no valid duration "
-                                f"({action.action_value!r}); skipping.")
+            if action_type in (ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.PERMANENT_LOCK_USER):
+                if subject is None:
+                    log.warning(f"{action_type} action {action.id} on stage {stage.id}: this request identifies "
+                                f"nobody to lock; skipping.")
                     continue
-                lock_expires_at = now + timedelta(seconds=duration)
-                if _upsert_user_lock_state(user, lock_expires_at=lock_expires_at,
+                if action_type == ConditionalAccessAction.PERMANENT_LOCK_USER:
+                    # Permanent lock; action_value is ignored (mirrors PERMANENT_BLOCK_IP).
+                    lock_expires_at = None
+                else:
+                    duration = parse_lock_duration_seconds(action.action_value)
+                    if duration is None:
+                        log.warning(f"LOCK_USER action {action.id} on stage {stage.id} has no valid duration "
+                                    f"({action.action_value!r}); skipping.")
+                        continue
+                    lock_expires_at = now + timedelta(seconds=duration)
+                if _upsert_user_lock_state(subject, lock_expires_at=lock_expires_at,
                                            error_message=stage.error_message, policy_name=policy.name):
                     record(action_type, expires_at=lock_expires_at)
-            elif action_type == ConditionalAccessAction.PERMANENT_LOCK_USER:
-                if _upsert_user_lock_state(user, lock_expires_at=None,
-                                           error_message=stage.error_message, policy_name=policy.name):
-                    record(action_type)
             elif action_type in (ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER):
                 if _send_action_email(action_type, action, user, tags):
                     record(action_type)
@@ -1918,10 +2050,10 @@ def _delete_ip_block(state: BlockList) -> None:
         get_ca_session().delete(state)
 
 
-def _upsert_user_lock_state(user: "User", *, lock_expires_at: datetime | None, error_message: str | None,
+def _upsert_user_lock_state(subject: LockSubject, *, lock_expires_at: datetime | None, error_message: str | None,
                             policy_name: str | None = None) -> bool:
     """
-    Create or update the :class:`UserLockState` row for *user*.
+    Create or update the :class:`UserLockState` row for *subject*.
 
     The write is defensive: a failure is logged and rolled back so that writing
     the lock state can never break the authentication response that already
@@ -1947,25 +2079,25 @@ def _upsert_user_lock_state(user: "User", *, lock_expires_at: datetime | None, e
         actually changed something.
     """
     declined = False
-    with guarded_write(f"the user lock state for {user!r}") as write:
+    with guarded_write(f"the lock state for {subject}") as write:
         session = get_ca_session()
-        state = session.get(UserLockState, (user.resolver, user.uid, user.realm))
+        state = session.get(UserLockState, subject.state_key)
         if state is None:
-            state = UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm)
+            state = UserLockState(resolver=subject.resolver, uid=subject.uid, realm=subject.realm)
             session.add(state)
         elif state.lock_expires_at == lock_expires_at:
-            log.info(f"Policy {policy_name!r} restates the lock already in force for {user!r}; the error message of "
+            log.info(f"Policy {policy_name!r} restates the lock already in force for {subject}; the error message of "
                      "the higher-priority policy that wrote it stands.")
             declined = True
         elif state.lock_expires_at is None and lock_expires_at is not None:
-            log.info(f"Not downgrading the existing permanent lock for {user!r} to a timed lock.")
+            log.info(f"Not downgrading the existing permanent lock for {subject} to a timed lock.")
             declined = True
         elif lock_expires_at is not None and lock_expires_at < state.lock_expires_at:
-            log.info(f"Not shortening the existing lock for {user!r}: it already runs until "
+            log.info(f"Not shortening the existing lock for {subject}: it already runs until "
                      f"{state.lock_expires_at}.")
             declined = True
         if not declined:
-            state.username = user.login
+            state.username = subject.username
             state.lock_expires_at = lock_expires_at
             # The cause travels with the expiry, so the row always names whoever imposed the lock now in
             # force: a policy lock that strengthens an administrator's timed one becomes a policy lock, while

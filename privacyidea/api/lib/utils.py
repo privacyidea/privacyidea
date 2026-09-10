@@ -294,6 +294,36 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
     return AuthLogUserRole.USER
 
 
+def canonical_internal_admin_login(username: str | None) -> str | None:
+    """
+    The spelling the ``admin`` table holds for the local database admin *username*, which is the name their
+    authentication-log rows and their lock are keyed by.
+
+    The lookup that authenticates them (:func:`~privacyidea.lib.auth.verify_db_admin`) compares in the database's
+    own collation, so on a case-insensitive one - MySQL's default - ``Admin`` and ``admin`` are one account, while
+    the log and the lock state both match case-sensitively. Recording the stored spelling is what keeps those one
+    subject: without it a lock is walked around by varying the case, each spelling counting only its own failures.
+
+    Only the account's own spelling is kept, not the one that was typed. This is called for a name that matched an
+    account, where the account is the fact worth recording; an unknown login never reaches here. A name that no
+    longer matches one (deleted mid-request) is returned unchanged, and so is anything a lookup failure prevents
+    canonicalizing - recording the row matters more than recording it under the better name.
+
+    :param username: the login as it was typed
+    :return: the stored spelling, or *username* itself when there is no account to take one from
+    """
+    if not username:
+        return username
+    try:
+        # Deferred: lib.auth imports the models and the policy machinery, which this module is imported from.
+        from privacyidea.lib.auth import get_db_admin
+        admin = get_db_admin(username)
+    except Exception as ex:
+        log.debug(f"Could not canonicalize the local admin login {username!r}: {ex!r}")
+        return username
+    return admin.username if admin else username
+
+
 def request_endpoint() -> str | None:
     """
     The endpoint of the current request, as its path with a trailing slash removed (``/auth``,
@@ -390,7 +420,9 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
 
     ``username`` overrides the login name derived from the User object. It is needed for
     local administrators, who have no User object (the login name is not stored there) but
-    whose login name should still be recorded.
+    whose login name should still be recorded. With *internal_admin* it is recorded as the ``admin`` table spells
+    it rather than as it was typed, since that name is the whole identity conditional access counts and locks such
+    an admin by - see :func:`canonical_internal_admin_login`.
 
     Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
     serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
@@ -469,6 +501,10 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
                 resolved = True
         except Exception as ex:
             log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
+    if internal_admin:
+        # The name the account is stored under, which is what makes every spelling of it one subject to count and
+        # one row to lock; see canonical_internal_admin_login.
+        username = canonical_internal_admin_login(username)
     context = get_ca_context()
     # Falls back to this row's own transaction id when before_request has not already resolved the attempt;
     # before_request must resolve a challenge-answering request's attempt before the token logic deletes that challenge,
@@ -549,6 +585,10 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
     condition (``USER_ROLE NOT_IN [admin-internal]``) exempt the emergency account
     from a pre-auth DENY.
 
+    The login name travels with it, since a local database admin *is* their login name as far as the engine is
+    concerned - canonicalized here for the same reason :func:`log_authentication` canonicalizes what it records,
+    so the pre-auth check and the post-response evaluation key one admin the same way.
+
     :param user: the authenticating user
     :param internal_admin: True for a local database admin; ``None`` to derive it
         from the request
@@ -564,7 +604,10 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
         source_ip = g.get("client_ip")
         if internal_admin is None:
             internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
-    return CAContext(user=user or None, source_ip=source_ip, endpoint=endpoint,
+    username = (user.login or None) if user else None
+    if internal_admin:
+        username = canonical_internal_admin_login(username)
+    return CAContext(user=user or None, username=username, source_ip=source_ip, endpoint=endpoint,
                      user_role=str(_determine_user_role(user, bool(internal_admin))))
 
 

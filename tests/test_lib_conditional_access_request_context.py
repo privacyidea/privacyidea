@@ -295,8 +295,10 @@ class ConditionalAccessContextTestCase(MyTestCase):
             context.run_post_eval()
 
         # The engine is handed only the classification and the subject, as a CAContext describing the identity the row
-        # states; the outcomes it returns are recorded by the context against the row it judged.
-        evaluate.assert_called_once_with(CAContext(user=context.principal.user, source_ip="10.0.0.1",
+        # states - the login name and role included, which is all a local admin is identified by; the outcomes it
+        # returns are recorded by the context against the row it judged.
+        evaluate.assert_called_once_with(CAContext(user=context.principal.user, username=event.username,
+                                                  source_ip="10.0.0.1",
                                                   user_role=event.user_role, endpoint=event.endpoint),
                                          AuthEventType.NOT_AUTHORIZED)
 

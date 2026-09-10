@@ -7,7 +7,9 @@ from privacyidea.api.lib.utils import (check_policy_name,
                                        verify_auth_token, is_fqdn,
                                        attestation_certificate_allowed, get_priority_from_param,
                                        get_required_one_of, get_optional_one_of, get_required, get_optional,
-                                       to_list_param, build_ca_context, send_error, request_endpoint)
+                                       to_list_param, build_ca_context, send_error, request_endpoint,
+                                       canonical_internal_admin_login)
+from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                            AUTH_EVENT_TYPE_KEY,
                                                                            AUTH_EVENT_REASON_KEY,
@@ -577,3 +579,16 @@ class UtilsTestCase(MyApiTestCase):
         # A non-integer value is a parameter error
         self.assertRaises(ParameterError, get_pagination_params, {"page": "abc"})
         self.assertRaises(ParameterError, get_pagination_params, {"pagesize": "abc"})
+
+    def test_18_canonical_internal_admin_login(self):
+        # The name the admin table stores is what a local admin's log rows and lock are keyed by, so a login that
+        # matched an account is recorded as that account spells it.
+        create_db_admin("CanonAdmin", password="secret")
+        try:
+            self.assertEqual("CanonAdmin", canonical_internal_admin_login("CanonAdmin"))
+            # A name matching no account is returned untouched: there is no better spelling to be had, and the row
+            # still has to be recorded under the name that was tried.
+            self.assertEqual("no-such-admin", canonical_internal_admin_login("no-such-admin"))
+            self.assertIsNone(canonical_internal_admin_login(None))
+        finally:
+            delete_db_admin("CanonAdmin")
