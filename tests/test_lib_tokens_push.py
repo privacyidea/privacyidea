@@ -49,7 +49,7 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
-from .base import MyTestCase, FakeFlaskG
+from .base import MyTestCase, FakeAudit, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
@@ -2056,6 +2056,7 @@ class PushTokenTestCase(MyTestCase):
         set_policy("push_16g_code", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
 
         token.create_challenge(transactionid="01234567890123456789",
                                options={"g": g, "push_triggered": True})
@@ -2131,6 +2132,7 @@ class PushTokenTestCase(MyTestCase):
         serial = token.get_serial()
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
 
         token.create_challenge(options={"g": g, "session": ChallengeSession.ENROLLMENT})
 
