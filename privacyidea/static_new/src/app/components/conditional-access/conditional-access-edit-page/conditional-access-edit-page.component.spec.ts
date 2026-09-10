@@ -32,6 +32,7 @@ import {
 } from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import {
   MockAuthService,
@@ -41,6 +42,7 @@ import {
   MockRouter,
   MockSmtpService
 } from "@testing/mock-services";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { BehaviorSubject } from "rxjs";
 import { ConditionalAccessEditPageComponent } from "./conditional-access-edit-page.component";
 
@@ -86,6 +88,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
   let policyServiceMock: MockConditionalAccessPolicyService;
   let pendingChangesServiceMock: MockPendingChangesService;
   let routerMock: MockRouter;
+  let dialogServiceMock: MockDialogService;
   let paramMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   beforeEach(async () => {
@@ -100,6 +103,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: SmtpService, useClass: MockSmtpService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: Router, useClass: MockRouter },
         {
           provide: ActivatedRoute,
@@ -114,6 +118,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     policyServiceMock = TestBed.inject(ConditionalAccessPolicyService) as unknown as MockConditionalAccessPolicyService;
     pendingChangesServiceMock = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     routerMock = TestBed.inject(Router) as unknown as MockRouter;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
 
     policyServiceMock.policies.set([mockPolicy]);
 
@@ -449,6 +454,36 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(policyServiceMock.disablePolicy).not.toHaveBeenCalled();
   });
 
+  it("should ask via a dialog before turning dry_run off, and reset counters by default", async () => {
+    component.toggleDryRun(true); // turn it on first, so turning it off asks
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue({ resetCounters: true });
+
+    await component.toggleDryRun(false);
+
+    expect(dialogServiceMock.openDialogAsync).toHaveBeenCalled();
+    expect(component.editPolicy().dry_run).toBe(false);
+    expect(component.editPolicy().reset_counters_on_enforce).toBe(true);
+  });
+
+  it("should keep the trial's counters when the dialog says so", async () => {
+    component.toggleDryRun(true);
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue({ resetCounters: false });
+
+    await component.toggleDryRun(false);
+
+    expect(component.editPolicy().dry_run).toBe(false);
+    expect(component.editPolicy().reset_counters_on_enforce).toBe(false);
+  });
+
+  it("should leave dry_run on when the dialog is cancelled", async () => {
+    component.toggleDryRun(true);
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue(undefined);
+
+    await component.toggleDryRun(false);
+
+    expect(component.editPolicy().dry_run).toBe(true);
+  });
+
   it("should call disablePolicy immediately when toggling enabled off", () => {
     component.toggleEnabled(false);
     expect(component.editPolicy().enabled).toBe(false);
@@ -617,6 +652,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: SmtpService, useClass: MockSmtpService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: Router, useClass: MockRouter },
         {
           provide: ActivatedRoute,

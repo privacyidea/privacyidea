@@ -447,6 +447,11 @@ def update_policy(policy_id):
     changed, but the resulting target/action combination must stay compatible
     (otherwise a 400).
 
+    :jsonparam reset_counters_on_enforce: when ``dry_run`` is sent as ``false`` and the policy is
+        currently in dry-run, whether to reset the failure counters so the policy is judged only on
+        failures from now on (the default) rather than on whatever accumulated during the trial. Send
+        ``false`` to enforce immediately against the counts the trial already accumulated. Ignored
+        unless ``dry_run`` is being turned off in this same call.
     :status 200: the id of the updated policy in ``result.value``
     :status 400: invalid parameter
     :status 404: no policy with this id exists
@@ -455,6 +460,7 @@ def update_policy(policy_id):
     enabled = get_optional(params, "enabled")
     dry_run = get_optional(params, "dry_run")
     reset_on_success = get_optional(params, "reset_on_success")
+    reset_counters_on_enforce = get_optional(params, "reset_counters_on_enforce")
     policy_id = _int_policy_id(policy_id)
     policy_id, changed_fields = update_conditional_access_policy(
         policy_id,
@@ -468,7 +474,9 @@ def update_policy(policy_id):
         reset_on_success=is_true(reset_on_success) if reset_on_success is not None else None,
         priority=get_optional(params, "priority"),
         target=get_optional(params, "target"),
-        count_mode=get_optional(params, "count_mode"))
+        count_mode=get_optional(params, "count_mode"),
+        reset_counters_on_enforce=(is_true(reset_counters_on_enforce)
+                                    if reset_counters_on_enforce is not None else True))
     g.audit_object.log({"success": True,
                         "info": f"updated policy {policy_id} "
                                 f"({', '.join(changed_fields) or 'no fields'})"})

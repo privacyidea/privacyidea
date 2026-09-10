@@ -1024,6 +1024,22 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
+    def test_leaving_dry_run_with_reset_counters_on_enforce_false_keeps_trial_failures(self):
+        # The opt-out: an admin who wants to enforce immediately against what the trial already
+        # accumulated skips the enforced_since floor by passing reset_counters_on_enforce=False.
+        policy, _stages = self._make_policy(name="was_dry_kept", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertFalse(is_user_locked(self.user))  # still dry-run: no lock
+
+        update_conditional_access_policy(policy.id, dry_run=False, reset_counters_on_enforce=False)
+        release_ca_connection()
+
+        # The 3 failures from the trial still count, so the very next evaluation (with no new failure)
+        # already sees the threshold met and locks.
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
     def test_dry_run_source_ip_policy_records_a_outcome_without_blocking(self):
         ip = "10.10.0.5"
         self._make_policy(name="dry_ip", counter_type=AuthEventType.PASSWORD_FAIL, dry_run=True,

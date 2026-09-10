@@ -1121,6 +1121,7 @@ def update_conditional_access_policy(
     target: str | None = None,
     count_mode: str | None = None,
     conditions: list[dict] | None = None,
+    reset_counters_on_enforce: bool = True,
 ) -> tuple[int, list[str]]:
     """
     Update a conditional-access policy. Only the given (non-``None``) fields are changed.
@@ -1143,7 +1144,10 @@ def update_conditional_access_policy(
     Turning ``dry_run`` off (``True`` -> ``False``) sets ``enforced_since`` to now, so the count functions floor
     their look-back window there and the policy is judged only on failures from this point on, not on whatever
     accumulated during the trial - see
-    :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.enforced_since`.
+    :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.enforced_since`. Pass
+    ``reset_counters_on_enforce=False`` to skip this and start enforcing against whatever the trial already
+    accumulated (e.g. an admin who ran the dry run specifically to see how many people would already be caught).
+    This has no effect unless ``dry_run`` is also being turned off in this same call.
 
     All fields are validated before anything is written. Only the fields the caller
     *sends* are validated, which is what keeps a policy stored before a validation
@@ -1219,10 +1223,11 @@ def update_conditional_access_policy(
             changed_fields.append("enabled")
         if dry_run is not None:
             dry_run = bool(dry_run)
-            if dry_run != policy.dry_run and not dry_run:
+            if dry_run != policy.dry_run and not dry_run and reset_counters_on_enforce:
                 # Leaving dry-run: floor the next count at this instant, so the policy is judged on failures from
                 # here on rather than on whatever accumulated during the trial (see
-                # ConditionalAccessPolicy.enforced_since).
+                # ConditionalAccessPolicy.enforced_since). Skipped when the caller opted out via
+                # reset_counters_on_enforce, e.g. to enforce against what the trial already accumulated.
                 policy.enforced_since = utc_now()
             policy.dry_run = dry_run
             changed_fields.append("dry_run")

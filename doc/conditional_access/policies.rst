@@ -292,12 +292,21 @@ have done, then disable dry run once the threshold fits. Dry run can also be
 switched on and off from the command line, which defuses a policy that has
 locked everybody out without losing what it records.
 
-Turning dry run off starts a fresh count: failures that accumulated during the
-trial are not counted towards the threshold once the policy starts enforcing,
-so a policy that would have locked someone out several times over during the
-trial does not lock them out on the very next request just because it is now
-enforced. Only failures from the moment dry run was disabled count towards the
-threshold; disabling and re-enabling dry run resets this starting point again.
+Turning dry run off starts a fresh count by default: failures that accumulated
+during the trial are not counted towards the threshold once the policy starts
+enforcing, so a policy that would have locked someone out several times over
+during the trial does not lock them out on the very next request just because
+it is now enforced. Only failures from the moment dry run was disabled count
+towards the threshold; disabling and re-enabling dry run resets this starting
+point again.
+
+This reset can be turned off, both in the WebUI (a dialog appears when
+disabling dry run, offering to keep the counters) and via the API
+(:http:patch:`/conditionalaccess/policy/(policy_id)` with
+``reset_counters_on_enforce=false``). Skip the reset to enforce immediately
+against whatever the trial already accumulated - for example when the trial
+was run specifically to see how many requests would already be caught, and
+enforcing on the very next matching request is the point.
 
 .. _conditional_access_policies_cli:
 

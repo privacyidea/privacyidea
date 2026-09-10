@@ -181,6 +181,11 @@ export interface ConditionalAccessPolicy {
   // failures since that login. Only a "user" target resets: a "source_ip" policy aggregates a signal across
   // accounts and never does, and the pre-auth allow/deny decision never does either.
   reset_on_success: boolean;
+  // The instant this policy last left dry-run (see update_conditional_access_policy); null while
+  // dry_run is set, or if it never has. Read-only - set only as a side effect of turning dry_run
+  // off. Optional because a template's "policy" is a create payload, not a stored row, and never
+  // carries one.
+  enforced_since?: string | null;
   counter_types_to_track: AuthEventType[];
   stages: ConditionalAccessPolicyStage[];
   // Which requests the policy applies to. Optional: a policy with no restriction simply omits this
@@ -195,6 +200,10 @@ export interface ConditionalAccessPolicy {
 export type ConditionalAccessPolicySaveParams = Omit<ConditionalAccessPolicy, "id" | "priority"> & {
   id?: number;
   priority: number | null;
+  // Whether to reset the failure counters when this save turns dry_run off; only meaningful then, and
+  // defaults server-side to true (see update_conditional_access_policy). Omitted rather than sent as
+  // true so a create/no-op save never carries a flag that has nothing to do with it.
+  reset_counters_on_enforce?: boolean;
 };
 
 // What a shipped template carries: a create payload without priority, which the catalog omits so
@@ -272,6 +281,7 @@ export const EMPTY_CONDITIONAL_ACCESS_POLICY: ConditionalAccessPolicySaveParams 
   time_window_seconds: 600,
   enabled: true,
   dry_run: false,
+  enforced_since: null,
   priority: null,
   target: "user",
   count_mode: "PER_REQUEST",

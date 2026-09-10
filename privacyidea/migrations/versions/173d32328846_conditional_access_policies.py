@@ -11,7 +11,7 @@ conditional_access_policies.enforced_since records the instant a policy started 
 dry_run is set), so a policy leaving dry-run is not judged against failures accumulated during the trial - see
 privacyidea.lib.conditional_access.engine._effective_window_seconds. Folded into this still-unreleased
 revision rather than added as a new one; a dev/test DB that already ran the create_table form of this
-revision gets the column added and backfilled by _add_enforced_since_column below.
+revision gets the column added by _add_enforced_since_column below.
 
 Revision ID: 173d32328846
 Revises: 0147d78cbace
@@ -21,8 +21,6 @@ Create Date: 2026-06-03 00:00:00.000000
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.exc import OperationalError, ProgrammingError
-
-from privacyidea.models.utils import utc_now
 
 # revision identifiers, used by Alembic.
 revision = '173d32328846'
@@ -62,38 +60,21 @@ def _create_table(table_name, *columns):
 
 def _add_enforced_since_column():
     """
-    Add ``enforced_since`` to ``conditional_access_policies`` and backfill it for existing rows, for a
-    database that already ran an earlier form of this revision without the column (create_table above then
-    printed "already exists" and returned without it).
-
-    Backfilled from Python's ``utc_now()``, not the SQL ``CURRENT_TIMESTAMP``: the column is compared against
-    ``utc_now()`` everywhere else (see ``engine._effective_window_seconds``), and ``CURRENT_TIMESTAMP`` is the
-    DB server's own clock/timezone, which need not be UTC. dry_run policies are left ``NULL`` (unchanged);
-    already-enforced policies get ``now()``, a reasonable approximation for policies that were enforcing
-    before this column existed.
+    Add ``enforced_since`` to ``conditional_access_policies``, for a database that already ran an
+    earlier form of this revision without the column (create_table above then printed "already
+    exists" and returned without it). No backfill: CA is not released yet, so no such database
+    carries rows to backfill - a fresh column is always all-``NULL``, same as create_table's.
     """
     try:
         op.add_column('conditional_access_policies', sa.Column('enforced_since', sa.DateTime(), nullable=True))
     except (OperationalError, ProgrammingError) as exx:
         if any(x in str(exx.orig).lower() for x in ["already exists", "duplicate column name"]):
             print("Ok, column 'enforced_since' already exists.")
-            return
         else:
             print(exx)
             raise
     except Exception as exx:
         print(f"Could not add column 'enforced_since' to database: {exx}")
-        raise
-
-    try:
-        connection = op.get_bind()
-        connection.execute(sa.text(
-            "UPDATE conditional_access_policies SET enforced_since = :enforced_since "
-            "WHERE dry_run = :dry_run"
-        ).bindparams(sa.bindparam("enforced_since", utc_now(), type_=sa.DateTime()),
-                     sa.bindparam("dry_run", False, type_=sa.Boolean())))
-    except Exception as exx:
-        print(f"Could not backfill 'enforced_since' for existing conditional-access policies: {exx}")
         raise
 
 

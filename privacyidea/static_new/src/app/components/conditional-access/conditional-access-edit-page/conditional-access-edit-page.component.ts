@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { DatePipe } from "@angular/common";
 import { Component, computed, effect, inject, OnDestroy, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { form, FormField, required, validate } from "@angular/forms/signals";
@@ -50,9 +51,15 @@ import {
 } from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { deepCopy } from "@utils/deep-copy.utils";
 import { ConditionalAccessConditionsComponent } from "./conditions/conditional-access-conditions.component";
 import { ConditionalAccessStagesListComponent } from "./stages-list/conditional-access-stages-list.component";
+import {
+  ConditionalAccessDryRunOffDialogComponent,
+  ConditionalAccessDryRunOffDialogData,
+  ConditionalAccessDryRunOffDialogResult
+} from "../conditional-access-dry-run-off-dialog/conditional-access-dry-run-off-dialog.component";
 
 type TimeUnit = "seconds" | "minutes" | "hours";
 
@@ -86,6 +93,7 @@ const COUNT_MODE_LABELS: Record<string, string> = {
   selector: "app-conditional-access-edit-page",
   standalone: true,
   imports: [
+    DatePipe,
     FormField,
     MatButtonModule,
     MatCheckboxModule,
@@ -110,6 +118,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   protected readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -549,8 +558,24 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     }
   }
 
-  toggleDryRun(checked: boolean): void {
-    this.updateEditPolicy({ dry_run: checked });
+  async toggleDryRun(checked: boolean): Promise<void> {
+    if (checked || !this.editPolicy().dry_run) {
+      // Turning dry run on, or it was already off: nothing to ask.
+      this.updateEditPolicy({ dry_run: checked, reset_counters_on_enforce: undefined });
+      return;
+    }
+    const result = await this.dialogService.openDialogAsync<
+      ConditionalAccessDryRunOffDialogData,
+      ConditionalAccessDryRunOffDialogResult
+    >({
+      component: ConditionalAccessDryRunOffDialogComponent,
+      data: { policyName: this.editPolicy().name }
+    });
+    if (!result) {
+      // Cancelled: leave the toggle (and dry_run) untouched.
+      return;
+    }
+    this.updateEditPolicy({ dry_run: false, reset_counters_on_enforce: result.resetCounters });
   }
 
   onResetOnSuccessChange(checked: boolean): void {
