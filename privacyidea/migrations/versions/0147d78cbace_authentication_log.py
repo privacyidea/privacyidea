@@ -75,10 +75,15 @@ def upgrade():
                         ['resolver', 'uid', 'realm', 'event_type', 'timestamp'])
         op.create_index('ix_authlog_ip_event_time', 'authentication_log',
                         ['source_ip', 'event_type', 'timestamp'])
-        # Serves PER_ATTEMPT counting (count_user_attempts / count_ip_attempts): a subject's rows range-scanned by
-        # time, no event_type predicate.
+        # Serves PER_ATTEMPT counting (count_subject_attempts / count_ip_attempts): a subject's rows range-scanned
+        # by time, no event_type predicate.
         op.create_index('ix_authlog_user_time', 'authentication_log',
                         ['resolver', 'uid', 'realm', 'timestamp'])
+        # The subject index for a local database admin, who has no resolver, uid or realm: their rows carry only
+        # the login name, and the role is what separates them from a same-named user's. Both conditional-access
+        # counts key on that pair, so without this every failed local-admin login scans the table.
+        op.create_index('ix_authlog_admin_event_time', 'authentication_log',
+                        ['username', 'user_role', 'event_type', 'timestamp'])
         op.create_index('ix_authlog_ip_time', 'authentication_log',
                         ['source_ip', 'timestamp'])
         # The TCP peer is the second pivot a forensic query starts from - "what came from this machine",

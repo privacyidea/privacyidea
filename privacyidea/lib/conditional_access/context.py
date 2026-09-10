@@ -70,7 +70,7 @@ class CAContext:
         the counting query. See
         :func:`~privacyidea.api.lib.utils.request_endpoint`.
     :ivar user_role: the principal's role
-        (:class:`~privacyidea.lib.conditional_access.authentication_log.AuthLogUserRole`),
+        (:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`),
         as recorded in the authentication log. Pre-auth this is the *claimed*
         role - an admin realm, or a local admin name that exists - since no
         credential has been checked yet; that is what lets a break-glass condition

@@ -30,7 +30,8 @@ from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.error import Error
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
-from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, get_authentication_logs,
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs,
                                                                    log_authentication_event)
 from privacyidea.lib.conditional_access.engine import is_user_locked, is_ip_blocked
 from privacyidea.lib.conditional_access.engine import get_user_lock, get_ip_block
@@ -2602,9 +2603,11 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
         lock = self._admin_lock(self.testadmin)
         self.assertIsNotNone(lock, "the second failure did not lock the local admin")
-        # Keyed by the login name, with no resolver or realm to key on.
+        # Keyed by the login name, with no resolver or realm to key on, and saying which kind of principal it
+        # locks so nothing has to read that off the two columns it leaves empty.
         self.assertEqual((str(), self.testadmin, str()), (lock.resolver, lock.uid, lock.realm))
         self.assertEqual(self.testadmin, lock.username)
+        self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), lock.user_role)
 
         # And the lock is enforced: the *correct* password is now refused by the pre-check, before the credential
         # is ever looked at, exactly as it would be for a locked user.

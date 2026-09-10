@@ -38,12 +38,13 @@ from flask_babel import _
 
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+                                                                          AuthLogUserRole,
                                                                           AUTH_EVENT_REASON_KEY,
                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
                                                                           AUTH_EVENT_SERIALS_KEY,
                                                                           REASON_DETAIL_INFO_KEY,
                                                                           strip_internal_classification)
-from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, ClientLabelSource,
+from privacyidea.lib.conditional_access.authentication_log import (ClientLabelSource,
                                                                     PendingAuthEvent)
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context, claimed_ca_message
 from privacyidea.lib.user import User

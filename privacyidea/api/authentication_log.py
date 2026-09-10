@@ -24,10 +24,9 @@ from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
-                                                                           outcome_of)
+                                                                           AuthLogUserRole, outcome_of)
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
                                                                    AuthenticationLogVisibilityScope,
-                                                                   AuthLogUserRole,
                                                                    DEFAULT_PAGE_SIZE)
 from privacyidea.lib.conditional_access.authentication_log_statistics import (DEFAULT_STATISTICS_BINS,
                                                                               get_authentication_log_statistics)

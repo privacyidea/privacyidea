@@ -31,10 +31,11 @@ from sqlalchemy.sql import ColumnElement
 
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+                                                                           AuthLogUserRole,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
                                                                            CountMode,
                                                                            RestrictionCause)
-from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole, naive_utc
+from privacyidea.lib.conditional_access.authentication_log import naive_utc
 from privacyidea.lib.conditional_access.conditions import (condition_sql_filters,
                                                            conditions_match_row,
                                                            policy_conditions_are_scopable,
@@ -2083,7 +2084,11 @@ def _upsert_user_lock_state(subject: LockSubject, *, lock_expires_at: datetime |
         session = get_ca_session()
         state = session.get(UserLockState, subject.state_key)
         if state is None:
-            state = UserLockState(resolver=subject.resolver, uid=subject.uid, realm=subject.realm)
+            # The role goes in with the key columns: it says which kind of principal the row locks, which the
+            # key it is created under already fixes (see LockSubject), so it is never updated afterwards.
+            state = UserLockState(resolver=subject.resolver, uid=subject.uid, realm=subject.realm,
+                                  user_role=str(AuthLogUserRole.ADMIN_INTERNAL if subject.internal_admin
+                                                else AuthLogUserRole.USER))
             session.add(state)
         elif state.lock_expires_at == lock_expires_at:
             log.info(f"Policy {policy_name!r} restates the lock already in force for {subject}; the error message of "

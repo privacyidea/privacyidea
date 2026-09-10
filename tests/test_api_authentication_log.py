@@ -27,8 +27,8 @@ import mock
 
 from privacyidea.api.authentication_log import _ENTRY_FILTER_PARAMS
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
-from privacyidea.lib.conditional_access.authentication_log import (log_authentication_event, AuthLogUserRole,
-                                                                  )
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_log import log_authentication_event
 from privacyidea.lib.conditional_access.authentication_log_statistics import (MAX_STATISTICS_BINS,
                                                                               get_authentication_log_statistics)
 from privacyidea.lib.conditional_access.conditions import AUTHENTICATING_ENDPOINTS

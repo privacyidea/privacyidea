@@ -60,32 +60,14 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
 DEFAULT_PAGE_SIZE = 15
 
 
-class AuthLogUserRole(str, Enum):
-    """
-    Role of the authenticating principal recorded in the authentication log. The two admin values are kept distinct
-    because conditional-access rules may treat them differently: ``admin-external`` admins come from an admin realm
-    (an external identity source) and are the everyday admins, while ``admin-internal`` admins are local database
-    accounts (created via the CLI, used for initial setup and as fallback/recovery) that authenticate only at the
-    ``/auth`` endpoint. Both share the ``admin-`` prefix so a single ``user_role=admin*`` filter matches either.
-
-    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python 3.10; the ``__str__`` override
-    normalizes ``str()``/f-string output to the value across versions (mirrors :class:`AuthEventType`).
-    """
-    USER = "user"
-    ADMIN_INTERNAL = "admin-internal"
-    ADMIN_EXTERNAL = "admin-external"
-
-    def __str__(self) -> str:
-        return self.value
-
-
 class ClientLabelSource(str, Enum):
     """
     Where a row's ``client_label`` came from: the ``client_id`` request parameter the client chose for itself, or
     the User-Agent header it sent. Recorded because the two are worth very different amounts - one is a name an
     integration deliberately gives itself, the other is a string any browser sends.
 
-    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthLogUserRole`.
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`.
     """
     CLIENT_ID = "client_id"
     USER_AGENT = "user_agent"
@@ -105,7 +87,9 @@ class AuthenticationLogVisibilityScope:
     *username_case_insensitive* mirrors the originating policy's ``user_case_insensitive`` option and forces a
     case-insensitive match on the ``usernames`` dimension only; realm and resolver always match case-sensitively.
 
-    *user_roles* restricts to entries of those :class:`AuthLogUserRole` values. It is not derived from policy scoping
+    *user_roles* restricts to entries of those
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`
+    values. It is not derived from policy scoping
     (policies do not scope by role); it is used to express a principal's own entries -- a local/internal admin has no
     realm, so their own entries are matched by username plus ``user_role=admin-internal`` instead of by realm.
     """

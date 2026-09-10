@@ -22,10 +22,9 @@ import mock
 from sqlalchemy import event
 from sqlalchemy.exc import InvalidRequestError
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole
 from privacyidea.lib.conditional_access.authentication_log import (
     AuthenticationLogVisibilityScope,
-    AuthLogUserRole,
     PendingAuthEvent,
     _MAX_OVERFLOW_LENGTH,
     _describe_overflow,

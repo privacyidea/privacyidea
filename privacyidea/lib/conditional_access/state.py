@@ -126,6 +126,10 @@ def _locked_user_dict(row: UserLockState, now: datetime) -> dict:
         "realm": row.realm,
         # Denormalized login captured at lock time (survives resolver deletion).
         "username": row.username,
+        # Which kind of principal this row locks. A local database admin is keyed by login name alone, so their row
+        # carries an empty resolver and realm - this is what says the row means that, rather than a user whose
+        # realm has gone missing.
+        "user_role": row.user_role,
         "permanent": row.lock_expires_at is None,
         "lock_expires_at": row.lock_expires_at,
         "seconds_remaining": _seconds_remaining(row.lock_expires_at, now),

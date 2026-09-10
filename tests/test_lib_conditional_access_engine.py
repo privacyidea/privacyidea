@@ -31,7 +31,7 @@ import mock
 
 from privacyidea.lib.conditional_access import engine
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode, RestrictionCause
-from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
 from privacyidea.lib.conditional_access.conditions import (CONDITION_TYPES, ConditionOperator, ConditionType,
                                                            ConditionTypeSpec, condition_matches,
                                                            conditions_match_row, policy_conditions_are_scopable,

@@ -23,7 +23,7 @@ the live user-lock state and blocklist entries.
 from datetime import timedelta
 
 from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
-from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole, RestrictionCause
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.conditional_access.state import (
     block_ip,
@@ -100,6 +100,10 @@ class UserLockStateTestCase(MyTestCase):
         self.assertIsNone(row.lock_expires_at)
         self.assertEqual(RestrictionCause.MANUAL, row.lock_cause)
         self.assertEqual(self.user.login, row.username)
+        # A row locking a resolved user says so, which is what tells it from a local admin's - keyed by login
+        # name alone, so carrying an empty resolver and realm rather than a missing one.
+        self.assertEqual(str(AuthLogUserRole.USER), row.user_role)
+        self.assertEqual(str(AuthLogUserRole.USER), lock["user_role"])
 
     def test_lock_user_with_a_duration_sets_the_expiry(self):
         lock = lock_user(self.user, duration_seconds=600)

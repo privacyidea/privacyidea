@@ -25,7 +25,7 @@ from unittest import mock
 from privacyidea.lib.conditional_access import policy as policy_module
 from privacyidea.lib.conditional_access.authentication_event_types import CA_ENFORCEMENT_EVENT_TYPES  # noqa: F401
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
-from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
 from privacyidea.lib.conditional_access.conditions import (AUTHENTICATING_ENDPOINTS, ConditionOperator, ConditionType,
                                                            get_condition_types)
 from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction, ConditionalAccessTarget,

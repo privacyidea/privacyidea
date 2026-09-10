@@ -30,7 +30,8 @@ from privacyidea.lib.cache import redis_feature_enabled
 from privacyidea.lib.cache.redis import redis_client_for_feature, _TXN_KEY
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, REASON_DETAIL_INFO_KEY
-from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs, AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyAction
 from privacyidea.lib.token import init_token, remove_token, get_tokens
 from privacyidea.lib.user import User

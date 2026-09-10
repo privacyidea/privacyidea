@@ -27,7 +27,8 @@ from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import (CA_ENFORCEMENT_EVENT_TYPES, AuthEventType)
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessEvaluation, StageMessage
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
-from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, PendingAuthEvent,
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent,
                                                                   get_authentication_logs,
                                                                   write_authentication_events)
 from privacyidea.lib.conditional_access.context import CAContext
