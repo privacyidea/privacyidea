@@ -5,7 +5,7 @@
 import { HttpResourceRef } from "@angular/common/http";
 import { computed, Signal, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import { AdminRealms, Realm, Realms, RealmServiceInterface } from "@services/realm/realm.service";
+import { AdminRealms, Realm, RealmDeleteWarnings, Realms, RealmServiceInterface } from "@services/realm/realm.service";
 import { of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
@@ -68,6 +68,15 @@ export class MockRealmService implements RealmServiceInterface {
       this.realmResource.set(MockPiResponse.fromValue<Realms>(rest));
     }
     return of(MockPiResponse.fromValue<number>(1));
+  });
+
+  getRealmDeleteWarnings = jest.fn().mockImplementation((_realm: string) => {
+    return of(
+      MockPiResponse.fromValue<RealmDeleteWarnings>({
+        custom_attribute_keys: [],
+        ca_policy_names: []
+      })
+    );
   });
 
   setDefaultRealm = jest.fn().mockImplementation((realm: string) => {

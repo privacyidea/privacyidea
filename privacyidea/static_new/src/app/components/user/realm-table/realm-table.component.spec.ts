@@ -531,97 +531,143 @@ describe("RealmTableComponent", () => {
 
   it("onDeleteRealm should do nothing when row has no name", () => {
     component.onDeleteRealm({} as unknown as RealmRow);
+    expect(realmService.getRealmDeleteWarnings).not.toHaveBeenCalled();
     expect(dialog.open).not.toHaveBeenCalled();
   });
 
-  it("onDeleteRealm should delete realm when confirmed", () => {
+  it("onDeleteRealm should show the plain dialog and delete when there is nothing to warn about", () => {
     dialog.result$ = of(true);
     const row = { name: "realmA" } as unknown as RealmRow;
 
     component.onDeleteRealm(row);
 
-    expect(dialog.open).toHaveBeenCalled();
+    expect(realmService.getRealmDeleteWarnings).toHaveBeenCalledWith("realmA");
+    expect(dialog.open).toHaveBeenCalledTimes(1);
     expect(realmService.deleteRealm).toHaveBeenCalledWith("realmA", false, false);
     expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
   });
 
-  it("onDeleteRealm should not delete when dialog is cancelled", () => {
+  it("onDeleteRealm should not delete when the plain dialog is cancelled", () => {
     dialog.result$ = of(false);
     const row = { name: "realmA" } as unknown as RealmRow;
 
     component.onDeleteRealm(row);
 
-    expect(dialog.open).toHaveBeenCalled();
+    expect(dialog.open).toHaveBeenCalledTimes(1);
     expect(realmService.deleteRealm).not.toHaveBeenCalled();
   });
 
   describe("onDeleteRealm with custom user attributes", () => {
-    const customAttributesError = new HttpErrorResponse({
-      status: 400,
-      statusText: "Bad Request",
-      error: {
-        result: {
-          error: {
-            code: 908,
-            message:
-              "Realm 'realmA' contains custom user attributes (department). " +
-              "Deleting the realm will also delete these custom user attributes."
-          }
-        }
-      }
-    });
-
-    it("should ask for confirmation and retry with the cascade flag", () => {
-      dialog.queuedResults = [of(true), of(true)];
-      (realmService.deleteRealm as jest.Mock).mockImplementationOnce(() => throwError(() => customAttributesError));
-      const row = { name: "realmA" } as unknown as RealmRow;
-
-      component.onDeleteRealm(row);
-
-      expect(dialog.open).toHaveBeenCalledTimes(2);
-      expect(dialog.openedConfigs[1].data).toEqual({
-        realmName: "realmA",
-        message: customAttributesError.error.result.error.message
-      });
-      expect(realmService.deleteRealm).toHaveBeenNthCalledWith(1, "realmA", false, false);
-      expect(realmService.deleteRealm).toHaveBeenNthCalledWith(2, "realmA", true, false);
-      expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
-      expect(notificationService.error).not.toHaveBeenCalled();
-      expect(realmService.realmResource.reload).toHaveBeenCalled();
-    });
-
-    it("should not retry when the confirmation is cancelled", () => {
-      dialog.queuedResults = [of(true), of(false)];
-      (realmService.deleteRealm as jest.Mock).mockImplementationOnce(() => throwError(() => customAttributesError));
-      const row = { name: "realmA" } as unknown as RealmRow;
-
-      component.onDeleteRealm(row);
-
-      expect(dialog.open).toHaveBeenCalledTimes(2);
-      expect(realmService.deleteRealm).toHaveBeenCalledTimes(1);
-      expect(notificationService.error).not.toHaveBeenCalled();
-      expect(notificationService.success).not.toHaveBeenCalled();
-    });
-
-    it("should show a plain error when the cascade delete also fails", () => {
-      dialog.queuedResults = [of(true), of(true)];
-      (realmService.deleteRealm as jest.Mock)
-        .mockImplementationOnce(() => throwError(() => customAttributesError))
-        .mockImplementationOnce(() => throwError(() => customAttributesError));
-      const row = { name: "realmA" } as unknown as RealmRow;
-
-      component.onDeleteRealm(row);
-
-      expect(dialog.open).toHaveBeenCalledTimes(2);
-      expect(realmService.deleteRealm).toHaveBeenCalledTimes(2);
-      expect(notificationService.error).toHaveBeenCalledWith(
-        `Failed to delete realm. ${customAttributesError.error.result.error.message}`
+    beforeEach(() => {
+      (realmService.getRealmDeleteWarnings as jest.Mock).mockReturnValueOnce(
+        of(
+          MockPiResponse.fromValue({
+            custom_attribute_keys: ["department"],
+            ca_policy_names: []
+          })
+        )
       );
+    });
+
+    it("should show one warning dialog naming the attributes and delete with the cascade flag on confirm", () => {
+      dialog.result$ = of(true);
+      const row = { name: "realmA" } as unknown as RealmRow;
+
+      component.onDeleteRealm(row);
+
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(dialog.openedConfigs[0].data).toEqual({
+        realmName: "realmA",
+        message:
+          'Realm "realmA" contains custom user attributes (department). ' +
+          "Deleting the realm will also delete these custom user attributes."
+      });
+      expect(realmService.deleteRealm).toHaveBeenCalledTimes(1);
+      expect(realmService.deleteRealm).toHaveBeenCalledWith("realmA", true, false);
+      expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
+    });
+
+    it("should not delete when the warning dialog is cancelled", () => {
+      dialog.result$ = of(false);
+      const row = { name: "realmA" } as unknown as RealmRow;
+
+      component.onDeleteRealm(row);
+
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(realmService.deleteRealm).not.toHaveBeenCalled();
     });
   });
 
   describe("onDeleteRealm with conditional-access policy references", () => {
+    beforeEach(() => {
+      (realmService.getRealmDeleteWarnings as jest.Mock).mockReturnValueOnce(
+        of(
+          MockPiResponse.fromValue({
+            custom_attribute_keys: [],
+            ca_policy_names: ["excludes_realmA"]
+          })
+        )
+      );
+    });
+
+    it("should show one warning dialog naming the policies and delete with the confirm flag on confirm", () => {
+      dialog.result$ = of(true);
+      const row = { name: "realmA" } as unknown as RealmRow;
+
+      component.onDeleteRealm(row);
+
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(dialog.openedConfigs[0].data).toEqual({
+        realmName: "realmA",
+        message:
+          'Realm "realmA" is still referenced by conditional-access policies (excludes_realmA). ' +
+          "Deleting the realm will leave those policies referencing a realm that no longer exists."
+      });
+      expect(realmService.deleteRealm).toHaveBeenCalledTimes(1);
+      expect(realmService.deleteRealm).toHaveBeenCalledWith("realmA", false, true);
+      expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
+    });
+
+    it("should not delete when the warning dialog is cancelled", () => {
+      dialog.result$ = of(false);
+      const row = { name: "realmA" } as unknown as RealmRow;
+
+      component.onDeleteRealm(row);
+
+      expect(dialog.open).toHaveBeenCalledTimes(1);
+      expect(realmService.deleteRealm).not.toHaveBeenCalled();
+    });
+  });
+
+  it("onDeleteRealm should combine both warnings into a single dialog", () => {
+    (realmService.getRealmDeleteWarnings as jest.Mock).mockReturnValueOnce(
+      of(
+        MockPiResponse.fromValue({
+          custom_attribute_keys: ["department"],
+          ca_policy_names: ["excludes_realmA"]
+        })
+      )
+    );
+    dialog.result$ = of(true);
+    const row = { name: "realmA" } as unknown as RealmRow;
+
+    component.onDeleteRealm(row);
+
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+    expect(dialog.openedConfigs[0].data).toEqual({
+      realmName: "realmA",
+      message:
+        'Realm "realmA" contains custom user attributes (department). ' +
+        "Deleting the realm will also delete these custom user attributes. " +
+        'Realm "realmA" is still referenced by conditional-access policies (excludes_realmA). ' +
+        "Deleting the realm will leave those policies referencing a realm that no longer exists."
+    });
+    expect(realmService.deleteRealm).toHaveBeenCalledWith("realmA", true, true);
+  });
+
+  it("onDeleteRealm should fall back to the race-condition retry dialog when deletion still fails after the upfront warning check", () => {
+    dialog.queuedResults = [of(true), of(true)];
     const caPolicyError = new HttpErrorResponse({
       status: 400,
       statusText: "Bad Request",
@@ -636,38 +682,16 @@ describe("RealmTableComponent", () => {
         }
       }
     });
+    (realmService.deleteRealm as jest.Mock).mockImplementationOnce(() => throwError(() => caPolicyError));
+    const row = { name: "realmA" } as unknown as RealmRow;
 
-    it("should ask for confirmation and retry with the confirm flag", () => {
-      dialog.queuedResults = [of(true), of(true)];
-      (realmService.deleteRealm as jest.Mock).mockImplementationOnce(() => throwError(() => caPolicyError));
-      const row = { name: "realmA" } as unknown as RealmRow;
+    component.onDeleteRealm(row);
 
-      component.onDeleteRealm(row);
-
-      expect(dialog.open).toHaveBeenCalledTimes(2);
-      expect(dialog.openedConfigs[1].data).toEqual({
-        realmName: "realmA",
-        message: caPolicyError.error.result.error.message
-      });
-      expect(realmService.deleteRealm).toHaveBeenNthCalledWith(1, "realmA", false, false);
-      expect(realmService.deleteRealm).toHaveBeenNthCalledWith(2, "realmA", false, true);
-      expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
-      expect(notificationService.error).not.toHaveBeenCalled();
-      expect(realmService.realmResource.reload).toHaveBeenCalled();
-    });
-
-    it("should not retry when the confirmation is cancelled", () => {
-      dialog.queuedResults = [of(true), of(false)];
-      (realmService.deleteRealm as jest.Mock).mockImplementationOnce(() => throwError(() => caPolicyError));
-      const row = { name: "realmA" } as unknown as RealmRow;
-
-      component.onDeleteRealm(row);
-
-      expect(dialog.open).toHaveBeenCalledTimes(2);
-      expect(realmService.deleteRealm).toHaveBeenCalledTimes(1);
-      expect(notificationService.error).not.toHaveBeenCalled();
-      expect(notificationService.success).not.toHaveBeenCalled();
-    });
+    expect(dialog.open).toHaveBeenCalledTimes(2);
+    expect(realmService.deleteRealm).toHaveBeenNthCalledWith(1, "realmA", false, false);
+    expect(realmService.deleteRealm).toHaveBeenNthCalledWith(2, "realmA", false, true);
+    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
+    expect(notificationService.error).not.toHaveBeenCalled();
   });
 
   it("onDeleteRealm should show a plain error for other error codes", () => {

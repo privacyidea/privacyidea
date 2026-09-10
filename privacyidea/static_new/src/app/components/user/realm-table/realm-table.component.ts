@@ -560,13 +560,46 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   // --- Row Action Handlers ---
   onDeleteRealm(row: RealmRow): void {
     if (!row?.name) return;
+    const realmName = row.name;
 
+    this.realmService.getRealmDeleteWarnings(realmName).subscribe({
+      next: (res) => {
+        const warnings = res.result?.value;
+        const hasCustomAttributes = !!warnings?.custom_attribute_keys?.length;
+        const hasCaPolicies = !!warnings?.ca_policy_names?.length;
+
+        if (!hasCustomAttributes && !hasCaPolicies) {
+          this._confirmPlainDelete(realmName);
+          return;
+        }
+
+        const messages: string[] = [];
+        if (hasCustomAttributes) {
+          messages.push(
+            $localize`:@@realm.deleteWarningCustomAttributes:Realm "${realmName}:REALM:" contains custom user attributes (${warnings!.custom_attribute_keys.join(", ")}:KEYS:). Deleting the realm will also delete these custom user attributes.`
+          );
+        }
+        if (hasCaPolicies) {
+          messages.push(
+            $localize`:@@realm.deleteWarningCaPolicies:Realm "${realmName}:REALM:" is still referenced by conditional-access policies (${warnings!.ca_policy_names.join(", ")}:POLICIES:). Deleting the realm will leave those policies referencing a realm that no longer exists.`
+          );
+        }
+
+        this._confirmDeleteRealmWarning(realmName, messages.join(" "), () =>
+          this._deleteRealm(realmName, hasCustomAttributes, hasCaPolicies)
+        );
+      },
+      error: () => this._confirmPlainDelete(realmName)
+    });
+  }
+
+  private _confirmPlainDelete(realmName: string): void {
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
           title: $localize`:@@realm.deleteRealm:Delete Realm`,
-          items: [row.name],
+          items: [realmName],
           itemType: "realm",
           confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
@@ -575,7 +608,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       .subscribe({
         next: (result) => {
           if (!result) return;
-          this._deleteRealm(row.name);
+          this._deleteRealm(realmName);
         }
       });
   }
@@ -620,15 +653,18 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       },
       error: (err: HttpErrorResponse) => {
         const error = err.error?.result?.error;
+        // The realm's warnings may have changed since onDeleteRealm fetched them (e.g. a CA
+        // policy was saved in another tab in the meantime), so these codes can still come back
+        // here even though the single upfront dialog already asked for confirmation once.
         if (!deleteCustomAttributes && error?.code === REALM_CUSTOM_ATTRIBUTES_ERROR_CODE) {
-          this._confirmDeleteRealmWarning(realmName, error.message, (confirmed) =>
-            this._deleteRealm(realmName, confirmed, confirmCaPolicies)
+          this._confirmDeleteRealmWarning(realmName, error.message, () =>
+            this._deleteRealm(realmName, true, confirmCaPolicies)
           );
           return;
         }
         if (!confirmCaPolicies && error?.code === REALM_CA_POLICY_REFERENCE_ERROR_CODE) {
-          this._confirmDeleteRealmWarning(realmName, error.message, (confirmed) =>
-            this._deleteRealm(realmName, deleteCustomAttributes, confirmed)
+          this._confirmDeleteRealmWarning(realmName, error.message, () =>
+            this._deleteRealm(realmName, deleteCustomAttributes, true)
           );
           return;
         }
@@ -640,7 +676,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     });
   }
 
-  private _confirmDeleteRealmWarning(realmName: string, message: string, onConfirm: (confirmed: boolean) => void): void {
+  private _confirmDeleteRealmWarning(realmName: string, message: string, onConfirm: () => void): void {
     this.dialogService
       .openDialog({
         component: RealmDeleteAttributesDialogComponent,
@@ -650,7 +686,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       .subscribe({
         next: (confirmed) => {
           if (!confirmed) return;
-          onConfirm(true);
+          onConfirm();
         }
       });
   }

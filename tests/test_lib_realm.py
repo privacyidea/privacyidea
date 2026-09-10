@@ -12,7 +12,7 @@ from privacyidea.lib.realm import (set_realm,
                                    get_default_realm,
                                    realm_is_defined,
                                    set_default_realm,
-                                   delete_realm, export_realms, import_realms)
+                                   delete_realm, export_realms, import_realms, get_realm_delete_warnings)
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver)
 from privacyidea.lib.token import init_token, unassign_token
@@ -291,6 +291,10 @@ class ResolverTestCase(MyTestCase):
             name="restricted_to_realm1", time_window_seconds=3600, counter_types_to_track=["MFA_FAIL"],
             stages=stages, target="user", priority=2,
             conditions=[{"condition_type": "USER_REALM", "operator": "IN", "value": [self.realm1]}])
+
+        warnings = get_realm_delete_warnings(self.realm1)
+        self.assertEqual(warnings["custom_attribute_keys"], [])
+        self.assertEqual(sorted(warnings["ca_policy_names"]), ["excludes_realm1", "restricted_to_realm1"])
 
         with self.assertRaises(UserError) as cm:
             delete_realm(self.realm1)
