@@ -250,6 +250,56 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertFalse(body["result"]["value"], body)
         self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
 
+    # --- what the audit log says about a rejection -----------------------------
+
+    def test_the_audit_entry_reads_as_the_failed_authentication_it_is(self):
+        # The audit log is where an admin sees the whole reason, so a rejection has to be findable there by the
+        # filters every other failed authentication answers to - "authentication" above all, whose value is normally
+        # read off the response the endpoint built, and a rejected request never reaches its endpoint.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        self._check({"user": "cornelius", "pass": "pin755224"})
+        entry = self.find_most_recent_audit_entry(action="*/validate/check")
+        self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
+        self.assertEqual(0, entry["success"], entry)
+        # Unlike the response, which says only what an admin configured, the entry names the reason - and both
+        # restrictions in force, not just the binding one.
+        self.assertEqual("Rejected: account is temporarily locked", entry["info"], entry)
+        self.assertEqual("cornelius", entry["user"], entry)
+        self.assertEqual(self.realm1, entry["realm"], entry)
+
+    def test_the_audit_entry_names_the_identity_the_gate_decided_on(self):
+        # A serial-only request carries no user parameter, so before_request logs nobody; the gate resolves the
+        # token owner to decide (see _conditional_access_identity) and the entry has to name the one it refused,
+        # or the rejection is unattributable.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"serial": self.serial, "pass": "pin755224"}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+        entry = self.find_most_recent_audit_entry(action="*/validate/check")
+        self.assertEqual("cornelius", entry["user"], entry)
+        self.assertEqual(self.realm1, entry["realm"], entry)
+        self.assertEqual(self.resolvername1, entry["resolver"], entry)
+
+    def test_the_audit_entry_of_a_request_refused_after_the_fact_says_so_too(self):
+        # The other half: this request was not turned away by the pre-check but by the restriction it wrote itself,
+        # and its endpoint had already logged the challenge it triggered as a success. The entry is corrected to
+        # say what the response says, keeping its own account of what it did alongside the reason.
+        create_conditional_access_policy(
+            name="ca_lock_on_trigger", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.CHALLENGE_TRIGGERED),
+            stages=[{"failure_threshold": 1,
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
+            target=ConditionalAccessTarget.USER, priority=1)
+        with self.app.test_request_context('/validate/triggerchallenge', method='POST',
+                                           data={"user": "cornelius", "realm": self.realm1},
+                                           headers={"Authorization": self.at}):
+            body = self.app.full_dispatch_request().json
+        self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
+        entry = self.find_most_recent_audit_entry(action="*/validate/triggerchallenge")
+        self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
+        self.assertEqual(0, entry["success"], entry)
+        self.assertEqual("triggered 1 challenges,Rejected: account is now locked", entry["info"], entry)
+
     def test_outcome_statistics_counts_the_lock_and_not_the_requests_it_turns_away(self):
         # End to end over the real engine: the second failure trips the stage and writes the LOCK_USER outcome, and
         # every request after it is turned away and logged as USER_LOCKED. Counting the event types would report five
@@ -1923,6 +1973,31 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # The login is still classified, so an admin can see why it failed even though the user cannot.
         entries = assert_authentication_log([AuthEventType.USER_LOCKED])
         assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user, endpoint='/auth')
+
+    def test_the_audit_entry_of_a_rejected_login_names_the_whole_identity(self):
+        # /auth resolves the user in its view, which a rejected login never reaches, so the gate is the only place
+        # that can record who was turned away - the resolver included, or the entry names a login rather than an
+        # identity.
+        self._lock_user()
+        self.assertEqual(401, self._auth("cornelius", "test").status_code)
+        entry = self.find_most_recent_audit_entry(action="*/auth")
+        self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
+        self.assertEqual(0, entry["success"], entry)
+        self.assertEqual("cornelius", entry["user"], entry)
+        self.assertEqual(self.user.realm, entry["realm"], entry)
+        self.assertEqual(self.user.resolver, entry["resolver"], entry)
+
+    def test_a_rejected_admin_login_is_recorded_as_an_admin(self):
+        # An admin is refused by a source-IP block (never by a user lock: a local database admin has no
+        # (resolver, uid, realm) identity to lock). /auth files an admin under "administrator" rather than under
+        # "user", so a rejected admin login has to be found by that same filter.
+        db.session.add(BlockList(ip=BLOCKED_IP, block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        self.assertEqual(401, self._auth("testadmin", "testpw", remote_addr=BLOCKED_IP).status_code)
+        entry = self.find_most_recent_audit_entry(action="*/auth")
+        self.assertEqual("testadmin", entry["administrator"], entry)
+        self.assertEqual("", entry["user"], entry)
+        self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
 
     def test_the_rejection_joins_the_transaction_it_refused(self):
         # A passkey or push login answers its challenge at /auth carrying the transaction, so a rejection there

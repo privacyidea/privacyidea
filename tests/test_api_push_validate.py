@@ -1918,6 +1918,16 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertListEqual([str(AuthEventType.USER_LOCKED)], [entry.event_type for entry in new_entries])
             # The challenge is still open (the answer did not consume it).
             self.assertTrue(get_challenges(transaction_id=transaction_id))
+            # The audit entry says the same. This endpoint is the one where the gate does not have the last word:
+            # the view logs success and the user off the request parameters as soon as the token class returns,
+            # and the smartphone's answer carries no user parameter at all - so the rejection is re-applied on the
+            # way out, or the refused answer would be audited as a success by nobody.
+            entry = self.find_most_recent_audit_entry(action="*/ttype/*")
+            self.assertEqual(0, entry["success"], entry)
+            self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
+            self.assertEqual("Rejected: account is temporarily locked", entry["info"], entry)
+            self.assertEqual(user.login, entry["user"], entry)
+            self.assertEqual(user.realm, entry["realm"], entry)
         finally:
             self._clear_ca()
             delete_challenges(serial=self.serial_push)
