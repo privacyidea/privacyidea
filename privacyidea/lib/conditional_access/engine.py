@@ -25,6 +25,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, TYPE_CHECKING
 
+from netaddr import AddrFormatError, IPAddress
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnElement
@@ -1013,12 +1014,52 @@ def _never_block_networks() -> "list[ipaddress._BaseNetwork]":
     return networks
 
 
+def canonical_block_identifier(identifier: str) -> str | None:
+    """
+    The spelling under which *identifier* is stored in
+    :class:`~privacyidea.models.conditional_access_policy.BlockList`, or ``None`` if it is not an IP address
+    at all.
+
+    The table is keyed by the identifier itself and the authentication pre-check looks a block up by primary
+    key, so a row filed under a second spelling of one address is a block that never matches. One IPv6
+    address has many spellings, and the two writers do not agree on one by themselves: the engine writes
+    whatever ``g.client_ip`` carries - ``request.remote_addr`` verbatim wherever no proxy override is
+    configured - while an administrator types the address by hand. Every path that names a row by its
+    identifier goes through here, so only one spelling is ever stored or looked up.
+
+    :func:`~privacyidea.lib.utils.get_client_ip_info` is the reference: the address it selects through a proxy
+    override is rendered by ``netaddr``, so that is the rendering the key takes. It also keeps the blocklist
+    and the authentication log naming one client the same way, and matches what the operating system puts in
+    ``REMOTE_ADDR``: ``netaddr`` keeps the ``::ffff:192.0.2.1`` notation of an IPv4-mapped address, where
+    ``ipaddress`` would render the same address ``::ffff:c000:201``.
+
+    ``None`` rather than the value unchanged, so a caller taking an address from an administrator can refuse
+    it (:func:`~privacyidea.lib.conditional_access.state.block_ip`) while one reading the table can fall back
+    to the raw value and stay able to find - and delete - a row some other path filed under it.
+    """
+    try:
+        return str(IPAddress(identifier))
+    except (AddrFormatError, ValueError):
+        return None
+
+
 def is_ip_never_block(source_ip: str | None) -> bool:
     """
     Return whether *source_ip* must never be blocked by the conditional-access
     engine: it is loopback (built-in) or matches the ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``
     allowlist from the server configuration. A falsy or unparsable IP is treated as never-block as
     well — fail safe: never block an address the engine cannot positively identify.
+
+    An IPv4-mapped address is checked in **both** forms, because a network of one family never contains an
+    address of the other: a dual-stack listener puts an IPv4 client in ``REMOTE_ADDR`` as
+    ``::ffff:192.0.2.1``, and comparing only that form matches neither the built-in ``127.0.0.0/8`` nor an
+    allowlisted IPv4 proxy or NAT range — the whole allowlist would be off for those deployments, which is
+    the one direction this guard must never fail in.
+
+    Only the mapped form is unwrapped, not the 6to4 or Teredo encodings ``ipaddress`` also recognizes: a
+    mapped address is how the operating system renders a real IPv4 peer, while a tunnel address is chosen by
+    the client, and unwrapping one would let a client encode an allowlisted address to make itself
+    unblockable.
     """
     if not source_ip:
         return True
@@ -1027,7 +1068,10 @@ def is_ip_never_block(source_ip: str | None) -> bool:
     except ValueError:
         log.warning(f"Could not parse source IP {source_ip!r}; treating it as never-block.")
         return True
-    return any(ip in network for network in _never_block_networks())
+    networks = _never_block_networks()
+    # ipv4_mapped exists on an IPv6Address only, and is None unless the address really carries an IPv4 one.
+    forms = [form for form in (ip, getattr(ip, "ipv4_mapped", None)) if form is not None]
+    return any(form in network for form in forms for network in networks)
 
 
 def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
@@ -1064,7 +1108,9 @@ def get_ip_block(source_ip: str | None, now: datetime | None = None, *,
     """
     if not source_ip:
         return None
-    state = get_ca_session().get(BlockList, source_ip)
+    # Canonicalized before the primary-key lookup, so the spelling g.client_ip happens to carry cannot miss
+    # a live row (see canonical_block_identifier); an identifier that is no address falls back to itself.
+    state = get_ca_session().get(BlockList, canonical_block_identifier(source_ip) or source_ip)
     if not state:
         return None
     # A block row exists, but the never-block allowlist is honored here too, so adding an IP to it immediately stops
@@ -1938,11 +1984,13 @@ def _upsert_ip_block(source_ip: str, *, block_expires_at: datetime | None, error
         log.info(f"Not blocking IP {source_ip!r}: it is on the conditional-access never-block list.")
         return False
     declined = False
+    # The key an administrator's block and the pre-check's lookup both use, so all three name one row.
+    identifier = canonical_block_identifier(source_ip) or source_ip
     with guarded_write(f"the IP block for {source_ip!r}") as write:
         session = get_ca_session()
-        state = session.get(BlockList, source_ip)
+        state = session.get(BlockList, identifier)
         if state is None:
-            state = BlockList(ip=source_ip)
+            state = BlockList(ip=identifier)
             session.add(state)
         elif state.block_expires_at == block_expires_at:
             log.info(f"Policy {policy_name!r} restates the block already in force for IP {source_ip!r}; the error "

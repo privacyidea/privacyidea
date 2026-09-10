@@ -24,6 +24,7 @@ from datetime import timedelta
 
 from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
 from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
+from privacyidea.lib.conditional_access.engine import is_ip_blocked
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.conditional_access.state import (
     block_ip,
@@ -160,6 +161,16 @@ class UserLockStateTestCase(MyTestCase):
         block_ip("2001:0DB8::0:1", duration_seconds=300)
         block_ip("2001:db8::1", duration_seconds=600)
         self.assertEqual(1, db.session.query(BlockList).count())
+
+    def test_block_ip_stores_an_ipv4_mapped_address_the_way_the_pre_check_sees_it(self):
+        # A dual-stack listener puts an IPv4 client in REMOTE_ADDR as ::ffff:192.0.2.1, and that is what
+        # g.client_ip carries into the pre-check. "Canonical" therefore has to mean netaddr's rendering,
+        # which keeps that notation - ipaddress would store ::ffff:c000:201, which the lookup never matches
+        # and which no admin recognizes in the blocklist next to the same client's authentication log.
+        entry = block_ip("::ffff:192.0.2.1", duration_seconds=300)
+        self.assertEqual("::ffff:192.0.2.1", entry["identifier"])
+        self.assertEqual("::ffff:192.0.2.1", db.session.query(BlockList).one().ip)
+        self.assertTrue(is_ip_blocked("::ffff:192.0.2.1"))
 
     # --- the lock cause --------------------------------------------------------
 
@@ -463,6 +474,20 @@ class UserLockStateTestCase(MyTestCase):
         self.assertIsNone(db.session.get(BlockList, "203.0.113.7"))
         # A second removal finds nothing.
         self.assertFalse(remove_blocklist_entry("203.0.113.7"))
+
+    def test_remove_blocklist_entry_accepts_another_spelling_of_the_address(self):
+        # Blocking accepts any spelling of an address, so unblocking has to as well - otherwise an admin
+        # who types the address the same way twice can create a block they cannot clear.
+        self._block("2001:db8::1", utc_now() + timedelta(seconds=600))
+        self.assertTrue(remove_blocklist_entry("2001:0DB8::0:1"))
+        self.assertEqual(0, db.session.query(BlockList).count())
+
+    def test_remove_blocklist_entry_keeps_taking_the_identifier_as_typed(self):
+        # An identifier that is not an IP address at all - a future entry type, or a row from a path that
+        # did not canonicalize - stays deletable by exactly the string it is stored under.
+        self._block("not-an-ip", None)
+        self.assertTrue(remove_blocklist_entry("not-an-ip"))
+        self.assertEqual(0, db.session.query(BlockList).count())
 
     def test_list_blocklist_include_expired_marks_stale(self):
         self._block("203.0.113.8", utc_now() - timedelta(seconds=60))

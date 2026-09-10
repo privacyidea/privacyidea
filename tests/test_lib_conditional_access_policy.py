@@ -36,7 +36,9 @@ from privacyidea.lib.conditional_access.policy import (
     _ACTIONS_BY_TARGET,
     _COUNT_MODES_BY_TARGET,
     _DEFAULT_COUNT_MODE_BY_TARGET,
+    MAX_COLUMN_INT,
     MAX_ERROR_MESSAGE_LENGTH,
+    MAX_PRIORITY,
     compose_default_error_message,
     create_conditional_access_policy,
     default_error_message,
@@ -206,6 +208,15 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                           target=usr, priority=2)
         self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"], [_stage()],
                           target=usr, priority=0)
+        # A value the Integer column cannot hold is a parameter error like every other bad one, not a driver
+        # error on the statement that carries it - which is what MySQL and PostgreSQL would answer, and which
+        # SQLite would hide by storing it. priority stops lower still, to leave the reorder its parking room.
+        self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"], [_stage()],
+                          target=usr, priority=MAX_PRIORITY + 1)
+        self.assertRaises(ParameterError, create_conditional_access_policy, "P", MAX_COLUMN_INT + 1, ["PIN_FAIL"],
+                          [_stage()], target=usr, priority=2)
+        self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"],
+                          [_stage(threshold=MAX_COLUMN_INT + 1)], target=usr, priority=2)
         # target
         self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"], [_stage()],
                           target="planet", priority=2)
@@ -240,6 +251,17 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                           [_stage(actions=[{"action_type": "LOCK_USER", "bogus": 1}])], target=usr, priority=2)
         # nothing invalid was persisted
         self.assertEqual(1, db.session.query(ConditionalAccessPolicy).count())
+
+    def test_02b_the_integer_bounds_are_inclusive(self):
+        # The rejections above name a limit; this is the limit itself being accepted, so the message cannot be off
+        # by one. MAX_PRIORITY leaves the reorder its parking room above, which the reorder test covers.
+        policy_id = create_conditional_access_policy("AtTheLimit", MAX_COLUMN_INT, ["PIN_FAIL"],
+                                                     [_stage(threshold=MAX_COLUMN_INT)],
+                                                     target=ConditionalAccessTarget.USER, priority=MAX_PRIORITY)
+        policy = get_conditional_access_policy(policy_id)
+        self.assertEqual(MAX_PRIORITY, policy["priority"])
+        self.assertEqual(MAX_COLUMN_INT, policy["time_window_seconds"])
+        self.assertEqual(MAX_COLUMN_INT, policy["stages"][0]["failure_threshold"])
 
     def test_02c_count_mode_per_attempt(self):
         # PER_ATTEMPT tracks the same AuthEventType vocabulary; only the counting unit differs.
@@ -1061,6 +1083,53 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         ids = self._numbered(1, 2, 3, 4, 5)
         reorder_conditional_access_policies(list(reversed(ids)))
         self.assertListEqual([("P5", 1), ("P4", 2), ("P3", 3), ("P2", 4), ("P1", 5)], self._order())
+
+    def _parked_values(self, order: list[int]) -> list[int]:
+        """
+        The values a reorder of *order* parks its rows on, captured at the flush that writes them - they are
+        transient by design, so this is the only place they can be observed.
+        """
+        from sqlalchemy import event
+
+        flushes = []
+
+        def capture(session, flush_context):
+            flushes.append(sorted(policy.priority for policy in session.dirty
+                                  if isinstance(policy, ConditionalAccessPolicy)))
+
+        event.listen(db.session, "after_flush", capture)
+        try:
+            reorder_conditional_access_policies(order)
+        finally:
+            event.remove(db.session, "after_flush", capture)
+        self.assertTrue(flushes, "no flush was observed")
+        # The first flush is the parking one; the second writes the final priorities.
+        return flushes[0]
+
+    def test_20a_reorder_parks_above_every_live_priority(self):
+        # A parked value has to be collision-free, which a negative one also is - and *inert*, which it is not:
+        # the flushes and the commit share one transaction so a parked value cannot survive, but if that ever
+        # stopped holding, a row parked below 1 would sort ahead of every real policy instead of behind them.
+        ids = self._numbered(10, 20, 30)
+        parked = self._parked_values(list(reversed(ids)))
+        # Above the highest live priority, so the parking cannot collide with an unlisted policy either. The
+        # property, not the arithmetic: how far above is test_20b's business, and pinning exact values here
+        # would only assert the ids this fixture happens to get.
+        self.assertEqual(len(ids), len(set(parked)))
+        self.assertTrue(all(value > 30 for value in parked), parked)
+        self.assertListEqual([("P30", 10), ("P20", 20), ("P10", 30)], self._order())
+
+    def test_20b_parking_values_are_disjoint_between_disjoint_reorders(self):
+        # Two admins rearranging unrelated policies do not conflict, which this function promises and which the
+        # parking has to keep: the value is built from the policy's own id, so the rows of one reorder park
+        # where no other reorder parks. An offset by position would put every reorder on the same values and
+        # serialize them on the unique priority index.
+        first, second, third, fourth = self._numbered(10, 20, 30, 40)
+        one = self._parked_values([second, first])
+        other = self._parked_values([fourth, third])
+        self.assertSetEqual(set(), set(one) & set(other))
+        # Both pairs swapped, and neither disturbed the other.
+        self.assertListEqual([("P20", 10), ("P10", 20), ("P40", 30), ("P30", 40)], self._order())
 
     def test_21_reorder_returns_nothing(self):
         # A write, not a read: the new order is observed through list_conditional_access_policies().

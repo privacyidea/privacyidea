@@ -618,11 +618,11 @@ def get_auth_token():
                        internal_admin=internal_admin,
                        reasons=auth_reasons, reason_detail=auth_reason_detail)
 
-    # Feed the classified outcome to the lockout engine here, in the view, because this endpoint *raises* its
-    # rejection: the error message, the error id and the details all go into the AuthError below, and the lock or block
-    # this login may have just written is read back for them. The staged row is flushed first, so the count includes
-    # this request's own event. Both halves are guarded and idempotent, so after_request and teardown find nothing
-    # left to do and this can never break the login response.
+    # Feed the classified outcome to the conditional-access engine here, in the view, because this endpoint
+    # *raises* its rejection: the error message, the error id and the details all go into the AuthError below, and
+    # the lock or block this login may have just written is read back for them. The staged row is flushed first,
+    # so the count includes this request's own event. Both halves are guarded and idempotent, so after_request
+    # and teardown find nothing left to do and this can never break the login response.
     context = get_ca_context()
     context.flush()
     evaluation = context.run_post_eval()
@@ -632,7 +632,9 @@ def get_auth_token():
         # the reason, a notification is appended to it (see compose_failure_message). Anything already in force
         # was refused by the pre-check before the credentials were ever checked, so there is nothing to read back.
         # With no wording at all the failure is the ordinary one, which is what keeps a locked account
-        # indistinguishable from a wrong password.
+        # indistinguishable from a wrong password in everything a human or a client reads: the status, the
+        # message and the detail. Not in the error *id*, deliberately - see the rejection branch below - and
+        # hide_specific_error_message closes even that.
         details = details or {}
         message = str(GENERIC_AUTH_FAILURE)
         error_id = Error.AUTHENTICATE_WRONG_CREDENTIALS

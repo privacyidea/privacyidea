@@ -250,8 +250,10 @@ class GuardedWriteTestCase(MyTestCase):
 
     def test_08_commits_once_the_request_session_released_its_lock(self):
         # Once the request session is committed (or rolled back) first, there is no competing write lock, so the
-        # conditional-access write goes through - which is why teardown releases db.session before flushing
-        # conditional-access writes.
+        # conditional-access write goes through. Nothing releases db.session on the request's behalf before the
+        # conditional-access flush - Flask-SQLAlchemy removes it on app-context teardown, which runs after the
+        # teardown_request that flushes these writes - so what keeps this the normal case is that the request's
+        # own code commits (MethodsMixin.save, and every flush site's flush-then-commit).
         db.session.add(self._entry("flushed-on-request-session"))
         db.session.flush()
         db.session.commit()
