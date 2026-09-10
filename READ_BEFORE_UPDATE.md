@@ -388,6 +388,16 @@
 
   Installations that do not use the User Agent condition are unaffected.
 
+* **HTTP API change** - `POST /container/<serial>/realms` now returns the status of each realm in a `realms`
+  sub-dictionary instead of putting the realm names next to the `deleted` flag. The response was
+  `{"realm1": true, "realm2": false, "deleted": true}` and is now
+  `{"realms": {"realm1": true, "realm2": false}, "deleted": true}`. The `deleted` entry keeps its place and its
+  meaning. The old shape reserved the key `deleted` in the same dictionary that carries the realm names, so a realm
+  that is actually named `deleted` had its status overwritten by the flag: attaching it was reported as a failure, and
+  detaching it was reported as the realm still being attached. Scripts and integrations that read
+  `result.value.<realm>` have to read `result.value.realms.<realm>` instead; the WebUI does not read the response and
+  is unaffected. `pi-token-janitor find ... set_realm` no longer omits a realm named `deleted` from what it reports.
+
 ## Update from 3.12 to 3.13
 
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the the
