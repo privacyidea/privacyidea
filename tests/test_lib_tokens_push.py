@@ -1885,7 +1885,7 @@ class PushTokenTestCase(MyTestCase):
         set_policy(f"push_{policy_suffix}_text", scope=SCOPE.AUTH,
                    action=f"{PushAction.MOBILE_TEXT}={self.TRIGGER_TEXT}")
         token = self._create_push_token()
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
         token.set_pin("pushpin")
         token.add_user(User("cornelius", self.realm1))
         return token
@@ -1961,7 +1961,7 @@ class PushTokenTestCase(MyTestCase):
         # to Firebase is the one that is stored - capped included.
         token = self._setup_notification_token("16c")
         serial = token.get_serial()
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, self.firebase_config_name)
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, self.firebase_config_name)
 
         with mock.patch("privacyidea.lib.tokens.pushtoken.create_sms_instance") as mock_gateway:
             mock_gateway.return_value.submit_message.return_value = True
@@ -2009,7 +2009,7 @@ class PushTokenTestCase(MyTestCase):
                    action=f"{PushAction.MOBILE_TEXT}={'A' * 700},"
                           f"{PushAction.MOBILE_TITLE}={'T' * 200}")
         token = self._create_push_token()
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
         token.set_pin("pushpin")
         token.add_user(User("cornelius", self.realm1))
         serial = token.get_serial()
@@ -2100,7 +2100,7 @@ class PushTokenTestCase(MyTestCase):
         set_policy("push_16i_text", scope=SCOPE.AUTH,
                    action=f"{PushAction.MOBILE_TEXT}={self.TRIGGER_TEXT}", client="10.1.2.3")
         token = self._create_push_token()
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
         token.set_pin("pushpin")
         token.add_user(User("cornelius", self.realm1))
         serial = token.get_serial()
@@ -2148,7 +2148,7 @@ class PushTokenTestCase(MyTestCase):
         set_policy("push_16k_text", scope=SCOPE.AUTH,
                    action=f"{PushAction.MOBILE_TEXT}=login from {{nope}}")
         token = self._create_push_token()
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
         token.set_pin("pushpin")
         token.add_user(User("cornelius", self.realm1))
         serial = token.get_serial()
