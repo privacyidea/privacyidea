@@ -822,20 +822,24 @@ def _count_scoping(policy: ConditionalAccessPolicy) -> "tuple[list | None, Calla
 def _effective_window_seconds(policy: ConditionalAccessPolicy, window_end: datetime) -> float:
     """
     The policy's ``time_window_seconds``, floored at :attr:`~privacyidea.models.conditional_access_policy.
-    ConditionalAccessPolicy.enforced_since` when set: a policy that just left dry-run must not be judged against
-    failures that accumulated during the trial, so its very first enforced look-back window is narrowed to
-    ``[enforced_since, window_end]`` instead of the full configured width. Returned as a float (not truncated to
-    whole seconds): right after the transition the true window is sub-second wide, and rounding it down to 0 would
-    exclude the very failures the transition is meant to start counting. Once the configured window has elapsed
-    since ``enforced_since`` this returns the configured width unchanged. ``enforced_since`` in the future (a naive
-    clock skew) is clamped to an empty window rather than a negative one.
+    ConditionalAccessPolicy.enforced_since` while the policy is enforced (``dry_run`` is ``False``): a policy that
+    just left dry-run must not be judged against failures that accumulated during the trial, so its very first
+    enforced look-back window is narrowed to ``[enforced_since, window_end]`` instead of the full configured width.
+    Returned as a float (not truncated to whole seconds): right after the transition the true window is sub-second
+    wide, and rounding it down to 0 would exclude the very failures the transition is meant to start counting. Once
+    the configured window has elapsed since ``enforced_since`` this returns the configured width unchanged.
+    ``enforced_since`` in the future (a naive clock skew) is clamped to an empty window rather than a negative one.
+
+    Ignored while ``dry_run`` is set: ``enforced_since`` only records the *last* time this policy left dry-run, so a
+    policy currently back in dry-run for a fresh trial must not have its window narrowed by an unrelated, possibly
+    long-past transition - the trial should observe the full configured window like any other dry run.
 
     :param policy: the policy whose window is computed
     :param window_end: the instant the window ends (already normalized to naive UTC by the caller)
     :return: the window width in seconds to hand to the counters
     """
     window_seconds = policy.time_window_seconds
-    if policy.enforced_since is not None:
+    if not policy.dry_run and policy.enforced_since is not None:
         elapsed = (window_end - policy.enforced_since).total_seconds()
         window_seconds = max(0.0, min(window_seconds, elapsed))
     return window_seconds

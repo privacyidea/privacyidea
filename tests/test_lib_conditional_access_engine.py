@@ -67,7 +67,7 @@ from privacyidea.lib.conditional_access.engine import (
 from privacyidea.lib.conditional_access.session import release_ca_connection
 from privacyidea.lib.conditional_access.state import lock_user
 from privacyidea.lib.conditional_access.policy import (StageDefinition, StageActionDefinition,
-                                                               _build_stages)
+                                                               _build_stages, update_conditional_access_policy)
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
@@ -1008,9 +1008,9 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertFalse(is_user_locked(self.user))  # still dry-run: no lock
 
-        policy.dry_run = False
-        policy.enforced_since = utc_now()
-        db.session.commit()
+        # Through the lib function, not the ORM directly: that is what actually sets enforced_since on the
+        # True -> False transition (see update_conditional_access_policy).
+        update_conditional_access_policy(policy.id, dry_run=False)
         # The engine reads policies on its own ca-session transaction (see session.get_ca_session); release it so
         # the next evaluate() call starts a fresh one and observes the update just committed above.
         release_ca_connection()

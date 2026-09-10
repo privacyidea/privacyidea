@@ -292,6 +292,13 @@ have done, then disable dry run once the threshold fits. Dry run can also be
 switched on and off from the command line, which defuses a policy that has
 locked everybody out without losing what it records.
 
+Turning dry run off starts a fresh count: failures that accumulated during the
+trial are not counted towards the threshold once the policy starts enforcing,
+so a policy that would have locked someone out several times over during the
+trial does not lock them out on the very next request just because it is now
+enforced. Only failures from the moment dry run was disabled count towards the
+threshold; disabling and re-enabling dry run resets this starting point again.
+
 .. _conditional_access_policies_cli:
 
 Managing policies on the command line
