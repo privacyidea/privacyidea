@@ -176,21 +176,6 @@ describe("RealmService", () => {
     req.flush({ result: 1 });
   });
 
-  it("getRealmDeleteWarnings sends GET to the delete-warnings endpoint", () => {
-    const realmName = "realm with space/ä";
-    let response: unknown;
-    realmService.getRealmDeleteWarnings(realmName).subscribe((res) => (response = res));
-
-    const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}/delete-warnings`);
-    expect(req.request.method).toBe("GET");
-
-    req.flush({ result: { value: { custom_attribute_keys: [], ca_policy_names: ["excludes_realmA"] } } });
-
-    expect(response).toEqual({
-      result: { value: { custom_attribute_keys: [], ca_policy_names: ["excludes_realmA"] } }
-    });
-  });
-
   it("deleteRealm propagates errors without notifying", () => {
     const realmName = "realmA";
     const errors: unknown[] = [];

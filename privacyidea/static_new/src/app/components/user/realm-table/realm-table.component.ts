@@ -560,37 +560,10 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   // --- Row Action Handlers ---
   onDeleteRealm(row: RealmRow): void {
     if (!row?.name) return;
-    const realmName = row.name;
-
-    this.realmService.getRealmDeleteWarnings(realmName).subscribe({
-      next: (res) => {
-        const warnings = res.result?.value;
-        const hasCustomAttributes = !!warnings?.custom_attribute_keys?.length;
-        const hasCaPolicies = !!warnings?.ca_policy_names?.length;
-
-        if (!hasCustomAttributes && !hasCaPolicies) {
-          this._confirmPlainDelete(realmName);
-          return;
-        }
-
-        const messages: string[] = [];
-        if (hasCustomAttributes) {
-          messages.push(
-            $localize`:@@realm.deleteWarningCustomAttributes:Realm "${realmName}:REALM:" contains custom user attributes (${warnings!.custom_attribute_keys.join(", ")}:KEYS:). Deleting the realm will also delete these custom user attributes.`
-          );
-        }
-        if (hasCaPolicies) {
-          messages.push(
-            $localize`:@@realm.deleteWarningCaPolicies:Realm "${realmName}:REALM:" is still referenced by conditional-access policies (${warnings!.ca_policy_names.join(", ")}:POLICIES:). Deleting the realm will leave those policies referencing a realm that no longer exists.`
-          );
-        }
-
-        this._confirmDeleteRealmWarning(realmName, messages.join(" "), () =>
-          this._deleteRealm(realmName, hasCustomAttributes, hasCaPolicies)
-        );
-      },
-      error: () => this._confirmPlainDelete(realmName)
-    });
+    // Custom user attributes and conditional-access policy references, if any, surface as a
+    // second confirmation from the DELETE call itself (see _deleteRealm's 908/909 handling) -
+    // no upfront pre-check needed, and the DELETE call is authoritative regardless.
+    this._confirmPlainDelete(row.name);
   }
 
   private _confirmPlainDelete(realmName: string): void {

@@ -50,8 +50,7 @@ from ..lib.realm import (set_default_realm,
                          get_default_realm,
                          set_realm,
                          get_realms,
-                         delete_realm,
-                         get_realm_delete_warnings)
+                         delete_realm)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import reduce_realms, is_true
 from privacyidea.lib.auth import ROLE
@@ -410,34 +409,6 @@ def get_default_realm_api():
                         "info": defRealm})
 
     return send_result(res)
-
-
-@realm_blueprint.route('/<realm>/delete-warnings', methods=['GET'])
-@log_with(log)
-@prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
-def get_realm_delete_warnings_api(realm=None):
-    """
-    Return, without deleting anything, what deleting this realm would require
-    confirmation for: its custom user attribute keys and the names of any
-    conditional-access policy still referencing it via a ``USER_REALM``
-    condition. A client uses this to show a single confirmation dialog naming
-    every consequence up front, instead of retrying the DELETE call and
-    reacting to one UserError at a time.
-
-    Requires admin authentication and the policy action :ref:`resolverdelete`.
-
-    :param realm: path component, the name of the realm that might be deleted.
-    :reqheader PI-Authorization: authentication token.
-    :status 200: ``result.value`` is
-        ``{"custom_attribute_keys": [...], "ca_policy_names": [...]}``, both
-        empty when there is nothing to warn about.
-    :status 404: no realm with the given name exists.
-    """
-    ret = get_realm_delete_warnings(realm)
-    g.audit_object.log({"success": True,
-                        "info": realm})
-
-    return send_result(ret)
 
 
 @realm_blueprint.route('/<realm>', methods=['DELETE'])

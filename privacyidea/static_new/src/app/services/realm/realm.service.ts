@@ -57,11 +57,6 @@ export interface RealmRow {
   resolversText: string;
 }
 
-export interface RealmDeleteWarnings {
-  custom_attribute_keys: string[];
-  ca_policy_names: string[];
-}
-
 export type RealmResolvers = RealmResolver[];
 
 export interface RealmResolver {
@@ -93,8 +88,6 @@ export interface RealmServiceInterface {
     deleteCustomAttributes?: boolean,
     confirmCaPolicies?: boolean
   ): Observable<PiResponse<number>>;
-
-  getRealmDeleteWarnings(realm: string): Observable<PiResponse<RealmDeleteWarnings>>;
 
   setDefaultRealm(realm: string): Observable<PiResponse<number>>;
 }
@@ -288,15 +281,6 @@ export class RealmService implements RealmServiceInterface {
     return this.http.delete<PiResponse<number>>(url, {
       headers: this.authService.getHeaders(),
       params
-    });
-  }
-
-  getRealmDeleteWarnings(realm: string): Observable<PiResponse<RealmDeleteWarnings>> {
-    const encodedRealm = encodeURIComponent(realm);
-    const url = `${environment.proxyUrl}/realm/${encodedRealm}/delete-warnings`;
-
-    return this.http.get<PiResponse<RealmDeleteWarnings>>(url, {
-      headers: this.authService.getHeaders()
     });
   }
 
