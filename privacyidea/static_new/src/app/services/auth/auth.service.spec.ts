@@ -25,8 +25,19 @@ import { AppComponent } from "@app/app.component";
 import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { VersioningService } from "@services/version/version.service";
-import { MockLocalService, MockNotificationService, MockRouter, MockVersioningService } from "@testing/mock-services";
+import {
+  MockLocalService,
+  MockNotificationService,
+  MockRouter,
+  MockSessionTimerService,
+  MockUiPreferencesService,
+  MockUserSettingsService,
+  MockVersioningService
+} from "@testing/mock-services";
 import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
 
 const b64url = (obj: object) => btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -59,7 +70,10 @@ describe("AuthService", () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: VersioningService, useClass: MockVersioningService },
         { provide: Router, useValue: routerMock },
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
+        { provide: SessionTimerService, useClass: MockSessionTimerService },
+        { provide: UiPreferencesService, useClass: MockUiPreferencesService }
       ]
     }).compileComponents();
 
@@ -264,7 +278,7 @@ describe("AuthService", () => {
     expect(authService.isAuthenticated()).toBe(false);
     expect(authService.authData()).toBeNull();
     expect(authService.jwtData()).toBeNull();
-    expect(mockLocal.removeData).toHaveBeenCalled();
+    expect(mockLocal.clearSession).toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
     await routerMock.navigate.mock.results[0].value;
   });
@@ -533,8 +547,7 @@ describe("AuthService", () => {
       mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ token: "t" }));
       restore();
       expect(authService.isAuthenticated()).toBe(false);
-      expect(mockLocal.removeData).toHaveBeenCalledWith(BEARER_TOKEN_STORAGE_KEY);
-      expect(mockLocal.removeData).toHaveBeenCalledWith(AUTH_DATA_STORAGE_KEY);
+      expect(mockLocal.clearSession).toHaveBeenCalled();
     });
 
     it("stays unauthenticated when no token is stored", () => {
@@ -546,6 +559,154 @@ describe("AuthService", () => {
       mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(3600));
       restore();
       expect(authService.isAuthenticated()).toBe(false);
+    });
+  });
+
+  describe("bootstrapSession", () => {
+    const makeJwt = (): string => {
+      const payload = {
+        username: "admin",
+        realm: "",
+        nonce: "",
+        role: "admin",
+        authtype: "",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        rights: []
+      };
+      return `h.${btoa(JSON.stringify(payload))}.s`;
+    };
+
+    it("restores the session the browser storage still holds", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt());
+      mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ menus: [] }));
+
+      authService.bootstrapSession();
+
+      expect(authService.isAuthenticated()).toBe(true);
+      expect(authService.username()).toBe("admin");
+    });
+
+    it("leaves the session closed when the storage holds none", () => {
+      authService.bootstrapSession();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+  });
+
+  describe("session persistence", () => {
+    const authResponse = (persistence?: string): AuthResponse => {
+      const payload: JwtData = {
+        username: "alice",
+        realm: "def",
+        nonce: "zz",
+        role: "admin",
+        authtype: "cookie",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        rights: []
+      };
+      return {
+        id: 0,
+        jsonrpc: "2.0",
+        signature: "",
+        time: Date.now(),
+        version: "1.0",
+        detail: {},
+        result: {
+          status: true,
+          value: {
+            menus: [],
+            realm: "def",
+            rights: [],
+            role: "admin",
+            token: ["hdr", b64url(payload), "sig"].join("."),
+            username: "alice",
+            ...(persistence === undefined ? {} : { session_persistence: persistence })
+          }
+        }
+      } as unknown as AuthResponse;
+    };
+
+    const login = (persistence?: string) => {
+      const sub = authService.authenticate({ username: "alice", password: "x" }).subscribe();
+      httpMock.expectOne((r) => r.method === "POST" && r.url.includes("/auth")).flush(authResponse(persistence));
+      sub.unsubscribe();
+    };
+
+    it("keeps the session where the policy in the response says, before writing it", () => {
+      login("browser");
+
+      expect(mockLocal.usePersistence).toHaveBeenCalledWith("browser");
+      const persistenceCall = (mockLocal.usePersistence as jest.Mock).mock.invocationCallOrder[0];
+      const tokenCall = (mockLocal.saveData as jest.Mock).mock.invocationCallOrder[0];
+      expect(persistenceCall).toBeLessThan(tokenCall);
+    });
+
+    it("falls back to the tab when the server sends no policy value", () => {
+      login();
+      expect(mockLocal.usePersistence).toHaveBeenCalledWith("tab");
+    });
+
+    it("falls back to the tab for a policy value it does not know", () => {
+      const warn = jest.spyOn(console, "warn").mockReturnValue();
+
+      login("permanent");
+
+      expect(mockLocal.usePersistence).toHaveBeenCalledWith("tab");
+      expect(warn).toHaveBeenCalled();
+    });
+
+    const leftoverTokenOf = (username: string, role = "admin"): string => {
+      const payload = {
+        username,
+        realm: "def",
+        nonce: "old",
+        role,
+        authtype: "cookie",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        rights: []
+      };
+      return ["hdr", b64url(payload), "sig"].join(".");
+    };
+
+    it("drops the leftover session of the principal that just logged in", () => {
+      mockLocal.inactiveSessionToken.mockReturnValue(leftoverTokenOf("alice"));
+
+      login("tab");
+
+      expect(mockLocal.clearInactiveSession).toHaveBeenCalled();
+    });
+
+    it("keeps a leftover session that belongs to somebody else", () => {
+      mockLocal.inactiveSessionToken.mockReturnValue(leftoverTokenOf("bob"));
+
+      login("tab");
+
+      expect(mockLocal.clearInactiveSession).not.toHaveBeenCalled();
+    });
+
+    it("keeps a leftover session of the same name in another role", () => {
+      mockLocal.inactiveSessionToken.mockReturnValue(leftoverTokenOf("alice", "user"));
+
+      login("tab");
+
+      expect(mockLocal.clearInactiveSession).not.toHaveBeenCalled();
+    });
+
+    it("clears the session from both storages on logout", () => {
+      login("browser");
+
+      authService.logout();
+
+      expect(mockLocal.clearSession).toHaveBeenCalled();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+
+    it("disarms the timers of the session it ends", () => {
+      const sessionTimer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
+      login("tab");
+
+      authService.logout();
+
+      expect(sessionTimer.stopTimers).toHaveBeenCalled();
     });
   });
 });

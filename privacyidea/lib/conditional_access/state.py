@@ -26,7 +26,6 @@ restriction by administrator decision and clearing single entries — shared by 
 REST API (``/conditionalaccess``) and the ``pi-manage conditionalaccess`` CLI, so
 both go through one implementation.
 """
-import ipaddress
 import logging
 from datetime import datetime, timedelta
 
@@ -34,7 +33,8 @@ from sqlalchemy import and_, delete, false, func, or_, select, ColumnElement
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole, RestrictionCause
 from privacyidea.lib.conditional_access.authentication_log import match_condition
-from privacyidea.lib.conditional_access.engine import LockSubject, get_user_lock, is_ip_never_block
+from privacyidea.lib.conditional_access.engine import (LockSubject, canonical_block_identifier, get_user_lock,
+                                                       is_ip_never_block)
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
@@ -484,7 +484,7 @@ def block_ip(ip: str, duration_seconds: int | None = None, now: datetime | None 
     block in the shape of :func:`_blocklist_dict`. The user-lock counterpart is :func:`lock_user`, and the same
     authoritative-write reasoning applies.
 
-    A never-block address (loopback, or one covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is **refused
+    A never-block address (loopback, or one covered by ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``) is **refused
     loudly**. The engine skips such an address silently, which is right for an automatic action - it must not
     break an authentication over an allowlisted proxy - but wrong here: an administrator who asks for a block
     and gets a silent no-op has no way to tell it apart from success.
@@ -495,17 +495,17 @@ def block_ip(ip: str, duration_seconds: int | None = None, now: datetime | None 
     :raises ParameterError: if the IP is unparsable or on the never-block list, or the duration is not a
         positive integer
     """
-    try:
-        # Store the canonical form: an IPv6 address has many spellings, while the engine looks blocks up by
-        # exact string against the request's client IP, which is already canonical. Keeping the typed spelling
-        # would file a block the pre-check never matches, and let a later engine block of the same address add
-        # a second row for it.
-        ip = str(ipaddress.ip_address(ip))
-    except ValueError:
+    # Stored the way the pre-check will look it up rather than the way it was typed: an IPv6 address has many
+    # spellings and the engine looks blocks up by primary key, so the typed spelling would file a block that
+    # never matches - and let a later engine block of the same address add a second row for it. This is also
+    # the validation: an identifier that is no IP address at all cannot be canonicalized.
+    canonical = canonical_block_identifier(ip)
+    if canonical is None:
         raise ParameterError(f"{ip!r} is not a valid IP address.")
+    ip = canonical
     if is_ip_never_block(ip):
-        raise ParameterError(f"{ip} is on the never-block list (loopback, or CONDITIONAL_ACCESS_NEVER_BLOCK) "
-                             f"and cannot be blocked.")
+        raise ParameterError(f"{ip} is on the never-block list (loopback, or "
+                             f"PI_CONDITIONAL_ACCESS_NEVER_BLOCK) and cannot be blocked.")
     moment = now if now is not None else utc_now()
     block_expires_at = _restriction_expiry(duration_seconds, moment)
     with guarded_write(f"the manual IP block for {ip}", reraise=True):
@@ -603,8 +603,14 @@ def remove_blocklist_entry(entry: str) -> bool:
     """
     Remove a single blocklist entry by its identifier (a source IP today).
     Returns ``True`` if a row was removed, ``False`` if there was no entry.
+
+    Both the canonical spelling of *entry* and *entry* as it was typed are removed: canonicalizing alone
+    would leave a row some other path filed under a different spelling undeletable, and it is the same
+    address either way (see
+    :func:`~privacyidea.lib.conditional_access.engine.canonical_block_identifier`).
     """
-    return _delete_and_commit(delete(BlockList).where(BlockList.ip == entry)) > 0
+    identifiers = {entry, canonical_block_identifier(entry) or entry}
+    return _delete_and_commit(delete(BlockList).where(BlockList.ip.in_(identifiers))) > 0
 
 
 @log_with(log)

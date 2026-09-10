@@ -644,7 +644,7 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
                                 container_serial=container_serial, action_detail="realms=realm2",
                                 info="attached=['realm1']; not added=['realm2']; not removed=['realm1']")
-        self.assertFalse(result["result"]["value"]["realm2"])
+        self.assertFalse(result["result"]["value"]["realms"]["realm2"])
         container = find_container_by_serial(container_serial)
         realms = [realm.name for realm in container.realms]
         self.assertSetEqual({self.realm1}, set(realms))
@@ -655,14 +655,14 @@ class APIContainerAuthorizationHelpdesk(APIContainerAuthorization):
         self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
                                 container_serial=container_serial, action_detail="realms=realm2,realm1",
                                 info="attached=['realm1']; not added=['realm2']")
-        self.assertFalse(result["result"]["value"]["realm2"])
-        self.assertTrue(result["result"]["value"]["realm1"])
+        self.assertFalse(result["result"]["value"]["realms"]["realm2"])
+        self.assertTrue(result["result"]["value"]["realms"]["realm1"])
 
         # container in realm1 and realm2, set realm1 (removes realm2 not allowed)
         add_container_realms(container_serial, ["realm1", "realm2"], allowed_realms=None)
         result = self.request_assert_success(f"/container/{container_serial}/realms", {"realms": "realm1"}, self.at)
         # The removal of realm2 is refused (audited as a failure); realm2 stays attached (True).
-        self.assertTrue(result["result"]["value"]["realm2"])
+        self.assertTrue(result["result"]["value"]["realms"]["realm2"])
         self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
                                 container_serial=container_serial, action_detail="realms=realm1",
                                 info="attached=['realm1', 'realm2']; not removed=['realm2']")

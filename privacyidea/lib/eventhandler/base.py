@@ -583,6 +583,33 @@ class BaseEventHandler:
         return serial, tokentype, tokendescription
 
     @staticmethod
+    def _format_with_tags(text, tags, fallback):
+        """
+        Replace the tags in the given text.
+
+        A text that can not be formatted must not fail the event handling. Besides
+        an unknown tag, this also happens for a positional field, an unbalanced
+        brace or an index into a tag that is not set. In this case the fallback is
+        returned.
+
+        :param text: The text containing the tags, without a time offset
+        :type text: str
+        :param tags: The tag dictionary, as returned by ``create_tag_dict()``
+        :type tags: dict
+        :param fallback: The text to return if the formatting fails. This is the
+            text as the administrator entered it, including a time offset that was
+            stripped from ``text``.
+        :type fallback: str
+        :return: The text with all tags replaced
+        :rtype: str
+        """
+        try:
+            return text.format(**tags)
+        except Exception as e:
+            log.warning(f"Could not format the text: {e!r}. Using the unformatted text.")
+            return fallback
+
+    @staticmethod
     def _get_container_owners(request):
         users = []
         user = User(login='', realm='')

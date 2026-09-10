@@ -35,7 +35,7 @@ from privacyidea.lib.tokenclass import ClientMode, ChallengeSession
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.push_types import PushDeclineReason
 from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POLL_ONLY,
-                                              DEFAULT_CHALLENGE_TEXT, PushMode)
+                                              DEFAULT_CHALLENGE_TEXT, PushMode, PushTokenClass)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from privacyidea.models import db, Challenge
@@ -2556,7 +2556,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         self._enroll_push_token()
         # Remove the firebase config so create_challenge does not persist a challenge
         # and returns transaction_id=None.
-        get_one_token(serial=self.serial_push).delete_tokeninfo(PushAction.FIREBASE_CONFIG)
+        get_one_token(serial=self.serial_push).remove_tokeninfo(PushAction.FIREBASE_CONFIG)
         # An unrelated, concurrent challenge for the same token that must survive.
         Challenge(self.serial_push, transaction_id="unrelated-tx", challenge="abc").save()
 
@@ -2625,16 +2625,16 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         delete_policy("push_config")
 
     def test_26_push_token_owner_fallbacks(self):
-        """The conditional-access owner lookup at /ttype/push falls back to an
-        empty user when the serial is missing or does not resolve to a token,
-        so the pre-check/post-eval never crash on an unknown serial."""
-        from privacyidea.api.ttype import _push_token_owner
+        """The conditional-access owner lookup for the push answer falls back to
+        an empty user when the serial is missing or does not resolve to a token,
+        so the pre-check never refuses an answer over identity resolution."""
+        resolve = PushTokenClass._resolve_token_owner
         with self.app.test_request_context():
             # Missing serial -> empty user, no DB lookup.
-            self.assertFalse(_push_token_owner(None))
-            self.assertFalse(_push_token_owner(""))
+            self.assertFalse(resolve(None))
+            self.assertFalse(resolve(""))
             # Unresolvable serial -> get_one_token raises -> empty user.
-            self.assertFalse(_push_token_owner("NO_SUCH_SERIAL_XYZ"))
+            self.assertFalse(resolve("NO_SUCH_SERIAL_XYZ"))
 
 
 class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):

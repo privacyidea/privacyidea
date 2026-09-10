@@ -416,7 +416,8 @@ def create_policy():
         aggregates across accounts and never does, so sending it as true with
         that target is a 400.
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.
-        Required and must be unique across policies (no default).
+        Required and must be unique across policies (no default), between 1 and
+        1000000.
     :jsonparam target: the identity the policy counts and acts on - ``user``
         (per-user brute force) or ``source_ip`` (password spraying). Required.
     :jsonparam conditions: list of conditions restricting which requests the
@@ -838,7 +839,7 @@ def add_blocklist_entry():
     Block a source IP by administrator decision, replacing whatever block is currently on record, and return
     the new entry. The IP counterpart of ``POST lock/user``.
 
-    A never-block address (loopback, or one covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is refused with a
+    A never-block address (loopback, or one covered by ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``) is refused with
     400 rather than silently skipped: the engine skips one so an automatic action cannot lock everyone out
     behind a shared proxy, but an admin asking for a block needs to be told it did not happen.
 

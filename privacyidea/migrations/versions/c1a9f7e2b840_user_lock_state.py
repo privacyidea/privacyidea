@@ -48,19 +48,36 @@ def _unicode_case_sensitive(length):
                                            "mysql", "mariadb")
 
 
-def _create_table(table_name, *columns):
-    try:
-        op.create_table(table_name, *columns)
-    except (OperationalError, ProgrammingError) as ex:
-        if "already exists" in str(ex.orig).lower():
-            print(f"Table '{table_name}' already exists.")
-        else:
-            print(f"Could not add table '{table_name}' to database.")
-            raise
+def _existing_tables() -> set[str]:
+    """
+    The names of the tables that already exist, lower-cased.
+
+    Reflected once per migration rather than once per table: on a normal run nothing exists yet, so this
+    single catalog read is all the guard below costs. Lower-cased because Oracle folds unquoted identifiers
+    to upper case and the inspector reflects them back lower-cased (mirrors models.db.sequence_exists).
+    """
+    return {name.lower() for name in sa.inspect(op.get_bind()).get_table_names()}
+
+
+def _create_table(existing_tables: set[str], table_name: str, *columns) -> None:
+    """
+    Create the table unless it is already there -- a schema bootstrapped from the models with create_all
+    before this migration ran carries it.
+
+    Presence is established by reflection rather than by swallowing an "already exists" error, which Oracle
+    never says: it reports an existing object as ORA-00955 ("name is already used by an existing object").
+    models.db.sequence_exists reflects for the same reason.
+    """
+    if table_name.lower() in existing_tables:
+        print(f"Table '{table_name}' already exists.")
+        return
+    op.create_table(table_name, *columns)
 
 
 def upgrade():
+    existing_tables = _existing_tables()
     _create_table(
+        existing_tables,
         'user_lock_state',
         sa.Column('resolver', _unicode_case_sensitive(120), nullable=False),
         sa.Column('uid', _unicode_case_sensitive(320), nullable=False),

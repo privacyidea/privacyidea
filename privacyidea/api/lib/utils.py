@@ -913,7 +913,7 @@ def hide_specific_error_message(request, response):
 
     This is the single implementation of the masking behaviour. It is applied
     once, centrally, from the shared after-request handler
-    (:func:`privacyidea.api.before_after.shape_validate_error_response`) for the
+    (:func:`privacyidea.api.before_after.mask_authentication_error_response`) for the
     ``/validate/check`` and ``/auth`` endpoints, so it has to handle every shape
     a failed-authentication response can take:
 

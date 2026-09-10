@@ -666,7 +666,7 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
     The visibility scope is an authorization boundary (which entries a principal may see). Each dimension matches by
     equality via a plain ``IN`` (which keeps the column index). The boundary columns (realm, resolver, username) are
     pinned to a **case-sensitive collation** at the schema level
-    (:func:`~privacyidea.models.authentication_log._case_sensitive_unicode`: ``utf8mb4_bin`` on MySQL/MariaDB; SQLite,
+    (:func:`~privacyidea.models.utils.case_sensitive_unicode`: ``utf8mb4_bin`` on MySQL/MariaDB; SQLite,
     PostgreSQL and Oracle compare case-sensitively by default), so the match is case-sensitive on every backend rather
     than depending on the server-default collation. This fails closed: an admin scoped to resolver ``res`` or user
     ``alice`` never sees a distinct ``Res`` / ``Alice``.

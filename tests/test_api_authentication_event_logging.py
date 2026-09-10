@@ -554,7 +554,7 @@ class _AuthLogContractTests(_ContractHost):
         set_policy("authlog_lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=1d")
         try:
             token = get_one_token(serial=self.serial)
-            token.add_tokeninfo(PolicyAction.LASTAUTH,
+            token.write_tokeninfo(PolicyAction.LASTAUTH,
                                 (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=2)).isoformat())
             self._assert_failed(self._authenticate(f"{self.pin}755224"))
         finally:

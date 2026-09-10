@@ -71,6 +71,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
+  REALM_CA_POLICY_REFERENCE_ERROR_CODE,
   REALM_CUSTOM_ATTRIBUTES_ERROR_CODE,
   RealmRow,
   Realms,
@@ -559,13 +560,19 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   // --- Row Action Handlers ---
   onDeleteRealm(row: RealmRow): void {
     if (!row?.name) return;
+    // Custom user attributes and conditional-access policy references, if any, surface as a
+    // second confirmation from the DELETE call itself (see _deleteRealm's 908/909 handling) -
+    // no upfront pre-check needed, and the DELETE call is authoritative regardless.
+    this._confirmPlainDelete(row.name);
+  }
 
+  private _confirmPlainDelete(realmName: string): void {
     this.dialogService
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
           title: $localize`:@@realm.deleteRealm:Delete Realm`,
-          items: [row.name],
+          items: [realmName],
           itemType: "realm",
           confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
@@ -574,7 +581,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       .subscribe({
         next: (result) => {
           if (!result) return;
-          this._deleteRealm(row.name);
+          this._deleteRealm(realmName);
         }
       });
   }
@@ -611,16 +618,27 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   }
 
   // --- Private Helpers ---
-  private _deleteRealm(realmName: string, deleteCustomAttributes = false): void {
-    this.realmService.deleteRealm(realmName, deleteCustomAttributes).subscribe({
+  private _deleteRealm(realmName: string, deleteCustomAttributes = false, confirmCaPolicies = false): void {
+    this.realmService.deleteRealm(realmName, deleteCustomAttributes, confirmCaPolicies).subscribe({
       next: () => {
         this._notificationService.success($localize`:@@realm.realmDeleted:Realm "${realmName}:REALM:" deleted.`);
         this.realmService.realmResource.reload?.();
       },
       error: (err: HttpErrorResponse) => {
         const error = err.error?.result?.error;
+        // The realm's warnings may have changed since onDeleteRealm fetched them (e.g. a CA
+        // policy was saved in another tab in the meantime), so these codes can still come back
+        // here even though the single upfront dialog already asked for confirmation once.
         if (!deleteCustomAttributes && error?.code === REALM_CUSTOM_ATTRIBUTES_ERROR_CODE) {
-          this._confirmDeleteCustomAttributes(realmName, error.message);
+          this._confirmDeleteRealmWarning(realmName, error.message, () =>
+            this._deleteRealm(realmName, true, confirmCaPolicies)
+          );
+          return;
+        }
+        if (!confirmCaPolicies && error?.code === REALM_CA_POLICY_REFERENCE_ERROR_CODE) {
+          this._confirmDeleteRealmWarning(realmName, error.message, () =>
+            this._deleteRealm(realmName, deleteCustomAttributes, true)
+          );
           return;
         }
         const message = error?.message || err.message;
@@ -631,7 +649,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     });
   }
 
-  private _confirmDeleteCustomAttributes(realmName: string, message: string): void {
+  private _confirmDeleteRealmWarning(realmName: string, message: string, onConfirm: () => void): void {
     this.dialogService
       .openDialog({
         component: RealmDeleteAttributesDialogComponent,
@@ -641,7 +659,7 @@ export class RealmTableComponent implements OnDestroy, OnInit {
       .subscribe({
         next: (confirmed) => {
           if (!confirmed) return;
-          this._deleteRealm(realmName, true);
+          onConfirm();
         }
       });
   }

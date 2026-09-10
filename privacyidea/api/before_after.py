@@ -559,14 +559,19 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
-    response = shape_validate_error_response(request, response)
+    response = mask_authentication_error_response(request, response)
 
     # Report what conditional access did to this request, if anything. Central rather than per endpoint for two
     # reasons: this also runs for a response an *error handler* built, where every post-policy is skipped, and no
-    # gated endpoint can forget to opt in. One lookup and it is done for every request. After the shaping above,
+    # gated endpoint can forget to opt in. One lookup and it is done for every request. After the masking above,
     # which is where hide_specific_error_message has its say, so a notification composes onto what survived it -
     # and before sign_response, which the decorator above applies to whatever this function returns.
     response = surface_conditional_access_message(response)
+
+    # Last of the three, because it drops the JSON body: conditional access has to have had its say on the verdict
+    # before the body carrying it is thrown away, or a request that authenticates *and* trips a restriction in one
+    # breath would be answered 204 while /validate/check answers the same request with a rejection.
+    response = shape_radius_response(request, response)
 
     # Strip version information before signing if the hide_version policy
     # is active and no user is logged in.
@@ -579,41 +584,56 @@ def after_request(response):
     return response
 
 
-def shape_validate_error_response(request, response):
+def _shaped_rule(request) -> str | None:
     """
-    Single source of truth for the two response-shaping policies of the
-    authentication endpoints. They must run on *every* response - normal returns
-    and the error responses built by the error handlers in this module alike -
-    but the ``@postpolicy`` chain of the view only runs when the view *returns*.
+    The route whose response is about to be shaped, or ``None`` when there is nothing to shape.
 
-    ``after_request`` is the single choke point every response flows through
-    (this is also how ``sign_response`` manages to sign error responses), so
-    both policies are applied here once instead of being duplicated as
-    ``@postpolicy`` decorators on the views and, for the error path, inline in
-    the error handlers:
+    Flask answers OPTIONS itself, without dispatching to the view, so such a request carries no authentication
+    outcome - only the Allow header, which must survive.
+    """
+    if request.method == "OPTIONS":
+        return None
+    return getattr(getattr(request, "url_rule", None), "rule", None)
 
-    * :func:`construct_radius_response` shapes ``/validate/radiuscheck`` into the
-      RADIUS empty-body ``204``/``400`` form.
-    * :func:`hide_specific_error_message` masks the specific failure reason on
-      ``/validate/check`` and ``/auth`` when the policy is active.
 
-    Both are no-ops for a successful authentication and only act on the route
-    they belong to, so unrelated endpoints (and ``/auth/rights``, ``/validate/*``
-    other than ``check``) are left untouched.
+def mask_authentication_error_response(request, response):
+    """
+    Apply :func:`hide_specific_error_message` to the two endpoints that authenticate a credential.
+
+    It must run on *every* response - normal returns and the error responses built by the error handlers in this
+    module alike - but the ``@postpolicy`` chain of the view only runs when the view *returns*. ``after_request``
+    is the single choke point every response flows through (this is also how ``sign_response`` manages to sign
+    error responses), so it is applied here once instead of being duplicated as a ``@postpolicy`` decorator on the
+    views and, for the error path, inline in the error handlers.
+
+    A no-op for a successful authentication and only on the routes it belongs to, so unrelated endpoints (and
+    ``/auth/rights``, ``/validate/*`` other than ``check``) are left untouched.
+
+    :param request: the request object
+    :param response: the response object
+    :return: the (possibly modified) response
+    """
+    if _shaped_rule(request) in ("/validate/check", "/auth"):
+        return hide_specific_error_message(request, response)
+    return response
+
+
+def shape_radius_response(request, response):
+    """
+    Apply :func:`construct_radius_response` to ``/validate/radiuscheck``, shaping it into the RADIUS empty-body
+    ``204``/``400`` form.
+
+    Applied from ``after_request`` for the same reason as :func:`mask_authentication_error_response` - so an error
+    response built by an error handler is shaped too - but **after**
+    :func:`~privacyidea.api.lib.conditional_access.surface_conditional_access_message`, because dropping the JSON
+    body also drops the verdict conditional access still has to correct.
 
     :param request: the request object
     :param response: the response object
     :return: the (possibly replaced) response
     """
-    # Flask answers OPTIONS itself, without dispatching to the view, so there is
-    # no authentication outcome to shape - only the Allow header, which must survive.
-    if request.method == "OPTIONS":
-        return response
-    rule = getattr(getattr(request, "url_rule", None), "rule", None)
-    if rule == "/validate/radiuscheck":
+    if _shaped_rule(request) == "/validate/radiuscheck":
         return construct_radius_response(request, response)
-    if rule in ("/validate/check", "/auth"):
-        return hide_specific_error_message(request, response)
     return response
 
 
@@ -657,7 +677,7 @@ def auth_error(error):
 
         # The specific message is written to the audit log here; masking the
         # client-facing response (hide_specific_error_message) is applied
-        # centrally in shape_validate_error_response (see after_request).
+        # centrally in mask_authentication_error_response (see after_request).
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
     return send_error(error.message, error_code=error.id, details=error.details), get_auth_error_status_code(error)

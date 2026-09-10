@@ -87,7 +87,7 @@ class PaperTokenTestCase(MyTestCase):
         # Set up the PaperTokenClass for testing
         papertoken = init_token(param={'serial': "PAPER12345678", 'type': 'paper'})
         papertoken.set_description("this is a paper token export test")
-        papertoken.add_tokeninfo("hashlib", "sha256")
+        papertoken.write_tokeninfo("hashlib", "sha256")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = papertoken.export_token()
