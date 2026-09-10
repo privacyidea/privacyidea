@@ -111,7 +111,7 @@ from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from privacyidea.lib import _, lazy_gettext
@@ -1308,10 +1308,15 @@ def reorder_conditional_access_policies(policy_ids: list[int], expected_prioriti
     # The values these policies hold, lowest first: reassigned in the requested order.
     priorities = sorted(policy.priority for policy in policies)
     with _unique_conflict_as_400():
-        # Parks every policy on a value that can't collide with a live one (ids unique, priorities >= 1), then
-        # assigns the new ones, since uniqueness is checked per statement; the flushes force that statement order.
-        for policy in policies:
-            policy.priority = -policy.id
+        # Parks every policy on a value no live row holds, then assigns the new ones, since uniqueness is checked
+        # per statement; the flushes force that statement order. Parking *above* every priority in the table
+        # rather than below zero: both are collision-free, but only one of them is harmless if it were ever to
+        # survive. The flushes and the commit share a transaction, so a parked value cannot be left behind - and
+        # if that ever stopped holding, a row parked at the top of the order is inert, where a negative one would
+        # sort first and quietly take precedence over every real policy.
+        park_base = db.session.scalar(select(func.max(ConditionalAccessPolicy.priority))) or 0
+        for offset, policy in enumerate(policies, start=1):
+            policy.priority = park_base + offset
         db.session.flush()
         for policy, priority in zip(policies, priorities):
             policy.priority = priority

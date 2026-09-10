@@ -1062,6 +1062,32 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         reorder_conditional_access_policies(list(reversed(ids)))
         self.assertListEqual([("P5", 1), ("P4", 2), ("P3", 3), ("P2", 4), ("P1", 5)], self._order())
 
+    def test_20a_reorder_parks_above_every_live_priority(self):
+        # The parking values are transient, so they are observed at the flush that writes them. They have to be
+        # collision-free, which a negative value also is - and *inert*, which it is not: the flushes and the
+        # commit share one transaction so a parked value cannot survive, but if that ever stopped holding, a row
+        # parked below 1 would sort ahead of every real policy instead of behind them.
+        from sqlalchemy import event
+
+        parked = []
+
+        def capture(session, flush_context):
+            parked.append(sorted(policy.priority for policy in session.dirty
+                                 if isinstance(policy, ConditionalAccessPolicy)))
+
+        ids = self._numbered(10, 20, 30)
+        event.listen(db.session, "after_flush", capture)
+        try:
+            reorder_conditional_access_policies(list(reversed(ids)))
+        finally:
+            event.remove(db.session, "after_flush", capture)
+
+        self.assertTrue(parked, "no flush was observed")
+        # The first flush is the parking one: every value it writes is above the highest live priority, so it
+        # cannot collide with an unlisted policy either.
+        self.assertListEqual([31, 32, 33], parked[0])
+        self.assertListEqual([("P30", 10), ("P20", 20), ("P10", 30)], self._order())
+
     def test_21_reorder_returns_nothing(self):
         # A write, not a read: the new order is observed through list_conditional_access_policies().
         first, second = self._numbered(1, 2)
