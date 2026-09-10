@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services";
@@ -24,10 +24,21 @@ import { WelcomeDialogServiceMock } from "@testing/mock-services/mock-welcome-di
 import { WelcomeDialogComponent } from "./welcome-dialog.component";
 
 describe("WelcomeDialogComponent", () => {
+  let fixture: ComponentFixture<WelcomeDialogComponent>;
   let component: WelcomeDialogComponent;
   let dialogRefMock: { close: jest.Mock };
   let welcomeDialogServiceMock: WelcomeDialogServiceMock;
   let authMock: MockAuthService;
+
+  const heading = (): string => fixture.nativeElement.querySelector(".pi-dialog-header").textContent.trim();
+  const buttons = (): HTMLElement[] => Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button"));
+  const buttonLabels = (): string[] => buttons().map((button) => button.textContent!.trim());
+  const clickButton = (label: string): void => {
+    const button = buttons().find((candidate) => candidate.textContent!.includes(label));
+    expect(button).toBeDefined();
+    button!.click();
+    fixture.detectChanges();
+  };
 
   beforeEach(() => {
     dialogRefMock = { close: jest.fn() };
@@ -42,7 +53,8 @@ describe("WelcomeDialogComponent", () => {
     });
 
     authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
-    component = TestBed.createComponent(WelcomeDialogComponent).componentInstance;
+    fixture = TestBed.createComponent(WelcomeDialogComponent);
+    component = fixture.componentInstance;
   });
 
   it("should start at step 0 by default", () => {
@@ -68,7 +80,6 @@ describe("WelcomeDialogComponent", () => {
   });
 
   it("should allow step 4 when subscriptionStatus is 1, then close on next", () => {
-    component = TestBed.createComponent(WelcomeDialogComponent).componentInstance;
     authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, subscription_status: 1 });
     component.nextWelcome(); // 1
     component.nextWelcome(); // 2
@@ -83,25 +94,54 @@ describe("WelcomeDialogComponent", () => {
   });
 
   it("renders the step heading and its buttons in the shared dialog wrapper", () => {
-    const fixture = TestBed.createComponent(WelcomeDialogComponent);
-    const heading = () => fixture.nativeElement.querySelector(".pi-dialog-header").textContent.trim();
-    const buttons = (): string[] =>
-      Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button")).map((button) =>
-        (button as HTMLElement).textContent!.trim()
-      );
     fixture.detectChanges();
 
     expect(heading()).toBe("Welcome");
-    expect(buttons()).toHaveLength(1);
-    expect(buttons()[0]).toContain("Next");
+    expect(buttonLabels()).toHaveLength(1);
+    expect(buttonLabels()[0]).toContain("Next");
 
-    fixture.componentInstance.step.set(3);
+    component.step.set(3);
     fixture.detectChanges();
 
     expect(heading()).toBe("Thank you for improving your security!");
-    expect(buttons()).toHaveLength(2);
-    expect(buttons()[0]).toContain("Read again");
-    expect(buttons()[1]).toContain("Dive In!");
+    expect(buttonLabels()).toHaveLength(2);
+    expect(buttonLabels()[0]).toContain("Read again");
+    expect(buttonLabels()[1]).toContain("Dive In!");
+  });
+
+  it("gives the open source and enterprise steps their own headings", () => {
+    component.step.set(1);
+    fixture.detectChanges();
+    expect(heading()).toBe("The value of open source");
+
+    component.step.set(2);
+    fixture.detectChanges();
+    expect(heading()).toBe("The added value of privacyIDEA Enterprise Edition");
+    expect(buttonLabels()).toHaveLength(1);
+    expect(buttonLabels()[0]).toContain("Next");
+  });
+
+  it("closes the subscription step with a single confirm button under the enterprise heading", () => {
+    component.step.set(4);
+    fixture.detectChanges();
+
+    expect(heading()).toBe("The added value of privacyIDEA Enterprise Edition");
+    expect(buttonLabels()).toHaveLength(1);
+    expect(buttonLabels()[0]).toContain("Okay");
+
+    clickButton("Okay");
+    expect(dialogRefMock.close).toHaveBeenCalled();
+  });
+
+  it("restarts on the read again action and advances on every other action", () => {
+    component.step.set(3);
+    fixture.detectChanges();
+
+    clickButton("Read again");
+    expect(component.step()).toBe(0);
+
+    clickButton("Next");
+    expect(component.step()).toBe(1);
   });
 
   it("resetWelcome should set step back to 0", () => {
