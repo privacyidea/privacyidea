@@ -38,6 +38,7 @@ The same can be done on the command line with :ref:`pi-manage <pimanage>`::
 
    pi-manage conditionalaccess list-locked-users
    pi-manage conditionalaccess unlock-user <login> --realm <realm>
+   pi-manage conditionalaccess unlock-user <login> --admin
    pi-manage conditionalaccess unlock-by-id --uid <uid> --realm <realm>
    pi-manage conditionalaccess clear-locks [--realm <realm>]
    pi-manage conditionalaccess purge-expired-locks
@@ -48,7 +49,10 @@ The same can be done on the command line with :ref:`pi-manage <pimanage>`::
    pi-manage conditionalaccess purge-expired-blocks
 
 ``unlock-user`` takes the login name as an argument and requires ``--realm``;
-add ``--resolver`` only if the login exists in more than one resolver.
+add ``--resolver`` only if the login exists in more than one resolver. For a
+**local administrator** pass ``--admin`` instead of ``--realm``: such an account
+lives in the ``admin`` table rather than in a realm, so its login name is the
+whole identity, see :ref:`conditional_access_local_admins`.
 ``unlock-by-id`` does the same for a user that no longer resolves to a login,
 taking the stored ``--uid`` and ``--realm`` instead, again with ``--resolver``
 only to disambiguate a uid shared between resolvers. The two
@@ -58,7 +62,9 @@ only to disambiguate a uid shared between resolvers. The two
 .. note:: If you lock yourself out of the WebUI with a source IP policy, use
    ``pi-manage conditionalaccess clear-blocks`` on the server, or add your
    address to ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, see
-   :ref:`conditional_access_never_block`.
+   :ref:`conditional_access_never_block`. If a *user* policy locked your local
+   administrator account, ``pi-manage conditionalaccess unlock-user <login>
+   --admin`` lifts it.
 
 Lifting a lock only undoes what a policy has already done - it will do it again
 on the next request. Switching the policy itself off, which is what a ``DENY``
@@ -78,6 +84,7 @@ a user's details page offers a **Lock** action and the *IP Blocklist* page a
 it (the default) or for a chosen duration. On the command line::
 
    pi-manage conditionalaccess lock-user <login> --realm <realm> [--duration <seconds>]
+   pi-manage conditionalaccess lock-user <login> --admin [--duration <seconds>]
    pi-manage conditionalaccess block-ip <ip> [--duration <seconds>]
 
 A manual restriction is written to the same place a policy writes to and is
@@ -95,6 +102,41 @@ which is the other way round from the engine, see
 
 Imposing a restriction has rights of its own, :ref:`policy_user_lock_set` and
 :ref:`policy_blocklist_set`, kept apart from the ``*_reset`` rights.
+
+A local administrator is locked by hand from the command line only, with
+``--admin`` in place of ``--realm``. There is no WebUI action for it: the
+**Lock** button lives on a user's details page, and a local administrator has
+none.
+
+
+.. _conditional_access_local_admins:
+
+Local administrators
+--------------------
+
+.. index:: local administrator, internal admin
+
+Local (internal) administrators - the accounts created with ``pi-manage admin
+add``, which authenticate at ``/auth`` and live in the ``admin`` table rather
+than in a realm - are locked by ``user`` policies like anybody else. They are
+identified differently, though, and it shows in a few places:
+
+* They have no realm, resolver or user id. Their login name **is** the identity,
+  and it is what both the failure count and the lock are keyed on, together with
+  the role the authentication log records them under (*admin-internal*).
+* On *Logs → Locked Users* such an entry carries an **internal admin** badge and
+  has no realm, resolver or link to a user page. It is lifted like any other,
+  individually or in bulk.
+* On the command line they are addressed with ``--admin`` instead of
+  ``--realm``, both to lock and to unlock.
+
+Since a lock applies to them like anyone else, a policy can lock out the account
+you would use to undo it. Two things guard against that: a timed lock lifts
+itself, and ``pi-manage conditionalaccess unlock-user <login> --admin`` lifts one
+from the server without needing to log in. To keep such an account out of a
+policy altogether, give the policy a ``USER_ROLE NOT IN [admin-internal]``
+condition - the same break-glass condition the templates use, see
+:ref:`conditional_access_policies_exceptions`.
 
 
 .. _conditional_access_never_block:

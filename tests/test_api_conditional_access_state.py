@@ -30,7 +30,10 @@ from werkzeug.test import TestResponse
 
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
-from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthLogUserRole,
+                                                                           RestrictionCause)
+from privacyidea.lib.conditional_access.state import lock_internal_admin
+from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.audit import Audit
@@ -265,6 +268,60 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertFalse(res.json["result"]["value"])
         self.assertEqual(0, UserLockState.query.count())
+
+    def test_reset_local_admin_by_login(self):
+        # A local database admin has no realm, resolver or uid - the login name is the whole identity and the key
+        # of their row - so the call names them by role instead, and needs no realm.
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            res = self._request("lock/user", method="DELETE",
+                                json_data={"user": "lockadmin",
+                                           "user_role": str(AuthLogUserRole.ADMIN_INTERNAL)})
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"])
+            self.assertEqual(0, UserLockState.query.count())
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_reset_local_admin_not_locked_returns_false(self):
+        res = self._request("lock/user", method="DELETE",
+                            json_data={"user": "lockadmin", "user_role": str(AuthLogUserRole.ADMIN_INTERNAL)})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertFalse(res.json["result"]["value"])
+
+    def test_reset_local_admin_refuses_a_user_id(self):
+        # There is no uid to disambiguate with, so a call carrying one is asking for something this form cannot do.
+        res = self._request("lock/user", method="DELETE",
+                            json_data={"user": "lockadmin", "user_id": "7",
+                                       "user_role": str(AuthLogUserRole.ADMIN_INTERNAL)})
+        self.assertEqual(400, res.status_code, res.json)
+
+    def test_reset_rejects_an_unknown_user_role(self):
+        # Read as "an ordinary user", an unknown role would look up a different principal from the one asked for.
+        res = self._request("lock/user", method="DELETE",
+                            json_data={"user": "cornelius", "realm": self.realm1, "user_role": "wizard"})
+        self.assertEqual(400, res.status_code, res.json)
+        # admin-external is not this form either: an admin-realm admin is a resolved user and is unlocked as one.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        res = self._request("lock/user", method="DELETE",
+                            json_data={"user": "cornelius", "realm": self.realm1,
+                                       "user_role": str(AuthLogUserRole.ADMIN_EXTERNAL)})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(1, UserLockState.query.count())
+
+    def test_locked_users_list_names_the_shape_of_each_row(self):
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            self._lock_user(utc_now() + timedelta(seconds=600))
+            res = self._request("lock/users")
+            self.assertEqual(200, res.status_code, res.json)
+            rows = {row["username"]: row["user_role"] for row in res.json["result"]["value"]["locked_users"]}
+            self.assertEqual({"lockadmin": str(AuthLogUserRole.ADMIN_INTERNAL),
+                              "cornelius": str(AuthLogUserRole.USER)}, rows)
+        finally:
+            delete_db_admin("lockadmin")
 
     # --- GET blocklist --------------------------------------------------------
 

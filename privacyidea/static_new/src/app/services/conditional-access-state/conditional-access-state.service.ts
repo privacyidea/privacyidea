@@ -22,6 +22,7 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { environment } from "@env/environment";
+import { ADMIN_INTERNAL_ROLE } from "@app/components/logs/user-roles";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -65,6 +66,10 @@ export interface LockedUserEntry {
   seconds_remaining: number | null;
   lock_cause: LockCause;
   locked_at: string;
+  // Which kind of principal this row locks ("user", or "admin-internal" for a local database admin). A local
+  // admin is keyed by login name alone, so their row carries an empty realm and resolver: this is what says
+  // those are the shape of the row rather than missing data.
+  user_role: string;
   // What this user is told when a request is turned away, as stored when the lock was written. A snapshot, so
   // it can differ from what the stage carries now; null when the stage configured none, which is the default.
   error_message: string | null;
@@ -80,6 +85,12 @@ export type ResetUserLockRequest =
       login: string;
       realm: string;
       resolver: string;
+    }
+  // A local database admin, who has neither realm nor resolver nor uid: the login name is the whole identity,
+  // and the role is what tells the server to look for one.
+  | {
+      login: string;
+      userRole: typeof ADMIN_INTERNAL_ROLE;
     };
 
 // What a manual lock needs: the user to lock, and how long for. duration_seconds omitted means a
@@ -288,9 +299,11 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
 
   resetUserLock(request: ResetUserLockRequest): Observable<boolean> {
     const payload =
-      "uid" in request
-        ? { user_id: request.uid, realm: request.realm, resolver: request.resolver }
-        : { user: request.login, realm: request.realm, resolver: request.resolver };
+      "userRole" in request
+        ? { user: request.login, user_role: request.userRole }
+        : "uid" in request
+          ? { user_id: request.uid, realm: request.realm, resolver: request.resolver }
+          : { user: request.login, realm: request.realm, resolver: request.resolver };
 
     return this.http
       .delete<PiResponse<boolean>>(this.conditionalAccessBaseUrl + "lock/user", {

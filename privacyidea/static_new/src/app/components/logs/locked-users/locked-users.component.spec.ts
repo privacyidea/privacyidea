@@ -45,6 +45,22 @@ import { provideHttpClient } from "@angular/common/http";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { LockedUserEntry } from "@services/conditional-access-state/conditional-access-state.service";
 
+// A local database admin: the login name is the whole identity, so the row carries no resolver, realm or uid
+// of its own and is unlocked by name and role instead.
+const adminEntry: LockedUserEntry = {
+  resolver: "",
+  uid: "superadmin",
+  realm: "",
+  username: "superadmin",
+  permanent: true,
+  lock_expires_at: null,
+  seconds_remaining: null,
+  user_role: "admin-internal",
+  lock_cause: "POLICY",
+  locked_at: "2026-01-01T09:00:00Z",
+  error_message: null
+};
+
 const mockEntry: LockedUserEntry = {
   resolver: "ldapResolver",
   uid: "uid001",
@@ -53,6 +69,7 @@ const mockEntry: LockedUserEntry = {
   permanent: false,
   lock_expires_at: "2026-01-01T10:00:00Z",
   seconds_remaining: 3600,
+  user_role: "user",
   lock_cause: "POLICY",
   locked_at: "2026-01-01T09:00:00Z",
   error_message: null
@@ -234,6 +251,29 @@ describe("LockedUsersComponent", () => {
     });
     expect(notificationService.success).toHaveBeenCalled();
     expect(casService.lockedUsersResource.reload).toHaveBeenCalled();
+  });
+
+  it("unlocks a local admin by login and role, who has no uid or realm to be named by", () => {
+    casService.setLockedUsers([adminEntry]);
+    component.selection.set([adminEntry]);
+    const dialogRef = new MockMatDialogRef<unknown, boolean>();
+    (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
+    (casService.resetUserLock as jest.Mock).mockReturnValue(of(true));
+
+    component.resetSelected();
+    dialogRef.close(true);
+
+    expect(casService.resetUserLock).toHaveBeenCalledWith({
+      login: adminEntry.username,
+      userRole: "admin-internal"
+    });
+  });
+
+  it("badges a local admin and leaves an ordinary user unmarked", () => {
+    expect(component.roleBadge(adminEntry)?.class).toBe("role-badge-admin-internal");
+    expect(component.roleBadge(mockEntry)).toBeNull();
+    expect(component.isLocalAdmin(adminEntry)).toBe(true);
+    expect(component.isLocalAdmin(mockEntry)).toBe(false);
   });
 
   it("does NOT reset when the dialog is cancelled", () => {

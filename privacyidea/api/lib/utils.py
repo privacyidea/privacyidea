@@ -295,36 +295,6 @@ def _determine_user_role(user: User | None, internal_admin: bool) -> AuthLogUser
     return AuthLogUserRole.USER
 
 
-def canonical_internal_admin_login(username: str | None) -> str | None:
-    """
-    The spelling the ``admin`` table holds for the local database admin *username*, which is the name their
-    authentication-log rows and their lock are keyed by.
-
-    The lookup that authenticates them (:func:`~privacyidea.lib.auth.verify_db_admin`) compares in the database's
-    own collation, so on a case-insensitive one - MySQL's default - ``Admin`` and ``admin`` are one account, while
-    the log and the lock state both match case-sensitively. Recording the stored spelling is what keeps those one
-    subject: without it a lock is walked around by varying the case, each spelling counting only its own failures.
-
-    Only the account's own spelling is kept, not the one that was typed. This is called for a name that matched an
-    account, where the account is the fact worth recording; an unknown login never reaches here. A name that no
-    longer matches one (deleted mid-request) is returned unchanged, and so is anything a lookup failure prevents
-    canonicalizing - recording the row matters more than recording it under the better name.
-
-    :param username: the login as it was typed
-    :return: the stored spelling, or *username* itself when there is no account to take one from
-    """
-    if not username:
-        return username
-    try:
-        # Deferred: lib.auth imports the models and the policy machinery, which this module is imported from.
-        from privacyidea.lib.auth import get_db_admin
-        admin = get_db_admin(username)
-    except Exception as ex:
-        log.debug(f"Could not canonicalize the local admin login {username!r}: {ex!r}")
-        return username
-    return admin.username if admin else username
-
-
 def request_endpoint() -> str | None:
     """
     The endpoint of the current request, as its path with a trailing slash removed (``/auth``,
@@ -504,8 +474,11 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
             log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
     if internal_admin:
         # The name the account is stored under, which is what makes every spelling of it one subject to count and
-        # one row to lock; see canonical_internal_admin_login.
-        username = canonical_internal_admin_login(username)
+        # one row to lock; see canonical_db_admin_login.
+        # Deferred: lib.auth reaches back into this module through lib.container, so importing it at
+        # module level would close a cycle.
+        from privacyidea.lib.auth import canonical_db_admin_login
+        username = canonical_db_admin_login(username)
     context = get_ca_context()
     # Falls back to this row's own transaction id when before_request has not already resolved the attempt;
     # before_request must resolve a challenge-answering request's attempt before the token logic deletes that challenge,
@@ -607,7 +580,10 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
             internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
     username = (user.login or None) if user else None
     if internal_admin:
-        username = canonical_internal_admin_login(username)
+        # Deferred: lib.auth reaches back into this module through lib.container, so importing it at
+        # module level would close a cycle.
+        from privacyidea.lib.auth import canonical_db_admin_login
+        username = canonical_db_admin_login(username)
     return CAContext(user=user or None, username=username, source_ip=source_ip, endpoint=endpoint,
                      user_role=str(_determine_user_role(user, bool(internal_admin))))
 

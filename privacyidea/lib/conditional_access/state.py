@@ -32,9 +32,9 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import and_, delete, false, func, or_, select, ColumnElement
 
-from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole, RestrictionCause
 from privacyidea.lib.conditional_access.authentication_log import match_condition
-from privacyidea.lib.conditional_access.engine import get_user_lock, is_ip_never_block
+from privacyidea.lib.conditional_access.engine import LockSubject, get_user_lock, is_ip_never_block
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
@@ -402,6 +402,79 @@ def lock_user(user: User, duration_seconds: int | None = None, now: datetime | N
     log.info(f"Locked {user!r} by administrator decision "
              f"({'permanently' if lock_expires_at is None else f'until {lock_expires_at}'}).")
     return _locked_user_dict(state, moment)
+
+
+@log_with(log)
+def lock_internal_admin(login: str, duration_seconds: int | None = None, now: datetime | None = None) -> dict:
+    """
+    Lock the local database admin *login* by administrator decision, and return the new lock in the shape of
+    :func:`_locked_user_dict`. The local-admin counterpart of :func:`lock_user`, with the same authoritative,
+    non-defensive write and the same permanent default; see there.
+
+    A local admin has no ``(resolver, uid, realm)`` to key a row on - only a login name - so the row is keyed as
+    :class:`~privacyidea.lib.conditional_access.engine.LockSubject` keys it, and under the spelling the ``admin``
+    table holds rather than the one that was typed: the authentication path counts and locks that name, so a lock
+    written under any other would never be met (see
+    :func:`~privacyidea.lib.auth.canonical_db_admin_login`).
+
+    Only an existing account can be locked. Locking a name that is not one would leave a row nothing ever reads,
+    which for a management call is a silent no-op rather than the refusal it should be - and unlike a userstore
+    user, whose realm may simply have gone away, there is exactly one place a local admin can be looked up.
+
+    :param login: the login name of the local database admin to lock
+    :param duration_seconds: how long the lock lasts, or ``None`` for a permanent lock
+    :param now: the reference time; defaults to :func:`utc_now`
+    :raises ParameterError: if no such local admin exists, or the duration is not a positive integer
+    """
+    # Deferred: lib.auth pulls in the token machinery, and importing it at module level would risk an
+    # import-order cycle during app startup.
+    from privacyidea.lib.auth import canonical_db_admin_login, db_admin_exists
+    if not (login and db_admin_exists(login)):
+        raise ParameterError(f"Cannot lock {login!r}: there is no local administrator of that name.")
+    subject = LockSubject.for_internal_admin(canonical_db_admin_login(login))
+    moment = now if now is not None else utc_now()
+    lock_expires_at = _restriction_expiry(duration_seconds, moment)
+    with guarded_write(f"the manual lock for {subject}", reraise=True):
+        session = get_ca_session()
+        state = session.get(UserLockState, subject.state_key)
+        if state is None:
+            state = UserLockState(resolver=subject.resolver, uid=subject.uid, realm=subject.realm,
+                                  user_role=str(AuthLogUserRole.ADMIN_INTERNAL))
+            session.add(state)
+        state.username = subject.username
+        state.lock_expires_at = lock_expires_at
+        state.lock_cause = RestrictionCause.MANUAL
+    log.info(f"Locked {subject} by administrator decision "
+             f"({'permanently' if lock_expires_at is None else f'until {lock_expires_at}'}).")
+    return _locked_user_dict(state, moment)
+
+
+@log_with(log)
+def unlock_internal_admin(login: str, visibility_scopes: list | None = None) -> bool:
+    """
+    Delete the lock of the local database admin *login*. Returns ``True`` if a row was removed, ``False`` if there
+    was no lock.
+
+    Keyed exactly, not by username like :func:`unlock_user_by_username`: a local admin's login *is* the key, so
+    there is only ever the one row and no realm or resolver to disambiguate it with. The spelling is canonicalized
+    for the same reason it is when locking - so the name an operator types reaches the row the engine wrote - but
+    an account that no longer exists is not an error here: a lock outliving its admin is exactly a row worth being
+    able to remove.
+
+    ``visibility_scopes`` restricts the delete to the caller's authorization boundary as elsewhere. A local admin's
+    row carries no realm or resolver, so a realm- or resolver-scoped administrator matches none of it and cannot
+    lift such a lock - which is the intended answer: the account is outside their boundary.
+    """
+    # Deferred for the same reason as in lock_internal_admin.
+    from privacyidea.lib.auth import canonical_db_admin_login
+    subject = LockSubject.for_internal_admin(canonical_db_admin_login(login))
+    if subject is None:
+        return False
+    conditions = [UserLockState.resolver == subject.resolver, UserLockState.uid == subject.uid,
+                  UserLockState.realm == subject.realm]
+    if visibility_scopes is not None:
+        conditions.append(_visibility_condition(visibility_scopes))
+    return _delete_and_commit(delete(UserLockState).where(*conditions)) > 0
 
 
 @log_with(log)

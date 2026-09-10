@@ -36,7 +36,8 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.authentication_log import get_authentication_log_visibility_scopes
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, to_list_param
-from privacyidea.lib.conditional_access.authentication_event_types import TRACKABLE_EVENT_TYPES
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthLogUserRole,
+                                                                           TRACKABLE_EVENT_TYPES)
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction
 from privacyidea.lib.conditional_access.policy import (list_conditional_access_policies,
                                                                get_conditional_access_policy,
@@ -53,7 +54,8 @@ from privacyidea.lib.conditional_access.policy_template import list_conditional_
 from privacyidea.lib.conditional_access.state import (list_locked_users_paginate, DEFAULT_PAGE_SIZE,
                                                               user_matches_scopes, get_user_lock_dict,
                                                               purge_expired_user_locks, unlock_user_by_id,
-                                                              unlock_user_by_username, lock_user, block_ip,
+                                                              unlock_user_by_username, unlock_internal_admin,
+                                                              lock_user, block_ip,
                                                               list_blocklist, purge_expired_blocklist,
                                                               remove_blocklist_entry)
 from privacyidea.lib.error import ParameterError, PolicyError
@@ -113,6 +115,25 @@ def _int_param(value, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _unlocks_internal_admin(params: dict) -> bool:
+    """
+    Whether this call names a local database admin rather than a user, i.e. carries ``user_role=admin-internal``.
+
+    Only the two roles a lock row can hold are accepted (see
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`); anything else is a
+    caller mistake and is refused rather than quietly read as "an ordinary user", which would look up a different
+    principal from the one that was asked for. ``admin-external`` is not one of them: an admin-realm admin *is* a
+    resolved user and is unlocked as one.
+    """
+    user_role = get_optional(params, "user_role")
+    if user_role is None or user_role == str(AuthLogUserRole.USER):
+        return False
+    if user_role == str(AuthLogUserRole.ADMIN_INTERNAL):
+        return True
+    raise ParameterError(f"Unknown user_role '{user_role}'. Valid values: "
+                         f"{AuthLogUserRole.USER}, {AuthLogUserRole.ADMIN_INTERNAL}.")
 
 
 def _int_policy_id(policy_id) -> int:
@@ -728,6 +749,12 @@ def reset_user_lock():
     required and ``resolver`` is optional — it only narrows the match.
     Omitting it clears every matching lock in the realm.
 
+    A **local database admin** is unlocked by passing ``user`` together with ``user_role=admin-internal``. They
+    have no realm, resolver or uid - the login name is the whole identity and the key of their row - so ``realm``
+    is not required in that form and ``user_id`` is not accepted. Locking one by hand has no counterpart here on
+    purpose: there is nowhere in the WebUI to do it from, and ``pi-manage conditionalaccess lock-user --admin``
+    is the way.
+
     Requires the admin policy action :ref:`policy_user_lock_reset`. Constrained to
     the admin's policy visibility scope (the realm / resolver / user conditions on the
     ``user_lock_reset`` policies), mirroring the read endpoints. The boundary is part
@@ -737,20 +764,31 @@ def reset_user_lock():
 
     One user identifier is required: user or user_id
 
-    :jsonparam user: login of the user to unlock.
-    :jsonparam realm: realm of the user (required)
+    :jsonparam user: login of the user (or local admin) to unlock.
+    :jsonparam realm: realm of the user (required, except for a local admin)
     :jsonparam resolver: resolver of the user (optional; only disambiguates)
     :jsonparam user_id: resolver-local user id
+    :jsonparam user_role: ``admin-internal`` to unlock the local database admin named by ``user``; omitted or
+        ``user`` for an ordinary user
     :status 200: ``true`` if a lock was removed, ``false`` if none existed or it is
         outside the admin's visibility scope
+    :status 400: invalid or missing parameter
     """
     params = request.all_data
     get_required_one_of(params, ["user", "user_id"])
     user_id = get_optional(params, "user_id")
     login = get_optional(params, "user")
+    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_RESET)
+    if _unlocks_internal_admin(params):
+        if user_id is not None:
+            raise ParameterError("A local administrator is identified by 'user' alone; 'user_id' does not apply.")
+        removed = unlock_internal_admin(login, visibility_scopes=visibility_scopes)
+        scope_note = "" if visibility_scopes is None else ", within visibility scope"
+        g.audit_object.log({"success": removed, "user": login, "realm": "", "resolver": "",
+                            "info": f"reset lock (local admin {login}{scope_note})"})
+        return send_result(removed)
     realm = get_required(params, "realm")
     resolver = get_optional(params, "resolver")
-    visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_RESET)
     resolver_suffix = f", resolver={resolver}" if resolver else ""
     # `is not None`, not truthiness: a resolver-local uid of 0 is a valid identifier, not "none given".
     # unlock_user_by_id compares directly against the stored (string) column, so a JSON integer is cast.

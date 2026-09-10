@@ -51,6 +51,7 @@ const lockStatus = (): LockedUserEntry => ({
   permanent: false,
   lock_expires_at: "2030-01-01T10:00:00Z",
   seconds_remaining: 120,
+  user_role: "user",
   lock_cause: "POLICY",
   locked_at: "2030-01-01T09:58:00Z",
   error_message: null

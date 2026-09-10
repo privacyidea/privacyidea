@@ -35,9 +35,12 @@ from privacyidea.lib.conditional_access.state import (
     purge_expired_blocklist,
     purge_expired_user_locks,
     remove_blocklist_entry,
+    lock_internal_admin,
+    unlock_internal_admin,
     unlock_user_by_id,
     user_matches_scopes, unlock_user_by_username,
 )
+from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
@@ -109,6 +112,73 @@ class UserLockStateTestCase(MyTestCase):
         lock = lock_user(self.user, duration_seconds=600)
         self.assertFalse(lock["permanent"])
         self.assertAlmostEqual(600, lock["seconds_remaining"], delta=5)
+
+    # --- the local-admin form: keyed by login name, since that is all there is -------------------------------
+
+    def test_lock_internal_admin_writes_the_admin_shape(self):
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock = lock_internal_admin("lockadmin", duration_seconds=600)
+            self.assertFalse(lock["permanent"])
+            self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), lock["user_role"])
+            row = db.session.query(UserLockState).one()
+            # The login name is the key; there is no resolver or realm to put in one.
+            self.assertEqual(("", "lockadmin", ""), (row.resolver, row.uid, row.realm))
+            self.assertEqual("lockadmin", row.username)
+            self.assertEqual(RestrictionCause.MANUAL, row.lock_cause)
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_lock_internal_admin_keys_on_the_stored_spelling(self):
+        # The authentication path counts and locks the name the admin table holds, so a lock written under any
+        # other spelling would never be met. Only reachable where the admin lookup is case-insensitive, which
+        # SQLite's is not - so this asserts the canonicalization directly rather than through a lookup.
+        create_db_admin("CaseAdmin", password="secret")
+        try:
+            lock_internal_admin("CaseAdmin")
+            self.assertEqual("CaseAdmin", db.session.query(UserLockState).one().uid)
+        finally:
+            delete_db_admin("CaseAdmin")
+
+    def test_lock_internal_admin_refuses_a_name_that_is_not_one(self):
+        # A row nothing ever reads is a silent no-op, and a local admin can only come from the one table.
+        self.assertRaises(ParameterError, lock_internal_admin, "no-such-admin")
+        self.assertRaises(ParameterError, lock_internal_admin, "")
+        self.assertEqual(0, db.session.query(UserLockState).count())
+
+    def test_unlock_internal_admin_removes_the_lock(self):
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            self.assertTrue(unlock_internal_admin("lockadmin"))
+            self.assertEqual(0, db.session.query(UserLockState).count())
+            # Nothing left to remove reads as False rather than as an error.
+            self.assertFalse(unlock_internal_admin("lockadmin"))
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_unlock_internal_admin_outlives_the_account(self):
+        # A lock outliving the admin it was written for is exactly the row an operator needs to be able to clear.
+        create_db_admin("goneadmin", password="secret")
+        lock_internal_admin("goneadmin")
+        delete_db_admin("goneadmin")
+        self.assertTrue(unlock_internal_admin("goneadmin"))
+        self.assertEqual(0, db.session.query(UserLockState).count())
+
+    def test_unlock_internal_admin_is_refused_to_a_realm_scoped_admin(self):
+        # A local admin's row carries no realm or resolver, so a boundary drawn in those terms does not contain
+        # it - and the scoped administrator is told the same "no lock" a missing row would give them.
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            scopes = [AuthenticationLogVisibilityScope(realms=[self.realm1], resolvers=[], usernames=[])]
+            self.assertFalse(unlock_internal_admin("lockadmin", visibility_scopes=scopes))
+            self.assertEqual(1, db.session.query(UserLockState).count())
+            # A boundary drawn by name does contain it.
+            by_name = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["lockadmin"])]
+            self.assertTrue(unlock_internal_admin("lockadmin", visibility_scopes=by_name))
+        finally:
+            delete_db_admin("lockadmin")
 
     def test_lock_user_rejects_a_non_positive_duration(self):
         for duration in (0, -1, True, "600"):

@@ -55,6 +55,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { ADMIN_INTERNAL_ROLE, UserRoleBadge, userRoleBadge } from "../user-roles";
 import { from } from "rxjs";
 import { concatMap, reduce } from "rxjs/operators";
 
@@ -161,6 +162,17 @@ export class LockedUsersComponent {
 
   displayLogin(row: LockedUserEntry): string {
     return row.username || row.uid;
+  }
+
+  // The badge for a row that locks something other than an ordinary user, from the same table the authentication
+  // log reads (see user-roles.ts); null for a user, who is the default and would wear one on nearly every row.
+  roleBadge(row: LockedUserEntry): UserRoleBadge | null {
+    return userRoleBadge(row.user_role);
+  }
+
+  // Whether this row locks a local database admin, who has no user page to link to and is unlocked by login name.
+  isLocalAdmin(row: LockedUserEntry): boolean {
+    return row.user_role === ADMIN_INTERNAL_ROLE;
   }
 
   // Pre-seeds the authentication-log filter with this user's identity - username, or uid for username-less rows, scoped
@@ -302,7 +314,12 @@ export class LockedUsersComponent {
         from(rows)
           .pipe(
             concatMap((row) =>
-              this.casService.resetUserLock({ uid: row.uid, realm: row.realm, resolver: row.resolver })
+              // A local admin is named by login and role: their row has no uid, realm or resolver to send.
+              this.casService.resetUserLock(
+                this.isLocalAdmin(row)
+                  ? { login: row.username, userRole: ADMIN_INTERNAL_ROLE }
+                  : { uid: row.uid, realm: row.realm, resolver: row.resolver }
+              )
             ),
             reduce((count, success) => count + (success ? 1 : 0), 0)
           )
