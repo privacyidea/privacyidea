@@ -459,7 +459,7 @@ class LibPolicyTestCase(MyTestCase):
 
         token = get_tokens(serial=serial)[0]
         # Set a very old last_auth
-        token.add_tokeninfo(PolicyAction.LASTAUTH,
+        token.write_tokeninfo(PolicyAction.LASTAUTH,
                             datetime.datetime.utcnow() - datetime.timedelta(days=2))
         rv = auth_lastauth(fake_auth, user, pin, options)
         self.assertEqual(rv[0], False)

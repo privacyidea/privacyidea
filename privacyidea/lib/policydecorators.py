@@ -505,7 +505,7 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
             if res:
                 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
                 last_auth = datetime.datetime.now(tzlocal())
-                token.add_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
+                token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
 
     return res, reply_dict
 

@@ -22,8 +22,8 @@ class DeprecatedTokenTestCase(MyTestCase):
         db_token.save()
         token = DeprecatedTokenClass(db_token)
         if original is not None:
-            token.add_tokeninfo("original_tokentype", original)
-        token.add_tokeninfo("deprecated_in", "3.14")
+            token.write_tokeninfo("original_tokentype", original)
+        token.write_tokeninfo("deprecated_in", "3.14")
         return token
 
     def test_01_class_identity(self):

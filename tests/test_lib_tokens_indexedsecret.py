@@ -142,7 +142,7 @@ class IndexedSecretTokenTestCase(MyTestCase):
         token = init_token(
             param={'serial': self.serial1, 'type': 'indexedsecret', 'otpkey': self.otpkey, "otplen": '8'})
         token.set_description("this is a indexedsecret token export test")
-        token.add_tokeninfo("hashlib", "sha256")
+        token.write_tokeninfo("hashlib", "sha256")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = token.export_token()

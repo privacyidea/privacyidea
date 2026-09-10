@@ -24,6 +24,7 @@ import { provideRouter, Router } from "@angular/router";
 
 import { MockNotificationService, MockSessionTimerService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 import { AppComponent } from "./app.component";
 import { appConfig } from "./app.config";
 import { routes } from "./app.routes";
@@ -31,6 +32,7 @@ import { AuthGuard } from "./guards/auth.guard";
 import { AuthService } from "./services/auth/auth.service";
 import { NotificationService } from "./services/notification/notification.service";
 import { SessionTimerService } from "./services/session-timer/session-timer.service";
+import { UserSettingsService } from "./services/user-settings/user-settings.service";
 
 describe("AppComponent", () => {
   beforeEach(async () => {
@@ -47,7 +49,8 @@ describe("AppComponent", () => {
           useValue: { canActivate: () => true, canActivateChild: () => true, canMatch: () => true }
         },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: SessionTimerService, useClass: MockSessionTimerService }
+        { provide: SessionTimerService, useClass: MockSessionTimerService },
+        { provide: UserSettingsService, useClass: MockUserSettingsService }
       ]
     }).compileComponents();
 
