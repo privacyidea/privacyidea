@@ -1,17 +1,18 @@
 # BoneNI <bounkirdni@gmail.com>, 2026.
+# Bone NI <bounkirdni@gmail.com>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2026-04-26 16:10+0000\n"
-"Last-Translator: BoneNI <bounkirdni@gmail.com>\n"
+"PO-Revision-Date: 2026-09-11 10:51+0000\n"
+"Last-Translator: Bone NI <bounkirdni@gmail.com>\n"
 "Language-Team: Lao <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/lo/>\n"
 "Language: lo\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.17.1-dev\n"
+"X-Generator: Weblate 2026.10.dev0\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
@@ -88,28 +89,26 @@ msgstr ""
 "<li>ການຊ່ວຍເຫຼືອ ແລະ\n"
 "                        <a target=\"netknights\" href=\"https://"
 "netknights.it/en/leistungen/service-level-agreements/\">\n"
-"                            ຂໍ້ຕົກລົງລະດັບການບໍລິການ ໂດຍ NetKnights</a>, "
-"ປະເທດເຢຍລະມັນ.\n"
+"                            ຂໍ້ຕົກລົງລະດັບບໍລິການ (SLA) ໂດຍ NetKnights</a>, ປະເທດເຢຍ"
+"ລະມັນ.\n"
 "                    </li>\n"
-"                    <li>ແພັກເກດວິສາຫະກິດທີ່ໝັ້ນຄົງສຳລັບ Ubuntu ແລະ RHEL "
-"ຊ່ວຍໃຫ້ການອັບເດດງ່າຍ ແລະ\n"
-"                        ການດຳເນີນງານທີ່ປອດໄພ.\n"
+"                    <li>ແພັກເກດລະດັບອົງກອນທີ່ໝັ້ນຄົງສຳລັບ Ubuntu ແລະ RHEL ຊ່ວຍໃຫ້ການອັບເດ"
+"ດງ່າຍ ແລະ ການດຳເນີນງານທີ່ປອດໄພ.\n"
 "                    </li>\n"
-"                    <li><b>Appliance</b>-Tool ສະເພາະ, ເຊິ່ງຊ່ວຍໃຫ້ການຕັ້ງຄ່າ\n"
-"                        RADIUS clients, MySQL replications,\n"
-"                        ສຳຮອງຂໍ້ມູນ ແລະ ກູ້ຄືນໄດ້ງ່າຍ...\n"
+"                    <li>ເຄື່ອງມື <b>Appliance</b> ສຸດພິເສດ, ເຊິ່ງຊ່ວຍໃຫ້ການຕັ້ງຄ່າ "
+"RADIUS ໄຄເອັນໄດ້ງ່າຍຂຶ້ນ, ການຈຳລອງ MySQL,\n"
+"                        ການສຳຮອງ ແລະ ການກູ້ຄືນຂໍ້ມູນ...\n"
 "                    </li>\n"
-"                    <li>ຂ່າວສານ ແລະ ລາຍງານຂໍ້ຜິດພາດທີ່ທັນເວລາສະເພາະ.</li>\n"
-"                    <li>ຂຶ້ນຢູ່ກັບລະດັບການຊ່ວຍເຫຼືອ ທ່ານຈະໄດ້ຮັບການຊ່ວຍເຫຼືອດ້ານການອັບເດດ ແລະ "
-"ການໃຫ້ຄຳປຶກສາລາຍປີ.</li>\n"
+"                    <li>ຂ່າວສານທັນດ່ວນ ແລະ ລາຍງານຂໍ້ຜິດພາດແບບພິເສດ.</li>\n"
+"                    <li>ຂຶ້ນກັບລະດັບການຊ່ວຍເຫຼືອ ທ່ານຈະໄດ້ຮັບການຊ່ວຍເຫຼືອໃນການອັບເດດ ແລະ ກາ"
+"ນໃຫ້ຄຳປຶກສາລາຍປີ.</li>\n"
 "                    <li>ໂດຍການຊື້\n"
 "                        <a target=\"netknights\" href=\"https://"
 "netknights.it/en/produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
-"                        ທ່ານຮັບປະກັນວ່າ ນັກພັດທະນາມືອາຊີບສາມາດເຮັດວຽກເຕັມເວລາ\n"
-"                        ໃນ privacyIDEA, ເພີ່ມຄຸນສົມບັດໃໝ່ໆ ແລະ "
-"ແກ້ໄຂຂໍ້ຜິດພາດໄດ້ຢ່າງທັນເວລາ. ນອກຈາກນີ້, ທ່ານຍັງສະໜັບສະໜູນ\n"
-"                        ການບໍລິການພາຍນອກ\n"
-"                        ເຊັ່ນ ການກວດສອບໂຄດ (code audits).\n"
+"                        ທ່ານຈະຮັບປະກັນວ່ານັກພັດທະນາມືອາຊີບສາມາດເຮັດວຽກເຕັມເວລາ\n"
+"                        ກັບ privacyIDEA, ເພີ່ມຄຸນສົມບັດໃໝ່ ແລະ ແກ້ໄຂຂໍ້ຜິດພາດໄດ້ທັນເວລາ. ນ"
+"ອກຈາກນັ້ນ, ທ່ານຍັງອະນຸຍາດໃຫ້ມີການບໍລິການພາຍນອກ\n"
+"                        ເຊັ່ນການກວດສອບໂຄ້ດ (code audits).\n"
 "                    </li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:45
@@ -218,18 +217,17 @@ msgid ""
 "                    paid programming of new features.\n"
 "                </p>"
 msgstr ""
-"<p>ກ່ອນອື່ນໝົດ, ພວກເຮົາຢາກໃຫ້ຂໍ້ມູນພື້ນຖານ\n"
-"                    ກ່ຽວກັບ privacyIDEA.</p>\n"
-"                <p>privacyIDEA ເປັນລະບົບ <b>ລະດັບວິສາຫະກິດ (Enterprise Level)</"
-"b>\n"
-"                    Multi Factor Authentication. ມັນເປັນໂອເພນຊອດ.\n"
+"<p>ທຳອິດ, ພວກເຮົາຂໍໃຫ້ຂໍ້ມູນເບື້ອງຕົ້ນ\n"
+"                    ກ່ຽວກັບ privacyIDEA ແກ່ທ່ານ.</p>\n"
+"                <p>privacyIDEA ແມ່ນລະບົບການຢືນຢັນຕົວຕົນຫຼາຍປັດໄຈ <b>ລະດັບອົງກອນ</b>.\n"
+"                    ມັນເປັນໂອເພນຊອດ (open source).\n"
 "                    ນັກພັດທະນາຫຼັກເຮັດວຽກຢູ່ NetKnights GmbH, ປະເທດເຢຍລະມັນ.\n"
-"                    NetKnights ສະໜອງ\n"
+"                    NetKnights ໃຫ້ບໍລິການ\n"
 "                    <a target=\"netknights\" href=\"https://netknights.it/en/"
 "produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
-"                    ລວມເຖິງ <b>ການຊ່ວຍເຫຼືອ ແລະ ຂໍ້ຕົກລົງລະດັບການບໍລິການ</b>.\n"
+"                    ລວມເຖິງ <b>ການຊ່ວຍເຫຼືອ ແລະ ຂໍ້ຕົກລົງລະດັບບໍລິການ (SLA)</b>.\n"
 "                    ຍິ່ງໄປກວ່ານັ້ນ, NetKnights ຍັງສະໜອງການບໍລິການ, ການໃຫ້ຄຳປຶກສາ ແລະ\n"
-"                    ການຈ້າງພັດທະນາຄຸນສົມບັດໃໝ່ໆ.\n"
+"                    ການຮັບຈ້າງຂຽນໂປຣແກຣມສຳລັບຄຸນສົມບັດໃໝ່.\n"
 "                </p>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:131
@@ -273,7 +271,7 @@ msgstr "ຊື່ທີ່ເປັນເອກະລັກສຳລັບແມ
 #: privacyidea/static/components/config/views/config.token.yubikey.html:21
 #: privacyidea/static/components/config/views/config.token.yubikey.html:44
 msgid "API Key"
-msgstr "API Key"
+msgstr "ຄີ API"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:16
 msgid "API client ID"
@@ -582,7 +580,7 @@ msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ."
 
 #: privacyidea/static/components/token/views/token.details.html:527
 msgid "Authentication succeeded with a different passkey:"
-msgstr ""
+msgstr "ການຢືນຢັນຕົວຕົນສຳເລັດດ້ວຍ passkey ອື່ນ:"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:46
 msgid "Authentications"
@@ -624,7 +622,7 @@ msgstr "Base DN ຂອງກຸ່ມຜູ້ໃຊ້"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:20
 msgid "Base URL"
-msgstr "Base URL"
+msgstr "URL ຫຼັກ"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:13
 msgid "Basic Settings"
@@ -663,7 +661,7 @@ msgstr "ໃບຢັ້ງຢືນ CA"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:28
 msgid "CA Connector"
-msgstr "CA Connector"
+msgstr "ຕົວເຊື່ອມຕໍ່ CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:5
 msgid "CA Connector name"
@@ -671,7 +669,7 @@ msgstr "ຊື່ CA Connector"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:44
 msgid "CA Key"
-msgstr "CA Key"
+msgstr "ຄີ CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:82
 msgid "CA certificate (filename)"
@@ -683,7 +681,7 @@ msgstr "ທາງເລືອກສະເພາະ CA"
 
 #: privacyidea/static/components/config/views/config.system.html:195
 msgid "CAs"
-msgstr "CAs"
+msgstr "CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:121
 msgid "CRL Configuration"
@@ -733,8 +731,8 @@ msgid ""
 "Certificate Signing\n"
 "                Request Directory"
 msgstr ""
-"ໄດເລກະທໍຣີການຮ້ອງຂໍ\n"
-"                ເຊັນໃບຢັ້ງຢືນ (CSR)"
+"ໄດເຣັກທໍຣີຄຳຂໍ\n"
+"                ເຊັນໃບຢັ້ງຢືນ"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:56
 msgid "Certificate Signing Request (PEM)"
@@ -808,7 +806,7 @@ msgid ""
 msgstr ""
 "ຄລິກ <a href=\"{{ enrolledToken.googleurl.value }}\">ທີ່ນີ້</a> ຫຼື ສະແກນ\n"
 "            ລະຫັດ QR, ຖ້າທ່ານ\n"
-"            ຕ້ອງການເພີ່ມໂທເຄັນໃສ່ແອັບ authenticator ໃນສະມາດໂຟນຂອງທ່ານ."
+"            ຕ້ອງການເພີ່ມໂທເຄັນໃສ່ແອັບຢືນຢັນຕົວຕົນໃນສະມາດໂຟນຂອງທ່ານ."
 
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:21
 msgid ""
@@ -818,7 +816,7 @@ msgid ""
 msgstr ""
 "ຄລິກ <a href=\"{{ enrolledToken.motpurl.value }}\">ທີ່ນີ້</a> ຫຼື ສະແກນ\n"
 "            ລະຫັດ QR, ຖ້າທ່ານ\n"
-"            ຕ້ອງການເພີ່ມໂທເຄັນໃສ່ແອັບ mOTP ຂອງທ່ານ ເຊັ່ນ Token2."
+"            ຕ້ອງການເພີ່ມໂທເຄັນໃສ່ແອັບ mOTP ຂອງທ່ານເຊັ່ນ Token2."
 
 #: privacyidea/static/components/token/views/token.enrolled.tiqr.html:20
 msgid ""
@@ -849,7 +847,7 @@ msgstr "ບໍ່ຮອງຮັບການຕັ້ງຄ່າ Client."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:279
 msgid "Client Credential"
-msgstr "Client Credential"
+msgstr "ຂໍ້ມູນປະຈຳຕົວຂອງໄຄເອັນ"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:271
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
@@ -873,7 +871,7 @@ msgstr "ກະແຈສ່ວນຕົວ Client (ຊື່ໄຟລ໌)"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Clients"
-msgstr "Clients"
+msgstr "ໄຄເອັນ"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:47
 msgid "Close"
@@ -1014,7 +1012,7 @@ msgstr "ລາຍລະອຽດຄອນເທນເນີສຳລັບ {{ co
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:96
 msgid "Container Realms"
-msgstr "Container Realms"
+msgstr "ຂອບເຂດຄອນເທນເນີ"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:92
 msgid ""
@@ -1022,13 +1020,13 @@ msgid ""
 "                <pi-filter ng-model=\"filter.realm\" ng-change=\"get()\" ng-"
 "keypress=\"($event.which==13)?get():return\"></pi-filter>"
 msgstr ""
-"Container Realms\n"
+"ຂອບເຂດຄອນເທນເນີ\n"
 "                <pi-filter ng-model=\"filter.realm\" ng-change=\"get()\" ng-"
 "keypress=\"($event.which==13)?get():return\"></pi-filter>"
 
 #: privacyidea/static/components/audit/views/audit.log.html:82
 msgid "Container Serial"
-msgstr "Container Serial"
+msgstr "ຊີຣຽວຂອງຄອນເທນເນີ"
 
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:19
 msgid "Container Templates"
@@ -1051,7 +1049,7 @@ msgstr "ຄອນເທນເນີທີ່ຖືກສ້າງດ້ວຍແ
 
 #: privacyidea/static/components/user/views/user.details.html:321
 msgid "Containers for user {{ username }}"
-msgstr ""
+msgstr "ຄອນເທນເນີສຳລັບຜູ້ໃຊ້ {{ username }}"
 
 #: privacyidea/static/components/token/controllers/tokenChallengesController.js:56
 msgid "Could not delete expired challenges."
@@ -1069,7 +1067,7 @@ msgstr "ນັບ"
 #: privacyidea/static/components/token/views/token.details.html:128
 #: privacyidea/static/components/token/views/token.getserial.html:52
 msgid "Count Window"
-msgstr "Count Window"
+msgstr "ຊ່ວງການນັບ"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:166
 msgid ""
@@ -1263,24 +1261,24 @@ msgstr "ຄ່າເລີ່ມຕົ້ນ"
 #: privacyidea/static/components/config/views/config.token.hotp.html:13
 #: privacyidea/static/components/config/views/config.token.totp.html:40
 msgid "Default Hashlib"
-msgstr "Default Hashlib"
+msgstr "Hashlib ເລີ່ມຕົ້ນ"
 
 #: privacyidea/static/components/config/views/config.token.remote.html:17
 msgid "Default Remote Server"
-msgstr "Default Remote Server"
+msgstr "ເຊີບເວີທາງໄກເລີ່ມຕົ້ນ"
 
 #: privacyidea/static/components/config/views/config.token.totp.html:31
 msgid "Default Time Shift"
-msgstr "Default Time Shift"
+msgstr "ການເລື່ອນເວລາເລີ່ມຕົ້ນ"
 
 #: privacyidea/static/components/config/views/config.token.daypassword.html:13
 #: privacyidea/static/components/config/views/config.token.totp.html:14
 msgid "Default Time Step"
-msgstr "Default Time Step"
+msgstr "ຂັ້ນເວລາເລີ່ມຕົ້ນ"
 
 #: privacyidea/static/components/config/views/config.token.totp.html:22
 msgid "Default Time Window"
-msgstr "Default Time Window"
+msgstr "ຊ່ວງເວລາເລີ່ມຕົ້ນ"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:75
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:26
@@ -1504,7 +1502,7 @@ msgstr "ທ່ານຕ້ອງການລຶບ service ID ນີ້ແທ້
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
-msgstr "Domain CA"
+msgstr "CA ຂອງໂດເມນ"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:163
 msgid "Don't send on signing error"
@@ -1848,12 +1846,12 @@ msgstr "ຄຸນລັກສະນະເພີ່ມເຕີມ"
 
 #: privacyidea/static/components/token/views/token.details.html:99
 msgid "Fail counter"
-msgstr "Fail counter"
+msgstr "ຕົວນັບການລົ້ມເຫຼວ"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:445
 #: privacyidea/static/components/user/views/user.details.html:151
 msgid "Failcounter"
-msgstr "Failcounter"
+msgstr "ຕົວນັບການລົ້ມເຫຼວ"
 
 #: privacyidea/static/components/user/controllers/userControllers.js:288
 msgid "Failed to delete user."
@@ -1873,9 +1871,8 @@ msgid "Failed to set PIN."
 msgstr "ຕັ້ງ PIN ຜິດພາດ."
 
 #: privacyidea/static/components/user/controllers/userControllers.js:101
-#, fuzzy
 msgid "Failed to set password."
-msgstr "ຕັ້ງລະຫັດຜ່ານໃໝ່ຜິດພາດ."
+msgstr "ຕັ້ງລະຫັດຜ່ານບໍ່ສຳເລັດ."
 
 #: privacyidea/static/components/user/controllers/userControllers.js:269
 msgid "Failed to update user."
@@ -2080,11 +2077,11 @@ msgstr "ຮາດແວ"
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:62
 #: privacyidea/static/components/token/views/token.enroll.totp.html:71
 msgid "Hash algorithm"
-msgstr "Hash algorithm"
+msgstr "ອັນກໍຣິທຶມແຮຊ"
 
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:130
 msgid "Headers"
-msgstr "Headers"
+msgstr "ສ່ວນຫົວ (Headers)"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:179
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:47
@@ -2450,7 +2447,7 @@ msgstr "ມັນຈະສົ່ງຂໍ້ມູນການລົງທະບ
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:7
 msgid "Key"
-msgstr "Key"
+msgstr "ຄີ"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:164
 msgid "Keyfile Path"
@@ -2643,7 +2640,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:87
 #: privacyidea/static/components/user/views/user.details.html:152
 msgid "Maxfail"
-msgstr "Maxfail"
+msgstr "ລົ້ມເຫຼວສູງສຸດ"
 
 #: privacyidea/static/components/token/views/token.details.html:231
 msgid "Maximum Authentication Count"
@@ -2827,6 +2824,8 @@ msgid ""
 "Number of days a new CRL should be generated before the\n"
 "                    current CRL expires."
 msgstr ""
+"ຈຳນວນມື້ທີ່ຄວນສ້າງ CRL ໃໝ່ກ່ອນທີ່\n"
+"                    CRL ປັດຈຸບັນຈະໝົດອາຍຸ."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:149
 msgid "Number of days the generated CRL should be valid."
@@ -2883,6 +2882,8 @@ msgid ""
 "OTP length of\n"
 "                newly enrolled tokens"
 msgstr ""
+"ຄວາມຍາວ OTP ຂອງ\n"
+"                ໂທເຄັນທີ່ລົງທະບຽນໃໝ່"
 
 #: privacyidea/static/components/config/views/config.token.email.html:19
 #: privacyidea/static/components/config/views/config.token.sms.html:24
@@ -2902,6 +2903,8 @@ msgid ""
 "Obviously you have no realms defined. Do you want me to create a\n"
 "          default realm for you from the machines /etc/passwd?"
 msgstr ""
+"ເບິ່ງຄືວ່າທ່ານຍັງບໍ່ໄດ້ກຳນົດຂອບເຂດ (realm) ໃດໆ. ທ່ານຕ້ອງການໃຫ້ສ້າງ\n"
+"          ຂອບເຂດເລີ່ມຕົ້ນໃຫ້ທ່ານຈາກ /etc/passwd ຂອງເຄື່ອງບໍ່?"
 
 #: privacyidea/static/components/token/views/token.applications.offline.html:2
 msgid "Offline tokens attached to notebooks"
@@ -2972,7 +2975,7 @@ msgstr "ຂໍ້ຜິດພາດອື່ນ"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:447
 msgid "Otplen"
-msgstr "ຄວາມຍາວ OTP"
+msgstr "ຄວາມຍາວ"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:154
 msgid "Overlap Period"
@@ -3018,9 +3021,8 @@ msgid "Passkey Log In"
 msgstr "ເຂົ້າສູ່ລະບົບດ້ວຍ Passkey"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:289
-#, fuzzy
 msgid "Passkey login cancelled."
-msgstr "ເຂົ້າສູ່ລະບົບດ້ວຍ Passkey"
+msgstr "ການເຂົ້າສູ່ລະບົບດ້ວຍ Passkey ຖືກຍົກເລີກ."
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:21
 msgid "Passphrase (optional)"
@@ -3119,6 +3121,8 @@ msgid ""
 "Please pass the public key and the fingerprint to the token\n"
 "                provider."
 msgstr ""
+"ກະລຸນາສົ່ງມອບພັບລິກຄີ (public key) ແລະ ລາຍນິ້ວມື (fingerprint) ໃຫ້ກັບ\n"
+"                ຜູ້ໃຫ້ບໍລິການໂທເຄັນ."
 
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:34
 msgid "Please provide the base URL of the privacyIDEA server."
@@ -3134,6 +3138,11 @@ msgid ""
 "missing registration data to the configured\n"
 "                    endpoint."
 msgstr ""
+"ກະລຸນາສະແກນລະຫັດ QR ດ້ວຍແອັບ privacyIDEA Authenticator\n"
+"                    ຫຼື ຄລິກ <a href=\"{{ containerRegistrationURL }}\">ລິ້ງນີ້</a> "
+"ເທິງ\n"
+"                    ສະມາດໂຟນຂອງທ່ານເພື່ອລົງທະບຽນຄອນເທນເນີຂອງທ່ານ. ມັນຈະສົ່ງຂໍ້ມູນການລົງທະບ"
+"ຽນທີ່ຂາດຫາຍໄປໄປຍັງ endpoint ທີ່ກຳນົດໄວ້."
 
 #: privacyidea/static/components/token/views/token.enrolled.push.html:9
 msgid ""
@@ -3142,6 +3151,9 @@ msgid ""
 "link</a> on your\n"
 "            smartphone."
 msgstr ""
+"ກະລຸນາສະແກນລະຫັດ QR ດ້ວຍແອັບ privacyIDEA Authenticator\n"
+"            ຫຼື ຄລິກ <a href=\"{{ enrolledToken.pushurl.value }}\">ລິ້ງນີ້</a> ເທິງ\n"
+"            ສະມາດໂຟນຂອງທ່ານ."
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:46
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:46
@@ -3150,6 +3162,8 @@ msgid ""
 "Please scan the QR code with the privacyIDEA authenticator app and enter\n"
 "            the generated code below."
 msgstr ""
+"ກະລຸນາສະແກນລະຫັດ QR ດ້ວຍແອັບ privacyIDEA authenticator ແລະ ປ້ອນ\n"
+"            ລະຫັດທີ່ຖືກສ້າງຂຶ້ນຢູ່ດ້ານລຸ່ມນີ້."
 
 #: privacyidea/static/components/config/views/config.policies.details.html:357
 msgid "Please select a Scope in the top section first to configure actions."
@@ -3164,6 +3178,8 @@ msgid ""
 "Please use crontab notation to specify the times at which the periodic task\n"
 "                should be run."
 msgstr ""
+"ກະລຸນາໃຊ້ຮູບແບບ crontab ເພື່ອກຳນົດເວລາທີ່ໜ້າວຽກແຕ່ລະໄລຍະ\n"
+"                ຄວນຈະເຮັດວຽກ."
 
 #: privacyidea/static/components/config/views/config.html:30
 #: privacyidea/static/components/dashboard/views/dashboard.html:117
@@ -3213,13 +3229,15 @@ msgstr "ແທັກທີ່ເປັນໄປໄດ້:"
 
 #: privacyidea/static/components/token/views/token.import.html:71
 msgid "Pre Shared Key"
-msgstr "ກະແຈທີ່ແບ່ງປັນກັນລ່ວງໜ້າ (PSK)"
+msgstr "ຄີທີ່ແບ່ງປັນໄວ້ລ່ວງໜ້າ (Pre Shared Key)"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:43
 msgid ""
 "Prepend the PIN in front of the OTP value\n"
 "            . Otherwise it will be post pended."
 msgstr ""
+"ເພີ່ມ PIN ໄວ້ທາງໜ້າຄ່າຂອງ OTP\n"
+"            . ຖ້າບໍ່ດັ່ງນັ້ນມັນຈະຖືກເພີ່ມໄວ້ທາງຫຼັງ."
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:163
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:282
@@ -3389,11 +3407,11 @@ msgstr "ສ້າງ Realm defrealm ແລ້ວ."
 #: privacyidea/static/components/config/views/config.html:70
 #: privacyidea/static/components/token/views/token.containerdetails.html:101
 msgid "Realms"
-msgstr "Realms"
+msgstr "ຂອບເຂດ"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:170
 msgid "Receive the users groups via the <code>memberOf</code> user attribute."
-msgstr ""
+msgstr "ຮັບກຸ່ມຜູ້ໃຊ້ຜ່ານແອດທຣິບິວ (attribute) ຜູ້ໃຊ້ <code>memberOf</code>."
 
 #: privacyidea/static/components/token/views/token.challenges.html:56
 msgid "Received"
@@ -3455,7 +3473,7 @@ msgstr "ການລົງທະບຽນສຳເລັດແລ້ວ"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:44
 msgid "Remote Realm"
-msgstr "Remote Realm"
+msgstr "ຂອບເຂດທາງໄກ"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:50
 msgid "Remote Resolver"
@@ -3463,11 +3481,11 @@ msgstr "Remote Resolver"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:26
 msgid "Remote Serial"
-msgstr "Remote Serial"
+msgstr "ຊີຣຽວທາງໄກ"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:16
 msgid "Remote Server"
-msgstr "Remote Server"
+msgstr "ເຊີບເວີທາງໄກ"
 
 #: privacyidea/static/components/config/views/config.token.remote.html:1
 msgid "Remote Token settings"
@@ -3475,7 +3493,7 @@ msgstr "ການຕັ້ງຄ່າໂທເຄັນທາງໄກ"
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:36
 msgid "Remote User"
-msgstr "Remote User"
+msgstr "ຜູ້ໃຊ້ທາງໄກ"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:551
 msgid "Remove"
@@ -3518,12 +3536,16 @@ msgid ""
 "Request Mapping (JSON\n"
 "                format)"
 msgstr ""
+"ການສ້າງແຜນຜັງຄຳຂໍ (ຮູບແບບ\n"
+"                JSON)"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:48
 msgid ""
 "Request Mapping (JSON\n"
 "            format)"
 msgstr ""
+"ການສ້າງແຜນຜັງຄຳຂໍ (ຮູບແບບ\n"
+"            JSON)"
 
 #: privacyidea/static/components/config/controllers/privacyideaServerController.js:75
 msgid "Request to remote privacyIDEA server successful."
@@ -3598,24 +3620,32 @@ msgid ""
 "Response Mapping\n"
 "                (JSON format)"
 msgstr ""
+"ການສ້າງແຜນຜັງການຕອບກັບ\n"
+"                (ຮູບແບບ JSON)"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:60
 msgid ""
 "Response Mapping\n"
 "            (JSON format)"
 msgstr ""
+"ການສ້າງແຜນຜັງການຕອບກັບ\n"
+"            (ຮູບແບບ JSON)"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:72
 msgid ""
 "Response contains (JSON\n"
 "                format):"
 msgstr ""
+"ການຕອບກັບມີ (ຮູບແບບ\n"
+"                JSON):"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:77
 msgid ""
 "Response contains (JSON\n"
 "            format):"
 msgstr ""
+"ການຕອບກັບມີ (ຮູບແບບ\n"
+"            JSON):"
 
 #: privacyidea/static/components/token/views/token.details.html:439
 msgid "Resync Token"
@@ -3713,6 +3743,9 @@ msgid ""
 "        and may differ from the token owner. To attach the token to a "
 "service ID go to the token details."
 msgstr ""
+"SSH ໂທເຄັນສາມາດຖືກແນບໄປກັບ ID ບໍລິການພ້ອມກັບຜູ້ໃຊ້. ຜູ້ໃຊ້ຄືຜູ້ໃຊ້ເທິງເຊີບເວີ SSH\n"
+"        ແລະ ອາດແຕກຕ່າງຈາກເຈົ້າຂອງໂທເຄັນ. ເພື່ອແນບໂທເຄັນເຂົ້າກັບ ID ບໍລິການໃຫ້ໄປທີ່ລາຍລະອຽດຂອ"
+"ງໂທເຄັນ."
 
 #: privacyidea/static/components/token/views/token.enroll.sshkey.html:9
 msgid "SSH public Key"
@@ -3832,7 +3865,7 @@ msgstr "ບັນທຶກຜູ້ໃຊ້"
 #: privacyidea/static/components/config/views/config.policies.list.html:16
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:125
 msgid "Scope"
-msgstr "Scope"
+msgstr "ຂອບເຂດ"
 
 #: privacyidea/static/components/directives/views/directive.filter.table.html:16
 #: privacyidea/static/components/directives/views/directive.filter.table.html:17
@@ -3883,12 +3916,17 @@ msgid ""
 "Select a predefined\n"
 "                <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
 msgstr ""
+"ເລືອກ\n"
+"                <a ui-sref=\"config.smtp\">ການຕັ້ງຄ່າເຊີບເວີ SMTP</a> ທີ່ກຳນົດໄວ້ລ່ວງໜ້"
+"າ."
 
 #: privacyidea/static/components/config/views/config.token.radius.html:9
 msgid ""
 "Select a predefined\n"
 "        <a ui-sref=\"config.radius\">RADIUS server configuration</a>."
 msgstr ""
+"ເລືອກ\n"
+"        <a ui-sref=\"config.radius\">ການຕັ້ງຄ່າເຊີບເວີ RADIUS</a> ທີ່ກຳນົດໄວ້ລ່ວງໜ້າ."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:33
 msgid ""
@@ -3896,18 +3934,26 @@ msgid ""
 "        <a ui-sref=\"config.radius\">RADIUS server configuration</a>.\n"
 "        The RADIUS request will be forwarded to this RADIUS server."
 msgstr ""
+"ເລືອກ\n"
+"        <a ui-sref=\"config.radius\">ການຕັ້ງຄ່າເຊີບເວີ RADIUS</a> ທີ່ກຳນົດໄວ້ລ່ວງໜ້າ.\n"
+"        ຄຳຂໍ RADIUS ຈະຖືກສົ່ງຕໍ່ໄປຍັງເຊີບເວີ RADIUS ນີ້."
 
 #: privacyidea/static/components/config/views/config.token.sms.html:14
 msgid ""
 "Select a predefined\n"
 "        <a ui-sref=\"config.smsgateway\">SMS Gateway configuration</a>."
 msgstr ""
+"ເລືອກ\n"
+"        <a ui-sref=\"config.smsgateway\">ການຕັ້ງຄ່າ SMS Gateway</a> ທີ່ກຳນົດໄວ້ລ່ວງໜ້"
+"າ."
 
 #: privacyidea/static/components/config/views/config.token.email.html:9
 msgid ""
 "Select a predefined\n"
 "        <a ui-sref=\"config.smtp\">SMTP server configuration</a>."
 msgstr ""
+"ເລືອກ\n"
+"        <a ui-sref=\"config.smtp\">ການຕັ້ງຄ່າເຊີບເວີ SMTP</a> ທີ່ກຳນົດໄວ້ລ່ວງໜ້າ."
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:81
 msgid "Select a token type to add:"
@@ -4005,6 +4051,9 @@ msgid ""
 "To view attached tokens go to <a ui-sref=\"token.applications\">token "
 "applications</a>."
 msgstr ""
+"ID ບໍລິການສາມາດໃຊ້ເພື່ອແນບເຊັ່ນ ຄີ SSH ເຂົ້າກັບເຄື່ອງ ແລະ ບໍລິການສະເພາະ.\n"
+"ເພື່ອເບິ່ງໂທເຄັນທີ່ແນບມາໃຫ້ໄປທີ່ <a ui-sref=\"token.applications\">ແອັບພລິເຄຊັນຂອງໂທເຄັນ</"
+"a>."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
 msgid "Set Default"
@@ -4117,12 +4166,16 @@ msgid ""
 "Special Error\n"
 "                Handling"
 msgstr ""
+"ການຈັດການ\n"
+"                ຂໍ້ຜິດພາດພິເສດ"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:69
 msgid ""
 "Special Error\n"
 "            Handling"
 msgstr ""
+"ການຈັດການ\n"
+"            ຂໍ້ຜິດພາດພິເສດ"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:313
 msgid ""
@@ -4134,6 +4187,11 @@ msgid ""
 "in Entra's app registration as client\n"
 "                                        credential."
 msgstr ""
+"ລະບຸເສັ້ນທາງ (path) ໄປຫາໄຟລ໌ໄພຣເວກຄີ (private key) ຂອງໃບຢັ້ງຢືນເຊີບເວີ. ຖ້າທ່ານໃຊ້\n"
+"                                        ຄີທີ່ເຂົ້າລະຫັດໄວ້, ໃຫ້ເພີ່ມລະຫັດຜ່ານທີ່ນີ້, ຖ້າບໍ່ດັ່ງນັ້ນໃ"
+"ຫ້ປະຫວ່າງໄວ້. \n"
+"                                        ໃບຢັ້ງຢືນເຊີບເວີຕ້ອງຖືກອັບໂຫຼດໃນການລົງທະບຽນແອັບຂ"
+"ອງ Entra ເປັນຂໍ້ມູນປະຈຳຕົວຂອງໄຄເອັນ."
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
 msgid "Start typing a serial number of a token that is not yet assigned"
@@ -4192,13 +4250,15 @@ msgstr "ນາມສະກຸນ"
 
 #: privacyidea/static/components/token/views/token.details.html:140
 msgid "Sync Window"
-msgstr "Sync Window"
+msgstr "ຊ່ວງເວລາການຊິ້ງຂໍ້ມູນ (Sync Window)"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:191
 msgid ""
 "Sync Window of\n"
 "                newly enrolled tokens"
 msgstr ""
+"ຊ່ວງເວລາການຊິ້ງຂໍ້ມູນຂອງ\n"
+"                ໂທເຄັນທີ່ລົງທະບຽນໃໝ່"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:221
 msgid "Synchronization"
@@ -4240,12 +4300,12 @@ msgstr "ດຳເນີນການເທິງຕົວຢືນຢັນຂອ
 
 #: privacyidea/static/components/token/views/token.enrolled.u2f.html:3
 msgid "Take action on your token"
-msgstr ""
+msgstr "ດຳເນີນການກັບໂທເຄັນຂອງທ່ານ"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:138
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:10
 msgid "Taskmodule"
-msgstr "Taskmodule"
+msgstr "ໂມດູນໜ້າວຽກ (Taskmodule)"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:148
 msgid "Template"
@@ -4326,6 +4386,9 @@ msgid ""
 "    present at once. You can define how many existing tokens of the given\n"
 "    realms need to be present to perform a successful authentication."
 msgstr ""
+"ໂທເຄັນແບບ 4 Eyes ຈະຢືນຢັນຕົວຕົນໄດ້ກໍຕໍ່ເມື່ອມີຜູ້ໃຊ້ສອງຄົນ ຫຼື ຫຼາຍກວ່ານັ້ນ\n"
+"    ຢູ່ພ້ອມກັນ. ທ່ານສາມາດກຳນົດວ່າຕ້ອງມີຈຳນວນໂທເຄັນຂອງຂອບເຂດນັ້ນໆເທົ່າໃດ\n"
+"    ເພື່ອໃຫ້ການຢືນຢັນຕົວຕົນສຳເລັດ."
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:27
 msgid "The AppID must not end with a \"/\"."
@@ -4342,24 +4405,33 @@ msgid ""
 "only be used to authenticate\n"
 "    at this service."
 msgstr ""
+"ໂທເຄັນລະຫັດຜ່ານສະເພາະແອັບພລິເຄຊັນແມ່ນລະຫັດຜ່ານຄົງທີ່,\n"
+"    ເຊິ່ງສາມາດຜູກມັດກັບບາງບໍລິການ. ລະຫັດຜ່ານຄົງທີ່ນີ້ສາມາດໃຊ້ເພື່ອຢືນຢັນຕົວຕົນ\n"
+"    ທີ່ບໍລິການນີ້ເທົ່ານັ້ນ."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:22
 msgid ""
 "The Authentication Server is this privacyIDEA server. Note that the\n"
 "        privacyIDEA server needs to be accessible from the users smartphone."
 msgstr ""
+"ເຊີບເວີການຢືນຢັນຕົວຕົນຄືເຊີບເວີ privacyIDEA ນີ້. ກະລຸນາຮັບຊາບວ່າ\n"
+"        ເຊີບເວີ privacyIDEA ຕ້ອງສາມາດເຂົ້າເຖິງໄດ້ຈາກສະມາດໂຟນຂອງຜູ້ໃຊ້."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:1
 msgid ""
 "The Certificate Token lets you enroll an x509 ceritificate\n"
 "    by the given CA."
 msgstr ""
+"ໂທເຄັນໃບຢັ້ງຢືນຊ່ວຍໃຫ້ທ່ານສາມາດລົງທະບຽນໃບຢັ້ງຢືນ x509 \n"
+"    ໂດຍ CA ທີ່ກຳນົດໄວ້."
 
 #: privacyidea/static/components/config/views/config.token.daypassword.html:2
 msgid ""
 "The DayPassword Token is a time based password token.\n"
 "    It is based on the TOTP token, but it can be used more than once.."
 msgstr ""
+"ໂທເຄັນ DayPassword ແມ່ນໂທເຄັນລະຫັດຜ່ານທີ່ອີງຕາມເວລາ.\n"
+"    ມັນອ້າງອີງຈາກໂທເຄັນ TOTP, ແຕ່ມັນສາມາດໃຊ້ໄດ້ຫຼາຍກວ່າໜຶ່ງຄັ້ງ.."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:1
 msgid ""
@@ -4368,6 +4440,8 @@ msgid ""
 "    have the server generate the secret and scan the QR code with an "
 "authenticator app that supports the token."
 msgstr ""
+"ໂທເຄັນ DayPassword ແມ່ນໂທເຄັນລະຫັດຜ່ານທີ່ອີງຕາມເວລາ. ທ່ານສາມາດວາງ (paste) ຊີເຄຣັດຄີ ຫຼື\n"
+"    ໃຫ້ເຊີບເວີສ້າງລະຫັດລັບແລ້ວສະແກນລະຫັດ QR ດ້ວຍແອັບຢືນຢັນຕົວຕົນທີ່ຮອງຮັບໂທເຄັນນີ້."
 
 #: privacyidea/static/components/config/views/config.token.email.html:2
 msgid ""
@@ -4375,6 +4449,9 @@ msgid ""
 "    the given email address, when the correct OTP PIN was presented by the "
 "user."
 msgstr ""
+"ໂທເຄັນອີເມວແມ່ນໂທເຄັນການຕອບສະໜອງຕໍ່ສິ່ງທ້າທາຍ (challenge response) ເຊິ່ງຈະສົ່ງຄ່າ OTP ໄປຍັ"
+"ງ\n"
+"    ທີ່ຢູ່ອີເມວທີ່ກຳນົດ, ເມື່ອຜູ້ໃຊ້ປ້ອນ PIN ຂອງ OTP ໄດ້ຖືກຕ້ອງ."
 
 #: privacyidea/static/components/token/views/token.enroll.email.html:1
 msgid "The Email Token sends the OTP value to the users email address."
@@ -4390,6 +4467,9 @@ msgid ""
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
 "    4226</a>."
 msgstr ""
+"ໂທເຄັນ HOTP ແມ່ນໂທເຄັນລະຫັດຜ່ານຄັ້ງດຽວທີ່ອີງຕາມເຫດການ.\n"
+"    ມັນຖືກອະທິບາຍໄວ້ໃນ <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
+"    4226</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:1
 msgid ""
@@ -4401,12 +4481,20 @@ msgid ""
 "    might have limitations in the supported hash algorithms or other "
 "parameters."
 msgstr ""
+"ໂທເຄັນ HOTP ແມ່ນໂທເຄັນທີ່ອີງຕາມເຫດການ. ທ່ານສາມາດວາງ (paste) ຊີເຄຣັດຄີ ຫຼື\n"
+"    ໃຫ້ເຊີບເວີສ້າງລະຫັດລັບແລ້ວສະແກນລະຫັດ QR ດ້ວຍ\n"
+"    ແອັບສະມາດໂຟນເຊັ່ນ privacyIDEA Authenticator ເຊິ່ງປ່ຽນ\n"
+"    ສະມາດໂຟນຂອງທ່ານໃຫ້ເປັນອຸປະກອນການຢືນຢັນຕົວຕົນ. ທ່ານຍັງສາມາດໃຊ້\n"
+"    ແອັບຢືນຢັນຕົວຕົນອື່ນໆເຊັ່ນ Google Authenticator. ແຕ່ກະລຸນາຮັບຊາບວ່າ, ແອັບເຫຼົ່ານີ້\n"
+"    ອາດມີຂໍ້ຈຳກັດໃນການຮອງຮັບອັນກໍຣິທຶມແຮຊ ຫຼື ພາຣາມິເຕີອື່ນໆ."
 
 #: privacyidea/static/components/login/views/login.html:103
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
 msgstr ""
+"HSM ຍັງບໍ່ພ້ອມໃຊ້ງານ. privacyIDEA ບໍ່ສາມາດເຮັດວຽກໄດ້ຢ່າງຖືກຕ້ອງ. ກະລຸນາເປີດ\n"
+"        HSM ແລະ ໂຫຼດໜ້ານີ້ໃໝ່ອີກຄັ້ງ."
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:15
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:15
@@ -4428,6 +4516,9 @@ msgid ""
 "the\n"
 "        token details."
 msgstr ""
+"ຄອນເທນເນີ PKCS12 ປະກອບມີພັບລິກຄີ ແລະ ໄພຣເວດຄີຂອງ\n"
+"        ໃບຢັ້ງຢືນ. ຄອນເທນເນີນີ້ຍັງຈະສາມາດດາວໂຫຼດໄດ້ໃນ\n"
+"        ລາຍລະອຽດຂອງໂທເຄັນ."
 
 #: privacyidea/static/components/token/views/token.enroll.paper.html:1
 msgid ""
@@ -4435,6 +4526,9 @@ msgid ""
 "    These OTP values can be used to authenticate. You need to use on value\n"
 "    after the other."
 msgstr ""
+"ໂທເຄັນແບບເຈ້ຍຈະຊ່ວຍໃຫ້ທ່ານສາມາດພິມລາຍຊື່ຄ່າຂອງ OTP ໄດ້.\n"
+"    ຄ່າ OTP ເຫຼົ່ານີ້ສາມາດໃຊ້ເພື່ອຢືນຢັນຕົວຕົນ. ທ່ານຈຳເປັນຕ້ອງໃຊ້ແຕ່ລະຄ່າ\n"
+"    ຕາມລຳດັບ."
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:32
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:32
@@ -4445,6 +4539,9 @@ msgid ""
 "please\n"
 "            regenerate the QR Code, when no one else is watching.</b>"
 msgstr ""
+"ລະຫັດ QR ປະກອບມີຊີເຄຣັດຄີ (secret key) ສຳລັບໂທເຄັນຂອງທ່ານ. ທ່ານຈຳເປັນຕ້ອງ\n"
+"            ປົກປ້ອງມັນ. <b>ຖ້າທ່ານສົງໄສວ່າຄົນອື່ນເຫັນມັນ, ກະລຸນາ\n"
+"            ສ້າງລະຫັດ QR ໃໝ່ອີກຄັ້ງ, ໃນເວລາທີ່ບໍ່ມີໃຜເບິ່ງຢູ່.</b>"
 
 #: privacyidea/static/components/token/views/token.enroll.question.html:1
 msgid ""
@@ -4452,6 +4549,9 @@ msgid ""
 "    When authenticating with this type of token, you will be asked a random\n"
 "    question and then need to provide the previously defined answer."
 msgstr ""
+"ໂທເຄັນແບບສອບຖາມຈະຊ່ວຍໃຫ້ທ່ານສາມາດກຳນົດຄຳຕອບສຳລັບຄຳຖາມຕ່າງໆ.\n"
+"    ເມື່ອຢືນຢັນຕົວຕົນດ້ວຍໂທເຄັນປະເພດນີ້, ທ່ານຈະຖືກຖາມດ້ວຍຄຳຖາມ\n"
+"    ແບບສຸ່ມ ແລະ ທ່ານຕ້ອງປ້ອນຄຳຕອບທີ່ໄດ້ກຳນົດໄວ້ລ່ວງໜ້າ."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:1
 msgid ""
@@ -4459,24 +4559,33 @@ msgid ""
 "    RADIUS server. You can choose if the PIN should be stripped and\n"
 "    checked locally."
 msgstr ""
+"ໂທເຄັນ RADIUS ຈະສົ່ງຕໍ່ຄຳຂໍການຢືນຢັນຕົວຕົນໄປຍັງ\n"
+"    ເຊີບເວີ RADIUS ອື່ນ. ທ່ານສາມາດເລືອກໄດ້ວ່າຈະໃຫ້ຕັດ PIN ອອກ ແລະ\n"
+"    ກວດສອບຢູ່ໃນເຄື່ອງນີ້ເລີຍ ຫຼື ບໍ່."
 
 #: privacyidea/static/components/config/views/config.token.radius.html:2
 msgid ""
 "The RADIUS token forwards the authentication request to another RADIUS\n"
 "    server."
 msgstr ""
+"ໂທເຄັນ RADIUS ຈະສົ່ງຕໍ່ຄຳຂໍການຢືນຢັນຕົວຕົນໄປຍັງເຊີບເວີ RADIUS \n"
+"    ອື່ນ."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:9
 msgid ""
 "The Registration Server is this privacyIDEA server. Note that the\n"
 "        privacyIDEA server needs to be accessible from the users smartphone."
 msgstr ""
+"ເຊີບເວີການລົງທະບຽນຄືເຊີບເວີ privacyIDEA ນີ້. ກະລຸນາຮັບຊາບວ່າ\n"
+"        ເຊີບເວີ privacyIDEA ຕ້ອງສາມາດເຂົ້າເຖິງໄດ້ຈາກສະມາດໂຟນຂອງຜູ້ໃຊ້."
 
 #: privacyidea/static/components/config/views/config.token.remote.html:2
 msgid ""
 "The Remote token forwards the authentication request to another\n"
 "    privacyIDEA server."
 msgstr ""
+"ໂທເຄັນ Remote ຈະສົ່ງຕໍ່ຄຳຂໍການຢືນຢັນຕົວຕົນໄປຍັງ\n"
+"    ເຊີບເວີ privacyIDEA ອື່ນ."
 
 #: privacyidea/static/components/config/views/config.token.sms.html:2
 msgid ""
@@ -4485,6 +4594,10 @@ msgid ""
 "    users mobile phone. Then user can authenticate with this OTP value in a\n"
 "    second step."
 msgstr ""
+"ໂທເຄັນ SMS ແມ່ນໂທເຄັນທີ່ອີງຕາມເຫດການ. ຫຼັງຈາກທີ່ຜູ້ໃຊ້ໄດ້ພະຍາຍາມ\n"
+"    ຢືນຢັນຕົວຕົນດ້ວຍ OTP PIN, SMS ທີ່ມີຄ່າ OTP ຈະຖືກສົ່ງໄປຍັງ\n"
+"    ໂທລະສັບມືຖືຂອງຜູ້ໃຊ້. ຈາກນັ້ນຜູ້ໃຊ້ສາມາດຢືນຢັນຕົວຕົນດ້ວຍຄ່າ OTP ນີ້ໃນ\n"
+"    ຂັ້ນຕອນທີສອງ."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:1
 msgid "The SMS Token sends an OTP value to the mobile phone of the user."
@@ -4495,18 +4608,24 @@ msgid ""
 "The SSH Key Token stores the public SSH Key in the server.\n"
 "    This can be used to authenticate to a secure shell."
 msgstr ""
+"ໂທເຄັນ SSH Key ຈະເກັບຮັກສາພັບລິກຄີ SSH ໄວ້ໃນເຊີບເວີ.\n"
+"    ສິ່ງນີ້ສາມາດໃຊ້ເພື່ອຢືນຢັນຕົວຕົນເຂົ້າສູ່ secure shell ໄດ້."
 
 #: privacyidea/static/components/token/views/token.getserial.html:95
 msgid ""
 "The Serial number for the OTP value {{ otp }} is\n"
 "    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 msgstr ""
+"ໝາຍເລກຊີຣຽວສຳລັບຄ່າ OTP {{ otp }} ແມ່ນ\n"
+"    <a ui-sref=\"token.details({tokenSerial:serial})\">{{ serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.spass.html:1
 msgid ""
 "The Simple Pass Token does not take additional arguments. You only need to\n"
 "    specify an OTP PIN."
 msgstr ""
+"ໂທເຄັນ Simple Pass ບໍ່ຮັບຄ່າ (arguments) ເພີ່ມເຕີມ. ທ່ານພຽງແຕ່ຕ້ອງ\n"
+"    ລະບຸ OTP PIN ເທົ່ານັ້ນ."
 
 #: privacyidea/static/components/token/views/token.enroll.tan.html:1
 msgid ""
@@ -4515,6 +4634,9 @@ msgid ""
 "an\n"
 "    arbitrary order."
 msgstr ""
+"ໂທເຄັນ TAN ຈະຊ່ວຍໃຫ້ທ່ານສາມາດພິມລາຍຊື່ຄ່າ OTP ໄດ້.\n"
+"    ຄ່າ OTP ເຫຼົ່ານີ້ສາມາດໃຊ້ເພື່ອຢືນຢັນຕົວຕົນ. ບັນດາຄ່າເຫຼົ່ານີ້ສາມາດຖືກໃຊ້ໃນ\n"
+"    ລຳດັບໃດກໍໄດ້."
 
 #: privacyidea/static/components/config/views/config.token.totp.html:2
 msgid ""
@@ -4522,6 +4644,9 @@ msgid ""
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc6238\">RFC\n"
 "    6238</a>."
 msgstr ""
+"ໂທເຄັນ TOTP ແມ່ນໂທເຄັນລະຫັດຜ່ານຄັ້ງດຽວທີ່ອີງຕາມເວລາ.\n"
+"    ມັນຖືກອະທິບາຍໄວ້ໃນ <a href=\"https://tools.ietf.org/html/rfc6238\">RFC\n"
+"    6238</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.totp.html:1
 msgid ""
@@ -4534,12 +4659,21 @@ msgid ""
 "    might have limitations in the supported hash algorithms or other "
 "parameters."
 msgstr ""
+"ໂທເຄັນ TOTP ແມ່ນໂທເຄັນທີ່ອີງຕາມເວລາ. ທ່ານສາມາດວາງ (paste) ຊີເຄຣັດຄີ ຫຼື\n"
+"    ໃຫ້ເຊີບເວີສ້າງລະຫັດລັບແລ້ວສະແກນລະຫັດ QR ດ້ວຍ\n"
+"    ແອັບສະມາດໂຟນເຊັ່ນ privacyIDEA Authenticator ເຊິ່ງປ່ຽນ\n"
+"    ສະມາດໂຟນຂອງທ່ານໃຫ້ເປັນອຸປະກອນການຢືນຢັນຕົວຕົນ. ທ່ານຍັງສາມາດໃຊ້\n"
+"    ແອັບຢືນຢັນຕົວຕົນອື່ນໆເຊັ່ນ Google Authenticator, Microsoft Authenticator, Authy ຫຼື "
+"FreeOTP. ແຕ່ກະລຸນາຮັບຊາບວ່າ, ແອັບເຫຼົ່ານີ້\n"
+"    ອາດມີຂໍ້ຈຳກັດໃນການຮອງຮັບອັນກໍຣິທຶມແຮຊ ຫຼື ພາຣາມິເຕີອື່ນໆ."
 
 #: privacyidea/static/components/config/views/config.token.tiqr.html:2
 msgid ""
 "The TiQR Token is an OCRA based Smartphone Token, that can be used to\n"
 "    authenticate by just scanning a QR code."
 msgstr ""
+"ໂທເຄັນ TiQR ແມ່ນໂທເຄັນສະມາດໂຟນທີ່ອີງຕາມ OCRA, ເຊິ່ງສາມາດໃຊ້ເພື່ອ\n"
+"    ຢືນຢັນຕົວຕົນໂດຍການສະແກນລະຫັດ QR ໄດ້ງ່າຍໆ."
 
 #: privacyidea/static/components/token/views/token.enroll.tiqr.html:6
 msgid ""
@@ -4547,6 +4681,8 @@ msgid ""
 "    authentication by just scanning a QR Code during the authentication "
 "process."
 msgstr ""
+"ໂທເຄັນ TiQR ແມ່ນໂທເຄັນແອັບສະມາດໂຟນ, ເຊິ່ງຊ່ວຍໃຫ້\n"
+"    ການຢືນຢັນຕົວຕົນງ່າຍຂຶ້ນພຽງແຕ່ສະແກນລະຫັດ QR ໃນລະຫວ່າງຂັ້ນຕອນການຢືນຢັນຕົວຕົນ."
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:2
 msgid ""
@@ -4554,6 +4690,9 @@ msgid ""
 "    You need to set the correct appId, which in fact is the URL of your\n"
 "    privacyIDEA installation."
 msgstr ""
+"ໂທເຄັນ U2F ແມ່ນຮາດແວໂທເຄັນ, ເຊິ່ງສື່ສານກັບເບຣົາເຊີ.\n"
+"    ທ່ານຈຳເປັນຕ້ອງຕັ້ງຄ່າ appId ໃຫ້ຖືກຕ້ອງ, ເຊິ່ງອັນທີ່ຈິງແລ້ວມັນຄື URL ຂອງ\n"
+"    ການຕິດຕັ້ງ privacyIDEA ຂອງທ່ານ."
 
 #: privacyidea/static/components/token/views/token.enroll.u2f.html:1
 msgid ""
@@ -4561,6 +4700,9 @@ msgid ""
 "    You can register this token with any webservice and with as many web\n"
 "    services you wish to."
 msgstr ""
+"ໂທເຄັນ U2F ແມ່ນໂທເຄັນທີ່ກຳນົດໂດຍ Fido Alliance.\n"
+"    ທ່ານສາມາດລົງທະບຽນໂທເຄັນນີ້ກັບບໍລິການເວັບ (webservice) ໃດກໍໄດ້ ແລະ ກັບ\n"
+"    ບໍລິການເວັບຫຼາຍເທົ່າທີ່ທ່ານຕ້ອງການ."
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:10
 msgid "The URL of your privacyIDEA installation."
@@ -4578,6 +4720,10 @@ msgid ""
 "will create a new\n"
 "    unique serial number."
 msgstr ""
+"ໝາຍເລກຊີຣຽວ VASCO ຈະຖືກອ່ານຈາກ VASCO blob. ຖ້າທ່ານຕ້ອງການໃຊ້ໝາຍເລກຊີຣຽວ VASCO ນີ້\n"
+"    ພາຍໃນ privacyIDEA, ໃຫ້ໝາຍຕິກໃສ່ກ່ອງໂຕເລືອກ. ຖ້າບໍ່ດັ່ງນັ້ນ privacyIDEA ຈະສ້າງໝາຍເລກຊີຣຽ"
+"ວໃໝ່ທີ່\n"
+"    ບໍ່ຊ້ຳກັນ."
 
 #: privacyidea/static/components/token/views/token.enroll.vasco.html:1
 msgid ""
@@ -4585,6 +4731,8 @@ msgid ""
 "blob\n"
 "    in a hexlified format."
 msgstr ""
+"ໂທເຄັນ VASCO ແມ່ນໂທເຄັນ OTP ສະເພາະຕົວ. ທ່ານສາມາດວາງ VASCO token blob\n"
+"    ໃນຮູບແບບຖານສິບຫົກ (hexlified) ໄດ້."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:2
 msgid ""
@@ -4592,6 +4740,10 @@ msgid ""
 "    You may set a trust anchor directory, which is a path to a directory\n"
 "    containing certificates to trust for WebAuthn authenticator attestation."
 msgstr ""
+"ໂທເຄັນ WebAuthn ແມ່ນຮາດແວໂທເຄັນ, ເຊິ່ງສື່ສານກັບເບຣົາເຊີ.\n"
+"    ທ່ານອາດຈະກຳນົດໄດເຣັກທໍຣີ trust anchor, ເຊິ່ງເປັນເສັ້ນທາງ (path) ໄປຫາໄດເຣັກທໍຣີ\n"
+"    ທີ່ບັນຈຸໃບຢັ້ງຢືນທີ່ເຊື່ອຖືໄດ້ສຳລັບການຮັບຮອງຕົວຢືນຢັນຕົວຕົນ (WebAuthn authenticator "
+"attestation)."
 
 #: privacyidea/static/components/token/views/token.enroll.webauthn.html:1
 msgid ""
@@ -4599,12 +4751,17 @@ msgid ""
 "    Alliance. You can register this token with any webservice and with\n"
 "    as many web services you wish to."
 msgstr ""
+"ໂທເຄັນ WebAuthn ແມ່ນໂທເຄັນທີ່ກຳນົດໂດຍ W3C ແລະ Fido\n"
+"    Alliance. ທ່ານສາມາດລົງທະບຽນໂທເຄັນນີ້ກັບບໍລິການເວັບໃດກໍໄດ້ ແລະ ກັບ\n"
+"    ບໍລິການເວັບຫຼາຍເທົ່າທີ່ທ່ານຕ້ອງການ."
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:1
 msgid ""
 "The Yubico Cloud mode forwards the authentication request to the\n"
 "    YubiCloud. The Yubikey needs to be registered with the YubiCloud."
 msgstr ""
+"ໂໝດ Yubico Cloud ຈະສົ່ງຕໍ່ຄຳຂໍການຢືນຢັນຕົວຕົນໄປຍັງ\n"
+"    YubiCloud. Yubikey ຈຳເປັນຕ້ອງລົງທະບຽນກັບ YubiCloud ກ່ອນ."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:2
 msgid ""
@@ -4613,6 +4770,9 @@ msgid ""
 "12\n"
 "    characters are a unique ID which is used to bind the device to the user."
 msgstr ""
+"ໂທເຄັນ Yubico ແມ່ນ Yubikey ທີ່ໄດ້ລົງທະບຽນກັບບໍລິການ\n"
+"    YubiCloud. Yubikey ຈະປ່ອຍລະຫັດຜ່ານຄັ້ງດຽວ (OTP) ຄວາມຍາວ 44 ຕົວອັກສອນ. 12\n"
+"    ຕົວອັກສອນທຳອິດແມ່ນ ID ສະເພາະ ເຊິ່ງໃຊ້ເພື່ອຜູກອຸປະກອນເຂົ້າກັບຜູ້ໃຊ້."
 
 #: privacyidea/static/components/token/views/token.enroll.yubikey.html:1
 msgid ""
@@ -4632,6 +4792,18 @@ msgid ""
 "    The current OTP length of a programmed YubiKey can automatically be\n"
 "    determined by inserting it in the test field."
 msgstr ""
+"ໂທເຄັນ Yubikey ແມ່ນອຸປະກອນ USB ທີ່ປ່ອຍລະຫັດຜ່ານຄັ້ງດຽວ (OTP) ທີ່ອີງຕາມເຫດການ.\n"
+"    ທ່ານສາມາດເລີ່ມຕົ້ນລະບົບ Yubikey ໄດ້ໂດຍໃຊ້ YubiKey personalization\n"
+"    tools.\n"
+"\n"
+"    ຈຳເປັນຕ້ອງໃຊ້ hex key ທີ່ເປັນຄວາມລັບ ແລະ ຄວາມຍາວ OTP ສຸດທ້າຍຢູ່ທີ່ນີ້.\n"
+"    ສຳລັບໂທເຄັນທີ່ເຂົ້າກັນໄດ້ກັບບໍລິການ Yubico cloud ຄວາມຍາວ OTP ຕ້ອງແມ່ນ\n"
+"    44 (UID 12 ຕົວອັກສອນ ແລະ OTP 32 ຕົວອັກສອນ).\n"
+"    ເມື່ອໂປຣແກຣມໂທເຄັນສຳລັບບໍລິການ Yubico cloud, ຄວາມຍາວ Public Identity\n"
+"    ຕ້ອງເປັນ 6 ໄບຕ໌ (bytes), ເຊິ່ງຈະເຮັດໃຫ້ທ່ານໄດ້ຮັບ UID ທີ່ມີ 12 ຕົວອັກສອນ.\n"
+"\n"
+"    ຄວາມຍາວ OTP ປັດຈຸບັນຂອງ YubiKey ທີ່ຖືກໂປຣແກຣມແລ້ວສາມາດ\n"
+"    ກວດສອບໄດ້ໂດຍອັດຕະໂນມັດໂດຍການສຽບມັນແລ້ວປ້ອນໃນຊ່ອງທົດສອບ."
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:77
 msgid "The added value of privacyIDEA Enterprise Edition"
@@ -4644,6 +4816,10 @@ msgid ""
 "produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
 "                    are:"
 msgstr ""
+"ມູນຄ່າເພີ່ມຂອງ\n"
+"                    <a target=\"netknights\" href=\"https://netknights.it/en/"
+"produkte/privacyidea/\">privacyIDEA Enterprise Edition</a>\n"
+"                    ແມ່ນ:"
 
 #: privacyidea/static/components/config/views/config.token.yubikey.html:7
 msgid ""
@@ -4657,6 +4833,15 @@ msgid ""
 "target=\"_blank\">\n"
 "        Yubico Validation Protocol</a>."
 msgstr ""
+"ຄຳຂໍການຢືນຢັນຕົວຕົນສາມາດຖືກຈັດການໂດຍ privacyIDEA ເລີ່ມຕົ້ນ\n"
+"    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/api/"
+"validate.html\" target=\"_blank\">\n"
+"        validate API</a> ແຕ່ຍັງສາມາດຖືກຈັດການໂດຍ\n"
+"    <a href=\"https://privacyidea.readthedocs.io/en/latest/modules/lib/"
+"tokentypes/"
+"yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint\" "
+"target=\"_blank\">\n"
+"        Yubico Validation Protocol</a> ໄດ້ເຊັ່ນກັນ."
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:8
 msgid ""
@@ -4665,6 +4850,10 @@ msgid ""
 "    you can request <a href=\"https://upgrade.yubico.com/getapikey/\" "
 "target=\"_extern\">here</a>."
 msgstr ""
+"ຄຳຂໍການຢືນຢັນຕົວຕົນຈະຖືກສົ່ງຕໍ່ໄປຍັງ YubiCloud. ສຳລັບການເຂົ້າເຖິງ\n"
+"    YubiCloud ທ່ານຈຳເປັນຕ້ອງປ້ອນ API Client ID ແລະ API Key, ເຊິ່ງ\n"
+"    ທ່ານສາມາດຮ້ອງຂໍໄດ້ <a href=\"https://upgrade.yubico.com/getapikey/\" "
+"target=\"_extern\">ທີ່ນີ້</a>."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:25
 msgid ""
@@ -4672,6 +4861,8 @@ msgid ""
 "the user endpoints defined\n"
 "                below."
 msgstr ""
+"URL ຫຼັກຂອງ API ຂອງແຫຼ່ງເກັບຂໍ້ມູນຜູ້ໃຊ້ ເຊິ່ງຈະຖືກເຊື່ອມຕໍ່ກັບ endpoints ຂອງຜູ້ໃຊ້ທີ່ກຳນົດໄວ້\n"
+"                ດ້ານລຸ່ມນີ້."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:1
 msgid "The certificate was enrolled successfully."
@@ -4682,6 +4873,8 @@ msgid ""
 "The certificate will be checked for a valid hostname and for\n"
 "                a trusted certificate. Do not uncheck this in productive use!"
 msgstr ""
+"ໃບຢັ້ງຢືນຈະຖືກກວດສອບວ່າຊື່ໂຮສ (hostname) ຖືກຕ້ອງຫຼືບໍ່ ແລະ ເປັນ\n"
+"                ໃບຢັ້ງຢືນທີ່ເຊື່ອຖືໄດ້ຫຼືບໍ່. ຫ້າມເອົາເຄື່ອງໝາຍຕິກອອກໃນການນຳໃຊ້ຈິງ!"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:204
 msgid "The challenge validity time"
@@ -4705,6 +4898,8 @@ msgid ""
 "The file containing the CA certificate which signed the\n"
 "                        LDAP TLS certificate."
 msgstr ""
+"ໄຟລ໌ທີ່ມີໃບຢັ້ງຢືນ CA ເຊິ່ງໄດ້ເຊັນ\n"
+"                        ໃບຢັ້ງຢືນ LDAP TLS."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:210
 msgid ""
@@ -4733,6 +4928,9 @@ msgid ""
 "The hashing algorithm for the passwords of newly created\n"
 "                    users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512, OTRS."
 msgstr ""
+"ອັນກໍຣິທຶມແຮຊສຳລັບລະຫັດຜ່ານຂອງຜູ້ໃຊ້\n"
+"                    ທີ່ສ້າງໃໝ່. ສາມາດເປັນ PHPASS, SHA, SSHA, SSHA256, SHA512, "
+"OTRS."
 
 #: privacyidea/static/components/token/views/token.enroll.indexedsecret.html:1
 msgid ""
@@ -4742,6 +4940,10 @@ msgid ""
 "known\n"
 "    secret."
 msgstr ""
+"ໂທເຄັນ Indexed secret ອ້າງອີງຕາມລະຫັດລັບທີ່ແບ່ງປັນລະຫວ່າງ privacyIDEA\n"
+"    ແລະ ຜູ້ໃຊ້.\n"
+"    ໃນລະຫວ່າງການຢືນຢັນຕົວຕົນ ຜູ້ໃຊ້ຈະຖືກຖາມຫາຕຳແໜ່ງແບບສຸ່ມຈາກລະຫັດລັບ\n"
+"    ທີ່ຮູ້ຈັກກັນນີ້."
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:400
 msgid "The key to store the groups in the user info (attribute mapping key)."
@@ -4753,6 +4955,8 @@ msgid ""
 "right column the equivalent\n"
 "                    attribute in the user store."
 msgstr ""
+"ຖັນດ້ານຊ້າຍກຳນົດແອດທຣິບິວ (attributes) ຂອງຜູ້ໃຊ້ທີ່ໃຊ້ໃນ privacyIDEA ແລະ ຖັນດ້ານຂວາແມ່ນ\n"
+"                    ແອດທຣິບິວທີ່ທຽບເທົ່າກັນໃນແຫຼ່ງເກັບຂໍ້ມູນຜູ້ໃຊ້."
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:35
 msgid "The mOTP PIN is the PIN that needs to be entered on the mobile device."
@@ -4764,6 +4968,9 @@ msgid ""
 "    You can\n"
 "    have the server generate the secret and scan the QR code."
 msgstr ""
+"ໂທເຄັນ mOTP ແມ່ນໂທເຄັນ OTP ທີ່ອີງຕາມເວລາສຳລັບອຸປະກອນມືຖື.\n"
+"    ທ່ານສາມາດ\n"
+"    ໃຫ້ເຊີບເວີສ້າງລະຫັດລັບ ແລະ ສະແກນລະຫັດ QR ໄດ້."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:37
 msgid ""
@@ -4783,6 +4990,11 @@ msgid ""
 "    </a>\n"
 "    will be disabled and can be deleted or enabled later."
 msgstr ""
+"ໂທເຄັນເກົ່າ\n"
+"    <a ui-sref=\"token.details({tokenSerial:selectedToken.serial})\">\n"
+"        {{ selectedToken.serial }}\n"
+"    </a>\n"
+"    ຈະຖືກປິດໃຊ້ງານ ແລະ ສາມາດລຶບ ຫຼື ເປີດໃຊ້ງານໄດ້ໃນພາຍຫຼັງ."
 
 #: privacyidea/static/components/token/views/token.lost.html:48
 msgid "The password can not be shown again, later!"
@@ -4793,6 +5005,8 @@ msgid ""
 "The password for the PKCS12 container is shown here only once. Make sure\n"
 "            to keep the password safe now."
 msgstr ""
+"ລະຫັດຜ່ານສຳລັບຄອນເທນເນີ PKCS12 ຈະສະແດງຢູ່ທີ່ນີ້ພຽງຄັ້ງດຽວເທົ່ານັ້ນ. ກະລຸນາ\n"
+"            ຮັກສາລະຫັດຜ່ານໃຫ້ປອດໄພໄວ້ຕັ້ງແຕ່ຕອນນີ້."
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:50
 msgid "The password of the PKCS12 container is the given token PIN"
@@ -4803,6 +5017,8 @@ msgid ""
 "The password that needs to be combined with the OTP PIN:\n"
 "        <b>{{ lostResult.password }}</b>"
 msgstr ""
+"ລະຫັດຜ່ານທີ່ຈຳເປັນຕ້ອງລວມເຂົ້າກັບ OTP PIN:\n"
+"        <b>{{ lostResult.password }}</b>"
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:10
 msgid "The path to the directory containing the trust anchors."
@@ -4822,6 +5038,16 @@ msgid ""
 "target=\"github\">backend\n"
 "                        service itself</a>."
 msgstr ""
+"ລະບົບຢືນຢັນຕົວຕົນ (backend) ຂອງ privacyIDEA ຖືກອະນຸຍາດພາຍໃຕ້\n"
+"                    AGPLv3.\n"
+"                    ບາງອົງປະກອບອາດເປັນສ່ວນໜຶ່ງຂອງໃບອະນຸຍາດອື່ນ.\n"
+"                    privacyIDEA ຖືກແຍກ (forked) ມາຈາກ LinOTP ເດີມ, ເຊິ່ງໄດ້ຮັບອະນຸຍາ"
+"ດ\n"
+"                    ໂດຍ LSE Leading Security Experts GmbH.\n"
+"                    ສຳລັບຂໍ້ມູນລາຍລະອຽດກະລຸນາເບິ່ງທີ່\n"
+"                    <a href=\"http://github.com/privacyidea/privacyidea\" "
+"target=\"github\">ບໍລິການ backend\n"
+"                        ເອງ</a>."
 
 #: privacyidea/static/app.js:160
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
@@ -4834,6 +5060,10 @@ msgid ""
 "    presented with a random questions and needs to provide his previously\n"
 "    defined answer."
 msgstr ""
+"ແບບສອບຖາມຊ່ວຍໃຫ້ທ່ານສາມາດກຳນົດຊຸດຄຳຖາມໄດ້. ໂທເຄັນ\n"
+"    ແບບສອບຖາມຈຳເປັນຕ້ອງກຳນົດຄຳຕອບສຳລັບຄຳຖາມເຫຼົ່ານີ້ ແລະ ຜູ້ໃຊ້ຈະຖືກ\n"
+"    ຖາມດ້ວຍຄຳຖາມແບບສຸ່ມ ແລະ ຕ້ອງປ້ອນຄຳຕອບທີ່ໄດ້ກຳນົດໄວ້\n"
+"    ກ່ອນໜ້ານີ້."
 
 #: privacyidea/static/components/token/views/token.enroll.registration.html:1
 msgid ""
@@ -4843,6 +5073,9 @@ msgid ""
 "can\n"
 "    not be used anymore."
 msgstr ""
+"ໂທເຄັນລົງທະບຽນແມ່ນລະຫັດ, ທີ່ຜູ້ໃຊ້ສາມາດໃຊ້ເພື່ອຢືນຢັນຕົວຕົນໄດ້ພຽງຄັ້ງດຽວ!\n"
+"    ຫຼັງຈາກໃຊ້ລະຫັດນີ້ເຂົ້າສູ່ລະບົບແລ້ວ, ໂທເຄັນລົງທະບຽນຈະຖືກລຶບ ແລະ ບໍ່ສາມາດ\n"
+"    ນຳມາໃຊ້ໄດ້ອີກ."
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:1
 msgid ""
@@ -4850,10 +5083,13 @@ msgid ""
 "    privacyIDEA server. You can choose if the PIN should be stripped and\n"
 "    checked locally."
 msgstr ""
+"ໂທເຄັນ Remote ຈະສົ່ງຕໍ່ຄຳຂໍການຢືນຢັນຕົວຕົນໄປຍັງ\n"
+"    ເຊີບເວີ privacyIDEA ອື່ນ. ທ່ານສາມາດເລືອກໄດ້ວ່າຈະໃຫ້ຕັດ PIN ອອກ ແລະ\n"
+"    ກວດສອບຢູ່ໃນເຄື່ອງນີ້ເລີຍ ຫຼື ບໍ່."
 
 #: privacyidea/static/app.js:92
 msgid "The resource name must consist of letters, numbers and '_', '-', '.'"
-msgstr "ຊື່ຊັບພະຍາກອນຕ້ອງປະກອບດ້ວຍຕົວອັກສອນ, ຕົວເລກ ແລະ '_', '-', '.'."
+msgstr "ຊື່ຊັບພະຍາກອນຕ້ອງປະກອບດ້ວຍຕົວອັກສອນ, ຕົວເລກ ແລະ '_', '-', '.'"
 
 #: privacyidea/static/app.js:102
 msgid ""
@@ -4883,6 +5119,8 @@ msgid ""
 "The separator that is used to separate the passwords of the\n"
 "        different tokens."
 msgstr ""
+"ຕົວແຍກ (separator) ທີ່ໃຊ້ເພື່ອແຍກລະຫັດຜ່ານຂອງ\n"
+"        ໂທເຄັນຕ່າງໆ."
 
 #: privacyidea/static/components/token/views/token.enroll.remote.html:28
 msgid "The serial number on the remote server"
@@ -4894,6 +5132,9 @@ msgid ""
 "        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
 "        {{ lostResult.serial }}</a>."
 msgstr ""
+"ໝາຍເລກຊີຣຽວຂອງໂທເຄັນໃໝ່ແມ່ນ\n"
+"        <a ui-sref=\"token.details({tokenSerial:lostResult.serial})\">\n"
+"        {{ lostResult.serial }}</a>."
 
 #: privacyidea/static/components/token/views/token.enroll.hotp.html:24
 #: privacyidea/static/components/token/views/token.enroll.totp.html:24
@@ -4903,18 +5144,26 @@ msgid ""
 "            will be\n"
 "            displayed to you to be scanned."
 msgstr ""
+"ເຊີບເວີຈະສ້າງຄີ OTP \n"
+"            ແລະ ລະຫັດ QR \n"
+"            ຈະຖືກ\n"
+"            ສະແດງໃຫ້ທ່ານເພື່ອສະແກນ."
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
 msgid ""
 "The server will create the private RSA key and return it with\n"
 "                    the certificate in an encrypted PKCS#12 container."
 msgstr ""
+"ເຊີບເວີຈະສ້າງ RSA key ສ່ວນຕົວ (private RSA key) ແລະ ສົ່ງຄືນພ້ອມກັບ\n"
+"                    ໃບຢັ້ງຢືນໃນຄອນເທນເນີ PKCS#12 ທີ່ເຂົ້າລະຫັດໄວ້."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:20
 msgid ""
 "The server will create the secret and a QR Code\n"
 "            will be displayed for you to be scanned."
 msgstr ""
+"ເຊີບເວີຈະສ້າງລະຫັດລັບ ແລະ ລະຫັດ QR \n"
+"            ຈະຖືກສະແດງໃຫ້ທ່ານເພື່ອສະແກນ."
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:16
 msgid ""
@@ -4923,6 +5172,10 @@ msgid ""
 "            will be\n"
 "            displayed to you to be scanned with the Token2 app."
 msgstr ""
+"ເຊີບເວີຈະສ້າງຊີເຄຣັດຄີ \n"
+"            ແລະ ລະຫັດ QR \n"
+"            ຈະຖືກ\n"
+"            ສະແດງໃຫ້ທ່ານເພື່ອສະແກນດ້ວຍແອັບ Token2."
 
 #: privacyidea/static/components/token/views/token.enroll.applspec.html:16
 msgid "The server will create the static password."
@@ -4934,6 +5187,9 @@ msgid ""
 "                    should be entered in the format\n"
 "                    <em>YYYY-MM-DDThh:mm+oooo</em>."
 msgstr ""
+"ເວລາເລີ່ມຕົ້ນ ແລະ ເວລາສິ້ນສຸດຂອງໄລຍະເວລາທີ່ມີຜົນນຳໃຊ້\n"
+"                    ຄວນຖືກປ້ອນໃນຮູບແບບ\n"
+"                    <em>YYYY-MM-DDThh:mm+oooo</em>."
 
 #: privacyidea/static/components/config/views/config.token.email.html:20
 #: privacyidea/static/components/config/views/config.token.sms.html:25
@@ -4941,6 +5197,8 @@ msgid ""
 "The time in seconds for which the sent OTP value is valid for\n"
 "        authentication."
 msgstr ""
+"ເວລາເປັນວິນາທີທີ່ຄ່າ OTP ທີ່ສົ່ງໄປຍັງມີຜົນສຳລັບ\n"
+"        ການຢືນຢັນຕົວຕົນ."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:54
 msgid "The time in which the password can be used. For example '1d' or '12h'."
@@ -4954,6 +5212,11 @@ msgid ""
 "                {{ enrolledToken.container_serial }}\n"
 "            </a>."
 msgstr ""
+"ໂທເຄັນໄດ້ຖືກລົງທະບຽນໃນຄອນເທນເນີ\n"
+"            <a ui-sref=\"token.containerdetails({containerSerial: "
+"enrolledToken.container_serial})\">\n"
+"                {{ enrolledToken.container_serial }}\n"
+"            </a>."
 
 #: privacyidea/static/components/token/views/token.details.html:615
 msgid ""
@@ -4966,6 +5229,14 @@ msgid ""
 "span>\n"
 "    ."
 msgstr ""
+"ປັດຈຸບັນໂທເຄັນຖືກມອບໝາຍໃຫ້ກັບຄອນເທນເນີ\n"
+"    <a ui-sref=\"token.containerdetails({containerSerial: containerSerial})"
+"\" ng-hide=\"!checkRight('container_list')\">\n"
+"        {{ containerSerial }}\n"
+"    </a>\n"
+"    <span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</"
+"span>\n"
+"    ."
 
 #: privacyidea/static/components/token/views/token.details.html:623
 msgid "The token is currently in no container."
@@ -4981,11 +5252,11 @@ msgid "The token is valid till {{ lostResult.end_date }}."
 msgstr "ໂທເຄັນມີຜົນນຳໃຊ້ເຖິງ {{ lostResult.end_date }}."
 
 #: privacyidea/static/components/directives/views/directive.verifyEnrolledToken.html:19
-#, fuzzy
 msgid ""
 "The token was enrolled, but it still needs to be verified. Please enter the "
 "verification value."
-msgstr "ໂທເຄັນຖືກລົງທະບຽນແລ້ວ, ແຕ່ທ່ານຍັງຕ້ອງຢືນຢັນມັນກ່ອນທີ່ຈະໃຊ້ໄດ້!"
+msgstr ""
+"ໂທເຄັນໄດ້ຖືກລົງທະບຽນແລ້ວ, ແຕ່ຍັງຈຳເປັນຕ້ອງໄດ້ຮັບການຢືນຢັນ. ກະລຸນາປ້ອນຄ່າການຢືນຢັນ."
 
 #: privacyidea/static/components/token/views/token.lost.html:34
 msgid "The token was marked lost successfully."
@@ -5002,6 +5273,14 @@ msgid ""
 "realmname:newUser.realm})\">{{ newUser.user }}</a> in realm\n"
 "            {{ newUser.realm }}."
 msgstr ""
+"ລົງທະບຽນໂທເຄັນສຳເລັດແລ້ວດ້ວຍໝາຍເລກຊີຣຽວ\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
+"\n"
+"                {{ enrolledToken.serial }}</a>\n"
+"            ສຳລັບຜູ້ໃຊ້\n"
+"            <a ui-sref=\"user.details({username:newUser.user, "
+"realmname:newUser.realm})\">{{ newUser.user }}</a> ໃນຂອບເຂດ\n"
+"            {{ newUser.realm }}."
 
 #: privacyidea/static/components/token/views/token.enroll.html:188
 msgid ""
@@ -5010,6 +5289,10 @@ msgid ""
 "\">\n"
 "                {{ enrolledToken.serial }}</a>."
 msgstr ""
+"ລົງທະບຽນໂທເຄັນສຳເລັດແລ້ວດ້ວຍໝາຍເລກຊີຣຽວ\n"
+"            <a ui-sref=\"token.details({tokenSerial:enrolledToken.serial})\">"
+"\n"
+"                {{ enrolledToken.serial }}</a>."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:32
 msgid "The trust_anchor_dir must be an absolute path."
@@ -5025,6 +5308,8 @@ msgid ""
 "The user data in this database can be modified from within\n"
 "                    privacyIDEA."
 msgstr ""
+"ຂໍ້ມູນຜູ້ໃຊ້ໃນຖານຂໍ້ມູນນີ້ສາມາດແກ້ໄຂໄດ້ຈາກພາຍໃນ\n"
+"                    privacyIDEA."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:194
 msgid ""
@@ -5036,6 +5321,8 @@ msgid ""
 "The user will have to authenticate with the old OTP PIN he knows and this\n"
 "    newly generated password."
 msgstr ""
+"ຜູ້ໃຊ້ຈະຕ້ອງຢືນຢັນຕົວຕົນດ້ວຍ OTP PIN ເກົ່າທີ່ລາວຮູ້ ແລະ ລະຫັດຜ່ານ\n"
+"    ທີ່ຖືກສ້າງຂຶ້ນໃໝ່ນີ້."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:51
 msgid "The username on the RADIUS server"
@@ -5070,12 +5357,19 @@ msgid ""
 "                        that\n"
 "                        contain this resolver."
 msgstr ""
+"ເຫຼົ່ານີ້ຄືຕົວແກ້ໄຂ (resolvers) ທີ່ຖືກໝາຍວ່າສາມາດແກ້ໄຂໄດ້. ທ່ານສາມາດເພີ່ມ\n"
+"                        ຜູ້ໃຊ້\n"
+"                        ເຂົ້າໄປໃນຕົວແກ້ໄຂໄດ້. ຜູ້ໃຊ້ຈະປາກົດໃນຂອບເຂດ,\n"
+"                        ເຊິ່ງ\n"
+"                        ມີຕົວແກ້ໄຂນີ້."
 
 #: privacyidea/static/components/config/views/config.system.edit.html:127
 msgid ""
 "These client IP addresses or subnets are\n"
 "                allowed to masquerade as another client."
 msgstr ""
+"ທີ່ຢູ່ IP ຫຼື ເຄືອຂ່າຍຍ່ອຍ (subnets) ຂອງໄຄເອັນເຫຼົ່ານີ້\n"
+"                ໄດ້ຮັບອະນຸຍາດໃຫ້ປອມຕົວ (masquerade) ເປັນໄຄເອັນອື່ນ."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:310
 msgid "This credential type does not support to check the user's password."
@@ -5087,6 +5381,9 @@ msgid ""
 "    configuration of your system in restructured text. You can use\n"
 "    this to document your installed system."
 msgstr ""
+"ເອກະສານນີ້ປະກອບດ້ວຍ\n"
+"    ການຕັ້ງຄ່າປັດຈຸບັນຂອງລະບົບຂອງທ່ານໃນຮູບແບບ restructured text. ທ່ານສາມາດໃຊ້\n"
+"    ສິ່ງນີ້ເພື່ອເປັນເອກະສານອ້າງອີງສຳລັບລະບົບທີ່ທ່ານຕິດຕັ້ງໄວ້."
 
 #: privacyidea/static/components/config/views/config.token.webauthn.html:19
 msgid ""
@@ -5099,6 +5396,12 @@ msgid ""
 "webauthn_authenticator_attestation_level\n"
 "        is set to \"trusted\" by a policy for any user."
 msgstr ""
+"ສິ່ງນີ້ບໍ່ຈຳເປັນຕ້ອງຕັ້ງຄ່າເພື່ອໃຫ້ WebAuthn ເຮັດວຽກໄດ້, ແຕ່ຖ້າບໍ່ມີ\n"
+"        ສິ່ງນີ້, privacyIDEA ຈະບໍ່ສາມາດກວດສອບໄດ້ວ່າໃບຢັ້ງຢືນການຮັບຮອງ (attestation "
+"certificate)\n"
+"        ແມ່ນເຊື່ອຖືໄດ້ແທ້ຫຼືບໍ່ (ມັນຍັງຈະຖືກກວດສອບຄວາມຖືກຕ້ອງຢູ່). ດັ່ງນັ້ນ ມັນຈຶ່ງ\n"
+"        ຈຳເປັນຕ້ອງຕັ້ງຄ່ານີ້, ຖ້າ webauthn_authenticator_attestation_level\n"
+"        ຖືກຕັ້ງເປັນ \"trusted\" ໂດຍນະໂຍບາຍສຳລັບຜູ້ໃຊ້ໃດໜຶ່ງ."
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:17
 msgid ""
@@ -5128,12 +5431,11 @@ msgid ""
 "the\n"
 "            password."
 msgstr ""
-"ນີ້ແມ່ນໄຟລ໌ PSKC ທີ່ສອດຄ່ອງກັບ RFC6030 OATH.\n"
+"ນີ້ແມ່ນໄຟລ໌ PSKC ທີ່ເຂົ້າກັນໄດ້ກັບ RFC6030 OATH.\n"
 "            ຄ່າໃນໄຟລ໌ PSKC ອາດຈະບໍ່ໄດ້ເຂົ້າລະຫັດ ຫຼື\n"
-"            <em>ອາດຈະ</em> ຖືກເຂົ້າລະຫັດດ້ວຍ\n"
-"            <em>ກຸນແຈທີ່ແບ່ງປັນກັນໄວ້ (Pre Shared Key)</em> ຫຼື <em>ລະຫັດຜ່ານ</em>. "
-"ຖ້າຄ່າເຫຼົ່ານັ້ນ\n"
-"            ຖືກເຂົ້າລະຫັດ, ກະລຸນາລະບຸ Pre Shared Key ໃນຮູບແບບເລກຖານສິບຫົກ ຫຼື\n"
+"            <em>ບໍ່ກໍ</em> ເຂົ້າລະຫັດດ້ວຍ\n"
+"            <em>Pre Shared Key</em> ຫຼື <em>ລະຫັດຜ່ານ</em>. ຖ້າຄ່າຕ່າງໆ\n"
+"            ຖືກເຂົ້າລະຫັດໄວ້, ກະລຸນາລະບຸ Pre Shared Key ໃນຮູບແບບຖານສິບຫົກ (hex) ຫຼື\n"
 "            ລະຫັດຜ່ານ."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:132
@@ -5700,9 +6002,8 @@ msgid "User Store Attribute"
 msgstr "ຄຸນລັກສະນະບ່ອນເກັບຂໍ້ມູນຜູ້ໃຊ້"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:139
-#, fuzzy
 msgid "User Store Group Attribute"
-msgstr "ຄຸນລັກສະນະບ່ອນເກັບຂໍ້ມູນຜູ້ໃຊ້"
+msgstr "ແອດທຣິບິວກຸ່ມຂອງແຫຼ່ງເກັບຂໍ້ມູນຜູ້ໃຊ້"
 
 #: privacyidea/static/components/register/controllers/registerControllers.js:17
 msgid "User account created. An Email has been sent to you."
@@ -5718,7 +6019,7 @@ msgstr "ລຶບຜູ້ໃຊ້ສຳເລັດແລ້ວ."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:167
 msgid "User groups are received in a separate request."
-msgstr ""
+msgstr "ກຸ່ມຜູ້ໃຊ້ຈະໄດ້ຮັບໃນຄຳຂໍແຍກຕ່າງຫາກ."
 
 #: privacyidea/static/components/user/controllers/userControllers.js:253
 msgid "User updated successfully."
@@ -5735,7 +6036,7 @@ msgstr "User-Resolver"
 #: privacyidea/static/components/token/views/token.containerdetails.html:686
 #: privacyidea/static/components/token/views/token.list.html:136
 msgid "UserId"
-msgstr "UserId"
+msgstr "ໄອດີຜູ້ໃຊ້"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:108
 #: privacyidea/static/components/config/views/config.radius.edit.html:111
@@ -5858,7 +6159,7 @@ msgstr "ຄຳສັ່ງ Where"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:443
 msgid "Window"
-msgstr "Window"
+msgstr "ຊ່ວງເວລາ"
 
 #: privacyidea/static/components/token/views/token.enroll.push.html:1
 msgid ""
@@ -5955,12 +6256,12 @@ msgid ""
 "                (like SQLResolver) and check the\n"
 "                box \"Edit user store\"."
 msgstr ""
-"ທ່ານຍັງບໍ່ໄດ້ກຳນົດຕົວແກ້ໄຂ (resolvers) ທີ່ສາມາດແກ້ໄຂໄດ້. ສະນັ້ນທ່ານບໍ່ສາມາດຂຽນ\n"
-"                ຂໍ້ມູນໃສ່ບ່ອນເກັບຂໍ້ມູນຜູ້ໃຊ້ໃດໆ. ຖ້າທ່ານຕ້ອງການເພີ່ມຜູ້ໃຊ້, ທ່ານຈຳເປັນຕ້ອງ\n"
-"                <a ui-sref=\"config.resolvers.list\">ກຳນົດຕົວແກ້ໄຂທີ່ສາມາດແກ້ໄຂໄດ້</"
-"a>\n"
+"ທ່ານຍັງບໍ່ໄດ້ກຳນົດຕົວແກ້ໄຂ (resolvers) ທີ່ສາມາດແກ້ໄຂໄດ້. ດັ່ງນັ້ນ ທ່ານຈຶ່ງບໍ່ສາມາດຂຽນ\n"
+"                ຂໍ້ມູນລົງໃນແຫຼ່ງເກັບຂໍ້ມູນຜູ້ໃຊ້ໃດໆໄດ້. ຖ້າທ່ານຕ້ອງການເພີ່ມຜູ້ໃຊ້, ທ່ານຈຳເປັນຕ້ອງ\n"
+"                <a ui-sref=\"config.resolvers.list\">ກຳນົດຕົວແກ້ໄຂ\n"
+"                    ທີ່ສາມາດແກ້ໄຂໄດ້</a>\n"
 "                (ເຊັ່ນ SQLResolver) ແລະ ໝາຍຕິກໃສ່\n"
-"                ຫ້ອງ \"Edit user store\"."
+"                ກ່ອງໂຕເລືອກ \"ແກ້ໄຂແຫຼ່ງເກັບຂໍ້ມູນຜູ້ໃຊ້ (Edit user store)\"."
 
 #: privacyidea/static/components/token/views/token.enrolled.registration.html:16
 msgid "You may pass this registration code to the user."
@@ -6070,9 +6371,9 @@ msgid ""
 "        subscription expired. Please check, if you need to renew your <a ui-"
 "sref=\"component.subscriptions\">subscription</a>."
 msgstr ""
-"ການສະໝັກໃຊ້ຂອງທ່ານບໍ່ມີຜົນອີກຕໍ່ໄປ. ບໍ່ແມ່ນທ່ານໃຊ້ໂທເຄັນເກີນຈຳນວນ ຫຼື\n"
-"        ການສະໝັກໃຊ້ໝົດອາຍຸ. ກະລຸນາກວດສອບວ່າທ່ານຈຳເປັນຕ້ອງຕໍ່ອາຍຸ <a ui-"
-"sref=\"component.subscriptions\">ການສະໝັກໃຊ້</a> ຂອງທ່ານຫຼືບໍ່."
+"ການສະໝັກໃຊ້ (subscription) ຂອງທ່ານບໍ່ມີຜົນນຳໃຊ້ອີກຕໍ່ໄປ. ທ່ານອາດຈະໃຊ້ໂທເຄັນເກີນຈຳນວນ ຫຼື\n"
+"        ການສະໝັກໃຊ້ໝົດອາຍຸແລ້ວ. ກະລຸນາກວດສອບ, ຖ້າທ່ານຈຳເປັນຕ້ອງຕໍ່ອາຍຸ <a ui-"
+"sref=\"component.subscriptions\">ການສະໝັກໃຊ້</a> ຂອງທ່ານ."
 
 #: privacyidea/static/components/login/views/pinchange.html:5
 msgid ""
@@ -6095,7 +6396,7 @@ msgstr "ການຕັ້ງຄ່າໂທເຄັນ Yubico"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:34
 msgid "Yubico URL"
-msgstr "Yubico URL"
+msgstr "URL ຂອງ Yubico"
 
 #: privacyidea/static/components/token/views/token.enroll.yubico.html:14
 msgid "Yubikey Identifier"
@@ -6145,7 +6446,7 @@ msgstr "ການຢືນຢັນຕົວຕົນ"
 
 #: privacyidea/static/components/token/views/token.details.html:529
 msgid "belonging to"
-msgstr ""
+msgstr "ທີ່ເປັນຂອງ"
 
 #: privacyidea/static/components/token/views/token.details.html:200
 msgid "certificate"
@@ -6303,9 +6604,8 @@ msgid "privacyIDEA UI is locked"
 msgstr "UI ຂອງ privacyIDEA ຖືກລັອກຢູ່"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:131
-#, fuzzy
 msgid "privacyIDEA User Groups Key"
-msgstr "ເຊີບເວີ privacyIDEA"
+msgstr "ຄີກຸ່ມຜູ້ໃຊ້ privacyIDEA"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:32
 msgid "privacyIDEA authentication backend"
@@ -6378,7 +6678,7 @@ msgstr "ສະຖານະການເປີດໃຊ້ງານ (rollout state
 #: privacyidea/static/components/token/views/token.containerdetails.html:622
 #: privacyidea/static/components/token/views/token.list.html:19
 msgid "serial"
-msgstr "serial"
+msgstr "ຊີຣຽວ"
 
 #: privacyidea/static/components/token/views/token.import.html:38
 msgid "serial number, seed, type, ocrasuite"
