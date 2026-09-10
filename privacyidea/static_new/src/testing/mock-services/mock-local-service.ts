@@ -40,6 +40,8 @@ export class MockLocalService implements LocalServiceInterface {
     }
   });
   usePersistence = jest.fn();
+  inactiveSessionToken = jest.fn().mockReturnValue("");
+  clearInactiveSession = jest.fn();
   clearSession = jest.fn().mockImplementation(() => {
     this.data = {};
   });

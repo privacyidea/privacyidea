@@ -65,8 +65,10 @@ session. Where it keeps it is set by the :ref:`policy_session_persistence` polic
 is evaluated for the user who logs in:
 
 * ``tab`` - the token goes to ``sessionStorage``. It belongs to the tab it was created
-  in, is gone when that tab closes, and a second tab has to log in for itself, so two
-  tabs can hold different users. This is the default.
+  in, is gone when that tab closes, and a tab opened on its own has to log in for
+  itself, so two tabs can hold different users. This is the default. Note that a tab
+  opened *from* a logged-in one -- Duplicate tab, a middle-click, ``window.open`` -- is
+  handed a copy of its ``sessionStorage`` by the browser, and therefore of the session.
 * ``browser`` - the token goes to ``localStorage``. Every tab of the browser shares the
   session, and it survives closing the browser until the JWT expires. This is the
   behaviour of releases before the policy existed.
@@ -78,14 +80,16 @@ any other.
 
 A tab picks up the session it finds in its own ``sessionStorage`` first and the one in
 ``localStorage`` second, so a session already open keeps the storage it was created in
-even after the policy changes. The new value applies to the next login, which also
-clears whatever the other storage still held. Under the default this moves a session
-written by an earlier release out of ``localStorage``, so nobody has to log in again
-after the upgrade.
+even after the policy changes, and a session written by an earlier release still works
+after the upgrade. The new value applies at the next login: that login also drops a
+session left in the other storage when it belongs to the same user, so narrowing the
+policy takes effect for them there rather than at the expiry of the old token. A session
+belonging to anyone else -- another tab, another user of the same browser -- is never
+touched, so the two can coexist.
 
-Logging out in one tab of a ``browser`` session takes the token away from all of them,
-but the other tabs only notice on their next request to the server, which is answered
-with 401 and returns them to the login page.
+Logging out in one tab of a ``browser`` session takes the token away from all of them.
+The others notice at their next request to the server: it is answered with 401, on which
+the WebUI ends the session and returns them to the login page.
 
 .. _new_webui_hardening:
 
@@ -96,9 +100,11 @@ Hardening a browser-wide session
 
 ``browser`` leaves a usable token on disk until it expires: whoever opens the browser
 next is logged in, and every same-origin context -- a frame, or a window opened through
-``window.open`` -- can read it. Use it only on devices that are not shared, and consider
-``X-Frame-Options: DENY`` (or ``Content-Security-Policy: frame-ancestors 'none'``) on the
-reverse proxy in either case.
+``window.open`` -- can read it. Use it only on devices that are not shared. ``tab`` keeps
+the token out of both, but not out of a tab opened from a logged-in one, which is handed
+a copy of the session as described above. Consider ``X-Frame-Options: DENY`` (or
+``Content-Security-Policy: frame-ancestors 'none'``) on the reverse proxy for either
+value.
 
 Logging out discards the stored token but does not withdraw it: privacyIDEA checks a JWT
 by signature and ``exp`` only, so a copied token stays usable until it expires. That

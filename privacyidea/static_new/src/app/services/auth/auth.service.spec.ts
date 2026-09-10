@@ -645,6 +645,52 @@ describe("AuthService", () => {
       expect(mockLocal.usePersistence).toHaveBeenCalledWith("tab");
     });
 
+    it("falls back to the tab for a policy value it does not know", () => {
+      const warn = jest.spyOn(console, "warn").mockReturnValue();
+
+      login("broswer");
+
+      expect(mockLocal.usePersistence).toHaveBeenCalledWith("tab");
+      expect(warn).toHaveBeenCalled();
+    });
+
+    const leftoverTokenOf = (username: string, role = "admin"): string => {
+      const payload = {
+        username,
+        realm: "def",
+        nonce: "old",
+        role,
+        authtype: "cookie",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        rights: []
+      };
+      return ["hdr", b64url(payload), "sig"].join(".");
+    };
+
+    it("drops the leftover session of the principal that just logged in", () => {
+      mockLocal.inactiveSessionToken.mockReturnValue(leftoverTokenOf("alice"));
+
+      login("tab");
+
+      expect(mockLocal.clearInactiveSession).toHaveBeenCalled();
+    });
+
+    it("keeps a leftover session that belongs to somebody else", () => {
+      mockLocal.inactiveSessionToken.mockReturnValue(leftoverTokenOf("bob"));
+
+      login("tab");
+
+      expect(mockLocal.clearInactiveSession).not.toHaveBeenCalled();
+    });
+
+    it("keeps a leftover session of the same name in another role", () => {
+      mockLocal.inactiveSessionToken.mockReturnValue(leftoverTokenOf("alice", "user"));
+
+      login("tab");
+
+      expect(mockLocal.clearInactiveSession).not.toHaveBeenCalled();
+    });
+
     it("clears the session from both storages on logout", () => {
       login("browser");
 

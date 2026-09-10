@@ -342,7 +342,7 @@ class TIMEOUT_ACTION:
 
 
 class SESSION_PERSISTENCE:
-    __doc__ = """This is a list of action values for the lifetime of a WebUI session"""
+    __doc__ = """This is a list of action values for where the WebUI keeps a session"""
     TAB = "tab"
     BROWSER = "browser"
 

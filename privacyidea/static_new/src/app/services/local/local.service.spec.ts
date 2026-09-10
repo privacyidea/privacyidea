@@ -74,15 +74,42 @@ describe("LocalService", () => {
       expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
     });
 
-    it("drops what the other storage held, so no stale session is left to find", () => {
+    it("leaves the other storage alone, because that session belongs to someone else", () => {
       localService.usePersistence("browser");
-      localService.saveData(BEARER_TOKEN_STORAGE_KEY, "old-token");
-      localService.saveData(AUTH_DATA_STORAGE_KEY, "old-data");
+      localService.saveData(BEARER_TOKEN_STORAGE_KEY, "another-tabs-token");
+
+      localService.usePersistence("tab");
+      localService.saveData(BEARER_TOKEN_STORAGE_KEY, "this-tabs-token");
+
+      expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).not.toBeNull();
+      expect(localService.getData(BEARER_TOKEN_STORAGE_KEY)).toBe("this-tabs-token");
+    });
+
+    it("hands out the other storage's token so its owner can be identified", () => {
+      localService.usePersistence("browser");
+      localService.saveData(BEARER_TOKEN_STORAGE_KEY, "leftover-token");
 
       localService.usePersistence("tab");
 
+      expect(localService.inactiveSessionToken()).toBe("leftover-token");
+      expect(localService.getData(BEARER_TOKEN_STORAGE_KEY)).toBe("");
+    });
+
+    it("drops the other storage's session only when asked to", () => {
+      localService.usePersistence("browser");
+      localService.saveData(BEARER_TOKEN_STORAGE_KEY, "leftover-token");
+      localService.saveData(AUTH_DATA_STORAGE_KEY, "leftover-data");
+
+      localService.usePersistence("tab");
+      localService.clearInactiveSession();
+
       expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
       expect(localStorage.getItem(AUTH_DATA_STORAGE_KEY)).toBeNull();
+    });
+
+    it("reports no token when the other storage holds none", () => {
+      localService.usePersistence("tab");
+      expect(localService.inactiveSessionToken()).toBe("");
     });
   });
 
@@ -110,14 +137,14 @@ describe("LocalService", () => {
     });
   });
 
-  it("clears the session from both storages", () => {
+  it("clears the session it holds, and not another tab's", () => {
     localService.usePersistence("browser");
     localService.saveData(BEARER_TOKEN_STORAGE_KEY, "in-local");
-    sessionStorage.setItem(AUTH_DATA_STORAGE_KEY, "in-session");
+    sessionStorage.setItem(AUTH_DATA_STORAGE_KEY, "another-tabs-data");
 
     localService.clearSession();
 
     expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
-    expect(sessionStorage.getItem(AUTH_DATA_STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(AUTH_DATA_STORAGE_KEY)).toBe("another-tabs-data");
   });
 });

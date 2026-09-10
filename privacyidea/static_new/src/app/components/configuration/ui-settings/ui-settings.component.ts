@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
+import { forkJoin } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -25,13 +26,13 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { UI_LOCALES } from "@core/locale";
+import { LandingPage } from "@core/landing-page";
 import {
   LightSourceDialComponent,
   LightSourceDialItem
 } from "@components/shared/light-source-dial/light-source-dial.component";
 import { ThemeToggleComponent } from "@components/shared/theme-toggle/theme-toggle.component";
-import { LandingPage } from "@core/landing-page";
-import { UI_LOCALES } from "@core/locale";
 import {
   AppearanceService,
   CornerLevel,
@@ -42,7 +43,6 @@ import {
 } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
-import { forkJoin } from "rxjs";
 
 @Component({
   selector: "app-ui-settings",
