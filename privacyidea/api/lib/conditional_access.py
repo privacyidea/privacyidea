@@ -84,6 +84,7 @@ from privacyidea.lib.conditional_access.engine import (get_user_lock, get_ip_blo
                                                        render_error_message, restriction_messages, AccessDecision,
                                                        ConditionalAccessAction, RestrictionStatus, StageMessage)
 from privacyidea.lib.conditional_access.policy import default_error_message
+from privacyidea.lib.conditional_access.session import release_ca_connection
 from privacyidea.lib.conditional_access.request_context import (ConditionalAccessContext, PostEvaluation,
                                                                  RejectionShape, get_ca_context, peek_ca_context)
 from privacyidea.lib.error import AuthError, Error
@@ -133,47 +134,56 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
     by both entry points so neither can answer it differently from the other.
 
     A lock or block already in force refuses the request before the conditional-access DENY decision is evaluated,
-    so an ALLOW cannot override them. Every restriction in force that carries one is reported, while the
+    so no policy can override them. Every restriction in force that carries one is reported, while the
     authentication log is classified by the binding one (:func:`_binding_event_type`), because that row holds one
-    classification per request. A DENY refuses this single request without persisting state; ALLOW / CONTINUE
-    return ``None`` and the request continues. ``g.client_ip`` is the source IP checked.
+    classification per request. A DENY refuses this single request without persisting state; CONTINUE ("no policy
+    had an opinion") returns ``None`` and the request continues. ``g.client_ip`` is the source IP checked.
 
     Reads clear an expired row as they go, so a lock that has run out is not treated as one.
+
+    The conditional-access connection is released on the way out: this is the only read the pre-check
+    does, and holding it for the rest of a request it let through occupies a second connection out of
+    ``db.session``'s pool (see :func:`~privacyidea.lib.conditional_access.session.release_ca_connection`).
     """
-    # Resolved once per request and kept on the context, which is the single place it lives: this pre-check reads
-    # it back below, and the post-response evaluation reads the same value, so both halves of one request word a
-    # rejection the same way.
-    context = get_ca_context()
-    context.use_default_error_message = show_default_ca_error_message(user)
-    lockout = get_user_lock(user, clear_expired=True)
-    ip_block = get_ip_block(g.client_ip, clear_expired=True)
-    binding = _binding_event_type(lockout, ip_block)
-    if binding:
-        subject = f"locked user {user!r}" if binding is AuthEventType.USER_LOCKED else f"blocked IP {g.client_ip!r}"
-        log.info(f"Rejecting {request.path} for {subject}.")
-        # Every restriction in force that carries an error message is reported, not only the binding one: an
-        # account lock and an address block are independent facts, resolved differently, so telling the user
-        # about one leaves them to discover the other by failing again. Worded the same on both, it is said once
-        # (restriction_messages de-duplicates).
-        messages = restriction_messages(lockout, ip_block, use_default_error_message=context.use_default_error_message)
-        return Rejection(binding, _audit_reason(lockout, ip_block),
-                         " ".join(message.text for message in messages) or None,
-                         _additional_event_types(binding, lockout, ip_block))
-    decision = evaluate_access_decision(build_ca_context(user))
-    # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it against
-    # (and a dry-run DENY lets the request continue, so its row comes later). The context holds the outcomes until the
-    # request stages the event they belong to - which, for an enforced DENY, is the row the caller writes next.
-    context.add_outcomes(decision.outcomes)
-    if decision.decision == AccessDecision.DENY:
-        log.info(f"Denying {request.path} for {user!r} by conditional-access policy.")
-        # A DENY persists nothing, so its error message comes straight off the deciding stage - or, with none, off
-        # the default error message for a denial.
-        template = decision.error_message
-        if not template and context.use_default_error_message:
-            template = default_error_message(ConditionalAccessAction.DENY)
-        return Rejection(AuthEventType.ACCESS_DENIED, "Rejected: denied by conditional-access policy",
-                         render_error_message(template))
-    return None
+    try:
+        # Resolved once per request and kept on the context, which is the single place it lives: this pre-check reads
+        # it back below, and the post-response evaluation reads the same value, so both halves of one request word a
+        # rejection the same way.
+        context = get_ca_context()
+        context.use_default_error_message = show_default_ca_error_message(user)
+        lockout = get_user_lock(user, clear_expired=True)
+        ip_block = get_ip_block(g.client_ip, clear_expired=True)
+        binding = _binding_event_type(lockout, ip_block)
+        if binding:
+            subject = f"locked user {user!r}" if binding is AuthEventType.USER_LOCKED else f"blocked IP {g.client_ip!r}"
+            log.info(f"Rejecting {request.path} for {subject}.")
+            # Every restriction in force that carries an error message is reported, not only the binding one: an
+            # account lock and an address block are independent facts, resolved differently, so telling the user
+            # about one leaves them to discover the other by failing again. Worded the same on both, it is said once
+            # (restriction_messages de-duplicates).
+            messages = restriction_messages(lockout, ip_block,
+                                            use_default_error_message=context.use_default_error_message)
+            return Rejection(binding, _audit_reason(lockout, ip_block),
+                             " ".join(message.text for message in messages) or None,
+                             _additional_event_types(binding, lockout, ip_block))
+        decision = evaluate_access_decision(build_ca_context(user))
+        # A DENY decision is part of this request's history, but no authentication-log row exists yet to record it
+        # against (and a dry-run DENY lets the request continue, so its row comes later). The context holds the
+        # outcomes until the request stages the event they belong to - which, for an enforced DENY, is the row the
+        # caller writes next.
+        context.add_outcomes(decision.outcomes)
+        if decision.decision == AccessDecision.DENY:
+            log.info(f"Denying {request.path} for {user!r} by conditional-access policy.")
+            # A DENY persists nothing, so its error message comes straight off the deciding stage - or, with none, off
+            # the default error message for a denial.
+            template = decision.error_message
+            if not template and context.use_default_error_message:
+                template = default_error_message(ConditionalAccessAction.DENY)
+            return Rejection(AuthEventType.ACCESS_DENIED, "Rejected: denied by conditional-access policy",
+                             render_error_message(template))
+        return None
+    finally:
+        release_ca_connection()
 
 
 # --- /validate/*: return the rejection as a response ---------------------------------------------------------------

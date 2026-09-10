@@ -251,6 +251,12 @@ describe("AuthenticationLog", () => {
       "PISP0003",
       "PISP0004"
     ]);
+    // An overflow the backend had to cap ends in a count of what it left out, which is not a token.
+    expect(component.usedSerials(withOverflow({ truncated: { serial: "PISP0003...(90 more characters)" } }))).toEqual([
+      "PISP0001",
+      "PISP0002",
+      "PISP0003"
+    ]);
     // other_info is free-form, so anything of an unexpected shape leaves the column's own serials standing.
     expect(component.usedSerials(withOverflow(null))).toEqual(["PISP0001", "PISP0002"]);
     expect(component.usedSerials(withOverflow({ truncated: "PISP0003" }))).toEqual(["PISP0001", "PISP0002"]);
@@ -344,9 +350,9 @@ describe("AuthenticationLog", () => {
       })
     );
     fixture.detectChanges();
-    const rendered = Array.from(fixture.nativeElement.querySelectorAll<HTMLElement>(".reason-entry")).map((element) =>
-      element.textContent!.trim()
-    );
+    const rendered = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>(".reason-entry")
+    ).map((element) => element.textContent!.trim());
     expect(rendered).toEqual(["TOKEN_DISABLED", "WRONG_OTP"]);
     // Only the row whose reasons were detailed gets the button that opens them.
     expect(fixture.nativeElement.querySelectorAll(".reason-detail-button").length).toBe(1);

@@ -24,7 +24,9 @@ from sqlalchemy.exc import OperationalError
 from unittest import mock
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.session import close_ca_session, get_ca_session, guarded_write
+from privacyidea.lib.framework import get_request_local_store
+from privacyidea.lib.conditional_access.session import (_SESSION_KEY, close_ca_session, get_ca_session,
+                                                        guarded_write, release_ca_connection)
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
@@ -80,6 +82,34 @@ class ConditionalAccessSessionTestCase(MyTestCase):
         # close() expunges the identity map, and the session is dropped so the next call opens a new one.
         self.assertNotIn(entry, session)
         self.assertIsNot(session, get_ca_session())
+
+    def test_08_release_returns_the_connection_and_keeps_the_session(self):
+        session = get_ca_session()
+        session.scalars(select(AuthenticationLog)).all()
+        # A read opens a transaction, and the connection is checked out for as long as it is open.
+        self.assertTrue(session.in_transaction())
+
+        release_ca_connection()
+
+        self.assertFalse(session.in_transaction())
+        # Unlike close_ca_session, the session itself survives and the next read opens a fresh transaction on it.
+        self.assertIs(session, get_ca_session())
+        self.assertListEqual([], session.scalars(select(AuthenticationLog)).all())
+        self.assertTrue(session.in_transaction())
+
+    def test_09_release_without_a_session_is_a_no_op(self):
+        close_ca_session()
+        # Must neither raise nor open a session just to release it.
+        release_ca_connection()
+        self.assertNotIn(_SESSION_KEY, get_request_local_store())
+
+    def test_10_release_does_not_commit_pending_writes(self):
+        session = get_ca_session()
+        session.add(AuthenticationLog(event_type=AuthEventType.LOGIN_SUCCESS, username="carol"))
+
+        release_ca_connection()
+
+        self.assertListEqual([], db.session.scalars(select(AuthenticationLog)).all())
 
     def test_07_closer_registered_as_appcontext_teardown(self):
         # Covers callers with no request (pi-manage, scripts, periodic tasks), where call_finalizers() never runs.

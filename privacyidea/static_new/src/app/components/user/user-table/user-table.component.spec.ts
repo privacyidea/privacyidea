@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
@@ -90,7 +91,7 @@ describe("UserTableComponent", () => {
     authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist"] });
     // A request is out and nothing has come back for it yet.
     mockUserService.usersResource.set(undefined as never);
-    mockUserService.usersResource.isLoading.set(true);
+    (mockUserService.usersResource.isLoading as WritableSignal<boolean>).set(true);
     expect(component.tableState.status()).toBe("loading");
 
     component.tableState.cancel();

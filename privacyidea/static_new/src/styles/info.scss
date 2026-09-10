@@ -108,7 +108,9 @@ $table-cell-font-size: 0.875rem;
 
 // Widen the app-info-hint tooltips so a two-sentence explanation stays readable
 // (the overlay renders outside component scope, so this lives in the global sheet).
+// The background follows the theme-driven tooltip token rather than a fixed light color: hardcoded
+// against --mat-tooltip-supporting-text-color (light text in dark mode) it left white-on-light-grey.
 .info-hint-tooltip .mdc-tooltip__surface {
-  background-color: #e8e8e8;
+  background-color: var(--mat-tooltip-container-color);
   max-width: 320px;
 }

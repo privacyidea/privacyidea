@@ -75,7 +75,7 @@ from privacyidea.api.lib.conditional_access import (compose_failure_message, con
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
-                                            get_webui_settings, hide_specific_error_message)
+                                            get_webui_settings)
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
@@ -195,7 +195,6 @@ def before_request():
 @prepolicy(disabled_token_types, request=request)
 @prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
-@postpolicy(hide_specific_error_message, request=request)
 @postpolicy(get_webui_settings, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)

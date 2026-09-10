@@ -15,6 +15,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokens.deprecated import DeprecatedTokenClass
 from privacyidea.models import Token, db
+from ..base import _reset_database
 
 
 @pytest.fixture(scope="function")
@@ -22,14 +23,13 @@ def app():
     """Create and configure app instance for testing."""
     app = create_app(config_name="testing", config_file="", silent=True)
     with app.app_context():
-        db.create_all()
+        _reset_database()
 
     yield app
 
     with app.app_context():
         call_finalizers()
         close_all_sessions()
-        db.drop_all()
         db.engine.dispose()
 
 

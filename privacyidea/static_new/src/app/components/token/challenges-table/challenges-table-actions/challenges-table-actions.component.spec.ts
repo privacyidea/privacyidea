@@ -63,7 +63,7 @@ describe("ChallengesTableActionsComponent", () => {
   it("should delete expired challenges and reload on success", () => {
     const deleteSpy = jest
       .spyOn(challengesService, "deleteExpiredChallenges")
-      .mockReturnValue(of({} as PiResponse<unknown>));
+      .mockReturnValue(of({} as PiResponse<{ status: boolean; deleted: number }>));
     const reloadSpy = jest.spyOn(challengesService.challengesResource, "reload");
 
     component.onDeleteExpiredChallenges();

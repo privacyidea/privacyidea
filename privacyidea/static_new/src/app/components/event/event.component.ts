@@ -46,7 +46,8 @@ import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService } from "@services/auth/auth.service";
-import { EMPTY_EVENT, EventHandler, EventService } from "@services/event/event.service";
+import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services/event/event.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { of } from "rxjs";
 
@@ -75,6 +76,7 @@ import { of } from "rxjs";
 export class EventComponent {
   protected readonly authService = inject(AuthService);
   protected readonly eventService = inject(EventService);
+  protected readonly notificationService = inject(NotificationService);
   protected readonly EMPTY_EVENT = EMPTY_EVENT;
   private readonly router = inject(Router);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -99,6 +101,7 @@ export class EventComponent {
     }
     return keys;
   });
+
   detailedView = signal(false);
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -198,6 +201,36 @@ export class EventComponent {
     }
   }
 
+  commitOrdering(eventHandler: EventHandler, input: HTMLInputElement): void {
+    const ordering = Number(input.value);
+    // The upper bound is the largest value the ordering column holds, so an out-of-range value is rejected
+    // here instead of failing in the database
+    if (!Number.isInteger(ordering) || ordering < 0 || ordering > MAX_ORDERING || input.value.trim() === "") {
+      input.value = String(eventHandler.ordering);
+      this.notificationService.warning(
+        $localize`:@@event.orderingHasToBeAWholeNumber:The ordering has to be a whole number between 0 and ${MAX_ORDERING}:MAXIMUM:.`
+      );
+      return;
+    }
+    if (ordering === eventHandler.ordering) {
+      return;
+    }
+
+    this.eventService.updateOrdering(eventHandler, ordering).subscribe((response) => {
+      this.eventService.allEventsResource.reload();
+      if (response?.result?.value === undefined) {
+        input.value = String(eventHandler.ordering);
+        this.notificationService.error(
+          $localize`:@@event.orderingNotSaved:The new ordering was not saved. The event handlers are unchanged.`
+        );
+        return;
+      }
+      this.notificationService.success(
+        $localize`:@@event.orderingUpdated:Updated the ordering of ${eventHandler.name}:HANDLER:.`
+      );
+    });
+  }
+
   private filterMatchesEvents(data: EventHandler, filter: string): boolean {
     // checks if the filter string matches any of the events in the event handler
     for (const event of data.event) {
@@ -233,8 +266,13 @@ export class EventComponent {
     const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof EventHandler;
     return data.sort((a: EventHandler, b: EventHandler) => {
-      const va = (a?.[key] ?? "").toString().toLowerCase();
-      const vb = (b?.[key] ?? "").toString().toLowerCase();
+      const rawA = a?.[key];
+      const rawB = b?.[key];
+      if (typeof rawA === "number" && typeof rawB === "number") {
+        return (rawA - rawB) * dir;
+      }
+      const va = (rawA ?? "").toString().toLowerCase();
+      const vb = (rawB ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;
       if (va > vb) return 1 * dir;
       return 0;

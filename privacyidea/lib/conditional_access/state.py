@@ -48,12 +48,15 @@ DEFAULT_PAGE_SIZE = 15
 
 # The lock state is derived from lock_expires_at vs. now: permanent means NULL, temporary means the expiry is
 # still ahead (in force, lifts on its own), and expired means it has passed (a stale record, no longer enforced).
+#: The states a user-lock record can be in, as accepted by the ``states`` query parameter.
 LOCK_STATES = ("permanent", "temporary", "expired")
 
 # Who imposed the restriction now in force; see :class:`RestrictionCause`.
+#: Who imposed the restriction now in force, as accepted by the ``causes`` query parameter.
 LOCK_CAUSES = tuple(cause.value for cause in RestrictionCause)
 
 # Columns the locked-users list may be sorted by (any other value falls back to locked_at).
+#: The columns a paginated locked-users query may sort by, keyed by the name the API accepts.
 SORTABLE_COLUMNS = {
     "username": UserLockState.username,
     "realm": UserLockState.realm,

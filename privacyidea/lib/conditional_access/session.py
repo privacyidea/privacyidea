@@ -24,6 +24,8 @@ it. Both effects are invisible at the call site, which is why these writes get a
 
 The session is bound to the very same engine as ``db.session`` -- same database, same connection pool. Only the
 transaction is separate; nothing here implies (or supports) storing the conditional-access tables elsewhere.
+Sharing the pool is what makes :func:`release_ca_connection` worth calling: a caller that is done reading hands
+the connection back rather than holding it beside ``db.session``'s own until teardown.
 """
 import logging
 from collections.abc import Iterator
@@ -61,6 +63,31 @@ def get_ca_session() -> Session:
         store[_SESSION_KEY] = session
         register_finalizer(close_ca_session)
     return session
+
+
+def release_ca_connection() -> None:
+    """
+    End the current transaction of the conditional-access session, returning its connection to the pool while
+    keeping the session itself usable.
+
+    The authentication pre-check reads the lock, the block and the policies and then hands the request on. Its
+    reads open a transaction that nothing commits, so without this the connection stays checked out until
+    teardown -- alongside ``db.session``'s own, out of the same pool -- for the whole request, while the only
+    conditional-access work left is the write at teardown. Releasing it here hands it back for the duration of the
+    request the pre-check just let through, and the next use opens a fresh transaction.
+
+    It also ends the read view: under MySQL/MariaDB's REPEATABLE READ an open transaction hides rows a concurrent
+    request committed since it began, which is exactly what the counts at teardown must not read (see
+    :meth:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.run_post_eval`).
+
+    Safe for the pre-check because it carries nothing persistent forward: the restrictions come back as plain
+    dataclasses and the outcomes it stages are transient (see
+    :func:`~privacyidea.lib.conditional_access.outcome_log.outcome_for_stage`). A caller holding an instance it
+    still means to read must not use this.
+    """
+    session = get_request_local_store().get(_SESSION_KEY)
+    if session is not None:
+        session.close()
 
 
 def close_ca_session(*_args) -> None:
