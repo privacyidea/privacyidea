@@ -65,7 +65,7 @@ from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
-                                    SCOPE, AUTOASSIGNVALUE, AUTHORIZED, Match)
+                                    SCOPE, AUTOASSIGNVALUE, AUTHORIZED, SESSION_PERSISTENCE, Match)
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            check_subscription,
@@ -93,6 +93,7 @@ DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_CONTAINER_TYPE = "generic"
 DEFAULT_TIMEOUT_ACTION = "lockscreen"
+DEFAULT_SESSION_PERSISTENCE = SESSION_PERSISTENCE.TAB
 DEFAULT_POLICY_TEMPLATE_URL = "/static/policy-templates/"
 BODY_TEMPLATE = lazy_gettext("""
 <--- Please describe your Problem in detail --->
@@ -673,6 +674,9 @@ def get_webui_settings(request, response):
                                         user=username, realm=realm).action_values(unique=True)
         timeout_action_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TIMEOUT_ACTION, user_object=user,
                                            user=username, realm=realm).action_values(unique=True)
+        session_persistence_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SESSION_PERSISTENCE,
+                                                user_object=user, user=username,
+                                                realm=realm).action_values(unique=True)
         audit_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.AUDITPAGESIZE, user_object=user,
                                             user=username, realm=realm).action_values(unique=True)
         token_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENPAGESIZE, user_object=user,
@@ -794,6 +798,13 @@ def get_webui_settings(request, response):
         if len(timeout_action_pol) == 1:
             timeout_action = list(timeout_action_pol)[0]
 
+        # The WebUI stores its bearer token in the browser storage this value selects, so it is
+        # the deployment's decision, not the user's: a session that outlives the tab it was
+        # opened in leaves the token on disk until the JWT expires.
+        session_persistence = DEFAULT_SESSION_PERSISTENCE
+        if len(session_persistence_pol) == 1:
+            session_persistence = list(session_persistence_pol)[0]
+
         policy_template_url_pol = Match.action_only(g, scope=SCOPE.WEBUI,
                                                     action=PolicyAction.POLICYTEMPLATEURL).action_values(unique=True)
         policy_template_url = DEFAULT_POLICY_TEMPLATE_URL
@@ -819,6 +830,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["dialog_no_token"] = dialog_no_token
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
+        content["result"]["value"]["session_persistence"] = session_persistence
         content["result"]["value"]["token_rollover"] = token_rollover
         content["result"]["value"]["hide_welcome"] = hide_welcome
         content["result"]["value"]["hide_buttons"] = hide_buttons

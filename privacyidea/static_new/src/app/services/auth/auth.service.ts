@@ -23,10 +23,12 @@ import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
+import { DEFAULT_SESSION_PERSISTENCE, isSessionPersistence, SessionPersistence } from "@core/session-persistence";
 import { environment } from "@env/environment";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
@@ -72,6 +74,8 @@ export interface AuthData {
   dialog_no_token: boolean;
   search_on_enter: boolean;
   timeout_action: string;
+  // Absent only when talking to a server that predates the session_persistence policy.
+  session_persistence?: SessionPersistence;
   token_rollover?: Record<string, string[]>;
   hide_welcome: boolean;
   hide_buttons: boolean;
@@ -243,6 +247,8 @@ export interface AuthServiceInterface {
   readonly isSelfServiceUser: Signal<boolean>;
 
   // Methods
+  bootstrapSession(): void;
+
   getHeaders(): HttpHeaders;
 
   authenticate(params: AuthenticateParams): Observable<AuthResponse>;
@@ -353,7 +359,7 @@ export class AuthService implements AuthServiceInterface {
   );
   readonly isSelfServiceUser = computed(() => this.role() === "user");
 
-  constructor() {
+  bootstrapSession(): void {
     this.restoreSession();
   }
 
@@ -379,6 +385,9 @@ export class AuthService implements AuthServiceInterface {
             this.acceptAuthentication();
             this.authData.set(value);
             this.jwtData.set(this.decodeJwtPayload(value.token));
+            // Before the first write, so the session goes to the storage the policy names.
+            this.localService.usePersistence(this.persistenceOf(value));
+            this.dropOwnStaleSession(value.token);
             this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
             this.localService.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify(this.persistableAuthData(value)));
             // Update version after login — the hide_version policy strips the
@@ -400,14 +409,25 @@ export class AuthService implements AuthServiceInterface {
   }
 
   logout(): void {
+    this.endSession();
+  }
+
+  private endSession(): void {
+    // Without this the timeout armed for the session that just ended stays live and logs the
+    // next one out; the interval would keep ticking for the life of the page as well.
+    this.injector.get(SessionTimerService).stopTimers();
     this.dialog.closeAll();
     this.authData.set(null);
     this.jwtData.set(null);
     this.clearStoredSession();
     this.authenticationAccepted.set(false);
+    this.clearUserScopedCaches();
+    this.router.navigate(["login"]);
+  }
+
+  private clearUserScopedCaches(): void {
     this.dashboardDataStore.invalidate();
     this.injector.get(UserSettingsService).clearCache();
-    this.router.navigate(["login"]);
   }
 
   actionAllowed(action: PolicyAction): boolean {
@@ -463,8 +483,8 @@ export class AuthService implements AuthServiceInterface {
   private readonly http = inject(HttpClient);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   private readonly dashboardDataStore = inject(DashboardDataStore);
-  // Resolved lazily: UserSettingsService injects the AuthService itself, so an
-  // eager inject() here would be a circular dependency.
+  // Resolved lazily: UserSettingsService and SessionTimerService inject the AuthService
+  // themselves, so an eager inject() here would be a circular dependency.
   private readonly injector = inject(Injector);
 
   decodeJwtPayload(token: string): JwtData | null {
@@ -489,6 +509,42 @@ export class AuthService implements AuthServiceInterface {
    * decoded JWT, so the token string and the JWT claims (rights, role, username, realm) are
    * not duplicated into storage; everything that remains is UI/policy config not in the JWT.
    */
+  /**
+   * The persistence the server asked for. An unknown value -- an older server that sends none,
+   * or a policy set to something that is not an allowed value -- falls back to the default
+   * rather than being trusted into a storage decision.
+   */
+  private persistenceOf(authData: AuthData): SessionPersistence {
+    const persistence = authData.session_persistence;
+    if (isSessionPersistence(persistence)) {
+      return persistence;
+    }
+    if (persistence !== undefined) {
+      console.warn(`Unknown session_persistence "${persistence}", falling back to ${DEFAULT_SESSION_PERSISTENCE}.`);
+    }
+    return DEFAULT_SESSION_PERSISTENCE;
+  }
+
+  /**
+   * Drops a session left in the storage this login does not use, but only when it belongs to
+   * the principal that just logged in: their own older session is theirs to lose, which is what
+   * lets a narrowed policy take effect here instead of at that token's expiry. A session of
+   * anyone else -- another tab, another user of this browser -- is left alone.
+   */
+  private dropOwnStaleSession(token: string): void {
+    const stale = this.decodeJwtPayload(this.localService.inactiveSessionToken());
+    const current = this.decodeJwtPayload(token);
+    if (
+      stale &&
+      current &&
+      stale.username === current.username &&
+      stale.realm === current.realm &&
+      stale.role === current.role
+    ) {
+      this.localService.clearInactiveSession();
+    }
+  }
+
   private persistableAuthData(authData: AuthData): Omit<AuthData, "token" | "rights" | "role" | "username" | "realm"> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { token, rights, role, username, realm, ...rest } = authData;
@@ -502,24 +558,24 @@ export class AuthService implements AuthServiceInterface {
    * expired or corrupt session is cleared instead.
    */
   private restoreSession(): void {
-    const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
-    if (!token) {
-      return;
-    }
-    const jwt = this.decodeJwtPayload(token);
-    // Treat a missing/zero exp as expired: such a token cannot establish a valid session.
-    if (!jwt || !jwt.exp || jwt.exp * 1000 <= Date.now()) {
-      this.clearStoredSession();
-      return;
-    }
-    const storedAuthData = this.localService.getData(AUTH_DATA_STORAGE_KEY);
-    if (!storedAuthData) {
-      // A token without its auth data cannot be restored; clear it so getHeaders() does not
-      // keep sending a bearer token for a session the UI considers logged out.
-      this.clearStoredSession();
-      return;
-    }
     try {
+      const token = this.localService.getData(BEARER_TOKEN_STORAGE_KEY);
+      if (!token) {
+        return;
+      }
+      const jwt = this.decodeJwtPayload(token);
+      // Treat a missing/zero exp as expired: such a token cannot establish a valid session.
+      if (!jwt || !jwt.exp || jwt.exp * 1000 <= Date.now()) {
+        this.clearStoredSession();
+        return;
+      }
+      const storedAuthData = this.localService.getData(AUTH_DATA_STORAGE_KEY);
+      if (!storedAuthData) {
+        // A token without its auth data cannot be restored; clear it so getHeaders() does not
+        // keep sending a bearer token for a session the UI considers logged out.
+        this.clearStoredSession();
+        return;
+      }
       this.authData.set(JSON.parse(storedAuthData) as AuthData);
       this.jwtData.set(jwt);
       this.authenticationAccepted.set(true);
@@ -529,7 +585,6 @@ export class AuthService implements AuthServiceInterface {
   }
 
   private clearStoredSession(): void {
-    this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
-    this.localService.removeData(AUTH_DATA_STORAGE_KEY);
+    this.localService.clearSession();
   }
 }
