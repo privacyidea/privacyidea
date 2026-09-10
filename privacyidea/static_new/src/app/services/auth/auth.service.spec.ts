@@ -648,7 +648,7 @@ describe("AuthService", () => {
     it("falls back to the tab for a policy value it does not know", () => {
       const warn = jest.spyOn(console, "warn").mockReturnValue();
 
-      login("broswer");
+      login("permanent");
 
       expect(mockLocal.usePersistence).toHaveBeenCalledWith("tab");
       expect(warn).toHaveBeenCalled();

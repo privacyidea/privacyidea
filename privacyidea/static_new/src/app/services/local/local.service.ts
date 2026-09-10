@@ -67,7 +67,7 @@ function storageFor(persistence: SessionPersistence): Storage {
   if (cached) {
     return cached;
   }
-  let storage: Storage = memoryStorage;
+  let storage: Storage;
   try {
     const candidate = persistence === "browser" ? localStorage : sessionStorage;
     // Some browsers hand out the object and refuse the write, so the probe has to write.
