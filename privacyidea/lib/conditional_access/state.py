@@ -407,7 +407,7 @@ def block_ip(ip: str, duration_seconds: int | None = None, now: datetime | None 
     block in the shape of :func:`_blocklist_dict`. The user-lock counterpart is :func:`lock_user`, and the same
     authoritative-write reasoning applies.
 
-    A never-block address (loopback, or one covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is **refused
+    A never-block address (loopback, or one covered by ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``) is **refused
     loudly**. The engine skips such an address silently, which is right for an automatic action - it must not
     break an authentication over an allowlisted proxy - but wrong here: an administrator who asks for a block
     and gets a silent no-op has no way to tell it apart from success.
@@ -427,8 +427,8 @@ def block_ip(ip: str, duration_seconds: int | None = None, now: datetime | None 
         raise ParameterError(f"{ip!r} is not a valid IP address.")
     ip = canonical
     if is_ip_never_block(ip):
-        raise ParameterError(f"{ip} is on the never-block list (loopback, or CONDITIONAL_ACCESS_NEVER_BLOCK) "
-                             f"and cannot be blocked.")
+        raise ParameterError(f"{ip} is on the never-block list (loopback, or "
+                             f"PI_CONDITIONAL_ACCESS_NEVER_BLOCK) and cannot be blocked.")
     moment = now if now is not None else utc_now()
     block_expires_at = _restriction_expiry(duration_seconds, moment)
     with guarded_write(f"the manual IP block for {ip}", reraise=True):

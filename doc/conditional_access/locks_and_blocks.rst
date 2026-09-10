@@ -109,6 +109,12 @@ with no WebUI or API - deliberately, since it is the safety net that keeps an
 administrator from locking themselves out. See
 :ref:`ini_conditional_access_never_block` for the setting itself.
 
+An IPv4 entry also covers the IPv4-mapped form of the same address
+(``::ffff:10.0.0.1`` for ``10.0.0.1``), which is what a dual-stack listener
+reports for an IPv4 client. Tunnel encodings that merely carry an IPv4 address
+(6to4, Teredo) are not covered: unlike the mapped form, those are chosen by the
+client rather than by the operating system.
+
 The exemption is checked both when a block is created and when an existing one
 is enforced, so adding an address immediately stops a block already in force
 from taking effect. It withholds the block itself, not the whole policy: an

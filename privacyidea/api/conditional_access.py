@@ -800,7 +800,7 @@ def add_blocklist_entry():
     Block a source IP by administrator decision, replacing whatever block is currently on record, and return
     the new entry. The IP counterpart of ``POST lock/user``.
 
-    A never-block address (loopback, or one covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is refused with a
+    A never-block address (loopback, or one covered by ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``) is refused with
     400 rather than silently skipped: the engine skips one so an automatic action cannot lock everyone out
     behind a shared proxy, but an admin asking for a block needs to be told it did not happen.
 

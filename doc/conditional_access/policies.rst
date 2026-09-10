@@ -178,14 +178,14 @@ over like any other, so *always* reaches up to the next threshold.
    yourself a way back in. A ``user`` policy never decides an internal
    administrator to begin with, as a local administrator has no resolved
    identity to count against, so it is a ``source_ip`` policy that can shut you
-   out: exempt your own address in *ConditionalAccessNeverBlock*, which is never
-   denied either (see :ref:`conditional_access_never_block`), or write *user role
-   is not one of [admin-internal]* and read what that exemption costs in
-   :ref:`conditional_access_policies_exceptions`. A ``DENY`` stores no state, so
-   none of the ``pi-manage conditionalaccess`` reset commands can lift it;
-   undoing an unscoped one means disabling the policy itself, with
-   ``pi-manage conditionalaccess disable-policy <name>`` if it has locked you out
-   of the WebUI, see :ref:`conditional_access_policies_cli`.
+   out: exempt your own address in ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, which
+   is never denied either (see :ref:`conditional_access_never_block`), or write
+   *user role is not one of [admin-internal]* and read what that exemption
+   costs in :ref:`conditional_access_policies_exceptions`. A ``DENY`` stores no
+   state, so none of the ``pi-manage conditionalaccess`` reset commands can
+   lift it; undoing an unscoped one means disabling the policy itself, with
+   ``pi-manage conditionalaccess disable-policy <name>`` if it has locked you
+   out of the WebUI, see :ref:`conditional_access_policies_cli`.
 
 Each stage also has an optional **error message**, the text an end user sees when
 a request is turned away by that stage. It is empty by default, which keeps a
@@ -252,9 +252,9 @@ policy will look for it.
    The most guessable account in the installation is then the one account the
    policy does not protect. Write the exemption only on the policies that need
    it, and where an address will do, exempt the address in
-   *ConditionalAccessNeverBlock* (see :ref:`conditional_access_never_block`)
-   instead: an address is a fact of the connection rather than a claim of the
-   request.
+   ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` (see
+   :ref:`conditional_access_never_block`) instead: an address is a fact of the
+   connection rather than a claim of the request.
 
 Which actions a policy may use depends on its target:
 
