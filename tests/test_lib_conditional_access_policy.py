@@ -36,7 +36,9 @@ from privacyidea.lib.conditional_access.policy import (
     _ACTIONS_BY_TARGET,
     _COUNT_MODES_BY_TARGET,
     _DEFAULT_COUNT_MODE_BY_TARGET,
+    MAX_COLUMN_INT,
     MAX_ERROR_MESSAGE_LENGTH,
+    MAX_PRIORITY,
     compose_default_error_message,
     create_conditional_access_policy,
     default_error_message,
@@ -206,6 +208,15 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                           target=usr, priority=2)
         self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"], [_stage()],
                           target=usr, priority=0)
+        # A value the Integer column cannot hold is a parameter error like every other bad one, not a driver
+        # error on the statement that carries it - which is what MySQL and PostgreSQL would answer, and which
+        # SQLite would hide by storing it. priority stops lower still, to leave the reorder its parking room.
+        self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"], [_stage()],
+                          target=usr, priority=MAX_PRIORITY + 1)
+        self.assertRaises(ParameterError, create_conditional_access_policy, "P", MAX_COLUMN_INT + 1, ["PIN_FAIL"],
+                          [_stage()], target=usr, priority=2)
+        self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"],
+                          [_stage(threshold=MAX_COLUMN_INT + 1)], target=usr, priority=2)
         # target
         self.assertRaises(ParameterError, create_conditional_access_policy, "P", 600, ["PIN_FAIL"], [_stage()],
                           target="planet", priority=2)
@@ -240,6 +251,17 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                           [_stage(actions=[{"action_type": "LOCK_USER", "bogus": 1}])], target=usr, priority=2)
         # nothing invalid was persisted
         self.assertEqual(1, db.session.query(ConditionalAccessPolicy).count())
+
+    def test_02b_the_integer_bounds_are_inclusive(self):
+        # The rejections above name a limit; this is the limit itself being accepted, so the message cannot be off
+        # by one. MAX_PRIORITY leaves the reorder its parking room above, which the reorder test covers.
+        policy_id = create_conditional_access_policy("AtTheLimit", MAX_COLUMN_INT, ["PIN_FAIL"],
+                                                     [_stage(threshold=MAX_COLUMN_INT)],
+                                                     target=ConditionalAccessTarget.USER, priority=MAX_PRIORITY)
+        policy = get_conditional_access_policy(policy_id)
+        self.assertEqual(MAX_PRIORITY, policy["priority"])
+        self.assertEqual(MAX_COLUMN_INT, policy["time_window_seconds"])
+        self.assertEqual(MAX_COLUMN_INT, policy["stages"][0]["failure_threshold"])
 
     def test_02c_count_mode_per_attempt(self):
         # PER_ATTEMPT tracks the same AuthEventType vocabulary; only the counting unit differs.

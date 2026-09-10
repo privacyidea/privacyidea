@@ -19,8 +19,8 @@ Policy settings
 
 **priority**
 
-  A unique positive number; a lower number takes precedence. This only decides
-  an outcome for the pre-auth ``DENY`` question (see
+  A unique positive number up to 1000000; a lower number takes precedence. This
+  only decides an outcome for the pre-auth ``DENY`` question (see
   :ref:`conditional_access_evaluation`): policies are consulted in ascending
   priority order and the first one that denies a request wins, so no
   lower-priority policy is even evaluated. Every other action - ``LOCK_USER``,

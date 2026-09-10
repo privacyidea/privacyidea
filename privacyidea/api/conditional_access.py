@@ -395,7 +395,8 @@ def create_policy():
         aggregates across accounts and never does, so sending it as true with
         that target is a 400.
     :jsonparam priority: evaluation priority; lower numbers are evaluated first.
-        Required and must be unique across policies (no default).
+        Required and must be unique across policies (no default), between 1 and
+        1000000.
     :jsonparam target: the identity the policy counts and acts on - ``user``
         (per-user brute force) or ``source_ip`` (password spraying). Required.
     :jsonparam conditions: list of conditions restricting which requests the

@@ -139,6 +139,17 @@ MAX_NAME_LENGTH = 255
 # on the lock/block state rows that copy it. Shared, so any path taking one as input validates alike.
 MAX_ERROR_MESSAGE_LENGTH = 500
 
+#: The largest value a field stored in an ``Integer`` column may take: the signed 32-bit ceiling, which MySQL and
+#: PostgreSQL enforce and SQLite does not.
+MAX_COLUMN_INT = 2 ** 31 - 1
+
+#: The largest priority a policy may carry, deliberately far below :data:`MAX_COLUMN_INT`. Reordering parks the
+#: rows it moves *above* the highest live priority (see :func:`reorder_conditional_access_policies`), so the room
+#: between this and the column ceiling is that parking space - over two thousand times more than the number of
+#: policies any installation would reorder at once. A priority is a position in an ordering, not a quantity;
+#: nothing needs seven digits of it.
+MAX_PRIORITY = 1_000_000
+
 # DENY is a standing pre-auth decision, so it defaults to re-triggering over the range its stage owns; the
 # post-response lock/email/block actions default to firing once. A set because both the threshold-0 rule
 # and the retrigger default ask "is this a standing verdict?".
@@ -286,7 +297,7 @@ def _validate_priority(priority, exclude_id: int | None = None) -> int:
         current priority does not count as a collision.
     :return: the validated priority
     """
-    priority = _validate_positive_int(priority, "priority")
+    priority = _validate_positive_int(priority, "priority", maximum=MAX_PRIORITY)
     existing = db.session.scalar(select(ConditionalAccessPolicy).where(ConditionalAccessPolicy.priority == priority))
     if existing and existing.id != exclude_id:
         raise ParameterError(
@@ -296,13 +307,18 @@ def _validate_priority(priority, exclude_id: int | None = None) -> int:
     return priority
 
 
-def _validate_positive_int(value, field: str) -> int:
+def _validate_positive_int(value, field: str, maximum: int = MAX_COLUMN_INT) -> int:
     """
-    Validate a strictly positive integer field. bool is explicitly rejected
+    Validate a strictly positive integer field, at most *maximum*. bool is explicitly rejected
     (it is an int subclass, but ``priority=true`` is a caller mistake).
+
+    The upper bound defaults to what the column can hold (:data:`MAX_COLUMN_INT`), so a value the database would
+    refuse is reported as the parameter error it is. Fields with a tighter range of their own pass it.
     """
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise ParameterError(f"'{field}' must be a positive integer.")
+    if value > maximum:
+        raise ParameterError(f"'{field}' must not exceed {maximum}.")
     return value
 
 
@@ -779,6 +795,8 @@ def _validate_stages(stages) -> list[StageDefinition]:
         threshold = stage.get("failure_threshold")
         if isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 0:
             raise ParameterError("'failure_threshold' must be a non-negative integer.")
+        if threshold > MAX_COLUMN_INT:
+            raise ParameterError(f"'failure_threshold' must not exceed {MAX_COLUMN_INT}.")
         if threshold in thresholds:
             raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
@@ -1294,7 +1312,8 @@ def reorder_conditional_access_policies(policy_ids: list[int], expected_prioriti
         if not isinstance(expected_priorities, (list, tuple)) or len(expected_priorities) != len(ids):
             raise ParameterError("'expected_priorities' must have one entry per policy id.")
         expected_priorities = [
-            _validate_positive_int(priority, "expected priority") for priority in expected_priorities
+            _validate_positive_int(priority, "expected priority", maximum=MAX_PRIORITY)
+            for priority in expected_priorities
         ]
     policies = [_get_policy(policy_id) for policy_id in ids]
     if expected_priorities is not None:
