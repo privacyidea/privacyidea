@@ -25,7 +25,7 @@ import {
   EventHandlerModuleDefaults,
   EventServiceInterface
 } from "@services/event/event.service";
-import { of } from "rxjs";
+import { Observable, of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockEventService implements EventServiceInterface {
@@ -40,6 +40,11 @@ export class MockEventService implements EventServiceInterface {
   getEventHandlers = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<EventHandler[]>([])));
 
   saveEventHandler = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(1)));
+
+  updateOrdering = jest.fn(
+    (handler: EventHandler, _: number): Observable<PiResponse<number> | undefined> =>
+      of(MockPiResponse.fromValue<number>(handler.id ?? 1))
+  );
 
   enableEvent = jest.fn().mockResolvedValue({});
 
@@ -98,12 +103,12 @@ export class MockEventService implements EventServiceInterface {
     MockPiResponse.fromValue<Record<string, EventCondition>>({})
   );
 
-  moduleConditions: Signal<Record<string, EventCondition>> = computed(() => ({
+  moduleConditions = signal<Record<string, EventCondition>>({
     condA: { type: "bool", desc: "descA" },
     condB: { type: "str", desc: "descB" },
     condC: { type: "int", desc: "descC", value: ["1", "2", "3"] },
     condD: { type: "multi", desc: "descD", value: [{ name: "option1" }, { name: "option2" }], group: "group1" }
-  }));
+  });
 
   moduleConditionsByGroup: Signal<Record<string, Record<string, EventCondition>>> = computed(() => ({
     group1: {

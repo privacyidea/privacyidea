@@ -99,7 +99,7 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
   });
 
   it("should label a link with the given label", () => {
-    expect(component.linkLabel("Serial")).toBe("Serial link");
+    expect(component["linkLabel"]("Serial")).toBe("Serial link");
   });
 
   describe("dataSource computed", () => {

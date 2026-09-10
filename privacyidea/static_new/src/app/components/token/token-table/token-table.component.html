@@ -265,11 +265,11 @@
                       <a
                         [attr.aria-label]="linkLabel(column.label)"
                         href="#">
-                        {{ tokenDetails[column.key] }}
+                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                       </a>
                     } @else {
                       <span>
-                        {{ tokenDetails[column.key] }}
+                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                       </span>
                     }
                   }

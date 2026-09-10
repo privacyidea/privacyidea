@@ -697,16 +697,21 @@ class APISelfserviceTestCase(MyApiTestCase):
         self.assertTrue(len(tokenobject_list) == 1, len(tokenobject_list))
         self.assertTrue(tokenobject_list[0].token.active)
 
-    def test_04_user_can_not_lost_another_token(self):
+    def test_04_user_can_not_use_lost_token(self):
+        # The lost token process is reserved for administrators, so a user is rejected for
+        # a foreign token as well as for their own one.
         self.authenticate_selfservice_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
-        with self.app.test_request_context('/token/lost/{0!s}'.format(
-                self.foreign_serial),
-                method='POST',
-                headers={'Authorization':
-                             self.at_user}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 400, res)
+        own_token = init_token({"type": "hotp", "genkey": True},
+                               user=User("selfservice", self.realm1))
+        for serial in [self.foreign_serial, own_token.get_serial()]:
+            with self.app.test_request_context(f'/token/lost/{serial}',
+                    method='POST',
+                    headers={'Authorization':
+                                 self.at_user}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res.json)
+        remove_token(own_token.get_serial())
 
     def test_05_user_can_disable_token(self):
         self.authenticate_selfservice_user()
@@ -952,7 +957,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         selfservice_token = init_token({"type": "spass", "pin": "somepin"},
                                        user=User("selfservice", "realm1"))
         # Last authentication was too long ago.
-        selfservice_token.add_tokeninfo(PolicyAction.LASTAUTH, "2016-10-10 10:10:10.000")
+        selfservice_token.write_tokeninfo(PolicyAction.LASTAUTH, "2016-10-10 10:10:10.000")
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice@realm1",
@@ -964,7 +969,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), content)
             self.assertIn("long ago", content["detail"]["message"], content)
 
-        selfservice_token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
+        selfservice_token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
 
         # But now it works
         with self.app.test_request_context('/auth',

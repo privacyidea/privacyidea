@@ -43,6 +43,11 @@ export interface EventHandler {
   conditions: Record<string, string>;
 }
 
+/**
+ * The largest ordering a binding can be given: the ordering is stored in a signed 32 bit integer column.
+ */
+export const MAX_ORDERING = 2147483647;
+
 export const EMPTY_EVENT: EventHandler = {
   id: null,
   name: "",
@@ -96,12 +101,39 @@ export interface EventHandlerSaveParams {
   handlermodule: string | null;
   ordering: number;
   position: string;
-  abort_on_error: boolean;
   event: string[];
   action: string;
-  conditions: Record<string, unknown>;
+  // POST /event keeps the stored value of these when they are not sent, so an ordering save can leave them out
+  abort_on_error?: boolean;
+  conditions?: Record<string, unknown>;
+  clear_options?: boolean;
 
   [key: string]: unknown;
+}
+
+export function toEventHandlerSaveParams(handler: EventHandler): EventHandlerSaveParams {
+  const { options, ...rest } = handler;
+  const params: EventHandlerSaveParams = {
+    ...rest,
+    id: handler.id == null ? undefined : String(handler.id)
+  };
+  for (const [optionKey, optionValue] of Object.entries(options ?? {})) {
+    params["option." + optionKey] = optionValue;
+  }
+  return params;
+}
+
+export function toEventHandlerOrderingParams(handler: EventHandler, ordering: number): EventHandlerSaveParams {
+  return {
+    id: handler.id == null ? undefined : String(handler.id),
+    name: handler.name,
+    handlermodule: handler.handlermodule,
+    action: handler.action,
+    event: handler.event,
+    position: handler.position,
+    active: handler.active,
+    ordering
+  };
 }
 
 export interface EventServiceInterface {
@@ -125,6 +157,8 @@ export interface EventServiceInterface {
   getEventHandlers(): Observable<PiResponse<EventHandler[]>>;
 
   saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined>;
+
+  updateOrdering(handler: EventHandler, ordering: number): Observable<PiResponse<number> | undefined>;
 
   enableEvent(eventId: number | null): Promise<object | undefined>;
 
@@ -324,6 +358,17 @@ export class EventService implements EventServiceInterface {
     });
   }
 
+  updateOrdering(handler: EventHandler, ordering: number): Observable<PiResponse<number> | undefined> {
+    return this.saveEventHandler(toEventHandlerOrderingParams(this.listedHandler(handler), ordering));
+  }
+
+  private listedHandler(handler: EventHandler): EventHandler {
+    if (handler.id == null) {
+      return handler;
+    }
+    return this.eventHandlers()?.find((listed) => listed.id === handler.id) ?? handler;
+  }
+
   saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined> {
     const headers = this.authService.getHeaders();
     const params = { ...event };
@@ -333,7 +378,7 @@ export class EventService implements EventServiceInterface {
     return this.http.post<PiResponse<number>>(this.eventBaseUrl, params, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to save event handler.", error.error);
-        const message = error.error.result?.error?.message || "";
+        const message = error.error?.result?.error?.message || "";
         this.notificationService.error(
           $localize`:@@event.failedToSaveEventHandler:Failed to save event handler. ${message}:MESSAGE:`
         );

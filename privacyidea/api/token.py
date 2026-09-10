@@ -64,6 +64,7 @@ from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
                                             postpolicy)
 from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
+                                           check_copy_token_action,
                                            check_token_init, check_token_upload,
                                            check_max_token_user,
                                            check_max_token_realm,
@@ -112,7 +113,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          copy_token_user, copy_token_pin, lost_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
-                         delete_tokeninfo, import_token,
+                         delete_tokeninfo, import_token, set_token_type_info, get_settable_tokeninfo_keys,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
@@ -121,6 +122,12 @@ from ..lib.user import get_user_from_param, User
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)
+
+# The fields POST /token/set writes through their own setter. Some of them are token info entries a token class
+# maintains, so they would otherwise be written a second time as a settable token info entry.
+HANDLED_SET_FIELDS = frozenset({"serial", "user", "realm", "resolver", "description", "count_window",
+                                "sync_window", "hashlib", "max_failcount", "count_auth_max",
+                                "count_auth_success_max", "validity_period_start", "validity_period_end"})
 
 __doc__ = """
 The token REST API manages the lifecycle of authentication tokens -
@@ -694,7 +701,12 @@ def list_api():
     :query outform: ``csv`` to return ``text/csv`` instead of JSON.
         Pagination still applies.
     :status 200: paginated token list in ``result.value`` (or as a
-        CSV body when ``outform=csv``).
+        CSV body when ``outform=csv``). Each token carries
+        ``readonly_info_keys`` and ``undeletable_info_keys``, the
+        subsets of its ``info`` entries that the token info
+        endpoints refuse to change respectively to remove because
+        the token itself maintains them, and ``settable_info_keys``,
+        the subset of those that :http:post:`/token/set` accepts.
     """
     param = request.all_data
     serial = get_optional(param, "serial")
@@ -1264,6 +1276,13 @@ def set_api(serial=None):
     :jsonparam validity_period_start: ISO 8601 start of validity
         (``YYYY-MM-DDThh:mm+oooo``).
     :jsonparam validity_period_end: ISO 8601 end of validity.
+    :jsonparam <tokentype>.<key>: a token type specific token-info
+        entry, e.g. ``remote.user`` on a remote token. The prefix
+        has to name a known token type and the entry is only
+        written to tokens of that type, so a parameter cannot
+        reach the namespace of another token type. These entries
+        are maintained by the token, so the generic token-info
+        endpoints refuse them.
     :status 200: number of attribute updates applied in
         ``result.value``.
     """
@@ -1323,6 +1342,20 @@ def set_api(serial=None):
         g.audit_object.add_to_log({'action_detail':
                                        f"validity_period_start={validity_period_start!r}, "})
         res += set_validity_period_start(serial, user, validity_period_start)
+
+    # Token info entries a token class maintains but that change over the lifetime of a token, e.g.
+    # "remote.user" or "phone". A parameter counts as one when some token class declares it settable, so the
+    # fixed fields above and any framework parameter are unaffected.
+    settable_keys = get_settable_tokeninfo_keys(set(request.all_data) - HANDLED_SET_FIELDS)
+    settable_info = {key: value for key, value in request.all_data.items() if key in settable_keys}
+    if settable_info:
+        # A key one token type declares settable is not written to a token of another type, so the audit
+        # follows the write and names the entries that were actually written
+        written_keys = set_token_type_info(serial, settable_info, user=user)
+        for key in sorted(set(written_keys)):
+            # The value can be a secret, e.g. the shared secret of a RADIUS server, so only the key is audited
+            g.audit_object.add_to_log({'action_detail': f"{key!s} set, "})
+        res += len(written_keys)
 
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -1499,27 +1532,47 @@ def loadtokens_api(filename=None):
         {'n_imported': len(import_tokens), 'n_not_imported': len(not_imported_serials)})
 
 
+_copy_endpoint_deprecation_warned = set()
+
+
+def _warn_copy_endpoint_deprecated(endpoint: str):
+    """
+    Log the deprecation of a token copy endpoint once per process, so a deployment that still
+    calls it is nudged toward /token/lost without spamming the log on every request.
+    """
+    if endpoint not in _copy_endpoint_deprecation_warned:
+        _copy_endpoint_deprecation_warned.add(endpoint)
+        log.warning(f"The endpoint '{endpoint}' is deprecated and will be removed in a future release. "
+                    f"Use 'POST /token/lost/<serial>' to replace a token instead.")
+
+
 @token_blueprint.route('/copypin', methods=['POST'])
 @admin_required
 @log_with(log)
-@prepolicy(check_base_action, request, action=PolicyAction.COPYTOKENPIN)
+@prepolicy(check_copy_token_action, request, action=PolicyAction.COPYTOKENPIN)
 @event("token_copypin", request, g)
 def copypin_api():
     """
-    Copy the OTP PIN of one token onto another. Used by helpdesk
-    flows where a replacement token is issued without forcing the
-    user to set a new PIN.
+    Copy the OTP PIN of one token onto another.
 
     Requires admin authentication and the policy action
-    :ref:`policy_copytokenpin`. The check is global rather than
-    realm-scoped, so an admin holding ``copytokenpin`` can copy a
-    PIN between tokens regardless of which realms those tokens
-    belong to.
+    :ref:`policy_copytokenpin` for **both** tokens, so an admin
+    restricted to certain realms can only copy between tokens in
+    those realms.
+
+    .. deprecated:: 3.14
+        This endpoint is deprecated and will be removed in a future
+        release. It exposes one raw step of the lost-token workflow;
+        use :http:post:`/token/lost/(serial)`, which performs the
+        whole replacement, instead.
 
     :jsonparam from: serial of the source token (required).
     :jsonparam to: serial of the destination token (required).
     :status 200: ``True`` on success in ``result.value``.
+    :status 403: the calling admin is not authorized for one of the
+        two tokens.
     """
+    _warn_copy_endpoint_deprecated("POST /token/copypin")
     serial_from = get_required(request.all_data, "from")
     serial_to = get_required(request.all_data, "to")
     res = copy_token_pin(serial_from, serial_to)
@@ -1529,23 +1582,33 @@ def copypin_api():
 
 @token_blueprint.route('/copyuser', methods=['POST'])
 @admin_required
-@prepolicy(check_base_action, request, action=PolicyAction.COPYTOKENUSER)
+@prepolicy(check_copy_token_action, request, action=PolicyAction.COPYTOKENUSER)
 @event("token_copyuser", request, g)
 @log_with(log)
 def copyuser_api():
     """
-    Copy the user assignment of one token onto another. Used by
-    helpdesk flows where a replacement token must inherit the
-    original token's owner without re-running the assign workflow.
+    Copy the user assignment of one token onto another. The
+    destination token is unassigned first, and the source token's
+    realms are copied along with the owner.
 
     Requires admin authentication and the policy action
-    :ref:`policy_copytokenuser`. The check is global rather than
-    realm-scoped; see ``copypin`` above for the same caveat.
+    :ref:`policy_copytokenuser` for **both** tokens, so an admin
+    restricted to certain realms can only copy between tokens in
+    those realms.
+
+    .. deprecated:: 3.14
+        This endpoint is deprecated and will be removed in a future
+        release. It exposes one raw step of the lost-token workflow;
+        use :http:post:`/token/lost/(serial)`, which performs the
+        whole replacement, instead.
 
     :jsonparam from: serial of the source token (required).
     :jsonparam to: serial of the destination token (required).
     :status 200: ``True`` on success in ``result.value``.
+    :status 403: the calling admin is not authorized for one of the
+        two tokens.
     """
+    _warn_copy_endpoint_deprecated("POST /token/copyuser")
     serial_from = get_required(request.all_data, "from")
     serial_to = get_required(request.all_data, "to")
     res = copy_token_user(serial_from, serial_to)
@@ -1554,20 +1617,25 @@ def copyuser_api():
 
 
 @token_blueprint.route('/lost/<serial>', methods=['POST'])
+@admin_required
 @prepolicy(check_token_action, request, action=PolicyAction.LOSTTOKEN)
 @event("token_lost", request, g)
 @log_with(log)
 def lost_api(serial=None):
     """
     Mark a token as lost and issue a temporary replacement. The
-    replacement carries a derived serial (``lost<original-serial>``),
-    a generated password, the original token's PIN, and a limited
-    validity period. The original token is disabled.
+    replacement is a newly created password token carrying a derived
+    serial (``lost<original-serial>``, with a counted suffix if that
+    serial is already taken), a generated password, the original
+    token's PIN, and a limited validity period. The original token is
+    disabled.
 
-    Callable by both admins and users; user-role callers may only
-    operate on their own tokens (the view enforces ownership).
+    The PIN is copied as a hash, so the replacement keeps the PIN the
+    user already knows without the calling admin learning it.
 
-    Requires authentication and the policy action ``losttoken``.
+    Requires admin authentication and the policy action ``losttoken``,
+    which is checked against the realms of the lost token. If a ``user``
+    is passed as well, it has to be the owner of the token.
 
     :param serial: path component, the serial of the lost token.
     :status 200: dict carrying the new serial, the temporary

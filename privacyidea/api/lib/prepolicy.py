@@ -1457,6 +1457,47 @@ def check_token_action(request: Request = None, action: str = None):
     return True
 
 
+def check_copy_token_action(request: Request = None, action: str = None):
+    """
+    This decorator function takes the request and verifies the given action for both tokens of a copy operation.
+
+    The copy endpoints name their tokens ``from`` and ``to`` instead of ``serial``, so ``check_token_action`` does not
+    pick them up. Both ends are verified, because the operation reads the source token and writes to the destination
+    token. As in ``check_token_action``, the token realms are passed as additional_realms to the policy match, so an
+    admin restricted to certain realms only passes for tokens in those realms.
+
+    A serial that does not resolve to exactly one token is skipped here: the copy functions in the lib reject it with
+    a dedicated error, which stays the caller-visible result.
+
+    :param request: The request object
+    :param action: The action to check if the user is allowed to perform it
+    :return: True otherwise raises an Exception
+    """
+    params = request.all_data
+    user = request.User
+    resolver = user.resolver if user else None
+    (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
+    user_attributes = UserAttributes(role, username, realm, resolver, adminuser, adminrealm)
+    user_attributes.user = user if user else None
+
+    serials = []
+    for parameter_name in ["from", "to"]:
+        serial = params.get(parameter_name)
+        if not serial:
+            raise ParameterError(f"Missing parameter: '{parameter_name}'")
+        serials.append(serial)
+
+    for serial in serials:
+        try:
+            allowed = check_token_action_allowed(g, action, serial, replace(user_attributes))
+        except ResourceNotFoundError:
+            continue
+        if not allowed:
+            raise PolicyError(f"{role.capitalize()} actions are defined, but the action {action} is not allowed "
+                              f"for the token {serial}!")
+    return True
+
+
 def check_token_list_action(request: Request = None, action: str = None):
     """
     This decorator function takes the request and verifies the given action for the SCOPE ADMIN or USER.
@@ -1721,6 +1762,13 @@ def check_token_init(request=None, action=None):
     if the requested tokentype is allowed to be enrolled in the SCOPE ADMIN
     or the SCOPE USER.
 
+    If the request carries the serial of a token that already exists, init_token() updates that token instead
+    of creating one. As long as the enrollment of that token is still under way, e.g. the second request of a
+    two-step or a FIDO2 enrollment, that is part of the enrollment. Once the token is in use, the same request
+    gives it a new secret, which is a modification of a token somebody may already authenticate with, so it
+    additionally requires the token_rollover action and is matched against the realm of that token rather than
+    against the realm passed in the request.
+
     :param request:
     :param action:
     :return: True or an Exception is raised
@@ -1729,6 +1777,8 @@ def check_token_init(request=None, action=None):
                      "enroll this token type!",
              "admin": "Admin actions are defined, but you are not allowed to "
                       "enroll this token type!"}
+    ROLLOVER_ERROR = {"user": "You are not allowed to roll over this token!",
+                      "admin": "You are not allowed to roll over this token!"}
     params = request.all_data
     resolver = request.User.resolver if request.User else None
     (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
@@ -1744,6 +1794,22 @@ def check_token_init(request=None, action=None):
                                  user_object=request.User).allowed()
     if not init_allowed:
         raise PolicyError(ERROR.get(role))
+
+    serial = get_optional(params, "serial")
+    existing_token = get_one_token(serial=serial, silent_fail=True) if serial else None
+    if existing_token and existing_token.token.rollout_state not in RolloutState.enrollment_pending_states():
+        token_owner = existing_token.user
+        rollover_allowed = Match.generic(g, action=PolicyAction.TOKENROLLOVER,
+                                         user=token_owner.login if token_owner else None,
+                                         resolver=token_owner.resolver if token_owner else None,
+                                         realm=token_owner.realm if token_owner else None,
+                                         scope=role,
+                                         adminrealm=adminrealm,
+                                         adminuser=adminuser,
+                                         user_object=token_owner or None).allowed()
+        if not rollover_allowed:
+            log.info(f"The {role} is not allowed to roll over the token {serial}, which is already enrolled.")
+            raise PolicyError(ROLLOVER_ERROR.get(role))
     return True
 
 
@@ -1821,7 +1887,7 @@ def api_key_required(request=None, action=None):
     If so, the validate request will only be performed, if a JWT token is passed
     with role=validate.
 
-    .. deprecated::
+    .. deprecated:: 3.14
         The ``api_key_required`` policy and its ``Authorization`` JWT (minted by
         ``pi-manage api createtoken``) are deprecated and will be removed in a
         future release. The X-API-Key API clients feature is intended to replace

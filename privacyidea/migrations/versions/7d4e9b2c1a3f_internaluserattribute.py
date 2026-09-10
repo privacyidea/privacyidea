@@ -10,11 +10,10 @@ from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy import text, Sequence
 from sqlalchemy.exc import OperationalError, ProgrammingError
-from sqlalchemy.schema import CreateSequence
 
-from privacyidea.models.db import build_restart_sequence_sql
+from privacyidea.models.db import (create_sequence_if_supported, drop_sequence_if_supported,
+                                   restart_sequence_past_max, sequence_id_column)
 
 # revision identifiers, used by Alembic.
 revision = '7d4e9b2c1a3f'
@@ -22,6 +21,7 @@ down_revision = '3cafe2771cdd'
 branch_labels = None
 depends_on = None
 
+SEQUENCE_NAME = "internaluserattribute_seq"
 FIDO2_USER_ID_KEY = 'fido2_user_id'
 LAST_USED_TOKEN_KEY = 'last_used_token'
 LAST_USED_TOKEN_PREFIX = 'last_used_token_'
@@ -58,34 +58,14 @@ def _new_table():
 
 
 def upgrade():
-    bind = op.get_bind()
-    is_postgres = bind.dialect.name == 'postgresql'
-
     # The model declares Sequence('internaluserattribute_seq'), so SQLAlchemy
-    # emits SELECT nextval(...) on every ORM insert. Create the sequence on
-    # any backend that supports CREATE SEQUENCE (Postgres + MariaDB 10.3+).
-    # Build it through SQLAlchemy's CreateSequence construct rather than a raw
-    # "CREATE SEQUENCE" string: CreateSequence is rewritten by the
-    # increment_by_zero @compiles hook in privacyidea.models.db, which appends
-    # INCREMENT BY 0 on MariaDB so a Galera cluster accepts the cached sequence.
-    # A raw string bypasses the hook and fails with "CACHE without INCREMENT BY
-    # 0 in Galera cluster".
-    if bind.dialect.supports_sequences:
-        op.execute(CreateSequence(Sequence("internaluserattribute_seq"), if_not_exists=True))
+    # emits SELECT nextval(...) on every ORM insert; create it where supported.
+    create_sequence_if_supported(op, SEQUENCE_NAME)
 
     try:
-        if is_postgres:
-            # Postgres needs the column default wired to the sequence so raw
-            # INSERTs (e.g. our data-migration block below) get an id.
-            id_column = sa.Column(
-                'id', sa.Integer(), nullable=False,
-                server_default=sa.text("nextval('internaluserattribute_seq')"),
-            )
-        else:
-            id_column = sa.Column('id', sa.Integer(), nullable=False, autoincrement=True)
         op.create_table(
             'internaluserattribute',
-            id_column,
+            sequence_id_column(op, SEQUENCE_NAME),
             sa.Column('user_id', sa.Unicode(length=320), nullable=True),
             sa.Column('resolver', sa.Unicode(length=120), nullable=True),
             sa.Column('realm_id', sa.Integer(), nullable=True),
@@ -109,16 +89,7 @@ def upgrade():
     # table-already-exists branch above where rows may already be present
     # and the sequence (newly created or pre-existing) would otherwise hand
     # out a value <= MAX(id), causing duplicate-PK errors on the next insert.
-    if bind.dialect.supports_sequences:
-        max_id = bind.execute(
-            text("SELECT COALESCE(MAX(id), 0) FROM internaluserattribute")
-        ).scalar() or 0
-        # No SQLAlchemy DDL construct exists for ALTER SEQUENCE ... RESTART, so a
-        # raw string would only be correct on one backend. build_restart_sequence_sql
-        # emits each dialect's accepted syntax and, crucially, appends INCREMENT BY 0
-        # on MariaDB — a Galera cluster otherwise rejects RESTART on a cached sequence
-        # with "CACHE without INCREMENT BY 0 in Galera cluster".
-        op.execute(build_restart_sequence_sql("internaluserattribute_seq", max_id + 1, bind.dialect.name))
+    restart_sequence_past_max(op, 'internaluserattribute', SEQUENCE_NAME)
 
     _run_data_migration(op.get_bind())
 
@@ -256,8 +227,7 @@ def downgrade():
 
     try:
         op.drop_table('internaluserattribute')
-        if op.get_bind().dialect.supports_sequences:
-            op.execute("DROP SEQUENCE IF EXISTS internaluserattribute_seq")
+        drop_sequence_if_supported(op, SEQUENCE_NAME)
     except (OperationalError, ProgrammingError) as ex:
         msg = str(ex.orig).lower()
         if "no such table" in msg or "unknown table" in msg or "does not exist" in msg:
