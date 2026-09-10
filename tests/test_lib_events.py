@@ -49,7 +49,7 @@ from privacyidea.lib.eventhandler.webhookeventhandler import (ActionType as WHEH
                                                               DB_CONTENT_TYPE_MAP)
 from privacyidea.lib.machine import list_token_machines
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
-                                   add_tokeninfo, unassign_token, get_tokens_paginate)
+                                   get_one_token, unassign_token, get_tokens_paginate)
 from privacyidea.lib.tokenclass import DATE_FORMAT, ChallengeSession
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
@@ -173,6 +173,34 @@ class EventHandlerLibTestCase(MyTestCase):
         self.assertTrue(r)
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 0)
+
+    def test_01b_update_keeps_options_when_omitted(self):
+        # Regression test: reordering an event handler (an update that does not
+        # supply options/conditions) must not wipe the stored options and
+        # conditions. See the "change order in the overview deletes actions" bug.
+        eid = set_event("keepme", "token_init", "UserNotification", "sendmail",
+                        conditions={"bla": "yes"},
+                        options={"emailconfig": "themis"})
+        # Update only the ordering, omit options and conditions (options=None,
+        # conditions=None means "keep the stored values")
+        set_event("keepme", "token_init", "UserNotification", "sendmail",
+                  id=eid, ordering=5)
+        event = db.session.scalars(select(EventHandler).where(EventHandler.id == eid)).one_or_none()
+        self.assertEqual(5, event.ordering)
+        # options and conditions are still there
+        self.assertEqual("emailconfig", event.options[0].Key)
+        self.assertEqual("themis", event.options[0].Value)
+        self.assertEqual("bla", event.conditions[0].Key)
+        self.assertEqual("yes", event.conditions[0].Value)
+
+        # An explicit empty dict clears the options/conditions
+        set_event("keepme", "token_init", "UserNotification", "sendmail",
+                  id=eid, options={}, conditions={})
+        event = db.session.scalars(select(EventHandler).where(EventHandler.id == eid)).one_or_none()
+        self.assertEqual(0, len(event.options.all()))
+        self.assertEqual(0, len(event.conditions.all()))
+
+        delete_event(eid)
 
     def test_02_get_handler_object(self):
         h_obj = get_handler_object("UserNotification")
@@ -324,8 +352,9 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Set the count_auth and count_auth_success
-        add_tokeninfo(serial, "count_auth", 100)
-        add_tokeninfo(serial, "count_auth_success", 50)
+        token_object = get_one_token(serial=serial)
+        token_object.set_count_auth(100)
+        token_object.set_count_auth_success(50)
         options["handler_def"] = {"conditions": {CONDITION.COUNT_AUTH: ">99"}}
         r = uhandler.check_condition(options)
         self.assertTrue(r)

@@ -170,11 +170,11 @@
                       <a
                         [attr.aria-label]="linkLabel(column.label)"
                         href="#">
-                        {{ element[column.key] }}
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
                       </a>
                     } @else {
                       <span>
-                        {{ element[column.key] }}
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
                       </span>
                     }
                   }

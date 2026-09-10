@@ -68,7 +68,7 @@ class PasswordTokenTestCase(MyTestCase):
         # Set up the PasswordTokenClass for testing
         passwordtoken = init_token(param={'serial': "PASS12345678", 'type': 'pw', 'otpkey': '12345'})
         passwordtoken.set_description("this is a password token export test")
-        passwordtoken.add_tokeninfo("hashlib", "sha256")
+        passwordtoken.write_tokeninfo("hashlib", "sha256")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = passwordtoken.export_token()

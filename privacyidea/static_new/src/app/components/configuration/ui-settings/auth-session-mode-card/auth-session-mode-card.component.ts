@@ -19,7 +19,6 @@
 import { Component, computed, inject, linkedSignal } from "@angular/core";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectChange, MatSelectModule } from "@angular/material/select";
-import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
 import {
   MessageConfirmationDialogComponent,
   MessageConfirmationDialogData
@@ -57,7 +56,7 @@ const MODE_HINTS: Record<AuthSessionMode, { title: string; message: string }> = 
 
 @Component({
   selector: "app-auth-session-mode-card",
-  imports: [DetailsCardComponent, MatFormFieldModule, MatSelectModule],
+  imports: [MatFormFieldModule, MatSelectModule],
   templateUrl: "./auth-session-mode-card.component.html",
   styleUrl: "./auth-session-mode-card.component.scss"
 })

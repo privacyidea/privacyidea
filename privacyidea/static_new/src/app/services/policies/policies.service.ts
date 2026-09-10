@@ -24,6 +24,7 @@ import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { splitMarkupSegments } from "@utils/markup.utils";
 import { lastValueFrom, Observable } from "rxjs";
 
 export type ActionType = "bool" | "int" | "str" | "text";
@@ -42,6 +43,21 @@ export type ScopedPolicyActions = Record<string, Record<string, PolicyActionDeta
 export type PolicyActionGroups = Record<string, Record<string, Record<string, PolicyActionDetail>>>;
 
 export type PoliciesList = PolicyDetail[];
+
+export function policyActionMatchesFilter(
+  actionName: string,
+  detail: PolicyActionDetail | undefined,
+  filter: string
+): boolean {
+  const searchTerm = filter.toLowerCase().trim();
+  if (!searchTerm) return true;
+  if (actionName.toLowerCase().includes(searchTerm)) return true;
+  // Searched per text part of the description, which is exactly what the highlight pipe can mark,
+  // so an action in the list always shows the user why it is there.
+  return splitMarkupSegments(detail?.desc ?? "").some(
+    (segment) => !segment.isMarkup && segment.text.toLowerCase().includes(searchTerm)
+  );
+}
 
 export interface PolicyDetail {
   action: Record<string, string | boolean> | null;
@@ -350,7 +366,7 @@ export class PolicyService implements PolicyServiceInterface {
           continue;
         }
         const action = actions[actionName];
-        if (!actionName.toLowerCase().includes(filterValue)) {
+        if (!policyActionMatchesFilter(actionName, action, filterValue)) {
           continue;
         }
         const group = action.group || "Other";
