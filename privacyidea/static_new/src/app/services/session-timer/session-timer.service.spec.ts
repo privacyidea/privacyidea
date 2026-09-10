@@ -176,13 +176,15 @@ describe("SessionTimerService", () => {
     expect(after3s).toBeGreaterThanOrEqual(6500);
   });
 
-  it("stopTimers disarms the timeout and the interval of the ended session", () => {
+  it("stopTimers keeps the ended session's timeout from logging the next one out", () => {
+    authService.logoutTimeS.set(2);
     service.initialTimerStart();
-    expect(jest.getTimerCount()).toBeGreaterThan(0);
 
     service.stopTimers();
+    jest.advanceTimersByTime(60_000);
 
-    expect(jest.getTimerCount()).toBe(0);
+    expect(notify.warning).not.toHaveBeenCalled();
+    expect(authService.logout).not.toHaveBeenCalled();
   });
 
   it("startRefreshingRemainingTime keeps a single interval running", () => {

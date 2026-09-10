@@ -278,7 +278,7 @@ describe("AuthService", () => {
     expect(authService.isAuthenticated()).toBe(false);
     expect(authService.authData()).toBeNull();
     expect(authService.jwtData()).toBeNull();
-    expect(mockLocal.removeData).toHaveBeenCalled();
+    expect(mockLocal.clearSession).toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
     await routerMock.navigate.mock.results[0].value;
   });
