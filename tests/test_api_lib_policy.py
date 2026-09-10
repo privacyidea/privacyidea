@@ -40,7 +40,7 @@ from privacyidea.lib.machine import attach_token
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE, AUTOASSIGNVALUE, AUTHORIZED,
-                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
+                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, SESSION_PERSISTENCE)
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    check_user_pass, unassign_token)
@@ -1018,6 +1018,69 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         new_response = get_webui_settings(req, resp)
         self.assertEqual("smartphone", new_response.json["result"]["value"]["default_container_type"])
         delete_policy("default_container")
+
+        # Test session persistence
+        # policy not set: the session belongs to the tab it was opened in
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.TAB, new_response.json["result"]["value"]["session_persistence"])
+        # A policy widens it to the whole browser
+        set_policy(name="pol_session_persistence", scope=SCOPE.WEBUI,
+                   action={PolicyAction.SESSION_PERSISTENCE: SESSION_PERSISTENCE.BROWSER})
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.BROWSER, new_response.json["result"]["value"]["session_persistence"])
+        # An inactive policy leaves the session on the default
+        set_policy(name="pol_session_persistence", active=False)
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.TAB, new_response.json["result"]["value"]["session_persistence"])
+        delete_policy("pol_session_persistence")
+
+    def test_08b_get_webui_settings_session_persistence_per_principal(self):
+        # The whole point of the policy is that it can differ per principal
+        self.setUp_user_realms()
+
+        builder = EnvironBuilder(method='POST', data={}, headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        req.all_data = {"user": "cornelius"}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": {"role": "user",
+                                    "username": "cornelius",
+                                    "realm": self.realm1}},
+               "version": "privacyIDEA test",
+               "id": 1}
+        resp = jsonify(res)
+
+        set_policy(name="pol_session_persistence", scope=SCOPE.WEBUI, realm=self.realm1,
+                   action={PolicyAction.SESSION_PERSISTENCE: SESSION_PERSISTENCE.BROWSER})
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.BROWSER,
+                         new_response.json["result"]["value"]["session_persistence"])
+
+        # Restricted to another user of the same realm, "cornelius" is back on the default
+        set_policy(name="pol_session_persistence", scope=SCOPE.WEBUI, realm=self.realm1, user="root",
+                   action={PolicyAction.SESSION_PERSISTENCE: SESSION_PERSISTENCE.BROWSER})
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.TAB,
+                         new_response.json["result"]["value"]["session_persistence"])
+
+        # A policy for admins does not reach a logged-in user either
+        set_policy(name="pol_session_persistence", scope=SCOPE.WEBUI, adminrealm=self.realm1,
+                   action={PolicyAction.SESSION_PERSISTENCE: SESSION_PERSISTENCE.BROWSER})
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.TAB,
+                         new_response.json["result"]["value"]["session_persistence"])
+
+        delete_policy("pol_session_persistence")
 
     def test_09_get_webui_settings_token_pagesize(self):
         # Test that policies like tokenpagesize are also user dependent
