@@ -52,8 +52,9 @@ def add_to_cache(username: str, realm: str, resolver: str, password: str,
     :param max_age_seconds: how long the entry may be used, from the policy.
         Only Redis can act on it - a database row has no lifetime of its own and
         is removed by the cleanup job instead.
-    :return: the id of the database row, or 0 if the entry went to Redis, which
-        has no row to identify
+    :return: the id of the database row, or 0 if the entry went to Redis (which
+        has no row to identify) or if the password was too long to hash and so
+        was not cached at all
     """
     try:
         auth_hash = _hash_password(password)
