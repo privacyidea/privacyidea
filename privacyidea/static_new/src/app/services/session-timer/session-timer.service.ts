@@ -31,6 +31,8 @@ export interface SessionTimerServiceInterface {
   resetTimer(): void;
 
   startRefreshingRemainingTime(): void;
+
+  stopTimers(): void;
 }
 
 @Injectable({ providedIn: "root" })
@@ -119,6 +121,14 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     this.intervalId = setInterval(() => {
       this.currentTime.set(Date.now());
     }, 1000);
+  }
+
+  /** Disarms everything the ended session armed, so it cannot log the next session out. */
+  stopTimers(): void {
+    this.resetTimer();
+    this.timer = undefined;
+    this.clearRefreshInterval();
+    this.intervalId = undefined;
   }
 
   private handleSessionTimeout(): void {

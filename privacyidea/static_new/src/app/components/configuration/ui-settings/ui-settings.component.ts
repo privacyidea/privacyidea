@@ -40,14 +40,9 @@ import {
   LIGHT_SOURCE_STEP_ANGLE,
   LightSourceLevel
 } from "@services/appearance/appearance.service";
-import {
-  AuthSessionModeService,
-  AuthSessionModeServiceInterface
-} from "@services/auth-session-mode/auth-session-mode.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 import { forkJoin } from "rxjs";
-import { AuthSessionModeCardComponent } from "./auth-session-mode-card/auth-session-mode-card.component";
 
 @Component({
   selector: "app-ui-settings",
@@ -61,7 +56,6 @@ import { AuthSessionModeCardComponent } from "./auth-session-mode-card/auth-sess
     MatSelectModule,
     MatSlideToggleModule,
     MatTooltipModule,
-    AuthSessionModeCardComponent,
     ThemeToggleComponent
   ],
   templateUrl: "./ui-settings.component.html",
@@ -71,7 +65,6 @@ export class UISettingsComponent {
   private readonly themeService = inject(ThemeService);
   private readonly appearanceService = inject(AppearanceService);
   private readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
-  private readonly authSessionModeService: AuthSessionModeServiceInterface = inject(AuthSessionModeService);
   protected readonly locales = UI_LOCALES;
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
   protected readonly showLoadingUrls = this.uiPreferencesService.showLoadingUrls;
@@ -113,7 +106,6 @@ export class UISettingsComponent {
   protected readonly appearanceHint = $localize`:@@uiSettings.changesHowTheInterfaceLooks:Changes how the interface looks: corner rounding, shadow depth and the direction the light comes from. Saved for your account.`;
 
   protected resetSettings(): void {
-    this.authSessionModeService.setDefaultMode();
     // Switching locale is a full-page navigation, which would abort the other writes if they
     // were still in flight, so it only runs once they have all settled.
     forkJoin([

@@ -16,10 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import type { AuthSessionMode } from "@services/auth-session-mode/auth-session-mode.service";
 
 export const environment = {
   secretAESKey: "SuperSecretAESKey",
-  proxyUrl: "/proxy",
-  defaultAuthSessionMode: "single-tab" as AuthSessionMode
+  proxyUrl: "/proxy"
 };

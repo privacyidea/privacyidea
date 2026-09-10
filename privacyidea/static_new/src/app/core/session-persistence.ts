@@ -16,6 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-:host {
-  display: block;
+
+/**
+ * Where the WebUI keeps the session of the logged-in user. The server decides through the
+ * `session_persistence` WebUI policy, so the browser only ever follows: "tab" keeps the session
+ * in the tab it was opened in and ends it when that tab closes, "browser" shares the session with
+ * every tab of the browser and leaves it on disk until the JWT expires.
+ */
+export type SessionPersistence = "tab" | "browser";
+
+export const SESSION_PERSISTENCE_VALUES: SessionPersistence[] = ["tab", "browser"];
+
+export const DEFAULT_SESSION_PERSISTENCE: SessionPersistence = "tab";
+
+export function isSessionPersistence(value: unknown): value is SessionPersistence {
+  return typeof value === "string" && (SESSION_PERSISTENCE_VALUES as string[]).includes(value);
 }

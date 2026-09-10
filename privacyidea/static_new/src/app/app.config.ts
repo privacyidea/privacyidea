@@ -51,9 +51,10 @@ export const appConfig: ApplicationConfig = {
       uiPreferencesService.normalizeLocaleUrl();
     }),
     provideAppInitializer(() => {
-      const authService = inject(AuthService);
-      const configService = inject(ConfigService);
-      return authService.bootstrapSession().then(() => configService.loadConfig());
+      // Restoring the session is a synchronous read of the browser storage, so the app never
+      // waits on it -- and a broken session cannot hold up the bootstrap.
+      inject(AuthService).bootstrapSession();
+      inject(ConfigService).loadConfig();
     }),
     provideZonelessChangeDetection(),
     provideRouter(routes),

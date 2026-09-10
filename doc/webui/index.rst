@@ -53,64 +53,58 @@ assets for their selected language; the settings above apply equally to all
 languages.
 
 
-.. _new_webui_session_mode:
+.. _new_webui_session_persistence:
 
-Session mode
-~~~~~~~~~~~~
+Session persistence
+~~~~~~~~~~~~~~~~~~~
 
-.. index:: session mode, single-tab, multi-tab-ephemeral, multi-tab-persistent
+.. index:: session persistence, sessionStorage, localStorage
 
-The new WebUI keeps the bearer token in web storage, so a page reload does not end
-the session. The session mode sets where it is kept and whether the tabs of one
-browser share it:
+The new WebUI keeps the bearer token in web storage, so a page reload does not end the
+session. Where it keeps it is set by the :ref:`policy_session_persistence` policy, which
+is evaluated for the user who logs in:
 
-* ``single-tab`` - ``sessionStorage``, not shared. Each tab authenticates for itself
-  and loses its session when it closes, so two tabs can hold different users. The
-  default.
-* ``multi-tab-ephemeral`` - ``sessionStorage``, but a starting tab asks the running
-  tabs to hand the session over. Gone once the last tab closes. Needs
-  ``BroadcastChannel``, otherwise the mode is not offered.
-* ``multi-tab-persistent`` - ``localStorage``, shared by all tabs, survives a browser
-  restart. The behaviour of earlier releases.
+* ``tab`` - the token goes to ``sessionStorage``. It belongs to the tab it was created
+  in, is gone when that tab closes, and a second tab has to log in for itself, so two
+  tabs can hold different users. This is the default.
+* ``browser`` - the token goes to ``localStorage``. Every tab of the browser shares the
+  session, and it survives closing the browser until the JWT expires. This is the
+  behaviour of releases before the policy existed.
 
-The deployment default is ``defaultAuthSessionMode`` in
-``privacyidea/static_new/src/environments/environment.ts`` and needs a rebuild.
-Signed-in administrators override it per browser under
-*Config -> UI Settings -> Session Mode*; widening the mode asks for confirmation. The
-override lives in that browser, not on the server -- the mode must be known before
-anyone logs in. A change reaches all open tabs at once and signs in those waiting on
-the login screen, as does a login in a shared mode.
+The value is a deployment decision, not a user preference: the WebUI has no setting for
+it. Because the policy is matched against the principal that is logging in, admin realms
+and user realms can be given different values, and the audit log records the policy like
+any other.
 
-At startup a tab looks in the storage its mode does not use. A session found there is
-moved into the active storage, unless that one already holds a session, and the unused
-storage is cleared either way. Under the default this carries a session written by an
-earlier release from ``localStorage`` into ``sessionStorage``, so nobody has to sign in
-again after the upgrade.
+A tab picks up the session it finds in its own ``sessionStorage`` first and the one in
+``localStorage`` second, so a session already open keeps the storage it was created in
+even after the policy changes. The new value applies to the next login, which also
+clears whatever the other storage still held. Under the default this moves a session
+written by an earlier release out of ``localStorage``, so nobody has to log in again
+after the upgrade.
+
+Logging out in one tab of a ``browser`` session takes the token away from all of them,
+but the other tabs only notice on their next request to the server, which is answered
+with 401 and returns them to the login page.
 
 .. _new_webui_hardening:
 
-Hardening the shared session modes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Hardening a browser-wide session
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. index:: X-Frame-Options, frame-ancestors, clickjacking
+.. index:: session persistence, hardening
 
-``multi-tab-persistent`` leaves a usable token on disk until it expires: whoever opens
-the browser next is signed in. Use it only on devices that are not shared.
+``browser`` leaves a usable token on disk until it expires: whoever opens the browser
+next is logged in, and every same-origin context -- a frame, or a window opened through
+``window.open`` -- can read it. Use it only on devices that are not shared, and consider
+``X-Frame-Options: DENY`` (or ``Content-Security-Policy: frame-ancestors 'none'``) on the
+reverse proxy in either case.
 
-Both shared modes hand the session to any same-origin context that asks for it, without
-inspecting where the request came from. It is also sent unasked whenever someone signs
-in or changes the mode, so a context that only listens receives it too. Set
-``X-Frame-Options: DENY`` (or ``Content-Security-Policy: frame-ancestors 'none'``) on
-the reverse proxy: a framed WebUI is handed the session and can be overlaid with the
-attacker's own elements. The header stops the frame but not a window opened through
-``window.open``, which is same-origin as well and is handed the session too -- it can
-neither be read nor overlaid by the page that opened it.
-
-Logging out discards the stored token but does not withdraw it: privacyIDEA checks a
-JWT by signature and ``exp`` only, so a copied token stays usable until it expires.
-That expiry is set by the :ref:`policy_jwt_validity` policy, which is the only real
-upper bound in every mode. ``logout_time`` is an idle timer in the browser and does
-not limit a token that has left it.
+Logging out discards the stored token but does not withdraw it: privacyIDEA checks a JWT
+by signature and ``exp`` only, so a copied token stays usable until it expires. That
+expiry is set by the :ref:`policy_jwt_validity` policy, which is the only real upper
+bound for both values. ``logout_time`` is an idle timer in the browser and does not
+limit a token that has left it.
 
 
 .. _dashboard:

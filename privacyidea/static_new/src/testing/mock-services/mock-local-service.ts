@@ -39,4 +39,8 @@ export class MockLocalService implements LocalServiceInterface {
       console.warn(`MockLocalService: No data found for key: ${key}`);
     }
   });
+  usePersistence = jest.fn();
+  clearSession = jest.fn().mockImplementation(() => {
+    this.data = {};
+  });
 }

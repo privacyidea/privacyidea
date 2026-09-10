@@ -176,6 +176,15 @@ describe("SessionTimerService", () => {
     expect(after3s).toBeGreaterThanOrEqual(6500);
   });
 
+  it("stopTimers disarms the timeout and the interval of the ended session", () => {
+    service.initialTimerStart();
+    expect(jest.getTimerCount()).toBeGreaterThan(0);
+
+    service.stopTimers();
+
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
   it("startRefreshingRemainingTime keeps a single interval running", () => {
     service.startRefreshingRemainingTime();
     const afterFirst = jest.getTimerCount();

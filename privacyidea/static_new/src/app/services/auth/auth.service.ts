@@ -22,19 +22,13 @@ import { computed, inject, Injectable, Injector, Signal, signal, WritableSignal 
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
-import { resolveLandingPath } from "@app/guards/auth.guard";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
+import { DEFAULT_SESSION_PERSISTENCE, SessionPersistence } from "@core/session-persistence";
 import { environment } from "@env/environment";
-import {
-  AuthSessionSyncService,
-  AuthSessionSyncServiceInterface
-} from "@services/auth-session-sync/auth-session-sync.service";
 import { PolicyAction } from "@services/auth/policy-actions";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
-import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
@@ -80,6 +74,8 @@ export interface AuthData {
   dialog_no_token: boolean;
   search_on_enter: boolean;
   timeout_action: string;
+  // Absent only when talking to a server that predates the session_persistence policy.
+  session_persistence?: SessionPersistence;
   token_rollover?: Record<string, string[]>;
   hide_welcome: boolean;
   hide_buttons: boolean;
@@ -251,7 +247,7 @@ export interface AuthServiceInterface {
   readonly isSelfServiceUser: Signal<boolean>;
 
   // Methods
-  bootstrapSession(): Promise<void>;
+  bootstrapSession(): void;
 
   getHeaders(): HttpHeaders;
 
@@ -363,18 +359,8 @@ export class AuthService implements AuthServiceInterface {
   );
   readonly isSelfServiceUser = computed(() => this.role() === "user");
 
-  constructor() {
-    this.authSessionSyncService.addHandler({
-      endSession: () => this.endSession(),
-      adoptStoredSession: () => this.adoptStoredSession(),
-      hasSession: () => this.isAuthenticated()
-    });
-  }
-
-  bootstrapSession(): Promise<void> {
-    return this.authSessionSyncService.adoptSessionFromOpenTabs().then(() => {
-      this.restoreSession();
-    });
+  bootstrapSession(): void {
+    this.restoreSession();
   }
 
   getHeaders(): HttpHeaders {
@@ -399,9 +385,11 @@ export class AuthService implements AuthServiceInterface {
             this.acceptAuthentication();
             this.authData.set(value);
             this.jwtData.set(this.decodeJwtPayload(value.token));
+            // Before the first write: the policy in the response decides which storage holds
+            // the session, and a session in the other storage is dropped rather than orphaned.
+            this.localService.usePersistence(value.session_persistence ?? DEFAULT_SESSION_PERSISTENCE);
             this.localService.saveData(BEARER_TOKEN_STORAGE_KEY, value.token);
             this.localService.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify(this.persistableAuthData(value)));
-            this.authSessionSyncService.broadcastLogin();
             // Update version after login — the hide_version policy strips the
             // version from pre-login responses, but the /auth response includes
             // it because g.logged_in_user is set during authentication.
@@ -421,33 +409,13 @@ export class AuthService implements AuthServiceInterface {
   }
 
   logout(): void {
-    this.authSessionSyncService.broadcastLogout();
     this.endSession();
   }
 
-  private adoptStoredSession(): void {
-    const previousSession = this.jwtNonce();
-    this.clearUserScopedCaches();
-    if (!this.restoreSession()) {
-      this.endSession();
-      return;
-    }
-    if (previousSession && previousSession !== this.jwtNonce()) {
-      this.reload();
-      return;
-    }
-    this.injector.get(SessionTimerService).initialTimerStart();
-    this.injector.get(UiPreferencesService).sync();
-    if (this.router.url.startsWith(ROUTE_PATHS.LOGIN)) {
-      this.router.navigateByUrl(resolveLandingPath(this));
-    }
-  }
-
-  protected reload(): void {
-    window.location.reload();
-  }
-
   private endSession(): void {
+    // Without this the timeout armed for the session that just ended stays live and logs the
+    // next one out; the interval would keep ticking for the life of the page as well.
+    this.injector.get(SessionTimerService).stopTimers();
     this.dialog.closeAll();
     this.authData.set(null);
     this.jwtData.set(null);
@@ -512,12 +480,11 @@ export class AuthService implements AuthServiceInterface {
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
   private readonly localService: LocalServiceInterface = inject(LocalService);
-  private readonly authSessionSyncService: AuthSessionSyncServiceInterface = inject(AuthSessionSyncService);
   private readonly http = inject(HttpClient);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   private readonly dashboardDataStore = inject(DashboardDataStore);
-  // Resolved lazily: UserSettingsService, SessionTimerService and UiPreferencesService inject
-  // the AuthService themselves, so an eager inject() here would be a circular dependency.
+  // Resolved lazily: UserSettingsService and SessionTimerService inject the AuthService
+  // themselves, so an eager inject() here would be a circular dependency.
   private readonly injector = inject(Injector);
 
   decodeJwtPayload(token: string): JwtData | null {
@@ -584,7 +551,6 @@ export class AuthService implements AuthServiceInterface {
   }
 
   private clearStoredSession(): void {
-    this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
-    this.localService.removeData(AUTH_DATA_STORAGE_KEY);
+    this.localService.clearSession();
   }
 }

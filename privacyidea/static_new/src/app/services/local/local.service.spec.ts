@@ -16,29 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Type } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
-import { AuthSessionModeService } from "@services/auth-session-mode/auth-session-mode.service";
-import { MockAuthSessionModeService } from "@testing/mock-services/mock-auth-session-mode-service";
+import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { LocalService } from "./local.service";
 
 describe("LocalService", () => {
   let localService: LocalService;
-  let modeService: MockAuthSessionModeService;
 
   function createService(): LocalService {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [{ provide: AuthSessionModeService as Type<unknown>, useValue: modeService }]
-    });
+    TestBed.configureTestingModule({ providers: [] });
     return TestBed.inject(LocalService);
   }
 
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
-    modeService = new MockAuthSessionModeService();
     localService = createService();
   });
 
@@ -66,26 +59,65 @@ describe("LocalService", () => {
     expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
   });
 
-  describe("follows the session mode", () => {
-    it("writes to sessionStorage outside multi-tab-persistent", () => {
+  describe("follows the session persistence the server sends", () => {
+    it("keeps a tab session out of localStorage", () => {
+      localService.usePersistence("tab");
       localService.saveData(BEARER_TOKEN_STORAGE_KEY, "a-token");
       expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).not.toBeNull();
       expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
     });
 
-    it("writes to localStorage under multi-tab-persistent", () => {
-      modeService.setMode("multi-tab-persistent");
+    it("puts a browser session in localStorage, where the other tabs find it", () => {
+      localService.usePersistence("browser");
       localService.saveData(BEARER_TOKEN_STORAGE_KEY, "a-token");
       expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).not.toBeNull();
       expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
     });
 
-    it("resolves the storage per call rather than capturing it once", () => {
-      localService.saveData(BEARER_TOKEN_STORAGE_KEY, "in-session");
-      modeService.setMode("multi-tab-persistent");
-      expect(localService.getData(BEARER_TOKEN_STORAGE_KEY)).toBe("");
-      localService.saveData(BEARER_TOKEN_STORAGE_KEY, "in-local");
-      expect(localService.getData(BEARER_TOKEN_STORAGE_KEY)).toBe("in-local");
+    it("drops what the other storage held, so no stale session is left to find", () => {
+      localService.usePersistence("browser");
+      localService.saveData(BEARER_TOKEN_STORAGE_KEY, "old-token");
+      localService.saveData(AUTH_DATA_STORAGE_KEY, "old-data");
+
+      localService.usePersistence("tab");
+
+      expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
+      expect(localStorage.getItem(AUTH_DATA_STORAGE_KEY)).toBeNull();
     });
+  });
+
+  describe("finds an existing session on construction", () => {
+    it("uses the browser session when this tab has none of its own", () => {
+      localService.usePersistence("browser");
+      localService.saveData(BEARER_TOKEN_STORAGE_KEY, "shared-token");
+
+      expect(createService().getData(BEARER_TOKEN_STORAGE_KEY)).toBe("shared-token");
+    });
+
+    it("prefers the tab's own session over a browser session left on disk", () => {
+      localService.usePersistence("browser");
+      localService.saveData(BEARER_TOKEN_STORAGE_KEY, "stale-token");
+      // Written straight to sessionStorage: usePersistence would have cleared the other one.
+      sessionStorage.setItem(BEARER_TOKEN_STORAGE_KEY, localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)!);
+      localStorage.setItem(BEARER_TOKEN_STORAGE_KEY, "other");
+
+      const fresh = createService();
+      fresh.saveData(BEARER_TOKEN_STORAGE_KEY, "tab-token");
+
+      expect(sessionStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).not.toBeNull();
+      expect(fresh.getData(BEARER_TOKEN_STORAGE_KEY)).toBe("tab-token");
+      expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBe("other");
+    });
+  });
+
+  it("clears the session from both storages", () => {
+    localService.usePersistence("browser");
+    localService.saveData(BEARER_TOKEN_STORAGE_KEY, "in-local");
+    sessionStorage.setItem(AUTH_DATA_STORAGE_KEY, "in-session");
+
+    localService.clearSession();
+
+    expect(localStorage.getItem(BEARER_TOKEN_STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(AUTH_DATA_STORAGE_KEY)).toBeNull();
   });
 });
