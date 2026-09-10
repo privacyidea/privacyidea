@@ -139,6 +139,13 @@ describe("DialogWrapperComponent", () => {
     expect(actionButtons[3].classList).toContain("action-button-secondary");
     expect(actionButtons[4].classList).toContain("action-button-primary");
   });
+  it("should style a destructive action that is not primary as outlined only", () => {
+    fixture.componentRef.setInput("actions", [{ value: "d", label: "D", type: "destruct" }]);
+    fixture.detectChanges();
+    const btn = nativeElement.querySelector(".pi-dialog-footer button:last-child");
+    expect(btn?.classList).toContain("action-button-delete-secondary");
+    expect(btn?.classList).not.toContain("action-button-secondary");
+  });
   it("should apply action-button-primary class when primary is true regardless of type", () => {
     fixture.componentRef.setInput("actions", [{ value: "p", label: "P", type: "cancel", primary: true }]);
     fixture.detectChanges();

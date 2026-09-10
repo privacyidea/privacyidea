@@ -192,17 +192,19 @@ class TokenContainerClass:
     def realms(self) -> list[Realm]:
         return self._db_container.realms
 
-    def set_realms(self, realms: list[str], add=False) -> dict[str, bool]:
+    def set_realms(self, realms: list[str], add=False) -> dict:
         """
         Set the realms of the container. If `add` is True, the realms will be added to the existing realms, otherwise
         the existing realms will be removed.
 
         :param realms: List of realm names
         :param add: False if the existing realms shall be removed, True otherwise
-        :return: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
-                 deleted.
+        :return: Dictionary with the entry 'realms' in the format {realm: success} and the entry 'deleted' indicating
+                 whether existing realms were deleted. The per-realm status is nested so that no realm name can
+                 collide with a status key - a realm may legitimately be called "deleted".
         """
-        result = {"deleted": False}
+        realm_status = {}
+        deleted = False
 
         if not realms:
             realms = []
@@ -228,8 +230,7 @@ class TokenContainerClass:
             realms_to_delete = [realm for realm in existing_realms if realm.name in realm_names_to_delete]
             for realm in realms_to_delete:
                 self._db_container.realms.remove(realm)
-            if realms_to_delete:
-                result["deleted"] = True
+            deleted = bool(realms_to_delete)
 
         # Add new realms
         for realm in realms_to_add:
@@ -237,22 +238,22 @@ class TokenContainerClass:
                 stmt = select(Realm).filter_by(name=realm)
                 realm_db = db.session.execute(stmt).scalar_one_or_none()
                 if not realm_db:
-                    result[realm] = False
+                    realm_status[realm] = False
                     log.warning(f"Realm {realm} does not exist. Cannot add it to container {self.serial}.")
                 else:
                     self._db_container.realms.append(realm_db)
-                    result[realm] = True
+                    realm_status[realm] = True
 
         # Set success status for already added realms
         for realm in already_added_realms:
             # If the realms are set completely new, the status for already added realms is True, if they should only be
             # added, the status is False
             # TODO: Not sure whether this makes sense, but this is the actual behaviour ...
-            result[realm] = not add
+            realm_status[realm] = not add
 
         self._db_container.save()
 
-        return result
+        return {"realms": realm_status, "deleted": deleted}
 
     @property
     def registration_state(self) -> RegistrationState:
@@ -932,6 +933,26 @@ class TokenContainerClass:
         """
         raise NotImplementedError("Encryption is not implemented for this container type.")
 
+    def _is_token_transferable(self, token: TokenClass) -> bool:
+        """
+        Check whether a token the client reports belongs to this container and hence can be taken over during the
+        initial token transfer.
+
+        A token that is assigned to a user is taken over if the user is an owner of the container. An unassigned
+        token is taken over if it shares a realm with the container. This covers tokens that are prepared in advance
+        for a user that is not known yet. A token that is neither assigned to a user nor in any realm can not be
+        related to the container and is not taken over.
+
+        :param token: The token the client reported
+        :return: True if the token can be added to this container during the initial token transfer
+        """
+        token_owner = token.user
+        if token_owner:
+            return any(token_owner == container_owner for container_owner in self.get_users())
+
+        container_realms = {realm.name for realm in self.realms}
+        return bool(container_realms.intersection(token.get_realms()))
+
     def synchronize_container_details(self, container_client: dict,
                                       initial_transfer_allowed: bool = False) -> dict[str, dict[str, any]]:
         """
@@ -1028,6 +1049,9 @@ class TokenContainerClass:
         if initial_transfer_allowed and not is_true(container_info.get(INITIALLY_SYNCHRONIZED)):
             self.update_container_info([TokenContainerInfoData(key=INITIALLY_SYNCHRONIZED, value="True",
                                                                info_type=PI_INTERNAL)])
+            # Imported here since the container module imports this module
+            from privacyidea.lib.container import find_container_for_token
+
             server_missing_tokens = list(set(client_serials).difference(set(server_token_serials)))
             for serial in server_missing_tokens:
                 # Try to add the missing token to the container on the server
@@ -1038,10 +1062,25 @@ class TokenContainerClass:
                     continue
 
                 try:
+                    if not self._is_token_transferable(token):
+                        log.info(f"Client token {serial} is neither owned by an owner of the container {self.serial} "
+                                 "nor in one of its realms. It is not added to the container.")
+                        continue
+                    # A token can only be part of one container. Taking it out of the one it is in is what a container
+                    # rollover is for, the initial transfer only picks up tokens that are not in a container yet.
+                    previous_container = find_container_for_token(serial)
+                    if previous_container:
+                        log.info(f"Client token {serial} is already part of the container "
+                                 f"{previous_container.serial}. It is not added to the container {self.serial}.")
+                        continue
+
                     self.add_token(token)
-                except ParameterError as e:
-                    log.info(f"Client token {serial} could not be added to the container: {e}")
+                except Exception as ex:
+                    # A single token must not abort the transfer: the container is marked as initially synchronized
+                    # above, hence the client can not repeat it.
+                    log.info(f"Client token {serial} could not be added to the container {self.serial}: {ex!r}")
                     continue
+
                 # add token to the same_serials list to update the token details
                 same_serials.append(serial)
 

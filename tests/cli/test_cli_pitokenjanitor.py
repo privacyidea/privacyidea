@@ -33,6 +33,7 @@ from privacyidea.lib.token import init_token, get_one_token
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.token import TokenOwner
+from ..base import _reset_database
 
 
 @pytest.fixture(scope="function")
@@ -40,14 +41,13 @@ def app():
     """Create and configure app instance for testing"""
     app = create_app(config_name="testing", config_file="", silent=True)
     with app.app_context():
-        db.create_all()
+        _reset_database()
 
     yield app
 
     with app.app_context():
         call_finalizers()
         close_all_sessions()
-        db.drop_all()
         db.engine.dispose()
 
 
@@ -653,6 +653,36 @@ class TestPiTokenJanitorActions:
             token = get_one_token(serial="HOTP0001")
             assert "info1" not in token.get_tokeninfo()
 
+    def test_set_tokeninfo_skips_an_entry_the_token_maintains(self, app, tokens):
+        """
+        Tests that a tokeninfo entry which the token type maintains itself is reported and skipped, and that the
+        run does not stop there, since a run can cover several token types.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "--tokenattribute", "serial=HOTP0001", "set_tokeninfo", "--tokeninfo",
+                                     "hashlib=sha512"])
+        assert result.exit_code == 0
+        assert "Skipped token HOTP0001" in result.output
+
+        with app.app_context():
+            token = get_one_token(serial="HOTP0001")
+            assert token.get_tokeninfo("hashlib") != "sha512"
+
+    def test_remove_tokeninfo_skips_an_entry_the_token_maintains(self, app, tokens):
+        """
+        Tests that removing a tokeninfo entry which the token needs to work is reported and skipped.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli,
+                               ["find", "--tokenattribute", "serial=HOTP0001", "remove_tokeninfo",
+                                "--tokeninfo_key", "hashlib"])
+        assert result.exit_code == 0
+        assert "Skipped token HOTP0001" in result.output
+
+        with app.app_context():
+            token = get_one_token(serial="HOTP0001")
+            assert "hashlib" in token.get_tokeninfo()
+
     def test_export_pi_format(self, app, tokens):
         """
         Tests exporting tokens in the 'pi' format.
@@ -835,6 +865,23 @@ class TestPiTokenJanitorContainer:
         with app.app_context():
             container = find_container_by_serial("C3")
             assert sorted(container.get_as_dict().get("realms")) == sorted(["realm1", "realm2"])
+
+    def test_container_set_realm_named_like_a_status_key(self, app, containers, realms):
+        """
+        Tests setting a realm that is named like a status key of the set_realms result.
+        """
+        runner = app.test_cli_runner()
+        with app.app_context():
+            set_realm(realm="deleted", resolvers=[{"name": "testresolver"}])
+            db.session.commit()
+
+        result = runner.invoke(findcontainer, ["--serial", "C3", "set_realm", "deleted"])
+        assert result.exit_code == 0
+        assert "Set realm '['deleted']' for container C3" in result.output
+
+        with app.app_context():
+            container = find_container_by_serial("C3")
+            assert container.get_as_dict().get("realms") == ["deleted"]
 
     def test_findcontainer_by_realm(self, app, containers, realms):
         """

@@ -141,6 +141,27 @@ describe("ViewActionColumnComponent", () => {
     expect(component.actionsList().map((a) => a.name)).toEqual(["beta", "delta", "alpha", "gamma"]);
   });
 
+  it("renders the display label of a mapped action value", () => {
+    mockPolicyService.getDetailsOfAction.mockReturnValue({ type: "str", value: ["0", "1"] });
+    fixture.componentRef.setInput("actions", { otppin: "1" });
+    fixture.detectChanges();
+
+    expect(component.actionsList()[0].displayValue).toBe("On");
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector(".action-value")?.textContent).toBe("On");
+  });
+
+  it("floats an entry whose display label matches the term", () => {
+    mockPolicyService.getDetailsOfAction.mockImplementation((name: string) =>
+      name === "otppin" ? { type: "str", value: ["0", "1"] } : { type: "str" }
+    );
+    fixture.componentRef.setInput("actions", { alpha: "1", otppin: "1" });
+    fixture.componentRef.setInput("highlightTerms", ["on"]);
+    fixture.detectChanges();
+
+    expect(component.actionsList().map((a) => a.name)).toEqual(["otppin", "alpha"]);
+  });
+
   it("matches on the action name as well as the value", () => {
     mockPolicyService.getDetailsOfAction.mockReturnValue({ type: "str" });
     fixture.componentRef.setInput("actions", { alpha: "1", login_mode: "x" });

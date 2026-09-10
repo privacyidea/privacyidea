@@ -42,10 +42,15 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { AuthService } from "@services/auth/auth.service";
-import { EMPTY_EVENT, EventHandlerSaveParams, EventService } from "@services/event/event.service";
+import {
+  EMPTY_EVENT,
+  EventHandlerSaveParams,
+  EventService,
+  toEventHandlerSaveParams
+} from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { deepCopy } from "@utils/deep-copy.utils";
@@ -239,19 +244,14 @@ export class EventEditPageComponent implements OnDestroy {
   }
 
   getSaveParameters(): EventHandlerSaveParams {
-    type EventHandlerParams = EventHandlerSaveParams & { options?: Record<string, unknown> };
-    const eventParams = deepCopy(this.editEvent()) as unknown as EventHandlerParams;
-    const options = eventParams.options ?? {};
-    for (const [optionKey, optionValue] of Object.entries(options)) {
-      eventParams["option." + optionKey] = optionValue;
-    }
-    if (eventParams.id != null) {
-      eventParams.id = String(eventParams.id);
-    }
+    const eventParams = toEventHandlerSaveParams(deepCopy(this.editEvent()));
+    // The edit form always carries the complete option set of the selected action, so the stored
+    // options have to be replaced even when the action has none. Without this flag, a request
+    // without any "option.*" parameter leaves the stored options untouched.
+    eventParams.clear_options = true;
     eventParams.handlermodule = this.eventService.selectedHandlerModule();
     // The default of the handler module is not written into the edited binding, so it is resolved here
     eventParams.abort_on_error = this.abortOnError();
-    delete eventParams.options;
     return eventParams;
   }
 

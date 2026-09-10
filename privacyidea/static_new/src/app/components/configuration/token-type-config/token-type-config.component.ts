@@ -122,9 +122,10 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     computation: (config) => this.reconcileQuestions({ ...config }, true)
   });
 
-  onFormDataChange(data: Record<string, string | number | boolean>): void {
+  onFormDataChange(data: Record<string, string | number | boolean | undefined>): void {
     const normalized: Record<string, string> = {};
     for (const [key, value] of Object.entries(data)) {
+      if (value === undefined) continue;
       normalized[key] = typeof value === "boolean" ? (value ? "True" : "False") : String(value);
     }
     const prevRequired = parseInt(this.formData()[QUESTION_NUMBER_OF_ANSWERS] ?? "", 10) || 0;

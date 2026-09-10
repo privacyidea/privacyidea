@@ -147,6 +147,10 @@
       height: 16px;
       font-size: 17px;
     }
+
+    .dark & {
+      background-color: var(--mat-sys-surface-container-high);
+    }
   }
 }
 

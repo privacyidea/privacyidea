@@ -408,21 +408,21 @@ class TokenContainerManagementTestCase(MyTestCase):
         result = add_container_realms(container_serial, [self.realm1], None)
         # Check return value
         self.assertFalse(result['deleted'])
-        self.assertTrue(result[self.realm1])
+        self.assertTrue(result['realms'][self.realm1])
         # Check realms
         container_realms = [realm.name for realm in container.realms]
         self.assertIn(self.realm1, container_realms)
 
         # Add same realm
         result = add_container_realms(container_serial, [self.realm1], None)
-        self.assertFalse(result[self.realm1])
+        self.assertFalse(result['realms'][self.realm1])
 
         # Add one non-existing realm
         result = add_container_realms(container_serial, ["nonexisting", self.realm2], None)
         # Check return value
         self.assertFalse(result['deleted'])
-        self.assertFalse(result['nonexisting'])
-        self.assertTrue(result[self.realm2])
+        self.assertFalse(result['realms']['nonexisting'])
+        self.assertTrue(result['realms'][self.realm2])
         # Check realms
         container_realms = [realm.name for realm in container.realms]
         self.assertNotIn("nonexisting", container_realms)
@@ -445,7 +445,7 @@ class TokenContainerManagementTestCase(MyTestCase):
         # same as None ("every realm"): nothing is added and the request is reported as failed.
         self.setUp_user_realm3()
         result = add_container_realms(container_serial, [self.realm3], [])
-        self.assertFalse(result[self.realm3])
+        self.assertFalse(result['realms'][self.realm3])
         container_realms = [realm.name for realm in container.realms]
         self.assertNotIn(self.realm3, container_realms)
         self.assertEqual(2, len(container_realms))
@@ -2269,7 +2269,8 @@ class TokenContainerSynchronization(MyTestCase):
 
     def test_21_initial_synchronize_smartphone(self):
         # setup container
-        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
+        self.setUp_user_realms()
+        smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Registration
@@ -2277,12 +2278,12 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone.update_container_info(
             [TokenContainerInfoData(key="initially_synchronized", value="False", info_type=PI_INTERNAL)])
 
-        # tokens
-        hotp_token = init_token({"genkey": "1", "type": "hotp"})
+        # tokens, related to the container through the realm
+        hotp_token = init_token({"genkey": "1", "type": "hotp", "realm": self.realm1})
         _, _, otp_dict = hotp_token.get_multi_otp(2)
         hotp_otps = list(otp_dict["otp"].values())
-        totp_token = init_token({"genkey": "1", "type": "totp"})
-        spass_token = init_token({"type": "spass"})
+        totp_token = init_token({"genkey": "1", "type": "totp", "realm": self.realm1})
+        spass_token = init_token({"type": "spass", "realm": self.realm1})
 
         # Init sync
         scope = "https://pi.net/container/synchronize"
