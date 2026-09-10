@@ -173,45 +173,43 @@ def get_default_realm():
     return get_config_object().default_realm
 
 
-def _warn_conditional_access_policies_referencing_realm(realm_name: str):
+def _get_conditional_access_policies_referencing_realm(realm_name: str) -> list:
     """
-    Log a warning naming every conditional-access policy whose ``USER_REALM``
-    condition references ``realm_name``, since deleting it changes what that
-    condition matches without the policy being edited at all:
+    Return the names of all conditional-access policies whose ``USER_REALM``
+    condition references ``realm_name``.
 
-    * ``IN [realm_name, ...]`` fails safe - the realm is simply gone from the
-      set, so the condition matches fewer (never more) requests than before.
-    * ``NOT_IN [realm_name, ...]`` fails open - no user can ever have a
-      deleted realm again, so the condition starts matching *every* request,
-      silently widening a DENY/LOCK_USER policy to the whole installation.
+    The realm stays in the condition's value list even after deletion - the
+    policy itself is never touched - which is a problem on its own:
+
+    * the condition still names a realm that no longer exists, so the policy
+      becomes invalid/un-saveable the next time it is edited;
+    * re-creating a realm with the same name silently rebinds the condition
+      to whatever that new realm turns out to be;
+    * a user who is migrated to another realm loses whatever exemption or
+      restriction the condition was giving them, without the policy ever
+      being touched.
 
     Evaluation deliberately never re-validates a condition's value against the
     current realm list (see :func:`~privacyidea.lib.conditional_access.policy.
-    _validate_condition_value`), so nothing else surfaces this - this is only a
-    log warning, not a blocker, to avoid coupling realm deletion to the CA
-    module for something that cannot be enforced retroactively anyway.
+    _validate_condition_value`), so nothing else surfaces this on its own.
+
+    :param realm_name: the realm about to be deleted
+    :return: sorted, deduplicated list of policy names
     """
     from ..models.conditional_access_policy import ConditionalAccessPolicy, ConditionalAccessPolicyCondition
-    from .conditional_access.conditions import ConditionOperator, ConditionType
+    from .conditional_access.conditions import ConditionType
 
-    stmt = select(ConditionalAccessPolicy.name, ConditionalAccessPolicyCondition.operator,
-                  ConditionalAccessPolicyCondition.value).join(
+    stmt = select(ConditionalAccessPolicy.name, ConditionalAccessPolicyCondition.value).join(
         ConditionalAccessPolicyCondition,
         ConditionalAccessPolicyCondition.policy_id == ConditionalAccessPolicy.id).where(
         ConditionalAccessPolicyCondition.condition_type == ConditionType.USER_REALM)
-    for policy_name, operator, value in db.session.execute(stmt).all():
-        if value and realm_name in value:
-            if operator == ConditionOperator.NOT_IN:
-                log.warning(f"Conditional-access policy '{policy_name}' excludes realm '{realm_name}' via "
-                            f"NOT_IN. Deleting this realm will widen the policy to match every request, "
-                            f"since no user can have a deleted realm.")
-            else:
-                log.warning(f"Conditional-access policy '{policy_name}' references realm '{realm_name}' "
-                            f"({operator}). Deleting this realm will change what the policy matches.")
+    policy_names = {policy_name for policy_name, value in db.session.execute(stmt).all()
+                     if value and realm_name in value}
+    return sorted(policy_names)
 
 
 @log_with(log)
-def delete_realm(realm_name: str, delete_custom_attributes: bool = False):
+def delete_realm(realm_name: str, delete_custom_attributes: bool = False, confirm_ca_policies: bool = False):
     """
     Delete the realm from the database table with the given name.
     If a user from this realm is assigned to a token or container a UserError is raised.
@@ -223,9 +221,21 @@ def delete_realm(realm_name: str, delete_custom_attributes: bool = False):
     raised so the caller can ask for confirmation. With ``delete_custom_attributes``
     True the attributes are deleted along with the realm.
 
+    Conditional-access policies can reference this realm in a ``USER_REALM``
+    condition. Deleting the realm does not touch those policies, but leaves them
+    referencing a realm that no longer exists (see
+    :func:`_get_conditional_access_policies_referencing_realm`). If any such
+    policy exists and ``confirm_ca_policies`` is False, a UserError (id
+    :attr:`Error.REALM_DELETE_CA_POLICY_REFERENCE`) naming the affected policies
+    is raised so the caller can ask for confirmation. With ``confirm_ca_policies``
+    True the realm is deleted anyway and the affected policies are logged as a
+    warning.
+
     :param realm_name: the to be deleted realm
     :param delete_custom_attributes: also delete the realm's custom user attributes
         instead of refusing the deletion
+    :param confirm_ca_policies: delete the realm anyway although conditional-access
+        policies still reference it, instead of refusing the deletion
     """
     # Check if there are still users assigned to tokens or containers
     from .container import get_all_containers
@@ -256,7 +266,16 @@ def delete_realm(realm_name: str, delete_custom_attributes: bool = False):
             f"Deleting the realm will also delete these custom user attributes.",
             id=Error.REALM_DELETE_CUSTOM_ATTRIBUTES)
 
-    _warn_conditional_access_policies_referencing_realm(realm_name)
+    ca_policy_names = _get_conditional_access_policies_referencing_realm(realm_name)
+    if ca_policy_names:
+        if not confirm_ca_policies:
+            names = ", ".join(ca_policy_names)
+            raise UserError(
+                f"Realm '{realm_name}' is still referenced by conditional-access policies ({names}). "
+                f"Deleting the realm will leave those policies referencing a realm that no longer exists.",
+                id=Error.REALM_DELETE_CA_POLICY_REFERENCE)
+        log.warning(f"Deleting realm '{realm_name}' although it is still referenced by conditional-access "
+                    f"policies ({', '.join(ca_policy_names)}).")
 
     # Check if there is a default realm
     def_realm = get_default_realm()

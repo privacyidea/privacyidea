@@ -6,7 +6,7 @@ The lib.resolvers.py only depends on the database model.
 import uuid
 
 from privacyidea.lib.container import init_container, unassign_user, delete_container_by_serial, get_container_realms
-from privacyidea.lib.error import UserError
+from privacyidea.lib.error import Error, UserError
 from privacyidea.lib.realm import (set_realm,
                                    get_realms,
                                    get_default_realm,
@@ -292,11 +292,16 @@ class ResolverTestCase(MyTestCase):
             stages=stages, target="user", priority=2,
             conditions=[{"condition_type": "USER_REALM", "operator": "IN", "value": [self.realm1]}])
 
-        with self.assertLogs("privacyidea.lib.realm", level="WARNING") as cm:
+        with self.assertRaises(UserError) as cm:
             delete_realm(self.realm1)
-        warnings = "\n".join(cm.output)
+        self.assertEqual(cm.exception.id, Error.REALM_DELETE_CA_POLICY_REFERENCE)
+        self.assertIn("excludes_realm1", cm.exception.message)
+        self.assertIn("restricted_to_realm1", cm.exception.message)
+
+        with self.assertLogs("privacyidea.lib.realm", level="WARNING") as logs:
+            delete_realm(self.realm1, confirm_ca_policies=True)
+        warnings = "\n".join(logs.output)
         self.assertIn("excludes_realm1", warnings)
-        self.assertIn("widen", warnings)
         self.assertIn("restricted_to_realm1", warnings)
 
         delete_conditional_access_policy(excludes_id)
