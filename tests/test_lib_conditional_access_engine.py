@@ -1163,6 +1163,57 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertListEqual([], evaluation.outcomes)
         self.assertIsNone(self._block("127.0.0.1"))
 
+    def test_a_restriction_that_is_not_in_force_records_nothing(self):
+        # The write reported success, but nothing can be read back from the row it claims to have written - the
+        # shape a lock keyed differently from the pre-check's lookup produces. No later request would be refused
+        # by it, so this one is not answered as a rejection either and the history stays empty.
+        self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        with mock.patch.object(engine, "get_user_lock", return_value=None):
+            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertListEqual([], evaluation.outcomes)
+        self.assertSetEqual(set(), evaluation.enforced_targets)
+        self.assertListEqual([], evaluation.messages)
+        # The row itself was written: it is the *read* that found nothing, which is the only fact a rejection
+        # may rest on.
+        self.assertIsNotNone(self._state())
+
+    def test_a_restriction_that_is_not_in_force_leaves_the_other_targets_alone(self):
+        # Only the target nothing stands on is dropped. The IP block written by the same request is in force and
+        # keeps both its outcome and its place in enforced_targets, so the request is still refused by it.
+        self._make_policy(name="user_live", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
+        self._make_policy(name="ip_live", counter_type=AuthEventType.PASSWORD_FAIL, priority=2,
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(2, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        self._seed_ip_events("203.0.113.7", AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
+        with mock.patch.object(engine, "get_user_lock", return_value=None):
+            evaluation = evaluate_conditional_access_policies(CAContext(self.user, "203.0.113.7"),
+                                                              AuthEventType.PASSWORD_FAIL)
+
+        self.assertListEqual([("ip_live", str(ConditionalAccessAction.BLOCK_IP))],
+                             [(outcome.policy_name, outcome.action_type) for outcome in evaluation.outcomes])
+        self.assertSetEqual({ConditionalAccessTarget.SOURCE_IP}, evaluation.enforced_targets)
+        self.assertIsNotNone(self._block("203.0.113.7"))
+
+    def test_a_dry_run_outcome_survives_a_restriction_that_is_not_in_force(self):
+        # A dry-run outcome records what a policy *would* have done and never claimed to have written anything,
+        # so the read-back has nothing to contradict: only the enforcing policy's claim is dropped.
+        self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True, priority=1,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
+        self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL, priority=2,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        with mock.patch.object(engine, "get_user_lock", return_value=None):
+            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertListEqual([("dry", True)],
+                             [(outcome.policy_name, outcome.dry_run) for outcome in evaluation.outcomes])
+        self.assertSetEqual(set(), evaluation.enforced_targets)
+
     def test_declined_downgrade_of_a_permanent_lock_records_nothing(self):
         # A timed lock must not weaken an existing permanent one; since nothing changed, nothing is recorded.
         self._make_policy(name="perma", counter_type=AuthEventType.MFA_FAIL, priority=1,

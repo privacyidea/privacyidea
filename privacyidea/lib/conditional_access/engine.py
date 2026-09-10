@@ -407,8 +407,9 @@ class ConditionalAccessEvaluation:
     messages: list[StageMessage] = field(default_factory=list)
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
     #: Which rows this evaluation left a restriction on, so the caller describes what ended up in force there -
-    #: see :func:`_restrictions_in_force`. A restricting action that never wrote anything is not in here: the
-    #: caller answers a request as a rejection on the strength of this set.
+    #: see :func:`_restrictions_in_force`, which is also what establishes this set: a target is in here because a
+    #: restriction was read back from it, not because a write reported success. The caller answers a request as a
+    #: rejection on the strength of it.
     enforced_targets: set[ConditionalAccessTarget] = field(default_factory=set)
 
 
@@ -1261,9 +1262,41 @@ def _stage_denies(stage: ConditionalAccessPolicyStage, count: int) -> bool:
     return False
 
 
-def _restrictions_in_force(context: CAContext, targets: set[ConditionalAccessTarget]) -> list[StageMessage]:
+def _restricted_target(action_type: str) -> "ConditionalAccessTarget | None":
     """
-    The error message of the restrictions in force on the targets an evaluation restricted, one message per row.
+    The target *action_type* restricts, or ``None`` for one that restricts nothing.
+
+    :data:`RESTRICTED_TARGET_BY_ACTION` looked up by the stored string, since an outcome carries its action as text
+    (:func:`~privacyidea.lib.conditional_access.outcome_log.outcome_for_stage`). An action type this module does
+    not know restricts nothing as far as this is concerned.
+    """
+    try:
+        return RESTRICTED_TARGET_BY_ACTION.get(ConditionalAccessAction(action_type))
+    except ValueError:
+        return None
+
+
+@dataclass(frozen=True)
+class RestrictionsInForce:
+    """
+    What :func:`_restrictions_in_force` found standing on the targets an evaluation restricted: the wording to
+    show, and which of those targets actually carry a restriction now.
+
+    Two fields rather than the messages alone, because a target with no message and a target with no restriction
+    are the same silence to a caller reading only the wording - and they must be answered in opposite ways. Silent
+    is the normal case and still refuses the request; nothing in force refuses nothing.
+
+    :ivar messages: the error message of each restriction that carries one, ranked and de-duplicated
+    :ivar standing: the targets a restriction was actually read back from
+    """
+    messages: list[StageMessage] = field(default_factory=list)
+    standing: set[ConditionalAccessTarget] = field(default_factory=set)
+
+
+def _restrictions_in_force(context: CAContext, targets: set[ConditionalAccessTarget]) -> RestrictionsInForce:
+    """
+    The restrictions in force on the targets an evaluation restricted: the error message of each, one per row, and
+    which targets a row was found on at all.
 
     Read back rather than rendered by the stage that aimed at it. Several policies can restrict the same subject
     in one request and a stage can carry several restricting actions, but only one row survives them all - so the
@@ -1272,18 +1305,26 @@ def _restrictions_in_force(context: CAContext, targets: set[ConditionalAccessTar
     down the expiry that actually stands, whatever the upserts decided to keep, and that a write declined as
     weakening still leaves the user told about the restriction that stands instead of about nothing.
 
+    The same read answers whether the restriction is there at all, which is what makes it the authority on
+    :attr:`ConditionalAccessEvaluation.enforced_targets` (see :func:`evaluate_conditional_access_policies`): a
+    write reporting success is not the same fact as a row a later request will be refused by, and only this read
+    establishes the second.
+
     Silent by default holds here as everywhere: a row carrying no error message produces none. A target whose
     write failed outright is not passed here at all - it restricted nothing, so there is no row to describe and no
     request to refuse (see :func:`_execute_stage_actions`).
 
     :param targets: the targets this evaluation restricted, so an untouched row is never read
     """
-    statuses = []
+    statuses: dict[ConditionalAccessTarget, RestrictionStatus | None] = {}
     if ConditionalAccessTarget.USER in targets and context.user is not None:
-        statuses.append(get_user_lock(context.user))
+        statuses[ConditionalAccessTarget.USER] = get_user_lock(context.user)
     if ConditionalAccessTarget.SOURCE_IP in targets and context.source_ip:
-        statuses.append(get_ip_block(context.source_ip))
-    return restriction_messages(*statuses, use_default_error_message=context.use_default_error_message)
+        statuses[ConditionalAccessTarget.SOURCE_IP] = get_ip_block(context.source_ip)
+    messages = restriction_messages(*statuses.values(),
+                                    use_default_error_message=context.use_default_error_message)
+    return RestrictionsInForce(messages=messages,
+                               standing={target for target, status in statuses.items() if status is not None})
 
 
 def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEventType | None,
@@ -1312,6 +1353,12 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     the response this evaluation belongs to. Any error is the caller's to swallow; this
     function itself only guards individual DB writes (see
     :func:`_upsert_user_lock_state`).
+
+    What the actions restricted is then verified against what the *next* request would meet, by reading the
+    restrictions back (:func:`_restrictions_in_force`): a target carrying none is dropped from
+    :attr:`ConditionalAccessEvaluation.enforced_targets` and its outcomes are discarded with a warning, so a
+    restriction that did not end up in force neither refuses this request nor enters its history. Only what a
+    write claimed can be wrong that way; a dry-run outcome, which claims nothing, is always kept.
 
     Alongside the messages, every action that actually ran (or, in dry run, would have run) is returned as a
     :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` for the caller to record as this
@@ -1361,7 +1408,22 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
         enforced |= evaluation.enforced_targets
     # Every restriction is described once, from the row left in force, ahead of the notifications the stages
     # carry: two policies locking the same user leave one lock, and so must say so once.
-    messages = _restrictions_in_force(context, enforced) + messages
+    in_force = _restrictions_in_force(context, enforced)
+    # That same read decides what this evaluation restricted, because a write reporting success and a row the next
+    # request will be refused by are two different facts. A target nothing was read back from restricted nothing
+    # after all - a restriction written under a key the pre-check does not look under, or a row something removed
+    # between the write and here - so it is dropped, together with the outcomes claiming it: this request must not
+    # be answered as a rejection no other request would get, and the history must not hold a lock that is not in
+    # force. Dry-run outcomes stay whatever happens, having never claimed to write anything.
+    unenforced = enforced - in_force.standing
+    if unenforced:
+        log.warning(f"Conditional access restricted {', '.join(sorted(target.value for target in unenforced))} for "
+                    f"{context.user!r} / source IP {context.source_ip!r}, but no restriction is in force there; "
+                    f"neither recording it nor refusing this request.")
+        outcomes = [outcome for outcome in outcomes
+                    if outcome.dry_run or _restricted_target(outcome.action_type) not in unenforced]
+        enforced = in_force.standing
+    messages = in_force.messages + messages
     # Ranked and de-duplicated by rank_and_deduplicate, which is stable, so messages of equal severity stay in
     # policy-priority order. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and
     # two policies locking the same user are two facts worth keeping apart.
@@ -1715,9 +1777,10 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
     """
     outcomes: list[ConditionalAccessOutcome] = []
     # Which rows this stage left a restriction on - noted for an action that actually restricted one, not for one
-    # that was configured to. The caller answers a request as a rejection on the strength of this set, so an action
-    # whose write never happened - no valid duration, no source IP, a failed write - must not put a target here
-    # that no later request would be refused by.
+    # that was configured to: an action whose write never happened - no valid duration, no source IP, a failed
+    # write - must not put a target here that no later request would be refused by. This is what the writes
+    # report; evaluate_conditional_access_policies then checks it against the restriction actually in force, which
+    # is the fact a rejection rests on.
     #
     # A write *declined as weakening* wrote nothing either, and the row it declined to weaken is still described:
     # only a stronger restriction in force declines one, and that one was written either by an earlier action here

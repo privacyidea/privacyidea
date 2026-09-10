@@ -25,6 +25,7 @@ from unittest import mock
 from datetime import datetime, timedelta, timezone
 
 from privacyidea.api.lib import conditional_access as ca_gate
+from privacyidea.lib.conditional_access import engine as ca_engine
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.error import Error
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
@@ -932,6 +933,30 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # And the next request is not refused, which is the disagreement the rejection would have created.
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["value"], body)
+
+    def test_a_lock_that_is_not_in_force_does_not_refuse_its_own_request(self):
+        # The other way a restriction can fail to happen: the write reports success, but nothing can be read back
+        # from the row it claims to have written - what a lock keyed differently from the pre-check's lookup does.
+        # Since no later request would be refused by it, this one must not be answered as a rejection either, and
+        # nothing may be recorded as having restricted it. Simulated by making the engine's read miss, which is
+        # exactly the disagreement between writer and reader that the check exists to catch.
+        create_conditional_access_policy(
+            name="ca_lock_unverifiable", time_window_seconds=3600, priority=1,
+            counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
+            stages=[{"failure_threshold": 1, "error_message": "MSG-UNVERIFIABLE",
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
+            target=ConditionalAccessTarget.USER)
+
+        with mock.patch.object(ca_engine, "get_user_lock", return_value=None):
+            body = self._check({"user": "cornelius", "pass": "wrongpin"})
+
+        # The token failure is still the reason the request failed, and still says so - the stage's wording is
+        # nowhere in the response, because the lock it describes was never established.
+        self.assertEqual("wrong otp pin", body["detail"]["message"], body)
+        self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
+        self.assertNotIn("MSG-UNVERIFIABLE", str(body), body)
+        # And nothing is recorded as having happened on the row this request wrote.
+        self.assertListEqual([], list(get_outcomes(get_authentication_logs()[-1].id)))
 
     def test_a_stage_whose_lock_was_skipped_still_says_nothing_about_it(self):
         # The other half of the same rule, and the reason "did it restrict anything" and "may it speak" are two
