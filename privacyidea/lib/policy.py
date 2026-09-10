@@ -341,6 +341,12 @@ class TIMEOUT_ACTION:
     LOCKSCREEN = 'lockscreen'
 
 
+class SESSION_PERSISTENCE:
+    __doc__ = """This is a list of action values for where the WebUI keeps a session"""
+    TAB = "tab"
+    BROWSER = "browser"
+
+
 class PolicyClass:
     """
     A policy object can be used to query the current set of policies.
@@ -2970,6 +2976,15 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _("Set the time in seconds after which the user will "
                           "be logged out from the WebUI. Default: 120")
+            },
+            PolicyAction.SESSION_PERSISTENCE: {
+                'type': 'str',
+                'value': [SESSION_PERSISTENCE.TAB, SESSION_PERSISTENCE.BROWSER],
+                'desc': _("Where the WebUI keeps the session of the logged-in user. With "
+                          '"tab" the session belongs to the browser tab it was opened in and '
+                          'ends when that tab is closed. With "browser" the session is shared '
+                          "by all tabs of the browser and survives closing it, until the JWT "
+                          'expires. Defaults to "tab".')
             },
             PolicyAction.JWTVALIDITY: {
                 'type': 'int',
