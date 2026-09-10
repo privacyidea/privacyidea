@@ -34,6 +34,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -87,6 +88,7 @@ export class UserNewResolverComponent implements OnDestroy {
   private readonly _route = inject(ActivatedRoute);
   private readonly _dialogService: DialogServiceInterface = inject(DialogService);
   private readonly _pendingChangesService = inject(PendingChangesService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   private _editInitialized = false;
 
@@ -417,6 +419,36 @@ export class UserNewResolverComponent implements OnDestroy {
       this._resetForm();
     }
     this._closeCurrent();
+  }
+
+  async deleteResolver(): Promise<void> {
+    const name = this._resolverService.selectedResolverName();
+    if (!name) {
+      return;
+    }
+    const confirmed = await this._dialogService.confirmDelete({
+      title: $localize`:@@resolver.deleteResolver:Delete Resolver`,
+      items: [name],
+      itemType: "resolver"
+    });
+    if (!confirmed) {
+      return;
+    }
+    this._resolverService.deleteResolver(name).subscribe({
+      next: (res) => {
+        if (res.result?.status === true && (res.result.value ?? -1) >= 0) {
+          this._notificationService.success(
+            $localize`:@@resolver.resolverDeleted:Resolver "${name}:RESOLVER:" deleted.`
+          );
+          this._resolverService.resolversResource.reload?.();
+          this._closeCurrent();
+        } else {
+          this._notificationService.error(
+            $localize`:@@resolver.resolverNotFound:Resolver "${name}:RESOLVER:" not found.`
+          );
+        }
+      }
+    });
   }
 
   private _closeCurrent(): void {

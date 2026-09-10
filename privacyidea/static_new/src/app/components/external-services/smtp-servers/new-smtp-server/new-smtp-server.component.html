@@ -38,6 +38,15 @@
       class="sticky-header"
       [appStickyHeader]="scrollContainer">
       <div class="sticky-controls ali-center">
+        @if (isEditMode() && authService.actionAllowed("smtpserver_write")) {
+          <button
+            (click)="deleteServer()"
+            class="action-button-delete-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>delete</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        }
         <button
           (click)="onCancel()"
           class="action-button-secondary button-width-s"

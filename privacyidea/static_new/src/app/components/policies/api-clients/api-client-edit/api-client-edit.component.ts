@@ -203,6 +203,28 @@ export class ApiClientEditComponent implements OnDestroy {
       });
   }
 
+  async deleteClient(): Promise<void> {
+    const id = this.editClientId();
+    if (!id) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@apiClient.deleteApiClient:Delete API Client`,
+      items: [this.editedClient()?.display_name ?? id],
+      itemType: "api-client"
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.apiClientService.deleteClient(id);
+    } catch {
+      return;
+    }
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.POLICIES_API_CLIENTS);
+  }
+
   onCancel(): void {
     if (this.hasChanges) {
       this.dialogService

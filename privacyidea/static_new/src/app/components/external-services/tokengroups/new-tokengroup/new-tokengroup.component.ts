@@ -27,6 +27,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
@@ -54,6 +55,7 @@ export class NewTokengroupComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected data: Tokengroup | null = null;
   isEditMode = signal(false);
@@ -134,6 +136,28 @@ export class NewTokengroupComponent implements OnDestroy {
     } catch {
       return false;
     }
+  }
+
+  async deleteTokengroup(): Promise<void> {
+    const identifier = this.editGroupName;
+    if (!identifier) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@tokengroup.deleteTokengroup:Delete Tokengroup`,
+      items: [identifier],
+      itemType: $localize`:@@tokengroup.tokengroup:tokengroup`
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.tokengroupService.deleteTokengroup(identifier);
+    } catch {
+      return;
+    }
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
   }
 
   onCancel(): void {
