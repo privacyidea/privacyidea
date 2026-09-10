@@ -22,6 +22,8 @@ the live user-lock state and blocklist entries.
 """
 from datetime import timedelta
 
+from sqlalchemy.dialects import mysql
+
 from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
 from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
 from privacyidea.lib.error import ParameterError
@@ -227,6 +229,27 @@ class UserLockStateTestCase(MyTestCase):
         matched = list_locked_users(error_messages=["locked. contact your administrator."], case_insensitive=True)
         self.assertEqual(1, len(matched))
         self.assertEqual("cornelius", matched[0]["username"])
+
+    def test_migrations_pin_error_message_to_a_case_sensitive_mysql_collation(self):
+        # The test above only proves the ORM model (db.create_all()) is case-sensitive; SQLite is
+        # case-sensitive by default regardless, so it can't catch a MySQL-only collation regression. This
+        # reads the actual migration modules that create these tables and checks the column type they build,
+        # independent of whichever backend the test suite itself runs on.
+        import importlib
+
+        migrations_and_tables = [
+            ("privacyidea.migrations.versions.173d32328846_conditional_access_policies",
+             "conditional_access_policy_stages"),
+            ("privacyidea.migrations.versions.c1a9f7e2b840_user_lock_state", "user_lock_state"),
+            ("privacyidea.migrations.versions.b2f5c9e1a7d4_block_list", "block_list"),
+        ]
+        for module_name, table_name in migrations_and_tables:
+            module = importlib.import_module(module_name)
+            column_type = module._unicode_case_sensitive(500)
+            mysql_variant = column_type.dialect_impl(mysql.dialect())
+            self.assertEqual("utf8mb4_bin", mysql_variant.collation,
+                             f"{module_name} (table {table_name!r}) no longer pins error_message "
+                             "to a case-sensitive MySQL collation")
 
     def test_list_locked_users_default_returns_all_states(self):
         # No states filter -> everything, including expired records.
