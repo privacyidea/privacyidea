@@ -2269,7 +2269,8 @@ class TokenContainerSynchronization(MyTestCase):
 
     def test_21_initial_synchronize_smartphone(self):
         # setup container
-        smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
+        self.setUp_user_realms()
+        smartphone_serial = init_container({"type": "smartphone", "realm": self.realm1})["container_serial"]
         smartphone = find_container_by_serial(smartphone_serial)
 
         # Registration
@@ -2277,12 +2278,12 @@ class TokenContainerSynchronization(MyTestCase):
         smartphone.update_container_info(
             [TokenContainerInfoData(key="initially_synchronized", value="False", info_type=PI_INTERNAL)])
 
-        # tokens
-        hotp_token = init_token({"genkey": "1", "type": "hotp"})
+        # tokens, related to the container through the realm
+        hotp_token = init_token({"genkey": "1", "type": "hotp", "realm": self.realm1})
         _, _, otp_dict = hotp_token.get_multi_otp(2)
         hotp_otps = list(otp_dict["otp"].values())
-        totp_token = init_token({"genkey": "1", "type": "totp"})
-        spass_token = init_token({"type": "spass"})
+        totp_token = init_token({"genkey": "1", "type": "totp", "realm": self.realm1})
+        spass_token = init_token({"type": "spass", "realm": self.realm1})
 
         # Init sync
         scope = "https://pi.net/container/synchronize"
