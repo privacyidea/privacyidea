@@ -6,13 +6,13 @@ The lib.resolvers.py only depends on the database model.
 import uuid
 
 from privacyidea.lib.container import init_container, unassign_user, delete_container_by_serial, get_container_realms
-from privacyidea.lib.error import UserError
+from privacyidea.lib.error import Error, UserError
 from privacyidea.lib.realm import (set_realm,
                                    get_realms,
                                    get_default_realm,
                                    realm_is_defined,
                                    set_default_realm,
-                                   delete_realm, export_realms, import_realms)
+                                   delete_realm, export_realms, import_realms, get_realm_delete_warnings)
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver)
 from privacyidea.lib.token import init_token, unassign_token
@@ -270,5 +270,44 @@ class ResolverTestCase(MyTestCase):
         delete_realm('realm2')
         delete_resolver("resolver1")
         delete_resolver("Resolver2")
-        db.session.delete(node1)
-        db.session.delete(node2)
+
+    def test_30_delete_realm_warns_about_conditional_access_policies(self):
+        from privacyidea.lib.conditional_access.policy import (create_conditional_access_policy,
+                                                                delete_conditional_access_policy)
+
+        rid = save_resolver({"resolver": self.resolvername1,
+                             "type": "passwdresolver",
+                             "fileName": "/etc/passwd"})
+        self.assertTrue(rid > 0, rid)
+        set_realm(self.realm1, [{"name": self.resolvername1}])
+
+        stages = [{"failure_threshold": 3,
+                  "actions": [{"action_type": "LOCK_USER", "action_value": {"duration_seconds": 600}}]}]
+        excludes_id = create_conditional_access_policy(
+            name="excludes_realm1", time_window_seconds=3600, counter_types_to_track=["MFA_FAIL"],
+            stages=stages, target="user", priority=1,
+            conditions=[{"condition_type": "USER_REALM", "operator": "NOT_IN", "value": [self.realm1]}])
+        restricted_id = create_conditional_access_policy(
+            name="restricted_to_realm1", time_window_seconds=3600, counter_types_to_track=["MFA_FAIL"],
+            stages=stages, target="user", priority=2,
+            conditions=[{"condition_type": "USER_REALM", "operator": "IN", "value": [self.realm1]}])
+
+        warnings = get_realm_delete_warnings(self.realm1)
+        self.assertEqual(warnings["custom_attribute_keys"], [])
+        self.assertEqual(sorted(warnings["ca_policy_names"]), ["excludes_realm1", "restricted_to_realm1"])
+
+        with self.assertRaises(UserError) as cm:
+            delete_realm(self.realm1)
+        self.assertEqual(cm.exception.id, Error.REALM_DELETE_CA_POLICY_REFERENCE)
+        self.assertIn("excludes_realm1", cm.exception.message)
+        self.assertIn("restricted_to_realm1", cm.exception.message)
+
+        with self.assertLogs("privacyidea.lib.realm", level="WARNING") as logs:
+            delete_realm(self.realm1, confirm_ca_policies=True)
+        warnings = "\n".join(logs.output)
+        self.assertIn("excludes_realm1", warnings)
+        self.assertIn("restricted_to_realm1", warnings)
+
+        delete_conditional_access_policy(excludes_id)
+        delete_conditional_access_policy(restricted_id)
+        delete_resolver(self.resolvername1)

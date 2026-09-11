@@ -62,6 +62,8 @@
   white-space: nowrap;
 }
 
+// A title that leads to the page it summarizes reads as a link throughout, matching the WebUI's link style
+// (--mat-sys-primary, no underline; see the `a` rule in styles/table.scss).
 .widget-title-link {
   color: var(--mat-sys-primary);
   text-decoration: none;

@@ -19,19 +19,21 @@
 import { Routes } from "@angular/router";
 
 import { pendingChangesGuard } from "@app/guards/pending-changes.guard";
-import { AuditSelfServiceComponent } from "./components/audit/audit.self-service.component";
+import { AuditSelfServiceComponent } from "./components/logs/audit/audit.self-service.component";
 import { AssignTokenSelfServiceComponent } from "./components/token/assign-token-self-service/assign-token-self-service.component";
 import { ContainerCreateSelfServiceComponent } from "./components/container/container-create/container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./components/container/container-create/container-create.wizard.component";
 import { ContainerDetailsComponent } from "./components/container/container-details/container-details.component";
 import { ContainerTableSelfServiceComponent } from "./components/container/container-table/container-table.self-service.component";
-import { NewsComponent } from "./components/news/news.component";
 import { TokenDetailsSelfServiceComponent } from "./components/token/token-details/token-details.self-service.component";
 import { TokenEnrollmentSelfServiceComponent } from "./components/token/token-enrollment/token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./components/token/token-enrollment/token-enrollment.wizard.component";
 import { TokenTableSelfServiceComponent } from "./components/token/token-table/token-table.self-service.component";
 import { UserDetailsSelfServiceComponent } from "./components/user/user-details/user-details.self-service.component";
 import { UserSelfServiceComponent } from "./components/user/user.self-service.component";
+import { AuthenticationLog } from "@components/logs/authentication-log/authentication-log";
+import { NewsComponent } from "./components/news/news.component";
+import { logsLandingRedirect } from "@app/routing/landing-redirects";
 
 export const routes: Routes = [
   {
@@ -68,8 +70,12 @@ export const routes: Routes = [
     ]
   },
   {
-    path: "audit",
-    component: AuditSelfServiceComponent
+    path: "logs",
+    children: [
+      { path: "", pathMatch: "full", redirectTo: logsLandingRedirect },
+      { path: "audit", component: AuditSelfServiceComponent },
+      { path: "authentication-log", component: AuthenticationLog }
+    ]
   },
   {
     path: "news",

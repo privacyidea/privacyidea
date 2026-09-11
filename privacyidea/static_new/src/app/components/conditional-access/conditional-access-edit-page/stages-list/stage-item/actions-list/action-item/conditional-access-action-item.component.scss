@@ -1,0 +1,92 @@
+// Each action is a collapsible panel: the header shows the action type and its
+// one-line description, the body holds the type select and value fields.
+.ca-action-item.mat-expansion-panel {
+  --mat-expansion-container-background-color: var(--mat-sys-surface-container-lowest);
+}
+
+.ca-action-panel-description {
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.ca-action-desc-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ca-action-warn-icon {
+  color: var(--mat-sys-error) !important;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.ca-action-target-error {
+  color: var(--mat-sys-error);
+  margin: 0 0 8px;
+  font-size: var(--mat-sys-body-small-size, 0.75rem);
+}
+
+// The SMTP server an email action names is not configured, so the mail cannot go out.
+.ca-action-stale {
+  color: var(--mat-sys-error);
+}
+
+// Marks that identifier in the option list and - through the option's text content - in the closed
+// select's trigger.
+.ca-action-stale-tag {
+  color: var(--mat-sys-error);
+}
+
+// Holds the per-action-type value fields (duration, or the several email
+// fields), wrapping them so they flow below the type select.
+.ca-action-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+}
+
+// A problem with the action's value, on its own row inside the wrapping value container.
+.ca-action-value-error {
+  flex-basis: 100%;
+  color: var(--mat-sys-error);
+  margin: 0;
+  font-size: var(--mat-sys-body-small-size, 0.75rem);
+}
+
+// Collapsible reference of the {tag} placeholders usable in subject/body.
+.ca-placeholder-help {
+  flex-basis: 100%;
+  color: var(--mat-sys-on-surface-variant);
+
+  summary {
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .ca-placeholder-intro {
+    margin: 8px 0;
+  }
+
+  .ca-placeholder-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: 16px;
+    row-gap: 4px;
+
+    li {
+      display: contents;
+    }
+
+    code {
+      font-family: monospace;
+      color: var(--mat-sys-on-surface);
+    }
+  }
+}

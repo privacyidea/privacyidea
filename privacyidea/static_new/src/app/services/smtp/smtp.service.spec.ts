@@ -21,6 +21,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
@@ -34,6 +35,11 @@ describe("SmtpService", () => {
   let httpMock: HttpTestingController;
   let notificationService: NotificationService;
   let contentService: MockContentService;
+  let authService: MockAuthService;
+
+  // The list is only requested by an admin holding smtpserver_read, which a default install does.
+  const allowSmtpRead = () =>
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["smtpserver_read"] });
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -50,6 +56,7 @@ describe("SmtpService", () => {
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService);
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
   });
 
   afterEach(() => {
@@ -176,6 +183,7 @@ describe("SmtpService", () => {
 
     it("should update smtpServers from smtpServerResource on successful response", async () => {
       contentService.onExternalSmtp = signal(true);
+      allowSmtpRead();
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
@@ -201,6 +209,7 @@ describe("SmtpService", () => {
 
     it("should handle error state from smtpServerResource", async () => {
       contentService.onExternalSmtp = signal(true);
+      allowSmtpRead();
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
@@ -216,12 +225,34 @@ describe("SmtpService", () => {
 
     it("should return an empty list when the resource resolves without a value", async () => {
       contentService.onExternalSmtp = signal(true);
+      allowSmtpRead();
       TestBed.tick();
 
       const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
       req.flush({ result: { status: true } });
       await Promise.resolve();
 
+      expect(service.smtpServers()).toEqual([]);
+    });
+
+    // The conditional-access edit page picks the SMTP server for its email actions from this list.
+    it("should fetch the servers for the conditional access pages", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
+      allowSmtpRead();
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromValue({}));
+    });
+
+    // Without smtpserver_read the endpoint only answers 403, which would raise an error notification on a page that
+    // merely wants the identifiers, so nothing is requested at all.
+    it("should not request the servers without smtpserver_read", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/smtpserver/");
       expect(service.smtpServers()).toEqual([]);
     });
   });

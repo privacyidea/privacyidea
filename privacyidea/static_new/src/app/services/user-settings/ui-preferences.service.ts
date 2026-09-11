@@ -180,6 +180,7 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
       case "audit":
         return this.authService.actionAllowed("auditlog");
       case "tokens":
+      case "conditional-access":
         return true;
     }
   }

@@ -19,7 +19,7 @@
 import { HttpInterceptorFn } from "@angular/common/http";
 import { inject } from "@angular/core";
 import { LoadingService, LoadingServiceInterface } from "@services/loading/loading-service";
-import { finalize, share } from "rxjs/operators";
+import { finalize, shareReplay } from "rxjs/operators";
 import { v4 as uuid } from "uuid";
 
 export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
@@ -27,17 +27,17 @@ export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
 
   const loadingId = uuid();
 
-  const sharedRequest$ = next(req).pipe(
-    share(),
-    finalize(() => {
-      loadingService.removeLoading(loadingId);
-    })
-  );
-  loadingService.addLoading({
-    key: loadingId,
-    observable: sharedRequest$,
-    url: req.url
-  });
+  // Registered up front rather than by subscribing to the request ourselves: a caller that unsubscribes early -
+  // switching a dashboard preset before its request answers, say - has to actually cancel the underlying HTTP call,
+  // and a second, independent subscription of our own here would keep shareReplay's refCount above zero (and the
+  // request running) long after the caller has walked away. finalize below runs on every subscriber's own teardown,
+  // early or not, which is what removeLoading is keyed to instead.
+  loadingService.addLoading(loadingId, req.url);
 
-  return sharedRequest$;
+  // shareReplay still earns its place beyond the loading count: it is what lets two callers subscribing to the same
+  // request share one HTTP call rather than firing it twice.
+  return next(req).pipe(
+    shareReplay({ bufferSize: 1, refCount: true }),
+    finalize(() => loadingService.removeLoading(loadingId))
+  );
 };

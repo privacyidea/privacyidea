@@ -27,7 +27,10 @@ existing API-layer call sites continue to work without changes.
 
 import re
 from collections.abc import Iterable
+from datetime import datetime
 from typing import Any
+
+from dateutil.parser import isoparse
 
 from privacyidea.lib.error import ParameterError
 
@@ -65,6 +68,50 @@ def get_required(dictionary: dict, key: str, allow_empty: bool = False) -> Any:
     if ret is None or (not allow_empty and ret == ""):
         raise ParameterError(f"Missing parameter: {key}", id=905)
     return ret
+
+
+def _parse_timestamp(value: str, key: str) -> datetime:
+    """
+    Parse an ISO 8601 value, reporting a malformed one as a ParameterError naming *key*.
+
+    :func:`~dateutil.parser.isoparse` signals a malformed value with a ValueError, which is caught and turned into a
+    ParameterError.
+    """
+    try:
+        return isoparse(value)
+    except ValueError:
+        raise ParameterError(f"Invalid ISO 8601 timestamp for {key}: {value!r}")
+
+
+def get_required_timestamp(param: dict, key: str) -> datetime:
+    """
+    Get a required ISO 8601 timestamp parameter, parsed into a datetime.
+
+    :param param: the parameter dictionary
+    :param key: the key to look up
+    :raises ParameterError: if the key is missing, empty, or not a valid ISO 8601 timestamp
+    :return: the parsed value, timezone-aware if the value carried an offset
+    """
+    return _parse_timestamp(get_required(param, key), key)
+
+
+def get_optional_timestamp(param: dict, key: str, default: datetime | None = None) -> datetime | None:
+    """
+    Get an optional ISO 8601 timestamp parameter, parsed into a datetime, or *default* when absent or empty.
+
+    A *present but malformed* value is still an error: not filtering on a timestamp the caller asked to filter on
+    would silently answer a different question than the one asked.
+
+    :param param: the parameter dictionary
+    :param key: the key to look up
+    :param default: what to return when the parameter is absent or an empty string
+    :raises ParameterError: if the value is present but not a valid ISO 8601 timestamp
+    :return: the parsed value, timezone-aware if the value carried an offset, else *default*
+    """
+    value = get_optional(param, key)
+    if value is None or value == "":
+        return default
+    return _parse_timestamp(value, key)
 
 
 def get_required_one_of(param: dict, keys: Iterable[str], allow_empty: bool = False) -> Any:
