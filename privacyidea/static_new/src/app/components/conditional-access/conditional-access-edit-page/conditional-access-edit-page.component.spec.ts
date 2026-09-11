@@ -685,6 +685,14 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.countFloorStillBites()).toBe(true);
     });
 
+    // What utc_isoformat actually sends: microsecond precision and a "+00:00" offset, where the
+    // Date Time String Format allows three fractional digits. V8 happens to accept it, so this
+    // pins the shape the component must keep handling rather than reproducing a visible bug.
+    it("should read the microsecond precision the server sends", () => {
+      withEnforcedSince(new Date(Date.now() - 60_000).toISOString().replace(/\.(\d{3})Z$/, ".$1789+00:00"));
+      expect(component.countFloorStillBites()).toBe(true);
+    });
+
     // Once a full window has passed the backend counts the configured width unchanged, so the hint
     // would only be noise.
     it("should stop reporting a floor older than the time window", () => {

@@ -52,6 +52,7 @@ import {
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { normalizeDateTimeString } from "@utils/date-format.utils";
 import { deepCopy } from "@utils/deep-copy.utils";
 import { ConditionalAccessConditionsComponent } from "./conditions/conditional-access-conditions.component";
 import { ConditionalAccessStagesListComponent } from "./stages-list/conditional-access-stages-list.component";
@@ -191,7 +192,9 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     if (!enforcedSince) {
       return false;
     }
-    const elapsed = (Date.now() - new Date(enforcedSince).getTime()) / 1000;
+    // The server sends microsecond precision, which new Date() only parses reliably on some
+    // engines - normalize it to the three digits the Date Time String Format allows first.
+    const elapsed = (Date.now() - new Date(normalizeDateTimeString(enforcedSince)).getTime()) / 1000;
     return elapsed < this.editPolicy().time_window_seconds;
   });
   // Raw text of the priority field, kept separate from the parsed value so an invalid entry is

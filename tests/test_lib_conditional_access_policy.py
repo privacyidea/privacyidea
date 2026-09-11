@@ -631,6 +631,9 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         update_conditional_access_policy(policy_id, dry_run=False)
         enforced_since = get_conditional_access_policy(policy_id)["enforced_since"]
         self.assertIsNotNone(enforced_since)
+        # Serialized like every other timestamp this API serves: ISO-8601 with an explicit UTC offset, not the
+        # RFC 1123 date jsonify would render a bare datetime as.
+        self.assertTrue(enforced_since.endswith("+00:00"), enforced_since)
 
         # Back into dry-run: the floor stays, so the trial simulates the enforcement it interrupted.
         update_conditional_access_policy(policy_id, dry_run=True)

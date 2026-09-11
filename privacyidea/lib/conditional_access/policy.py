@@ -126,7 +126,7 @@ from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ADMIN_RE
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
-from privacyidea.models.utils import utc_now
+from privacyidea.models.utils import utc_isoformat, utc_now
 from privacyidea.models.conditional_access_policy import (ConditionalAccessPolicy, ConditionalAccessPolicyCondition,
                                                ConditionalAccessPolicyStage, ConditionalAccessStageAction)
 
@@ -214,6 +214,10 @@ def conditional_access_policy_to_dict(policy: ConditionalAccessPolicy) -> dict:
     # Scalar columns (id, name, time_window_seconds, enabled, dry_run, priority) map straight through, while
     # counter_types_to_track and stages are not table columns, so both are serialized explicitly below.
     result = {column: getattr(policy, column) for column in policy.__table__.columns.keys()}
+    # enforced_since is stored naive-UTC; rendered by jsonify as it stands it would come out as an RFC 1123 date,
+    # while every other timestamp this API serves is ISO-8601 with an explicit +00:00 (see outcome_log,
+    # authentication_log_statistics).
+    result["enforced_since"] = utc_isoformat(policy.enforced_since)
     result["counter_types_to_track"] = list(policy.counter_types_to_track)
     # An empty list means the policy applies to everyone; conditions carry no id because updates replace them wholesale.
     # They serialize in condition_type order (canonical for an ANDed set), so identical conditions diff cleanly.
