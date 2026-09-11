@@ -48,7 +48,7 @@
       (matSortChange)="onSortChange($event)"
       [dataSource]="clientDataSource()"
       aria-label="Client Data Table"
-      class="clients-table"
+      class="clients-table column-striped-explicit"
       i18n-aria-label="@@audit.clientDataTable"
       mat-table
       matSort>
@@ -56,7 +56,7 @@
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
-            [ngClass]="{ 'col-even': colIdx % 2 === 0, 'col-odd': colIdx % 2 !== 0 }"
+            [ngClass]="{ 'col-stripe': colIdx % 2 === 0 }"
             mat-header-cell
             mat-sort-header>
             {{ column.label }}
@@ -65,7 +65,7 @@
             @if (!useApplicationRowSpan(column.key) || client.isFirst) {
               <td
                 [attr.rowspan]="useApplicationRowSpan(column.key) ? client.rowspan : 1"
-                [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'"
+                [ngClass]="{ 'col-stripe': colIdx % 2 === 0 }"
                 mat-cell>
                 <div class="data-table-cell">
                   @if (column.key === "lastseen") {

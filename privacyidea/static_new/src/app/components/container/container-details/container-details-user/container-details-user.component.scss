@@ -16,15 +16,6 @@
     border: 1px solid var(--mat-sys-outline-variant);
   }
 
-  td:nth-child(even),
-  th:nth-child(even) {
-    background: transparent;
-  }
-
-  tr.mat-mdc-row:nth-child(odd) td {
-    background: var(--mat-sys-surface-variant);
-  }
-
   td:nth-child(1) {
     width: 35%;
   }
