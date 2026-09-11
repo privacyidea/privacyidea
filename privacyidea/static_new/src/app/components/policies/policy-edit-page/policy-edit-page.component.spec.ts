@@ -29,6 +29,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
 import { PolicyTab } from "@components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-panel-edit.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -75,7 +76,8 @@ function createTestBed(paramName: string | null) {
           MatFormFieldModule,
           MatInputModule,
           ClearableInputComponent,
-          StickyHeaderDirective
+          StickyHeaderDirective,
+          ScrollToTopDirective
         ]
       }
     })

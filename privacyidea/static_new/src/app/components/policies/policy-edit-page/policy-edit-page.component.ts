@@ -28,6 +28,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -47,7 +48,8 @@ import { PolicyTemplatePickerComponent } from "./policy-template-picker/policy-t
     MatFormFieldModule,
     MatInputModule,
     ClearableInputComponent,
-    StickyHeaderDirective
+    StickyHeaderDirective,
+    ScrollToTopDirective
   ],
   templateUrl: "./policy-edit-page.component.html",
   styleUrl: "./policy-edit-page.component.scss"
