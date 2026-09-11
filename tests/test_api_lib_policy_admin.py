@@ -801,12 +801,16 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         g.logged_in_user = {"username": "apikey", "realm": "", "role": ROLE.VALIDATE}
         self.assertListEqual([], get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ))
 
-        # A user is scoped to their own entries, and an admin with no scoping policy is unrestricted.
+        # A user is scoped to their own entries - by resolved identity, which needs the request context
+        # own_entries_scope reads the already-resolved caller from - and an admin with no scoping policy is
+        # unrestricted.
         g.logged_in_user = {"username": "cornelius", "realm": self.realm1, "role": ROLE.USER}
-        scopes = get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
+        with self.app.test_request_context():
+            scopes = get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
         self.assertEqual(1, len(scopes))
-        self.assertListEqual(["cornelius"], scopes[0].usernames)
         self.assertListEqual([self.realm1], scopes[0].realms)
+        self.assertListEqual([self.resolvername1], scopes[0].resolvers)
+        self.assertListEqual([], scopes[0].usernames)
 
         g.logged_in_user = {"username": "admin1", "realm": "", "role": ROLE.ADMIN}
         self.assertIsNone(get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ))

@@ -92,10 +92,18 @@ class AuthenticationLogVisibilityScope:
     values. It is not derived from policy scoping
     (policies do not scope by role); it is used to express a principal's own entries -- a local/internal admin has no
     realm, so their own entries are matched by username plus ``user_role=admin-internal`` instead of by realm.
+
+    *uids* is the resolver's immutable user id and is only meaningful together with a ``resolvers`` (and ``realms``)
+    dimension, since a uid is unique per resolver only. It names an *account* where ``usernames`` names a login, which
+    is not an identity: a login can be renamed, and a freed one can be handed to a different account. Policy scoping
+    cannot produce this dimension -- a policy targets logins -- so it is how a principal's *own* entries are expressed
+    (see :func:`~privacyidea.lib.policies.helper.own_entries_scope`), matching what the log records the subject as and
+    what the engine counts it by.
     """
     realms: list[str]
     resolvers: list[str]
     usernames: list[str]
+    uids: list[str] = field(default_factory=list)
     username_case_insensitive: bool = False
     user_roles: list[str] = field(default_factory=list)
 
@@ -664,8 +672,8 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
     restricted dimension are excluded.
 
     The visibility scope is an authorization boundary (which entries a principal may see). Each dimension matches by
-    equality via a plain ``IN`` (which keeps the column index). The boundary columns (realm, resolver, username) are
-    pinned to a **case-sensitive collation** at the schema level
+    equality via a plain ``IN`` (which keeps the column index). The boundary columns (realm, resolver, uid, username)
+    are pinned to a **case-sensitive collation** at the schema level
     (:func:`~privacyidea.models.utils.case_sensitive_unicode`: ``utf8mb4_bin`` on MySQL/MariaDB; SQLite,
     PostgreSQL and Oracle compare case-sensitively by default), so the match is case-sensitive on every backend rather
     than depending on the server-default collation. This fails closed: an admin scoped to resolver ``res`` or user
@@ -697,6 +705,8 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
             dimensions.append(AuthenticationLog.realm.in_(scope.realms))
         if scope.resolvers:
             dimensions.append(AuthenticationLog.resolver.in_(scope.resolvers))
+        if scope.uids:
+            dimensions.append(AuthenticationLog.uid.in_(scope.uids))
         if scope.usernames:
             if scope.username_case_insensitive:
                 dimensions.append(func.lower(AuthenticationLog.username).in_([name.lower()

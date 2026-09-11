@@ -539,6 +539,17 @@ class UserLockStateTestCase(MyTestCase):
         miss = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["nobody"])]
         self.assertListEqual([], list_locked_users(visibility_scopes=miss))
 
+    def test_visibility_scope_uid_enforced(self):
+        # A lock row is keyed by the same (resolver, uid, realm) identity as an auth-log entry, so the uid dimension
+        # has to be enforced here too - a scope carrying one must not fall back to matching the whole realm.
+        self._lock(utc_now() + timedelta(seconds=600))
+        match = [AuthenticationLogVisibilityScope(realms=[], resolvers=[self.user.resolver], usernames=[],
+                                                  uids=[str(self.user.uid)])]
+        self.assertEqual(1, len(list_locked_users(visibility_scopes=match)))
+        miss = [AuthenticationLogVisibilityScope(realms=[], resolvers=[self.user.resolver], usernames=[],
+                                                 uids=[f"{self.user.uid}-gone"])]
+        self.assertListEqual([], list_locked_users(visibility_scopes=miss))
+
     def test_user_matches_scopes(self):
         self.assertTrue(user_matches_scopes(self.user, None))
         self.assertTrue(user_matches_scopes(
@@ -553,6 +564,13 @@ class UserLockStateTestCase(MyTestCase):
         self.assertTrue(user_matches_scopes(
             self.user, [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["CORNELIUS"],
                                                          username_case_insensitive=True)]))
+        # The uid dimension names the account, so a scope carrying another uid must not match on the realm alone.
+        self.assertTrue(user_matches_scopes(
+            self.user, [AuthenticationLogVisibilityScope(realms=[self.user.realm], resolvers=[], usernames=[],
+                                                         uids=[str(self.user.uid)])]))
+        self.assertFalse(user_matches_scopes(
+            self.user, [AuthenticationLogVisibilityScope(realms=[self.user.realm], resolvers=[], usernames=[],
+                                                         uids=[f"{self.user.uid}-gone"])]))
 
     # --- get_user_lock_dict ------------------------------------------------
 

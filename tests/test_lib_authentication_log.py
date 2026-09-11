@@ -886,6 +886,19 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
         self.assertEqual(2, restricted.count)
 
+    def test_visibility_scope_uid_dimension(self):
+        # The uid dimension is what a principal's own entries are matched by: it follows the account, so an entry
+        # recorded under a former login name is included and one carrying the same login name for another uid is not.
+        renamed = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u1",
+                                           realm="realm1", username="alice.old")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u2", realm="realm1",
+                                 username="alice")
+        log_authentication_event(event_type=AuthEventType.USER_UNKNOWN, realm="realm1", username="alice")
+        scope = AuthenticationLogVisibilityScope(realms=["realm1"], resolvers=["res1"], usernames=[], uids=["u1"])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual(1, restricted.count)
+        self.assertEqual(renamed, restricted.auth_logs[0].id)
+
     def test_visibility_scope_user_roles_dimension(self):
         # The user_roles dimension is AND-ed with the others, so a local admin's own entries are matched by username +
         # admin-internal and a same-named regular-user entry is excluded.

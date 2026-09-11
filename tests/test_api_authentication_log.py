@@ -36,6 +36,7 @@ from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
+from privacyidea.lib.user import User
 from privacyidea.models import ConditionalAccessOutcome, db
 from .authlog_utils import AuthLogTestCase
 from .base import skip_unless_admin_lookup_folds_case
@@ -84,6 +85,13 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     @staticmethod
     def _returned_ids(value):
         return {entry["id"] for entry in value["auth_logs"]}
+
+    @staticmethod
+    def _identity(login, realm):
+        # The (resolver, uid) an entry of this account carries, which is what the own-entries scope binds to. Taken
+        # from the resolver rather than written by hand, so an entry seeded as "own" really is the account's.
+        user = User(login=login, realm=realm)
+        return user.resolver, user.uid
 
     def _login_helpdesk(self):
         # Logs in a helpdesk admin from the superuser realm "adminrealm" (so they have a real realm + username) and
@@ -649,11 +657,12 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
 
     def test_realm_scoped_admin_always_sees_own_entries(self):
         # A realm-scoped helpdesk admin sees their own entry even though it is in a different realm (adminrealm),
-        # because the own-scope matches by realm + username -- resolver is intentionally not part of the match.
+        # which the policy scope does not cover.
         helpdesk_token = self._login_helpdesk()
+        own_resolver, own_uid = self._identity("selfservice", "adminrealm")
         in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
                                             uid="1", realm=self.realm1)
-        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=own_resolver, uid=own_uid,
                                        realm="adminrealm", username="selfservice")
         db.session.commit()
         set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
@@ -669,9 +678,10 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         # scope.
         save_resolver({"resolver": "otherresolver", "type": "passwdresolver", "fileName": "tests/testdata/passwords"})
         helpdesk_token = self._login_helpdesk()
+        own_resolver, own_uid = self._identity("selfservice", "adminrealm")
         in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="otherresolver",
                                             uid="1", realm=self.realm1)
-        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=own_resolver, uid=own_uid,
                                        realm="adminrealm", username="selfservice")
         db.session.commit()
         set_policy("authlog_resolver", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
@@ -687,9 +697,10 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         # A user-scoped helpdesk admin sees their own entry even though its username differs from the scoped user, so it
         # is only included via the own-entries scope.
         helpdesk_token = self._login_helpdesk()
+        own_resolver, own_uid = self._identity("selfservice", "adminrealm")
         in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
                                             uid="1", realm=self.realm1, username="someuser")
-        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=own_resolver, uid=own_uid,
                                        realm="adminrealm", username="selfservice")
         db.session.commit()
         set_policy("authlog_user", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, user="someuser")
@@ -698,6 +709,26 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         finally:
             delete_policy("authlog_user")
             delete_realm("adminrealm")
+
+    def test_scoped_admin_keeps_its_policy_scope_when_its_own_identity_is_gone(self):
+        # The own-entries alternative is dropped, not widened to the login name, when the admin's account no longer
+        # resolves (here its realm deleted while the token is still valid) - and the read still succeeds on the
+        # policy scope rather than erroring.
+        helpdesk_token = self._login_helpdesk()
+        own_resolver, own_uid = self._identity("selfservice", "adminrealm")
+        in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                            uid="1", realm=self.realm1)
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=own_resolver, uid=own_uid,
+                                       realm="adminrealm", username="selfservice")
+        db.session.commit()
+        delete_realm("adminrealm")
+        set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
+        try:
+            ids = self._helpdesk_ids(helpdesk_token, {"page_size": 50})
+            self.assertSetEqual({in_scope}, ids)
+            self.assertNotIn(own, ids)
+        finally:
+            delete_policy("authlog_realm")
 
     def test_local_admin_always_sees_own_entries(self):
         # A restricted local (DB) admin has no realm; their own /auth events are recorded with realm/resolver NULL and
@@ -767,7 +798,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         # entry, so the log is cleared to test on controlled entries only.
         self.authenticate_selfservice_user()
         self._clear_log()
-        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="1",
+        resolver, uid = self._identity("selfservice", self.realm1)
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=resolver, uid=uid,
                                        realm=self.realm1, username="selfservice")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
                                  realm=self.realm1, username="hans")  # another user, same realm
@@ -777,6 +809,54 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         try:
             value = self._user_get({"page_size": 50})["result"]["value"]
             self.assertEqual({own}, {entry["id"] for entry in value["auth_logs"]})
+        finally:
+            delete_policy("authlog_user")
+
+    def test_user_own_entries_are_the_account_not_the_login_name(self):
+        # "Their own" is the account (resolver + uid + realm), not the login name the entry happens to carry: an
+        # entry recorded before a rename is still theirs, and one carrying their login name but another account's uid
+        # never is - which is what a freed login name handed to a different account looks like in the log. An entry
+        # that resolved to no account at all is nobody's own, whatever name it was addressed to.
+        self.authenticate_selfservice_user()
+        self._clear_log()
+        resolver, uid = self._identity("selfservice", self.realm1)
+        before_rename = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=resolver, uid=uid,
+                                                 realm=self.realm1, username="selfservice.old")
+        predecessor = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=resolver,
+                                               uid=f"{uid}-gone", realm=self.realm1, username="selfservice")
+        unresolved = log_authentication_event(event_type=AuthEventType.USER_UNKNOWN, realm=self.realm1,
+                                              username="selfservice")
+        db.session.commit()
+        set_policy("authlog_user", scope=SCOPE.USER, action=PolicyAction.AUTHENTICATION_LOG_READ)
+        try:
+            ids = self._returned_ids(self._user_get({"page_size": 50})["result"]["value"])
+            self.assertSetEqual({before_rename}, ids)
+            self.assertNotIn(predecessor, ids)
+            self.assertNotIn(unresolved, ids)
+        finally:
+            delete_policy("authlog_user")
+
+    def test_user_sees_nothing_when_their_own_identity_does_not_resolve(self):
+        # Fails closed: with the account gone (here its realm deleted while the token is still valid), nothing is
+        # theirs - not even the entries carrying their login name, which is exactly what a different account may
+        # since have been given.
+        set_realm("tmprealm", [{"name": self.resolvername1}])
+        with self.app.test_request_context("/auth", method="POST",
+                                           data={"username": "selfservice@tmprealm", "password": "test"}):
+            token = self.app.full_dispatch_request().json["result"]["value"]["token"]
+        self._clear_log()
+        resolver, uid = self._identity("selfservice", "tmprealm")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=resolver, uid=uid,
+                                 realm="tmprealm", username="selfservice")
+        db.session.commit()
+        delete_realm("tmprealm")
+        set_policy("authlog_user", scope=SCOPE.USER, action=PolicyAction.AUTHENTICATION_LOG_READ)
+        try:
+            with self.app.test_request_context("/authenticationlog/", method="GET", query_string={"page_size": 50},
+                                               headers={"Authorization": token}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertListEqual([], res.json["result"]["value"]["auth_logs"])
         finally:
             delete_policy("authlog_user")
 
@@ -916,7 +996,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         # same way, and getting that wrong would hand a self-service user the whole deployment's counts.
         self.authenticate_selfservice_user()
         self._clear_log()
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="1",
+        resolver, uid = self._identity("selfservice", self.realm1)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=resolver, uid=uid,
                                  realm=self.realm1, username="selfservice")
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1, uid="2",
                                  realm=self.realm1, username="hans")
