@@ -33,17 +33,6 @@
     table-layout: auto;
     width: 100%;
 
-    // Reset global column striping
-    td:nth-child(even),
-    th:nth-child(even) {
-      background: transparent;
-    }
-
-    // Apply row striping (zebra)
-    tr:nth-child(even) {
-      background-color: var(--mat-sys-surface-variant);
-    }
-
     th,
     td {
       padding: 0 8px;

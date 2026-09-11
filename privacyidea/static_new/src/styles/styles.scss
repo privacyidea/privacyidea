@@ -4,7 +4,6 @@
 @use "@angular/material/core/style/elevation" as mat-elevation;
 @use "theme";
 @use "material-icons/iconfont/material-icons.scss";
-@forward "table" show base-table-structure;
 @forward "cards";
 
 @include meta.load-css("mixins.scss");

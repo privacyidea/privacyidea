@@ -1,0 +1,449 @@
+@use "table";
+
+// Material gives .mat-mdc-table its own surface colour from component styles that are injected
+// after this sheet, and a bare "table" selector loses to that class. Naming the class next to
+// the element wins on specificity instead - the same reason the header cells below do it. Cells
+// inherit this background, so losing it tints every unstriped cell.
+table,
+table.mat-mdc-table {
+  background-color: table.$table-bg;
+}
+
+.mdc-checkbox
+  .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not([aria-checked="mixed"])
+  ~ .mdc-checkbox__background {
+  border: 2px solid #999;
+}
+
+// Material styles the paginator's own parts with the same specificity from component styles
+// that are injected after this sheet, so the host element has to carry the weight here too.
+mat-paginator .mat-mdc-paginator-page-size {
+  margin-right: 0;
+}
+
+mat-paginator .mat-mdc-paginator-page-size-label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+mat-paginator .mat-mdc-paginator-range-label {
+  margin: 0 16px;
+  white-space: nowrap;
+}
+
+mat-paginator .mat-mdc-paginator-container {
+  padding: 0 0 0 16px;
+  flex-wrap: nowrap !important;
+  --mat-paginator-container-size: 0px;
+}
+
+a {
+  text-decoration: none;
+  color: table.$link-color;
+  cursor: pointer;
+}
+
+// A table picks its striping mode by class; each mode is applied here exactly once, so a table
+// never has to reset the rules of a mode it is not in. The default mode holds for every table
+// that names none of them, so it has to exclude all of them.
+$striping-modes: "row-striped", "column-striped-explicit", "unstriped";
+$default-mode: "";
+
+@each $mode in $striping-modes {
+  $default-mode: $default-mode + ":not(.#{$mode})";
+}
+
+table#{$default-mode} {
+  @include table.column-stripes;
+}
+
+table.row-striped {
+  @include table.row-stripes;
+}
+
+table.column-striped-explicit {
+  @include table.column-stripes-explicit;
+}
+
+// "unstriped" needs no rules of its own: excluded from the default mode above, its cells keep
+// whatever background the table itself gives them.
+
+// The table itself is transparent so it blends with the ancestor card's gradient (see the
+// table-bg variable in table.scss), but a sticky header cell scrolls over the rows beneath it
+// and can't stay see-through - give it an opaque fallback so scrolled content never shows
+// through it. Material sets "background: inherit" on the same cell from its own component
+// styles, which are injected after this sheet; leading with the "table" element beats that on
+// specificity rather than on order, so none of these need !important.
+table.mat-mdc-table .mat-mdc-header-cell {
+  background: table.$header-bg;
+}
+
+table.mat-mdc-table#{$default-mode} .mat-mdc-header-cell:nth-child(even) {
+  background: var(--mat-sys-surface-variant);
+}
+
+.mat-mdc-form-field {
+  color: table.$link-color;
+}
+
+.filter-paginator-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+
+  .selfservice-paginator-label {
+    margin: 0;
+    flex: 1 1 200px;
+  }
+
+  .mat-mdc-paginator {
+    background-color: table.$paginator-bg;
+    flex: 1 1 max-content;
+    min-width: max-content;
+
+    @media (max-width: 1100px) {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+  // Ensure the container doesn't expand beyond its parent
+  display: block;
+}
+
+.highlight-true,
+.highlight-warning,
+.highlight-false,
+.highlight-true-clickable,
+.highlight-warning-clickable,
+.highlight-false-clickable,
+.highlight-disabled {
+  border-radius: var(--border-radius);
+  padding: table.$highlight-padding;
+  color: white;
+  display: inline-block;
+
+  &.highlight-true,
+  &.highlight-true-clickable {
+    background-color: var(--green-light);
+  }
+
+  &.highlight-warning,
+  &.highlight-warning-clickable {
+    background-color: var(--yellow-light-active);
+  }
+
+  &.highlight-false,
+  &.highlight-false-clickable {
+    background-color: var(--red-light);
+  }
+
+  &.highlight-disabled {
+    background-color: #a0a0a0;
+  }
+
+  &.highlight-true-clickable,
+  &.highlight-warning-clickable,
+  &.highlight-false-clickable {
+    cursor: pointer;
+  }
+}
+
+.table-keyword-filter-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.filter-keyword-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 76px 10px 0;
+  width: fit-content;
+  flex-wrap: wrap;
+
+  .filter-keyword-title {
+    margin-top: -4px;
+    min-width: 89px;
+  }
+}
+
+.edit-button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.edit-column-cell {
+  min-width: 86px;
+  padding: 0;
+}
+
+// Material sets border-top-color on .mat-divider itself with the same specificity, from styles
+// injected after this sheet - go through its token rather than outweigh the selector.
+.mat-divider {
+  --mat-divider-color: var(--mat-sys-color-on-surface);
+}
+
+.height-52 {
+  height: 52px;
+}
+
+.container-form-field {
+  height: 51px;
+}
+
+.height-115 {
+  height: 115px;
+}
+
+.height-136 {
+  height: 136px;
+}
+
+.height-137 {
+  height: 137px;
+}
+
+.height-77 {
+  height: 77px;
+}
+
+.height-78 {
+  height: 78px;
+}
+
+.scroll-margin-pad {
+  margin-right: -16px;
+  padding-right: 16px;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.height-auto {
+  height: auto;
+}
+
+table.mat-mdc-table {
+  min-width: 0;
+}
+
+.details-key-row {
+  min-width: 9rem;
+}
+
+.table-checkbox {
+  padding: 0;
+  width: 42px;
+}
+
+.details-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-lowest);
+  padding: 8px 12px 12px;
+}
+
+.details-field-list {
+  display: flex;
+  flex-direction: column;
+  // Match the Material table cell size used by the user card (.mat-mdc-row).
+  font-size: 14px;
+
+  > * {
+    display: grid;
+    grid-template-columns: 35% 65%;
+    align-items: stretch;
+    min-height: 52px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-top-width: 0;
+  }
+
+  > :first-child {
+    border-top-width: 1px;
+  }
+
+  > :nth-child(odd) {
+    background: var(--mat-sys-surface-variant);
+  }
+
+  .detail-field-label {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    min-width: 0;
+    border-right: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  .detail-field-value {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    min-width: 0;
+  }
+
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .value-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+}
+
+// Card titles. The margin goes on the row and the h3/h4 reset below keeps the browser's em-based
+// heading margins out of it. Scoped by app-details-card, so a page-level .details-header keeps
+// its own spacing.
+.details-card-title,
+app-details-card .details-header {
+  margin: 8px;
+}
+
+app-details-card .details-header {
+  h3,
+  h4 {
+    margin: 0;
+  }
+}
+
+.details-cards-column {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.details-cards-grid {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.details-container {
+  .details-table {
+    border-collapse: collapse;
+
+    th,
+    td {
+      border: 1px solid var(--mat-sys-outline-variant);
+    }
+  }
+
+  .details-table.border-bottom-none {
+    tr:last-child td,
+    tr:last-child th {
+      border-bottom: none !important;
+    }
+  }
+
+  .details-header {
+    display: flex;
+    align-items: center;
+  }
+
+  .details-flex-layout {
+    display: flex;
+    box-sizing: border-box;
+    background: var(--mat-sys-surface-container-lowest);
+  }
+
+  .details-description-div {
+    display: flex;
+    overflow-wrap: anywhere;
+    padding-right: 16px;
+    align-items: center;
+    overflow-y: auto;
+    white-space: normal;
+  }
+
+  .details-scrollable-container {
+    display: block;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+  }
+
+  .details-description {
+    display: flex;
+    width: table.$description-width;
+  }
+
+  .details-table-item {
+    margin-left: 5px;
+  }
+
+  .details-value {
+    margin-top: 7px;
+  }
+
+  .container-details-token-table-layout .mat-mdc-text-field-wrapper,
+  .add-token .mat-mdc-text-field-wrapper {
+    padding-left: 16px !important;
+  }
+
+  .details-table
+    .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
+    --mat-form-field-container-height: 52px;
+    --mat-form-field-container-vertical-padding: 8px;
+  }
+
+  .mat-mdc-row {
+    font-size: 14px;
+  }
+}
+
+.selfservice-paginator-label {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.mat-mdc-autocomplete-panel.token-option-panel {
+  max-height: 400px;
+}
+
+.token-option {
+  border: 1px solid var(--mat-sys-surface-container-highest);
+  background: var(--mat-sys-surface-container-low);
+  margin: 0 1px;
+  border-radius: var(--border-radius);
+}
+
+.token-option-span {
+  background: var(--mat-sys-surface-container-lowest);
+  padding: 6px;
+  border-radius: var(--border-radius);
+  margin-right: 8px;
+}
+
+.mat-mdc-option.mdc-list-item.token-option .mdc-list-item__primary-text {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  border-left: 2px solid var(--mat-sys-surface-container-highest);
+  padding: 10px;
+}
