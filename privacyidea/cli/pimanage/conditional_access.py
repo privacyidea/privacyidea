@@ -182,7 +182,8 @@ def disable_dry_run(name: str | None, policy_id: int | None) -> None:
         click.echo(f"Conditional-access policy {label} is not in dry run.")
         return
     update_conditional_access_policy(policy.id, dry_run=False)
-    click.echo(f"Conditional-access policy {label} is no longer in dry run: its actions are enforced again.")
+    click.echo(f"Conditional-access policy {label} is no longer in dry run: its actions are enforced again, "
+               f"counting events from now on.")
 
 
 @conditional_access_cli.command("delete-policy",
