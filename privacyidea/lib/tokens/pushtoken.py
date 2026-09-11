@@ -1022,7 +1022,8 @@ class PushTokenClass(TokenClass):
             # A silent rejection carries no detail, because an ordinary failed answer here carries none either -
             # the opposite of /validate/*, where every failure has one and a silent rejection needs the generic
             # message to have one too. Configured wording is surfaced on both. PUSH_ANSWER_REJECTION states that
-            # shape once, so the response hook answers a restriction *this* answer wrote in the same shape.
+            # shape once, for the pre-check below - the only thing that reports a restriction, and only on the
+            # answers it refuses. A restriction *this* answer trips speaks from the next one.
             from privacyidea.api.lib.conditional_access import (PUSH_ANSWER_REJECTION,
                                                                 conditional_access_rejection)
             rejection = conditional_access_rejection(cls._resolve_token_owner(serial), PUSH_ANSWER_REJECTION)

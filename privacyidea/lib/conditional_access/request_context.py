@@ -351,11 +351,10 @@ class ConditionalAccessContext:
         (``push_wait``: the challenge trigger, then the terminal outcome) the earlier ones are still counted - counts
         are taken over the stored rows - they just do not each provoke their own evaluation.
 
-        Runs **once per distinct classification**, not merely once: a caller that has already evaluated will not
-        make request teardown repeat the same evaluation. Should a post-policy correct the outcome in between,
-        however, teardown *does* evaluate again - otherwise the engine would be left having judged a classification
-        that no longer holds. A classification counts as evaluated only once the engine returned, so a call that
-        failed is retried at teardown rather than swallowed.
+        Idempotent **per classification**, not merely once: once the engine has returned for one, a repeated call
+        is skipped, while a post-policy that corrects the outcome in between is evaluated again - the engine would
+        otherwise be left having judged a classification that no longer holds. Request teardown is the only caller,
+        so nothing reaches that guard today; it is what keeps the evaluation safe to drive from anywhere else.
 
         The evaluation counts events over the authentication log, so it must run **after** :meth:`flush` - otherwise
         the count would miss the very event that triggered it. That ordering also keeps the counts from reading a stale
@@ -406,8 +405,8 @@ class ConditionalAccessContext:
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
             return
-        # Marked evaluated only now: a failure above leaves the classification unevaluated, so the teardown call is
-        # the retry rather than a skipped second attempt.
+        # Marked evaluated only now, so a failure above leaves the classification unevaluated: a later call for it
+        # evaluates rather than skipping a second attempt.
         self._evaluated_as = event.event_type
         record_outcomes(outcomes, event.row_id)
 

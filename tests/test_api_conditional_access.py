@@ -1714,15 +1714,6 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
                      "actions": [{"action_type": str(action), "action_value": None}]}],
             target=ConditionalAccessTarget.USER, priority=priority)
 
-    @staticmethod
-    def _make_block_ip_policy(*, threshold, duration=600, window=3600, priority=1, error_message=None):
-        create_conditional_access_policy(
-            name="ca_block_ip", time_window_seconds=window,
-            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": threshold, "error_message": error_message,
-                     "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP), "action_value": duration}]}],
-            target=ConditionalAccessTarget.SOURCE_IP, priority=priority)
-
     def test_locked_user_rejected_silently_by_default(self):
         # Nothing is volunteered: with no message configured, a locked user is refused with the same generic
         # message as a wrong password, down to the absent severity hint - which would give the lock away on its own.
@@ -2019,7 +2010,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # After enough prior PASSWORD_FAILs the next login is denied pre-auth, even with
         # the correct password. The message states it was a conditional-access decision
         # (without naming the policy); no new log row and no persisted lock.
-        self._make_decision_policy(name="ca_deny", threshold=3, action=ConditionalAccessAction.DENY, error_message="MSG-DELTA")
+        self._make_decision_policy(name="ca_deny", threshold=3, action=ConditionalAccessAction.DENY,
+                                   error_message="MSG-DELTA")
         for _ in range(3):
             res = self._auth("cornelius", "wrongpass")
             self.assertEqual(401, res.status_code, res)

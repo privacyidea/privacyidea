@@ -933,8 +933,9 @@ def hide_specific_error_message(request, response):
         return response
 
     # A conditional-access message is kept: an admin either wrote it on the stage or turned it on by policy, so it
-    # is not what this action is here to suppress. Taken from the claim rather than from the body, because a stage
-    # that only notified was *appended* to the token's own reason and that reason is exactly what this does suppress.
+    # is not what this action is here to suppress. Taken from the claim rather than from the body: the claim holds
+    # only what conditional access itself said, where the body holds the token's own reason whenever a rejection said
+    # nothing - and that reason is exactly what this does suppress.
     message = claimed_ca_message() or str(GENERIC_AUTH_FAILURE)
     error = result.get("error")
     if isinstance(error, dict):
