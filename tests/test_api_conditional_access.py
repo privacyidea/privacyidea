@@ -27,10 +27,10 @@ from datetime import datetime, timedelta, timezone
 from privacyidea.api.lib import conditional_access as ca_gate
 from privacyidea.lib.conditional_access import engine as ca_engine
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
+from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.error import Error
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
-from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole, CountMode
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs,
                                                                    log_authentication_event)
 from privacyidea.lib.conditional_access.engine import is_user_locked, is_ip_blocked
@@ -40,9 +40,11 @@ from privacyidea.lib.conditional_access.engine import LockSubject, _upsert_user_
 from privacyidea.lib.conditional_access.policy import create_conditional_access_policy, default_error_message
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
+from privacyidea.lib.conditional_access.state import lock_internal_admin, lock_user
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
+from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.token import init_token, remove_token, get_tokens, revoke_token
@@ -63,7 +65,7 @@ from privacyidea.models.conditional_access_policy import (
 from privacyidea.models.utils import utc_now
 from . import smtpmock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
-from .base import MyApiTestCase
+from .base import MyApiTestCase, skip_unless_admin_lookup_folds_case
 
 
 def _rows_since(before: int) -> list[str]:
@@ -2620,9 +2622,9 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             delete_smtpserver("lockoutmail")
 
     def test_a_local_admin_is_locked_by_a_user_policy(self):
-        # A local database admin has no (resolver, uid, realm) - only a login name - so they used to be invisible
-        # to a user-target policy and could not be locked at all. They are keyed by that login name together with
-        # the admin-internal role, the same pair the authentication log records them under.
+        # A local database admin has no (resolver, uid, realm) - only a login name - so a user-target policy keys
+        # them by that login name together with the admin-internal role, the same pair the authentication log
+        # records them under.
         self._make_password_policy(threshold=2, duration=600)
 
         self._auth(self.testadmin, "wrongpass")
@@ -2633,7 +2635,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertIsNotNone(lock, "the second failure did not lock the local admin")
         # Keyed by the login name, with no resolver or realm to key on, and saying which kind of principal it
         # locks so nothing has to read that off the two columns it leaves empty.
-        self.assertEqual((str(), self.testadmin, str()), (lock.resolver, lock.uid, lock.realm))
+        self.assertEqual(("", self.testadmin, ""), (lock.resolver, lock.uid, lock.realm))
         self.assertEqual(self.testadmin, lock.username)
         self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), lock.user_role)
 
@@ -2645,6 +2647,43 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(str(AuthEventType.USER_LOCKED), entries[-1].event_type)
         self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), entries[-1].user_role)
         self.assertEqual(self.testadmin, entries[-1].username)
+
+    def test_a_locked_local_admins_refusal_is_logged_under_the_stored_spelling_of_their_login(self):
+        # One account typed two ways is one subject: the refusal row has to name it the way the lock and the
+        # counting do, or a lock reached under one spelling leaves its rejections filed under the other - invisible
+        # to the admin's own log scope and to any filter on the name.
+        skip_unless_admin_lookup_folds_case(self)
+        lock_internal_admin(self.testadmin)
+
+        # The correct password, refused by the pre-check before it is looked at, under a spelling the admin table
+        # treats as the same account.
+        res = self._auth(self.testadmin.upper(), self.testadminpw)
+        self.assertEqual(401, res.status_code, res.json)
+
+        entry = get_authentication_logs()[-1]
+        self.assertEqual(str(AuthEventType.USER_LOCKED), entry.event_type)
+        self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), entry.user_role)
+        self.assertEqual(self.testadmin, entry.username)
+
+    def test_a_name_that_is_both_a_local_admin_and_a_user_is_refused_on_the_users_lock(self):
+        # /auth takes a bare login name and only learns which principal it named by seeing which credential
+        # matches: the local admin's password is tried first, and a same-named user in the default realm is the
+        # fallback. The pre-check runs before that, so it refuses on either one's lock. The failures of such a name
+        # land on the user's row, so looking only under the admin's would let the name be locked over and over
+        # while every request went through - here, with the admin's own password, as a successful login.
+        self.assertEqual(self.realm1, get_default_realm(),
+                         "the collision needs the user's realm to be the one a bare login name resolves to")
+        create_db_admin(self.user.login, password="adminpw")
+        try:
+            lock_user(self.user)
+
+            res = self._auth(self.user.login, "adminpw")
+
+            self.assertEqual(401, res.status_code, res.json)
+            entries = get_authentication_logs()
+            self.assertEqual(str(AuthEventType.USER_LOCKED), entries[-1].event_type)
+        finally:
+            delete_db_admin(self.user.login)
 
     def test_a_locked_local_admin_gets_back_in_once_the_lock_expires(self):
         # The recovery path, and the reason no separate never-lock list is needed: the lock is timed like any

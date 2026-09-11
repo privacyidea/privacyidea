@@ -38,6 +38,7 @@ from privacyidea.lib.conditional_access.state import (
     remove_blocklist_entry,
     lock_internal_admin,
     unlock_internal_admin,
+    unlock_internal_admin_by_uid,
     unlock_user_by_id,
     user_matches_scopes, unlock_user_by_username,
 )
@@ -54,7 +55,7 @@ from privacyidea.models.conditional_access_policy import (
     UserLockState,
 )
 from privacyidea.models.utils import utc_now
-from .base import MyTestCase
+from .base import MyTestCase, skip_unless_admin_lookup_folds_case
 
 
 class UserLockStateTestCase(MyTestCase):
@@ -132,12 +133,28 @@ class UserLockStateTestCase(MyTestCase):
 
     def test_lock_internal_admin_keys_on_the_stored_spelling(self):
         # The authentication path counts and locks the name the admin table holds, so a lock written under any
-        # other spelling would never be met. Only reachable where the admin lookup is case-insensitive, which
-        # SQLite's is not - so this asserts the canonicalization directly rather than through a lookup.
+        # other spelling would never be met. Holds on every database, the name here being spelled as the account
+        # is; reaching the same account under a second spelling is what
+        # test_lock_internal_admin_reaches_the_account_under_a_folded_login covers.
         create_db_admin("CaseAdmin", password="secret")
         try:
             lock_internal_admin("CaseAdmin")
             self.assertEqual("CaseAdmin", db.session.query(UserLockState).one().uid)
+        finally:
+            delete_db_admin("CaseAdmin")
+
+    def test_lock_internal_admin_reaches_the_account_under_a_folded_login(self):
+        # Where the admin table treats two spellings as one account, so must the lock: a lock asked for under the
+        # folded name has to land on the row the authentication path will look under, which is the stored spelling.
+        # Removing it again works from either spelling for the same reason.
+        skip_unless_admin_lookup_folds_case(self)
+        create_db_admin("CaseAdmin", password="secret")
+        try:
+            lock_internal_admin("caseadmin")
+
+            self.assertEqual("CaseAdmin", db.session.query(UserLockState).one().uid)
+            self.assertTrue(unlock_internal_admin("CASEADMIN"))
+            self.assertEqual(0, db.session.query(UserLockState).count())
         finally:
             delete_db_admin("CaseAdmin")
 
@@ -158,6 +175,40 @@ class UserLockStateTestCase(MyTestCase):
         finally:
             delete_db_admin("lockadmin")
 
+    def test_unlock_internal_admin_clears_the_row_left_by_an_earlier_spelling(self):
+        # An account removed and recreated under a different spelling leaves its lock standing under the old one.
+        # Canonicalizing the name alone would look only where the account is spelled now and never find that row,
+        # leaving a lock that bars the account from logging in and cannot be lifted.
+        skip_unless_admin_lookup_folds_case(self)
+        create_db_admin("CaseAdmin", password="secret")
+        lock_internal_admin("CaseAdmin")
+        delete_db_admin("CaseAdmin")
+        create_db_admin("caseadmin", password="secret")
+        try:
+            self.assertTrue(unlock_internal_admin("CaseAdmin"))
+            self.assertEqual(0, db.session.query(UserLockState).count())
+        finally:
+            delete_db_admin("caseadmin")
+
+    def test_unlock_internal_admin_by_uid_removes_only_the_row_it_names(self):
+        # The exact-key form, for a caller acting on a row it has just listed: nothing is derived from the name,
+        # so a second row under a second spelling stays where it is rather than going along with it.
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            db.session.add(UserLockState(resolver="", uid="LockAdmin", realm="", username="LockAdmin",
+                                         user_role=str(AuthLogUserRole.ADMIN_INTERNAL)))
+            db.session.commit()
+
+            self.assertTrue(unlock_internal_admin_by_uid("LockAdmin"))
+
+            self.assertEqual(["lockadmin"], [row.uid for row in db.session.query(UserLockState).all()])
+            # Nothing left under that key reads as False rather than as an error, as everywhere else here.
+            self.assertFalse(unlock_internal_admin_by_uid("LockAdmin"))
+            self.assertFalse(unlock_internal_admin_by_uid(""))
+        finally:
+            delete_db_admin("lockadmin")
+
     def test_unlock_internal_admin_outlives_the_account(self):
         # A lock outliving the admin it was written for is exactly the row an operator needs to be able to clear.
         create_db_admin("goneadmin", password="secret")
@@ -166,20 +217,39 @@ class UserLockStateTestCase(MyTestCase):
         self.assertTrue(unlock_internal_admin("goneadmin"))
         self.assertEqual(0, db.session.query(UserLockState).count())
 
-    def test_unlock_internal_admin_is_refused_to_a_realm_scoped_admin(self):
-        # A local admin's row carries no realm or resolver, so a boundary drawn in those terms does not contain
-        # it - and the scoped administrator is told the same "no lock" a missing row would give them.
+    def test_unlock_internal_admin_is_refused_to_a_target_scoped_admin(self):
+        # Realm, resolver and user are userstore terms and a local admin is not a userstore user, so a boundary
+        # drawn in them does not contain one - by name no more than by realm. The admin policy those scopes come
+        # from cannot say "including local administrators", so a name-scoped delegation reaching a privileged
+        # account would be a grant nobody wrote. The scoped administrator is told the same "no lock" a missing row
+        # would give them.
         create_db_admin("lockadmin", password="secret")
         try:
             lock_internal_admin("lockadmin")
-            scopes = [AuthenticationLogVisibilityScope(realms=[self.realm1], resolvers=[], usernames=[])]
-            self.assertFalse(unlock_internal_admin("lockadmin", visibility_scopes=scopes))
-            self.assertEqual(1, db.session.query(UserLockState).count())
-            # A boundary drawn by name does contain it.
+            by_realm = [AuthenticationLogVisibilityScope(realms=[self.realm1], resolvers=[], usernames=[])]
+            self.assertFalse(unlock_internal_admin("lockadmin", visibility_scopes=by_realm))
             by_name = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["lockadmin"])]
-            self.assertTrue(unlock_internal_admin("lockadmin", visibility_scopes=by_name))
+            self.assertFalse(unlock_internal_admin("lockadmin", visibility_scopes=by_name))
+            self.assertEqual(1, db.session.query(UserLockState).count())
+
+            # A boundary naming the role does contain it, and so does an unscoped caller - the two ways the lock
+            # can still be lifted (see also pi-manage conditionalaccess unlock-user --admin).
+            by_role = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["lockadmin"],
+                                                        user_roles=[str(AuthLogUserRole.ADMIN_INTERNAL)])]
+            self.assertTrue(unlock_internal_admin("lockadmin", visibility_scopes=by_role))
+            lock_internal_admin("lockadmin")
+            self.assertTrue(unlock_internal_admin("lockadmin"))
+            self.assertEqual(0, db.session.query(UserLockState).count())
         finally:
             delete_db_admin("lockadmin")
+
+    def test_a_target_scoped_admin_still_reaches_an_ordinary_users_lock(self):
+        # The role dimension narrows the boundary to local admins only: a delegation scoped by name goes on
+        # working for the users it was written for.
+        lock_user(self.user)
+        by_name = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[self.user.login])]
+        self.assertTrue(unlock_user_by_username(self.user.login, self.user.realm, visibility_scopes=by_name))
+        self.assertEqual(0, db.session.query(UserLockState).count())
 
     def test_lock_user_rejects_a_non_positive_duration(self):
         for duration in (0, -1, True, "600"):

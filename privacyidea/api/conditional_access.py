@@ -55,6 +55,7 @@ from privacyidea.lib.conditional_access.state import (list_locked_users_paginate
                                                               user_matches_scopes, get_user_lock_dict,
                                                               purge_expired_user_locks, unlock_user_by_id,
                                                               unlock_user_by_username, unlock_internal_admin,
+                                                              unlock_internal_admin_by_uid,
                                                               lock_user, block_ip,
                                                               list_blocklist, purge_expired_blocklist,
                                                               remove_blocklist_entry)
@@ -750,11 +751,14 @@ def reset_user_lock():
     required and ``resolver`` is optional — it only narrows the match.
     Omitting it clears every matching lock in the realm.
 
-    A **local database admin** is unlocked by passing ``user`` together with ``user_role=admin-internal``. They
-    have no realm, resolver or uid - the login name is the whole identity and the key of their row - so ``realm``
-    is not required in that form and ``user_id`` is not accepted. Locking one by hand has no counterpart here on
-    purpose: there is nowhere in the WebUI to do it from, and ``pi-manage conditionalaccess lock-user --admin``
-    is the way.
+    A **local database admin** is unlocked by passing ``user_role=admin-internal`` with either ``user_id`` - the
+    ``uid`` of the row to remove, which is what the locked-users list holds - or ``user``, the login name. They
+    have no realm or resolver, the login name being the whole identity and the key of their row, so ``realm`` is
+    not required in this form. The two differ in what they clear: ``user_id`` removes that one row and nothing
+    else, while ``user`` removes every row standing under a spelling of that name, all of which bar the account
+    from logging in wherever the ``admin`` table matches a login case-insensitively. Locking one by hand has no
+    counterpart here on purpose: there is nowhere in the WebUI to do it from, and
+    ``pi-manage conditionalaccess lock-user --admin`` is the way.
 
     Requires the admin policy action :ref:`policy_user_lock_reset`. Constrained to
     the admin's policy visibility scope (the realm / resolver / user conditions on the
@@ -768,9 +772,9 @@ def reset_user_lock():
     :jsonparam user: login of the user (or local admin) to unlock.
     :jsonparam realm: realm of the user (required, except for a local admin)
     :jsonparam resolver: resolver of the user (optional; only disambiguates)
-    :jsonparam user_id: resolver-local user id
-    :jsonparam user_role: ``admin-internal`` to unlock the local database admin named by ``user``; omitted or
-        ``user`` for an ordinary user
+    :jsonparam user_id: resolver-local user id; for a local admin, the ``uid`` of the row to remove
+    :jsonparam user_role: ``admin-internal`` to unlock the local database admin identified by ``user_id`` or
+        ``user``; omitted or ``user`` for an ordinary user
     :status 200: ``true`` if a lock was removed, ``false`` if none existed or it is
         outside the admin's visibility scope
     :status 400: invalid or missing parameter
@@ -781,12 +785,17 @@ def reset_user_lock():
     login = get_optional(params, "user")
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.USER_LOCK_RESET)
     if _unlocks_internal_admin(params):
+        # A caller holding the row passes its key and gets exactly that row removed; one holding only a name gets
+        # every spelling of it cleared, since they all bar the same account from logging in.
         if user_id is not None:
-            raise ParameterError("A local administrator is identified by 'user' alone; 'user_id' does not apply.")
-        removed = unlock_internal_admin(login, visibility_scopes=visibility_scopes)
+            removed = unlock_internal_admin_by_uid(str(user_id), visibility_scopes=visibility_scopes)
+            target = str(user_id)
+        else:
+            removed = unlock_internal_admin(login, visibility_scopes=visibility_scopes)
+            target = login
         scope_note = "" if visibility_scopes is None else ", within visibility scope"
-        g.audit_object.log({"success": removed, "user": login, "realm": "", "resolver": "",
-                            "info": f"reset lock (local admin {login}{scope_note})"})
+        g.audit_object.log({"success": removed, "user": target, "realm": "", "resolver": "",
+                            "info": f"reset lock (local admin {target}{scope_note})"})
         return send_result(removed)
     realm = get_required(params, "realm")
     resolver = get_optional(params, "resolver")

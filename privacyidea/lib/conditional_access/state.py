@@ -167,6 +167,16 @@ def _visibility_condition(scopes: list) -> ColumnElement[bool]:
     Realm, resolver and username are all enforced (username via the denormalized
     ``UserLockState.username`` column, honoring the policy's
     ``user_case_insensitive`` option like the auth log).
+
+    A scope that names no ``user_roles`` does not reach the rows of a **local database administrator**. Realm,
+    resolver and user are userstore terms, and none of them describes such an account, whose row carries a login
+    name and nothing else, so a boundary drawn only in those terms does not contain one. Without this, a policy
+    scoped to a user name would reach a local admin of that name - by coincidence of the shared ``username``
+    column rather than by anyone's intent, and the admin policy the boundary comes from has no way to say
+    otherwise, carrying only realm, resolver and user (see
+    :func:`~privacyidea.lib.policies.helper.get_policy_visibility_scopes`). A local admin's rows are therefore
+    reachable only by a caller that is unscoped altogether, or by a scope naming the role outright - which is how
+    a scoped admin still sees their **own** entries.
     """
     scope_conditions = []
     for scope in scopes:
@@ -181,6 +191,12 @@ def _visibility_condition(scopes: list) -> ColumnElement[bool]:
                     [name.lower() for name in scope.usernames]))
             else:
                 dimensions.append(UserLockState.username.in_(scope.usernames))
+        if scope.user_roles:
+            dimensions.append(UserLockState.user_role.in_([str(role) for role in scope.user_roles]))
+        elif dimensions:
+            # Stated as "not a local admin" rather than "is a user", as the auth log states it: this column is
+            # never null, but the boundary is about the one role that must stay out of reach, not about the rest.
+            dimensions.append(UserLockState.user_role != str(AuthLogUserRole.ADMIN_INTERNAL))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
     if not scope_conditions:
@@ -428,10 +444,13 @@ def lock_internal_admin(login: str, duration_seconds: int | None = None, now: da
     """
     # Deferred: lib.auth pulls in the token machinery, and importing it at module level would risk an
     # import-order cycle during app startup.
-    from privacyidea.lib.auth import canonical_db_admin_login, db_admin_exists
-    if not (login and db_admin_exists(login)):
+    from privacyidea.lib.auth import get_db_admin
+    # One lookup answers both questions this needs: whether the account exists, and the spelling it is stored
+    # under.
+    admin = get_db_admin(login) if login else None
+    if admin is None:
         raise ParameterError(f"Cannot lock {login!r}: there is no local administrator of that name.")
-    subject = LockSubject.for_internal_admin(canonical_db_admin_login(login))
+    subject = LockSubject.for_internal_admin(admin.username)
     moment = now if now is not None else utc_now()
     lock_expires_at = _restriction_expiry(duration_seconds, moment)
     with guarded_write(f"the manual lock for {subject}", reraise=True):
@@ -452,14 +471,16 @@ def lock_internal_admin(login: str, duration_seconds: int | None = None, now: da
 @log_with(log)
 def unlock_internal_admin(login: str, visibility_scopes: list | None = None) -> bool:
     """
-    Delete the lock of the local database admin *login*. Returns ``True`` if a row was removed, ``False`` if there
-    was no lock.
+    Delete the lock of the local database admin named *login*, whichever spelling of that name it stands under.
+    Returns ``True`` if a row was removed, ``False`` if there was no lock. The by-name counterpart of
+    :func:`unlock_internal_admin_by_uid`, which removes one row by its own key; this is for a caller holding a
+    typed name rather than a listed row, such as ``pi-manage conditionalaccess unlock-user --admin``.
 
-    Keyed exactly, not by username like :func:`unlock_user_by_username`: a local admin's login *is* the key, so
-    there is only ever the one row and no realm or resolver to disambiguate it with. The spelling is canonicalized
-    for the same reason it is when locking - so the name an operator types reaches the row the engine wrote - but
-    an account that no longer exists is not an error here: a lock outliving its admin is exactly a row worth being
-    able to remove.
+    Both the canonical spelling and the one given are matched, and for the same reason the lock is written under
+    the canonical one: where the ``admin`` table folds case, every spelling authenticates the same account, so
+    every row standing under one of them bars that account from logging in and all of them have to go. Matching
+    only the canonical spelling would strand a row whose account was since removed and recreated under a different
+    one - and a lock outliving its admin is exactly the row an operator needs to be able to clear.
 
     ``visibility_scopes`` restricts the delete to the caller's authorization boundary as elsewhere. A local admin's
     row carries no realm or resolver, so a realm- or resolver-scoped administrator matches none of it and cannot
@@ -467,11 +488,41 @@ def unlock_internal_admin(login: str, visibility_scopes: list | None = None) -> 
     """
     # Deferred for the same reason as in lock_internal_admin.
     from privacyidea.lib.auth import canonical_db_admin_login
-    subject = LockSubject.for_internal_admin(canonical_db_admin_login(login))
-    if subject is None:
+    # dict.fromkeys rather than a set: order is irrelevant to the query but keeps the log line stable, and the two
+    # collapse to one whenever the name was already spelled as the account is.
+    logins = [name for name in dict.fromkeys((canonical_db_admin_login(login), login)) if name]
+    if not logins:
         return False
-    conditions = [UserLockState.resolver == subject.resolver, UserLockState.uid == subject.uid,
-                  UserLockState.realm == subject.realm]
+    return _delete_internal_admin_locks(logins, visibility_scopes)
+
+
+@log_with(log)
+def unlock_internal_admin_by_uid(uid: str, visibility_scopes: list | None = None) -> bool:
+    """
+    Delete the one local-admin lock row keyed on *uid*. Returns ``True`` if it was removed, ``False`` if there was
+    no such row.
+
+    The exact-key counterpart of :func:`unlock_internal_admin`, for a caller that already holds the row - the
+    locked-users table, which lists it and then acts on what it listed. Nothing is derived and nothing else is
+    touched: the name is not looked up in the ``admin`` table, so a row cannot be missed because the account it
+    belongs to is gone or now spelled differently, and a second row under a second spelling is left alone rather
+    than removed along with the one that was asked for.
+    """
+    if not uid:
+        return False
+    return _delete_internal_admin_locks([uid], visibility_scopes)
+
+
+def _delete_internal_admin_locks(uids: list[str], visibility_scopes: list | None) -> bool:
+    """
+    Delete the local-admin lock rows keyed on any of *uids*, within *visibility_scopes*. Shared by the two
+    unlock entry points, which differ only in how they arrive at the names.
+    """
+    # The empty resolver and realm a local admin's row carries are taken from the subject rather than spelled out
+    # again here, so the two stay one definition; only the uid differs between the names.
+    subject = LockSubject.for_internal_admin(uids[0])
+    conditions = [UserLockState.resolver == subject.resolver, UserLockState.realm == subject.realm,
+                  UserLockState.uid.in_(uids)]
     if visibility_scopes is not None:
         conditions.append(_visibility_condition(visibility_scopes))
     return _delete_and_commit(delete(UserLockState).where(*conditions)) > 0

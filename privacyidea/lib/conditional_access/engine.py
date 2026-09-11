@@ -461,8 +461,7 @@ class LockSubject:
     The principal a ``user``-target policy counts the failures of and writes the lock for.
 
     Two kinds of principal can be locked, and they are identified differently - which is the whole reason this
-    type exists, the engine having previously keyed everything on a user's ``(resolver, uid, realm)`` and so been
-    able to see only the first:
+    type exists, a single ``(resolver, uid, realm)`` tuple being able to name only the first of them:
 
     * a **resolved user**, identified by that tuple, exactly as the authentication log stores it;
     * a **local database admin**, who has no resolver, no uid and no realm - only a login name. Their log rows are
@@ -1044,7 +1043,16 @@ def get_subject_lock(subject: "LockSubject | None", now: datetime | None = None,
     """
     if subject is None:
         return None
-    state = get_ca_session().get(UserLockState, subject.state_key)
+    return _lock_status_of(get_ca_session().get(UserLockState, subject.state_key), now, clear_expired)
+
+
+def _lock_status_of(state: "UserLockState | None", now: datetime | None,
+                    clear_expired: bool) -> "RestrictionStatus | None":
+    """
+    What *state* means right now, or ``None`` for no row and for a stale one. The expiry, permanent-lock and
+    *clear_expired* semantics :func:`get_subject_lock` documents live here, so every way of arriving at a row
+    answers them identically.
+    """
     if not state:
         return None
     if state.lock_expires_at is None:
@@ -1060,6 +1068,36 @@ def get_subject_lock(subject: "LockSubject | None", now: datetime | None = None,
     return RestrictionStatus(permanent=False, expires_at=state.lock_expires_at,
                              seconds_remaining=remaining, target=ConditionalAccessTarget.USER,
                              error_message=state.error_message)
+
+
+def get_user_lock_by_login(login: str | None, now: datetime | None = None, *,
+                           clear_expired: bool = False) -> "RestrictionStatus | None":
+    """
+    The lock standing on a **user** whose login name is *login*, in whichever realm, or ``None`` if no such user is
+    locked. Keyed on the name alone, deliberately: this answers a question asked before a request has an identity.
+
+    ``/auth`` accepts a bare login name and only finds out which principal it named by seeing which credential
+    matches - a local database admin's, or a same-named user's in the default realm (see
+    :func:`~privacyidea.api.lib.conditional_access._evaluate_rejection`, the one caller). The pre-check runs before
+    that, so it cannot ask "is this principal locked" without guessing which one; it asks "is any principal this
+    name could mean locked" instead, and this is the half of that question a user's row answers. Only rows a *user*
+    left are matched - a local admin's row is reached by its own key, which is exact.
+
+    Several realms can hold a user of one name, and any of their locks bars a login under the bare name, so the
+    first one standing is returned. A row is not narrowed to the default realm because the realm this request would
+    have resolved to is not settled at this point (``get_realm_for_authentication`` may rewrite it), and refusing
+    too widely here is a refusal, never an admission.
+    """
+    if not login:
+        return None
+    states = get_ca_session().scalars(
+        select(UserLockState).where(UserLockState.username == login,
+                                    UserLockState.user_role == str(AuthLogUserRole.USER))).all()
+    for state in states:
+        status = _lock_status_of(state, now, clear_expired)
+        if status is not None:
+            return status
+    return None
 
 
 def get_user_lock(user: "User", now: datetime | None = None, *,
@@ -1461,7 +1499,8 @@ class RestrictionsInForce:
     standing: set[ConditionalAccessTarget] = field(default_factory=set)
 
 
-def _restrictions_in_force(context: CAContext, targets: set[ConditionalAccessTarget]) -> RestrictionsInForce:
+def _restrictions_in_force(context: CAContext, targets: set[ConditionalAccessTarget],
+                           now: datetime | None = None) -> RestrictionsInForce:
     """
     The restrictions in force on the targets an evaluation restricted: the error message of each, one per row, and
     which targets a row was found on at all.
@@ -1483,14 +1522,17 @@ def _restrictions_in_force(context: CAContext, targets: set[ConditionalAccessTar
     request to refuse (see :func:`_execute_stage_actions`).
 
     :param targets: the targets this evaluation restricted, so an untouched row is never read
+    :param now: the instant to judge expiry against, which must be the one the writes used: a restriction lasting
+        seconds is otherwise read back as already expired whenever a slow action - an email delivery, say - runs
+        between the write and here, and would then count as never having been in force
     """
     statuses: dict[ConditionalAccessTarget, RestrictionStatus | None] = {}
     if ConditionalAccessTarget.USER in targets:
         # Read back under the same key the write used and the pre-check will use, which is the point of asking
         # the context rather than reaching for its user: a local admin's lock is on neither.
-        statuses[ConditionalAccessTarget.USER] = get_subject_lock(lock_subject(context))
+        statuses[ConditionalAccessTarget.USER] = get_subject_lock(lock_subject(context), now)
     if ConditionalAccessTarget.SOURCE_IP in targets and context.source_ip:
-        statuses[ConditionalAccessTarget.SOURCE_IP] = get_ip_block(context.source_ip)
+        statuses[ConditionalAccessTarget.SOURCE_IP] = get_ip_block(context.source_ip, now)
     messages = restriction_messages(*statuses.values(),
                                     use_default_error_message=context.use_default_error_message)
     return RestrictionsInForce(messages=messages,
@@ -1578,7 +1620,7 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
         enforced |= evaluation.enforced_targets
     # Every restriction is described once, from the row left in force, ahead of the notifications the stages
     # carry: two policies locking the same user leave one lock, and so must say so once.
-    in_force = _restrictions_in_force(context, enforced)
+    in_force = _restrictions_in_force(context, enforced, now)
     # That same read decides what this evaluation restricted, because a write reporting success and a row the next
     # request will be refused by are two different facts. A target nothing was read back from restricted nothing
     # after all - a restriction written under a key the pre-check does not look under, or a row something removed

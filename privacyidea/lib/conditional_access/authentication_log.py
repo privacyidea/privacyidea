@@ -28,7 +28,7 @@ from sqlalchemy.sql import ColumnElement
 
 from privacyidea.models import (AuthenticationLog, AuthenticationLogReason, ConditionalAccessOutcome,
                                 authentication_log_column_length, authentication_log_reason_column_length)
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.sqlutils import delete_matching_rows
@@ -676,6 +676,17 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
     how that policy option is applied during policy matching. realm and resolver are always case-sensitive (realm is
     additionally always stored lower case, so its casing never varies in practice).
 
+
+    A scope that names no ``user_roles`` does not reach the rows of a **local database administrator**. Realm,
+    resolver and user are userstore terms, and none of them describes such an account, whose row carries a login
+    name and nothing else, so a boundary drawn only in those terms does not contain one. Without this, a policy
+    scoped to a user name would reach a local admin of that name - by coincidence of the shared ``username``
+    column rather than by anyone's intent, and the admin policy the boundary comes from has no way to say
+    otherwise, carrying only realm, resolver and user (see
+    :func:`~privacyidea.lib.policies.helper.get_policy_visibility_scopes`). A local admin's rows are therefore
+    reachable only by a caller that is unscoped altogether, or by a scope naming the role outright - which is how
+    a scoped admin still sees their **own** entries.
+
     An empty scope list (or scopes that set no dimension at all) restricts to *nothing*: it returns ``false()`` rather
     than an empty ``or_()``, so the visibility boundary fails closed instead of degrading to "no restriction".
     """
@@ -694,6 +705,11 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
                 dimensions.append(AuthenticationLog.username.in_(scope.usernames))
         if scope.user_roles:
             dimensions.append(AuthenticationLog.user_role.in_([str(role) for role in scope.user_roles]))
+        elif dimensions:
+            # Stated as "not a local admin" rather than "is a user": this column is nullable, and a row that names
+            # no role is an ordinary one - only a local admin's is ever labelled explicitly.
+            dimensions.append(or_(AuthenticationLog.user_role.is_(None),
+                                  AuthenticationLog.user_role != str(AuthLogUserRole.ADMIN_INTERNAL)))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
     if not scope_conditions:

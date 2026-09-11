@@ -62,14 +62,27 @@ def _existing_tables() -> set[str]:
 def _create_table(existing_tables: set[str], table_name: str, *columns) -> None:
     """
     Create the table unless it is already there -- a schema bootstrapped from the models with create_all
-    before this migration ran carries it.
+    before this migration ran carries it -- then add each of its COLUMNS that is absent.
 
     Presence is established by reflection rather than by swallowing an "already exists" error, which Oracle
     never says: it reports an existing object as ORA-00955 ("name is already used by an existing object").
     models.db.sequence_exists reflects for the same reason.
+
+    The columns are reconciled rather than left to the CREATE TABLE alone, because this revision is the only
+    place they are declared: a database already carrying the table skips that statement, so a column added to
+    this revision after it ran there would never arrive, and every read of it would fail. A column added to a
+    populated table takes the value of the rows already in it from its server_default, so one declared NOT NULL
+    needs one.
     """
     if table_name.lower() in existing_tables:
         print(f"Table '{table_name}' already exists.")
+        existing_columns = {column["name"].lower()
+                            for column in sa.inspect(op.get_bind()).get_columns(table_name)}
+        for column in columns:
+            if not isinstance(column, sa.Column) or column.name.lower() in existing_columns:
+                continue
+            print(f"Adding the missing column '{column.name}' to '{table_name}'.")
+            op.add_column(table_name, column)
         return
     op.create_table(table_name, *columns)
 

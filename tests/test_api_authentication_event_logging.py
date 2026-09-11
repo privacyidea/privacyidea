@@ -32,12 +32,11 @@ import mock
 from flask import Response
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
-                                                                          AuthEventReason)
+                                                                          AuthEventReason, AuthLogUserRole)
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import SYSCONF, delete_privacyidea_config, set_privacyidea_config
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
-from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
 from privacyidea.lib.conditional_access.request_context import ATTEMPT_ID_CHALLENGE_KEY
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED

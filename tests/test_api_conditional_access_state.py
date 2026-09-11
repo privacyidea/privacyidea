@@ -86,6 +86,17 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
                                         lock_expires_at=lock_expires_at))
         db.session.commit()
 
+    @staticmethod
+    def _orphan_admin_lock(uid: str) -> None:
+        """
+        A local-admin lock row standing under *uid* with no account of that exact spelling behind it - what an
+        account removed and recreated under a different one leaves behind. Written directly, there being no
+        supported way to produce it: lock_internal_admin only ever writes the spelling the admin table holds.
+        """
+        db.session.add(UserLockState(resolver="", uid=uid, realm="", username=uid,
+                                     user_role=str(AuthLogUserRole.ADMIN_INTERNAL)))
+        db.session.commit()
+
     def _block(self, ip, block_expires_at) -> None:
         db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at))
         db.session.commit()
@@ -270,8 +281,8 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(0, UserLockState.query.count())
 
     def test_reset_local_admin_by_login(self):
-        # A local database admin has no realm, resolver or uid - the login name is the whole identity and the key
-        # of their row - so the call names them by role instead, and needs no realm.
+        # A local database admin has no realm or resolver - the login name is the whole identity and the key of
+        # their row - so the call names them by role instead, and needs no realm.
         create_db_admin("lockadmin", password="secret")
         try:
             lock_internal_admin("lockadmin")
@@ -290,12 +301,37 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertFalse(res.json["result"]["value"])
 
-    def test_reset_local_admin_refuses_a_user_id(self):
-        # There is no uid to disambiguate with, so a call carrying one is asking for something this form cannot do.
-        res = self._request("lock/user", method="DELETE",
-                            json_data={"user": "lockadmin", "user_id": "7",
-                                       "user_role": str(AuthLogUserRole.ADMIN_INTERNAL)})
-        self.assertEqual(400, res.status_code, res.json)
+    def test_reset_local_admin_by_the_key_of_the_listed_row(self):
+        # What the locked-users list holds is the row's own key, so it is what the list sends back: nothing is
+        # re-derived from a name, and the row asked for is the row removed.
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            res = self._request("lock/user", method="DELETE",
+                                json_data={"user_id": "lockadmin",
+                                           "user_role": str(AuthLogUserRole.ADMIN_INTERNAL)})
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"])
+            self.assertEqual(0, UserLockState.query.count())
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_reset_local_admin_by_row_key_leaves_a_row_under_another_spelling_alone(self):
+        # The two forms differ in reach on purpose: this one clears the row named and nothing else, while the
+        # by-login form clears every spelling of the name (see
+        # test_unlock_internal_admin_clears_the_row_left_by_an_earlier_spelling).
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            self._orphan_admin_lock("LockAdmin")
+            res = self._request("lock/user", method="DELETE",
+                                json_data={"user_id": "LockAdmin",
+                                           "user_role": str(AuthLogUserRole.ADMIN_INTERNAL)})
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"])
+            self.assertEqual(["lockadmin"], [row.uid for row in UserLockState.query.all()])
+        finally:
+            delete_db_admin("lockadmin")
 
     def test_reset_rejects_an_unknown_user_role(self):
         # Read as "an ordinary user", an unknown role would look up a different principal from the one asked for.

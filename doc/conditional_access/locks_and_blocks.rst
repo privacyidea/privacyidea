@@ -121,14 +121,33 @@ add``, which authenticate at ``/auth`` and live in the ``admin`` table rather
 than in a realm - are locked by ``user`` policies like anybody else. They are
 identified differently, though, and it shows in a few places:
 
-* They have no realm, resolver or user id. Their login name **is** the identity,
-  and it is what both the failure count and the lock are keyed on, together with
-  the role the authentication log records them under (*admin-internal*).
+* They have no realm or resolver. Their login name **is** the identity, and it is
+  what both the failure count and the lock are keyed on, together with the role
+  the authentication log records them under (*admin-internal*).
+* On MySQL and MariaDB the ``admin`` table matches a login without regard to
+  case, so ``Admin`` and ``admin`` authenticate the same account. Counting and
+  locking follow that: whichever spelling is typed, the failures are counted
+  against the one account and the lock is written under the name the table
+  holds. Unlocking by name lifts every lock standing under a spelling of it,
+  since each of them would bar the account from logging in.
 * On *Logs → Locked Users* such an entry carries an **internal admin** badge and
   has no realm, resolver or link to a user page. It is lifted like any other,
   individually or in bulk.
 * On the command line they are addressed with ``--admin`` instead of
   ``--realm``, both to lock and to unlock.
+* A **target-scoped** administrator does not see or lift their locks. An admin
+  policy is scoped by realm, resolver and user - userstore terms, none of which
+  describes an account that has only a login name - so such a delegation stops
+  at ordinary users, and a policy scoped to a login name does not reach a local
+  administrator who happens to share it. Lifting one needs a ``user_lock_reset``
+  policy with no target scope, or the command line.
+* If a user of the same login name exists in the default realm, the two share a
+  lockout. ``/auth`` takes a bare login name and only learns which of them was
+  meant from the credential that matches, so a request is refused while *either*
+  is locked - anything else would let the name be locked over and over without a
+  single request being refused. The failure count is shared for the same reason
+  (see :ref:`policy_auth_max_fail`), so a colliding name is worth avoiding: give
+  the local administrator one no realm will ever hold.
 
 Since a lock applies to them like anyone else, a policy can lock out the account
 you would use to undo it. Two things guard against that: a timed lock lifts

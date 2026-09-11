@@ -80,7 +80,8 @@ from flask import request, g, Response
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication, build_ca_context,
                                       send_error, send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.engine import (get_subject_lock, get_ip_block, evaluate_access_decision,
+from privacyidea.lib.conditional_access.engine import (get_subject_lock, get_user_lock_by_login, get_ip_block,
+                                                       evaluate_access_decision,
                                                        lock_subject, render_error_message, restriction_messages,
                                                        AccessDecision, ConditionalAccessAction, RestrictionStatus,
                                                        StageMessage)
@@ -162,10 +163,22 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
         ca_context = build_ca_context(user)
         principal = lock_subject(ca_context)
         user_lock = get_subject_lock(principal, clear_expired=True)
+        locked = str(principal)
+        if user_lock is None and principal is not None and principal.internal_admin:
+            # The request named a local admin, but at this point that is a claim and not yet a fact: /auth tries the
+            # admin password first and falls back to a same-named user in the default realm, so which principal was
+            # meant is only settled by the credential that matches - after this runs. Both are therefore looked
+            # under, and either one's lock refuses the request. Otherwise the lock of the user the request turns out
+            # to be for is written on their row and looked for on the admin's, and so never met: the name would lock
+            # over and over without a single request being refused. The same ambiguity already couples the two
+            # accounts in the auth_max_fail time limit (see doc/policies/authorization.rst).
+            user_lock = get_user_lock_by_login(principal.username, clear_expired=True)
+            if user_lock is not None:
+                locked = f"user named {principal.username!r}"
         ip_block = get_ip_block(source_ip, clear_expired=True)
         binding = _binding_event_type(user_lock, ip_block)
         if binding:
-            refused = (f"locked {principal}" if binding is AuthEventType.USER_LOCKED
+            refused = (f"locked {locked}" if binding is AuthEventType.USER_LOCKED
                        else f"blocked IP {source_ip!r}")
             log.info(f"Rejecting {request.path} for {refused}.")
             # Every restriction in force that carries an error message is reported, not only the binding one: an

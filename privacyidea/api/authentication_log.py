@@ -22,7 +22,7 @@ from flask import Blueprint, request, g
 from privacyidea.api.auth import user_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
-from privacyidea.lib.auth import ROLE
+from privacyidea.lib.auth import canonical_db_admin_login, ROLE
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                            AuthLogUserRole, outcome_of)
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
@@ -93,7 +93,8 @@ def get_authentication_log_visibility_scopes() -> list[AuthenticationLogVisibili
     restriction the same way. Public for that reason: it is imported across the API layer rather than reimplemented.
 
     A scoped admin always also sees their own entries, added to the policy scope as an extra OR alternative. A local
-    admin has no realm, so their own entries are matched by username plus the internal-admin role instead.
+    admin has no realm, so their own entries are matched by username plus the internal-admin role instead - under the
+    name the ``admin`` table spells, which is the one their rows are recorded under however they typed it at login.
     """
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
     if g.logged_in_user["role"] != ROLE.ADMIN or visibility_scopes is None:
@@ -102,7 +103,8 @@ def get_authentication_log_visibility_scopes() -> list[AuthenticationLogVisibili
     own_username = g.logged_in_user.get("username")
     if own_username and not own_realm:
         return visibility_scopes + [
-            AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[own_username],
+            AuthenticationLogVisibilityScope(realms=[], resolvers=[],
+                                             usernames=[canonical_db_admin_login(own_username)],
                                              user_roles=[str(AuthLogUserRole.ADMIN_INTERNAL)])]
     if own_username and own_realm:
         return visibility_scopes + [

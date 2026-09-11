@@ -30,8 +30,8 @@ from email import message_from_string
 import mock
 
 from privacyidea.lib.conditional_access import engine
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode, RestrictionCause
-from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthLogUserRole,
+                                                                           CountMode, RestrictionCause)
 from privacyidea.lib.conditional_access.conditions import (CONDITION_TYPES, ConditionOperator, ConditionType,
                                                            ConditionTypeSpec, condition_matches,
                                                            conditions_match_row, policy_conditions_are_scopable,
@@ -1195,6 +1195,24 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         # The row itself was written: it is the *read* that found nothing, which is the only fact a rejection
         # may rest on.
         self.assertIsNotNone(self._state())
+
+    def test_a_short_restriction_is_in_force_at_the_evaluations_own_reference_time(self):
+        # Expiry is judged against the instant the evaluation runs with, not against the wall clock at the moment
+        # the row is read back. An action that takes longer than the lock lasts - an email delivery, say - would
+        # otherwise turn a lock that was written and stands into one that counts as never having been in force.
+        self._make_policy(name="short", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 60)]),))
+        moment = utc_now() - timedelta(hours=1)
+        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=moment)
+
+        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=moment)
+
+        self.assertSetEqual({ConditionalAccessTarget.USER}, evaluation.enforced_targets)
+        self.assertEqual([ConditionalAccessAction.LOCK_USER.value],
+                         [outcome.action_type for outcome in evaluation.outcomes])
+        state = self._state()
+        self.assertIsNotNone(state)
+        self.assertEqual(moment + timedelta(seconds=60), state.lock_expires_at)
 
     def test_a_restriction_that_is_not_in_force_leaves_the_other_targets_alone(self):
         # Only the target nothing stands on is dropped. The IP block written by the same request is in force and
