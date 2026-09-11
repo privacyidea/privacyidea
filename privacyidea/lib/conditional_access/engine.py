@@ -214,6 +214,15 @@ RESTRICTED_TARGET_BY_ACTION: dict[ConditionalAccessAction, ConditionalAccessTarg
     action: target for (target, _permanent), action in RESTRICTION_ACTIONS.items()
 }
 
+#: The actions whose effect a request can ever be told about: the ones that restrict a target, plus ``DENY``.
+#: A message is said by the pre-check refusing a restricted request - off the row in force - or by the pre-auth
+#: decision that denies one, so a stage carrying none of these turns no request away and its wording has nowhere
+#: to be shown. What an action *does* is the property here, which is why this is not read off the table of
+#: default wording (:data:`~privacyidea.lib.conditional_access.policy.DEFAULT_ERROR_MESSAGES`): that table
+#: happens to cover exactly these actions today, but it answers "which actions have a default sentence", and an
+#: editing convenience added to or taken from it must not silently change what the editor believes can report.
+REPORTING_ACTIONS: frozenset = frozenset(RESTRICTED_TARGET_BY_ACTION) | {ConditionalAccessAction.DENY}
+
 
 @dataclass(frozen=True)
 class RestrictionStatus:

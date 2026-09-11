@@ -301,9 +301,10 @@ def list_condition_types():
 def list_targets():
     """
     Return the policy targets and, for each, the constraints that depend on the target - the stage actions it allows,
-    the count modes it supports, which of its actions may appear more than once within one stage, and which of its
-    actions contradict each other within one stage - as ``{target: {"actions": [...], "count_modes": [...],
-    "repeatable_actions": [...], "exclusive_action_groups": [[...], ...]}}`` (all sorted; see
+    the count modes it supports, which of its actions may appear more than once within one stage, which of its
+    actions contradict each other within one stage, and which of them a request can ever be told about - as
+    ``{target: {"actions": [...], "count_modes": [...], "repeatable_actions": [...],
+    "exclusive_action_groups": [[...], ...], "reporting_actions": [...]}}`` (all sorted; see
     :func:`~privacyidea.lib.conditional_access.policy.get_target_constraints`).
 
     Requires the admin policy action :ref:`policy_conditional_access_policy_read`.

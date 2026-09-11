@@ -764,11 +764,13 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         constraints = get_target_constraints()
         self.assertSetEqual({t.value for t in ConditionalAccessTarget}, set(constraints))
         for target, entry in constraints.items():
-            self.assertSetEqual({"actions", "count_modes", "repeatable_actions", "exclusive_action_groups"},
-                                set(entry))
+            self.assertSetEqual({"actions", "count_modes", "repeatable_actions", "exclusive_action_groups",
+                                 "reporting_actions"}, set(entry))
             self.assertListEqual(sorted(entry["actions"]), entry["actions"])
             self.assertListEqual(sorted(entry["count_modes"]), entry["count_modes"])
             self.assertListEqual(sorted(entry["repeatable_actions"]), entry["repeatable_actions"])
+            self.assertListEqual(sorted(entry["reporting_actions"]), entry["reporting_actions"])
+            self.assertTrue(set(entry["reporting_actions"]).issubset(entry["actions"]))
             # Every served rule is expressible for this target: a group only one of whose members the target
             # allows could never be violated, so offering it as a rule would be noise.
             for group in entry["exclusive_action_groups"]:
