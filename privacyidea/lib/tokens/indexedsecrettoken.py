@@ -65,6 +65,9 @@ class IndexedSecretTokenClass(TokenClass):
     """
     mode = [AuthenticationMode.CHALLENGE]
 
+    # "multichallenge" is not declared: nothing in the server ever writes it, it is a switch an administrator
+    # sets on a single token to ask for one position at a time, so it stays free-form token info.
+
     # The token type provides means to verify the enrollment
     can_verify_enrollment = True
 

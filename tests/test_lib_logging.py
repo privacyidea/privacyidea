@@ -18,7 +18,7 @@
 import logging
 import logging.config
 
-from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, SecureFormatter
+from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, SecureFormatter, log_with
 from privacyidea.lib.utils import parse_date
 
 
@@ -48,3 +48,19 @@ def test_log_formatter(caplog, tmp_path):
     assert ("!!Log Entry Secured by SecureFormatter!! Dateformat 2016/.x052/20 "
             "could not be parsed") == caplog.messages[0]
 
+
+
+def test_log_with_falls_back_when_source_is_unavailable(caplog):
+    # log_with reports the line the wrapped function is defined on. A function built at runtime has
+    # no source file to read that from, so the decorator falls back to the code object, and logging
+    # still works instead of failing.
+    namespace = {}
+    exec(compile("def built_at_runtime(value):\n    return value * 2", "<generated>", "exec"), namespace)
+    decorated = log_with(logging.getLogger("test_fallback"))(namespace["built_at_runtime"])
+
+    with caplog.at_level(logging.DEBUG, logger="test_fallback"):
+        assert decorated(21) == 42
+
+    entry = next(record for record in caplog.records if "built_at_runtime" in record.getMessage())
+    # The fallback reports the code object's first line rather than raising.
+    assert entry.s_line == namespace["built_at_runtime"].__code__.co_firstlineno + 1

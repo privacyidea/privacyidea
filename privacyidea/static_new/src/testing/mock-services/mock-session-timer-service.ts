@@ -25,4 +25,5 @@ export class MockSessionTimerService implements SessionTimerServiceInterface {
   startTimer = jest.fn();
   resetTimer = jest.fn();
   startRefreshingRemainingTime = jest.fn();
+  stopTimers = jest.fn();
 }

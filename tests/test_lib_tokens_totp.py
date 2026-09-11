@@ -824,7 +824,7 @@ class TOTPTokenTestCase(MyTestCase):
         # Set up the TOTP token for testing
         totptoken = init_token(param={'serial': "TOTP12345678", 'type': 'totp', 'otpkey': '12345', "otplen": '8'})
         totptoken.set_description("this is a totp token export test")
-        totptoken.add_tokeninfo("hashlib", "sha256")
+        totptoken.write_tokeninfo("hashlib", "sha256")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = totptoken.export_token()

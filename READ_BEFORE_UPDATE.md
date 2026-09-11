@@ -60,6 +60,65 @@
   your admin policies that reference `getchallenges`
   and decide whether each admin should also get `cancelchallenge`.
 
+* **A new policy action `token_rollover` is required to roll a token over.** `POST /token/init` updates a token when it
+  is called with the serial of a token that already exists. While the enrollment of that token is still under way — the
+  second request of a two-step or a FIDO2 enrollment, a token waiting to be verified — that is part of the enrollment
+  and keeps working with the `enroll<TOKENTYPE>` action alone. Once the token is in use, the same request gives it a
+  new secret, and that now additionally requires the new `token_rollover` action in the `admin` or `user` scope. The
+  policy is matched against the realm of the **existing token**, not against a realm passed in the request, so a
+  realm-restricted admin can only roll over tokens of the realms they administrate.
+
+  **If you have any admin or user policies defined**, rolling a token over will be refused after the upgrade until you
+  grant the new action — review the policies of the administrators and of the self-service users who roll tokens over
+  and add `token_rollover` where needed. Installations without any policies in that scope are unaffected. Enrolling a
+  *new* token is unaffected in every case.
+
+  Note that an action of the same name already exists in the `webui` scope. That one only decides for which token types
+  the WebUI offers a rollover button; the new one decides whether the request is carried out. The WebUI now checks both,
+  so an administrator who does not hold the new action no longer sees a button that would fail.
+
+* **Token info that a token type maintains itself is no longer writable through the generic token info endpoints.** A
+  token info entry can hold what a token authenticates with — the public key of a passkey, the server a RADIUS token
+  forwards to, the answers of a questionnaire token — next to the free-form metadata an administrator keeps there.
+  Every token type now declares the entries it maintains, and `POST` / `DELETE /token/info/<serial>/<key>` answer with
+  a 403 for those. The `settokeninfo` action keeps working for free-form entries, and the values stay readable and
+  usable in policy conditions.
+
+  Only the entries a token type really maintains are affected. A per-token switch that privacyIDEA never writes
+  itself, e.g. `multichallenge` of an indexed secret token or `polling_allowed` of a push token, stays free-form and
+  keeps being set through the token info endpoint as before.
+
+  The entries that do change over the lifetime of a token keep a way to be set, all of them through
+  `POST /token/set` and its `set` action:
+
+    * `count_auth_max`, `count_auth_success_max`, `hashlib`, `validity_period_start` and `validity_period_end`, as
+      before.
+    * the ones a token type declares settable, passed under their own name, e.g. `timeWindow` and `timeStep` of a
+      TOTP token, `phone` of an SMS token, `email` of an email token, or `remote.user` and `radius.server`. Such an
+      entry is only written to a token of a type that declares it, so a parameter cannot reach a different token
+      type.
+    * an offline refill token of an HOTP, WebAuthn or passkey token can still be deleted, which revokes the ability
+      to refill offline OTP values, but it can no longer be set to a given value.
+
+  The entries that have no way to be set are the ones that carry what a token authenticates with, e.g. the public key
+  of a passkey, the TANs of a TAN token, the public id a Yubikey is recognized by, the answers of a questionnaire
+  token or the public key of an SSH key token. Those change by enrolling or rolling the token over.
+
+  A `set tokeninfo` or `delete tokeninfo` **event handler** keeps working for a free-form entry and for one the token
+  type declares settable — the handler writes the latter through the same path as `POST /token/set`. It only stops
+  working if it writes an entry of the last kind, in which case it logs the refusal, and fails the whole request if
+  you enabled *Abort on error* for that binding. **Review your handlers** under *Config -> Events* if any of them
+  writes a token info key that carries a secret. The same applies to scripts that call the token info endpoints, and
+  to `pi-tokenjanitor find ... set_tokeninfo` / `remove_tokeninfo` and `privacyidea-token-janitor`, which report and
+  skip such an entry and carry on with the remaining tokens.
+
+  Two further consequences: the SSH key of an SSH key token can no longer be changed through the token info endpoint —
+  re-enroll the token with the new key instead — and a repeated `POST /token/init` for an already enrolled token no
+  longer rewrites its `<tokentype>.*` entries, which is what `POST /token/set` is now for.
+
+  `GET /token/` reports the affected entries per token as `readonly_info_keys`, `undeletable_info_keys` and
+  `settable_info_keys`, which is what the WebUI uses to decide which entries it offers to edit and to delete.
+
 * The optional Redis challenge cache (`PI_REDIS_CACHE_CHALLENGES`) is new in this release. If you enable it, be aware
   that authentications that are mid-flight at the moment of any subsequent upgrade may need to be restarted by the
   user - same expectation we already set for the SQL schema upgrade. See the "Redis cache" section of the documentation
@@ -271,6 +330,16 @@
   pass a stale or misspelled user name to `GET /container/` and relied on getting an empty result need to handle the
   error.
 
+* **The initial token transfer of a smartphone container only takes over related tokens.** During the first
+  synchronization of a registered smartphone container, the policy `initially_add_tokens_to_container` lets the server
+  add the tokens the client reports to the container. Which of them are taken over is now restricted: a token that is
+  assigned to a user is only added if the user is an owner of the container, and an unassigned token is only added if it
+  shares a realm with the container. The realm rule preserves the main use case of the policy: tokens that are
+  prepared in advance for a user that is not known yet. A token that has neither an owner nor a realm can not be related
+  to the container and is no longer taken over; if you prepare tokens that way, put the tokens and the container into a
+  realm. A token that is already part of another container is no longer taken over either — moving a container with
+  all its tokens to a new device is what a container rollover is for.
+
 * **HTTP API change** - the `resolver` and `userid` filters of `GET /token/` are now applied. Both parameters have
   always been accepted and documented, but they never became a condition of the query, so a request carrying one of them
   returned *all* tokens instead of the tokens of that resolver or of that user id. `resolver` is matched
@@ -318,6 +387,16 @@
       pi-manage config policy disable <name>
 
   Installations that do not use the User Agent condition are unaffected.
+
+* **HTTP API change** - `POST /container/<serial>/realms` now returns the status of each realm in a `realms`
+  sub-dictionary instead of putting the realm names next to the `deleted` flag. The response was
+  `{"realm1": true, "realm2": false, "deleted": true}` and is now
+  `{"realms": {"realm1": true, "realm2": false}, "deleted": true}`. The `deleted` entry keeps its place and its
+  meaning. The old shape reserved the key `deleted` in the same dictionary that carries the realm names, so a realm
+  that is actually named `deleted` had its status overwritten by the flag: attaching it was reported as a failure, and
+  detaching it was reported as the realm still being attached. Scripts and integrations that read
+  `result.value.<realm>` have to read `result.value.realms.<realm>` instead; the WebUI does not read the response and
+  is unaffected. `pi-token-janitor find ... set_realm` no longer omits a realm named `deleted` from what it reports.
 
 ## Update from 3.12 to 3.13
 

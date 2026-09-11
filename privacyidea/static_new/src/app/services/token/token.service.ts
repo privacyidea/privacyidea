@@ -60,6 +60,7 @@ import {
   firstValueFrom,
   forkJoin,
   Observable,
+  of,
   shareReplay,
   Subject,
   switchMap,
@@ -248,6 +249,11 @@ export interface TokenDetails {
   maxfail: number;
   otplen: number;
   realms: string[];
+  /**
+   * Info entries the token itself maintains, so the token info endpoint refuses to change them. They are still
+   * readable, and some of them can be changed through their own endpoint, see TOKEN_SET_INFO_KEYS.
+   */
+  readonly_info_keys?: string[];
   resolver: string;
   revoked: boolean;
   rollout_state: string;
@@ -255,9 +261,31 @@ export interface TokenDetails {
   sync_window: number;
   tokengroup: TokenGroup[];
   tokentype: TokenTypeKey;
+  /** Info entries that POST /token/set accepts, a subset of readonly_info_keys. */
+  settable_info_keys?: string[];
+  /** Info entries the token info endpoint refuses to remove, a subset of readonly_info_keys. */
+  undeletable_info_keys?: string[];
   user_id: string;
   user_realm: string;
   username: string;
+}
+
+/**
+ * Whether a token info entry can be changed at all, through either the token info endpoint or /token/set.
+ *
+ * Which entries a token maintains, and which of those have their own endpoint, is decided per token type on
+ * the server and reported with the token, so that this never has to be repeated here.
+ *
+ * @param infoKey The token info key
+ * @param readonlyInfoKeys The readonly_info_keys of the token
+ * @param settableInfoKeys The settable_info_keys of the token
+ */
+export function isTokenInfoKeyWritable(
+  infoKey: string,
+  readonlyInfoKeys: string[] = [],
+  settableInfoKeys: string[] = []
+): boolean {
+  return !readonlyInfoKeys.includes(infoKey) || settableInfoKeys.includes(infoKey);
 }
 
 export type TokenGroups = Map<string, TokenGroup[]>;
@@ -371,7 +399,12 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
 
   getSerial(otp: string, params: HttpParams): Observable<PiResponse<{ count: number; serial?: string | undefined }>>;
 
-  setTokenInfos(tokenSerial: string, infos: Record<string, string>): Observable<PiResponse<boolean>[]>;
+  setTokenInfos(
+    tokenSerial: string,
+    infos: Record<string, string>,
+    readonlyInfoKeys?: string[],
+    settableInfoKeys?: string[]
+  ): Observable<PiResponse<boolean>[]>;
 
   deleteToken(tokenSerial: string): Observable<PiResponse<number>>;
 
@@ -949,7 +982,12 @@ export class TokenService extends FilterableTableService implements TokenService
       );
   }
 
-  setTokenInfos(tokenSerial: string, infos: Record<string, string>): Observable<PiResponse<boolean>[]> {
+  setTokenInfos(
+    tokenSerial: string,
+    infos: Record<string, string>,
+    readonlyInfoKeys: string[] = [],
+    settableInfoKeys: string[] = []
+  ): Observable<PiResponse<boolean>[]> {
     const headers = this.authService.getHeaders();
     const set_url = `${this.tokenBaseUrl}set`;
     const info_url = `${this.tokenBaseUrl}info`;
@@ -967,26 +1005,25 @@ export class TokenService extends FilterableTableService implements TokenService
       );
     };
 
-    const requests = Object.keys(infos).map((infoKey) => {
-      const infoValue = infos[infoKey];
-      if (
-        infoKey === "count_auth_max" ||
-        infoKey === "count_auth_success_max" ||
-        infoKey === "hashlib" ||
-        infoKey === "validity_period_start" ||
-        infoKey === "validity_period_end"
-      ) {
-        return postRequest(set_url, {
-          serial: tokenSerial,
-          [infoKey]: infoValue
-        });
-      } else {
-        return postRequest(`${info_url}/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`, {
-          value: infoValue
-        });
-      }
-    });
-    return forkJoin(requests);
+    // The whole info map is passed in, so skip the entries the server would refuse. An entry with its own
+    // endpoint stays writable through that endpoint even though the token info endpoint refuses it.
+    const requests = Object.keys(infos)
+      .filter((infoKey) => isTokenInfoKeyWritable(infoKey, readonlyInfoKeys, settableInfoKeys))
+      .map((infoKey) => {
+        const infoValue = infos[infoKey];
+        if (settableInfoKeys.includes(infoKey)) {
+          return postRequest(set_url, {
+            serial: tokenSerial,
+            [infoKey]: infoValue
+          });
+        } else {
+          return postRequest(`${info_url}/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`, {
+            value: infoValue
+          });
+        }
+      });
+    // forkJoin over an empty list completes without emitting, which would swallow the caller's next handler
+    return requests.length ? forkJoin(requests) : of([]);
   }
 
   deleteToken(tokenSerial: string): Observable<PiResponse<number>> {

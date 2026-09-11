@@ -24,6 +24,7 @@ from privacyidea.app import create_app
 from privacyidea.models import db
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.cli.tools.cron import cli as privacyidea_cron
+from ..base import _reset_database
 
 
 @pytest.fixture(scope="class")
@@ -31,14 +32,13 @@ def app():
     """Create and configure app instance for testing"""
     app = create_app(config_name="testing", config_file="", silent=True)
     with app.app_context():
-        db.create_all()
+        _reset_database()
 
     yield app
 
     with app.app_context():
         call_finalizers()
         close_all_sessions()
-        db.drop_all()
         db.engine.dispose()
 
 
