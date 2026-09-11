@@ -97,16 +97,24 @@ def never_block_config(value):
 class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
     def _seed_attempt(self, attempt_id: str, event_types: list[AuthEventType],
-                      timestamp: datetime | None = None, user: User | None = None) -> None:
+                      timestamp: datetime | None = None, user: User | None = None) -> list[int]:
         """Insert one row per event type (in order) sharing *attempt_id*; row ids increase with insertion order,
-        so the last event type has the highest id (the 'latest' event of the attempt)."""
+        so the last event type has the highest id (the 'latest' event of the attempt).
+
+        :return: the inserted rows' ids, in insertion order - what a request evaluating this attempt would pass
+            as ``CAContext.own_row_ids``.
+        """
         user = user or self.user
         timestamp = timestamp if timestamp is not None else utc_now()
+        rows = []
         for event_type in event_types:
-            db.session.add(AuthenticationLog(
+            row = AuthenticationLog(
                 event_type=str(event_type), resolver=user.resolver, uid=user.uid,
-                realm=user.realm, timestamp=timestamp, attempt_id=attempt_id))
+                realm=user.realm, timestamp=timestamp, attempt_id=attempt_id)
+            db.session.add(row)
+            rows.append(row)
         db.session.commit()
+        return [row.id for row in rows]
 
     def _make_policy(self, *, name: str, counter_type, window: int = 3600, enabled: bool = True,
                      dry_run: bool = False, reset_on_success: bool = True, priority: int = 1,
@@ -916,6 +924,44 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 1)
         evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
+
+    def test_fire_once_still_fires_when_a_single_evaluation_skips_the_exact_threshold(self):
+        # Regression for a count that steps past the threshold in one evaluation instead of landing on it exactly -
+        # e.g. two concurrent requests each committing their own row before either counts (F7), or here, one
+        # request staging two tracked rows at once (a multichallenge/push_wait flow: engine.py's own docstring
+        # example). Both rows are this one request's own contribution, named directly via own_row_ids (not their
+        # shared attempt_id - see the next test for why that distinction matters), so the fix (count_before
+        # excludes exactly these two rows) sees them as a single step from 2 to 4 - still a crossing of threshold 3
+        # - and fires, where a plain `count == threshold` (4 != 3) would silently never lock the user for this
+        # crossing at all.
+        self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        own_row_ids = tuple(self._seed_attempt("att-race", [AuthEventType.MFA_FAIL, AuthEventType.MFA_FAIL]))
+        evaluate_conditional_access_policies(CAContext(self.user, own_row_ids=own_row_ids), AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_fire_once_does_not_refire_on_a_later_request_of_the_same_multi_request_attempt(self):
+        # Regression: an attempt_id can be shared by several requests, not just several rows of one request (a
+        # challenge trigger, a wrong answer, the retry - see ConditionalAccessContext.attempt_id). Excluding by
+        # that shared id (the pre-fix behaviour) would exclude an *earlier* request's row too, undercounting
+        # count_before and making the action fire again on a later request that adds no new crossing - here a
+        # second wrong answer against the same open challenge, sharing "att-shared" with the first.
+        self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        # First request of the attempt: count 2 -> 3, crosses the threshold, fires once.
+        own_row_ids = tuple(self._seed_attempt("att-shared", [AuthEventType.MFA_FAIL]))
+        first = evaluate_conditional_access_policies(CAContext(self.user, own_row_ids=own_row_ids),
+                                                      AuthEventType.MFA_FAIL)
+        self.assertEqual(1, len(first))
+        self.assertTrue(is_user_locked(self.user))
+
+        # Second request of the *same* attempt (shares "att-shared" with the first, but is evaluated separately,
+        # so it only names its own new row in own_row_ids): count 3 -> 4, already past the threshold before this
+        # request's own row joined it, so the fire-once action must not trigger a second time.
+        own_row_ids = tuple(self._seed_attempt("att-shared", [AuthEventType.MFA_FAIL]))
+        second = evaluate_conditional_access_policies(CAContext(self.user, own_row_ids=own_row_ids),
+                                                       AuthEventType.MFA_FAIL)
+        self.assertEqual(0, len(second))
 
     def test_dry_run_writes_no_state(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
@@ -2084,7 +2130,17 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertEqual(600, parse_lock_duration_seconds("600"))
         self.assertEqual(300, parse_lock_duration_seconds({"duration_seconds": 300}))
         self.assertEqual(120, parse_lock_duration_seconds({"duration": 120}))
-        for invalid in (None, 0, -5, True, False, "abc", {}, {"foo": 1}):
+        self.assertEqual(engine.MAX_LOCK_DURATION_SECONDS,
+                         parse_lock_duration_seconds(engine.MAX_LOCK_DURATION_SECONDS))
+        # A bool nested inside the dict must be rejected the same as a top-level one, not silently become 1 via
+        # int(True) - {"duration_seconds": True} is otherwise indistinguishable from a real one-second duration.
+        for invalid in (None, 0, -5, True, False, "abc", {}, {"foo": 1},
+                        {"duration_seconds": True}, {"duration": False},
+                        engine.MAX_LOCK_DURATION_SECONDS + 1, 3 * 10 ** 11,
+                        # int() raises OverflowError (not ValueError/TypeError) for a non-finite float - a bare
+                        # Infinity token is valid input to Python's stdlib json.loads, so this can arrive here
+                        # straight from a request body and must not escape as an uncaught exception.
+                        float("inf"), float("-inf"), {"duration_seconds": float("inf")}):
             self.assertIsNone(parse_lock_duration_seconds(invalid), invalid)
 
     # --- EMAIL_ADMIN / EMAIL_USER actions -------------------------------------

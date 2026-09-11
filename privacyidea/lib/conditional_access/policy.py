@@ -123,6 +123,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (
 from privacyidea.lib.conditional_access.conditions import CONDITION_TYPES
 from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ADMIN_RECIPIENT_GROUPS, REPORTING_ACTIONS,
                                                        ConditionalAccessAction, ConditionalAccessTarget,
+                                                       MAX_LOCK_DURATION_SECONDS,
                                                        parse_lock_duration_seconds)
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
@@ -621,13 +622,17 @@ _EMAIL_MIMETYPES = frozenset({"plain", "html"})
 def _validate_duration_action_value(action_type: str, action_value) -> None:
     """
     Validate the ``action_value`` of a timed restriction (``LOCK_USER``, ``BLOCK_IP``): a positive number of
-    seconds, given as an integer, a numeric string, or an object carrying ``duration_seconds`` (or ``duration``).
+    seconds, at most :data:`~privacyidea.lib.conditional_access.engine.MAX_LOCK_DURATION_SECONDS`, given as an
+    integer, a numeric string, or an object carrying ``duration_seconds`` (or ``duration``).
 
     The check *is* the engine's own parser
     (:func:`~privacyidea.lib.conditional_access.engine.parse_lock_duration_seconds`), so anything storable is
     something the engine can act on. That matters more than the exact shapes accepted: a duration the engine
     cannot parse is not a lock that fires late, it is a lock that never fires at all - the action is skipped
-    with a log line and the admin sees a saved policy doing nothing.
+    with a log line and the admin sees a saved policy doing nothing. The upper bound exists for the same reason:
+    past it, ``now + timedelta(seconds=duration)`` raises ``OverflowError`` when the engine tries to act on it
+    (see :data:`~privacyidea.lib.conditional_access.engine.MAX_LOCK_DURATION_SECONDS`), which is the same silent
+    "policy does nothing" failure as a duration the parser rejects outright.
 
     An unknown key inside the object is rejected before the parse, so the near-miss that motivates all of this
     (``lock_duration_seconds``, which nothing reads) is reported by name instead of as a generic "no duration".
@@ -638,8 +643,9 @@ def _validate_duration_action_value(action_type: str, action_value) -> None:
             raise ParameterError(f"Unknown key(s) in the action_value of '{action_type}': "
                                  f"{', '.join(sorted(unknown))}. Valid keys: {', '.join(sorted(_DURATION_KEYS))}.")
     if parse_lock_duration_seconds(action_value) is None:
-        raise ParameterError(f"Action '{action_type}' needs a positive duration in seconds: give 'action_value' "
-                             f"a positive integer, or an object with 'duration_seconds'. Got {action_value!r}.")
+        raise ParameterError(f"Action '{action_type}' needs a positive duration in seconds, at most "
+                             f"{MAX_LOCK_DURATION_SECONDS}: give 'action_value' a positive integer, or an "
+                             f"object with 'duration_seconds'. Got {action_value!r}.")
 
 
 def _validate_email_action_value(action_type: str, action_value) -> None:

@@ -421,8 +421,24 @@ def clear_persistent_cookie(response) -> None:
     Used when a presented cookie is invalid, expired or has been invalidated
     (e.g. after reuse detection), so the client stops sending it.
 
+    Defensive against a response that already queued a fresh cookie of its own
+    (:func:`set_persistent_cookie`) before this runs: ``response.delete_cookie``
+    alone would only *append* another ``Set-Cookie`` header in that case,
+    leaving both on the wire - a client that reads a single header value per
+    name (as this project's own werkzeug does for ``response.headers.get(...)``)
+    would see the genuine, still-valid cookie rather than the clearing one. Not
+    currently reachable - :func:`apply_cookie_action` only ever calls one of the
+    two per response - but cheap to guard against (a no-op when nothing is
+    queued) should a future caller apply both to the same response.
+
     :param response: the Flask response to clear the cookie on
     """
+    all_cookies = response.headers.get_all("Set-Cookie")
+    other_cookies = [value for value in all_cookies if not value.startswith(f"{PERSISTENT_COOKIE_NAME}=")]
+    if len(other_cookies) != len(all_cookies):
+        del response.headers["Set-Cookie"]
+        for value in other_cookies:
+            response.headers.add("Set-Cookie", value)
     response.delete_cookie(PERSISTENT_COOKIE_NAME, httponly=True, secure=True, samesite="Strict")
 
 

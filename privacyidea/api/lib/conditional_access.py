@@ -380,7 +380,14 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
     produce. A returned response still has to travel back out through whatever is listed above the gate, so
     listing it over the response decorators would skip them - on ``/validate/check`` that means
     ``no_detail_on_fail`` never stripping the rejection, and ``construct_radius_response`` never converting a
-    ``/radiuscheck`` one into the empty-body reply every other failure there gets.
+    ``/radiuscheck`` one into the empty-body reply every other failure there gets. That is also exactly why a
+    response decorator cannot be trusted to tell a real rejection apart from an ordinary failure by shape alone -
+    both carry the same ``result.value`` false - so a postpolicy that must not act on a rejection instead checks
+    :attr:`~.request_context.ConditionalAccessContext.rejected_by_conditional_access` (``autoassign``, which would
+    otherwise verify the submitted credential itself and assign a token on the strength of a response that only
+    *looks* like a failed authentication). That property is already true by the time this returns - the rejection
+    just staged an enforcement-type authentication-log event (:func:`conditional_access_rejection`) - so nothing
+    further needs to be recorded here.
 
     :param identity_resolver: an optional zero-argument callable returning the
         :class:`~privacyidea.lib.user.User` the pre-check should gate on. When

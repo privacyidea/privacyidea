@@ -146,7 +146,14 @@ lock permanently at 20. Thresholds must be unique within a policy.
 
 By default an action fires **once**, exactly when the count reaches the
 threshold: an email configured at 8 is sent on the 8th failure and not again on
-the 9th. Enable **re-trigger above threshold** for an action that should fire on
+the 9th. It also fires if a single evaluation's own request is what carried the
+count from below the threshold to at or above it, even when that step skipped
+the threshold value itself - e.g. one of two concurrent failed logins, each
+committing before the other is counted. A narrower race, where several such
+requests all commit before any of them is evaluated, can still let this
+particular crossing go unfired; the count keeps climbing regardless, so later
+requests remain subject to whatever higher stage the policy defines next.
+Enable **re-trigger above threshold** for an action that should fire on
 every further request instead, for as long as the count stays in the range its
 stage owns - at or above its own threshold, below the next stage's. Each stage
 therefore owns one range of counts, and only the stage owning the *current*
