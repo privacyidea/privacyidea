@@ -619,6 +619,39 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertEqual(1, db.session.query(ConditionalAccessPolicyStage).count())
         self.assertEqual(1, db.session.query(ConditionalAccessPolicyCounterType).count())
 
+    def test_04a_enforced_since_is_written_on_every_exit_from_dry_run(self):
+        # enforced_since describes the enforcement episode that starts here, so leaving dry-run writes it either
+        # way: to now when the counts are reset, to NULL when the caller wants the full window counted. Anything
+        # else leaves a stale floor from an earlier episode silently narrowing the window.
+        policy_id = create_conditional_access_policy(
+            "Trial", 600, ["PIN_FAIL"], [_stage(5)], target=ConditionalAccessTarget.USER, priority=1, dry_run=True
+        )
+        self.assertIsNone(get_conditional_access_policy(policy_id)["enforced_since"])
+
+        update_conditional_access_policy(policy_id, dry_run=False)
+        enforced_since = get_conditional_access_policy(policy_id)["enforced_since"]
+        self.assertIsNotNone(enforced_since)
+
+        # Back into dry-run: the floor stays, so the trial simulates the enforcement it interrupted.
+        update_conditional_access_policy(policy_id, dry_run=True)
+        self.assertEqual(enforced_since, get_conditional_access_policy(policy_id)["enforced_since"])
+
+        # Out again, opting out of the reset: the floor is cleared, not left over from the first episode.
+        update_conditional_access_policy(policy_id, dry_run=False, reset_counters_on_enforce=False)
+        self.assertIsNone(get_conditional_access_policy(policy_id)["enforced_since"])
+
+    def test_04b_enforced_since_is_untouched_by_updates_that_do_not_flip_dry_run(self):
+        policy_id = create_conditional_access_policy(
+            "Steady", 600, ["PIN_FAIL"], [_stage(5)], target=ConditionalAccessTarget.USER, priority=1, dry_run=True
+        )
+        update_conditional_access_policy(policy_id, dry_run=False)
+        enforced_since = get_conditional_access_policy(policy_id)["enforced_since"]
+
+        # Re-sending the same dry_run value is not a transition, and reset_counters_on_enforce alone does nothing.
+        update_conditional_access_policy(policy_id, dry_run=False, reset_counters_on_enforce=False)
+        update_conditional_access_policy(policy_id, name="Steady renamed", time_window_seconds=900)
+        self.assertEqual(enforced_since, get_conditional_access_policy(policy_id)["enforced_since"])
+
     def test_05_update_validation(self):
         policy_id = create_conditional_access_policy("A", 600, ["PIN_FAIL"], [_stage(5)],
                 target=ConditionalAccessTarget.USER, priority=1)

@@ -1142,12 +1142,15 @@ def update_conditional_access_policy(
     own, so no stale state is left enforced.
 
     Turning ``dry_run`` off (``True`` -> ``False``) sets ``enforced_since`` to now, so the count functions floor
-    their look-back window there and the policy is judged only on failures from this point on, not on whatever
-    accumulated during the trial - see
+    their look-back window there and the policy is judged only on events from this point on, not on whatever
+    accumulated before - see
     :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.enforced_since`. Pass
-    ``reset_counters_on_enforce=False`` to skip this and start enforcing against whatever the trial already
-    accumulated (e.g. an admin who ran the dry run specifically to see how many people would already be caught).
-    This has no effect unless ``dry_run`` is also being turned off in this same call.
+    ``reset_counters_on_enforce=False`` to clear the floor instead and count the policy's full time window from the
+    first enforced request on (e.g. an admin who ran the dry run specifically to see how many people would already
+    be caught). Mind that a count which already sits above a stage's threshold never *reaches* it, so that stage
+    stays silent until the old events age out of the window. This has no effect unless ``dry_run`` is also being
+    turned off in this same call. Turning ``dry_run`` on leaves ``enforced_since`` untouched: the trial simulates
+    the enforcement it interrupted, floor included.
 
     All fields are validated before anything is written. Only the fields the caller
     *sends* are validated, which is what keeps a policy stored before a validation
@@ -1223,12 +1226,13 @@ def update_conditional_access_policy(
             changed_fields.append("enabled")
         if dry_run is not None:
             dry_run = bool(dry_run)
-            if dry_run != policy.dry_run and not dry_run and reset_counters_on_enforce:
-                # Leaving dry-run: floor the next count at this instant, so the policy is judged on failures from
-                # here on rather than on whatever accumulated during the trial (see
-                # ConditionalAccessPolicy.enforced_since). Skipped when the caller opted out via
-                # reset_counters_on_enforce, e.g. to enforce against what the trial already accumulated.
-                policy.enforced_since = utc_now()
+            if dry_run != policy.dry_run and not dry_run:
+                # Leaving dry-run writes the floor either way, so it always describes the enforcement episode that
+                # starts here: this instant when the counts are reset, NULL when the caller opted out via
+                # reset_counters_on_enforce and wants the full window counted (see
+                # ConditionalAccessPolicy.enforced_since). Entering dry-run leaves it alone - the trial keeps
+                # simulating the enforcement it interrupted.
+                policy.enforced_since = utc_now() if reset_counters_on_enforce else None
             policy.dry_run = dry_run
             changed_fields.append("dry_run")
         if reset_on_success is not None:

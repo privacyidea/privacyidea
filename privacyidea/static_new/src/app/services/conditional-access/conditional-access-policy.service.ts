@@ -181,9 +181,10 @@ export interface ConditionalAccessPolicy {
   // failures since that login. Only a "user" target resets: a "source_ip" policy aggregates a signal across
   // accounts and never does, and the pre-auth allow/deny decision never does either.
   reset_on_success: boolean;
-  // The instant this policy last left dry-run (see update_conditional_access_policy); null while
-  // dry_run is set, or if it never has. Read-only - set only as a side effect of turning dry_run
-  // off. Optional because a template's "policy" is a create payload, not a stored row, and never
+  // The instant this policy's current enforcement episode starts counting (see
+  // update_conditional_access_policy); null if it counts its full time window. Read-only - written
+  // only as a side effect of turning dry_run off, to now or to null per reset_counters_on_enforce.
+  // Optional because a template's "policy" is a create payload, not a stored row, and never
   // carries one.
   enforced_since?: string | null;
   counter_types_to_track: AuthEventType[];

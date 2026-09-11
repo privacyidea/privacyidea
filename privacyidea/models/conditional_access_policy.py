@@ -84,12 +84,13 @@ class ConditionalAccessPolicy(MethodsMixin, db.Model):
     # accounts, where one account's legitimate login must not clear it (see engine._policy_count_ip), so it is always
     # False there and setting it is rejected (see policy._validate_reset_on_success).
     reset_on_success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    # NULL except right after a policy leaves dry-run: set to the instant dry_run flips from True to False (see
-    # policy.update_conditional_access_policy), never at creation or on any other update. While set, the count
-    # functions floor their look-back window here, so the transitioning policy is judged only on failures from that
+    # The instant this policy's current enforcement episode starts counting, or NULL for "count the full window".
+    # Written only when dry_run flips from True to False (see policy.update_conditional_access_policy), to now, or
+    # to NULL when the caller opted out of the reset; never at creation or on any other update. While set, the count
+    # functions floor their look-back window here, so the transitioning policy is judged only on events from that
     # point on rather than on whatever accumulated during the trial - the transition dry-run exists to make safe.
-    # Once the configured time_window_seconds has elapsed since this instant it stops affecting anything, so it is
-    # never cleared back to NULL.
+    # Once the configured time_window_seconds has elapsed since this instant it stops affecting anything, which is
+    # why a value left over from an earlier episode is harmless: every episode overwrites it on the way in.
     enforced_since: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     stages: Mapped[list["ConditionalAccessPolicyStage"]] = relationship(
