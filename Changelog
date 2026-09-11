@@ -162,6 +162,10 @@ Version 3.14dev1
     policy, which silently ignored failed authentications.
     Such rows count again after the upgrade, so an upgrade can lock out a user until the time window of the policy has
     passed (#5629, #5616)
+  * The smartphone's answer to a push challenge is written to the audit log. The entry of the answer names the
+    transaction and the recorded outcome - accepted, confirmed (the smartphone step of code_to_phone), declined
+    or cancelled - plus the reason the app sent with a refusal; the authentication that fails because of a
+    refusal names it as well, instead of only reporting a response that did not match (#5754)
 
 Version 3.13.3
 
