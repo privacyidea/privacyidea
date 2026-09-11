@@ -337,6 +337,24 @@ class RaceToleranceTest(MyTestCase):
 
         self.assertEqual({"race_a": 5, "race_b": 8}, self._counts())
 
+    def test_a_lost_insert_race_whose_row_is_gone_again_is_logged(self):
+        # The recovery UPDATE can match nothing too, if the row that won the race is deleted
+        # or rolled back before it runs. There is nothing left to add the sample to, but a
+        # metric that is quietly short of samples is worse than one that visibly lost them.
+        window = _window_start(_utc_now())
+        db.session.add(MetricAggregate(metric_name="race_c", labels_key="",
+                                       node="", window_start=window,
+                                       count=7, sum_value=0.7, max_value=0.5))
+        db.session.commit()
+
+        with patch.object(metrics, "_increment_row", return_value=0):
+            with self.assertLogs("privacyidea.lib.metrics", level="WARNING") as captured:
+                metrics._write_observations({("race_c", (), "", window): _aggregate(count=5)})
+
+        self.assertIn("Lost a metric sample for 'race_c'", "\n".join(captured.output))
+        # No duplicate row either, and the existing one is untouched.
+        self.assertEqual({"race_c": 7}, self._counts())
+
     def test_a_non_race_failure_does_not_lose_the_other_rows_of_the_batch(self):
         # A lost insert race (above) recovers inside _apply_aggregate itself. Anything else --
         # a lock-wait timeout, a deadlock -- is not: it must still cost only the one key that
