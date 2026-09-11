@@ -629,9 +629,12 @@ def _audit_rejection(reason: str, user: User | None = None, as_administrator: bo
     entry = {"success": False, "authentication": AUTH_RESPONSE.REJECT}
     if user and user.login:
         # An admin is named in one column or the other, never both: the login gate logged ``user`` eagerly, before
-        # it knew whether this request would be refused at all, and ``/auth`` moves an admin out of it.
-        entry.update({"user": "", "administrator": user.login} if as_administrator
-                     else {"user": user.login, "realm": user.realm, "resolver": user.resolver})
+        # it knew whether this request would be refused at all, and ``/auth`` moves an admin out of it. The realm and
+        # resolver are written either way rather than left at what the gate logged, so that a local database admin -
+        # who has neither - is not left carrying a realm the gate guessed from the login name, and an admin-realm
+        # one is named as fully as the view names them when it lets them in.
+        entry.update({"realm": user.realm, "resolver": user.resolver})
+        entry.update({"user": "", "administrator": user.login} if as_administrator else {"user": user.login})
     get_ca_context().rejection_audit = entry
     g.audit_object.log({**entry, "info": reason})
 

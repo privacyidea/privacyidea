@@ -2059,6 +2059,28 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual("testadmin", entry["administrator"], entry)
         self.assertEqual("", entry["user"], entry)
         self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
+        # A local database admin lives in no realm, so the entry names none - the same blank the view writes for the
+        # login it lets through. The gate logged the realm it had guessed from the login name before it knew this was
+        # an admin at all, and the rejection has to undo that rather than leave it standing.
+        self.assertEqual("", entry["realm"], entry)
+        self.assertEqual("", entry["resolver"], entry)
+
+    def test_a_rejected_admin_realm_login_is_named_as_fully_as_an_accepted_one(self):
+        # An admin who *is* a user - one in a superuser realm - keeps the identity columns an ordinary login gets,
+        # which is what the view logs when it lets such a login in. The resolver is the half the gate never logged,
+        # so a rejection that only moved the login name out of "user" would name a realm and no resolver within it.
+        self.app.config["SUPERUSER_REALM"] = [self.realm1]
+        try:
+            db.session.add(BlockList(ip=BLOCKED_IP, block_expires_at=utc_now() + timedelta(seconds=600)))
+            db.session.commit()
+            self.assertEqual(401, self._auth(f"cornelius@{self.realm1}", "test", remote_addr=BLOCKED_IP).status_code)
+        finally:
+            self.app.config["SUPERUSER_REALM"] = []
+        entry = self.find_most_recent_audit_entry(action="*/auth")
+        self.assertEqual("cornelius", entry["administrator"], entry)
+        self.assertEqual("", entry["user"], entry)
+        self.assertEqual(self.user.realm, entry["realm"], entry)
+        self.assertEqual(self.user.resolver, entry["resolver"], entry)
 
     def test_the_rejection_joins_the_transaction_it_refused(self):
         # A passkey or push login answers its challenge at /auth carrying the transaction, so a rejection there
