@@ -19,6 +19,7 @@
 import { formatLocalDateTime } from "@utils/date-format.utils";
 
 export const TIMESTAMP_INFO_KEYS = ["creation_date", "assignment_date", "last_auth"] as const;
+export const BLOB_INFO_KEYS = ["pkcs12", "certificate", "privatekey"] as const;
 export const USER_TIMESTAMP_INFO_KEYS = ["assignment_date"] as const;
 
 type TokenDetailGroup = "identity" | "counters" | "assignment";

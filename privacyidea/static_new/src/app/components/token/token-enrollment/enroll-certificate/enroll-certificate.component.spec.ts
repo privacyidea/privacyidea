@@ -135,13 +135,24 @@ describe("EnrollCertComponent", () => {
       expect(component.caConnectorTouched()).toBe(true);
     });
 
-    it("should return null and mark certTemplateTouched when generate but certTemplate empty", () => {
+    // The template is optional: the server falls back to the CA default and a freshly
+    // created local CA has no templates at all.
+    it("should build enrollment data when generate and certTemplate is empty", () => {
       component.intention.set("generate");
       component.caConnector.set("conn-1");
       component.certTemplate.set("");
       const result = component.buildEnrollmentArgs(basicOptions);
+      expect(result).not.toBeNull();
+      expect(result!.data.certTemplate).toBe("");
+    });
+
+    it("should return null and mark caConnectorTouched when uploadRequest but caConnector empty", () => {
+      component.intention.set("uploadRequest");
+      component.pem.set("-----BEGIN CERTIFICATE REQUEST-----");
+      component.caConnector.set("");
+      const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
-      expect(component.certTemplateTouched()).toBe(true);
+      expect(component.caConnectorTouched()).toBe(true);
     });
 
     it("should return enrollment data without pem when intention is generate", () => {
@@ -150,17 +161,33 @@ describe("EnrollCertComponent", () => {
       component.certTemplate.set("t1");
       const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
+      expect(result!.data.intention).toBe("generate");
       expect(result!.data.caConnector).toBe("conn-1");
       expect(result!.data.certTemplate).toBe("t1");
       expect(result!.data.pem).toBeUndefined();
     });
 
-    it("should include pem when intention is uploadCert", () => {
+    it("should include pem and the intention when uploading a request", () => {
+      component.intention.set("uploadRequest");
+      component.caConnector.set("conn-1");
+      component.pem.set("-----BEGIN CERTIFICATE REQUEST-----");
+      const result = component.buildEnrollmentArgs(basicOptions);
+      expect(result).not.toBeNull();
+      expect(result!.data.intention).toBe("uploadRequest");
+      expect(result!.data.pem).toBe("-----BEGIN CERTIFICATE REQUEST-----");
+    });
+
+    // An uploaded certificate is only stored, so it needs neither a CA connector nor a template.
+    it("should include pem without a CA connector when intention is uploadCert", () => {
       component.intention.set("uploadCert");
+      component.caConnector.set("");
       component.pem.set("-----BEGIN CERTIFICATE-----");
       const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
+      expect(result!.data.intention).toBe("uploadCert");
       expect(result!.data.pem).toBe("-----BEGIN CERTIFICATE-----");
+      expect(result!.data.caConnector).toBeUndefined();
+      expect(result!.data.certTemplate).toBeUndefined();
     });
   });
 

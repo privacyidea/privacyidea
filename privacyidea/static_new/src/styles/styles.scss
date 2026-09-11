@@ -1012,6 +1012,11 @@ $corner-radii: (
   }
 }
 
+.multiline-tooltip {
+  white-space: pre-line;
+  text-align: left;
+}
+
 // Panel class set by the shared app-multi-select-filter component. Its options can be long, so let the menu grow to
 // fit instead of truncating at the default 280px.
 .filter-select-menu.mat-mdc-menu-panel {

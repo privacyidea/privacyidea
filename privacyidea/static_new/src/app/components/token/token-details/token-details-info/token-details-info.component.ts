@@ -32,7 +32,7 @@ import {
   TokenServiceInterface
 } from "@services/token/token.service";
 import { Observable, switchMap } from "rxjs";
-import { TIMESTAMP_INFO_KEYS } from "../token-details.constants";
+import { BLOB_INFO_KEYS, TIMESTAMP_INFO_KEYS } from "../token-details.constants";
 
 @Component({
   selector: "app-token-details-info",
@@ -52,7 +52,7 @@ import { TIMESTAMP_INFO_KEYS } from "../token-details.constants";
 })
 export class TokenDetailsInfoComponent {
   protected readonly Object = Object;
-  protected readonly hiddenInfoKeys: readonly string[] = TIMESTAMP_INFO_KEYS;
+  protected readonly hiddenInfoKeys: readonly string[] = [...TIMESTAMP_INFO_KEYS, ...BLOB_INFO_KEYS];
   private tokenService: TokenServiceInterface = inject(TokenService);
   tokenSerial = this.tokenService.tokenSerial;
   @Input() infoData!: WritableSignal<EditableElement[]>;

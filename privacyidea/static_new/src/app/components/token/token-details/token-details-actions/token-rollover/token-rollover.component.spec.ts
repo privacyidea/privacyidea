@@ -91,7 +91,9 @@ describe("TokenRolloverComponent", () => {
     expect(component.title()).toBe("Rollover Token ABC123");
   });
 
-  it("should show an error notification when enrollment fails", async () => {
+  // enrollToken() reports the failure itself, so the component only has to stop quietly
+  // instead of notifying a second time and leaving the rejection unhandled.
+  it("should stop without a second notification when enrollment fails", async () => {
     component.token.set({ type: "hotp", serial: "ABC123" });
     installStrategy(component, {
       buildEnrollmentArgs: jest.fn().mockReturnValue({
@@ -103,9 +105,21 @@ describe("TokenRolloverComponent", () => {
       new Promise((_resolve, reject) => reject({ error: { result: { error: { message: "boom" } } } }))
     );
 
-    await expect(component.rolloverToken()).rejects.toBeDefined();
+    await expect(component.rolloverToken()).resolves.toBeUndefined();
 
-    expect(notificationService.error).toHaveBeenCalledWith("Failed to enroll token: boom");
+    expect(notificationService.error).not.toHaveBeenCalled();
+  });
+
+  it("should warn when the strategy cannot build the enrollment arguments", async () => {
+    component.token.set({ type: "hotp", serial: "ABC123" });
+    installStrategy(component, { buildEnrollmentArgs: jest.fn().mockReturnValue(null) });
+
+    await component.rolloverToken();
+
+    expect(notificationService.warning).toHaveBeenCalledWith(
+      "Please fill in all required fields or correct invalid entries."
+    );
+    expect(tokenService.enrollToken).not.toHaveBeenCalled();
   });
 
   it("should call enrollToken and close dialog on successful rollover", async () => {

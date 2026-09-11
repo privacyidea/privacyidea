@@ -35,6 +35,7 @@ import { MatButton } from "@angular/material/button";
 import { Router, RouterLink } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
+import { CertificateDataComponent } from "@components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -102,7 +103,8 @@ import {
     ScrollToTopDirective,
     TokenDetailsMachineComponent,
     DetailsHeaderComponent,
-    OverflowNavDirective
+    OverflowNavDirective,
+    CertificateDataComponent
   ],
   providers: [DetailsEditRegistry],
   templateUrl: "./token-details.component.html",
@@ -267,6 +269,9 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     source: this.tokenDetails,
     computation: () => this.tokenDetails()?.tokentype ?? ""
   });
+
+  protected readonly certificateInfo = computed(() => (this.tokenDetails()?.info?.["certificate"] as string) ?? "");
+  protected readonly pkcs12Info = computed(() => (this.tokenDetails()?.info?.["pkcs12"] as string) ?? "");
   userRealm = "";
   isAnyEditingOrRevoked = computed(() => {
     return (

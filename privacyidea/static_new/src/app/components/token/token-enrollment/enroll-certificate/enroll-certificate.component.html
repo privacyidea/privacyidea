@@ -17,67 +17,49 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <mat-button-toggle-group
-    [value]="intention()"
-    (change)="intention.set($event.value)"
-    [hideSingleSelectionIndicator]="true"
-    class="button-toggle-group">
-    <mat-button-toggle
-      i18n="@@token.generateRequest"
-      value="generate"
-      >Generate Request</mat-button-toggle
-    >
-    <mat-button-toggle
-      i18n="@@token.uploadRequest"
-      value="uploadRequest"
-      >Upload Request</mat-button-toggle
-    >
-    <mat-button-toggle
-      i18n="@@token.uploadCertificate"
-      value="uploadCert"
-      >Upload Certificate</mat-button-toggle
-    >
-  </mat-button-toggle-group>
-  <div class="flex-row gap-16">
-    <mat-form-field class="input-width-l">
-      <mat-label i18n="@@token.caConnector">CA Connector</mat-label>
-      <mat-select
-        [value]="caConnector()"
-        (selectionChange)="caConnector.set($event.value); caConnectorTouched.set(true)"
-        [disabled]="disabled()"
-        required>
-        @for (option of caConnectorOptions(); track option) {
-          <mat-option [value]="option">{{ option }}</mat-option>
+  <app-selector-buttons
+    (selected)="onIntentionSelected($event)"
+    [initialValue]="intention()"
+    [labels]="intentionLabels()"
+    [values]="intentionValues"
+    class="intention-selector width-100" />
+  @if (intention() !== "uploadCert") {
+    <div class="flex-row gap-16">
+      <mat-form-field class="input-width-l">
+        <mat-label i18n="@@token.caConnector">CA Connector</mat-label>
+        <mat-select
+          [value]="caConnector()"
+          (selectionChange)="caConnector.set($event.value); caConnectorTouched.set(true)"
+          [disabled]="disabled()"
+          required>
+          @for (option of caConnectorOptions(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-select>
+        @if (!caConnector() && caConnectorTouched()) {
+          <mat-error i18n="@@token.caConnectorRequired">CA Connector is <strong>required</strong></mat-error>
         }
-      </mat-select>
-      @if (!caConnector() && caConnectorTouched()) {
-        <mat-error i18n="@@token.caConnectorRequired">CA Connector is <strong>required</strong></mat-error>
-      }
-    </mat-form-field>
-    <mat-form-field class="input-width-l">
-      <mat-label i18n="@@token.certificateTemplate">Certificate Template</mat-label>
-      <mat-select
-        [value]="certTemplate()"
-        (selectionChange)="certTemplate.set($event.value); certTemplateTouched.set(true)"
-        [disabled]="disabled()"
-        required>
-        @for (option of certTemplateOptions(); track option) {
-          <mat-option [value]="option">{{ option }}</mat-option>
+      </mat-form-field>
+      <mat-form-field class="input-width-l">
+        <mat-label i18n="@@token.certificateTemplate">Certificate Template</mat-label>
+        <mat-select
+          [value]="certTemplate()"
+          (selectionChange)="certTemplate.set($event.value)"
+          [disabled]="disabled()">
+          @for (option of certTemplateOptions(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint i18n="@@token.certificateTemplateOptional">Optional, the CA default is used if empty.</mat-hint>
+        @if (certTemplate()) {
+          <app-clear-button
+            (clearButtonClick)="clearTemplateSelection()"
+            matSuffix></app-clear-button>
         }
-      </mat-select>
-      @if (!certTemplate() && certTemplateTouched()) {
-        <mat-error i18n="@@token.certificateTemplateRequired"
-          >Certificate Template is <strong>required</strong></mat-error
-        >
-      }
-      @if (certTemplate()) {
-        <app-clear-button
-          (clearButtonClick)="clearTemplateSelection()"
-          matSuffix></app-clear-button>
-      }
-    </mat-form-field>
-    <span class="input-width-l"></span>
-  </div>
+      </mat-form-field>
+      <span class="input-width-l"></span>
+    </div>
+  }
   @switch (intention()) {
     @case ("generate") {
       <span

@@ -297,12 +297,37 @@ describe("CertificateApiPayloadMapper", () => {
     pem: "PEM"
   });
 
-  it("maps and keeps genkey=1", () => {
-    const p = mapper.toApiPayload(base());
+  it("sends genkey=1 and no PEM when the server generates the key pair", () => {
+    const p = mapper.toApiPayload({ ...base(), intention: "generate" });
     expect(p.genkey).toBe(1);
     expect(p.ca).toBe("ca1");
     expect(p.template).toBe("tplA");
-    expect(p.pem).toBe("PEM");
+    expect("request" in p).toBe(false);
+    expect("certificate" in p).toBe(false);
+  });
+
+  it("defaults to generate when no intention is given", () => {
+    const p = mapper.toApiPayload(base());
+    expect(p.genkey).toBe(1);
+  });
+
+  // The server parameter is "request", and "genkey" would make it discard the upload and
+  // issue a certificate for a freshly generated key pair instead.
+  it("sends an uploaded request as request= without genkey", () => {
+    const p = mapper.toApiPayload({ ...base(), intention: "uploadRequest", pem: "CSR" });
+    expect(p.request).toBe("CSR");
+    expect("genkey" in p).toBe(false);
+    expect(p.ca).toBe("ca1");
+  });
+
+  // An uploaded certificate is only stored: a CA connector or genkey would make the server
+  // issue a new certificate instead.
+  it("sends an uploaded certificate as certificate= without genkey, ca or template", () => {
+    const p = mapper.toApiPayload({ ...base(), intention: "uploadCert", pem: "CERT" });
+    expect(p.certificate).toBe("CERT");
+    expect("genkey" in p).toBe(false);
+    expect("ca" in p).toBe(false);
+    expect("template" in p).toBe(false);
   });
 
   it("omits optional undefined", () => {
@@ -310,7 +335,16 @@ describe("CertificateApiPayloadMapper", () => {
     const p = mapper.toApiPayload(d);
     expect("ca" in p).toBe(false);
     expect("template" in p).toBe(false);
-    expect("pem" in p).toBe(false);
+    expect("request" in p).toBe(false);
+    expect("certificate" in p).toBe(false);
+  });
+
+  it("fromApiPayload restores the intention", () => {
+    expect(mapper.fromApiPayload({ type: "certificate", genkey: 1 }).intention).toBe("generate");
+    expect(mapper.fromApiPayload({ type: "certificate", request: "CSR" }).intention).toBe("uploadRequest");
+    const uploaded = mapper.fromApiPayload({ type: "certificate", certificate: "CERT" });
+    expect(uploaded.intention).toBe("uploadCert");
+    expect(uploaded.pem).toBe("CERT");
   });
 
   it("fromTokenDetailsToEnrollmentData maps TokenDetails to CertificateEnrollmentData defaults", () => {

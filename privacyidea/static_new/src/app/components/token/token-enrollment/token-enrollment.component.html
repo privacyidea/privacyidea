@@ -63,9 +63,7 @@
             <h4 i18n="@@token.assignTokenUser">Assign Token to a User</h4>
             <app-user-assignment
               [required]="isUserRequired()"
-              [showOnlyAddToRealm]="
-                !['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)
-              "></app-user-assignment>
+              [showOnlyAddToRealm]="showOnlyAddToRealm()"></app-user-assignment>
           </div>
         }
       </div>

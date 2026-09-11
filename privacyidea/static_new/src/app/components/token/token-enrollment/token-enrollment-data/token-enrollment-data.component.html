@@ -61,5 +61,14 @@
     @if (enrolledData()["otps"]) {
       <app-otp-values [otpValues]="enrolledData()['otps'] ?? []" />
     }
+    @if (isCertificate()) {
+      <app-certificate-data
+        (closeBlockedReasonChange)="closeBlockedReasonChange.emit($event)"
+        [certificate]="certificate()"
+        [pkcs12]="pkcs12()"
+        [pkcs12Password]="pkcs12Password()"
+        [rolloutState]="enrolledData().rollout_state ?? ''"
+        [serial]="serial()" />
+    }
   </div>
 </div>

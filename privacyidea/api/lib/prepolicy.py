@@ -349,6 +349,9 @@ def check_otp_pin(request=None, action=None):
 
     The pin is investigated in the params as "otppin" or "pin"
 
+    Token types that do not use a PIN at all (``using_pin = False``) are exempt, whether the
+    request identifies the token by serial or, as at enrollment, only by its type.
+
     In case the given OTP PIN does not match the requirements an exception is
     raised.
     """
@@ -384,6 +387,10 @@ def check_otp_pin(request=None, action=None):
                 pin_user = token_owner
     # the default tokentype is still HOTP
     tokentype = tokentype or "hotp"
+    token_class = get_token_class(tokentype)
+    if token_class and token_class.using_pin is False:
+        log.debug(f"Token type {tokentype} does not use a PIN, skipping the PIN policies.")
+        return True
     check_pin(g, pin, tokentype, pin_user)
     return True
 

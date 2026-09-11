@@ -1,0 +1,62 @@
+@use "styles";
+
+.certificate-data {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 650px;
+}
+
+.certificate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.certificate-password {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.certificate-password-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  code {
+    overflow-wrap: anywhere;
+  }
+
+  app-copy-button {
+    --copy-icon-color: var(--mat-sys-on-surface);
+  }
+}
+
+.password-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.password-toggle-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  display: flex !important;
+  justify-content: center;
+  color: var(--mat-sys-on-surface);
+}
+
+.certificate-expansion {
+  max-width: 650px;
+}
+
+.certificate-pem {
+  margin: 0;
+  overflow-x: auto;
+  font-size: 0.75rem;
+}
