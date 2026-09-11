@@ -330,6 +330,16 @@
   pass a stale or misspelled user name to `GET /container/` and relied on getting an empty result need to handle the
   error.
 
+* **The initial token transfer of a smartphone container only takes over related tokens.** During the first
+  synchronization of a registered smartphone container, the policy `initially_add_tokens_to_container` lets the server
+  add the tokens the client reports to the container. Which of them are taken over is now restricted: a token that is
+  assigned to a user is only added if the user is an owner of the container, and an unassigned token is only added if it
+  shares a realm with the container. The realm rule preserves the main use case of the policy: tokens that are
+  prepared in advance for a user that is not known yet. A token that has neither an owner nor a realm can not be related
+  to the container and is no longer taken over; if you prepare tokens that way, put the tokens and the container into a
+  realm. A token that is already part of another container is no longer taken over either — moving a container with
+  all its tokens to a new device is what a container rollover is for.
+
 * **HTTP API change** - the `resolver` and `userid` filters of `GET /token/` are now applied. Both parameters have
   always been accepted and documented, but they never became a condition of the query, so a request carrying one of them
   returned *all* tokens instead of the tokens of that resolver or of that user id. `resolver` is matched
@@ -377,6 +387,16 @@
       pi-manage config policy disable <name>
 
   Installations that do not use the User Agent condition are unaffected.
+
+* **HTTP API change** - `POST /container/<serial>/realms` now returns the status of each realm in a `realms`
+  sub-dictionary instead of putting the realm names next to the `deleted` flag. The response was
+  `{"realm1": true, "realm2": false, "deleted": true}` and is now
+  `{"realms": {"realm1": true, "realm2": false}, "deleted": true}`. The `deleted` entry keeps its place and its
+  meaning. The old shape reserved the key `deleted` in the same dictionary that carries the realm names, so a realm
+  that is actually named `deleted` had its status overwritten by the flag: attaching it was reported as a failure, and
+  detaching it was reported as the realm still being attached. Scripts and integrations that read
+  `result.value.<realm>` have to read `result.value.realms.<realm>` instead; the WebUI does not read the response and
+  is unaffected. `pi-token-janitor find ... set_realm` no longer omits a realm named `deleted` from what it reports.
 
 ## Update from 3.12 to 3.13
 

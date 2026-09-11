@@ -2012,7 +2012,7 @@
       </trans-unit>
       <trans-unit id="systemConfig.selectPredefined" datatype="html">
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>SMTP server configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/></source>
-        <target state="new">Selecione uma <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot;&gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configuração de servidor SMTP<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> predefinida</target>
+        <target>Selecione uma <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configuração de servidor SMTP<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> predefinida</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
           <context context-type="linenumber">179</context>
@@ -2392,7 +2392,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.selectPredefinedSmtp" datatype="html">
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>SMTP server configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
-        <target state="new">Selecione uma <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot;&gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configuração de servidor SMTP<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> predefinida</target>
+        <target>Selecione uma <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configuração de servidor SMTP<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> predefinida</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/email-config/email-config.component.html</context>
           <context context-type="linenumber">47</context>
@@ -2552,7 +2552,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.selectPredefined" datatype="html">
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>RADIUS server configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
-        <target state="new">Selecione uma <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]&quot;&gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configuração de servidor RADIUS<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> predefinida</target>
+        <target>Selecione uma <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configuração de servidor RADIUS<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> predefinida</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/radius-config/radius-config.component.html</context>
           <context context-type="linenumber">46</context>
@@ -2644,7 +2644,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.selectPredefinedSms" datatype="html">
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>SMS Gateway configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
-        <target state="new">Selecione uma <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]&quot;&gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configuração de gateway de SMS<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> predefinida</target>
+        <target>Selecione uma <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>configuração de gateway de SMS<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> predefinida</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/sms-config/sms-config.component.html</context>
           <context context-type="linenumber">51</context>
@@ -4080,7 +4080,7 @@
       </trans-unit>
       <trans-unit id="container.pleaseScanQrCode" datatype="html">
         <source>Please scan the QR code with the privacyIDEA Authenticator App or click this <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value ?? &apos;&apos; }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone to register your container. It will send the missing registration data to the configured endpoint.</source>
-        <target state="new">Por favor, leia o código QR com a aplicação privacyIDEA Authenticator ou clique nesta <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value }}&quot;&gt;"/>ligação<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> no seu smartphone para registar o seu contentor. Serão enviados os dados de registo em falta para o endpoint configurado.</target>
+        <target>Por favor, leia o código QR com a aplicação privacyIDEA Authenticator ou clique nesta <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value ?? &apos;&apos; }}&quot;&gt;"/>ligação<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> no seu smartphone para registar o seu contentor. Serão enviados os dados de registo em falta para o endpoint configurado.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.component.html</context>
           <context context-type="linenumber">47</context>
@@ -8127,7 +8127,7 @@
       </trans-unit>
       <trans-unit id="container.supportedToken" datatype="html">
         <source>Supported Token Types: <x id="START_BLOCK_IF" equiv-text="@if ( (containerService().selectedContainerType()?.token_types?.length ?? 0) &gt;= tokenService().tokenTypeOptions().length ) {"/> All <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService().selectedContainerType()?.token_types?.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService().selectedContainerType()?.token_types?.[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></source>
-        <target state="new">Tipos de token suportados: <x id="START_BLOCK_IF" equiv-text="@if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt;= tokenService().tokenTypeOptions().length) {"/> Todos <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService().selectedContainerType()?.token_types?.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService().selectedContainerType()?.token_types?.[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></target>
+        <target>Tipos de token suportados: <x id="START_BLOCK_IF" equiv-text="@if ( (containerService().selectedContainerType()?.token_types?.length ?? 0) &gt;= tokenService().tokenTypeOptions().length ) {"/> Todos <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService().selectedContainerType()?.token_types?.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService().selectedContainerType()?.token_types?.[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/container-create-form/container-create-form.component.html</context>
           <context context-type="linenumber">22</context>
@@ -19273,7 +19273,7 @@
       </trans-unit>
       <trans-unit id="2159130950882492111" datatype="html">
         <source>Cancel</source>
-        <target state="new">Cancel</target>
+        <target>Cancelar</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/table-state/table-state.component.html</context>
           <context context-type="linenumber">38</context>
@@ -19317,7 +19317,7 @@
       </trans-unit>
       <trans-unit id="5870107995447361938" datatype="html">
         <source>Invalid transaction ID or serial number in enrollment detail for finalization.</source>
-        <target state="new">Invalid transaction ID or serial number in enrollment detail for finalization.</target>
+        <target>ID de transação ou número de série inválido nos detalhes de registo para a finalização.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component.ts</context>
           <context context-type="linenumber">112</context>
@@ -19349,7 +19349,7 @@
       </trans-unit>
       <trans-unit id="7022070615528435141" datatype="html">
         <source>Delete</source>
-        <target state="new">Delete</target>
+        <target>Eliminar</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.ts</context>
           <context context-type="linenumber">108</context>
@@ -19749,7 +19749,7 @@
       </trans-unit>
       <trans-unit id="valueLabelActive" datatype="html">
         <source>Active</source>
-        <target state="new">Active</target>
+        <target>Ativo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">43</context>
@@ -19881,7 +19881,7 @@
       </trans-unit>
       <trans-unit id="valueLabelLogout" datatype="html">
         <source>Logout</source>
-        <target state="new">Logout</target>
+        <target>Sair</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">60</context>
@@ -19897,7 +19897,7 @@
       </trans-unit>
       <trans-unit id="valueLabelNone" datatype="html">
         <source>None</source>
-        <target state="new">None</target>
+        <target>Nenhum</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">62</context>
@@ -19945,7 +19945,7 @@
       </trans-unit>
       <trans-unit id="valueLabelVerify" datatype="html">
         <source>Verify</source>
-        <target state="new">Verify</target>
+        <target>Verificar</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">72</context>

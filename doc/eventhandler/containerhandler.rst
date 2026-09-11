@@ -61,6 +61,16 @@ set description
 
 For the container identified in the request a new **description** will be set.
 
+The **description** may contain tags that are replaced when the event is handled.
+The tag ``{now}`` is replaced by the current timestamp and supports offsets like
+``{now}+5d`` or ``{now}-30m`` (``s``, ``m``, ``h``, ``d``); ``{current_time}`` is a
+deprecated alias for it. The tags of the notification handlers are available as
+well, for example ``{client_ip}``, ``{ua_browser}``, ``{ua_string}``,
+``{container_serial}``, ``{username}`` and ``{userrealm}``. ``{username}`` and
+``{userrealm}`` describe the owner of the container, ``{admin}`` and ``{realm}`` the
+acting administrator. A tag that can not be replaced does not fail the event
+handling, the text is then written as it was entered.
+
 remove all tokens
 .................
 
@@ -74,6 +84,16 @@ For the container identified in the request the container info will be set. All 
 It requires the specification of a **key** and optionally a **value**. If no value is defined, it is set to an empty
 string "".
 
+The **value** may contain tags that are replaced when the event is handled.
+The tag ``{now}`` is replaced by the current timestamp and supports offsets like
+``{now}+5d`` or ``{now}-30m`` (``s``, ``m``, ``h``, ``d``); ``{current_time}`` is a
+deprecated alias for it. The tags of the notification handlers are available as
+well, for example ``{client_ip}``, ``{ua_browser}``, ``{ua_string}``,
+``{container_serial}``, ``{username}`` and ``{userrealm}``. ``{username}`` and
+``{userrealm}`` describe the owner of the container, ``{admin}`` and ``{realm}`` the
+acting administrator. A tag that can not be replaced does not fail the event
+handling, the value is then written as it was entered.
+
 add container info
 ..................
 
@@ -82,6 +102,16 @@ the given key already exists, an old entry will be overwritten.
 
 It requires the specification of a **key** and a optionally **value**. If no value is defined, it is set to an empty
 string "".
+
+The **value** may contain tags that are replaced when the event is handled.
+The tag ``{now}`` is replaced by the current timestamp and supports offsets like
+``{now}+5d`` or ``{now}-30m`` (``s``, ``m``, ``h``, ``d``); ``{current_time}`` is a
+deprecated alias for it. The tags of the notification handlers are available as
+well, for example ``{client_ip}``, ``{ua_browser}``, ``{ua_string}``,
+``{container_serial}``, ``{username}`` and ``{userrealm}``. ``{username}`` and
+``{userrealm}`` describe the owner of the container, ``{admin}`` and ``{realm}`` the
+acting administrator. A tag that can not be replaced does not fail the event
+handling, the value is then written as it was entered.
 
 delete container info
 .....................
