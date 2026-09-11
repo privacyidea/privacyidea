@@ -448,6 +448,13 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(renderedErrors()).toEqual([]);
   });
 
+  // The dialog asks what to do with a trial's events, so it is the stored policy that decides
+  // whether it appears at all - put the component in the state of one saved in dry run.
+  const storedPolicyInDryRun = () => {
+    component.policy.set({ ...component.policy(), dry_run: true });
+    component.editPolicy.set({ ...component.editPolicy(), dry_run: true });
+  };
+
   it("should toggle dry_run without calling the enable/disable endpoints", () => {
     component.toggleDryRun(true);
     expect(component.editPolicy().dry_run).toBe(true);
@@ -456,7 +463,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
   });
 
   it("should ask via a dialog before turning dry_run off, and reset counters by default", async () => {
-    component.toggleDryRun(true); // turn it on first, so turning it off asks
+    storedPolicyInDryRun();
     dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue({ resetCounters: true });
 
     await component.toggleDryRun(false);
@@ -467,7 +474,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
   });
 
   it("should keep the trial's counters when the dialog says so", async () => {
-    component.toggleDryRun(true);
+    storedPolicyInDryRun();
     dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue({ resetCounters: false });
 
     await component.toggleDryRun(false);
@@ -477,7 +484,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
   });
 
   it("should leave dry_run on when the dialog is cancelled", async () => {
-    component.toggleDryRun(true);
+    storedPolicyInDryRun();
     dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue(undefined);
 
     await component.toggleDryRun(false);
@@ -488,13 +495,26 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
   // The control flips itself on the change and [checked] reads an unchanged value, so nothing puts
   // it back: without this the page would show "dry run off" for a policy still in dry run.
   it("should put the toggle back when the dialog is cancelled", async () => {
-    component.toggleDryRun(true);
+    storedPolicyInDryRun();
     dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue(undefined);
     const toggle = { checked: false } as MatSlideToggle;
 
     await component.toggleDryRun(false, toggle);
 
     expect(toggle.checked).toBe(true);
+  });
+
+  // Switching a stored enforcing policy to dry run and back, without saving in between, changes
+  // nothing and accumulates no trial - there is nothing to ask about.
+  it("should not ask when the stored policy is not in dry run", async () => {
+    dialogServiceMock.openDialogAsync = jest.fn();
+    component.toggleDryRun(true);
+
+    await component.toggleDryRun(false);
+
+    expect(dialogServiceMock.openDialogAsync).not.toHaveBeenCalled();
+    expect(component.editPolicy().dry_run).toBe(false);
+    expect(component.editPolicy().reset_counters_on_enforce).toBeUndefined();
   });
 
   it("should call disablePolicy immediately when toggling enabled off", () => {
@@ -734,6 +754,21 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
 
   it("should show the create title", () => {
     expect(component.title()).toEqual("Create Conditional-Access Policy");
+  });
+
+  // A policy that does not exist yet has no trial to reset, so switching dry run on and off again
+  // while drafting it must not raise the question - and must not send a choice the create call
+  // would ignore anyway.
+  it("should not ask about the counters while creating a policy", async () => {
+    const dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    dialogServiceMock.openDialogAsync = jest.fn();
+    component.toggleDryRun(true);
+
+    await component.toggleDryRun(false);
+
+    expect(dialogServiceMock.openDialogAsync).not.toHaveBeenCalled();
+    expect(component.editPolicy().dry_run).toBe(false);
+    expect(component.editPolicy().reset_counters_on_enforce).toBeUndefined();
   });
 
   it("should not show the enabled toggle affordance calls without an id", () => {

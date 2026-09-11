@@ -570,8 +570,10 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   }
 
   async toggleDryRun(checked: boolean, toggle?: MatSlideToggle): Promise<void> {
-    if (checked || !this.editPolicy().dry_run) {
-      // Turning dry run on, or it was already off: nothing to ask.
+    // The question is what to do with the events a trial accumulated, so the *stored* state decides
+    // whether there is anything to ask about: a policy being created has no trial, and neither has
+    // a stored enforcing policy that was switched to dry run and back without ever being saved.
+    if (checked || !this.policy().dry_run) {
       this.updateEditPolicy({ dry_run: checked, reset_counters_on_enforce: undefined });
       return;
     }
