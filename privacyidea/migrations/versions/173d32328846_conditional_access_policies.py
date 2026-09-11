@@ -7,11 +7,10 @@ lookup), conditional_access_policy_conditions (the restrictions on which request
 applies to at all), conditional_access_policy_stages (the failure thresholds within a
 policy) and conditional_access_stage_actions (the reactions when a stage is triggered).
 
-conditional_access_policies.enforced_since records the instant a policy started enforcing (NULL while
-dry_run is set), so a policy leaving dry-run is not judged against failures accumulated during the trial - see
-privacyidea.lib.conditional_access.engine._effective_window_seconds. Folded into this still-unreleased
-revision rather than added as a new one; a dev/test DB that already ran the create_table form of this
-revision gets the column added by _add_enforced_since_column below.
+conditional_access_policies.enforced_since records the instant a policy's current enforcement episode starts
+counting (NULL to count the full time window), so a policy leaving dry-run is not judged against events
+accumulated during the trial - see privacyidea.lib.conditional_access.engine._effective_window_seconds. Folded
+into this still-unreleased revision rather than added as a new one.
 
 Revision ID: 173d32328846
 Revises: 0147d78cbace
@@ -58,26 +57,6 @@ def _create_table(table_name, *columns):
             raise
 
 
-def _add_enforced_since_column():
-    """
-    Add ``enforced_since`` to ``conditional_access_policies``, for a database that already ran an
-    earlier form of this revision without the column (create_table above then printed "already
-    exists" and returned without it). No backfill: CA is not released yet, so no such database
-    carries rows to backfill - a fresh column is always all-``NULL``, same as create_table's.
-    """
-    try:
-        op.add_column('conditional_access_policies', sa.Column('enforced_since', sa.DateTime(), nullable=True))
-    except (OperationalError, ProgrammingError) as exx:
-        if any(x in str(exx.orig).lower() for x in ["already exists", "duplicate column name"]):
-            print("Ok, column 'enforced_since' already exists.")
-        else:
-            print(exx)
-            raise
-    except Exception as exx:
-        print(f"Could not add column 'enforced_since' to database: {exx}")
-        raise
-
-
 def upgrade():
     _create_table(
         'conditional_access_policies',
@@ -95,7 +74,6 @@ def upgrade():
         sa.UniqueConstraint('name'),
         sa.UniqueConstraint('priority', name='uq_ca_policy_priority'),
     )
-    _add_enforced_since_column()
     _create_table(
         'conditional_access_policy_counter_types',
         _id_column(),
