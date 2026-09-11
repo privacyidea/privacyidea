@@ -81,6 +81,12 @@ class CAContext:
         Not about the generic "Authentication failed." - that is what a rejection with nothing to say ends up
         carrying, decided in the API layer. Resolved there too, because matching a policy needs Flask and this
         package deliberately does not.
+    :ivar attempt_id: the ``attempt_id`` of the row the post-response evaluation is reacting to, shared by every
+        row one request stages (a multichallenge flow's several rows all carry the same one). Used only post-auth,
+        to compute a count as it stood *before* this request's own rows joined it (see
+        :func:`~privacyidea.lib.conditional_access.engine._exclude_attempt`) - the pre-auth decision has nothing of
+        its own logged yet, so it never sets this. ``None`` when unavailable (outside a request context, or a
+        caller that never joined an attempt), in which case that count simply is not computed.
     Note what is deliberately *absent*: the authentication log's ``client_label``
     (the ``client_id`` parameter, falling back to the User-Agent header). It
     identifies the calling application well enough to be worth recording
@@ -94,3 +100,4 @@ class CAContext:
     endpoint: str | None = None
     user_role: str | None = None
     use_default_error_message: bool = False
+    attempt_id: str | None = None

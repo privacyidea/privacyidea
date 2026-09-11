@@ -1054,6 +1054,24 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self.assertEqual([], list(get_outcomes(removed)))
         self.assertEqual(1, len(get_outcomes(kept)))
 
+    def test_a_reasons_filtered_delete_removes_the_parent_row_too(self):
+        # Regression: reasons= matches via an EXISTS against authentication_log_reason (see filter_conditions).
+        # Reused unchanged for the parent-row delete after the reason rows are already gone, that EXISTS matches
+        # nothing and the entry survives with its history stripped - deleted() would report 0 while reason/outcome
+        # rows for a live entry vanish underneath it.
+        removed = self._entry_with_outcomes(username="doomed")
+        db.session.add(AuthenticationLogReason(auth_log_id=removed, reason="WRONG_OTP"))
+        kept = self._entry_with_outcomes(username="spared")
+        db.session.add(AuthenticationLogReason(auth_log_id=kept, reason="WRONG_OTP"))
+        db.session.commit()
+
+        self.assertEqual(1, delete_authentication_logs(reasons="WRONG_OTP", usernames="doomed"))
+
+        self.assertIsNone(get_authentication_log_event(removed))
+        self.assertEqual([], list(get_outcomes(removed)))
+        self.assertIsNotNone(get_authentication_log_event(kept))
+        self.assertEqual(1, len(get_outcomes(kept)))
+
     def test_retention_takes_the_outcomes_with_it(self):
         removed = self._entry_with_outcomes(2)
         # Age the row past the cutoff; its outcomes have no timestamp of their own, so they are matched through it.

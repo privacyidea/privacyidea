@@ -979,7 +979,19 @@ def delete_authentication_logs(resolvers: str | list[str] | None = None,
         raise ParameterError("Refusing to delete the whole authentication log: at least one filter is required.")
     if visibility_scopes is not None:
         conditions.append(visibility_condition(visibility_scopes))
-    return _delete_entries(and_(*conditions), chunk_size)
+    criterion = and_(*conditions)
+    if reasons is not None:
+        # reasons matches via an EXISTS against authentication_log_reason (see filter_conditions), and
+        # _delete_entries deletes that very table before the parent row it belongs to (the FK does not cascade on
+        # SQLite). Reused unchanged for the parent delete, the EXISTS would then re-evaluate against a
+        # authentication_log_reason that no longer has those rows and match nothing - every matching entry would
+        # lose its reasons and its conditional-access outcomes while the entry itself, and the count this function
+        # returns, both stay put. Freezing the matching ids first (read while the reason rows this criterion
+        # depends on still exist) breaks that self-invalidation. Not needed for a criterion that carries no
+        # reasons filter, since none of those ever reference a table _delete_entries removes rows from.
+        ids = get_ca_session().scalars(select(AuthenticationLog.id).where(criterion)).all()
+        criterion = AuthenticationLog.id.in_(ids)
+    return _delete_entries(criterion, chunk_size)
 
 
 def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = None) -> int:

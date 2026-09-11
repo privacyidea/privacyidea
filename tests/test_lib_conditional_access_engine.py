@@ -917,6 +917,19 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
+    def test_fire_once_still_fires_when_a_single_evaluation_skips_the_exact_threshold(self):
+        # Regression for a count that steps past the threshold in one evaluation instead of landing on it exactly -
+        # e.g. two concurrent requests each committing their own row before either counts (F7), or here, one
+        # request staging two tracked rows at once (a multichallenge/push_wait flow: engine.py's own docstring
+        # example). Both rows share one attempt_id, so the fix (count_before excludes the whole attempt, not just
+        # one row) sees them as a single step from 2 to 4 - still a crossing of threshold 3 - and fires, where a
+        # plain `count == threshold` (4 != 3) would silently never lock the user for this crossing at all.
+        self._make_policy(name="lock3", counter_type=AuthEventType.MFA_FAIL)
+        self._seed_events(AuthEventType.MFA_FAIL, 2)
+        self._seed_attempt("att-race", [AuthEventType.MFA_FAIL, AuthEventType.MFA_FAIL])
+        evaluate_conditional_access_policies(CAContext(self.user, attempt_id="att-race"), AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
     def test_dry_run_writes_no_state(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 5)
@@ -1952,7 +1965,13 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertEqual(600, parse_lock_duration_seconds("600"))
         self.assertEqual(300, parse_lock_duration_seconds({"duration_seconds": 300}))
         self.assertEqual(120, parse_lock_duration_seconds({"duration": 120}))
-        for invalid in (None, 0, -5, True, False, "abc", {}, {"foo": 1}):
+        self.assertEqual(engine.MAX_LOCK_DURATION_SECONDS,
+                         parse_lock_duration_seconds(engine.MAX_LOCK_DURATION_SECONDS))
+        # A bool nested inside the dict must be rejected the same as a top-level one, not silently become 1 via
+        # int(True) - {"duration_seconds": True} is otherwise indistinguishable from a real one-second duration.
+        for invalid in (None, 0, -5, True, False, "abc", {}, {"foo": 1},
+                        {"duration_seconds": True}, {"duration": False},
+                        engine.MAX_LOCK_DURATION_SECONDS + 1, 3 * 10 ** 11):
             self.assertIsNone(parse_lock_duration_seconds(invalid), invalid)
 
     # --- EMAIL_ADMIN / EMAIL_USER actions -------------------------------------

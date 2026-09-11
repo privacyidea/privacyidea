@@ -160,6 +160,12 @@ class ConditionalAccessContext:
         # answer a *restricted* request the same way - even when the view raised and the body to replace is an error.
         # The default is the /validate shape, which is also the safest thing to assume for a request no gate ran on.
         self.rejection_shape = RejectionShape()
+        # Whether the pre-auth gate (conditional_access_gate) actually refused this request, as opposed to merely
+        # having run and recorded a rejection_shape for a request it let through (see conditional_access_rejection).
+        # A postpolicy that must never act on a rejected result - autoassign, which must not verify a credential
+        # and assign a token on the strength of a response that only looks like an ordinary failed authentication -
+        # checks this rather than result.value, which a genuine wrong-password failure carries too.
+        self.gate_rejected = False
 
     def claim_message(self, message: str) -> None:
         """
@@ -456,7 +462,8 @@ class ConditionalAccessContext:
         # as a match. Omitting the endpoint silently inverted every ENDPOINT condition on this path.
         context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
                             user_role=event.user_role, endpoint=event.endpoint,
-                            use_default_error_message=self.use_default_error_message)
+                            use_default_error_message=self.use_default_error_message,
+                            attempt_id=event.attempt_id)
         try:
             evaluation = evaluate_conditional_access_policies(context, event.event_type)
         except Exception as ex:

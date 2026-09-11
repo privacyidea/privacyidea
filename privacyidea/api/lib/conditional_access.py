@@ -88,6 +88,7 @@ from privacyidea.lib.conditional_access.session import release_ca_connection
 from privacyidea.lib.conditional_access.request_context import (ConditionalAccessContext, PostEvaluation,
                                                                  RejectionShape, get_ca_context, peek_ca_context)
 from privacyidea.lib.error import AuthError, Error
+from privacyidea.lib.remembered_device import clear_persistent_cookie
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.user import User
@@ -408,6 +409,12 @@ def _refuse(response: Response, content: dict, context: "ConditionalAccessContex
     ``/validate/triggerchallenge``, where a request that triggers a challenge and trips a lock in one breath reads
     as a success. Withdrawing that challenge is not invalidating it: the row is left to expire unanswered, and the
     client never learns the ``transaction_id``, so it could not use it anyway.
+
+    By the time this runs, postpolicies earlier in the chain (``offline_info``, ``_finalize_auth_response``) have
+    already treated the request as the success it still was when they ran: fresh offline OTPs and a rotated
+    refilltoken may sit in ``content["auth_items"]``, and a ``pi_remember_device`` cookie may already be queued on
+    *response*. Converting the body to a rejection is not enough on its own to take those back - the client would
+    keep 2FA-skip material that outlives the very restriction being reported here.
     """
     result = content.get("result") or {}
     detail = content.get("detail") or {}
@@ -416,7 +423,8 @@ def _refuse(response: Response, content: dict, context: "ConditionalAccessContex
         # The body is the wrong kind to edit into a rejection, so one is built instead. An error body has no
         # value to falsify - and must not survive anyway, "ERR1007: the token is locked" stating the very reason a
         # rejection withholds. On /auth the reverse: a refusal there *is* an error response, so even the 200 a
-        # challenge returned before the engine ran (auth.py) has to be replaced by one.
+        # challenge returned before the engine ran (auth.py) has to be replaced by one. This is a freshly built
+        # response object, so it carries no auth_items or remember-device cookie of its own - nothing to strip.
         return _rejection_response(context, rejection_message(shape, evaluation.messages))
     # Editable: this endpoint answers a refusal with an ordinary result body, which is what is already in hand.
     # A detail that is gone was stripped by no_detail_on_fail, and a silent restriction then says nothing rather
@@ -427,6 +435,9 @@ def _refuse(response: Response, content: dict, context: "ConditionalAccessContex
         # Only where the endpoint reports a verdict at all - /ttype/push renders with rid 1 and has no such field.
         result["authentication"] = AUTH_RESPONSE.REJECT
     content["result"] = result
+    # Offline OTP material (and the refilltoken inside it) was only ever meant for the successful attempt this
+    # response no longer reports; it is not detail, so no_detail_on_fail never touched it.
+    content.pop("auth_items", None)
     if message is None:
         content.pop("detail", None)
     else:
@@ -435,6 +446,10 @@ def _refuse(response: Response, content: dict, context: "ConditionalAccessContex
         kept = {"threadid": detail["threadid"]} if "threadid" in detail else {}
         content["detail"] = {**kept, "message": message}
     response.set_data(json.dumps(content))
+    # Same reasoning as auth_items: whatever remember-device cookie this response was about to set was earned by
+    # the success it no longer reports. Unconditional - cheap on the common case (no cookie queued, so this just
+    # appends a redundant expiry) and correct on the one that matters.
+    clear_persistent_cookie(response)
     return response
 
 
@@ -477,7 +492,12 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
     produce. A returned response still has to travel back out through whatever is listed above the gate, so
     listing it over the response decorators would skip them - on ``/validate/check`` that means
     ``no_detail_on_fail`` never stripping the rejection, and ``construct_radius_response`` never converting a
-    ``/radiuscheck`` one into the empty-body reply every other failure there gets.
+    ``/radiuscheck`` one into the empty-body reply every other failure there gets. That is also exactly why a
+    response decorator cannot be trusted to tell a real rejection apart from an ordinary failure by shape alone -
+    both carry the same ``result.value`` false - so this records :attr:`~.request_context.ConditionalAccessContext.
+    gate_rejected` for the ones that must not act on a rejection to check instead (``autoassign``, which would
+    otherwise verify the submitted credential itself and assign a token on the strength of a response that only
+    *looks* like a failed authentication).
 
     :param identity_resolver: an optional zero-argument callable returning the
         :class:`~privacyidea.lib.user.User` the pre-check should gate on. When
@@ -492,6 +512,7 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
             user = identity_resolver() if identity_resolver is not None else request.User
             rejection = conditional_access_precheck(user, rejection_value=rejection_value)
             if rejection is not None:
+                get_ca_context().gate_rejected = True
                 return rejection
             return wrapped_function(*args, **kwargs)
         return wrapper
