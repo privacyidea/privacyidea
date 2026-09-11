@@ -17,7 +17,10 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
+<!-- Opening the menu is the whole of this click: a table header that sorts on click of its own
+     must not sort as well. -->
 <button
+  (click)="$event.stopPropagation()"
   [matMenuTriggerFor]="inner.matMenu"
   aria-label="Filter by {{ label() }}"
   class="filter-button"

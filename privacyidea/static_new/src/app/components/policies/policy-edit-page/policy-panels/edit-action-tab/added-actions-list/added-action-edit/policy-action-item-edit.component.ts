@@ -28,6 +28,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import {
   labeledOptions,
@@ -50,7 +51,8 @@ import {
     MatSelectModule,
     MatFormFieldModule,
     MatAutocompleteModule,
-    MultiSelectOnlyComponent
+    MultiSelectOnlyComponent,
+    HighlightPipe
   ],
   templateUrl: "./policy-action-item-edit.component.html",
   styleUrl: "./policy-action-item-edit.component.scss"
@@ -58,6 +60,7 @@ import {
 export class PolicyActionItemEditComponent<T extends string | number | boolean = string | number | boolean> {
   readonly action = input.required<{ name: string; value: T }>();
   readonly actionDetail = input.required<PolicyActionDetail<T> | null>();
+  readonly highlight = input<string>("");
   readonly removeAction = output<void>();
   readonly updateAction = output<T | undefined>();
 

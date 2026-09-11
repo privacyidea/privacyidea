@@ -45,7 +45,7 @@
         } @else {
           @if (actionValues.length === 0) {
             <p i18n="@@policy.noValuesAvailable">No values available.</p>
-          } @else if (actionValues.length <= 3) {
+          } @else if (actionValues.length < 3) {
             <app-selector-buttons
               #selectorComponent
               class="flex-1"

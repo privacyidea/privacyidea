@@ -32,6 +32,7 @@ import { AddedActionsListComponent } from "./added-actions-list.component";
 class MockPolicyActionItemEditComponent {
   action = input.required<{ name: string; value: string | number }>();
   actionDetail = input.required<PolicyActionDetail | null>();
+  highlight = input<string>("");
   removeAction = output<void>();
   updateAction = output<string | number | undefined>();
 }
@@ -74,6 +75,31 @@ describe("AddedActionsListComponent", () => {
   it("should render a list of actions", () => {
     const items = fixture.debugElement.queryAll(By.directive(MockPolicyActionItemEditComponent));
     expect(items.length).toBe(2);
+  });
+
+  it("should render only the actions matching the search term", () => {
+    fixture.componentRef.setInput("actionFilter", "action2");
+    fixture.detectChanges();
+
+    const items = fixture.debugElement.queryAll(By.directive(MockPolicyActionItemEditComponent));
+    expect(items.length).toBe(1);
+    expect((items[0].componentInstance as MockPolicyActionItemEditComponent).action().name).toBe("action2");
+  });
+
+  it("should match the search term against the action description", () => {
+    policyServiceMock.getDetailsOfAction.mockImplementation((actionName: string) =>
+      actionName === "action1" ? { type: "str", desc: "Sets the login mode." } : { type: "bool", desc: "" }
+    );
+    fixture.componentRef.setInput("actionFilter", "login mode");
+    fixture.detectChanges();
+
+    const items = fixture.debugElement.queryAll(By.directive(MockPolicyActionItemEditComponent));
+    expect(items.length).toBe(1);
+    expect((items[0].componentInstance as MockPolicyActionItemEditComponent).action().name).toBe("action1");
+  });
+
+  it("should keep every action when no search term is set", () => {
+    expect(component.filteredActions()).toEqual(mockActions);
   });
 
   it("should emit updated actions when an action is removed", () => {
