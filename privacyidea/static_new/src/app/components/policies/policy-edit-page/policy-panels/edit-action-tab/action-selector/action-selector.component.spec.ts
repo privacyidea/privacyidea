@@ -21,9 +21,8 @@ import { CommonModule } from "@angular/common";
 import { Component, input, model, ViewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatButtonModule } from "@angular/material/button";
-import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { By } from "@angular/platform-browser";
 import { PolicyDetail, PolicyService, ScopedPolicyActions } from "@services/policies/policies.service";
 import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
@@ -84,14 +83,7 @@ describe("ActionSelectorComponent", () => {
     })
       .overrideComponent(ActionSelectorComponent, {
         set: {
-          imports: [
-            CommonModule,
-            MockPolicyActionItemComponent,
-            MatButtonModule,
-            MatIconModule,
-            MatFormFieldModule,
-            MatSelectModule
-          ]
+          imports: [CommonModule, MockPolicyActionItemComponent, MatButtonModule, MatIconModule, MatExpansionModule]
         }
       })
       .compileComponents();
@@ -106,22 +98,7 @@ describe("ActionSelectorComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should handle undefined group selection by falling back to empty string", () => {
-    component.selectActionGroup();
-    expect(component.selectedActionGroup()).toBe("");
-  });
-
-  it("should return group names when filteredPolicyActionGroups has groups for the current scope", () => {
-    (component["policyService"].filteredPolicyActionGroups as jest.Mock).mockReturnValue({
-      admin: { tokenGroup: { enrollTOTP: { type: "bool" as const, desc: "Enroll TOTP." } } }
-    });
-    hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
-    fixture.detectChanges();
-
-    expect(component.actionGroupNamesFiltered()).toContain("tokenGroup");
-  });
-
-  it("should offer every group of the current scope in a dropdown", () => {
+  it("should list one panel per group of the selected scope", () => {
     (component["policyService"].filteredPolicyActionGroups as jest.Mock).mockReturnValue({
       admin: {
         tokenGroup: { enrollTOTP: { type: "bool" as const, desc: "Enroll TOTP." } },
@@ -131,26 +108,45 @@ describe("ActionSelectorComponent", () => {
     hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
     fixture.detectChanges();
 
-    const select = fixture.debugElement.query(By.directive(MatSelect));
-    select.componentInstance.open();
-    fixture.detectChanges();
-
-    const options = fixture.debugElement.queryAll(By.css("mat-option"));
-    expect(options.map((option) => option.componentInstance.value)).toEqual(["tokenGroup", "systemGroup"]);
-    expect(component.selectedActionGroup()).toBe("tokenGroup");
+    expect(component.actionGroups().map((group) => group.name)).toEqual(["tokenGroup", "systemGroup"]);
+    const headers = fixture.debugElement.queryAll(By.css(".action-group-panel mat-expansion-panel-header"));
+    expect(headers.map((header) => header.nativeElement.textContent.trim())).toEqual(["tokenGroup1", "systemGroup1"]);
   });
 
-  it("should hide the group dropdown while the scope holds a single group", () => {
+  it("should keep every group collapsed until one is opened", () => {
     (component["policyService"].filteredPolicyActionGroups as jest.Mock).mockReturnValue({
       admin: { tokenGroup: { enrollTOTP: { type: "bool" as const, desc: "Enroll TOTP." } } }
     });
     hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
     fixture.detectChanges();
 
-    expect(fixture.debugElement.query(By.directive(MatSelect))).toBeNull();
+    expect(component.openGroups().size).toBe(0);
+
+    component.setGroupOpen("tokenGroup", true);
+    expect([...component.openGroups()]).toEqual(["tokenGroup"]);
+
+    component.setGroupOpen("tokenGroup", false);
+    expect(component.openGroups().size).toBe(0);
   });
 
-  describe("actionsFiltered", () => {
+  it("should open the groups a search still matches, and collapse them once it is cleared", () => {
+    (component["policyService"].filteredPolicyActionGroups as jest.Mock).mockReturnValue({
+      admin: {
+        tokenGroup: { enrollTOTP: { type: "bool" as const, desc: "Enroll TOTP." } },
+        systemGroup: { configread: { type: "bool" as const, desc: "Read config." } }
+      }
+    });
+    hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
+    fixture.detectChanges();
+
+    component.actionFilter.set("enroll");
+    expect([...component.openGroups()]).toEqual(["tokenGroup", "systemGroup"]);
+
+    component.actionFilter.set("");
+    expect(component.openGroups().size).toBe(0);
+  });
+
+  describe("addable actions", () => {
     const adminAction = { type: "bool" as const, desc: "Admin can do this." };
     const userAction = { type: "str" as const, desc: "User can do this." };
 
@@ -169,7 +165,7 @@ describe("ActionSelectorComponent", () => {
       hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
       fixture.detectChanges();
 
-      const items = component.actionsFiltered();
+      const items = component.allScopeActions();
       const adminItem = items.find((i) => i.actionName === "container_add_token" && i.scope === "admin");
       const userItem = items.find((i) => i.actionName === "container_add_token" && i.scope === "user");
 
@@ -183,42 +179,40 @@ describe("ActionSelectorComponent", () => {
       hostComponent.policy.set({ ...hostComponent.policy(), scope: "" });
       fixture.detectChanges();
 
-      const duplicates = component.actionsFiltered().filter((i) => i.actionName === "container_add_token");
+      const duplicates = component.allScopeActions().filter((i) => i.actionName === "container_add_token");
       expect(duplicates.length).toBe(2);
     });
 
-    it("should return items from the selected scope only without scope labels", () => {
-      (hostComponent.component["policyService"].getActionsOf as jest.Mock).mockReturnValue({
-        container_add_token: adminAction,
-        configread: { type: "bool" as const, desc: "Read config." }
+    it("should group the items of the selected scope, without scope labels", () => {
+      (component["policyService"].filteredPolicyActionGroups as jest.Mock).mockReturnValue({
+        admin: {
+          tokenGroup: { container_add_token: adminAction },
+          systemGroup: { configread: { type: "bool" as const, desc: "Read config." } }
+        }
       });
       hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin" });
       fixture.detectChanges();
 
-      const items = component.actionsFiltered();
-      expect(items.length).toBeGreaterThan(0);
+      const items = component.actionGroups().flatMap((group) => group.actions);
+      expect(items.length).toBe(2);
       expect(items.every((i) => i.label === i.actionName)).toBe(true);
       expect(items.every((i) => i.scope === "admin")).toBe(true);
     });
 
-    it("should exclude already-added actions when a scope is selected", () => {
-      (hostComponent.component["policyService"].getActionsOf as jest.Mock).mockReturnValue({
-        container_add_token: adminAction,
-        configread: { type: "bool" as const, desc: "Read config." }
-      });
+    it("should ask for the groups without the actions the policy already has", () => {
       hostComponent.policy.set({ ...hostComponent.policy(), scope: "admin", action: { container_add_token: true } });
       fixture.detectChanges();
 
-      const items = component.actionsFiltered();
-      expect(items.find((i) => i.actionName === "container_add_token")).toBeUndefined();
-      expect(items.find((i) => i.actionName === "configread")).toBeDefined();
+      component.actionGroups();
+
+      expect(component["policyService"].filteredPolicyActionGroups).toHaveBeenCalledWith(["container_add_token"], "");
     });
 
     it("should exclude already-added actions when no scope is selected", () => {
       hostComponent.policy.set({ ...hostComponent.policy(), scope: "", action: { container_add_token: true } });
       fixture.detectChanges();
 
-      const items = component.actionsFiltered();
+      const items = component.allScopeActions();
       expect(items.find((i) => i.actionName === "container_add_token")).toBeUndefined();
       expect(items.find((i) => i.actionName === "configread")).toBeDefined();
     });
@@ -228,10 +222,10 @@ describe("ActionSelectorComponent", () => {
       fixture.detectChanges();
 
       const adminItem = component
-        .actionsFiltered()
+        .allScopeActions()
         .find((i) => i.actionName === "container_add_token" && i.scope === "admin");
       const userItem = component
-        .actionsFiltered()
+        .allScopeActions()
         .find((i) => i.actionName === "container_add_token" && i.scope === "user");
 
       expect(adminItem?.detail).toEqual(adminAction);
@@ -279,7 +273,7 @@ describe("ActionSelectorComponent", () => {
 
       const mockItem: Partial<PolicyActionItemComponent> = { focusFirstInput: jest.fn() };
       jest.spyOn(component, "actionItems").mockReturnValue([mockItem as PolicyActionItemComponent]);
-      jest.spyOn(component, "actionsFiltered").mockReturnValue([
+      jest.spyOn(component, "renderedActions").mockReturnValue([
         {
           actionName: "container_add_token",
           scope: "admin",
@@ -296,7 +290,7 @@ describe("ActionSelectorComponent", () => {
 
     it("should not throw when no items are available", async () => {
       jest.spyOn(component, "actionItems").mockReturnValue([]);
-      jest.spyOn(component, "actionsFiltered").mockReturnValue([]);
+      jest.spyOn(component, "renderedActions").mockReturnValue([]);
 
       expect(() => {
         component.focusNextActionItem("nonexistent", "admin");

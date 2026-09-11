@@ -18,22 +18,10 @@
  **/
 
 import { CommonModule } from "@angular/common";
-import {
-  Component,
-  computed,
-  inject,
-  input,
-  linkedSignal,
-  model,
-  output,
-  viewChildren,
-  WritableSignal
-} from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, model, output, viewChildren } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
-import { MatSelectModule } from "@angular/material/select";
 import {
   policyActionMatchesFilter,
   PolicyDetail,
@@ -45,15 +33,7 @@ import { PolicyActionItemComponent, SelectableAction } from "./policy-action-ite
 @Component({
   selector: "app-action-selector",
   standalone: true,
-  imports: [
-    CommonModule,
-    MatIconModule,
-    MatButtonModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    PolicyActionItemComponent
-  ],
+  imports: [CommonModule, MatIconModule, MatButtonModule, MatExpansionModule, PolicyActionItemComponent],
   templateUrl: "./action-selector.component.html",
   styleUrls: ["./action-selector.component.scss"]
 })
@@ -65,13 +45,14 @@ export class ActionSelectorComponent {
 
   readonly actionFilter = model<string>("");
 
-  readonly selectedActionGroup: WritableSignal<string> = linkedSignal({
-    source: () => this.actionGroupNamesFiltered(),
-    computation: (groupNames, previous) => {
-      const previousGroup = previous?.value;
-      if (previousGroup && groupNames.includes(previousGroup)) return previousGroup;
-      return groupNames.length > 0 ? groupNames[0] : "";
-    }
+  /**
+   * Which group panels are open. A search opens every group that still has a match, so the hits are
+   * visible without hunting; clearing the search collapses them again. In between the user is free
+   * to open and close whichever they like.
+   */
+  readonly openGroups = linkedSignal<string, Set<string>>({
+    source: () => this.actionFilter().trim(),
+    computation: (filter) => (filter ? new Set(this.actionGroups().map((group) => group.name)) : new Set<string>())
   });
 
   readonly addedActionNames = computed(() => {
@@ -86,30 +67,30 @@ export class ActionSelectorComponent {
     return this.policyService.filteredPolicyActionGroups(this.addedActionNames(), this.actionFilter().toLowerCase());
   });
 
-  readonly actionGroupNamesFiltered = computed(() => {
-    const actionGroups = this.actionGroupsFiltered()[this.policyScope()];
-    if (!actionGroups) return [];
-    return Object.keys(actionGroups);
+  /**
+   * The groups of the selected scope, each with the actions that are still addable. Groups that the
+   * search leaves empty are dropped by the service, so the list is only ever the groups worth opening.
+   */
+  readonly actionGroups = computed<{ name: string; actions: SelectableAction[] }[]>(() => {
+    const scope = this.policyScope();
+    if (!scope) return [];
+    const groups = this.actionGroupsFiltered()[scope] ?? {};
+    return Object.keys(groups).map((name) => ({
+      name,
+      actions: Object.keys(groups[name]).map((actionName) => ({
+        label: actionName,
+        actionName,
+        scope,
+        detail: groups[name][actionName]
+      }))
+    }));
   });
 
-  readonly actionsFiltered = computed<SelectableAction[]>(() => {
-    const group = this.selectedActionGroup();
-    const scope = this.policyScope();
+  /** Without a scope there are no groups to speak of, so every scope's actions are listed flat. */
+  readonly allScopeActions = computed<SelectableAction[]>(() => {
+    if (this.policyScope()) return [];
     const filterText = this.actionFilter().toLowerCase().trim();
     const result: SelectableAction[] = [];
-
-    if (scope) {
-      const actions = this.policyService.getActionsOf(scope, group);
-      for (const actionName in actions) {
-        if (
-          !this.addedActionNames().includes(actionName) &&
-          policyActionMatchesFilter(actionName, actions[actionName], filterText)
-        ) {
-          result.push({ label: actionName, actionName, scope: scope, detail: actions[actionName] });
-        }
-      }
-      return result;
-    }
     const policyActions = this.policyService.policyActions();
     for (const scopeName in policyActions) {
       const actions = policyActions[scopeName];
@@ -130,10 +111,29 @@ export class ActionSelectorComponent {
     return result;
   });
 
+  readonly hasActionsToAdd = computed(() =>
+    this.policyScope() ? this.actionGroups().length > 0 : this.allScopeActions().length > 0
+  );
+
+  /**
+   * The actions that are on screen, in the order they are rendered: a collapsed group renders none.
+   * Keeping this in step with the rendered items is what lets focus move to the next one.
+   */
+  readonly renderedActions = computed<SelectableAction[]>(() => {
+    if (!this.policyScope()) return this.allScopeActions();
+    const open = this.openGroups();
+    return this.actionGroups()
+      .filter((group) => open.has(group.name))
+      .flatMap((group) => group.actions);
+  });
+
   actionItems = viewChildren(PolicyActionItemComponent);
 
-  selectActionGroup(group?: string): void {
-    this.selectedActionGroup.set(group ?? "");
+  setGroupOpen(group: string, open: boolean): void {
+    const next = new Set(this.openGroups());
+    if (open) next.add(group);
+    else next.delete(group);
+    this.openGroups.set(next);
   }
 
   addPolicyAction(action: { name: string; value: string | number | boolean | undefined }, itemScope?: string | null) {
@@ -151,7 +151,7 @@ export class ActionSelectorComponent {
   }
 
   focusNextActionItem(currentActionName: string, itemScope?: string | null) {
-    const currentIndex = this.actionsFiltered().findIndex(
+    const currentIndex = this.renderedActions().findIndex(
       (item) => item.actionName === currentActionName && item.scope === itemScope
     );
     setTimeout(() => {

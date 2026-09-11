@@ -25,37 +25,44 @@
       </mat-panel-title>
     </mat-expansion-panel-header>
     <div class="panel-content">
-      @if (actionGroupNamesFiltered().length > 1) {
-        <mat-form-field
-          class="input-width-l"
-          subscriptSizing="dynamic">
-          <mat-label i18n="@@common.group">Group</mat-label>
-          <mat-select
-            [value]="selectedActionGroup()"
-            [panelClass]="'single-column-panel'"
-            (selectionChange)="selectActionGroup($event.value)">
-            @for (group of actionGroupNamesFiltered(); track group) {
-              <mat-option
-                class="select-option"
-                [value]="group"
-                >{{ group }}</mat-option
-              >
-            }
-          </mat-select>
-        </mat-form-field>
-      }
-
-      @if (actionsFiltered().length > 0) {
-        <div class="add-action-details">
-          <div class="policy-action-items">
-            @for (action of actionsFiltered(); track action.label) {
-              <app-policy-action-item-new
-                [selectableAction]="action"
-                [highlight]="actionFilter()"
-                (actionAdd)="addPolicyAction($event, action.scope)" />
-            }
+      @if (hasActionsToAdd()) {
+        @if (policyScope()) {
+          <!-- One panel per group, so the whole structure of a scope stays visible: without it the
+               only way to reach another group is to go back to a picker and choose it. -->
+          @for (group of actionGroups(); track group.name) {
+            <mat-expansion-panel
+              class="action-group-panel"
+              [expanded]="openGroups().has(group.name)"
+              (opened)="setGroupOpen(group.name, true)"
+              (closed)="setGroupOpen(group.name, false)">
+              <mat-expansion-panel-header>
+                <mat-panel-title>{{ group.name }}</mat-panel-title>
+                <mat-panel-description>{{ group.actions.length }}</mat-panel-description>
+              </mat-expansion-panel-header>
+              <ng-template matExpansionPanelContent>
+                <div class="policy-action-items">
+                  @for (action of group.actions; track action.label) {
+                    <app-policy-action-item-new
+                      [selectableAction]="action"
+                      [highlight]="actionFilter()"
+                      (actionAdd)="addPolicyAction($event, action.scope)" />
+                  }
+                </div>
+              </ng-template>
+            </mat-expansion-panel>
+          }
+        } @else {
+          <div class="add-action-details">
+            <div class="policy-action-items">
+              @for (action of allScopeActions(); track action.label) {
+                <app-policy-action-item-new
+                  [selectableAction]="action"
+                  [highlight]="actionFilter()"
+                  (actionAdd)="addPolicyAction($event, action.scope)" />
+              }
+            </div>
           </div>
-        </div>
+        }
       } @else {
         <div class="flex-column">
           @if (actionFilter() !== "") {
