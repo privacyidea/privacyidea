@@ -19,6 +19,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import {
+  ConditionalAccessActionType,
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyStage,
   ConditionalAccessStageAction,
@@ -161,13 +162,15 @@ describe("ConditionalAccessStageItemComponent", () => {
 
   describe("error message", () => {
     // Served most severe first, the way /conditionalaccess/defaulterrormessages orders them: the composition
-    // is "join the ones this stage carries", so the order is the only rule under test here.
+    // is "join the ones this stage carries", so the order is the only rule under test here. The table holds only
+    // actions that describe a standing state - a restriction in force or a denial - because those are the only
+    // ones a request can be told about; EMAIL_* are deliberately absent.
     const SUGGESTIONS: DefaultErrorMessage[] = [
       { action_type: "PERMANENT_LOCK_USER", message: "Your account has been locked." },
+      { action_type: "PERMANENT_BLOCK_IP", message: "Your address has been blocked." },
       { action_type: "LOCK_USER", message: "Locked. Try again in about {duration}." },
-      { action_type: "DENY", message: "Access has been denied." },
-      { action_type: "EMAIL_USER", message: "An email has been sent to you." },
-      { action_type: "EMAIL_ADMIN", message: "Your administrator has been notified." }
+      { action_type: "BLOCK_IP", message: "Blocked. Try again in about {duration}." },
+      { action_type: "DENY", message: "Access has been denied." }
     ];
 
     let policyService: MockConditionalAccessPolicyService;
@@ -259,9 +262,9 @@ describe("ConditionalAccessStageItemComponent", () => {
       expect(component.suggestedErrorMessage()).toBe("Your account has been locked.");
     });
 
-    it("should join every other action the stage carries, in the order served", () => {
-      // No rule beyond the order: a stage that denies, locks and notifies is described by one sentence per
-      // action, which is what the engine reports for it too.
+    it("should join every reporting action the stage carries, in the order served", () => {
+      // No rule beyond the order: one sentence per action that describes a standing state. The notification is
+      // not one of them - no row records that an email went out, so nothing could ever report it.
       withStage({
         error_message: null,
         actions: [
@@ -270,27 +273,28 @@ describe("ConditionalAccessStageItemComponent", () => {
           { action_type: "PERMANENT_LOCK_USER", action_value: null }
         ]
       });
-      expect(component.suggestedErrorMessage()).toBe(
-        "Your account has been locked. Access has been denied. An email has been sent to you."
-      );
+      expect(component.suggestedErrorMessage()).toBe("Your account has been locked. Access has been denied.");
     });
 
-    it("should suggest nothing for an action that has no wording", () => {
+    it("should suggest nothing for a stage with no actions", () => {
       // A stage carries no actions until the admin picks one, so there is nothing to suggest and nothing to
-      // reset to. (Every action the server offers now has wording of its own.)
+      // reset to.
       withStage({ error_message: null, actions: [] });
       expect(component.suggestedErrorMessage()).toBeNull();
       expect(component.canResetErrorMessage()).toBe(false);
     });
 
-    it("should suggest the notification wording for a notify-only stage", () => {
+    it("should suggest nothing for a notify-only stage", () => {
+      // Such a stage refuses nothing, so no request is ever turned away while it applies and there is no
+      // moment at which wording for it could be shown.
       withStage({ error_message: null, actions: [{ action_type: "EMAIL_ADMIN", action_value: null }] });
-      expect(component.suggestedErrorMessage()).toBe("Your administrator has been notified.");
+      expect(component.suggestedErrorMessage()).toBeNull();
+      expect(component.canResetErrorMessage()).toBe(false);
     });
 
-    it("should lead with the restriction and append the notification when the stage does both", () => {
-      // Being emailed about is a separate fact from being locked out, so the user is told both - and in
-      // severity order rather than the order the actions were added, matching what the engine reports.
+    it("should describe only the restriction when the stage also notifies", () => {
+      // The lock is what later requests are refused by, and its row is what carries the wording; the email is
+      // a one-off event that no row remembers.
       withStage({
         error_message: null,
         actions: [
@@ -298,22 +302,7 @@ describe("ConditionalAccessStageItemComponent", () => {
           { action_type: "LOCK_USER", action_value: null }
         ]
       });
-      expect(component.suggestedErrorMessage()).toBe(
-        "Locked. Try again in about {duration}. Your administrator has been notified."
-      );
-    });
-
-    it("should append every notification the stage triggers", () => {
-      withStage({
-        error_message: null,
-        actions: [
-          { action_type: "EMAIL_USER", action_value: null },
-          { action_type: "EMAIL_ADMIN", action_value: null }
-        ]
-      });
-      expect(component.suggestedErrorMessage()).toBe(
-        "An email has been sent to you. Your administrator has been notified."
-      );
+      expect(component.suggestedErrorMessage()).toBe("Locked. Try again in about {duration}.");
     });
 
     it("should clear the message when switched off", () => {
@@ -449,6 +438,58 @@ describe("ConditionalAccessStageItemComponent", () => {
         actions: [{ action_type: "PERMANENT_LOCK_USER", action_value: null }]
       });
       expect(component.durationTagUnusable()).toBe(false);
+    });
+
+    it("should flag a message on a stage that reports nothing", () => {
+      // A notify-only stage refuses no request, so there is no moment at which this wording could be shown.
+      withStage({
+        error_message: "Your administrator has been notified.",
+        actions: [{ action_type: "EMAIL_ADMIN", action_value: null }]
+      });
+      expect(component.messageUnreachable()).toBe(true);
+    });
+
+    it("should flag a message on a stage with no actions at all", () => {
+      withStage({ error_message: "Locked.", actions: [] });
+      expect(component.messageUnreachable()).toBe(true);
+    });
+
+    it("should not flag a message on a stage that restricts or denies", () => {
+      // One reporting action is enough, whatever else the stage does alongside it.
+      const reporting: ConditionalAccessActionType[] = [
+        "LOCK_USER",
+        "PERMANENT_LOCK_USER",
+        "BLOCK_IP",
+        "PERMANENT_BLOCK_IP",
+        "DENY"
+      ];
+      for (const action_type of reporting) {
+        withStage({ error_message: "Locked.", actions: [{ action_type, action_value: null }] });
+        expect(component.messageUnreachable()).toBe(false);
+      }
+      withStage({
+        error_message: "Locked.",
+        actions: [
+          { action_type: "EMAIL_ADMIN", action_value: null },
+          { action_type: "LOCK_USER", action_value: null }
+        ]
+      });
+      expect(component.messageUnreachable()).toBe(false);
+    });
+
+    it("should not flag a stage that carries no message to show", () => {
+      // Nothing to warn about until there is wording: an empty or blank field is the silent default.
+      withStage({ error_message: null, actions: [{ action_type: "EMAIL_ADMIN", action_value: null }] });
+      expect(component.messageUnreachable()).toBe(false);
+      withStage({ error_message: "   ", actions: [{ action_type: "EMAIL_ADMIN", action_value: null }] });
+      expect(component.messageUnreachable()).toBe(false);
+    });
+
+    it("should stay silent until the suggestion table has loaded", () => {
+      // The reporting actions are read off that table, so an empty one must not flag every stage on the page.
+      policyService.defaultErrorMessages.set([]);
+      withStage({ error_message: "Locked.", actions: [{ action_type: "EMAIL_ADMIN", action_value: null }] });
+      expect(component.messageUnreachable()).toBe(false);
     });
 
     it("should report the message length for the counter", () => {

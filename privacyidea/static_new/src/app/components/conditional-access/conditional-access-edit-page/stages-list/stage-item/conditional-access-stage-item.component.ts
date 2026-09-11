@@ -95,11 +95,16 @@ export class ConditionalAccessStageItemComponent {
   readonly durationTagUnusableHint = $localize`{duration} needs a temporary lock or block to count down. This stage \
 has none, so it would be shown to the user as written - remove the tag, or add a temporary action.`;
 
-  readonly errorMessageHint = $localize`Shown to the user when authentication fails while this stage applies, \
-including on later attempts while a lock or block from it is still in force. It applies to this stage only. Left \
-empty, the user is told only "Authentication failed.", so a rejection cannot be told apart from any other failed \
-authentication - unless the "show_default_ca_error_message" policy is set, which fills in the default wording for this \
-stage's actions.`;
+  readonly errorMessageHint = $localize`Shown to the user on a request this stage turns away before the password \
+or OTP is checked: while a lock or block written by this stage is in force, or when this stage denies access. Not \
+on the request that trips the stage - that one gets the answer it had coming, and the restriction applies from the \
+next request. It applies to this stage only. Left empty, the user is told only "Authentication failed.", so a \
+rejection cannot be told apart from any other failed authentication - unless the \
+"show_default_ca_error_message" policy is set, which fills in the default wording for this stage's actions.`;
+
+  readonly messageUnreachableHint = $localize`This stage neither restricts access nor denies it, so no request is \
+ever turned away while it applies and this message would never be shown. Add a lock, block or deny action, or \
+leave the message empty.`;
 
   // Whether this stage carries wording of its own: absent or null means the admin has not turned it on, an
   // empty string means turned on but not written yet. The field itself is always rendered - disabled rather
@@ -113,12 +118,20 @@ stage's actions.`;
 
   readonly errorMessageLength = computed(() => (this.stage().error_message ?? "").length);
 
+  // The actions whose wording a request could ever be shown: a restriction in force, or a denial. Read off the
+  // table the server serves rather than listed here, because that table holds exactly those actions - a message
+  // is said by the pre-check refusing a restricted request, off the row in force, and a row records what is in
+  // force rather than the notifications the stage also sent.
+  private readonly reportingActions = computed(
+    () => new Set(this.policyService.defaultErrorMessages().map((entry) => entry.action_type))
+  );
+
   // The suggestion for this stage as it stands: one sentence per action it carries, in the order the server
-  // serves them (most severe first). That is the same concatenation the runtime performs, so the wording the
-  // editor offers is the wording a user would be shown - being emailed about is a separate fact from being
-  // locked out, and both are said. The only thing left out is the timed half of a redundant pair, which the
-  // runtime cannot show either: a restriction is never weakened, so the permanent action's row is the one in
-  // force. Null when the stage carries no action the server offers wording for.
+  // serves them (most severe first). That is the same wording the runtime shows, so the editor offers what a
+  // user would be told. The only thing left out is the timed half of a redundant pair, which the runtime cannot
+  // show either: a restriction is never weakened, so the permanent action's row is the one in force. Null when
+  // the stage carries no action the server offers wording for - a notify-only stage included, nothing being able
+  // to report what it did.
   readonly suggestedErrorMessage = computed(() => {
     const present = new Set(this.stage().actions.map((action) => action.action_type));
     const superseded = new Set(
@@ -148,6 +161,18 @@ stage's actions.`;
   readonly durationTagUnusable = computed(
     () => (this.stage().error_message ?? "").includes(DURATION_TAG) && !this.hasTimedAction()
   );
+
+  // Flagged because such a stage's wording has nowhere to be shown: it restricts nothing and denies nothing, so
+  // no request is ever refused while it applies. Advisory like the tag warnings - the admin may be one action
+  // away from giving it a voice. Silent until the suggestion table has loaded, so an empty one does not flag
+  // every stage on the page.
+  readonly messageUnreachable = computed(() => {
+    const reporting = this.reportingActions();
+    if (!reporting.size || !(this.stage().error_message ?? "").trim()) {
+      return false;
+    }
+    return !this.stage().actions.some((action) => reporting.has(action.action_type));
+  });
 
   // Tags in the message that the server will not substitute. Purely advisory: the admin can
   // save anyway, because an unsubstituted brace expression is shown as written, which is a
