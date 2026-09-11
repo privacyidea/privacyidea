@@ -38,12 +38,13 @@ from flask_babel import _
 
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
+                                                                          AuthLogUserRole,
                                                                           AUTH_EVENT_REASON_KEY,
                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
                                                                           AUTH_EVENT_SERIALS_KEY,
                                                                           REASON_DETAIL_INFO_KEY,
                                                                           strip_internal_classification)
-from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, ClientLabelSource,
+from privacyidea.lib.conditional_access.authentication_log import (ClientLabelSource,
                                                                     PendingAuthEvent)
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context, claimed_ca_message
 from privacyidea.lib.user import User
@@ -390,7 +391,9 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
 
     ``username`` overrides the login name derived from the User object. It is needed for
     local administrators, who have no User object (the login name is not stored there) but
-    whose login name should still be recorded.
+    whose login name should still be recorded. With *internal_admin* it is recorded as the ``admin`` table spells
+    it rather than as it was typed, since that name is the whole identity conditional access counts and locks such
+    an admin by - see :func:`~privacyidea.lib.auth.canonical_db_admin_login`.
 
     Some requests identify a token but not its user (e.g. the smartphone ``/ttype/push`` confirm carries only the
     serial). In that case the token owner is resolved from the serial, so a row that names a single token always also
@@ -469,6 +472,17 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
                 resolved = True
         except Exception as ex:
             log.debug(f"Could not resolve the token owner for the authentication log: {ex!r}")
+    # The login this row is recorded under: the caller's override where it has one, else the User object's. Resolved
+    # before the canonicalization below rather than after, because a caller that leaves the override out - the
+    # restricted-login rejection does - would otherwise canonicalize nothing and record the typed spelling.
+    login_name = username or ((user.login or None) if user else None)
+    if internal_admin:
+        # The name the account is stored under, which is what makes every spelling of it one subject to count and
+        # one row to lock; see canonical_db_admin_login.
+        # Deferred: lib.auth reaches back into this module through lib.container, so importing it at
+        # module level would close a cycle.
+        from privacyidea.lib.auth import canonical_db_admin_login
+        login_name = canonical_db_admin_login(login_name)
     context = get_ca_context()
     # Falls back to this row's own transaction id when before_request has not already resolved the attempt;
     # before_request must resolve a challenge-answering request's attempt before the token logic deletes that challenge,
@@ -487,7 +501,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     # Records the authenticating principal, including the token owner resolved just above that the caller doesn't know
     # about, on the request context so policy evaluation and the logged row agree on the same subject; kept as an
     # AuthPrincipal rather than a bare User because a local database admin has no user object.
-    context.principal = AuthPrincipal(user=user or User(), username=username, internal_admin=internal_admin)
+    context.principal = AuthPrincipal(user=user or User(), username=login_name, internal_admin=internal_admin)
     context.source_ip = source_ip
     # The caller's own info and the reason detail share the row's other_info, the detail under a key of its own
     # (see REASON_DETAIL_INFO_KEY), so neither has to know about the other.
@@ -501,7 +515,7 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
         resolver=user.resolver if resolved else None,
         uid=user.uid if resolved else None,
         realm=(user.realm or None) if user else None,
-        username=username or ((user.login or None) if user else None),
+        username=login_name,
         user_role=_determine_user_role(user, internal_admin),
         source_ip=source_ip,
         peer_ip=peer_ip,
@@ -539,8 +553,12 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
     in from its own ``db_admin_exists`` lookup — so the **pre-auth** check
     classifies a local admin correctly without a second query, and endpoints that
     never see one (``/validate/*``, where ``g.resolved_user`` is absent) fall back
-    to ``False``. Pass it explicitly to override, as ``/auth`` does after the
-    credential check, where the flag is *verified* rather than merely claimed.
+    to ``False``. Pass it explicitly to override where a caller knows better.
+
+    The pre-auth check (:func:`~privacyidea.api.lib.conditional_access._evaluate_rejection`) is what this assembles
+    the context for. The post-response evaluation does not come through here: its context is built from the
+    authentication-log row that was just written, by
+    :meth:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.run_post_eval`.
 
     Note the pre-auth value is a claimed identity: it says an admin of that name
     exists and no realm was given, not that the password was right. That is the
@@ -548,6 +566,10 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
     realm before any credential is checked, and it is what lets a break-glass
     condition (``USER_ROLE NOT_IN [admin-internal]``) exempt the emergency account
     from a pre-auth DENY.
+
+    The login name travels with it, since a local database admin *is* their login name as far as the engine is
+    concerned - canonicalized here for the same reason :func:`log_authentication` canonicalizes what it records,
+    so the pre-auth check and the post-response evaluation key one admin the same way.
 
     :param user: the authenticating user
     :param internal_admin: True for a local database admin; ``None`` to derive it
@@ -564,7 +586,13 @@ def build_ca_context(user, internal_admin: bool | None = None) -> "CAContext":
         source_ip = g.get("client_ip")
         if internal_admin is None:
             internal_admin = g.get("resolved_user", {}).get("is_local_admin", False)
-    return CAContext(user=user or None, source_ip=source_ip, endpoint=endpoint,
+    username = (user.login or None) if user else None
+    if internal_admin:
+        # Deferred: lib.auth reaches back into this module through lib.container, so importing it at
+        # module level would close a cycle.
+        from privacyidea.lib.auth import canonical_db_admin_login
+        username = canonical_db_admin_login(username)
+    return CAContext(user=user or None, username=username, source_ip=source_ip, endpoint=endpoint,
                      user_role=str(_determine_user_role(user, bool(internal_admin))))
 
 

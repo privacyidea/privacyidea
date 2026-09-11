@@ -26,9 +26,9 @@ import inspect
 import mock
 
 from privacyidea.api.authentication_log import _ENTRY_FILTER_PARAMS
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
-from privacyidea.lib.conditional_access.authentication_log import (log_authentication_event, AuthLogUserRole,
-                                                                  )
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                           AuthLogUserRole)
+from privacyidea.lib.conditional_access.authentication_log import log_authentication_event
 from privacyidea.lib.conditional_access.authentication_log_statistics import (MAX_STATISTICS_BINS,
                                                                               get_authentication_log_statistics)
 from privacyidea.lib.conditional_access.conditions import AUTHENTICATING_ENDPOINTS
@@ -38,6 +38,7 @@ from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.models import ConditionalAccessOutcome, db
 from .authlog_utils import AuthLogTestCase
+from .base import skip_unless_admin_lookup_folds_case
 
 
 class AuthenticationLogApiTestCase(AuthLogTestCase):
@@ -715,6 +716,49 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
             ids = self._returned_ids(self._get({"page_size": 50})["result"]["value"])
             self.assertSetEqual({in_scope, own}, ids)
             self.assertNotIn(other, ids)
+        finally:
+            delete_policy("authlog_realm")
+
+    def test_a_user_scoped_admin_does_not_see_a_local_admins_entries(self):
+        # A policy scopes an admin by realm, resolver and user - all userstore terms, none of which describes a
+        # local administrator. Matching one by name alone would hand a delegation reach over a privileged account
+        # that nobody wrote into the policy, so the role keeps them apart even where the name is the same.
+        in_scope = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1,
+                                            uid="1", realm=self.realm1, username="someuser")
+        local_admin = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, username="someuser",
+                                               user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        db.session.commit()
+        set_policy("authlog_user", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, user="someuser")
+        try:
+            ids = self._returned_ids(self._get({"page_size": 50})["result"]["value"])
+            self.assertIn(in_scope, ids)
+            self.assertNotIn(local_admin, ids)
+        finally:
+            delete_policy("authlog_user")
+
+    def test_local_admin_sees_own_entries_after_logging_in_under_another_spelling(self):
+        # The own-entries scope has to name the admin the way their rows do. Those are recorded under the spelling
+        # the admin table holds, while the token carries the one that was typed - so on a database that treats the
+        # two as one account, an admin who signs in as "TESTADMIN" must still see the rows filed under "testadmin".
+        skip_unless_admin_lookup_folds_case(self)
+        own = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, username=self.testadmin,
+                                       user_role=AuthLogUserRole.ADMIN_INTERNAL)
+        db.session.commit()
+        # Scoped to a realm the admin is not in, so their own rows are reachable only through the own-entries scope.
+        set_policy("authlog_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=self.realm1)
+        try:
+            with self.app.test_request_context("/auth", method="POST",
+                                               data={"username": self.testadmin.upper(),
+                                                     "password": self.testadminpw}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                folded_token = res.json["result"]["value"]["token"]
+
+            with self.app.test_request_context("/authenticationlog/", method="GET", query_string={"page_size": 50},
+                                               headers={"Authorization": folded_token}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertIn(own, self._returned_ids(res.json["result"]["value"]))
         finally:
             delete_policy("authlog_realm")
 

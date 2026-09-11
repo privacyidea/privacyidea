@@ -175,13 +175,14 @@ over like any other, so *always* reaches up to the next threshold.
 
 .. warning:: A ``DENY`` at threshold 0 refuses **every** request the policy
    covers, whatever the subject has done. Scope it with conditions, and leave
-   yourself a way back in. A ``user`` policy never decides an internal
-   administrator to begin with, as a local administrator has no resolved
-   identity to count against, so it is a ``source_ip`` policy that can shut you
-   out: exempt your own address in ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, which
-   is never denied either (see :ref:`conditional_access_never_block`), or write
-   *user role is not one of [admin-internal]* and read what that exemption
-   costs in :ref:`conditional_access_policies_exceptions`. A ``DENY`` stores no
+   yourself a way back in. Either kind can shut you out: a ``user`` policy
+   reaches a local administrator like anybody else (see
+   :ref:`conditional_access_local_admins`), and a ``source_ip`` policy applies
+   to whoever is behind the address. Exempt your own address in
+   ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, which is never denied either (see
+   :ref:`conditional_access_never_block`), or write *user role is not one of
+   [admin-internal]* and read what that exemption costs in
+   :ref:`conditional_access_policies_exceptions`. A ``DENY`` stores no
    state, so none of the ``pi-manage conditionalaccess`` reset commands can
    lift it; undoing an unscoped one means disabling the policy itself, with
    ``pi-manage conditionalaccess disable-policy <name>`` if it has locked you
