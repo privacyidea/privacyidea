@@ -289,30 +289,6 @@ describe("AuthenticationLogService", () => {
     expect(service.filterParams()).toEqual({ reasons: "TOKEN_DISABLED,TOKEN_REVOKED" });
   });
 
-  it("oldestTimestamp is null before load and reflects the oldest entry after", async () => {
-    expect(service.oldestTimestamp()).toBeNull();
-    service.authenticationLogResource.reload();
-    TestBed.tick();
-    httpMock.match(isPageRequest).forEach((r) => r.flush(emptyPage()));
-    flushEventTypes();
-    httpMock
-      .match((r) => r.url.endsWith("/authenticationlog/") && r.params.get("page_size") === "1")
-      .forEach((r) =>
-        r.flush(
-          MockPiResponse.fromValue({
-            auth_logs: [{ timestamp: "2020-01-01T00:00:00Z" }],
-            count: 1,
-            current: 1,
-            prev: null,
-            next: null
-          })
-        )
-      );
-    await Promise.resolve();
-    TestBed.tick();
-    expect(service.oldestTimestamp()).toBe("2020-01-01T00:00:00Z");
-  });
-
   it("fetchStatistics requests the window and omits bins when not given", () => {
     const seen: unknown[] = [];
     service.fetchStatistics("2026-03-01T00:00:00Z", "2026-03-02T00:00:00Z").subscribe((r) => seen.push(r));

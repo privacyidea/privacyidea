@@ -152,31 +152,25 @@ describe("AuthenticationLog", () => {
     expect(service.pageIndex()).toBe(4);
   });
 
-  // One response carrying `count` entries in total, of which one is on the page.
-  function respondWithCount(count: number): void {
+  // One response holding exactly these entries, all of them on the page.
+  function respondWithEntries(auth_logs: AuthenticationLogEntry[], count = auth_logs.length): void {
     service.authenticationLogResource.set(
-      MockPiResponse.fromValue({
-        auth_logs: [{ id: 1, event_type: "PIN_FAIL", timestamp: "2026-08-03T09:00:00Z" }],
-        count,
-        current: 1,
-        prev: null,
-        next: null
-      })
+      MockPiResponse.fromValue({ auth_logs, count, current: 1, prev: null, next: null })
     );
     fixture.detectChanges();
   }
 
-  it("defaults the page size to the whole result once it is known", () => {
-    respondWithCount(42);
-    expect(service.pageSize()).toBe(42);
-  });
+  // One response carrying `count` entries in total, of which one is on the page.
+  function respondWithCount(count: number): void {
+    respondWithEntries([{ id: 1, event_type: "PIN_FAIL", timestamp: "2026-08-03T09:00:00Z" }], count);
+  }
 
-  it("does not override a page size the user picked afterwards", () => {
+  // The log is paged like every other table: learning the total must not widen the page size to it, which would
+  // refetch the whole log and render every row of it at once.
+  it("keeps the page size when the total arrives, rather than widening it to the whole result", () => {
+    const pageSize = service.pageSize();
     respondWithCount(42);
-    component.onPageEvent({ pageIndex: 0, pageSize: 10 } as PageEvent);
-    respondWithCount(99);
-
-    expect(service.pageSize()).toBe(10);
+    expect(service.pageSize()).toBe(pageSize);
   });
 
   it("offers the total number of entries as a page size, sorted among the presets", () => {
@@ -597,10 +591,61 @@ describe("AuthenticationLog", () => {
     expect(service.timestampTo()).toBe("2026-06-02T12:00:00.000Z");
   });
 
+  it("sizes the slider window to the span of the page", () => {
+    respondWithEntries([
+      { id: 1, event_type: "PIN_FAIL", timestamp: "2026-03-05T09:00:00Z" },
+      { id: 2, event_type: "PIN_FAIL", timestamp: "2026-03-01T09:00:00Z" }
+    ]);
+    expect(component.windowStartMs()).toBe(new Date("2026-03-01T09:00:00Z").getTime());
+    expect(component.windowEndMs()).toBe(new Date("2026-03-05T09:00:00Z").getTime());
+  });
+
+  // Paging is what the window follows, so the track always measures the entries on screen.
+  it("re-sizes the slider window when another page arrives", () => {
+    respondWithEntries([
+      { id: 1, event_type: "PIN_FAIL", timestamp: "2026-03-05T09:00:00Z" },
+      { id: 2, event_type: "PIN_FAIL", timestamp: "2026-03-01T09:00:00Z" }
+    ]);
+    respondWithEntries([
+      { id: 3, event_type: "PIN_FAIL", timestamp: "2026-02-10T09:00:00Z" },
+      { id: 4, event_type: "PIN_FAIL", timestamp: "2026-02-02T09:00:00Z" }
+    ]);
+    expect(component.windowStartMs()).toBe(new Date("2026-02-02T09:00:00Z").getTime());
+    expect(component.windowEndMs()).toBe(new Date("2026-02-10T09:00:00Z").getTime());
+  });
+
+  it('summarises the window\'s right edge as the newest entry on the page, not "now"', () => {
+    // Nothing loaded: the window still runs to the present, which is the one case the label reads as "now".
+    expect(component.rangeSummaryTo()).toBe("now");
+
+    respondWithEntries([
+      { id: 1, event_type: "PIN_FAIL", timestamp: "2026-03-05T09:00:00Z" },
+      { id: 2, event_type: "PIN_FAIL", timestamp: "2026-03-01T09:00:00Z" }
+    ]);
+    expect(component.rangeSummaryTo()).toContain("2026-03-05");
+  });
+
+  // A page spanning a single instant would divide the track by zero, so it is widened forward from the entry.
+  it("gives a page of one timestamp a day of width, starting at that entry", () => {
+    respondWithEntries([{ id: 1, event_type: "PIN_FAIL", timestamp: "2026-03-05T09:00:00Z" }]);
+    const entry = new Date("2026-03-05T09:00:00Z").getTime();
+    expect(component.windowStartMs()).toBe(entry);
+    expect(component.windowEndMs()).toBe(entry + 86_400_000);
+  });
+
+  // The picked range reloads the page it is scoped to, so the window must survive that response rather than snapping
+  // back to the reloaded page's own oldest entry.
+  it("keeps a picked range's window when the page it loaded arrives", () => {
+    component.onRangeStartDateChange(new Date(2026, 2, 1));
+    const picked = component.windowStartMs();
+    respondWithEntries([{ id: 1, event_type: "PIN_FAIL", timestamp: "2026-03-20T09:00:00Z" }]);
+    expect(component.windowStartMs()).toBe(picked);
+  });
+
   it("floors the leftmost slider position to the oldest entry's second (so a sub-second entry is not excluded)", () => {
-    // A sub-second oldest timestamp: the start must floor to its whole second so the entry stays >= start_time.
-    service.oldestTimestamp.set("2020-01-01T00:00:00.123456Z");
-    fixture.detectChanges();
+    // A sub-second oldest timestamp on the page, which is what the window starts at: the start must floor to its
+    // whole second so the entry stays >= start_time.
+    respondWithEntries([{ id: 1, event_type: "PIN_FAIL", timestamp: "2020-01-01T00:00:00.123456Z" }]);
     // Drag start fully left, end fully right, then commit: start floors to the second, end is open ("now").
     component.rangeStart.set(0);
     component.rangeEnd.set(component.rangeSliderSteps);

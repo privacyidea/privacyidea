@@ -401,16 +401,59 @@ export class AuthenticationLog {
   // A "now" reference for open-ended windows (those running up to the present), re-sampled when a new window starts
   // so the math below reads a stable value.
   private readonly nowAnchorMs = signal(Date.now());
-  // Default window start: the oldest recorded entry (kept at least a day back), or the widest fallback until it loads.
-  readonly defaultWindowStartMs = computed(() => {
-    const oldest = this.authenticationLogService.oldestTimestamp();
-    const end = this.nowAnchorMs();
-    return oldest ? Math.min(end - MS_PER_DAY, new Date(oldest).getTime()) : end - DEFAULT_SLIDER_WINDOW_MS;
+  // What the loaded page spans, oldest to newest. The page is also what the histogram bins, so sizing the window to it
+  // keeps the two in step: the strip fills the track instead of bunching into the corner the page happens to occupy,
+  // whichever end the sort puts the page at. Null with nothing loaded, and for the skeleton rows, whose every
+  // column is "".
+  private readonly loadedSpanMs = computed<{ start: number; end: number } | null>(() => {
+    let span: { start: number; end: number } | null = null;
+    for (const entry of this.dataSource().data) {
+      const ms = entry.timestamp ? new Date(entry.timestamp).getTime() : NaN;
+      if (isNaN(ms)) {
+        continue;
+      }
+      span = span ? { start: Math.min(span.start, ms), end: Math.max(span.end, ms) } : { start: ms, end: ms };
+    }
+    return span;
   });
-  // The slider window [start, end] is its zoom, defaulting to oldest→now; a date-range selection zooms it to the picked
-  // span (e.g. a single day fills the whole track), and it stays writable so dragging the thumbs never re-zooms it.
-  readonly windowStartMs = linkedSignal(() => this.defaultWindowStartMs());
-  readonly windowEndMs = linkedSignal(() => this.nowAnchorMs());
+  // Default window bounds with no range picked: the page's own span, so the track measures exactly what is on screen -
+  // a page spanning minutes gets a track of minutes, which is the resolution to refine at. Until a page loads, "now"
+  // back over the widest fallback.
+  readonly defaultWindowStartMs = computed(() => {
+    const span = this.loadedSpanMs();
+    return span ? span.start : this.nowAnchorMs() - DEFAULT_SLIDER_WINDOW_MS;
+  });
+  // A page whose entries all share one timestamp spans a point, which would divide the track by zero. It is given a
+  // day of width *forward* from the entry, leaving the entry itself at the window start: the leftmost thumb position
+  // always means "from the oldest entry on the page", and with an open end the empty width to its right reads as time
+  // running on past it.
+  readonly defaultWindowEndMs = computed(() => {
+    const span = this.loadedSpanMs();
+    if (!span) {
+      return this.nowAnchorMs();
+    }
+    return span.end > span.start ? span.end : span.start + MS_PER_DAY;
+  });
+  // The slider window [start, end] is its zoom; a date-range selection zooms it to the picked span (e.g. a single day
+  // fills the whole track), and it stays writable so dragging the thumbs never re-zooms it.
+  //
+  // Which is why a picked range holds the window rather than the default recomputing over it: the default follows the
+  // loaded page, and a picked range reloads that page, so relinking on every response would drop the picked zoom the
+  // moment its own result arrived - and a thumb drag, which narrows the same bound, would re-zoom on every commit.
+  readonly windowStartMs = linkedSignal<{ picked: boolean; fallback: number }, number>({
+    source: () => ({
+      picked: !!this.authenticationLogService.timestampFrom(),
+      fallback: this.defaultWindowStartMs()
+    }),
+    computation: (source, previous) => (source.picked && previous ? previous.value : source.fallback)
+  });
+  readonly windowEndMs = linkedSignal<{ picked: boolean; fallback: number }, number>({
+    source: () => ({
+      picked: !!this.authenticationLogService.timestampTo(),
+      fallback: this.defaultWindowEndMs()
+    }),
+    computation: (source, previous) => (source.picked && previous ? previous.value : source.fallback)
+  });
   // Whether the window runs up to "now" (an open upper bound): true for the default or start-only window, false once
   // an end date bounds it; this governs whether the end thumb at its max means open/"now" or a concrete end.
   private readonly openEndedWindow = signal(true);
@@ -429,8 +472,12 @@ export class AuthenticationLog {
   }
 
   readonly rangeSummaryFrom = computed(() => this.summaryFormat(this.windowStartMs()));
+  // The right edge reads as whatever the window actually ends at - the newest entry on the page, or a picked end -
+  // and says "now" only while no page has loaded and the window still runs to the present. Not keyed on
+  // openEndedWindow: that governs what the end *thumb* at its maximum commits (no end_time, so later entries are not
+  // excluded), which is a different question from where the track stops.
   readonly rangeSummaryTo = computed(() =>
-    this.openEndedWindow() ? $localize`now` : this.summaryFormat(this.windowEndMs())
+    this.windowEndMs() === this.nowAnchorMs() ? $localize`now` : this.summaryFormat(this.windowEndMs())
   );
 
   // Activity histogram drawn behind the slider: the loaded entries' timestamps are bucketed across the slider window,
@@ -459,22 +506,6 @@ export class AuthenticationLog {
     // Keep the time filter in sync with edits made directly to the start_time/end_time entries in the main filter
     // text (the slider/date picker write the same signals via applyTimeRange).
     effect(() => this.syncTimeFilterFromText());
-    // "All" is the default page size: the first response tells us how many entries there are, and the page size widens
-    // to that exactly once, so a size the user picks afterwards stands.
-    effect(() => this.applyDefaultPageSize());
-  }
-
-  private defaultPageSizeApplied = false;
-
-  private applyDefaultPageSize(): void {
-    const total = this.totalLength();
-    if (this.defaultPageSizeApplied || total <= 0) {
-      return;
-    }
-    this.defaultPageSizeApplied = true;
-    if (total > this.authenticationLogService.pageSize()) {
-      this.authenticationLogService.pageSize.set(total);
-    }
   }
 
   // Drives the time filter from the start_time/end_time entries in the filter text; guards keep the signal-to-chip
@@ -643,7 +674,7 @@ export class AuthenticationLog {
     this.nowAnchorMs.set(Date.now());
     this.openEndedWindow.set(true);
     this.windowStartMs.set(this.defaultWindowStartMs());
-    this.windowEndMs.set(this.nowAnchorMs());
+    this.windowEndMs.set(this.defaultWindowEndMs());
     this.applyTimeRange(null, null);
   }
 
@@ -670,7 +701,7 @@ export class AuthenticationLog {
     this.nowAnchorMs.set(Date.now());
     this.openEndedWindow.set(!toIso);
     this.windowStartMs.set(fromIso ? new Date(fromIso).getTime() : this.defaultWindowStartMs());
-    this.windowEndMs.set(toIso ? new Date(toIso).getTime() : this.nowAnchorMs());
+    this.windowEndMs.set(toIso ? new Date(toIso).getTime() : this.defaultWindowEndMs());
   }
 
   // Update the thumb position live while dragging (labels only, no reload); commitTimeRange applies it on release.
