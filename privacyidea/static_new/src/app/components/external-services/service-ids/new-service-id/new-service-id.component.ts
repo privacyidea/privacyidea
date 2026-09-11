@@ -30,6 +30,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
@@ -56,6 +57,7 @@ export class NewServiceIdComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   isEditMode = signal(false);
   private editServiceName: string | null = null;
@@ -134,6 +136,28 @@ export class NewServiceIdComponent implements OnDestroy {
     } catch {
       return false;
     }
+  }
+
+  async deleteServiceId(): Promise<void> {
+    const identifier = this.editServiceName;
+    if (!identifier) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@serviceId.deleteServiceId:Delete Service ID`,
+      items: [identifier],
+      itemType: $localize`:@@common.serviceId:Service ID`
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.serviceIdService.deleteServiceId(identifier);
+    } catch {
+      return;
+    }
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
   }
 
   onCancel(): void {

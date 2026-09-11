@@ -282,8 +282,13 @@ export class EventEditPageComponent implements OnDestroy {
   }
 
   async deleteEvent(): Promise<void> {
-    await this.eventService.deleteWithConfirmDialog(this.event());
+    const result = await this.eventService.deleteWithConfirmDialog(this.event());
+    if (!result) {
+      return;
+    }
     this.eventService.allEventsResource.reload();
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.EVENTS);
   }
 
   toggleActive(activate: boolean): void {

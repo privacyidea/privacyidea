@@ -44,6 +44,15 @@
             <span i18n="@@common.inactive">Inactive</span>
           }
         </mat-slide-toggle>
+        @if (!isNewEvent() && authService.actionAllowed("eventhandling_write")) {
+          <button
+            (click)="$event.stopPropagation(); deleteEvent()"
+            class="action-button-delete-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>delete</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        }
         <button
           (click)="$event.stopPropagation(); cancelEdit()"
           class="action-button-secondary button-width-s"
@@ -63,7 +72,7 @@
 
     <div>
       <div class="two-col-grid">
-        <mat-form-field class="input-width-l margin-bottom-16">
+        <mat-form-field class="input-width-l">
           <mat-label i18n="@@common.name">Name</mat-label>
           <app-clearable-input
             (clearButtonClick)="updateEventHandler('name', '')"

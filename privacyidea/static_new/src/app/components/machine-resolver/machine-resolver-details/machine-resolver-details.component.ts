@@ -89,6 +89,9 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
 
   readonly canEditTab = computed(() => this.isEditMode() && this.authService.actionAllowed("mresolverwrite"));
   readonly canMakeChanges = computed(() => !this.isEditMode() || this.canEditTab());
+  readonly canDeleteMachineResolver = computed(
+    () => this.isEditMode() && this.authService.actionAllowed("mresolverdelete")
+  );
 
   readonly originalMachineResolver = signal<MachineResolver>(
     deepCopy(MachineResolverDetailsComponent.machineResolverDefault)
@@ -242,6 +245,27 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
     } catch (err) {
       console.error("Error handling unsaved changes dialog:", err);
     }
+  }
+
+  async deleteMachineResolver(): Promise<void> {
+    const name = this.selectedName();
+    if (!name) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@machine.deleteMachine:Delete Machine Resolver`,
+      items: [name],
+      itemType: "machine resolver"
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.machineResolverService.deleteMachineResolver(name);
+    } catch {
+      return;
+    }
+    this.navigateBack();
   }
 
   private exitEditOrNavigate(): void {

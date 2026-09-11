@@ -28,7 +28,10 @@ import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-e
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { HttpErrorResponse } from "@angular/common/http";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { PolicyActionSearchComponent } from "./policy-action-search/policy-action-search.component";
@@ -57,6 +60,8 @@ export class PolicyEditPageComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly mode = signal<"create" | "edit">("create");
@@ -171,6 +176,32 @@ export class PolicyEditPageComponent implements OnDestroy {
           this._navigateBack();
         }
       });
+  }
+
+  async deletePolicy(): Promise<void> {
+    const name = this.editPolicyName;
+    if (!name) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@policy.deletePolicy:Delete Policy`,
+      items: [name],
+      itemType: $localize`:@@policy.policy:policy`
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.policyService.deletePolicy(name);
+    } catch (error) {
+      const message = (error as HttpErrorResponse)?.error?.result?.error?.message || "";
+      this.notificationService.error(
+        $localize`:@@policy.failedDeletePolicy:Failed to delete policy. ${message}:MESSAGE:`
+      );
+      return;
+    }
+    this.notificationService.success($localize`:@@policy.policyDeleted:Policy deleted successfully.`);
+    this._navigateBack();
   }
 
   private _navigateBack(): void {
