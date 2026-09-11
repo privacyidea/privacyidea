@@ -258,14 +258,14 @@ class ConditionalAccessTemplateBehaviourTestCase(ConditionalAccessTestCase):
             now = utc_now()
             self._create("mfa_bruteforce", configure_email=True)
             self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)
-            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+            evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
             status = get_user_lock(self.user, now=now)
             self.assertFalse(status.permanent, "lock is permanent, expected timed")
             self.assertEqual(1800, status.seconds_remaining, "wrong lock duration")
             self.assertIn("soc@example.com", smtpmock.get_sent_recipient(), "admin not emailed")
-            # The shipped templates carry no error_message, so nothing is surfaced: the email goes out
-            # and the user is told only that authentication failed.
-            self.assertListEqual([], evaluation.messages, "a shipped template should stay silent")
+            # The shipped templates carry no error_message, so the lock is silent: the requests it refuses are
+            # told only that authentication failed.
+            self.assertIsNone(status.error_message, "a shipped template should stay silent")
         finally:
             Admin.query.filter_by(username="ca_soc").delete()
             db.session.commit()
@@ -297,10 +297,10 @@ class ConditionalAccessTemplateBehaviourTestCase(ConditionalAccessTestCase):
         now = utc_now()
         self._create("mfa_bruteforce")  # email deliberately left unconfigured
         self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
-        self.assertEqual(1800, get_user_lock(self.user, now=now).seconds_remaining,
-                         "lock did not fire without SMTP configured")
-        self.assertListEqual([], evaluation.messages, "a shipped template should stay silent")
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        status = get_user_lock(self.user, now=now)
+        self.assertEqual(1800, status.seconds_remaining, "lock did not fire without SMTP configured")
+        self.assertIsNone(status.error_message, "a shipped template should stay silent")
 
     # --- per-user rate limit (all attempts, DENY) -----------------------------
 

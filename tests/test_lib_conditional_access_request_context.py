@@ -395,23 +395,24 @@ class ConditionalAccessContextTestCase(MyTestCase):
         # Staging an event is the signal to evaluate, so a request that logged nothing evaluates nothing.
         context = ConditionalAccessContext()
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
-            self.assertListEqual([], context.run_post_eval().messages)
+            context.run_post_eval()
         evaluate.assert_not_called()
 
     def test_24_post_eval_does_not_repeat_the_same_classification(self):
-        # /auth runs it in-view for the messages; request teardown must not repeat that same evaluation.
+        # A second call for an unchanged classification is a no-op, so request teardown cannot double-count a
+        # request an earlier caller already evaluated.
         context = ConditionalAccessContext()
         context.stage(self._event("alice"))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
             evaluate.return_value = []
-            self.assertListEqual([StageMessage("a message", ConditionalAccessAction.EMAIL_ADMIN)], context.run_post_eval().messages)
-            self.assertListEqual([], context.run_post_eval().messages)
+            context.run_post_eval()
+            context.run_post_eval()
         self.assertEqual(1, evaluate.call_count)
 
     def test_24b_post_eval_runs_again_for_a_corrected_classification(self):
-        # The guard is "once per classification", not "once": if a post-policy corrects the outcome after an endpoint
-        # already evaluated in-view, teardown must evaluate the correction, or the engine is left having judged an
-        # outcome that no longer holds.
+        # The guard is "once per classification", not "once": if a post-policy corrects the outcome after an
+        # earlier call evaluated it, teardown must evaluate the correction, or the engine is left having judged
+        # an outcome that no longer holds.
         context = ConditionalAccessContext()
         context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
@@ -432,20 +433,20 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.stage(self._event("alice"))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies",
                         side_effect=RuntimeError("engine boom")):
-            self.assertListEqual([], context.run_post_eval().messages)
+            context.run_post_eval()
 
     def test_25b_a_failed_evaluation_is_retried_at_teardown(self):
-        # /auth evaluates in-view and teardown evaluates again; a classification counts as evaluated only once the
-        # engine returns, so a transient failure in the early call does not cost the evaluation entirely.
+        # A classification counts as evaluated only once the engine returns, so a transient failure in an earlier
+        # call does not cost the evaluation entirely - teardown tries again.
         context = ConditionalAccessContext()
         context.stage(self._event("alice"))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies",
                         side_effect=RuntimeError("engine boom")):
-            self.assertListEqual([], context.run_post_eval().messages)
+            context.run_post_eval()
 
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
             evaluate.return_value = []
-            self.assertListEqual([StageMessage("locked", ConditionalAccessAction.LOCK_USER)], context.run_post_eval().messages)
+            context.run_post_eval()
         evaluate.assert_called_once()
 
     def test_26_evaluation_counts_over_a_committed_read_view(self):
@@ -528,7 +529,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.flush()
 
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
-            self.assertListEqual([], context.run_post_eval().messages)
+            context.run_post_eval()
         evaluate.assert_not_called()
 
     def test_34_post_eval_records_what_the_engine_returned(self):
@@ -537,7 +538,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.flush()
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
             evaluate.return_value = [self._make_outcome(ConditionalAccessAction.PERMANENT_LOCK_USER)]
-            self.assertListEqual([StageMessage("a message", ConditionalAccessAction.EMAIL_ADMIN)], context.run_post_eval().messages)
+            context.run_post_eval()
 
         outcomes = get_outcomes(event.row_id)
         self.assertListEqual([str(ConditionalAccessAction.PERMANENT_LOCK_USER)],
