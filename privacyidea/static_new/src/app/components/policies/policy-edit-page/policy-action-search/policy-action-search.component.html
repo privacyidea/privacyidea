@@ -17,24 +17,15 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="policy-flex-row">
-  <div class="flex-body">
-    <!-- Left out while the pinned page header shows the field instead. -->
-    @if (!searchInHeader()) {
-      <app-policy-action-search [(actionFilter)]="actionFilter" />
-    }
-
-    @if (actions().length > 0) {
-      <app-added-actions-list
-        [isEditMode]="true"
-        [actions]="actions()"
-        [scope]="policy().scope"
-        [actionFilter]="actionFilter()"
-        (actionsChange)="onActionsChange($event)" />
-    }
-    <app-action-selector
-      [policy]="policy()"
-      [(actionFilter)]="actionFilter"
-      (actionAdd)="onActionAdd($event)" />
-  </div>
-</div>
+<mat-form-field subscriptSizing="dynamic">
+  <mat-label i18n="@@policy.searchActionsLabel">Search actions</mat-label>
+  <app-clearable-input
+    (clearButtonClick)="actionFilter.set('')"
+    [showClearButton]="actionFilter() !== ''">
+    <input
+      matInput
+      type="text"
+      [value]="actionFilter()"
+      (input)="actionFilter.set($any($event.target).value)" />
+  </app-clearable-input>
+</mat-form-field>

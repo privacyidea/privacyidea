@@ -97,6 +97,19 @@ $input-focus-outline: theme.$focus-outline;
   }
 }
 
+// The global option state layers paint an opaque primary fill, which only reads next to the text
+// colour override that applies inside select panels. These rows are in an autocomplete panel and
+// bring their own colours (a primary-coloured IP, chips), so the states stay a surface step.
+// Both panel classes are named so this outranks the [_ngcontent]-stamped copy of the global rule,
+// which ties on specificity and is injected later.
+.mat-mdc-autocomplete-panel.known-clients-autocomplete-panel {
+  .mat-mdc-option:hover:not(.mdc-list-item--disabled),
+  .mat-mdc-option.mat-mdc-option-active:not(.mdc-list-item--disabled),
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+    background-color: var(--mat-sys-surface-container-high);
+  }
+}
+
 .hint-spacer {
   margin-bottom: 1.2em;
 }

@@ -31,6 +31,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -42,6 +43,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { StringUtils } from "@utils/string.utils";
 import { POLICY_VOCABULARY_ACTIONS, valueDisplayLabel } from "@utils/value-label.utils";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
@@ -69,6 +71,7 @@ import { ViewConditionsColumnComponent } from "./view-conditions-column/view-con
     CopyButtonComponent,
     HighlightPipe,
     TableStateComponent,
+    MultiSelectFilterComponent,
     RouterLink
   ],
   templateUrl: "./policies-table.component.html",
@@ -180,6 +183,22 @@ export class PoliciesTableComponent {
     const option = this.filterOptions.find((o) => o.key === columnKey);
     if (!option) return;
     const nextFilter = option.toggle ? option.toggle(this.filter()) : this.filter().toggleKey(option.key);
+    this.onFilterUpdate(nextFilter);
+    this.filterComponent()?.updateFilterManually(nextFilter);
+  }
+
+  /**
+   * The scopes are a closed set, so that column filters by picking from them rather than by typing.
+   * Several may be picked at once; they are stored as the comma-separated value of the scope key,
+   * which is also what someone typing the filter by hand can write.
+   */
+  selectedScopes(): string[] {
+    return StringUtils.splitFilterList(this.filter().getFilterOfKey("scope"));
+  }
+
+  setScopeFilter(scopes: string[]): void {
+    const current = this.filter();
+    const nextFilter = scopes.length ? current.setValueOfKey("scope", scopes.join(",")) : current.removeKey("scope");
     this.onFilterUpdate(nextFilter);
     this.filterComponent()?.updateFilterManually(nextFilter);
   }
@@ -310,9 +329,11 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
     new FilterOption<PolicyDetail>({
       key: "scope",
       label: $localize`:@@common.scope:Scope`,
+      // Comma-separated, so picking several scopes from the column filter keeps them all; each
+      // entry still matches as a substring, so a hand-typed partial scope works as before.
       matches: (item, filter) => {
-        const val = filter.getFilterOfKey("scope");
-        return !val || item.scope.toLowerCase().includes(val.toLowerCase());
+        const scopes = StringUtils.splitFilterList(filter.getFilterOfKey("scope"));
+        return !scopes.length || scopes.some((scope) => item.scope.toLowerCase().includes(scope.toLowerCase()));
       },
       globalMatches: (item, term) => item.scope.toLowerCase().includes(term)
     }),
