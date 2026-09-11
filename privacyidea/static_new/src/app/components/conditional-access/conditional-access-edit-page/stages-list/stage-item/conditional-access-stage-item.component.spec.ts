@@ -19,9 +19,11 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuthService } from "@services/auth/auth.service";
 import {
+  ConditionalAccessActionType,
   ConditionalAccessPolicyService,
   ConditionalAccessPolicyStage,
   ConditionalAccessStageAction,
+  ConditionalAccessTarget,
   DefaultErrorMessage
 } from "@services/conditional-access/conditional-access-policy.service";
 import { SmtpService } from "@services/smtp/smtp.service";
@@ -161,23 +163,35 @@ describe("ConditionalAccessStageItemComponent", () => {
 
   describe("error message", () => {
     // Served most severe first, the way /conditionalaccess/defaulterrormessages orders them: the composition
-    // is "join the ones this stage carries", so the order is the only rule under test here.
+    // is "join the ones this stage carries", so the order is the only rule under test here. The table holds only
+    // actions that describe a standing state - a restriction in force or a denial - because those are the only
+    // ones a request can be told about; EMAIL_* are deliberately absent.
     const SUGGESTIONS: DefaultErrorMessage[] = [
       { action_type: "PERMANENT_LOCK_USER", message: "Your account has been locked." },
+      { action_type: "PERMANENT_BLOCK_IP", message: "Your address has been blocked." },
       { action_type: "LOCK_USER", message: "Locked. Try again in about {duration}." },
-      { action_type: "DENY", message: "Access has been denied." },
-      { action_type: "EMAIL_USER", message: "An email has been sent to you." },
-      { action_type: "EMAIL_ADMIN", message: "Your administrator has been notified." }
+      { action_type: "BLOCK_IP", message: "Blocked. Try again in about {duration}." },
+      { action_type: "DENY", message: "Access has been denied." }
     ];
+
+    // What /conditionalaccess/targets serves as each target's reporting actions: those that restrict it, plus
+    // DENY. Filtered per target there, so a user policy never offers the block pair and vice versa.
+    const REPORTING_BY_TARGET = {
+      user: ["DENY", "LOCK_USER", "PERMANENT_LOCK_USER"],
+      source_ip: ["BLOCK_IP", "DENY", "PERMANENT_BLOCK_IP"]
+    } as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>;
 
     let policyService: MockConditionalAccessPolicyService;
 
     const withStage = (override: Partial<ConditionalAccessPolicyStage>) =>
       fixture.componentRef.setInput("stage", { ...stage, ...override });
 
+    const withTarget = (target: ConditionalAccessTarget) => fixture.componentRef.setInput("target", target);
+
     beforeEach(() => {
       policyService = TestBed.inject(ConditionalAccessPolicyService) as unknown as MockConditionalAccessPolicyService;
       policyService.defaultErrorMessages.set(SUGGESTIONS);
+      policyService.reportingActionsByTarget.set(REPORTING_BY_TARGET);
     });
 
     it("should emit the error_message exactly as typed", () => {
@@ -259,9 +273,9 @@ describe("ConditionalAccessStageItemComponent", () => {
       expect(component.suggestedErrorMessage()).toBe("Your account has been locked.");
     });
 
-    it("should join every other action the stage carries, in the order served", () => {
-      // No rule beyond the order: a stage that denies, locks and notifies is described by one sentence per
-      // action, which is what the engine reports for it too.
+    it("should join every reporting action the stage carries, in the order served", () => {
+      // No rule beyond the order: one sentence per action that describes a standing state. The notification is
+      // not one of them - no row records that an email went out, so nothing could ever report it.
       withStage({
         error_message: null,
         actions: [
@@ -270,27 +284,28 @@ describe("ConditionalAccessStageItemComponent", () => {
           { action_type: "PERMANENT_LOCK_USER", action_value: null }
         ]
       });
-      expect(component.suggestedErrorMessage()).toBe(
-        "Your account has been locked. Access has been denied. An email has been sent to you."
-      );
+      expect(component.suggestedErrorMessage()).toBe("Your account has been locked. Access has been denied.");
     });
 
-    it("should suggest nothing for an action that has no wording", () => {
+    it("should suggest nothing for a stage with no actions", () => {
       // A stage carries no actions until the admin picks one, so there is nothing to suggest and nothing to
-      // reset to. (Every action the server offers now has wording of its own.)
+      // reset to.
       withStage({ error_message: null, actions: [] });
       expect(component.suggestedErrorMessage()).toBeNull();
       expect(component.canResetErrorMessage()).toBe(false);
     });
 
-    it("should suggest the notification wording for a notify-only stage", () => {
+    it("should suggest nothing for a notify-only stage", () => {
+      // Such a stage refuses nothing, so no request is ever turned away while it applies and there is no
+      // moment at which wording for it could be shown.
       withStage({ error_message: null, actions: [{ action_type: "EMAIL_ADMIN", action_value: null }] });
-      expect(component.suggestedErrorMessage()).toBe("Your administrator has been notified.");
+      expect(component.suggestedErrorMessage()).toBeNull();
+      expect(component.canResetErrorMessage()).toBe(false);
     });
 
-    it("should lead with the restriction and append the notification when the stage does both", () => {
-      // Being emailed about is a separate fact from being locked out, so the user is told both - and in
-      // severity order rather than the order the actions were added, matching what the engine reports.
+    it("should describe only the restriction when the stage also notifies", () => {
+      // The lock is what later requests are refused by, and its row is what carries the wording; the email is
+      // a one-off event that no row remembers.
       withStage({
         error_message: null,
         actions: [
@@ -298,22 +313,7 @@ describe("ConditionalAccessStageItemComponent", () => {
           { action_type: "LOCK_USER", action_value: null }
         ]
       });
-      expect(component.suggestedErrorMessage()).toBe(
-        "Locked. Try again in about {duration}. Your administrator has been notified."
-      );
-    });
-
-    it("should append every notification the stage triggers", () => {
-      withStage({
-        error_message: null,
-        actions: [
-          { action_type: "EMAIL_USER", action_value: null },
-          { action_type: "EMAIL_ADMIN", action_value: null }
-        ]
-      });
-      expect(component.suggestedErrorMessage()).toBe(
-        "An email has been sent to you. Your administrator has been notified."
-      );
+      expect(component.suggestedErrorMessage()).toBe("Locked. Try again in about {duration}.");
     });
 
     it("should clear the message when switched off", () => {
@@ -449,6 +449,81 @@ describe("ConditionalAccessStageItemComponent", () => {
         actions: [{ action_type: "PERMANENT_LOCK_USER", action_value: null }]
       });
       expect(component.durationTagUnusable()).toBe(false);
+    });
+
+    it("should flag a message on a stage that reports nothing", () => {
+      // A notify-only stage refuses no request, so there is no moment at which this wording could be shown.
+      withStage({
+        error_message: "Your administrator has been notified.",
+        actions: [{ action_type: "EMAIL_ADMIN", action_value: null }]
+      });
+      expect(component.messageUnreachable()).toBe(true);
+    });
+
+    it("should flag a message on a stage with no actions at all", () => {
+      withStage({ error_message: "Locked.", actions: [] });
+      expect(component.messageUnreachable()).toBe(true);
+    });
+
+    it("should not flag a message on a stage that restricts or denies", () => {
+      // One reporting action is enough, whatever else the stage does alongside it. Asked per target, since that
+      // is how the rule is served: the lock pair belongs to a user policy and the block pair to a source_ip one.
+      const reporting: [ConditionalAccessTarget, ConditionalAccessActionType][] = [
+        ["user", "LOCK_USER"],
+        ["user", "PERMANENT_LOCK_USER"],
+        ["user", "DENY"],
+        ["source_ip", "BLOCK_IP"],
+        ["source_ip", "PERMANENT_BLOCK_IP"],
+        ["source_ip", "DENY"]
+      ];
+      for (const [target, action_type] of reporting) {
+        withTarget(target);
+        withStage({ error_message: "Locked.", actions: [{ action_type, action_value: null }] });
+        expect(component.messageUnreachable()).toBe(false);
+      }
+      withTarget("user");
+      withStage({
+        error_message: "Locked.",
+        actions: [
+          { action_type: "EMAIL_ADMIN", action_value: null },
+          { action_type: "LOCK_USER", action_value: null }
+        ]
+      });
+      expect(component.messageUnreachable()).toBe(false);
+    });
+
+    it("should not flag a stage that carries no message to show", () => {
+      // Nothing to warn about until there is wording: an empty or blank field is the silent default.
+      withStage({ error_message: null, actions: [{ action_type: "EMAIL_ADMIN", action_value: null }] });
+      expect(component.messageUnreachable()).toBe(false);
+      withStage({ error_message: "   ", actions: [{ action_type: "EMAIL_ADMIN", action_value: null }] });
+      expect(component.messageUnreachable()).toBe(false);
+    });
+
+    it("should stay silent until the target's constraints have loaded", () => {
+      // An empty set is "not known yet", not "nothing can report", so it must not flag every stage on the page.
+      policyService.reportingActionsByTarget.set({} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>);
+      withStage({ error_message: "Locked.", actions: [{ action_type: "EMAIL_ADMIN", action_value: null }] });
+      expect(component.messageUnreachable()).toBe(false);
+    });
+
+    it("should judge reachability by what the actions do, not by which have suggested wording", () => {
+      // The two are separate questions, and the suggestion table is only the answer to the second: wording for a
+      // notify action would be an authoring convenience, and must not make the editor believe it can be shown.
+      policyService.defaultErrorMessages.set([
+        ...SUGGESTIONS,
+        { action_type: "EMAIL_ADMIN", message: "Your administrator has been notified." }
+      ]);
+      withStage({
+        error_message: "Your administrator has been notified.",
+        actions: [{ action_type: "EMAIL_ADMIN", action_value: null }]
+      });
+      expect(component.messageUnreachable()).toBe(true);
+
+      // And the converse: an action that reports but carries no suggestion is still reachable.
+      policyService.defaultErrorMessages.set([]);
+      withStage({ error_message: "Locked.", actions: [{ action_type: "LOCK_USER", action_value: null }] });
+      expect(component.messageUnreachable()).toBe(false);
     });
 
     it("should report the message length for the counter", () => {

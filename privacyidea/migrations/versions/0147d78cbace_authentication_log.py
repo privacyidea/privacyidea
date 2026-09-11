@@ -29,9 +29,15 @@ INDEXES = {
     'authentication_log': [
         ('ix_authlog_user_event_time', ['resolver', 'uid', 'realm', 'event_type', 'timestamp']),
         ('ix_authlog_ip_event_time', ['source_ip', 'event_type', 'timestamp']),
-        # Serves PER_ATTEMPT counting (count_user_attempts / count_ip_attempts): a subject's rows range-scanned by
-        # time, no event_type predicate.
+        # Serves PER_ATTEMPT counting (count_subject_attempts / count_ip_attempts): a subject's rows range-scanned
+        # by time, no event_type predicate.
         ('ix_authlog_user_time', ['resolver', 'uid', 'realm', 'timestamp']),
+        # A local database admin has no resolver, uid or realm: their rows carry only the login name, and the
+        # role is what separates them from a same-named user's. They get the same pair every other subject has,
+        # keyed on that pair instead - event_type for the event count, timestamp straight after the subject for
+        # the attempt count - or every local-admin authentication scans.
+        ('ix_authlog_admin_event_time', ['username', 'user_role', 'event_type', 'timestamp']),
+        ('ix_authlog_admin_time', ['username', 'user_role', 'timestamp']),
         ('ix_authlog_ip_time', ['source_ip', 'timestamp']),
         # The TCP peer is the second pivot a forensic query starts from - "what came from this machine",
         # whatever it claimed to be forwarding for.

@@ -81,15 +81,23 @@
               }
               @if (isFilterable(column.key)) {
                 <div class="flex">
-                  <button
-                    (click)="$event.stopPropagation(); onFilterClick(column.key)"
-                    [disabled]="policyService.allPolicies().length === 0"
-                    class="filter-button"
-                    mat-icon-button>
-                    <mat-icon class="keyword-button-icon margin-left-0">
-                      {{ getFilterIconName(column.key) }}
-                    </mat-icon>
-                  </button>
+                  @if (column.key === "scope") {
+                    <app-multi-select-filter
+                      [label]="column.value.label"
+                      [options]="policyService.allPolicyScopes()"
+                      [selected]="selectedScopes()"
+                      (selectionChange)="setScopeFilter($event)" />
+                  } @else {
+                    <button
+                      (click)="$event.stopPropagation(); onFilterClick(column.key)"
+                      [disabled]="policyService.allPolicies().length === 0"
+                      class="filter-button"
+                      mat-icon-button>
+                      <mat-icon class="keyword-button-icon margin-left-0">
+                        {{ getFilterIconName(column.key) }}
+                      </mat-icon>
+                    </button>
+                  }
                 </div>
               }
             </div>

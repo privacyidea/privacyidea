@@ -19,6 +19,7 @@
 
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PolicyDetail } from "@services/policies/policies.service";
 import { EditActionTabComponent } from "./edit-action-tab.component";
@@ -31,6 +32,7 @@ import { EditActionTabComponent } from "./edit-action-tab.component";
 class MockAddedActionsListComponent {
   isEditMode = input.required<boolean>();
   actions = input.required<{ name: string; value: string | boolean }[]>();
+  actionFilter = input<string>("");
   actionsChange = output<{ name: string; value: string | boolean }[]>();
   actionRemove = output<string>();
 }
@@ -42,7 +44,19 @@ class MockAddedActionsListComponent {
 })
 class MockActionSelectorComponent {
   policy = input.required<PolicyDetail>();
+  actionFilter = input<string>("");
+  actionFilterChange = output<string>();
   actionAdd = output<{ action: { name: string; value: string | boolean }; newScope?: string | null }>();
+}
+
+@Component({
+  selector: "app-policy-action-search",
+  template: "",
+  standalone: true
+})
+class MockPolicyActionSearchComponent {
+  actionFilter = input<string>("");
+  actionFilterChange = output<string>();
 }
 
 class MockDialogService {}
@@ -67,7 +81,7 @@ describe("EditActionTabComponent", () => {
     })
       .overrideComponent(EditActionTabComponent, {
         set: {
-          imports: [MockAddedActionsListComponent, MockActionSelectorComponent]
+          imports: [MockAddedActionsListComponent, MockActionSelectorComponent, MockPolicyActionSearchComponent]
         }
       })
       .compileComponents();
@@ -135,6 +149,34 @@ describe("EditActionTabComponent", () => {
       })
     );
     expect(scopeChangeSpy).toHaveBeenCalledWith(newScope);
+  });
+
+  it("should show the search field above both action lists", () => {
+    const searchField = fixture.debugElement.query(By.directive(MockPolicyActionSearchComponent));
+    const actionLists = fixture.debugElement.query(By.directive(MockAddedActionsListComponent));
+
+    expect(searchField).not.toBeNull();
+    expect(
+      searchField.nativeElement.compareDocumentPosition(actionLists.nativeElement) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("should leave the search field out while the header shows it", () => {
+    fixture.componentRef.setInput("searchInHeader", true);
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(MockPolicyActionSearchComponent))).toBeNull();
+  });
+
+  it("should hand the search term to both action lists", () => {
+    component.actionFilter.set("token");
+    fixture.detectChanges();
+
+    const addedList = fixture.debugElement.query(By.directive(MockAddedActionsListComponent));
+    const selector = fixture.debugElement.query(By.directive(MockActionSelectorComponent));
+
+    expect((addedList.componentInstance as MockAddedActionsListComponent).actionFilter()).toBe("token");
+    expect((selector.componentInstance as MockActionSelectorComponent).actionFilter()).toBe("token");
   });
 
   it("should reset selectedAction when the policy scope changes (linkedSignal)", () => {

@@ -45,6 +45,22 @@ import { provideHttpClient } from "@angular/common/http";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { LockedUserEntry } from "@services/conditional-access-state/conditional-access-state.service";
 
+// A local database admin: the login name is the whole identity, so it stands in uid with no resolver or realm
+// beside it, and the role is what tells that row apart from an ordinary user's.
+const adminEntry: LockedUserEntry = {
+  resolver: "",
+  uid: "superadmin",
+  realm: "",
+  username: "superadmin",
+  permanent: true,
+  lock_expires_at: null,
+  seconds_remaining: null,
+  user_role: "admin-internal",
+  lock_cause: "POLICY",
+  locked_at: "2026-01-01T09:00:00Z",
+  error_message: null
+};
+
 const mockEntry: LockedUserEntry = {
   resolver: "ldapResolver",
   uid: "uid001",
@@ -53,6 +69,7 @@ const mockEntry: LockedUserEntry = {
   permanent: false,
   lock_expires_at: "2026-01-01T10:00:00Z",
   seconds_remaining: 3600,
+  user_role: "user",
   lock_cause: "POLICY",
   locked_at: "2026-01-01T09:00:00Z",
   error_message: null
@@ -138,6 +155,17 @@ describe("LockedUsersComponent", () => {
       expect(filter.has("username")).toBe(false);
       expect(filter.get("realm")).toBe("myrealm");
       expect(filter.get("resolver")).toBe("ldapResolver");
+    });
+
+    it("filters a local admin by login name and role, without the realm and resolver they do not have", () => {
+      component.showAuthenticationLog(adminEntry);
+      const filter = authLogService.authenticationLogFilter().filterMap;
+      expect(filter.get("username")).toBe("superadmin");
+      expect(filter.get("user_role")).toBe("admin-internal");
+      // Sent empty these would filter on an empty string; the login name alone would pull in a same-named
+      // ordinary user's events.
+      expect(filter.has("realm")).toBe(false);
+      expect(filter.has("resolver")).toBe(false);
     });
   });
 
@@ -234,6 +262,29 @@ describe("LockedUsersComponent", () => {
     });
     expect(notificationService.success).toHaveBeenCalled();
     expect(casService.lockedUsersResource.reload).toHaveBeenCalled();
+  });
+
+  it("unlocks a local admin by the key of the listed row and the role, having no realm to be named by", () => {
+    casService.setLockedUsers([adminEntry]);
+    component.selection.set([adminEntry]);
+    const dialogRef = new MockMatDialogRef<unknown, boolean>();
+    (dialogService.openDialog as jest.Mock).mockReturnValue(dialogRef);
+    (casService.resetUserLock as jest.Mock).mockReturnValue(of(true));
+
+    component.resetSelected();
+    dialogRef.close(true);
+
+    expect(casService.resetUserLock).toHaveBeenCalledWith({
+      uid: adminEntry.uid,
+      userRole: "admin-internal"
+    });
+  });
+
+  it("badges a local admin and leaves an ordinary user unmarked", () => {
+    expect(component.roleBadge(adminEntry)?.class).toBe("role-badge-admin-internal");
+    expect(component.roleBadge(mockEntry)).toBeNull();
+    expect(component.isLocalAdmin(adminEntry)).toBe(true);
+    expect(component.isLocalAdmin(mockEntry)).toBe(false);
   });
 
   it("does NOT reset when the dialog is cancelled", () => {

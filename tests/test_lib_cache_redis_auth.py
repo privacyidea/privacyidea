@@ -39,8 +39,10 @@ from unittest.mock import patch
 import pytest
 import redis as redis_lib
 
+from passlib.hash import pbkdf2_sha512
+
 from privacyidea.lib.authcache import add_to_cache, delete_from_cache, verify_in_cache
-from privacyidea.lib.cache.auth import _ttl_seconds, cache_enabled
+from privacyidea.lib.cache.auth import _ttl_seconds, cache_enabled, add_to_cache as redis_add_to_cache
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import PolicyClass, SCOPE, delete_policy, set_policy
@@ -219,8 +221,8 @@ class RedisAuthCacheTestCase(MyTestCase):
             first_auth = utc_now() + datetime.timedelta(minutes=1)
             self.assertFalse(verify_in_cache(self.username, self.realm, self.resolver, self.password,
                                              first_auth=first_auth))
-            # It was removed rather than left to cost an argon2 verification on
-            # every later attempt
+            # It was removed rather than left to cost a key derivation on every
+            # later attempt
             self.assertEqual({}, self._real_client.hgetall(self._key()))
 
     def test_08_an_entry_last_used_before_the_window_does_not_verify(self):
@@ -265,6 +267,43 @@ class RedisAuthCacheTestCase(MyTestCase):
         # Neither the argon2 hash nor its recognisable prefix may be readable
         self.assertNotIn("argon2", records[0])
         self.assertNotIn("first_auth", records[0])
+
+    def test_11a_an_entry_of_another_configured_algorithm_verifies(self):
+        # The entries are read with every algorithm of PI_HASH_ALGO_LIST, exactly as on the
+        # database path, so an installation that reorders the list keeps its cached entries.
+        with auth_cache_in_store(self._real_client):
+            redis_add_to_cache(self.username, self.realm, self.resolver,
+                               pbkdf2_sha512.using(rounds=1000).hash(self.password))
+            first_auth, last_auth = self._windows()
+            # The wrong password comes first on purpose: a miss goes on to
+            # delete_from_cache(), which reads the entry with the second of the two
+            # verifications. If that one could not read the entry it would take it for an
+            # unreadable one and drop it, and the verification below would then fail for a
+            # completely different reason.
+            self.assertFalse(verify_in_cache(self.username, self.realm, self.resolver,
+                                             "wrong password", first_auth=first_auth,
+                                             last_auth=last_auth))
+            self.assertTrue(verify_in_cache(self.username, self.realm, self.resolver,
+                                            self.password, first_auth=first_auth,
+                                            last_auth=last_auth))
+
+    def test_11b_a_malformed_entry_is_discarded_rather_than_raising(self):
+        # As on the database path: a value that is recognised as Argon2 but cannot be parsed
+        # raises a plain ValueError, not UnknownHashError, and has to be dropped too.
+        with auth_cache_in_store(self._real_client):
+            add_to_cache(self.username, self.realm, self.resolver, self.password)
+            first_auth, last_auth = self._windows()
+            self.assertTrue(verify_in_cache(self.username, self.realm, self.resolver,
+                                            self.password, first_auth=first_auth,
+                                            last_auth=last_auth))
+            # Corrupt the stored hash the way a truncating column would
+            self._flush_cache()
+            redis_add_to_cache(self.username, self.realm, self.resolver,
+                               pbkdf2_sha512.using(rounds=1000).hash(self.password)[:-6])
+            self.assertFalse(verify_in_cache(self.username, self.realm, self.resolver,
+                                             self.password, first_auth=first_auth,
+                                             last_auth=last_auth))
+            self.assertEqual({}, self._real_client.hgetall(self._key()))
 
     def test_12_deleting_removes_the_matching_entry_only(self):
         with auth_cache_in_store(self._real_client):

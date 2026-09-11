@@ -24,8 +24,7 @@ from unittest import mock
 
 from privacyidea.lib.conditional_access import policy as policy_module
 from privacyidea.lib.conditional_access.authentication_event_types import CA_ENFORCEMENT_EVENT_TYPES  # noqa: F401
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
-from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole, CountMode
 from privacyidea.lib.conditional_access.conditions import (AUTHENTICATING_ENDPOINTS, ConditionOperator, ConditionType,
                                                            get_condition_types)
 from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction, ConditionalAccessTarget,
@@ -39,7 +38,6 @@ from privacyidea.lib.conditional_access.policy import (
     MAX_COLUMN_INT,
     MAX_ERROR_MESSAGE_LENGTH,
     MAX_PRIORITY,
-    compose_default_error_message,
     create_conditional_access_policy,
     default_error_message,
     delete_conditional_access_policy,
@@ -649,6 +647,42 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         self.assertEqual(1, db.session.query(ConditionalAccessPolicyStage).count())
         self.assertEqual(1, db.session.query(ConditionalAccessPolicyCounterType).count())
 
+    def test_04a_enforced_since_is_written_on_every_exit_from_dry_run(self):
+        # enforced_since describes the enforcement episode that starts here, so leaving dry-run writes it either
+        # way: to now when the counts are reset, to NULL when the caller wants the full window counted. Anything
+        # else leaves a stale floor from an earlier episode silently narrowing the window.
+        policy_id = create_conditional_access_policy(
+            "Trial", 600, ["PIN_FAIL"], [_stage(5)], target=ConditionalAccessTarget.USER, priority=1, dry_run=True
+        )
+        self.assertIsNone(get_conditional_access_policy(policy_id)["enforced_since"])
+
+        update_conditional_access_policy(policy_id, dry_run=False)
+        enforced_since = get_conditional_access_policy(policy_id)["enforced_since"]
+        self.assertIsNotNone(enforced_since)
+        # Serialized like every other timestamp this API serves: ISO-8601 with an explicit UTC offset, not the
+        # RFC 1123 date jsonify would render a bare datetime as.
+        self.assertTrue(enforced_since.endswith("+00:00"), enforced_since)
+
+        # Back into dry-run: the floor stays, so the trial simulates the enforcement it interrupted.
+        update_conditional_access_policy(policy_id, dry_run=True)
+        self.assertEqual(enforced_since, get_conditional_access_policy(policy_id)["enforced_since"])
+
+        # Out again, opting out of the reset: the floor is cleared, not left over from the first episode.
+        update_conditional_access_policy(policy_id, dry_run=False, reset_counters_on_enforce=False)
+        self.assertIsNone(get_conditional_access_policy(policy_id)["enforced_since"])
+
+    def test_04b_enforced_since_is_untouched_by_updates_that_do_not_flip_dry_run(self):
+        policy_id = create_conditional_access_policy(
+            "Steady", 600, ["PIN_FAIL"], [_stage(5)], target=ConditionalAccessTarget.USER, priority=1, dry_run=True
+        )
+        update_conditional_access_policy(policy_id, dry_run=False)
+        enforced_since = get_conditional_access_policy(policy_id)["enforced_since"]
+
+        # Re-sending the same dry_run value is not a transition, and reset_counters_on_enforce alone does nothing.
+        update_conditional_access_policy(policy_id, dry_run=False, reset_counters_on_enforce=False)
+        update_conditional_access_policy(policy_id, name="Steady renamed", time_window_seconds=900)
+        self.assertEqual(enforced_since, get_conditional_access_policy(policy_id)["enforced_since"])
+
     def test_05_update_validation(self):
         policy_id = create_conditional_access_policy("A", 600, ["PIN_FAIL"], [_stage(5)],
                 target=ConditionalAccessTarget.USER, priority=1)
@@ -738,11 +772,13 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         constraints = get_target_constraints()
         self.assertSetEqual({t.value for t in ConditionalAccessTarget}, set(constraints))
         for target, entry in constraints.items():
-            self.assertSetEqual({"actions", "count_modes", "repeatable_actions", "exclusive_action_groups"},
-                                set(entry))
+            self.assertSetEqual({"actions", "count_modes", "repeatable_actions", "exclusive_action_groups",
+                                 "reporting_actions"}, set(entry))
             self.assertListEqual(sorted(entry["actions"]), entry["actions"])
             self.assertListEqual(sorted(entry["count_modes"]), entry["count_modes"])
             self.assertListEqual(sorted(entry["repeatable_actions"]), entry["repeatable_actions"])
+            self.assertListEqual(sorted(entry["reporting_actions"]), entry["reporting_actions"])
+            self.assertTrue(set(entry["reporting_actions"]).issubset(entry["actions"]))
             # Every served rule is expressible for this target: a group only one of whose members the target
             # allows could never be violated, so offering it as a rule would be noise.
             for group in entry["exclusive_action_groups"]:
@@ -771,32 +807,28 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
 
     def test_10a_default_error_messages_are_ordered_most_severe_first(self):
         # The exact list, because both membership and order are contracts: the order is ACTION_SEVERITY, the
-        # one ordering there is, an action that rejects nothing is absent for having nothing to say, and the
-        # EMAIL_* pair comes last. A new action added here has to be a deliberate decision, not a surprise.
+        # one ordering there is, and an action that turns nobody away is absent because nothing could ever show
+        # its wording - a message is said off the row a restriction leaves behind, and no row records that an
+        # email went out. A new action added here has to be a deliberate decision, not a surprise.
         suggestions = get_default_error_messages()
         self.assertListEqual([ConditionalAccessAction.PERMANENT_LOCK_USER.value, ConditionalAccessAction.PERMANENT_BLOCK_IP.value,
                               ConditionalAccessAction.LOCK_USER.value, ConditionalAccessAction.BLOCK_IP.value,
-                              ConditionalAccessAction.DENY.value, ConditionalAccessAction.EMAIL_USER.value,
-                              ConditionalAccessAction.EMAIL_ADMIN.value],
+                              ConditionalAccessAction.DENY.value],
                              [entry["action_type"] for entry in suggestions])
         # Resolved to plain strings, not lazy proxies the JSON encoder would choke on.
         for entry in suggestions:
             self.assertIsInstance(entry["message"], str)
             self.assertTrue(entry["message"])
 
-    def test_10a3_the_table_and_the_severity_ordering_cover_the_same_actions(self):
-        # One thing seen twice: every action that ranks has a message, and every message belongs to an action
-        # that ranks. Nothing may be reachable from only one of them.
-        self.assertSetEqual(set(ACTION_SEVERITY), set(DEFAULT_ERROR_MESSAGES))
-
-    def test_10a3b_a_suggestion_is_the_entries_joined_in_the_order_served(self):
-        # The order is the whole composition rule, so a client needs nothing but the list: joining the entries a
-        # stage carries is what the runtime reports for it. Asserted against the runtime's own composition, so
-        # the two cannot drift - here for a notify-only stage, which is all the runtime composes stage-side.
-        served = {entry["action_type"]: entry["message"] for entry in get_default_error_messages()}
-        actions = [ConditionalAccessAction.EMAIL_USER, ConditionalAccessAction.EMAIL_ADMIN]
-        self.assertEqual(" ".join(served[action.value] for action in actions),
-                         compose_default_error_message(actions))
+    def test_10a3_every_default_message_belongs_to_an_action_that_ranks(self):
+        # The table is a subset of the ordering, not its twin: an action only has wording if it turns a request
+        # away, while ACTION_SEVERITY ranks every action so that one added later is already ranked when it needs
+        # to be. What must never happen is a message whose action has no rank - it would sort last by accident.
+        self.assertTrue(set(DEFAULT_ERROR_MESSAGES) <= set(ACTION_SEVERITY),
+                        set(DEFAULT_ERROR_MESSAGES) - set(ACTION_SEVERITY))
+        # And the ones that are absent are absent for the one reason: they report rather than refuse.
+        self.assertSetEqual({ConditionalAccessAction.EMAIL_USER, ConditionalAccessAction.EMAIL_ADMIN},
+                            set(ACTION_SEVERITY) - set(DEFAULT_ERROR_MESSAGES))
 
     def test_10a4_a_restriction_row_finds_its_error_message_by_shape(self):
         # A stored restriction remembers its expiry and its subject, not which action wrote it. Those two
@@ -813,25 +845,9 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # An action the table does not cover has nothing to say, and a caller must not have to know which
         # those are - so the lookup answers for any action, not only the ones with error message.
         self.assertIsNone(default_error_message("SOME_FUTURE_ACTION"))
-        self.assertIsNone(compose_default_error_message(["SOME_FUTURE_ACTION"]))
-        self.assertIsNone(compose_default_error_message([]))
-
-    def test_10a6_a_stage_composes_its_notifications_most_severe_first(self):
-        # The order is ACTION_SEVERITY, not the order the actions were configured in, so a stage falling back
-        # to the default reads like the one next to it that had the suggestion written in.
-        composed = compose_default_error_message([ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER])
-        self.assertEqual(" ".join([str(DEFAULT_ERROR_MESSAGES[ConditionalAccessAction.EMAIL_USER]),
-                                   str(DEFAULT_ERROR_MESSAGES[ConditionalAccessAction.EMAIL_ADMIN])]), composed)
-
-    def test_10a6b_the_restriction_is_left_to_the_row_that_holds_it(self):
-        # A restriction is described from the row it left behind, so composing a stage's fallback never
-        # includes one - otherwise the user reads it twice, once per source, and with a {duration} this side
-        # cannot substitute.
-        self.assertEqual(str(DEFAULT_ERROR_MESSAGES[ConditionalAccessAction.EMAIL_USER]),
-                         compose_default_error_message([ConditionalAccessAction.LOCK_USER, ConditionalAccessAction.EMAIL_USER]))
-        # A stage that only restricted has nothing left to say from here.
-        self.assertIsNone(compose_default_error_message([ConditionalAccessAction.LOCK_USER]))
-        self.assertIsNone(compose_default_error_message([ConditionalAccessAction.PERMANENT_BLOCK_IP, ConditionalAccessAction.DENY]))
+        # The notifying actions are exactly that case now: nothing can report them, so they carry no wording.
+        self.assertIsNone(default_error_message(ConditionalAccessAction.EMAIL_USER))
+        self.assertIsNone(default_error_message(ConditionalAccessAction.EMAIL_ADMIN))
 
     def test_10b_only_timed_restrictions_suggest_the_duration_tag(self):
         # A permanent lock has no remaining time, and DENY is not a restriction at all, so

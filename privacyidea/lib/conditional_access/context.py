@@ -58,7 +58,8 @@ class CAContext:
     :ivar user: the authenticating user. ``user``-target policies key their count
         and their lock on this user's ``(resolver, uid, realm)`` tuple and
         therefore ignore an unresolved one; ``source_ip``-target policies act
-        regardless of it.
+        regardless of it. A local database admin has none at all, and is described by :attr:`username` and
+        :attr:`user_role` instead.
     :ivar source_ip: the resolved client IP, as used by the audit log.
         ``source_ip``-target policies count and block on it.
     :ivar endpoint: the endpoint the request authenticates against, as its path
@@ -69,18 +70,18 @@ class CAContext:
         the counting query. See
         :func:`~privacyidea.api.lib.utils.request_endpoint`.
     :ivar user_role: the principal's role
-        (:class:`~privacyidea.lib.conditional_access.authentication_log.AuthLogUserRole`),
+        (:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`),
         as recorded in the authentication log. Pre-auth this is the *claimed*
         role - an admin realm, or a local admin name that exists - since no
         credential has been checked yet; that is what lets a break-glass condition
         exempt an emergency admin from a pre-auth DENY. See
         :func:`~privacyidea.api.lib.utils.build_ca_context` for where it comes
         from.
-    :ivar use_default_error_message: Whether a rejection with no error message of its own falls back to the
-        default wording for what it did (the ``show_default_ca_error_message`` policy), rather than saying nothing.
-        Not about the generic "Authentication failed." - that is what a rejection with nothing to say ends up
-        carrying, decided in the API layer. Resolved there too, because matching a policy needs Flask and this
-        package deliberately does not.
+    :ivar username: the login name, as the authentication log records it. For a **local database admin** this is
+        the whole identity - no user object, no resolver, no realm - so together with a :attr:`user_role` of
+        ``admin-internal`` it is what a ``user``-target policy counts and locks them by (see
+        :func:`~privacyidea.lib.conditional_access.engine.lock_subject`). For everyone else it merely repeats the
+        user's login, and for an unknown login it is the name that was tried.
     :ivar own_row_ids: the ids of the authentication-log rows *this request itself* wrote, however many (a
         multichallenge or push_wait flow logs several within one request). Used only post-auth, to compute a count
         as it stood *before* this request's own rows joined it (see
@@ -103,5 +104,6 @@ class CAContext:
     source_ip: str | None = None
     endpoint: str | None = None
     user_role: str | None = None
-    use_default_error_message: bool = False
+    # Last, so the positional order callers build this with - (user, source_ip) - keeps meaning what it did.
+    username: str | None = None
     own_row_ids: "tuple[int, ...] | None" = None

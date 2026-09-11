@@ -28,7 +28,7 @@ session it writes on.
 import logging
 import secrets
 from dataclasses import dataclass, field
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
 from flask import has_request_context
 
@@ -42,11 +42,6 @@ from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.user import User
 from privacyidea.models import ConditionalAccessOutcome
-
-if TYPE_CHECKING:
-    # Only for the annotation below: importing the engine at module level would risk an import-order cycle
-    # during app startup, which is why run_post_eval imports it inside the function instead.
-    from privacyidea.lib.conditional_access.engine import StageMessage
 
 log = logging.getLogger(__name__)
 
@@ -80,55 +75,6 @@ class AuthPrincipal:
     internal_admin: bool = False
 
 
-@dataclass(frozen=True)
-class PostEvaluation:
-    """
-    What the post-response evaluation left for the current response to say.
-
-    :ivar messages: the user-facing wording the triggered stages carry, most severe first. Empty when nothing was
-        triggered *and* when what was triggered carries no wording - silent by default holds here as everywhere.
-    :ivar restricted: whether this request left a restriction in force. Independent of :attr:`messages`, and that
-        is the whole reason it exists: a silent restriction produces no wording, yet the request still has to be
-        answered as the rejection it now is, exactly like every request the pre-check refuses after it.
-    """
-    messages: list["StageMessage"] = field(default_factory=list)
-    restricted: bool = False
-
-
-@dataclass(frozen=True)
-class RejectionShape:
-    """
-    How one endpoint answers a request conditional access refuses.
-
-    Recorded by whichever gate guards the endpoint, so a request restricted by *itself* is answered exactly as the
-    gate answers every request after it - the whole response, not just the wording, and whatever the view was about
-    to return. Looking like an ordinary failed authentication is the whole requirement, and what one looks like
-    differs per endpoint.
-
-    :ivar value: what ``result.value`` says. ``False`` everywhere except ``/validate/triggerchallenge``, where the
-        value is the number of challenges triggered and a boolean would change the type of a field its callers may
-        be reading as a number.
-    :ivar rid: the response id this endpoint renders with. ``prepare_result`` adds ``result.authentication`` only
-        for ``rid > 1``, so a rejection at ``/ttype/push`` - which renders with ``1`` - must not grow a field the
-        endpoint never carries.
-    :ivar carries_detail: whether an ordinary failed authentication here carries a ``detail`` at all. On
-        ``/validate/*`` every failure does, so a silent rejection carries the generic failure to have one too; at
-        ``/ttype/push`` none does, so a silent rejection carries none either - the generic message would be exactly
-        the tell that including it on ``/validate`` avoids.
-    :ivar as_error: ``/auth``, the one entry point whose failed authentication is an error response rather than a
-        ``200`` carrying ``result.value`` false.
-    """
-    value: Any = False
-    rid: int = 2
-    carries_detail: bool = True
-    as_error: bool = False
-
-    @property
-    def reports_authentication(self) -> bool:
-        """Whether this endpoint's responses carry ``result.authentication`` at all (see :attr:`rid`)."""
-        return self.rid > 1
-
-
 class ConditionalAccessContext:
     """
     The conditional-access work of one request: who is authenticating, and the authentication-log rows it will write.
@@ -153,27 +99,21 @@ class ConditionalAccessContext:
         # The wording conditional access claims for this response, so the masking actions show it (see claim_message).
         self.own_message: str | None = None
         # Whether a rejection with no error message of its own falls back to the default wording for what it did
-        # (see CAContext). Resolved once by the gate, where policies can be matched, and read again at
-        # post-response evaluation so both halves of one request answer the same way.
+        # (the show_default_ca_error_message policy). Resolved once by the gate, where policies can be matched, and
+        # read back there: a restriction is only ever described on the requests it refuses.
         self.use_default_error_message = False
-        # How this endpoint answers a refused request, recorded by whichever gate guards it so the response hook can
-        # answer a *restricted* request the same way - even when the view raised and the body to replace is an error.
-        # The default is the /validate shape, which is also the safest thing to assume for a request no gate ran on.
-        self.rejection_shape = RejectionShape()
-        # Whether the pre-auth gate (conditional_access_gate) actually refused this request, as opposed to merely
-        # having run and recorded a rejection_shape for a request it let through (see conditional_access_rejection).
-        # A postpolicy that must never act on a rejected result - autoassign, which must not verify a credential
-        # and assign a token on the strength of a response that only looks like an ordinary failed authentication -
-        # checks this rather than result.value, which a genuine wrong-password failure carries too.
-        self.gate_rejected = False
+        # The audit entry of a request the pre-check turned away, or None for one it let through. Re-applied on the
+        # way out, because the gate does not have the last word on it: /ttype/push runs a view afterwards that logs
+        # success and the identity itself (see _audit_rejection).
+        self.rejection_audit: dict | None = None
 
     def claim_message(self, message: str) -> None:
         """
         Claim *message* as conditional access's own wording for this response, so ``hide_specific_error_message``
         and ``no_detail_on_fail`` show it instead of their own generic text (see :func:`claimed_ca_message`).
 
-        Only the gates claim: their responses are built inside the decorator stack, where those two actions can
-        still reach them. The ``after_request`` hook needs no claim, since it runs after both.
+        Only the gates claim, they being the only place a conditional-access message is ever said: their responses
+        are built inside the decorator stack, where those two actions can still reach them.
         """
         self.own_message = message
 
@@ -396,11 +336,14 @@ class ConditionalAccessContext:
         for name, value in fields.items():
             setattr(event, name, value)
 
-    def run_post_eval(self) -> PostEvaluation:
+    def run_post_eval(self) -> None:
         """
-        Let the conditional-access engine react to what this request logged, and report back what the current
-        response has to say about it: the wording the triggered stages carry, and whether this request left a
-        restriction in force (see :class:`PostEvaluation`).
+        Let the conditional-access engine react to what this request logged.
+
+        Nothing is reported back, because nothing is reported to the client: a restriction this request writes
+        applies from the *next* request, which the pre-check refuses (see
+        :func:`~privacyidea.api.lib.conditional_access.conditional_access_precheck`). The response in flight keeps
+        whatever it had coming.
 
         Nothing has to be scheduled: staging an authentication event *is* the signal, and everything the engine needs
         is already recorded - the classification comes from the latest staged event, the principal and source IP from
@@ -412,11 +355,10 @@ class ConditionalAccessContext:
         (``push_wait``: the challenge trigger, then the terminal outcome) the earlier ones are still counted - counts
         are taken over the stored rows - they just do not each provoke their own evaluation.
 
-        Runs **once per distinct classification**, not merely once: an endpoint that needs the messages in its own
-        response can run it early (``/auth`` does) and request teardown will not repeat the same evaluation. Should a
-        post-policy correct the outcome in between, however, teardown *does* evaluate again - otherwise the engine
-        would be left having judged a classification that no longer holds. A classification counts as evaluated only
-        once the engine returned, so an early call that failed is retried at teardown rather than swallowed.
+        Idempotent **per classification**, not merely once: once the engine has returned for one, a repeated call
+        is skipped, while a post-policy that corrects the outcome in between is evaluated again - the engine would
+        otherwise be left having judged a classification that no longer holds. Request teardown is the only caller,
+        so nothing reaches that guard today; it is what keeps the evaluation safe to drive from anywhere else.
 
         The evaluation counts events over the authentication log, so it must run **after** :meth:`flush` - otherwise
         the count would miss the very event that triggered it. That ordering also keeps the counts from reading a stale
@@ -439,7 +381,9 @@ class ConditionalAccessContext:
         already recorded, so this stays Flask-free and - more importantly - the conditions are evaluated against
         exactly the identity the row states. ``user_role`` is taken off the event for that reason: it was determined
         when the event was staged, from the ``internal_admin`` flag the caller verified, which a local database admin
-        cannot be classified without.
+        cannot be classified without. ``username`` comes off it for the same reason, and is the other half of that
+        identity: a local admin has no user object, so the pair is all a policy can count and lock them by (see
+        :func:`~privacyidea.lib.conditional_access.engine.lock_subject`).
 
         The event types conditional access writes for its own rejections are skipped: evaluating them would let a lock
         feed itself, since a locked user's rejected requests would keep the count above the threshold forever. They are
@@ -449,11 +393,11 @@ class ConditionalAccessContext:
         """
         event = self.latest
         if event is None or event.event_type == self._evaluated_as:
-            return PostEvaluation()
+            return
         if event.event_type in CA_ENFORCEMENT_EVENT_TYPES:
             log.debug(f"Not evaluating conditional-access policies for {event.event_type}: this request was rejected "
                       f"by conditional access itself.")
-            return PostEvaluation()
+            return
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_conditional_access_policies
@@ -465,20 +409,18 @@ class ConditionalAccessContext:
         # an earlier one's), so attempt_id alone would also name rows an earlier request already contributed and
         # a previous evaluation already counted.
         own_row_ids = tuple(staged.row_id for staged in self.pending if staged.row_id is not None)
-        context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
+        context = CAContext(user=self.principal.user or None, username=event.username, source_ip=self.source_ip,
                             user_role=event.user_role, endpoint=event.endpoint,
-                            use_default_error_message=self.use_default_error_message,
                             own_row_ids=own_row_ids or None)
         try:
-            evaluation = evaluate_conditional_access_policies(context, event.event_type)
+            outcomes = evaluate_conditional_access_policies(context, event.event_type)
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
-            return PostEvaluation()
-        # Marked evaluated only now: a failure above leaves the classification unevaluated, so the teardown call is
-        # the retry rather than a skipped second attempt.
+            return
+        # Marked evaluated only now, so a failure above leaves the classification unevaluated: a later call for it
+        # evaluates rather than skipping a second attempt.
         self._evaluated_as = event.event_type
-        record_outcomes(evaluation.outcomes, event.row_id)
-        return PostEvaluation(messages=evaluation.messages, restricted=bool(evaluation.enforced_targets))
+        record_outcomes(outcomes, event.row_id)
 
     def finalize(self) -> None:
         """

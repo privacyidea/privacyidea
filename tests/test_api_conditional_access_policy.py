@@ -39,7 +39,7 @@ from privacyidea.lib.conditional_access.policy import (create_conditional_access
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.models import db
-from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.conditional_access_policy import (

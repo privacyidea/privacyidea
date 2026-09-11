@@ -529,6 +529,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # an ordinary failed authentication - the only shape autoassign otherwise checks - so without this guard
         # autoassign would verify the submitted OTP itself and assign a token to a locked/blocked account on the
         # strength of a rejection that was never actually a credential check.
+        from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+        from privacyidea.lib.conditional_access.authentication_log import PendingAuthEvent
         from privacyidea.lib.conditional_access.request_context import get_ca_context
 
         self.setUp_user_realms()
@@ -554,11 +556,12 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                   action="{0!s}={1!s}".format(PolicyAction.AUTOASSIGN, AUTOASSIGNVALUE.NONE),
                   client="10.0.0.0/8")
         g.policy_object = PolicyClass()
-        get_ca_context().gate_rejected = True
+        # rejected_by_conditional_access reads true off the latest staged event's type - exactly what the real
+        # gate rejection does by staging one of these before autoassign ever runs (conditional_access_rejection).
+        get_ca_context().stage(PendingAuthEvent(event_type=AuthEventType.USER_LOCKED))
         try:
             new_response = autoassign(req, resp)
         finally:
-            get_ca_context().gate_rejected = False
             delete_policy("pol2")
 
         jresult = new_response.json

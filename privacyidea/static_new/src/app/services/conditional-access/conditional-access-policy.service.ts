@@ -97,11 +97,13 @@ export const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [ConditionalAccessA
 export interface TargetConstraints {
   actions: ConditionalAccessActionType[];
   count_modes: CountMode[];
-  // Which of this target's actions may appear more than once within one stage, and which of them
-  // contradict each other there. Optional so a backend that does not serve them yet - and a spec fixture
-  // that omits them - simply yields no rules rather than a type error.
+  // Which of this target's actions may appear more than once within one stage, which of them
+  // contradict each other there, and which of them a request can ever be told about. Optional so a backend
+  // that does not serve them yet - and a spec fixture that omits them - simply yields no rules rather than a
+  // type error.
   repeatable_actions?: ConditionalAccessActionType[];
   exclusive_action_groups?: ConditionalAccessActionType[][];
+  reporting_actions?: ConditionalAccessActionType[];
 }
 
 export interface ConditionalAccessStageAction {
@@ -181,6 +183,12 @@ export interface ConditionalAccessPolicy {
   // failures since that login. Only a "user" target resets: a "source_ip" policy aggregates a signal across
   // accounts and never does, and the pre-auth allow/deny decision never does either.
   reset_on_success: boolean;
+  // The instant this policy's current enforcement episode starts counting (see
+  // update_conditional_access_policy); null if it counts its full time window. Read-only - written
+  // only as a side effect of turning dry_run off, to now or to null per reset_counters_on_enforce.
+  // Optional because a template's "policy" is a create payload, not a stored row, and never
+  // carries one.
+  enforced_since?: string | null;
   counter_types_to_track: AuthEventType[];
   stages: ConditionalAccessPolicyStage[];
   // Which requests the policy applies to. Optional: a policy with no restriction simply omits this
@@ -195,6 +203,10 @@ export interface ConditionalAccessPolicy {
 export type ConditionalAccessPolicySaveParams = Omit<ConditionalAccessPolicy, "id" | "priority"> & {
   id?: number;
   priority: number | null;
+  // Whether to reset the failure counters when this save turns dry_run off; only meaningful then, and
+  // defaults server-side to true (see update_conditional_access_policy). Omitted rather than sent as
+  // true so a create/no-op save never carries a flag that has nothing to do with it.
+  reset_counters_on_enforce?: boolean;
 };
 
 // What a shipped template carries: a create payload without priority, which the catalog omits so
@@ -272,6 +284,7 @@ export const EMPTY_CONDITIONAL_ACCESS_POLICY: ConditionalAccessPolicySaveParams 
   time_window_seconds: 600,
   enabled: true,
   dry_run: false,
+  enforced_since: null,
   priority: null,
   target: "user",
   count_mode: "PER_REQUEST",
@@ -291,6 +304,7 @@ export interface ConditionalAccessPolicyServiceInterface {
   readonly actionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>;
   readonly repeatableActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>;
   readonly exclusiveGroupsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>>;
+  readonly reportingActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>;
   readonly countModesByTarget: Signal<Record<ConditionalAccessTarget, CountMode[]>>;
   readonly defaultErrorMessagesResource: HttpResourceRef<PiResponse<DefaultErrorMessage[]> | undefined>;
   readonly defaultErrorMessages: Signal<DefaultErrorMessage[]>;
@@ -338,7 +352,7 @@ export interface ConditionalAccessPolicyServiceInterface {
 
   disablePolicy(id: number): Promise<void>;
 
-  setDryRun(id: number, dryRun: boolean): Promise<void>;
+  setDryRun(id: number, dryRun: boolean, resetCountersOnEnforce?: boolean): Promise<void>;
 }
 
 @Injectable()
@@ -463,6 +477,17 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
             entry.exclusive_action_groups ?? []
           ])
         ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>
+    );
+
+  // Which of a target's actions a request can ever be told about: a restriction in force, or a denial. Served
+  // rather than derived from the suggested wording, because "has a default sentence" is a different question
+  // from "can report at all" - see get_target_constraints in lib/conditional_access/policy.py.
+  readonly reportingActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>> =
+    computed(
+      () =>
+        Object.fromEntries(
+          Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.reporting_actions ?? []])
+        ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
     );
 
   readonly countModesByTarget: Signal<Record<ConditionalAccessTarget, CountMode[]>> = computed(
@@ -734,7 +759,11 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   // given, so a policy carrying a value that is no longer valid - a deleted realm in a condition,
   // say - can still be switched on and off instead of being frozen until it is repaired. It also
   // cannot overwrite another admin's concurrent edit of the fields this toggle does not touch.
-  private async patchFlag(id: number, flag: { enabled: boolean } | { dry_run: boolean }, errorMessage: string) {
+  private async patchFlag(
+    id: number,
+    flag: { enabled: boolean } | { dry_run: boolean; reset_counters_on_enforce?: boolean },
+    errorMessage: string
+  ) {
     const headers = this.authService.getHeaders();
     try {
       await lastValueFrom(this.http.patch(`${this.baseUrl}/${id}`, flag, { headers }));
@@ -752,10 +781,10 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
     await this.patchFlag(id, { enabled: false }, $localize`Failed to disable conditional-access policy.`);
   }
 
-  async setDryRun(id: number, dryRun: boolean): Promise<void> {
+  async setDryRun(id: number, dryRun: boolean, resetCountersOnEnforce?: boolean): Promise<void> {
     await this.patchFlag(
       id,
-      { dry_run: dryRun },
+      dryRun ? { dry_run: dryRun } : { dry_run: dryRun, reset_counters_on_enforce: resetCountersOnEnforce },
       dryRun
         ? $localize`Failed to switch the conditional-access policy to dry-run mode.`
         : $localize`Failed to switch the conditional-access policy to enforcing mode.`

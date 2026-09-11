@@ -19,7 +19,8 @@ from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.conditional_access.engine import is_user_locked
-from privacyidea.models.conditional_access_policy import (ConditionalAccessPolicy, ConditionalAccessPolicyStage,
+from privacyidea.models.conditional_access_policy import (BlockList, ConditionalAccessPolicy,
+                                                          ConditionalAccessPolicyStage,
                                                           ConditionalAccessStageAction,
                                                           ConditionalAccessPolicyCounterType, UserLockState)
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
@@ -1829,7 +1830,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             delete_policy("push_config")
 
     def _clear_ca(self):
-        for model in (UserLockState, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
+        for model in (UserLockState, BlockList, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
                       ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
             db.session.query(model).delete()
         db.session.commit()
@@ -1918,6 +1919,16 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertListEqual([str(AuthEventType.USER_LOCKED)], [entry.event_type for entry in new_entries])
             # The challenge is still open (the answer did not consume it).
             self.assertTrue(get_challenges(transaction_id=transaction_id))
+            # The audit entry says the same. This endpoint is the one where the gate does not have the last word:
+            # the view logs success and the user off the request parameters as soon as the token class returns,
+            # and the smartphone's answer carries no user parameter at all - so the rejection is re-applied on the
+            # way out, or the refused answer would be audited as a success by nobody.
+            entry = self.find_most_recent_audit_entry(action="*/ttype/*")
+            self.assertEqual(0, entry["success"], entry)
+            self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
+            self.assertEqual("Rejected: account is temporarily locked", entry["info"], entry)
+            self.assertEqual(user.login, entry["user"], entry)
+            self.assertEqual(user.realm, entry["realm"], entry)
         finally:
             self._clear_ca()
             delete_challenges(serial=self.serial_push)
@@ -1988,10 +1999,10 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             remove_token(self.serial_push)
             delete_policy("push_config")
 
-    def test_18h_push_answer_that_trips_a_lock_is_refused_in_this_endpoints_shape(self):
-        """An answer that locks its own owner is refused exactly as the answers after it are refused - the whole
-        response, not just the wording, and whether or not the stage carried any. Silent is the case that matters:
-        it produces no wording, so it can only be told apart from a refusal by the response still being one."""
+    def test_18h_push_answer_that_trips_a_lock_still_succeeds(self):
+        """An answer that locks its own owner is answered as the answer it was - it verified, so it succeeds - and
+        the lock refuses the answers after it. Nothing about this response mentions the lock, whether or not the
+        stage carried wording, so the moment a lock is written is not observable here at all."""
         from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
         from privacyidea.lib.conditional_access.policy import create_conditional_access_policy
 
@@ -2024,22 +2035,124 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 return self.app.full_dispatch_request()
 
         try:
-            # Silent: the answer would have succeeded, and is refused with nothing to show for it - no detail,
-            # because an ordinary failed answer here has none, and no authentication verdict, because no response
-            # here has one.
+            # Silent: the answer verified, so it is accepted, and the lock it wrote is not mentioned.
             silent = answer_that_locks(None)
-            self.assertFalse(silent.json["result"]["value"], silent.json)
-            self.assertNotIn("detail", silent.json, silent.json)
-            self.assertNotIn("authentication", silent.json["result"], silent.json)
+            self.assertTrue(silent.json["result"]["value"], silent.json)
             self.assertTrue(is_user_locked(user))
 
-            # Worded: the same response, plus the sentence the stage carries.
+            # Worded changes nothing here: wording is said by the pre-check on the answers that follow, and this
+            # response is not a refusal to attach it to.
             worded = answer_that_locks("Locked. Try again in about {duration}.")
-            self.assertFalse(worded.json["result"]["value"], worded.json)
-            self.assertEqual("Locked. Try again in about 10 minute(s).",
-                             worded.json["detail"]["message"], worded.json)
-            self.assertNotIn("authentication", worded.json["result"], worded.json)
+            self.assertTrue(worded.json["result"]["value"], worded.json)
+            self.assertNotIn("Locked", (worded.json.get("detail") or {}).get("message", ""), worded.json)
             self.assertTrue(is_user_locked(user))
+        finally:
+            self._clear_ca()
+            delete_challenges(serial=self.serial_push)
+            remove_token(self.serial_push)
+            delete_policy("push_config")
+
+    def test_18i_push_auth_answer_gated_by_an_ip_block(self):
+        """The pre-check refuses a push answer for every reason it refuses anything, not only a locked owner: the
+        source IP is the other restriction it reads, and the smartphone answering from a blocked address is turned
+        away in this endpoint's shape, before the signature is verified."""
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self._clear_ca()
+        self._enroll_push_for(user)
+        blocked_ip = "203.0.113.9"
+        try:
+            # Trigger a real challenge from an address that is not blocked, then read its nonce.
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                self.app.full_dispatch_request()
+            challenge = get_challenges(serial=self.serial_push)[0]
+            signature = self.smartphone_private_key.sign(
+                f"{challenge.challenge}|{self.serial_push}".encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+
+            # Block the address the smartphone will answer from, with wording so the refusal is identifiable.
+            db.session.add(BlockList(ip=blocked_ip, block_expires_at=utc_now() + datetime.timedelta(seconds=600),
+                                     error_message="Blocked. Try again in about {duration}."))
+            db.session.commit()
+            logs_before = db.session.query(AuthenticationLog).count()
+
+            with self.app.test_request_context('/ttype/push', method='POST',
+                                               data={"serial": self.serial_push,
+                                                     "signature": b32encode(signature)},
+                                               environ_base={"REMOTE_ADDR": blocked_ip}):
+                response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+            # A valid signature that would have authenticated, refused before it was checked.
+            self.assertFalse(response.json["result"]["value"], response.json)
+            self.assertEqual("Blocked. Try again in about 10 minute(s).",
+                             response.json["detail"]["message"], response.json)
+            # Still this endpoint's shape: it renders with rid 1, so no rejection may grow an authentication verdict.
+            self.assertNotIn("authentication", response.json["result"], response.json)
+            # Classified as the block, replacing the approval row the answer would otherwise have written.
+            new_entries = db.session.query(AuthenticationLog).order_by(AuthenticationLog.id).all()[logs_before:]
+            self.assertListEqual([str(AuthEventType.IP_BLOCKED)], [entry.event_type for entry in new_entries])
+            # And the answer was never processed, so the challenge is still open.
+            self.assertTrue(get_challenges(transaction_id=challenge.transaction_id))
+        finally:
+            self._clear_ca()
+            delete_challenges(serial=self.serial_push)
+            remove_token(self.serial_push)
+            delete_policy("push_config")
+
+    def test_18j_push_auth_answer_refused_by_a_deny_policy(self):
+        """The pre-check's third reason at this endpoint: a conditional-access DENY. It stores no state and is
+        decided per request from the events already recorded, so the smartphone's answer is refused by policy
+        rather than by a row - and in the same shape a lock or a block is refused in."""
+        from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
+        from privacyidea.lib.conditional_access.policy import create_conditional_access_policy
+
+        self.setUp_user_realms()
+        user = User("selfservice", self.realm1)
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        self._clear_ca()
+        self._enroll_push_for(user)
+        try:
+            # Trigger a real challenge. This writes the one CHALLENGE_TRIGGERED row the policy below counts, so
+            # the threshold is reached by the time the answer arrives - but not yet while the trigger itself runs.
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": "selfservice", "pass": "push_pin"}):
+                self.app.full_dispatch_request()
+            challenge = get_challenges(serial=self.serial_push)[0]
+            signature = self.smartphone_private_key.sign(
+                f"{challenge.challenge}|{self.serial_push}".encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+            # No {duration} in the wording: a DENY leaves no restriction behind, so there is no remaining time to
+            # substitute and the tag would reach the smartphone as written.
+            create_conditional_access_policy(
+                name="ca_push_deny", time_window_seconds=3600,
+                counter_types_to_track=[str(AuthEventType.CHALLENGE_TRIGGERED)],
+                stages=[{"failure_threshold": 1, "error_message": "Access has been denied.",
+                         "actions": [{"action_type": str(ConditionalAccessAction.DENY)}]}],
+                target=ConditionalAccessTarget.USER, priority=1)
+            logs_before = db.session.query(AuthenticationLog).count()
+
+            with self.app.test_request_context('/ttype/push', method='POST',
+                                               data={"serial": self.serial_push,
+                                                     "signature": b32encode(signature)}):
+                response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+            # The same valid signature that authenticates in test_18h, refused before it was checked.
+            self.assertFalse(response.json["result"]["value"], response.json)
+            self.assertEqual("Access has been denied.", response.json["detail"]["message"], response.json)
+            # Still this endpoint's shape: it renders with rid 1, so no rejection may grow an authentication verdict.
+            self.assertNotIn("authentication", response.json["result"], response.json)
+            # Classified as the denial, replacing the approval row the answer would otherwise have written.
+            new_entries = db.session.query(AuthenticationLog).order_by(AuthenticationLog.id).all()[logs_before:]
+            self.assertListEqual([str(AuthEventType.ACCESS_DENIED)], [entry.event_type for entry in new_entries])
+            # A DENY persists nothing, so nothing is left behind for an admin to lift.
+            self.assertFalse(is_user_locked(user))
+            self.assertEqual(0, db.session.query(UserLockState).count())
+            # And the answer was never processed, so the challenge is still open.
+            self.assertTrue(get_challenges(transaction_id=challenge.transaction_id))
         finally:
             self._clear_ca()
             delete_challenges(serial=self.serial_push)

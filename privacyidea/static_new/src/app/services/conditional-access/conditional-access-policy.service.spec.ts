@@ -217,7 +217,8 @@ describe("ConditionalAccessPolicyService", () => {
         actions: ["LOCK_USER", "PERMANENT_LOCK_USER", "EMAIL_ADMIN", "DENY"],
         count_modes: ["PER_ATTEMPT", "PER_REQUEST"],
         repeatable_actions: ["EMAIL_ADMIN"],
-        exclusive_action_groups: [["LOCK_USER", "PERMANENT_LOCK_USER"]]
+        exclusive_action_groups: [["LOCK_USER", "PERMANENT_LOCK_USER"]],
+        reporting_actions: ["DENY", "LOCK_USER", "PERMANENT_LOCK_USER"]
       },
       source_ip: {
         actions: ["BLOCK_IP", "DENY"],
@@ -311,6 +312,10 @@ describe("ConditionalAccessPolicyService", () => {
       expect(service.repeatableActionsByTarget()).toEqual({ user: ["EMAIL_ADMIN"], source_ip: [] });
       expect(service.exclusiveGroupsByTarget()).toEqual({
         user: [["LOCK_USER", "PERMANENT_LOCK_USER"]],
+        source_ip: []
+      });
+      expect(service.reportingActionsByTarget()).toEqual({
+        user: ["DENY", "LOCK_USER", "PERMANENT_LOCK_USER"],
         source_ip: []
       });
     });

@@ -552,14 +552,12 @@ def no_detail_on_fail(request, response):
 
     A conditional-access message is the one thing that survives, exactly as it survives
     :func:`hide_specific_error_message`: this action strips what privacyIDEA volunteers about the attempt, whereas
-    that message is something an admin either wrote on a stage or turned on by policy. Without this a lock said
-    nothing on the request that refused it while saying its piece on the request that wrote it - the same lock,
-    worded two ways, depending on which half of the request answered.
+    that message is something an admin either wrote on a stage or turned on by policy. Without this a lock would
+    say nothing on the very requests it refuses.
 
     Read from the claim (:func:`~privacyidea.lib.conditional_access.request_context.claimed_ca_message`) rather than
-    from the response body, which is what makes the outcome independent of where this action sits relative to the
-    hook that writes that body: the claim always holds the wording as it must read once the specific reason is
-    stripped, so a message appended to "wrong otp pin" cannot carry that reason through here.
+    from the response body: the gate builds its rejection inside the decorator stack, so the claim is what carries
+    the configured wording across this strip.
 
     :param request:
     :param response:
@@ -910,12 +908,14 @@ def autoassign(request, response):
     into account ACTION.MAXTOKENUSER and ACTION.MAXTOKENREALM.
     :return:
     """
-    if get_ca_context().gate_rejected:
+    if get_ca_context().rejected_by_conditional_access:
         # The pre-auth conditional-access gate already refused this request - its rejection carries the same
         # "value": false shape as an ordinary failed authentication (see conditional_access_gate), which is
         # exactly what this function otherwise treats as "no token yet, try the submitted OTP against the
         # realm's unassigned ones". Verifying the OTP here would flip a locked/blocked account's rejection into a
-        # success and additionally assign it a token.
+        # success and additionally assign it a token. rejected_by_conditional_access reads true as soon as the
+        # rejection stages its enforcement-type event (conditional_access_rejection/_reject_restricted_login), so
+        # this also covers /auth and /ttype/push, not just conditional_access_gate's own endpoints.
         return response
     content = response.json
     # check, if the authentication was successful, then we need to do nothing

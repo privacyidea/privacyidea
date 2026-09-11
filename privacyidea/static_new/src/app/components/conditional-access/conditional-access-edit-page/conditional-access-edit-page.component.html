@@ -75,13 +75,23 @@
           </mat-slide-toggle>
         }
         <mat-slide-toggle
-          (change)="toggleDryRun($event.checked)"
+          #dryRunToggle="matSlideToggle"
+          (change)="toggleDryRun($event.checked, dryRunToggle)"
           [checked]="editPolicy().dry_run"
           [disableRipple]="true"
           i18n-matTooltip
           matTooltip="Toggle Dry Run (evaluate but do not enforce)">
           <span i18n>Dry run</span>
         </mat-slide-toggle>
+        @if (countFloorStillBites()) {
+          <span
+            class="ca-enforced-since-hint"
+            i18n-matTooltip
+            matTooltip="Events from before this instant are not counted towards the thresholds">
+            <span i18n>Counting events since</span>
+            {{ editPolicy().enforced_since | date: "yyyy-MM-dd HH:mm:ss" }}
+          </span>
+        }
       </div>
     </div>
 

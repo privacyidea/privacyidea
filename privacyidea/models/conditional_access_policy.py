@@ -32,7 +32,8 @@ from sqlalchemy import (
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from privacyidea.lib.conditional_access.authentication_event_types import CountMode, RestrictionCause
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthLogUserRole, CountMode,
+                                                                           RestrictionCause)
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now, case_sensitive_unicode
 
@@ -84,6 +85,14 @@ class ConditionalAccessPolicy(MethodsMixin, db.Model):
     # accounts, where one account's legitimate login must not clear it (see engine._policy_count_ip), so it is always
     # False there and setting it is rejected (see policy._validate_reset_on_success).
     reset_on_success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # The instant this policy's current enforcement episode starts counting, or NULL for "count the full window".
+    # Written only when dry_run flips from True to False (see policy.update_conditional_access_policy), to now, or
+    # to NULL when the caller opted out of the reset; never at creation or on any other update. While set, the count
+    # functions floor their look-back window here, so the transitioning policy is judged only on events from that
+    # point on rather than on whatever accumulated during the trial - the transition dry-run exists to make safe.
+    # Once the configured time_window_seconds has elapsed since this instant it stops affecting anything, which is
+    # why a value left over from an earlier episode is harmless: every episode overwrites it on the way in.
+    enforced_since: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     stages: Mapped[list["ConditionalAccessPolicyStage"]] = relationship(
         "ConditionalAccessPolicyStage",
@@ -287,6 +296,12 @@ class UserLockState(MethodsMixin, db.Model):
     lifts a lock by deleting the row (timestamps are naive UTC, see
     :func:`~privacyidea.models.utils.utc_now`).
 
+    A **local database admin** is locked here too, and has none of those three values - only a login name. Their
+    row carries the login name as the ``uid`` with an empty ``resolver`` and ``realm``, which cannot collide with a
+    user's: a user row is only ever written for a principal that has all three. ``user_role`` says which of the two
+    a row is, so nothing has to infer it from what the row lacks; see
+    :class:`~privacyidea.lib.conditional_access.engine.LockSubject`, which is what builds both shapes.
+
     The row records the lock itself, not which policy produced it: what a stage
     did, and to whom, is the conditional-access history
     (:class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`).
@@ -301,6 +316,11 @@ class UserLockState(MethodsMixin, db.Model):
     # Denormalized login captured at lock time; lets management views display/filter by name and lets
     # a user-scoped read policy be enforced in SQL without a live resolver lookup, which fails for a deleted user.
     username: Mapped[str | None] = mapped_column(case_sensitive_unicode(255), nullable=True)
+    # Which kind of principal this row locks, as the authentication log names it
+    # (:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`): ``user`` for a resolved
+    # user, ``admin-internal`` for a local database admin. Part of the identity rather than of the lock, so it is
+    # written when the row is created and never changed - the key it was created under fixes what it is.
+    user_role: Mapped[str] = mapped_column(Unicode(20), default=str(AuthLogUserRole.USER), nullable=False)
     lock_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     # Who imposed this lock: the engine acting on a policy, or an administrator by hand. Written together with
     # ``lock_expires_at``, so it always describes the lock now in force; see

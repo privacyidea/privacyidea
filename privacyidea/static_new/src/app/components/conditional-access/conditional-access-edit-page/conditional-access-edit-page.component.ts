@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { DatePipe } from "@angular/common";
 import { Component, computed, effect, inject, OnDestroy, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { form, FormField, required, validate } from "@angular/forms/signals";
@@ -25,7 +26,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -50,9 +51,16 @@ import {
 } from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { normalizeDateTimeString } from "@utils/date-format.utils";
 import { deepCopy } from "@utils/deep-copy.utils";
 import { ConditionalAccessConditionsComponent } from "./conditions/conditional-access-conditions.component";
 import { ConditionalAccessStagesListComponent } from "./stages-list/conditional-access-stages-list.component";
+import {
+  ConditionalAccessDryRunOffDialogComponent,
+  ConditionalAccessDryRunOffDialogData,
+  ConditionalAccessDryRunOffDialogResult
+} from "../conditional-access-dry-run-off-dialog/conditional-access-dry-run-off-dialog.component";
 
 type TimeUnit = "seconds" | "minutes" | "hours";
 
@@ -86,6 +94,7 @@ const COUNT_MODE_LABELS: Record<string, string> = {
   selector: "app-conditional-access-edit-page",
   standalone: true,
   imports: [
+    DatePipe,
     FormField,
     MatButtonModule,
     MatCheckboxModule,
@@ -110,6 +119,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   protected readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -174,6 +184,19 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   readonly editConditions = computed<ConditionalAccessPolicyCondition[]>(() => this.editPolicy().conditions ?? []);
 
   timeWindowValid = computed(() => this.editPolicy().time_window_seconds >= 1);
+  // enforced_since floors the counts only until one full time window has passed since it; after
+  // that the backend counts the configured window unchanged, so showing it would be noise. Shown
+  // in dry run too, because the trial simulates against the same floor.
+  readonly countFloorStillBites = computed(() => {
+    const enforcedSince = this.editPolicy().enforced_since;
+    if (!enforcedSince) {
+      return false;
+    }
+    // The server sends microsecond precision, which new Date() only parses reliably on some
+    // engines - normalize it to the three digits the Date Time String Format allows first.
+    const elapsed = (Date.now() - new Date(normalizeDateTimeString(enforcedSince)).getTime()) / 1000;
+    return elapsed < this.editPolicy().time_window_seconds;
+  });
   // Raw text of the priority field, kept separate from the parsed value so an invalid entry is
   // reported instead of silently rewritten (see onPriorityInput).
   priorityInput = signal<string>("");
@@ -549,8 +572,35 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     }
   }
 
-  toggleDryRun(checked: boolean): void {
-    this.updateEditPolicy({ dry_run: checked });
+  async toggleDryRun(checked: boolean, toggle?: MatSlideToggle): Promise<void> {
+    // The question is what to do with the events a trial accumulated, so the *stored* state decides
+    // whether there is anything to ask about: a policy being created has no trial, and neither has
+    // a stored enforcing policy that was switched to dry run and back without ever being saved.
+    if (checked || !this.policy().dry_run) {
+      this.updateEditPolicy({ dry_run: checked, reset_counters_on_enforce: undefined });
+      return;
+    }
+    const result = await this.dialogService.openDialogAsync<
+      ConditionalAccessDryRunOffDialogData,
+      ConditionalAccessDryRunOffDialogResult
+    >({
+      component: ConditionalAccessDryRunOffDialogComponent,
+      data: { policyNames: [this.editPolicy().name] }
+    });
+    if (!result) {
+      // Cancelled: dry_run stays on, but the control already flipped itself to report the click.
+      // [checked] is one-way and the value it reads is unchanged, so Angular writes nothing back -
+      // put the control where the policy actually is, or the page claims a state it never saved.
+      this.resyncDryRunToggle(toggle);
+      return;
+    }
+    this.updateEditPolicy({ dry_run: false, reset_counters_on_enforce: result.resetCounters });
+  }
+
+  private resyncDryRunToggle(toggle: MatSlideToggle | undefined): void {
+    if (toggle) {
+      toggle.checked = this.editPolicy().dry_run;
+    }
   }
 
   onResetOnSuccessChange(checked: boolean): void {

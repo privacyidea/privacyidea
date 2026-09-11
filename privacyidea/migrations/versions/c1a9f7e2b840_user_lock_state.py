@@ -8,6 +8,12 @@ window. The load-bearing field is lock_expires_at - a row whose
 lock_expires_at lies in the future means the user is currently locked.
 lock_cause records whether the engine or an administrator imposed that lock.
 
+A local database admin is locked here too and has none of those three values,
+only a login name: their row carries it as the uid with an empty resolver and
+realm, which cannot collide with a user's (a user row always has all three).
+user_role says which of the two a row is, so nothing has to infer it from the
+columns a row leaves empty.
+
 Revision ID: c1a9f7e2b840
 Revises: 173d32328846
 Create Date: 2026-06-08 00:00:00.000000
@@ -57,14 +63,27 @@ def _existing_tables() -> set[str]:
 def _create_table(existing_tables: set[str], table_name: str, *columns) -> None:
     """
     Create the table unless it is already there -- a schema bootstrapped from the models with create_all
-    before this migration ran carries it.
+    before this migration ran carries it -- then add each of its COLUMNS that is absent.
 
     Presence is established by reflection rather than by swallowing an "already exists" error, which Oracle
     never says: it reports an existing object as ORA-00955 ("name is already used by an existing object").
     models.db.sequence_exists reflects for the same reason.
+
+    The columns are reconciled rather than left to the CREATE TABLE alone, because this revision is the only
+    place they are declared: a database already carrying the table skips that statement, so a column added to
+    this revision after it ran there would never arrive, and every read of it would fail. A column added to a
+    populated table takes the value of the rows already in it from its server_default, so one declared NOT NULL
+    needs one.
     """
     if table_name.lower() in existing_tables:
         print(f"Table '{table_name}' already exists.")
+        existing_columns = {column["name"].lower()
+                            for column in sa.inspect(op.get_bind()).get_columns(table_name)}
+        for column in columns:
+            if not isinstance(column, sa.Column) or column.name.lower() in existing_columns:
+                continue
+            print(f"Adding the missing column '{column.name}' to '{table_name}'.")
+            op.add_column(table_name, column)
         return
     op.create_table(table_name, *columns)
 
@@ -78,6 +97,7 @@ def upgrade():
         sa.Column('uid', _unicode_case_sensitive(320), nullable=False),
         sa.Column('realm', _unicode_case_sensitive(255), nullable=False),
         sa.Column('username', _unicode_case_sensitive(255), nullable=True),
+        sa.Column('user_role', sa.Unicode(length=20), nullable=False, server_default='user'),
         sa.Column('lock_expires_at', sa.DateTime(), nullable=True),
         sa.Column('lock_cause', sa.Unicode(length=20), nullable=False, server_default='POLICY'),
         sa.Column('error_message', _unicode_case_sensitive(500), nullable=True),

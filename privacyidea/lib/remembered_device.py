@@ -419,16 +419,17 @@ def clear_persistent_cookie(response) -> None:
     Remove the remember-device cookie from the client.
 
     Used when a presented cookie is invalid, expired or has been invalidated
-    (e.g. after reuse detection), so the client stops sending it - or when a
-    response that already queued a fresh cookie (:func:`set_persistent_cookie`)
-    turns out to answer a request retroactively refused after the fact (see
-    ``api.lib.conditional_access._refuse``). ``response.delete_cookie`` alone
-    would only *append* another ``Set-Cookie`` header in that case, leaving both
-    on the wire - a client that reads a single header value per name (as this
-    project's own werkzeug does for ``response.headers.get(...)``) would see the
-    genuine, still-valid cookie rather than the clearing one. So any
-    already-queued header for this cookie is dropped first, and only the
-    clearing header is left.
+    (e.g. after reuse detection), so the client stops sending it.
+
+    Defensive against a response that already queued a fresh cookie of its own
+    (:func:`set_persistent_cookie`) before this runs: ``response.delete_cookie``
+    alone would only *append* another ``Set-Cookie`` header in that case,
+    leaving both on the wire - a client that reads a single header value per
+    name (as this project's own werkzeug does for ``response.headers.get(...)``)
+    would see the genuine, still-valid cookie rather than the clearing one. Not
+    currently reachable - :func:`apply_cookie_action` only ever calls one of the
+    two per response - but cheap to guard against (a no-op when nothing is
+    queued) should a future caller apply both to the same response.
 
     :param response: the Flask response to clear the cookie on
     """

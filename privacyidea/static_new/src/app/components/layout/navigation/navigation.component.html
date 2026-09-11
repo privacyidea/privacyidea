@@ -565,7 +565,7 @@
         [ngClass]="contentService.onAudit() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.AUDIT]">
         <mat-icon>list_alt</mat-icon>
-        <span i18n="@@nav.log">Log</span>
+        <span i18n="@@nav.audit">Audit</span>
       </a>
     }
     @if (authService.actionAllowed("authentication_log_read")) {

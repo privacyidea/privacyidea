@@ -182,22 +182,24 @@ over like any other, so *always* reaches up to the next threshold.
 
 .. warning:: A ``DENY`` at threshold 0 refuses **every** request the policy
    covers, whatever the subject has done. Scope it with conditions, and leave
-   yourself a way back in. A ``user`` policy never decides an internal
-   administrator to begin with, as a local administrator has no resolved
-   identity to count against, so it is a ``source_ip`` policy that can shut you
-   out: exempt your own address in ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, which
-   is never denied either (see :ref:`conditional_access_never_block`), or write
-   *user role is not one of [admin-internal]* and read what that exemption
-   costs in :ref:`conditional_access_policies_exceptions`. A ``DENY`` stores no
+   yourself a way back in. Either kind can shut you out: a ``user`` policy
+   reaches a local administrator like anybody else (see
+   :ref:`conditional_access_local_admins`), and a ``source_ip`` policy applies
+   to whoever is behind the address. Exempt your own address in
+   ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, which is never denied either (see
+   :ref:`conditional_access_never_block`), or write *user role is not one of
+   [admin-internal]* and read what that exemption costs in
+   :ref:`conditional_access_policies_exceptions`. A ``DENY`` stores no
    state, so none of the ``pi-manage conditionalaccess`` reset commands can
    lift it; undoing an unscoped one means disabling the policy itself, with
    ``pi-manage conditionalaccess disable-policy <name>`` if it has locked you
    out of the WebUI, see :ref:`conditional_access_policies_cli`.
 
-Each stage also has an optional **error message**, the text an end user sees when
-a request is turned away by that stage. It is empty by default, which keeps a
-rejection indistinguishable from any other failed authentication, see
-:ref:`conditional_access_error_messages`.
+Each stage also has an optional **error message**, the text an end user sees on a
+request that a lock, block or ``DENY`` from that stage turns away - never on the
+request that trips the stage, which is answered on its own merits. It is empty by
+default, which keeps a rejection indistinguishable from any other failed
+authentication, see :ref:`conditional_access_error_messages`.
 
 .. _conditional_access_policies_actions:
 
@@ -222,6 +224,10 @@ Actions
     Notify the user, or an administrator, that the threshold was reached.
     ``EMAIL_USER`` sends to the address in the user store. ``EMAIL_ADMIN`` sends
     to a list of addresses or to the internal administrators.
+
+    Neither turns a request away, so neither is ever reported in a response: a
+    stage carrying nothing but these is silent whatever error message is written
+    on it, see :ref:`conditional_access_error_messages`.
 
     An email action needs the identifier of an :ref:`smtpserver` configuration
     plus subject and body. Subject and body may contain ``{username}``,
@@ -316,6 +322,35 @@ Filter the authentication log on *dry run* outcomes to see what a policy would
 have done, then disable dry run once the threshold fits. Dry run can also be
 switched on and off from the command line, which defuses a policy that has
 locked everybody out without losing what it records.
+
+Turning dry run off starts a fresh count by default: events that accumulated
+before are not counted towards the threshold once the policy starts enforcing,
+so a policy that would have locked someone out several times over during the
+trial does not lock them out on the very next request just because it is now
+enforced. Only events from the moment dry run was disabled count towards the
+threshold, until one full time window has passed and the policy counts its
+configured window again.
+
+Switching a policy back to dry run keeps that starting point rather than
+discarding it, so the trial keeps simulating the enforcement it interrupted -
+asked what the policy would do right now, dry run answers with the same count
+the policy would really be using.
+
+The reset can be turned off, both in the WebUI (a dialog appears when disabling
+dry run) and via the API (:http:patch:`/conditionalaccess/policy/(policy_id)`
+with ``reset_counters_on_enforce=false``). The policy then counts its full time
+window from the first enforced request on - for example when the trial was run
+specifically to see how many requests would already be caught, and enforcing on
+the very next matching request is the point.
+
+.. warning:: Counting events from before enforcement began can leave a policy
+   silent rather than strict. A stage fires as the count *reaches* its
+   threshold (unless the action sets *retrigger above threshold*), so a count
+   that already sits above a threshold never reaches it: that stage stays quiet
+   until the old events age out of the time window and the count climbs through
+   the threshold again. On a busy policy the count may not drop below the
+   threshold at all, and a real attack then raises no alarm. This is why the
+   reset is the default.
 
 .. _conditional_access_policies_cli:
 
