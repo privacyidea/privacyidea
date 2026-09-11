@@ -38,6 +38,7 @@ You can attach token actions like enable, disable, delete, unassign,... of the
 """
 
 from privacyidea.lib.container import add_token_to_container
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
 from privacyidea.lib.eventhandler.base import BaseEventHandler
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.token import (get_token_types, set_validity_period_end,
@@ -49,19 +50,20 @@ from privacyidea.lib.token import (set_realms, remove_token, enable_token,
                                    set_count_window, add_tokeninfo, get_tokeninfo,
                                    set_failcounter, delete_tokeninfo,
                                    get_one_token, set_max_failcount,
-                                   assign_tokengroup, unassign_tokengroup)
+                                   assign_tokengroup, unassign_tokengroup,
+                                   set_token_type_info)
 from privacyidea.lib.utils import (parse_date, is_true,
-                                   parse_time_offset_from_now)
-from privacyidea.lib.tokenclass import DATE_FORMAT, AUTH_DATE_FORMAT
+                                   parse_time_offset_from_now,
+                                   create_tag_dict)
+from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.user import User
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway
 from privacyidea.lib.tokengroup import get_tokengroups
 from privacyidea.lib import _
 import logging
-import datetime
 import yaml
 import json
-from dateutil.tz import tzlocal
 
 log = logging.getLogger(__name__)
 
@@ -103,6 +105,49 @@ class VALIDITY:
     """
     START = "valid from"
     END = "valid till"
+
+
+def _write_tokeninfo_of_handler(serial: str, key: str, value: str) -> None:
+    """
+    Write a token info entry on behalf of a token event handler.
+
+    A handler is configured by an administrator and runs on the server, so it may write the entries a token
+    class maintains but allows to be set, e.g. the acceptance window of a TOTP token, which is the documented
+    way to widen that window while a token is synchronized for the first time. An entry that carries what the
+    token authenticates with is refused, and the handler logs it instead of failing.
+
+    Whether a key belongs to the token depends on its type, e.g. "timeWindow" is what a TOTP token accepts an
+    OTP within, while it is free-form on an HOTP token, so the free-form write is tried first and only a
+    refusal leads to the write of a maintained entry.
+
+    :param serial: The serial number of the token
+    :param key: The token info key to write
+    :param value: The value to write
+    """
+    try:
+        add_tokeninfo(serial, key, value)
+        return
+    except PolicyError as error:
+        refusal = str(error)
+    try:
+        if set_token_type_info(serial, {key: value}):
+            return
+    except ParameterError:
+        pass
+    log.warning(f"The event handler can not set the token info '{key}' of token {serial}: {refusal}")
+
+
+def _delete_tokeninfo_of_handler(serial: str, key: str) -> None:
+    """
+    Delete a token info entry on behalf of a token event handler, see _write_tokeninfo_of_handler().
+
+    :param serial: The serial number of the token
+    :param key: The token info key to delete
+    """
+    try:
+        delete_tokeninfo(serial, key)
+    except PolicyError as error:
+        log.warning(f"The event handler can not delete the token info '{key}' of token {serial}: {error!s}")
 
 
 class TokenEventHandler(BaseEventHandler):
@@ -250,7 +295,12 @@ class TokenEventHandler(BaseEventHandler):
                         {
                             "type": "str",
                             "description": _("The new description of the "
-                                             "token.")
+                                             "token. It may contain tags like "
+                                             "{now} (with offsets such as "
+                                             "{now}+5d), {client_ip}, "
+                                             "{ua_browser}, {ua_string}, "
+                                             "{serial}, {tokentype}, {username}, {realm} "
+                                             "and {userrealm}.")
                         }
                 },
             ACTION_TYPE.SET_VALIDITY:
@@ -325,7 +375,12 @@ class TokenEventHandler(BaseEventHandler):
                         {
                             "type": "str",
                             "description": _("Set the above key to this "
-                                             "value.")
+                                             "value. It may contain tags like "
+                                             "{now} (with offsets such as "
+                                             "{now}+5d), {client_ip}, "
+                                             "{ua_browser}, {ua_string}, "
+                                             "{serial}, {tokentype}, {username} "
+                                             "and {userrealm}.")
                         }
                 },
             ACTION_TYPE.INCREASE_TOKENINFO:
@@ -441,6 +496,47 @@ class TokenEventHandler(BaseEventHandler):
         }
         return actions
 
+    def _get_tags(self, g, request, serial, text):
+        """
+        Create the tag dictionary for the text of the "set description" and
+        "set tokeninfo" actions.
+
+        A possible time offset (like ``{now}+5d``) is parsed from the text and
+        removed from it. The returned text must be formatted with the returned
+        tags.
+
+        :param g: The flask g object
+        :param request: The request object
+        :param serial: The serial number of the token that is handled
+        :param text: The description or tokeninfo value, may contain tags
+        :return: tuple of the text without the offset and the tag dictionary
+        """
+        text, time_delta = parse_time_offset_from_now(text)
+        tokenowner = self._get_tokenowner(request)
+        tokentype = tokendescription = None
+        if serial:
+            # The handler can act on several tokens, so the tags describe the token
+            # that is handled and its owner, not the token or user of the request.
+            try:
+                token = get_one_token(serial=serial)
+                tokenowner = token.user or User()
+                tokentype = token.get_tokentype()
+                tokendescription = token.token.description
+            except ResourceNotFoundError:
+                log.info(f"Could not read the token {serial} for the tags.")
+        else:
+            serial, tokentype, tokendescription = self._get_token_data(serial, tokenowner)
+        logged_in_user = g.logged_in_user if hasattr(g, "logged_in_user") else None
+        tags = create_tag_dict(logged_in_user=logged_in_user,
+                               request=request,
+                               client_ip=getattr(g, "client_ip", None),
+                               serial=serial,
+                               tokenowner=tokenowner,
+                               tokentype=tokentype,
+                               tokendescription=tokendescription,
+                               time_offset=time_delta)
+        return text, tags
+
     def do(self, action, options=None):
         """
         This method executes the defined action in the given event.
@@ -505,51 +601,29 @@ class TokenEventHandler(BaseEventHandler):
                         unassign_token(serial)
                     elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
                         description = handler_options.get("description") or ""
-                        description, td = parse_time_offset_from_now(description)
-                        s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
-                            AUTH_DATE_FORMAT)
+                        text, tags = self._get_tags(g, request, serial, description)
                         set_description(serial,
-                                        description.format(
-                                            current_time=s_now,
-                                            now=s_now,
-                                            client_ip=g.client_ip,
-                                            ua_browser=request.user_agent.browser,
-                                            ua_string=request.user_agent.string))
+                                        self._format_with_tags(text, tags, description))
                     elif action.lower() == ACTION_TYPE.SET_COUNTWINDOW:
                         set_count_window(serial,
                                          int(handler_options.get("count window",
                                                                  50)))
                     elif action.lower() == ACTION_TYPE.SET_TOKENINFO:
                         tokeninfo = handler_options.get("value") or ""
-                        tokeninfo, td = parse_time_offset_from_now(tokeninfo)
-                        s_now = (datetime.datetime.now(tzlocal()) + td).strftime(
-                            AUTH_DATE_FORMAT)
-                        try:
-                            username = request.User.loginname
-                            realm = request.User.realm
-                        except Exception:
-                            username = "N/A"
-                            realm = "N/A"
-                        add_tokeninfo(serial, handler_options.get("key"),
-                                      tokeninfo.format(
-                                          current_time=s_now,
-                                          now=s_now,
-                                          client_ip=g.client_ip,
-                                          username=username,
-                                          realm=realm,
-                                          ua_browser=request.user_agent.browser,
-                                          ua_string=request.user_agent.string))
+                        text, tags = self._get_tags(g, request, serial, tokeninfo)
+                        _write_tokeninfo_of_handler(serial, handler_options.get("key"),
+                                                    self._format_with_tags(text, tags, tokeninfo))
                     elif action.lower() == ACTION_TYPE.INCREASE_TOKENINFO:
                         try:
                             # We assume that the tokeninfo is an integer
                             increment = int(handler_options.get("increment") or 1)
                             current_value = int(get_tokeninfo(serial, handler_options.get("key")) or 0)
-                            add_tokeninfo(serial, handler_options.get("key"),
-                                          f"{current_value + increment}")
+                            _write_tokeninfo_of_handler(serial, handler_options.get("key"),
+                                                        f"{current_value + increment}")
                         except ValueError:
                             log.warning("Can not increase the tokeninfo {!s}".format(handler_options.get("key")))
                     elif action.lower() == ACTION_TYPE.DELETE_TOKENINFO:
-                        delete_tokeninfo(serial, handler_options.get("key"))
+                        _delete_tokeninfo_of_handler(serial, handler_options.get("key"))
                     elif action.lower() == ACTION_TYPE.SET_VALIDITY:
                         start_date = handler_options.get(VALIDITY.START)
                         end_date = handler_options.get(VALIDITY.END)

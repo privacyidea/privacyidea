@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
 import { forkJoin } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
@@ -27,7 +27,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { UI_LOCALES } from "@core/locale";
-import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import { LandingPage } from "@core/landing-page";
 import {
   LightSourceDialComponent,
   LightSourceDialItem
@@ -47,7 +47,6 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
 @Component({
   selector: "app-ui-settings",
   imports: [
-    DetailsCardComponent,
     LightSourceDialComponent,
     MatButtonModule,
     MatButtonToggleModule,
@@ -69,6 +68,19 @@ export class UISettingsComponent {
   protected readonly locales = UI_LOCALES;
   protected readonly preferredLocale = this.uiPreferencesService.preferredLocale;
   protected readonly showLoadingUrls = this.uiPreferencesService.showLoadingUrls;
+  protected readonly landingPage = this.uiPreferencesService.landingPage;
+  protected readonly availableLandingPages = this.uiPreferencesService.availableLandingPages;
+  // Set optimistically on pick so the control reflects it immediately; reset from the stored
+  // value again whenever that changes -- including when a failed write leaves it unchanged,
+  // which snaps the control back to what is actually persisted.
+  protected readonly selectedLandingPage: WritableSignal<LandingPage> = linkedSignal(() => this.landingPage());
+  protected readonly landingPageLabels: Record<LandingPage, string> = {
+    dashboard: $localize`:@@nav.dashboard:Dashboard`,
+    tokens: $localize`:@@common.token:Token`,
+    users: $localize`:@@nav.users:Users`,
+    audit: $localize`:@@nav.audit:Audit`,
+    "conditional-access": $localize`:@@nav.conditionalAccess:Conditional Access`
+  };
   protected readonly depth = this.appearanceService.depth;
   protected readonly lightSource = this.appearanceService.lightSource;
   protected readonly corners = this.appearanceService.corners;
@@ -100,7 +112,8 @@ export class UISettingsComponent {
     forkJoin([
       this.appearanceService.resetToDefaults(),
       this.themeService.setTheme("system"),
-      this.uiPreferencesService.setShowLoadingUrls(false)
+      this.uiPreferencesService.setShowLoadingUrls(false),
+      this.uiPreferencesService.resetLandingPage()
     ]).subscribe(() => this.uiPreferencesService.switchLocale("en"));
   }
 
@@ -122,5 +135,16 @@ export class UISettingsComponent {
 
   protected selectLocale(code: string): void {
     this.uiPreferencesService.switchLocale(code);
+  }
+
+  protected selectLandingPage(page: LandingPage): void {
+    this.selectedLandingPage.set(page);
+    this.uiPreferencesService.setLandingPage(page).subscribe((result) => {
+      // A failed write is swallowed into a `null` emission (see setLandingPage) after the
+      // service has already shown a toast -- snap the control back to what is actually stored.
+      if (result === null) {
+        this.selectedLandingPage.set(this.landingPage());
+      }
+    });
   }
 }

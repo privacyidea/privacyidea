@@ -178,6 +178,13 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
     A **user** may only ever act on their own entries, so a single scope built from the logged-in user's realm and
     username is returned (never ``None``).
 
+    Any **other** role acts on nothing: an empty list, which every consumer reads as a boundary that admits no
+    record (:func:`~privacyidea.lib.conditional_access.authentication_log.visibility_condition` returns
+    ``false()`` for it). Unreachable today - every endpoint that asks is behind ``@user_required``, so only the
+    two roles above get this far - but the default of a function whose job is to restrict has to be "nothing",
+    not "everything", or a role added later silently arrives unscoped. ``None`` cannot express it: that is the
+    unrestricted answer an unscoped admin policy legitimately produces.
+
     For an **admin** the scopes are derived from the target scoping (realm, resolver, user) of that action's
     policies: one scope per scoping policy, combined OR across policies and AND across the dimensions a single policy
     sets. ``None`` (no restriction) is returned if no policy of this action is scoped, or if any applicable policy
@@ -186,7 +193,8 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
     the current admin and request.
 
     :param action: the policy action whose scoping to read (e.g. ``authentication_log_read``, ``user_lock_read``)
-    :return: a list of :class:`AuthenticationLogVisibilityScope`, or ``None`` for unrestricted access
+    :return: a list of :class:`AuthenticationLogVisibilityScope` (an empty one admitting no record), or ``None``
+        for unrestricted access
     """
     from privacyidea.lib.auth import ROLE
     from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
@@ -194,7 +202,11 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
         return [AuthenticationLogVisibilityScope(realms=[g.logged_in_user["realm"]], resolvers=[],
                                                  usernames=[g.logged_in_user["username"]])]
     if g.logged_in_user["role"] != ROLE.ADMIN:
-        return None
+        # Logged and not raised: an unexpected role here is a misconfiguration to notice, not a reason to answer
+        # 500 to a read that "no records" answers correctly and safely.
+        log.warning(f"No visibility boundary is defined for role {g.logged_in_user['role']!r}; "
+                    f"restricting {action} to no records.")
+        return []
     scopes = []
     for policy in Match.admin(g, action=action).policies():
         realms = policy.get("realm") or []

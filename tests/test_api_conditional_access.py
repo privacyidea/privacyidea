@@ -25,22 +25,26 @@ from unittest import mock
 from datetime import datetime, timedelta, timezone
 
 from privacyidea.api.lib import conditional_access as ca_gate
+from privacyidea.lib.conditional_access import engine as ca_engine
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
+from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.error import Error
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode
-from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, get_authentication_logs,
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole, CountMode
+from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs,
                                                                    log_authentication_event)
 from privacyidea.lib.conditional_access.engine import is_user_locked, is_ip_blocked
 from privacyidea.lib.conditional_access.engine import get_user_lock, get_ip_block
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
-from privacyidea.lib.conditional_access.engine import _upsert_user_lock_state
+from privacyidea.lib.conditional_access.engine import LockSubject, _upsert_user_lock_state
 from privacyidea.lib.conditional_access.policy import create_conditional_access_policy, default_error_message
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
+from privacyidea.lib.conditional_access.state import lock_internal_admin, lock_user
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
+from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.token import init_token, remove_token, get_tokens, revoke_token
@@ -61,7 +65,7 @@ from privacyidea.models.conditional_access_policy import (
 from privacyidea.models.utils import utc_now
 from . import smtpmock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
-from .base import MyApiTestCase
+from .base import MyApiTestCase, skip_unless_admin_lookup_folds_case
 
 
 def _rows_since(before: int) -> list[str]:
@@ -142,6 +146,13 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             self.assertEqual(200, response.status_code, response)
             return response.json
 
+    def _radiuscheck(self, data: dict) -> int:
+        """The status code is the whole answer at /validate/radiuscheck: 204 authenticated, 400 anything else."""
+        with self.app.test_request_context('/validate/radiuscheck', method='POST', data=data):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(b"", response.data, response.data)
+            return response.status_code
+
     def _outcome_statistics(self, query_string: dict | None = None, status: int = 200) -> dict:
         """Read the outcome history over a window around now, since the rows written here take the current time."""
         query = {"start_time": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
@@ -167,18 +178,20 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         return {series["action_type"]: series["total"] for series in body["result"]["value"]["outcomes"]}
 
     def _lock_user(self, lock_expires_at, error_message: str | None = None, user: User | None = None) -> None:
-        _upsert_user_lock_state(user or self.user, lock_expires_at=lock_expires_at,
-                                   error_message=error_message)
+        _upsert_user_lock_state(LockSubject.for_user(user or self.user), lock_expires_at=lock_expires_at,
+                                error_message=error_message)
 
     @staticmethod
     def _make_lock_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
-                          dry_run: bool = False, priority: int = 1, error_message: str | None = None) -> None:
+                          dry_run: bool = False, priority: int = 1, error_message: str | None = None,
+                          reset_on_success: bool | None = None) -> None:
         create_conditional_access_policy(
             name="ca_lock", time_window_seconds=window,
             counter_types_to_track=_counter_types(counter_type),
             stages=[{"failure_threshold": threshold, "error_message": error_message,
                      "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": duration}]}],
-            target=ConditionalAccessTarget.USER, dry_run=dry_run, priority=priority)
+            target=ConditionalAccessTarget.USER, dry_run=dry_run, priority=priority,
+            reset_on_success=reset_on_success)
 
     @staticmethod
     def _make_block_ip_policy(*, counter_type, threshold: int, duration: int, window: int = 3600,
@@ -629,6 +642,25 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(after["detail"], tripping["detail"], tripping)
         self.assertEqual(str(GENERIC_AUTH_FAILURE), tripping["detail"]["message"], tripping)
 
+    def test_a_tripping_request_is_refused_at_radiuscheck_too(self):
+        # /validate/radiuscheck answers with a status code and an empty body, so construct_radius_response drops the
+        # JSON body - and with it the verdict. It therefore has to run *after* the conditional-access response hook,
+        # or the request that writes a restriction is answered 204 while /validate/check answers the very same
+        # request with a rejection: the RADIUS client would authenticate the user on the request that locks them.
+        #
+        # A rate limit is the reachable shape of "authenticates and trips in one breath": LOGIN_SUCCESS is trackable
+        # and reset_on_success=False keeps the success from clearing the counter it just fed.
+        self._make_lock_policy(counter_type=AuthEventType.LOGIN_SUCCESS, threshold=2, duration=600,
+                               reset_on_success=False)
+        # First success: one event, below the threshold, so nothing is refused and the adapter is told "authenticated".
+        self.assertEqual(204, self._radiuscheck({"user": "cornelius", "pass": "pin755224"}))
+        self.assertFalse(is_user_locked(self.user))
+
+        # Second success reaches the threshold and locks. Same endpoint, same kind of request - the only difference
+        # is that this one tripped the restriction, and that has to reach the status code.
+        self.assertEqual(400, self._radiuscheck({"user": "cornelius", "pass": "pin287082"}))
+        self.assertTrue(is_user_locked(self.user))
+
     def test_hide_specific_error_message_still_masks_an_ordinary_token_failure(self):
         # The policy keeps doing its job on everything that is not conditional access's: a wrong PIN is still
         # generic, so keeping the lock error message does not widen what else the endpoint discloses.
@@ -932,6 +964,30 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # And the next request is not refused, which is the disagreement the rejection would have created.
         body = self._check({"user": "cornelius", "pass": "pin755224"})
         self.assertTrue(body["result"]["value"], body)
+
+    def test_a_lock_that_is_not_in_force_does_not_refuse_its_own_request(self):
+        # The other way a restriction can fail to happen: the write reports success, but nothing can be read back
+        # from the row it claims to have written - what a lock keyed differently from the pre-check's lookup does.
+        # Since no later request would be refused by it, this one must not be answered as a rejection either, and
+        # nothing may be recorded as having restricted it. Simulated by making the engine's read miss, which is
+        # exactly the disagreement between writer and reader that the check exists to catch.
+        create_conditional_access_policy(
+            name="ca_lock_unverifiable", time_window_seconds=3600, priority=1,
+            counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
+            stages=[{"failure_threshold": 1, "error_message": "MSG-UNVERIFIABLE",
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
+            target=ConditionalAccessTarget.USER)
+
+        with mock.patch.object(ca_engine, "get_subject_lock", return_value=None):
+            body = self._check({"user": "cornelius", "pass": "wrongpin"})
+
+        # The token failure is still the reason the request failed, and still says so - the stage's wording is
+        # nowhere in the response, because the lock it describes was never established.
+        self.assertEqual("wrong otp pin", body["detail"]["message"], body)
+        self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
+        self.assertNotIn("MSG-UNVERIFIABLE", str(body), body)
+        # And nothing is recorded as having happened on the row this request wrote.
+        self.assertListEqual([], list(get_outcomes(get_authentication_logs()[-1].id)))
 
     def test_a_stage_whose_lock_was_skipped_still_says_nothing_about_it(self):
         # The other half of the same rule, and the reason "did it restrict anything" and "may it speak" are two
@@ -1836,6 +1892,11 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             db.session.query(model).delete()
         db.session.commit()
 
+    @staticmethod
+    def _admin_lock(login: str) -> UserLockState | None:
+        """The lock row of the local database admin *login*, which is keyed by that name (see LockSubject)."""
+        return db.session.get(UserLockState, LockSubject.for_internal_admin(login).state_key)
+
     def _auth(self, username, password, remote_addr=None, transaction_id=None):
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
         data = {"username": username, "password": password}
@@ -2560,10 +2621,111 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             delete_policy("ca_show")
             delete_smtpserver("lockoutmail")
 
+    def test_a_local_admin_is_locked_by_a_user_policy(self):
+        # A local database admin has no (resolver, uid, realm) - only a login name - so a user-target policy keys
+        # them by that login name together with the admin-internal role, the same pair the authentication log
+        # records them under.
+        self._make_password_policy(threshold=2, duration=600)
+
+        self._auth(self.testadmin, "wrongpass")
+        res = self._auth(self.testadmin, "wrongpass")
+        self.assertEqual(401, res.status_code, res.json)
+
+        lock = self._admin_lock(self.testadmin)
+        self.assertIsNotNone(lock, "the second failure did not lock the local admin")
+        # Keyed by the login name, with no resolver or realm to key on, and saying which kind of principal it
+        # locks so nothing has to read that off the two columns it leaves empty.
+        self.assertEqual(("", self.testadmin, ""), (lock.resolver, lock.uid, lock.realm))
+        self.assertEqual(self.testadmin, lock.username)
+        self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), lock.user_role)
+
+        # And the lock is enforced: the *correct* password is now refused by the pre-check, before the credential
+        # is ever looked at, exactly as it would be for a locked user.
+        res = self._auth(self.testadmin, self.testadminpw)
+        self.assertEqual(401, res.status_code, res.json)
+        entries = get_authentication_logs()
+        self.assertEqual(str(AuthEventType.USER_LOCKED), entries[-1].event_type)
+        self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), entries[-1].user_role)
+        self.assertEqual(self.testadmin, entries[-1].username)
+
+    def test_a_locked_local_admins_refusal_is_logged_under_the_stored_spelling_of_their_login(self):
+        # One account typed two ways is one subject: the refusal row has to name it the way the lock and the
+        # counting do, or a lock reached under one spelling leaves its rejections filed under the other - invisible
+        # to the admin's own log scope and to any filter on the name.
+        skip_unless_admin_lookup_folds_case(self)
+        lock_internal_admin(self.testadmin)
+
+        # The correct password, refused by the pre-check before it is looked at, under a spelling the admin table
+        # treats as the same account.
+        res = self._auth(self.testadmin.upper(), self.testadminpw)
+        self.assertEqual(401, res.status_code, res.json)
+
+        entry = get_authentication_logs()[-1]
+        self.assertEqual(str(AuthEventType.USER_LOCKED), entry.event_type)
+        self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), entry.user_role)
+        self.assertEqual(self.testadmin, entry.username)
+
+    def test_a_name_that_is_both_a_local_admin_and_a_user_is_refused_on_the_users_lock(self):
+        # /auth takes a bare login name and only learns which principal it named by seeing which credential
+        # matches: the local admin's password is tried first, and a same-named user in the default realm is the
+        # fallback. The pre-check runs before that, so it refuses on either one's lock. The failures of such a name
+        # land on the user's row, so looking only under the admin's would let the name be locked over and over
+        # while every request went through - here, with the admin's own password, as a successful login.
+        self.assertEqual(self.realm1, get_default_realm(),
+                         "the collision needs the user's realm to be the one a bare login name resolves to")
+        create_db_admin(self.user.login, password="adminpw")
+        try:
+            lock_user(self.user)
+
+            res = self._auth(self.user.login, "adminpw")
+
+            self.assertEqual(401, res.status_code, res.json)
+            entries = get_authentication_logs()
+            self.assertEqual(str(AuthEventType.USER_LOCKED), entries[-1].event_type)
+        finally:
+            delete_db_admin(self.user.login)
+
+    def test_a_locked_local_admin_gets_back_in_once_the_lock_expires(self):
+        # The recovery path, and the reason no separate never-lock list is needed: the lock is timed like any
+        # other, so the account an operator would hunt for comes back on its own.
+        self._make_password_policy(threshold=1, duration=600)
+        self.assertEqual(401, self._auth(self.testadmin, "wrongpass").status_code)
+        self.assertEqual(401, self._auth(self.testadmin, self.testadminpw).status_code)
+
+        lock = self._admin_lock(self.testadmin)
+        lock.lock_expires_at = utc_now() - timedelta(seconds=1)
+        db.session.commit()
+
+        res = self._auth(self.testadmin, self.testadminpw)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(res.json["result"]["value"]["token"], res.json)
+
+    def test_a_user_policy_condition_exempts_the_local_admin(self):
+        # Break glass for a user-target policy, which now reaches local admins too: the same USER_ROLE condition
+        # that exempts them from a source-IP DENY keeps the emergency account out of a lock policy.
+        create_conditional_access_policy(
+            name="ca_pw_no_admins", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+            stages=[{"failure_threshold": 1,
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
+            conditions=[{"condition_type": str(ConditionType.USER_ROLE),
+                         "operator": str(ConditionOperator.NOT_IN),
+                         "value": [str(AuthLogUserRole.ADMIN_INTERNAL)]}],
+            target=ConditionalAccessTarget.USER, priority=1)
+
+        self.assertEqual(401, self._auth(self.testadmin, "wrongpass").status_code)
+        self.assertIsNone(self._admin_lock(self.testadmin))
+        res = self._auth(self.testadmin, self.testadminpw)
+        self.assertEqual(200, res.status_code, res.json)
+
+        # A regular user under the same policy is not exempt.
+        self.assertEqual(401, self._auth("cornelius", "wrongpass").status_code)
+        self.assertTrue(is_user_locked(self.user))
+
     def test_break_glass_local_admin_is_exempt_from_pre_auth_deny(self):
-        # A blanket source-IP DENY exempts local admins; it must target source_ip, since a user-target policy already
-        # skips a local admin because their User() never resolves and the role would never be consulted. Loopback is on
-        # the never-block list, hence the test uses 10.0.0.5.
+        # A blanket source-IP DENY exempts local admins by the same USER_ROLE condition a user-target policy uses
+        # (see test_a_user_policy_condition_exempts_the_local_admin); this is the source-IP half, where the policy
+        # applies to whoever is behind the address. Loopback is on the never-block list, hence 10.0.0.5.
         create_conditional_access_policy(
             name="ca_deny_ip", time_window_seconds=3600,
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),

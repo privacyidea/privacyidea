@@ -15,6 +15,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokens.deprecated import DeprecatedTokenClass
 from privacyidea.models import Token, db
+from ..base import _reset_database
 
 
 @pytest.fixture(scope="function")
@@ -22,14 +23,13 @@ def app():
     """Create and configure app instance for testing."""
     app = create_app(config_name="testing", config_file="", silent=True)
     with app.app_context():
-        db.create_all()
+        _reset_database()
 
     yield app
 
     with app.app_context():
         call_finalizers()
         close_all_sessions()
-        db.drop_all()
         db.engine.dispose()
 
 
@@ -39,9 +39,11 @@ def _make_deprecated(serial: str, original: str) -> None:
     db_token.active = False
     db_token.save()
     token = DeprecatedTokenClass(db_token)
-    token.add_tokeninfo("original_tokentype", original)
-    token.add_tokeninfo("original_active", "1")
-    token.add_tokeninfo("deprecated_in", "3.14")
+    # The migration is what writes these, so they go through the writer the server uses and not through the
+    # path a request takes, which refuses them
+    token.write_tokeninfo("original_tokentype", original)
+    token.write_tokeninfo("original_active", "1")
+    token.write_tokeninfo("deprecated_in", "3.14")
 
 
 class TestJanitorDeprecatedList:

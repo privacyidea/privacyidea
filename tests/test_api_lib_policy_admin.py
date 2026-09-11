@@ -65,7 +65,7 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import get_jwt_validity
+from privacyidea.lib.policies.helper import get_jwt_validity, get_policy_visibility_scopes
 from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
                                     PolicyClass, SCOPE, REMOTE_USER,
                                     AUTOASSIGNVALUE, AUTHORIZED,
@@ -791,3 +791,22 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         self.assertEqual(timedelta(hours=1), validity)
 
         delete_policy("jwt_validity")
+
+    def test_63_visibility_scopes_default_to_no_records(self):
+        # The boundary for a role that has none defined is "nothing", not "everything": every consumer reads an
+        # empty scope list as a WHERE that admits no row, while None is the unrestricted answer an unscoped admin
+        # policy legitimately produces. Unreachable through the API - the endpoints that ask are behind
+        # @user_required - so it is asserted here, on the function itself.
+        g.policy_object = PolicyClass()
+        g.logged_in_user = {"username": "apikey", "realm": "", "role": ROLE.VALIDATE}
+        self.assertListEqual([], get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ))
+
+        # A user is scoped to their own entries, and an admin with no scoping policy is unrestricted.
+        g.logged_in_user = {"username": "cornelius", "realm": self.realm1, "role": ROLE.USER}
+        scopes = get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
+        self.assertEqual(1, len(scopes))
+        self.assertListEqual(["cornelius"], scopes[0].usernames)
+        self.assertListEqual([self.realm1], scopes[0].realms)
+
+        g.logged_in_user = {"username": "admin1", "realm": "", "role": ROLE.ADMIN}
+        self.assertIsNone(get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ))

@@ -111,7 +111,7 @@ from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from privacyidea.lib import _, lazy_gettext
@@ -140,6 +140,17 @@ MAX_NAME_LENGTH = 255
 # on the lock/block state rows that copy it. Shared, so any path taking one as input validates alike.
 MAX_ERROR_MESSAGE_LENGTH = 500
 
+#: The largest value a field stored in an ``Integer`` column may take: the signed 32-bit ceiling, which MySQL and
+#: PostgreSQL enforce and SQLite does not.
+MAX_COLUMN_INT = 2 ** 31 - 1
+
+#: The largest priority a policy may carry, deliberately far below :data:`MAX_COLUMN_INT`. Reordering parks the
+#: rows it moves *above* the highest live priority (see :func:`reorder_conditional_access_policies`), so the room
+#: between this and the column ceiling is that parking space - over two thousand times more than the number of
+#: policies any installation would reorder at once. A priority is a position in an ordering, not a quantity;
+#: nothing needs seven digits of it.
+MAX_PRIORITY = 1_000_000
+
 # DENY is a standing pre-auth decision, so it defaults to re-triggering over the range its stage owns; the
 # post-response lock/email/block actions default to firing once. A set because both the threshold-0 rule
 # and the retrigger default ask "is this a standing verdict?".
@@ -150,7 +161,7 @@ DECISION_ACTIONS = frozenset({ConditionalAccessAction.DENY})
 # The actions a stage may carry more than once. Only the notifications: repeating EMAIL_ADMIN with a
 # different recipient_group (or a different subject and body) is the one case where a second copy of an
 # action does something the first cannot - see
-# :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email`, which resolves its recipients per
+# :func:`~privacyidea.lib.conditional_access.engine._send_action_email`, which resolves its recipients per
 # action. Every other action writes one piece of state or one verdict, so a second copy either does nothing
 # or silently overwrites the first.
 #: The actions a stage may carry more than once - the notifications, where a second copy reaches a
@@ -291,7 +302,7 @@ def _validate_priority(priority, exclude_id: int | None = None) -> int:
         current priority does not count as a collision.
     :return: the validated priority
     """
-    priority = _validate_positive_int(priority, "priority")
+    priority = _validate_positive_int(priority, "priority", maximum=MAX_PRIORITY)
     existing = db.session.scalar(select(ConditionalAccessPolicy).where(ConditionalAccessPolicy.priority == priority))
     if existing and existing.id != exclude_id:
         raise ParameterError(
@@ -301,13 +312,18 @@ def _validate_priority(priority, exclude_id: int | None = None) -> int:
     return priority
 
 
-def _validate_positive_int(value, field: str) -> int:
+def _validate_positive_int(value, field: str, maximum: int = MAX_COLUMN_INT) -> int:
     """
-    Validate a strictly positive integer field. bool is explicitly rejected
+    Validate a strictly positive integer field, at most *maximum*. bool is explicitly rejected
     (it is an int subclass, but ``priority=true`` is a caller mistake).
+
+    The upper bound defaults to what the column can hold (:data:`MAX_COLUMN_INT`), so a value the database would
+    refuse is reported as the parameter error it is. Fields with a tighter range of their own pass it.
     """
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise ParameterError(f"'{field}' must be a positive integer.")
+    if value > maximum:
+        raise ParameterError(f"'{field}' must not exceed {maximum}.")
     return value
 
 
@@ -596,7 +612,7 @@ def _validate_counter_types(counter_types) -> list[str]:
 # The ``action_value`` keys each action type accepts, as the engine reads them.
 #
 # The timed restrictions take a duration; the email actions take the SMTP settings
-# :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email` reads. ``identifier`` is the
+# :func:`~privacyidea.lib.conditional_access.engine._send_action_email` reads. ``identifier`` is the
 # accepted alias for ``smtp_identifier``.
 _DURATION_KEYS = ("duration_seconds", "duration")
 _EMAIL_KEYS = frozenset({"smtp_identifier", "identifier", "recipient_group", "subject", "body",
@@ -633,7 +649,7 @@ def _validate_duration_action_value(action_type: str, action_value) -> None:
 def _validate_email_action_value(action_type: str, action_value) -> None:
     """
     Validate the ``action_value`` of an ``EMAIL_ADMIN`` / ``EMAIL_USER`` action: the object of SMTP settings
-    :func:`~privacyidea.lib.conditional_access.engine._send_lockout_email` reads, with a non-empty ``subject``
+    :func:`~privacyidea.lib.conditional_access.engine._send_action_email` reads, with a non-empty ``subject``
     and ``body``.
 
     ``smtp_identifier`` is deliberately **not** required, even though the engine needs it to send: the SMTP
@@ -784,6 +800,8 @@ def _validate_stages(stages) -> list[StageDefinition]:
         threshold = stage.get("failure_threshold")
         if isinstance(threshold, bool) or not isinstance(threshold, int) or threshold < 0:
             raise ParameterError("'failure_threshold' must be a non-negative integer.")
+        if threshold > MAX_COLUMN_INT:
+            raise ParameterError(f"'failure_threshold' must not exceed {MAX_COLUMN_INT}.")
         if threshold in thresholds:
             raise ParameterError(f"Duplicate failure_threshold {threshold}: thresholds must be unique within a policy.")
         thresholds.add(threshold)
@@ -1319,7 +1337,8 @@ def reorder_conditional_access_policies(policy_ids: list[int], expected_prioriti
         if not isinstance(expected_priorities, (list, tuple)) or len(expected_priorities) != len(ids):
             raise ParameterError("'expected_priorities' must have one entry per policy id.")
         expected_priorities = [
-            _validate_positive_int(priority, "expected priority") for priority in expected_priorities
+            _validate_positive_int(priority, "expected priority", maximum=MAX_PRIORITY)
+            for priority in expected_priorities
         ]
     policies = [_get_policy(policy_id) for policy_id in ids]
     if expected_priorities is not None:
@@ -1333,10 +1352,23 @@ def reorder_conditional_access_policies(policy_ids: list[int], expected_prioriti
     # The values these policies hold, lowest first: reassigned in the requested order.
     priorities = sorted(policy.priority for policy in policies)
     with _unique_conflict_as_400():
-        # Parks every policy on a value that can't collide with a live one (ids unique, priorities >= 1), then
-        # assigns the new ones, since uniqueness is checked per statement; the flushes force that statement order.
+        # Parks every policy on a value no live row holds, then assigns the new ones, since uniqueness is checked
+        # per statement; the flushes force that statement order. The parking value is built from two things,
+        # and needs both:
+        #
+        # *Above* every priority in the table, because a parked value has to be harmless if it were ever to
+        # survive. The flushes and the commit share a transaction, so one cannot be left behind - but if that
+        # ever stopped holding, a row parked at the top of the order is inert, where a value below 1 would sort
+        # first and quietly take precedence over every real policy.
+        #
+        # Plus the policy's own **id**, which is what keeps two concurrent reorders out of each other's way.
+        # Ids are unique, so the rows of one reorder park on values no other reorder parks on - the property
+        # that lets this function promise above that disjoint rearrangements do not conflict. An offset by
+        # position instead (1, 2, 3...) would have every reorder park on the same values and serialize them on
+        # the unique index, which for two admins reordering unrelated policies is a lock wait neither asked for.
+        park_base = db.session.scalar(select(func.max(ConditionalAccessPolicy.priority))) or 0
         for policy in policies:
-            policy.priority = -policy.id
+            policy.priority = park_base + policy.id
         db.session.flush()
         for policy, priority in zip(policies, priorities):
             policy.priority = priority

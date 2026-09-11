@@ -426,6 +426,12 @@ class PushTokenClass(TokenClass):
     mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE, AuthenticationMode.OUTOFBAND]
     client_mode = ClientMode.POLL
 
+    # POLLING_ALLOWED is not declared: nothing in the server ever writes it, it is a switch an administrator
+    # sets on a single token to deny it polling, so it stays free-form token info.
+    owned_tokeninfo_keys = frozenset({"enrollment_credential", "firebase_token",
+                                      PRIVATE_KEY_SERVER, PUBLIC_KEY_SERVER, PUBLIC_KEY_SMARTPHONE,
+                                      PushAction.FIREBASE_CONFIG})
+
     def __init__(self, db_token: Token):
         TokenClass.__init__(self, db_token)
         self.set_type("push")
@@ -660,22 +666,22 @@ class PushTokenClass(TokenClass):
             enrollment_credential = get_required(upd_param, "enrollment_credential")
             if enrollment_credential != self.get_tokeninfo("enrollment_credential"):
                 raise ParameterError("Invalid enrollment credential. You are not authorized to finalize this token.")
-            self.delete_tokeninfo("enrollment_credential")
+            self.remove_tokeninfo("enrollment_credential")
             self.token.rollout_state = "enrolled"
             self.token.active = True
-            self.add_tokeninfo(PUBLIC_KEY_SMARTPHONE, upd_param.get("pubkey"))
-            self.add_tokeninfo("firebase_token", upd_param.get("fbtoken"))
+            self.write_tokeninfo(PUBLIC_KEY_SMARTPHONE, upd_param.get("pubkey"))
+            self.write_tokeninfo("firebase_token", upd_param.get("fbtoken"))
             # create a keypair for the server side.
             pub_key, priv_key = generate_keypair(4096)
-            self.add_tokeninfo(PUBLIC_KEY_SERVER, pub_key)
-            self.add_tokeninfo(PRIVATE_KEY_SERVER, priv_key, "password")
+            self.write_tokeninfo(PUBLIC_KEY_SERVER, pub_key)
+            self.write_tokeninfo(PRIVATE_KEY_SERVER, priv_key, "password")
 
         elif "genkey" in upd_param:
             # We are in step 1:
             upd_param["2stepinit"] = 1
-            self.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
+            self.write_tokeninfo("enrollment_credential", geturandom(20, hex=True))
             # We also store the Firebase config, that was used during the enrollment.
-            self.add_tokeninfo(PushAction.FIREBASE_CONFIG, param.get(PushAction.FIREBASE_CONFIG))
+            self.write_tokeninfo(PushAction.FIREBASE_CONFIG, param.get(PushAction.FIREBASE_CONFIG))
         else:
             raise ParameterError("Invalid Parameters. Either provide (genkey) or (serial, fbtoken, pubkey).")
 
@@ -984,7 +990,7 @@ class PushTokenClass(TokenClass):
                               padding.PKCS1v15(),
                               hashes.SHA256())
             # If the timestamp and signature are valid, we update the token
-            token.add_tokeninfo('firebase_token', request_data['new_fb_token'])
+            token.write_tokeninfo('firebase_token', request_data['new_fb_token'])
             return True, {}
         except (ResourceNotFoundError, ParameterError, TypeError,
                 InvalidSignature, ConfigAdminError, BinasciiError) as e:
@@ -1033,13 +1039,23 @@ class PushTokenClass(TokenClass):
         """
         Resolve the owner of the push token addressed by *serial* for the
         conditional-access pre-check. Returns an empty :class:`User` when the
-        serial is missing or the token has no resolvable owner.
+        serial is missing or the token has no resolvable owner - deliberately: the
+        answer is verified by its signature, so identity resolution must never be
+        what refuses it (a directory outage would fail a valid answer, with no
+        recovery path from the phone).
+
+        That fallback bypasses nothing, because this gate is not what grants the
+        login: the polling ``/validate/check`` carries the user and is gated on the
+        resolved identity. Only ``push_wait`` has no second gate - its trigger leg
+        is gated at request start, so a lock created during the wait is caught by
+        neither.
         """
         if not serial:
             return User()
         try:
             return get_one_token(serial=serial).user or User()
-        except Exception:
+        except Exception as ex:
+            log.debug(f"Conditional-access pre-check could not resolve the owner of token {serial}: {ex!r}")
             return User()
 
     def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode) -> dict | None:
@@ -1632,9 +1648,9 @@ class PushTokenClass(TokenClass):
         push_params = get_pushtoken_add_config(g, user_obj=user_obj)
         token = init_token({"type": cls.get_class_type(), "genkey": 1, "2stepinit": 1}, user=user_obj)
         # We are in step 1:
-        token.add_tokeninfo("enrollment_credential", geturandom(20, hex=True))
+        token.write_tokeninfo("enrollment_credential", geturandom(20, hex=True))
         # We also store the Firebase config, that was used during the enrollment.
-        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, push_params.get(PushAction.FIREBASE_CONFIG))
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, push_params.get(PushAction.FIREBASE_CONFIG))
         content.get("result")["value"] = False
         content.get("result")["authentication"] = "CHALLENGE"
 

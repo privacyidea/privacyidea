@@ -98,6 +98,12 @@ container on the server. This allows to register devices with existing tokens as
 add the tokens on the device to the container. However, the tokens already have to exist on the server. No new token is
 created, it only allows to add existing tokens to the container.
 
+Only tokens that are related to the container are added. A token that is assigned to a user is added if the user is an
+owner of the container. A token that is not assigned to a user is added if it is in one of the realms of the container,
+which covers tokens that are prepared in advance for a user that is not known yet. A token that has neither an owner nor
+a realm can not be related to the container and is skipped. A token that is already part of a container is skipped as
+well: moving a container with all its tokens to a new device is what a container rollover is for.
+
 .. versionadded:: 3.11
 
 disable_client_token_deletion

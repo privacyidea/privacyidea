@@ -676,7 +676,10 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
         self.setUp_user_realms()
         set_policy(
             name="force_2step",
-            action=[f"hotp_2step=force", "enrollHOTP=1", f"{PolicyAction.OTPPINMINLEN}=4"],
+            # Rolling a token over that is already enrolled gives it a new secret, which needs the rollover
+            # action on top of the enrollment action
+            action=[f"hotp_2step=force", "enrollHOTP=1", f"{PolicyAction.TOKENROLLOVER}=1",
+                    f"{PolicyAction.OTPPINMINLEN}=4"],
             scope=SCOPE.USER,
         )
         set_policy(

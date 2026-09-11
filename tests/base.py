@@ -2,15 +2,17 @@
 import pathlib
 import unittest
 import mock
+from sqlalchemy import Sequence, select, text
+from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.config import TestingConfig
-from privacyidea.models import db, save_config_timestamp
+from privacyidea.models import Token, db, save_config_timestamp
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
-from privacyidea.lib.auth import create_db_admin
+from privacyidea.lib.auth import create_db_admin, delete_db_admin, get_db_admin
 from privacyidea.lib.auditmodules.base import Audit
 from privacyidea.lib.conditional_access.request_context import reset_ca_context
 from privacyidea.lib.conditional_access.session import close_ca_session
@@ -51,6 +53,32 @@ def force_expire_challenges(transaction_id):
     else:
         from privacyidea.models import db
         db.session.commit()
+
+
+# A login used only to find out how this database matches one, created and removed again by
+# skip_unless_admin_lookup_folds_case.
+_CASE_PROBE_ADMIN = "caseProbeAdmin"
+
+
+def skip_unless_admin_lookup_folds_case(testcase):
+    """
+    Skip *testcase* unless the ``admin`` table matches a login name case-insensitively.
+
+    Whether two spellings of one login are one account is the database's decision, not privacyIDEA's:
+    ``admin.username`` carries the server's default collation, which folds case on MySQL/MariaDB and does not on
+    SQLite, PostgreSQL or Oracle. The canonicalization that keeps such an account one subject in the authentication
+    log and one row in the lock state therefore has something to do only where the lookup folds, and only there can a
+    test tell it apart from its absence. Probed rather than keyed off the dialect name, because a MySQL server
+    configured with a binary collation folds nothing either.
+    """
+    create_db_admin(_CASE_PROBE_ADMIN)
+    try:
+        folds_case = get_db_admin(_CASE_PROBE_ADMIN.upper()) is not None
+    finally:
+        delete_db_admin(_CASE_PROBE_ADMIN)
+    if not folds_case:
+        testcase.skipTest("the admin lookup matches case-sensitively on this database, so one account cannot be "
+                          "reached under a second spelling")
 
 
 class FakeFlaskG(object):
@@ -106,6 +134,99 @@ class PristineSqliteFixtures:
                 fixture_file.write(data)
 
 
+def _declared_sequences() -> list:
+    """Names of every ``Sequence`` the models attach to a primary key.
+
+    privacyIDEA allocates ids from real database sequences rather than from
+    AUTO_INCREMENT, so emptying the tables is not enough to make the next class
+    start from id 1 again — the sequences have to be restarted too.
+    """
+    return sorted({column.default.name
+                   for table in db.metadata.tables.values()
+                   for column in table.columns
+                   if isinstance(getattr(column, "default", None), Sequence)})
+
+
+def _schema_present() -> bool:
+    """Is the schema already built in this worker's database?
+
+    Reads one row from the table every test touches. A failure means the tables
+    are gone - either this is the first class on the worker, or a class in
+    ``tests/cli`` dropped them - and leaves the transaction unusable on
+    PostgreSQL, so it is rolled back before the caller builds the schema.
+    """
+    try:
+        db.session.execute(select(Token.id).limit(1)).first()
+        return True
+    except DatabaseError:
+        db.session.rollback()
+        return False
+
+
+def _reset_database() -> None:
+    """Give the next test class an empty database without rebuilding the schema.
+
+    ``db.create_all()`` over the ~57 tables and the matching ``db.drop_all()``
+    cost about 1.9 s per test class against MariaDB, and there are ~325 classes,
+    so the suite spent a fifth of its time recreating a schema that never
+    changes. Creating it once per xdist worker and deleting the rows in between
+    leaves each class with the same empty tables for about 45 ms.
+
+    The schema is only built when it is actually missing, which one cheap query
+    answers. It cannot simply be built once and remembered: several classes in
+    ``tests/cli`` call ``db.drop_all()`` in their own teardown, and a remembered
+    "already built" would leave every later class on that worker querying tables
+    that no longer exist. Asking the database each time costs about a
+    millisecond and stays correct however the tables went away, where calling
+    ``create_all()`` unconditionally cost ~300 ms per class under parallel load.
+
+    PostgreSQL is emptied with ``TRUNCATE`` rather than ``DELETE``. It is not
+    only about speed: ``DELETE`` leaves the heap in place, and because an
+    ``UPDATE`` writes a new tuple, a row updated after the wipe can end up
+    physically behind a row inserted later. ``get_tokens()`` has no ``ORDER
+    BY``, so tests that read ``tokens[0]`` then see the wrong token - the
+    two-step push enrollment updates its row and stopped coming first.
+    ``TRUNCATE`` recreates the heap, which is what dropping and rebuilding the
+    table used to provide. MySQL/MariaDB cannot use it here, because
+    privacyIDEA's sequences are SEQUENCE-engine tables and ``TRUNCATE`` refuses
+    them; InnoDB returns rows in primary-key order anyway, so ``DELETE`` is
+    equivalent there.
+
+    Rows are deleted child-table first (``sorted_tables`` is parent-first) so
+    foreign keys stay satisfied. MySQL/MariaDB additionally get the FK check
+    switched off, because privacyIDEA has cycles that no single ordering
+    satisfies.
+
+    The sequences behind the primary keys are restarted as well, so a class
+    still sees ids counting from 1 the way a freshly built schema gave it.
+    Several tests assert on a specific id, and deleting rows alone leaves the
+    sequences where the previous class left them. On SQLite there is nothing to
+    do: ``Sequence`` is ignored there and an emptied table hands out rowid 1
+    again by itself.
+    """
+    if not _schema_present():
+        db.create_all()
+    connection = db.session.connection()
+    dialect = db.engine.dialect.name
+    is_mysql = dialect in ("mysql", "mariadb")
+    if is_mysql:
+        connection.execute(text("SET FOREIGN_KEY_CHECKS=0"))
+    try:
+        if dialect == "postgresql":
+            table_list = ", ".join(f'"{table.name}"' for table in db.metadata.sorted_tables)
+            connection.execute(text(f"TRUNCATE TABLE {table_list} RESTART IDENTITY CASCADE"))
+        else:
+            for table in reversed(db.metadata.sorted_tables):
+                connection.execute(table.delete())
+        if dialect != "sqlite":
+            for sequence_name in _declared_sequences():
+                connection.execute(text(f"ALTER SEQUENCE {sequence_name} RESTART"))
+    finally:
+        if is_mysql:
+            connection.execute(text("SET FOREIGN_KEY_CHECKS=1"))
+    db.session.commit()
+
+
 class MyTestCase(unittest.TestCase):
     app = None
     app_context = None
@@ -139,7 +260,7 @@ class MyTestCase(unittest.TestCase):
         cls.app = create_app('testing', pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
-        db.create_all()
+        _reset_database()
 
         # save the current timestamp to the database to avoid hanging cached data
         save_config_timestamp()
@@ -336,7 +457,6 @@ class MyTestCase(unittest.TestCase):
     def tearDownClass(cls):
         call_finalizers()
         close_all_sessions()
-        db.drop_all()
         db.engine.dispose()
         cls.app_context.pop()
 

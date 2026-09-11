@@ -62,7 +62,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 type ComparisonStatus = "excess" | "missing" | "correct";
 
@@ -345,7 +345,7 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
       });
   }
 
-  assignUserToToken(token: TokenDetails): void {
+  assignUserToToken(token: ContainerDetailToken): void {
     const user = this.assignedUser();
     this.tokenService
       .assignUser({

@@ -101,10 +101,9 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             no_detail_on_fail,
                                             no_detail_on_success, autoassign,
                                             offline_info,
-                                            add_user_detail_to_response, construct_radius_response,
+                                            add_user_detail_to_response,
                                             mangle_challenge_response, is_authorized,
-                                            multichallenge_enroll_via_validate, preferred_client_mode,
-                                            hide_specific_error_message)
+                                            multichallenge_enroll_via_validate, preferred_client_mode)
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
@@ -118,8 +117,8 @@ from privacyidea.api.lib.utils import (get_all_params, get_before_request_config
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
-                                         user_identity, count_user_devices, apply_cookie_action,
-                                         CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus)
+                                               user_identity, count_user_devices, apply_cookie_action,
+                                               CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -337,7 +336,11 @@ def _conditional_access_identity():
     Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
     (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
     cover every request that can reach the gate. Falls back to the (empty) request user when no owner can be
-    resolved, so the IP-block check still applies.
+    resolved, so the IP-block check still applies. That costs a user-scoped check only on a request that cannot
+    authenticate anyway: the authenticating path repeats this lookup without ``silent_fail``
+    (:func:`~privacyidea.lib.token.check_serial_pass`), so a serial that does not resolve to exactly one token
+    raises there instead of authenticating - and the authentication-log row resolves the owner from the serial
+    itself, so an attempt that does reach a token is still counted.
     """
     if request.User:
         return request.User
@@ -348,6 +351,10 @@ def _conditional_access_identity():
         if serial:
             token = get_one_token(serial=serial, silent_fail=True)
         elif credential_id:
+            # Only the credential-id lookup, while _handle_fido2_auth also falls back to the transaction id: a
+            # webauthn token predating the credential-id hash is invisible here but resolvable there. Unreachable in
+            # practice - a passkey is hashed at enrollment, the webauthn second leg carries the user - and not worth
+            # a challenge lookup plus otpkey decrypt on every request.
             token = get_fido2_token_by_credential_id(credential_id)
     except Exception as ex:
         log.debug(f"Conditional-access pre-check could not resolve a token owner: {ex!r}")
@@ -373,8 +380,6 @@ def _challenge_owner(challenge) -> User:
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
 @validate_blueprint.route('/radiuscheck', methods=['POST', 'GET'])
-@postpolicy(hide_specific_error_message, request=request)
-@postpolicy(construct_radius_response, request=request)
 @postpolicy(is_authorized, request=request)
 @postpolicy(multichallenge_enroll_via_validate, request=request)
 @postpolicy(mangle_challenge_response, request=request)
@@ -416,10 +421,14 @@ def check():
 
     * ``/validate/check`` — standard JSON response, ``result.value``
       is ``true`` / ``false``.
-    * ``/validate/radiuscheck`` — RADIUS adapter shape: a successful
-      authentication returns an empty ``204``, a failed
-      authentication an empty ``400``. Error responses (server-side
-      faults) are the same as for ``/validate/check``.
+    * ``/validate/radiuscheck`` — RADIUS adapter shape: the body is
+      always empty. A successful authentication returns ``204``; any
+      other outcome returns ``400``. Unlike ``/validate/check``, this
+      includes server-side faults (e.g. an unknown serial or an
+      internal error): they are collapsed into the same empty ``400``
+      rather than surfacing the JSON error body and its status code,
+      because a RADIUS adapter only consumes the status code. Inspect
+      the audit log or use ``/validate/check`` to diagnose failures.
 
     To return user attributes alongside the authentication result
     (the former ``/validate/samlcheck`` use case), enable the AUTHZ
@@ -1086,7 +1095,7 @@ def _resolve_persistent_cookie(user: User, success: bool) -> CookieAction | None
         except (ValueError, TypeError):
             max_devices = 0
         if max_devices > 0 and count_user_devices(g.client_id, identity.resolver, identity.user_id,
-                                                   identity.realm_id) >= max_devices:
+                                                  identity.realm_id) >= max_devices:
             return None
     # The cookie lifetime is a policy value so it can differ per realm/user/client
     # (e.g. a shorter lifetime for admins). Unset / invalid -> the model default.

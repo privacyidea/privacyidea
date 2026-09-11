@@ -421,6 +421,25 @@ class CountMode(str, Enum):
         return self.value
 
 
+class AuthLogUserRole(str, Enum):
+    """
+    Role of the authenticating principal recorded in the authentication log. The two admin values are kept distinct
+    because conditional-access rules may treat them differently: ``admin-external`` admins come from an admin realm
+    (an external identity source) and are the everyday admins, while ``admin-internal`` admins are local database
+    accounts (created via the CLI, used for initial setup and as fallback/recovery) that authenticate only at the
+    ``/auth`` endpoint. Both share the ``admin-`` prefix so a single ``user_role=admin*`` filter matches either.
+
+    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python 3.10; the ``__str__`` override
+    normalizes ``str()``/f-string output to the value across versions (mirrors :class:`AuthEventType`).
+    """
+    USER = "user"
+    ADMIN_INTERNAL = "admin-internal"
+    ADMIN_EXTERNAL = "admin-external"
+
+    def __str__(self) -> str:
+        return self.value
+
+
 class RestrictionCause(str, Enum):
     """
     Who imposed a live conditional-access restriction: the engine acting on a policy (:attr:`POLICY`) or an

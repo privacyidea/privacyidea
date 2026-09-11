@@ -35,6 +35,13 @@ depends_on = None
 
 TABLE = 'conditional_access_outcome'
 
+INDEXES = {
+    TABLE: [
+        ('ix_ca_outcome_authlog', ['auth_log_id']),
+        ('ix_ca_outcome_action', ['action_type']),
+    ],
+}
+
 
 def _unicode_case_sensitive(length: int) -> sa.Unicode:
     """
@@ -50,32 +57,63 @@ def _unicode_case_sensitive(length: int) -> sa.Unicode:
                                            "mysql", "mariadb")
 
 
-def upgrade():
-    try:
-        # The column lengths must match
-        # privacyidea.models.conditional_access_outcome.conditional_access_outcome_column_length.
-        op.create_table(
-            TABLE,
-            sa.Column('id', BigIntegerType, sa.Identity(always=False), nullable=False),
-            sa.Column('auth_log_id', BigIntegerType, nullable=False),
-            sa.Column('action_type', _unicode_case_sensitive(100), nullable=False),
-            sa.Column('dry_run', sa.Boolean(), nullable=False),
-            sa.Column('policy_name', _unicode_case_sensitive(255), nullable=False),
-            sa.Column('threshold', sa.Integer(), nullable=False),
-            sa.Column('event_count', sa.Integer(), nullable=False),
-            sa.Column('stage_name', _unicode_case_sensitive(255), nullable=True),
-            sa.Column('info', sa.JSON(), nullable=True),
-            sa.ForeignKeyConstraint(['auth_log_id'], ['authentication_log.id'], ondelete='CASCADE'),
-            sa.PrimaryKeyConstraint('id'),
-            sa.Index('ix_ca_outcome_authlog', 'auth_log_id'),
-            sa.Index('ix_ca_outcome_action', 'action_type'),
-        )
-    except (OperationalError, ProgrammingError) as ex:
-        if "already exists" in str(ex.orig).lower():
-            print(f"Table '{TABLE}' already exists.")
+def _existing_tables() -> set[str]:
+    """
+    The names of the tables that already exist, lower-cased.
+
+    Reflected once per migration rather than once per table: on a normal run nothing exists yet, so this
+    single catalog read is all the guard below costs. Lower-cased because Oracle folds unquoted identifiers
+    to upper case and the inspector reflects them back lower-cased (mirrors models.db.sequence_exists).
+    """
+    return {name.lower() for name in sa.inspect(op.get_bind()).get_table_names()}
+
+
+def _create_table(existing_tables: set[str], table_name: str, *columns) -> None:
+    """
+    Create the table unless it is already there, then add each of its INDEXES that is absent.
+
+    Presence is established by reflection rather than by swallowing an "already exists" error, which Oracle
+    never says: it reports an existing object as ORA-00955 ("name is already used by an existing object").
+    models.db.sequence_exists reflects for the same reason.
+
+    The indexes are created by statements of their own and are deliberately not declared inline in the
+    CREATE TABLE: every statement here autocommits (see migrations/env.py), so a run that created the table
+    and then failed would leave the table behind, and a guard that keyed the indexes off the table's absence
+    would skip them for good once Alembic stamped the revision.
+    """
+    if table_name.lower() in existing_tables:
+        print(f"Table '{table_name}' already exists.")
+        existing_indexes = {(index["name"] or "").lower()
+                            for index in sa.inspect(op.get_bind()).get_indexes(table_name)}
+    else:
+        op.create_table(table_name, *columns)
+        existing_indexes = set()
+
+    for index_name, index_columns in INDEXES.get(table_name, ()):
+        if index_name.lower() in existing_indexes:
+            print(f"Index '{index_name}' already exists.")
         else:
-            print(f"Could not add table '{TABLE}' to database.")
-            raise
+            op.create_index(index_name, table_name, index_columns)
+
+
+def upgrade():
+    # The column lengths must match
+    # privacyidea.models.conditional_access_outcome.conditional_access_outcome_column_length.
+    _create_table(
+        _existing_tables(),
+        TABLE,
+        sa.Column('id', BigIntegerType, sa.Identity(always=False), nullable=False),
+        sa.Column('auth_log_id', BigIntegerType, nullable=False),
+        sa.Column('action_type', _unicode_case_sensitive(100), nullable=False),
+        sa.Column('dry_run', sa.Boolean(), nullable=False),
+        sa.Column('policy_name', _unicode_case_sensitive(255), nullable=False),
+        sa.Column('threshold', sa.Integer(), nullable=False),
+        sa.Column('event_count', sa.Integer(), nullable=False),
+        sa.Column('stage_name', _unicode_case_sensitive(255), nullable=True),
+        sa.Column('info', sa.JSON(), nullable=True),
+        sa.ForeignKeyConstraint(['auth_log_id'], ['authentication_log.id'], ondelete='CASCADE'),
+        sa.PrimaryKeyConstraint('id'),
+    )
 
 
 def downgrade():

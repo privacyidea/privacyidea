@@ -22,11 +22,12 @@ import mock
 from sqlalchemy import event
 from sqlalchemy.exc import InvalidRequestError
 
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole
 from privacyidea.lib.conditional_access.authentication_log import (
     AuthenticationLogVisibilityScope,
-    AuthLogUserRole,
     PendingAuthEvent,
+    _MAX_OVERFLOW_LENGTH,
+    _describe_overflow,
     cleanup_authentication_log,
     delete_authentication_log_event,
     delete_authentication_logs,
@@ -42,7 +43,8 @@ from privacyidea.lib.conditional_access.authentication_log_statistics import (
     get_authentication_log_statistics,
     get_conditional_access_outcome_statistics,
 )
-from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, count_user_attempts, count_user_events
+from privacyidea.lib.conditional_access.engine import (ConditionalAccessAction, LockSubject,
+                                                       count_subject_attempts, count_subject_events)
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.error import ParameterError
@@ -537,7 +539,7 @@ class AuthenticationLogTestCase(MyTestCase):
 
     def test_overflow_is_preserved_in_other_info(self):
         # The part of a value that does not fit the column is preserved as the cut-off remainder under
-        # other_info["truncated"][column] instead of being lost.
+        # other_info["truncated"][column], so a name cut mid-way can still be reconstructed.
         max_resolver = authentication_log_column_length["resolver"]
         event_id = log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS,
                                             resolver="R" * max_resolver + "OVERFLOW")
@@ -545,6 +547,30 @@ class AuthenticationLogTestCase(MyTestCase):
         assert entry is not None
         self.assertEqual("R" * max_resolver, entry.resolver)
         self.assertEqual({"truncated": {"resolver": "OVERFLOW"}}, entry.other_info)
+
+    def test_long_overflow_is_capped_with_a_count(self):
+        # A remainder longer than _MAX_OVERFLOW_LENGTH is kept up to that length and the rest counted, so a value the
+        # client chose - its client_id label, the login name and realm of a user that does not resolve - cannot decide
+        # how large the row's unbounded JSON is. 100 KB in, a bounded row out.
+        columns = ("client_label", "username", "realm")
+        event_id = log_authentication_event(event_type=AuthEventType.USER_UNKNOWN,
+                                            **{column: "X" * 100000 for column in columns})
+        entry = get_authentication_log_event(event_id)
+        assert entry is not None
+        expected = {}
+        for column in columns:
+            max_length = authentication_log_column_length[column]
+            self.assertEqual("X" * max_length, getattr(entry, column), column)
+            dropped = 100000 - max_length - _MAX_OVERFLOW_LENGTH
+            expected[column] = f"{'X' * _MAX_OVERFLOW_LENGTH}...({dropped} more characters)"
+        self.assertEqual({"truncated": expected}, entry.other_info)
+
+    def test_capped_overflow_of_a_list_keeps_whole_items(self):
+        # The kept part of an overflow is cut on the column's separator too, so a capped serial overflow still names
+        # whole serials: 40 serials of 8 characters overflow the cap inside the 29th, which is left out entirely.
+        overflow = ",".join(["TOK00001"] * 40)
+        self.assertEqual(f"{','.join(['TOK00001'] * 28)}...({len(overflow) - 252} more characters)",
+                         _describe_overflow(overflow, ","))
 
     def test_overflow_merges_with_caller_other_info(self):
         # Overflow is folded into the caller's other_info under "truncated" without clobbering the caller's own keys.
@@ -993,8 +1019,8 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self._entry_with_outcomes()
 
         with statements_against("conditional_access_outcome") as statements:
-            count_user_events("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
-            count_user_attempts("res1", "u1", "realm1", [str(AuthEventType.MFA_FAIL)], 3600)
+            count_subject_events(LockSubject("res1", "u1", "realm1"), [str(AuthEventType.MFA_FAIL)], 3600)
+            count_subject_attempts(LockSubject("res1", "u1", "realm1"), [str(AuthEventType.MFA_FAIL)], 3600)
         self.assertListEqual([], statements)
 
     def test_deleting_one_entry_takes_its_outcomes(self):
@@ -1108,6 +1134,19 @@ class AuthenticationLogStatisticsTestCase(MyTestCase):
                               str(AuthEventType.CHALLENGE_ANSWERED_FAIL): 1},
                              self._totals(self._statistics()))
 
+    def test_representative_is_the_newest_timestamp_not_the_highest_id(self):
+        # Row ids come from a plain autoincrement, so a multi-master cluster can commit a row on one node with a
+        # lower id than one committed earlier on another (see engine._row_order). The wrong answer here holds the
+        # lower id and the later timestamp: ranking by id would report the attempt as still in flight, and would
+        # drift from the engine, which counts it as a failure.
+        self._log(AuthEventType.CHALLENGE_ANSWERED_FAIL, at=self.window_start + timedelta(hours=2))
+        self._log(AuthEventType.CHALLENGE_CONTINUED, at=self.window_start + timedelta(hours=1))
+
+        self.assertDictEqual({str(AuthEventType.CHALLENGE_ANSWERED_FAIL): 1}, self._totals(self._statistics()))
+        self.assertEqual(1, count_subject_attempts(LockSubject("res1", "u1", "r1"),
+                                                   [AuthEventType.CHALLENGE_ANSWERED_FAIL],
+                                                   24 * 3600, window_end=self.window_end))
+
     def test_enforcement_row_classifies_the_attempt_it_ended(self):
         self._log(AuthEventType.CHALLENGE_TRIGGERED)
         self._log(AuthEventType.USER_LOCKED)
@@ -1133,8 +1172,8 @@ class AuthenticationLogStatisticsTestCase(MyTestCase):
 
         totals = self._totals(self._statistics())
         for event_type in (AuthEventType.PIN_FAIL, AuthEventType.LOGIN_SUCCESS, AuthEventType.MFA_FAIL):
-            self.assertEqual(count_user_attempts("res1", "u1", "r1", [event_type], 24 * 3600,
-                                                 window_end=self.window_end),
+            self.assertEqual(count_subject_attempts(LockSubject("res1", "u1", "r1"), [event_type], 24 * 3600,
+                                                    window_end=self.window_end),
                              totals.get(str(event_type), 0),
                              f"statistics and engine disagree on {event_type}")
 

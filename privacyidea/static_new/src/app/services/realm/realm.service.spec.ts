@@ -165,6 +165,17 @@ describe("RealmService", () => {
     req.flush({ result: 1 });
   });
 
+  it("deleteRealm sends confirm_ca_policies when requested", () => {
+    const realmName = "realmA";
+    realmService.deleteRealm(realmName, false, true).subscribe();
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${realmName}?confirm_ca_policies=1`);
+    expect(req.request.method).toBe("DELETE");
+    expect(req.request.params.get("confirm_ca_policies")).toBe("1");
+
+    req.flush({ result: 1 });
+  });
+
   it("deleteRealm propagates errors without notifying", () => {
     const realmName = "realmA";
     const errors: unknown[] = [];

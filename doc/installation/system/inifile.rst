@@ -185,8 +185,10 @@ captures stderr - typically the webserver's error log.
 
 privacyIDEA digitally signs the responses with the private key in
 ``PI_AUDIT_KEY_PRIVATE``. If you can be sure that the private key has
-not been tampered with, you can set the parameter ``PI_AUDIT_NO_PRIVATE_KEY_CHECK``
-to ``True`` in order to improve the performance when loading the key.
+not been tampered with, you can set the parameter
+``PI_RESPONSE_NO_PRIVATE_KEY_CHECK`` to ``True`` in order to skip the validation
+of the key. The loaded key is kept for the lifetime of the worker process, so this
+only affects the first response each worker process signs.
 
 You can disable the signing of the responses completely using the parameter
 ``PI_NO_RESPONSE_SIGN``. Set this to ``True`` to suppress the response signature.
@@ -249,7 +251,30 @@ effective if you also set ``PI_ENGINE_REGISTRY_CLASS`` to ``"shared"``.
 For signing and verifying each Audit entry, the RSA keys in ``PI_AUDIT_KEY_PRIVATE``
 and ``PI_AUDIT_KEY_PUBLIC`` are used. If you can be sure that the private key has
 not been tampered with, you can set the parameter ``PI_AUDIT_NO_PRIVATE_KEY_CHECK``
-to ``True`` in order to improve the performance when loading the key.
+to ``True`` in order to skip the validation of the key. The loaded key is kept for
+the lifetime of the worker process, so this only affects the first request each
+worker process handles.
+
+A key file that is replaced while the server is running is picked up without a
+restart, because the contents of the key files are read and compared whenever they
+are used. Kubernetes updates a mounted secret by pointing a symlink at a new
+version of the file, which is picked up in the same way.
+
+.. warning:: Rotating the audit keypair means that every entry written with the
+   previous key is verified against the new public key from then on, so the whole
+   audit log up to the rotation is displayed with the signature *FAIL* - which can
+   not be told apart from a tampered entry. privacyIDEA verifies with a single
+   public key, so entries from before the rotation can not be verified any more
+   once the new key is in place. Worker processes also pick up a new key
+   independently of each other, so entries written during the changeover are split
+   across both keys.
+
+.. note:: The audit keys are always configured as *file names* and never hold the
+   key material itself, so it can not be passed in an environment variable. A
+   container deployment mounts the keypair instead; the Docker configuration picks
+   up ``/run/secrets/audit_key_private`` and ``/run/secrets/audit_key_public`` on
+   its own. Docker secrets are immutable, so rotating one there means a new secret
+   and a new container rather than a replaced file.
 
 If you by any reason want to avoid signing audit entries entirely, you can
 set ``PI_AUDIT_NO_SIGN = True``. If ``PI_AUDIT_NO_SIGN`` is set to ``True``
@@ -938,6 +963,13 @@ that cannot be parsed is written to the log and ignored. Loopback (``127.0.0.0/8
 and ``::1/128``) is always on the list and cannot be removed. Blocking it would
 lock out a reverse proxy running on the same host, and when ``OverrideAuthorizationClient``
 is unset every client is seen as that proxy.
+
+An IPv4 entry also covers the IPv4-mapped form of the same address
+(``::ffff:10.0.0.1`` for ``10.0.0.1``), which is what a dual-stack listener
+reports for an IPv4 client, so an IPv4 network does not have to be listed twice.
+Tunnel encodings that merely carry an IPv4 address (6to4, Teredo) are not
+covered: unlike the mapped form, those are chosen by the client rather than by
+the operating system.
 
 Put the addresses of your reverse proxies, load balancers, NAT gateways and
 management networks here. Blocking shared infrastructure locks out everyone

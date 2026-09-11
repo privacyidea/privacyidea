@@ -75,7 +75,7 @@ from privacyidea.api.lib.conditional_access import (compose_failure_message, con
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
-                                            get_webui_settings, hide_specific_error_message)
+                                            get_webui_settings)
 from privacyidea.api.lib.prepolicy import (is_remote_user_allowed, prepolicy,
                                            pushtoken_disable_wait, webauthntoken_authz, webauthntoken_request,
                                            fido2_auth, increase_failcounter_on_challenge,
@@ -195,7 +195,6 @@ def before_request():
 @prepolicy(disabled_token_types, request=request)
 @prepolicy(load_challenge_text, request=request)
 @prepolicy(fido2_auth, request=request)
-@postpolicy(hide_specific_error_message, request=request)
 @postpolicy(get_webui_settings, request=request)
 @postpolicy(no_detail_on_success, request=request)
 @postpolicy(add_user_detail_to_response, request=request)
@@ -619,11 +618,11 @@ def get_auth_token():
                        internal_admin=internal_admin,
                        reasons=auth_reasons, reason_detail=auth_reason_detail)
 
-    # Feed the classified outcome to the lockout engine here, in the view, because this endpoint *raises* its
-    # rejection: the error message, the error id and the details all go into the AuthError below, and the lock or block
-    # this login may have just written is read back for them. The staged row is flushed first, so the count includes
-    # this request's own event. Both halves are guarded and idempotent, so after_request and teardown find nothing
-    # left to do and this can never break the login response.
+    # Feed the classified outcome to the conditional-access engine here, in the view, because this endpoint
+    # *raises* its rejection: the error message, the error id and the details all go into the AuthError below, and
+    # the lock or block this login may have just written is read back for them. The staged row is flushed first,
+    # so the count includes this request's own event. Both halves are guarded and idempotent, so after_request
+    # and teardown find nothing left to do and this can never break the login response.
     context = get_ca_context()
     context.flush()
     evaluation = context.run_post_eval()
@@ -633,7 +632,9 @@ def get_auth_token():
         # the reason, a notification is appended to it (see compose_failure_message). Anything already in force
         # was refused by the pre-check before the credentials were ever checked, so there is nothing to read back.
         # With no wording at all the failure is the ordinary one, which is what keeps a locked account
-        # indistinguishable from a wrong password.
+        # indistinguishable from a wrong password in everything a human or a client reads: the status, the
+        # message and the detail. Not in the error *id*, deliberately - see the rejection branch below - and
+        # hide_specific_error_message closes even that.
         details = details or {}
         message = str(GENERIC_AUTH_FAILURE)
         error_id = Error.AUTHENTICATE_WRONG_CREDENTIALS
