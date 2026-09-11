@@ -66,13 +66,11 @@ describe("ConditionalAccessDryRunOffDialogComponent", () => {
     expect(dialogRef.close).toHaveBeenCalledWith({ resetCounters: false });
   });
 
-  it("spells out the consequence only once the checkbox is checked", () => {
-    const consequence = () => (fixture.nativeElement as HTMLElement).querySelector(".consequence")?.textContent ?? "";
-    expect(consequence()).toBe("");
-
-    component.countPastEvents.set(true);
-    fixture.detectChanges();
-    expect(consequence()).toContain("stays silent");
+  // The risk is what makes the checkbox a deliberate choice, so it is stated up front rather than
+  // revealed once the box is already ticked.
+  it("spells out the consequence of counting the older events", () => {
+    const consequence = (fixture.nativeElement as HTMLElement).querySelector(".consequence")?.textContent ?? "";
+    expect(consequence).toContain("stays silent");
   });
 
   it("closes with undefined on cancel", () => {

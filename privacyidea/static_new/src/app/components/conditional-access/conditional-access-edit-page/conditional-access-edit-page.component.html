@@ -75,7 +75,8 @@
           </mat-slide-toggle>
         }
         <mat-slide-toggle
-          (change)="toggleDryRun($event.checked)"
+          #dryRunToggle="matSlideToggle"
+          (change)="toggleDryRun($event.checked, dryRunToggle)"
           [checked]="editPolicy().dry_run"
           [disableRipple]="true"
           i18n-matTooltip

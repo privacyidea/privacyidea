@@ -20,6 +20,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { LiveAnnouncer } from "@angular/cdk/a11y";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
@@ -153,6 +154,17 @@ describe("ConditionalAccessComponent", () => {
     dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue(undefined);
     await component.onToggleDryRun({ ...samplePolicy, dry_run: true });
     expect(policyServiceMock.setDryRun).not.toHaveBeenCalled();
+  });
+
+  // The control flips itself on the click and [checked] reads an unchanged value, so nothing puts
+  // it back: without this the row would show "dry run off" for a policy still in dry run.
+  it("should put the row's toggle back when the dialog is cancelled", async () => {
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue(undefined);
+    const toggle = { checked: false } as MatSlideToggle;
+
+    await component.onToggleDryRun({ ...samplePolicy, dry_run: true }, toggle);
+
+    expect(toggle.checked).toBe(true);
   });
 
   it("should join all stage thresholds for display", () => {

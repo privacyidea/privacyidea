@@ -19,6 +19,7 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
@@ -482,6 +483,18 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     await component.toggleDryRun(false);
 
     expect(component.editPolicy().dry_run).toBe(true);
+  });
+
+  // The control flips itself on the change and [checked] reads an unchanged value, so nothing puts
+  // it back: without this the page would show "dry run off" for a policy still in dry run.
+  it("should put the toggle back when the dialog is cancelled", async () => {
+    component.toggleDryRun(true);
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue(undefined);
+    const toggle = { checked: false } as MatSlideToggle;
+
+    await component.toggleDryRun(false, toggle);
+
+    expect(toggle.checked).toBe(true);
   });
 
   it("should call disablePolicy immediately when toggling enabled off", () => {

@@ -26,7 +26,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -569,7 +569,7 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
     }
   }
 
-  async toggleDryRun(checked: boolean): Promise<void> {
+  async toggleDryRun(checked: boolean, toggle?: MatSlideToggle): Promise<void> {
     if (checked || !this.editPolicy().dry_run) {
       // Turning dry run on, or it was already off: nothing to ask.
       this.updateEditPolicy({ dry_run: checked, reset_counters_on_enforce: undefined });
@@ -583,10 +583,19 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
       data: { policyNames: [this.editPolicy().name] }
     });
     if (!result) {
-      // Cancelled: leave the toggle (and dry_run) untouched.
+      // Cancelled: dry_run stays on, but the control already flipped itself to report the click.
+      // [checked] is one-way and the value it reads is unchanged, so Angular writes nothing back -
+      // put the control where the policy actually is, or the page claims a state it never saved.
+      this.resyncDryRunToggle(toggle);
       return;
     }
     this.updateEditPolicy({ dry_run: false, reset_counters_on_enforce: result.resetCounters });
+  }
+
+  private resyncDryRunToggle(toggle: MatSlideToggle | undefined): void {
+    if (toggle) {
+      toggle.checked = this.editPolicy().dry_run;
+    }
   }
 
   onResetOnSuccessChange(checked: boolean): void {
