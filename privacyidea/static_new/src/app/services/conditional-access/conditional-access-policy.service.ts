@@ -97,11 +97,13 @@ export const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [ConditionalAccessA
 export interface TargetConstraints {
   actions: ConditionalAccessActionType[];
   count_modes: CountMode[];
-  // Which of this target's actions may appear more than once within one stage, and which of them
-  // contradict each other there. Optional so a backend that does not serve them yet - and a spec fixture
-  // that omits them - simply yields no rules rather than a type error.
+  // Which of this target's actions may appear more than once within one stage, which of them
+  // contradict each other there, and which of them a request can ever be told about. Optional so a backend
+  // that does not serve them yet - and a spec fixture that omits them - simply yields no rules rather than a
+  // type error.
   repeatable_actions?: ConditionalAccessActionType[];
   exclusive_action_groups?: ConditionalAccessActionType[][];
+  reporting_actions?: ConditionalAccessActionType[];
 }
 
 export interface ConditionalAccessStageAction {
@@ -302,6 +304,7 @@ export interface ConditionalAccessPolicyServiceInterface {
   readonly actionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>;
   readonly repeatableActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>;
   readonly exclusiveGroupsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>>;
+  readonly reportingActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>;
   readonly countModesByTarget: Signal<Record<ConditionalAccessTarget, CountMode[]>>;
   readonly defaultErrorMessagesResource: HttpResourceRef<PiResponse<DefaultErrorMessage[]> | undefined>;
   readonly defaultErrorMessages: Signal<DefaultErrorMessage[]>;
@@ -474,6 +477,17 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
             entry.exclusive_action_groups ?? []
           ])
         ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>
+    );
+
+  // Which of a target's actions a request can ever be told about: a restriction in force, or a denial. Served
+  // rather than derived from the suggested wording, because "has a default sentence" is a different question
+  // from "can report at all" - see get_target_constraints in lib/conditional_access/policy.py.
+  readonly reportingActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>> =
+    computed(
+      () =>
+        Object.fromEntries(
+          Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.reporting_actions ?? []])
+        ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
     );
 
   readonly countModesByTarget: Signal<Record<ConditionalAccessTarget, CountMode[]>> = computed(

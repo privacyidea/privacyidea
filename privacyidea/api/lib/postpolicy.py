@@ -552,14 +552,12 @@ def no_detail_on_fail(request, response):
 
     A conditional-access message is the one thing that survives, exactly as it survives
     :func:`hide_specific_error_message`: this action strips what privacyIDEA volunteers about the attempt, whereas
-    that message is something an admin either wrote on a stage or turned on by policy. Without this a lock said
-    nothing on the request that refused it while saying its piece on the request that wrote it - the same lock,
-    worded two ways, depending on which half of the request answered.
+    that message is something an admin either wrote on a stage or turned on by policy. Without this a lock would
+    say nothing on the very requests it refuses.
 
     Read from the claim (:func:`~privacyidea.lib.conditional_access.request_context.claimed_ca_message`) rather than
-    from the response body, which is what makes the outcome independent of where this action sits relative to the
-    hook that writes that body: the claim always holds the wording as it must read once the specific reason is
-    stripped, so a message appended to "wrong otp pin" cannot carry that reason through here.
+    from the response body: the gate builds its rejection inside the decorator stack, so the claim is what carries
+    the configured wording across this strip.
 
     :param request:
     :param response:

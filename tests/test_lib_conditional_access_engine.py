@@ -57,9 +57,7 @@ from privacyidea.lib.conditional_access.engine import (
     get_ip_block,
     parse_lock_duration_seconds,
     render_error_message,
-    most_severe_action,
     ACTION_SEVERITY,
-    StageMessage,
     RestrictionStatus,
     _policy_count_ip,
     _safe_format,
@@ -294,8 +292,8 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                               ConditionalAccessAction.BLOCK_IP, {"duration_seconds": 3600})]),))
         self._seed_ip_events("203.0.113.9", AuthEventType.PASSWORD_FAIL, n_users=5)
         # No source IP on the current request -> the IP-targeted policy cannot act.
-        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user, None),
-                                                      AuthEventType.PASSWORD_FAIL).messages)
+        self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user, None),
+                                                                      AuthEventType.PASSWORD_FAIL))
 
     # --- count_subject_events -------------------------------------------------
 
@@ -931,10 +929,10 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         # as this request's history, since the engine itself never writes them.
         policy, _stages = self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
-        self.assertEqual(1, len(evaluation.outcomes))
-        outcome = evaluation.outcomes[0]
+        self.assertEqual(1, len(outcomes))
+        outcome = outcomes[0]
         self.assertTrue(outcome.dry_run)
         self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcome.action_type)
         self.assertEqual("dry", outcome.policy_name)
@@ -958,10 +956,10 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                           stages=(StageDefinition(
                               2, [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         # dry_b's PERMANENT_LOCK_USER is fire-once at threshold 2 and the count is 3, so only dry_a matches.
-        self.assertEqual(["dry_a"], [outcome.policy_name for outcome in evaluation.outcomes])
+        self.assertEqual(["dry_a"], [outcome.policy_name for outcome in outcomes])
         self.assertIsNone(self._state())
 
     def test_dry_run_outcome_records_the_stage_name_when_the_stage_has_one(self):
@@ -972,14 +970,14 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
             stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)],
                                     name="Lock 10 min"),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcome = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes[0]
+        outcome = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)[0]
         self.assertEqual("Lock 10 min", outcome.stage_name)
 
     def test_dry_run_below_threshold_records_nothing(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 2)  # below the threshold of 3
         self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user),
-                AuthEventType.MFA_FAIL).outcomes)
+                AuthEventType.MFA_FAIL))
         self.assertIsNone(self._state())
 
     def test_dry_run_fire_once_records_nothing_above_threshold(self):
@@ -989,7 +987,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 6)  # well past the threshold of 3
         self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user),
-                AuthEventType.MFA_FAIL).outcomes)
+                AuthEventType.MFA_FAIL))
 
     def test_dry_run_retrigger_records_a_outcome_above_threshold(self):
         # With a re-triggering action the dry run keeps reporting for as long as the count stays at or above the
@@ -998,7 +996,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         stages[0].actions[0].retrigger_above_threshold = True
         db.session.commit()
         self._seed_events(AuthEventType.MFA_FAIL, 6)  # count 6 >= threshold 3
-        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertEqual(1, len(outcomes))
         self.assertEqual(3, outcomes[0].threshold)
@@ -1014,10 +1012,10 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._seed_events(AuthEventType.MFA_FAIL, 3)
 
         self.assertEqual(1, len(evaluate_conditional_access_policies(CAContext(self.user),
-                AuthEventType.MFA_FAIL).outcomes))
+                AuthEventType.MFA_FAIL)))
         self._seed_events(AuthEventType.MFA_FAIL, 1)
         self.assertEqual(1, len(evaluate_conditional_access_policies(CAContext(self.user),
-                AuthEventType.MFA_FAIL).outcomes))
+                AuthEventType.MFA_FAIL)))
         self.assertIsNone(self._state())
 
     def test_dry_run_records_one_outcome_per_pending_action_of_the_stage(self):
@@ -1028,7 +1026,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
             stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600),
                                            StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertEqual([str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.PERMANENT_LOCK_USER)],
                          [outcome.action_type for outcome in outcomes])
@@ -1043,7 +1041,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
             name="dry_broken", counter_type=AuthEventType.MFA_FAIL, dry_run=True,
             stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, "not-a-duration")]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcome = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes[0]
+        outcome = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)[0]
         self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcome.action_type)
         self.assertIsNone(outcome.info)
 
@@ -1097,18 +1095,18 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         update_conditional_access_policy(policy.id, dry_run=False)
         release_ca_connection()
         self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user),
-                                                                      AuthEventType.MFA_FAIL).outcomes)
+                                                                      AuthEventType.MFA_FAIL))
 
         update_conditional_access_policy(policy.id, dry_run=True)
         release_ca_connection()
         self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user),
-                                                                      AuthEventType.MFA_FAIL).outcomes)
+                                                                      AuthEventType.MFA_FAIL))
         self.assertFalse(is_user_locked(self.user))
 
         # The floor still only hides what came before it: failures seeded now do reach the threshold, and the
         # trial reports the lock it would have applied.
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertEqual(1, len(outcomes))
         self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcomes[0].action_type)
         self.assertFalse(is_user_locked(self.user))
@@ -1119,7 +1117,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                           target=ConditionalAccessTarget.SOURCE_IP,
                           stages=(StageDefinition(2, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
-        outcomes = evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
 
         self.assertEqual("dry_ip", outcomes[0].policy_name)
         self.assertEqual(str(ConditionalAccessAction.BLOCK_IP), outcomes[0].action_type)
@@ -1145,23 +1143,24 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
             return real(policy, *args, **kwargs)
 
         with mock.patch.object(engine, "_evaluate_policy", side_effect=fail_the_first):
-            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertListEqual(["broken", "works"], calls)
         # The surviving policy still locked the user, and nothing propagated to the caller.
         self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)],
-                [outcome.action_type for outcome in evaluation.outcomes])
+                [outcome.action_type for outcome in outcomes])
         self.assertTrue(is_user_locked(self.user))
 
-    def test_dry_run_returns_no_messages(self):
+    def test_dry_run_records_its_outcome_without_locking(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertListEqual([True], [outcome.dry_run for outcome in outcomes])
+        self.assertFalse(is_user_locked(self.user))
 
     @smtpmock.activate
     def test_dry_run_email_action_records_the_outcome_but_sends_nothing(self):
-        # Dry-run must not produce the side effect itself: the outcome names EMAIL_ADMIN, but no mail is sent and
-        # no user-facing notice is returned.
+        # Dry-run must not produce the side effect itself: the outcome names EMAIL_ADMIN, but no mail is sent.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         db.session.add(Admin(username="ca_dry_adm", email="dryadm@example.com"))
@@ -1173,11 +1172,10 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                                                      {"smtp_identifier": "actionmail",
                                                                       "subject": "s", "body": "b"})]),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
             self.assertListEqual([str(ConditionalAccessAction.EMAIL_ADMIN)],
-                                 [outcome.action_type for outcome in evaluation.outcomes])
-            self.assertEqual([], evaluation.messages)
+                                 [outcome.action_type for outcome in outcomes])
             # Nothing was handed to the SMTP layer at all (the mock reports no recipient).
             self.assertIsNone(smtpmock.get_sent_recipient())
         finally:
@@ -1191,7 +1189,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True, priority=1)
         self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL, priority=2)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertEqual([("dry", True), ("live", False)],
                          [(outcome.policy_name, outcome.dry_run) for outcome in outcomes])
@@ -1203,7 +1201,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertEqual(1, len(outcomes))
         self.assertFalse(outcomes[0].dry_run)
@@ -1218,7 +1216,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                           stages=(StageDefinition(
                               3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertEqual(str(ConditionalAccessAction.PERMANENT_LOCK_USER), outcomes[0].action_type)
         self.assertIsNone(outcomes[0].info)
@@ -1231,7 +1229,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
             stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, "not-a-duration")]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user),
-                AuthEventType.MFA_FAIL).outcomes)
+                AuthEventType.MFA_FAIL))
         self.assertFalse(is_user_locked(self.user))
 
     def test_never_block_ip_records_nothing(self):
@@ -1240,27 +1238,25 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                           target=ConditionalAccessTarget.SOURCE_IP,
                           stages=(StageDefinition(2, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
         self._seed_ip_events("127.0.0.1", AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user, "127.0.0.1"),
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user, "127.0.0.1"),
                 AuthEventType.PASSWORD_FAIL)
 
-        self.assertListEqual([], evaluation.outcomes)
+        self.assertListEqual([], outcomes)
         self.assertIsNone(self._block("127.0.0.1"))
 
     def test_a_restriction_that_is_not_in_force_records_nothing(self):
         # The write reported success, but nothing can be read back from the row it claims to have written - the
         # shape a lock keyed differently from the pre-check's lookup produces. No later request would be refused
-        # by it, so this one is not answered as a rejection either and the history stays empty.
+        # by it, so the history does not claim one either.
         self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         with mock.patch.object(engine, "get_subject_lock", return_value=None):
-            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
-        self.assertListEqual([], evaluation.outcomes)
-        self.assertSetEqual(set(), evaluation.enforced_targets)
-        self.assertListEqual([], evaluation.messages)
-        # The row itself was written: it is the *read* that found nothing, which is the only fact a rejection
-        # may rest on.
+        self.assertListEqual([], outcomes)
+        # The row itself was written: it is the *read* that found nothing, which is the only fact the history may
+        # rest on.
         self.assertIsNotNone(self._state())
 
     def test_a_short_restriction_is_in_force_at_the_evaluations_own_reference_time(self):
@@ -1272,18 +1268,19 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         moment = utc_now() - timedelta(hours=1)
         self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=moment)
 
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=moment)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=moment)
 
-        self.assertSetEqual({ConditionalAccessTarget.USER}, evaluation.enforced_targets)
+        # The outcome surviving is what says the read-back found the lock in force: judged against the wall clock
+        # instead, a 60-second lock written an hour ago reads as expired and its outcome would be discarded.
         self.assertEqual([ConditionalAccessAction.LOCK_USER.value],
-                         [outcome.action_type for outcome in evaluation.outcomes])
+                         [outcome.action_type for outcome in outcomes])
         state = self._state()
         self.assertIsNotNone(state)
         self.assertEqual(moment + timedelta(seconds=60), state.lock_expires_at)
 
     def test_a_restriction_that_is_not_in_force_leaves_the_other_targets_alone(self):
-        # Only the target nothing stands on is dropped. The IP block written by the same request is in force and
-        # keeps both its outcome and its place in enforced_targets, so the request is still refused by it.
+        # Only the target nothing stands on is dropped. The IP block written by the same request is in force, so
+        # its outcome is kept.
         self._make_policy(name="user_live", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._make_policy(name="ip_live", counter_type=AuthEventType.PASSWORD_FAIL, priority=2,
@@ -1292,12 +1289,11 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
         self._seed_ip_events("203.0.113.7", AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
         with mock.patch.object(engine, "get_subject_lock", return_value=None):
-            evaluation = evaluate_conditional_access_policies(CAContext(self.user, "203.0.113.7"),
-                                                              AuthEventType.PASSWORD_FAIL)
+            outcomes = evaluate_conditional_access_policies(CAContext(self.user, "203.0.113.7"),
+                                                            AuthEventType.PASSWORD_FAIL)
 
         self.assertListEqual([("ip_live", str(ConditionalAccessAction.BLOCK_IP))],
-                             [(outcome.policy_name, outcome.action_type) for outcome in evaluation.outcomes])
-        self.assertSetEqual({ConditionalAccessTarget.SOURCE_IP}, evaluation.enforced_targets)
+                             [(outcome.policy_name, outcome.action_type) for outcome in outcomes])
         self.assertIsNotNone(self._block("203.0.113.7"))
 
     def test_a_dry_run_outcome_survives_a_restriction_that_is_not_in_force(self):
@@ -1309,11 +1305,10 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         with mock.patch.object(engine, "get_subject_lock", return_value=None):
-            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertListEqual([("dry", True)],
-                             [(outcome.policy_name, outcome.dry_run) for outcome in evaluation.outcomes])
-        self.assertSetEqual(set(), evaluation.enforced_targets)
+                             [(outcome.policy_name, outcome.dry_run) for outcome in outcomes])
 
     def test_declined_downgrade_of_a_permanent_lock_records_nothing(self):
         # A timed lock must not weaken an existing permanent one; since nothing changed, nothing is recorded.
@@ -1327,7 +1322,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._make_policy(name="timed", counter_type=AuthEventType.MFA_FAIL, priority=2,
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 1)
-        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertListEqual([], outcomes)
         # The permanent lock is untouched.
@@ -1376,7 +1371,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                            StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER, None,
                                                                  retrigger_above_threshold=False)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 6)  # count 6 > threshold 3
-        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
 
         self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)], [outcome.action_type for outcome in outcomes])
 
@@ -1450,16 +1445,16 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
         # count 5 at 'now' -> the severe stage fires (fire-once, at its exact threshold).
         self._seed_events(AuthEventType.MFA_FAIL, 5, timestamp=now)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
-        self.assertListEqual([severe_stage.failure_threshold], [o.threshold for o in evaluation.outcomes])
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=now)
+        self.assertListEqual([severe_stage.failure_threshold], [o.threshold for o in outcomes])
 
         # 250s later: the five events are now outside the 100s window (count decays to 0), and the severe stage's
         # 50s lock has long since expired. Three fresh failures bring the count back to 3 -> the mild stage's own
         # (re-triggering) threshold, and it fires again even though the severe stage already fired once.
         later = now + timedelta(seconds=250)
         self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=later)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=later)
-        self.assertListEqual([mild_stage.failure_threshold], [o.threshold for o in evaluation.outcomes])
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=later)
+        self.assertListEqual([mild_stage.failure_threshold], [o.threshold for o in outcomes])
 
     def test_permanent_lock_action(self):
         self._make_policy(name="perm", counter_type=AuthEventType.MFA_FAIL,
@@ -2232,9 +2227,9 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertIsNotNone(state)
 
     @smtpmock.activate
-    def test_notify_only_stage_returns_its_message(self):
-        # A stage that only notified leaves no lock or block to carry its error message, so the evaluation
-        # returns it for the caller to surface on this response.
+    def test_notify_only_stage_sends_its_mail_and_reports_nothing(self):
+        # A stage that only notified leaves no lock or block behind, so no request is ever refused while it
+        # applies and nothing it was configured to say can reach a user.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
         try:
@@ -2246,58 +2241,35 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                                                       "subject": "s", "body": "b"})],
                                         error_message="Your administrator has been notified."),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            messages = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages
-            # Rank 2: it states an extra fact rather than the reason, so a caller appends it to the failure.
-            self.assertListEqual([StageMessage("Your administrator has been notified.", ConditionalAccessAction.EMAIL_ADMIN)],
-                                 messages)
+            outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            # The mail went out and is recorded, but the stage restricted nothing, so it leaves no row behind for
+            # any request to be refused by - and its error message therefore never reaches anyone.
+            self.assertListEqual([str(ConditionalAccessAction.EMAIL_ADMIN)],
+                                 [outcome.action_type for outcome in outcomes])
+            self.assertIsNone(self._state())
+            self.assertFalse(is_user_locked(self.user))
         finally:
             delete_smtpserver("actionmail")
 
-    @smtpmock.activate
-    def test_notify_only_stage_without_a_message_returns_nothing(self):
-        # The default is silence here too: an email is sent, and the user is told nothing about it.
-        smtpmock.setdata(response={})
-        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
-        try:
-            self._make_policy(
-                name="mailsilent", counter_type=AuthEventType.MFA_FAIL,
-                stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.EMAIL_ADMIN,
-                                                                     {"smtp_identifier": "lockoutmail",
-                                                                      "recipient_group": "soc@example.com",
-                                                                      "subject": "s", "body": "b"})]),))
-            self._seed_events(AuthEventType.MFA_FAIL, 3)
-            self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages)
-        finally:
-            delete_smtpserver("actionmail")
-
-    def test_a_locking_stage_returns_its_message_rendered(self):
-        # Rendered here, where the duration just written is known, so no caller has to read the row back.
-        # The template is still stored, for the requests that come after this one.
+    def test_a_locking_stage_stores_its_message_on_the_row(self):
+        # Stored as the template, not as finished text: the pre-check renders it for each request the lock
+        # refuses, so {duration} counts down the time left then rather than the duration written now. This
+        # request itself is told nothing.
         lock = [StageActionDefinition(ConditionalAccessAction.LOCK_USER, {"duration_seconds": 600})]
         self._make_policy(name="lockonly", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(3, lock, error_message="Locked for {duration}."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Locked for 10 minute(s).", ConditionalAccessAction.LOCK_USER)],
-                             evaluation.messages)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)],
+                             [outcome.action_type for outcome in outcomes])
         self.assertTrue(is_user_locked(self.user))
         self.assertEqual("Locked for {duration}.", self._state().error_message)
 
-    def test_a_permanent_stage_outranks_a_timed_one(self):
-        # Rank 0 before rank 1, so a caller showing several leads with the one the user can do least about.
-        self._make_policy(name="perm", counter_type=AuthEventType.MFA_FAIL, priority=1,
-                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)],
-                                                  error_message="Permanent."),))
-        self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Permanent.", ConditionalAccessAction.PERMANENT_LOCK_USER)], evaluation.messages)
-
     @smtpmock.activate
-    def test_a_declined_restriction_does_not_speak_as_a_notification(self):
+    def test_a_declined_restriction_records_nothing_and_leaves_the_wording_in_force(self):
         # The lower-priority stage restricts nothing - its timed lock would weaken the permanent one written just
-        # before it - but its mail goes out, so the stage did something. That must not turn its error message into a
-        # notification: it describes a lock, and rendering it here would append it to the failure with the
-        # {duration} it has no restriction to substitute against.
+        # before it - but its mail goes out, so the stage did something. The row keeps the wording of the policy
+        # that actually wrote it, which is what every request the lock refuses will be told.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         try:
@@ -2313,21 +2285,20 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                                                       "subject": "s", "body": "b"})],
                                         error_message="Locked for {duration}."),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-            self.assertListEqual([StageMessage("Permanent.", ConditionalAccessAction.PERMANENT_LOCK_USER)],
-                                 evaluation.messages)
+            outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
             # The declined lock recorded nothing, the mail that did go out did.
-            self.assertEqual([str(ConditionalAccessAction.PERMANENT_LOCK_USER), str(ConditionalAccessAction.EMAIL_ADMIN)],
-                             [outcome.action_type for outcome in evaluation.outcomes])
+            self.assertListEqual([str(ConditionalAccessAction.PERMANENT_LOCK_USER), str(ConditionalAccessAction.EMAIL_ADMIN)],
+                                 [outcome.action_type for outcome in outcomes])
+            # And the surviving row still carries the higher-priority policy's wording, not the declined one's.
+            self.assertEqual("Permanent.", self._state().error_message)
         finally:
             delete_smtpserver("lockoutmail")
 
     @smtpmock.activate
-    def test_a_deny_stage_does_not_speak_from_the_post_response_engine(self):
-        # A DENY decides the request pre-auth, where its error message is rendered (_evaluate_rejection). Here it is a
-        # no-op - the count only reaches the threshold once this request's own event is written - so the mail is
-        # the whole of what this stage did, and the error message that describes the denial must not be appended to a
-        # request the denial did not turn away.
+    def test_a_deny_stage_records_nothing_from_the_post_response_engine(self):
+        # A DENY decides the request pre-auth, where its error message is read off the stage
+        # (_evaluate_rejection). Here it is a no-op - the count only reaches the threshold once this request's own
+        # event is written - so the mail is the whole of what this stage did here.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         try:
@@ -2340,11 +2311,10 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                                                       "subject": "s", "body": "b"})],
                                         error_message="Access denied."),))
             self._seed_events(AuthEventType.MFA_FAIL, 3)
-            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-            self.assertListEqual([], evaluation.messages)
-            # The DENY records nothing here either - it is recorded by the decision step that makes it.
-            self.assertEqual([str(ConditionalAccessAction.EMAIL_ADMIN)],
-                             [outcome.action_type for outcome in evaluation.outcomes])
+            outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+            # The DENY records nothing here - it is recorded by the decision step that makes it.
+            self.assertListEqual([str(ConditionalAccessAction.EMAIL_ADMIN)],
+                                 [outcome.action_type for outcome in outcomes])
         finally:
             delete_smtpserver("lockoutmail")
 
@@ -2488,7 +2458,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm2])],
             stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages)
+        self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL))
         self.assertFalse(is_user_locked(self.user))
 
     def _spray_policy(self, *, threshold: int = 3,
@@ -2650,7 +2620,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
             conditions=[self._condition(ConditionType.USER_REALM, ConditionOperator.IN, [self.realm2])],
             stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).messages)
+        self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL))
         self.assertFalse(is_user_locked(self.user))
 
     def test_a_condition_that_cannot_be_a_predicate_leaves_the_count_unscoped(self):
@@ -2913,33 +2883,17 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertIsNone(undecided.error_message)
 
     def test_every_action_that_can_report_something_has_a_severity_rank(self):
-        # ACTION_SEVERITY has to cover the enum, not merely agree with the message table.
-        # A member added without a rank fails silently:
-        # most_severe_action answers None for it, and _execute_stage_actions drops the stage's error message
-        # rather than showing it out of order - so the admin's wording disappears with nothing to say why.
+        # ACTION_SEVERITY has to cover the enum, not merely agree with the message table: a member added without
+        # a rank sorts last among the messages of the restrictions in force (rank_and_deduplicate), so a wording
+        # would silently come out in the wrong order.
         #
         # The exemption is for an action that decides a request without turning anyone away, having nothing to
         # tell a user - and since ALLOW was removed there is no longer any such action.
         self.assertSetEqual(set(ConditionalAccessAction), set(ACTION_SEVERITY))
-        # And the rank is what a stage's message hangs on, so every covered action has to answer.
-        for action in ACTION_SEVERITY:
-            self.assertEqual(action, most_severe_action([action.value]), action)
 
-    def test_a_stage_message_describes_its_longest_restriction(self):
-        # One message covers however many actions a stage runs, and the row keeps the last expiry written, so
-        # the message describes the longest restriction the stage produced - the one in force.
-        actions = [StageActionDefinition(ConditionalAccessAction.LOCK_USER, {"duration_seconds": 3600}),
-                   StageActionDefinition(ConditionalAccessAction.LOCK_USER, {"duration_seconds": 600})]
-        self._make_policy(name="twolocks", counter_type=AuthEventType.MFA_FAIL,
-                          stages=(StageDefinition(3, actions, error_message="Locked for {duration}."),))
-        self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Locked for 1 hour(s).", ConditionalAccessAction.LOCK_USER)],
-                             evaluation.messages)
-
-    def test_two_policies_locking_the_same_user_produce_one_message(self):
+    def test_two_policies_locking_the_same_user_leave_one_row_and_one_wording(self):
         # Both policies trip on this request and both lock the same user, but there is only one lock row - so
-        # the user is told once, about the lock that survived, not once per policy.
+        # the requests it refuses read the wording of the lock that survived, not one sentence per policy.
         self._make_policy(name="hour", counter_type=AuthEventType.MFA_FAIL, priority=1,
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER,
                                                                                {"duration_seconds": 3600})],
@@ -2949,14 +2903,16 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                                                                {"duration_seconds": 600})],
                                                   error_message="Locked for a short while."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        # The hour-long lock is the one in force, so its error message - and its duration - is what the user reads.
-        self.assertListEqual([StageMessage("Locked for 1 hour(s).", ConditionalAccessAction.LOCK_USER)],
-                             evaluation.messages)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        # Only the hour-long lock is history: the ten-minute write would weaken it, so it is declined and
+        # records nothing. Its wording is declined with it - the row keeps what the surviving lock said.
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER)],
+                             [outcome.action_type for outcome in outcomes])
+        self.assertEqual("Locked for {duration}.", self._state().error_message)
 
-    def test_a_notification_from_a_second_policy_survives_alongside_the_lock(self):
-        # Only restrictions collapse onto one row. A notify-only policy describes something else that happened,
-        # so its error message is still carried, after the restriction.
+    def test_a_notification_from_a_second_policy_leaves_the_lock_wording_alone(self):
+        # Only restrictions collapse onto one row. A notify-only policy writes no row at all, so it can neither
+        # replace the lock's wording nor add to it - it only contributes its own outcome.
         self._make_policy(name="lock", counter_type=AuthEventType.MFA_FAIL, priority=1,
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER,
                                                                                {"duration_seconds": 600})],
@@ -2966,32 +2922,15 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                                   error_message="We emailed you."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
         with mock.patch("privacyidea.lib.conditional_access.engine._send_action_email", return_value=True):
-            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Locked for 10 minute(s).", ConditionalAccessAction.LOCK_USER),
-                              StageMessage("We emailed you.", ConditionalAccessAction.EMAIL_USER)],
-                             evaluation.messages)
+            outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertListEqual([str(ConditionalAccessAction.LOCK_USER), str(ConditionalAccessAction.EMAIL_USER)],
+                             [outcome.action_type for outcome in outcomes])
+        self.assertEqual("Locked for {duration}.", self._state().error_message)
 
-    def test_shared_error_message_is_kept_as_the_restriction_it_also_describes(self):
-        # The same sentence configured on a notify-only stage and on a locking one. It is shown once, and as
-        # the restriction: kept as a notification, compose_failure_message would append it to the generic
-        # failure instead of replacing it, so the user would read "wrong credentials" for a locked account.
-        self._make_policy(name="notify", counter_type=AuthEventType.MFA_FAIL, priority=1,
-                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.EMAIL_USER)],
-                                                  error_message="Contact your administrator."),))
-        self._make_policy(name="lock", counter_type=AuthEventType.MFA_FAIL, priority=2,
-                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER,
-                                                                               {"duration_seconds": 600})],
-                                                  error_message="Contact your administrator."),))
-        self._seed_events(AuthEventType.MFA_FAIL, 3)
-        with mock.patch("privacyidea.lib.conditional_access.engine._send_action_email", return_value=True):
-            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Contact your administrator.", ConditionalAccessAction.LOCK_USER)],
-                             evaluation.messages)
-
-    def test_a_stage_whose_lock_was_declined_describes_the_lock_that_stands(self):
+    def test_a_stage_whose_lock_was_declined_leaves_the_lock_that_stands(self):
         # The permanent lock from the first policy wins, so the second policy's timed write is declined as
-        # weakening and records no outcome. The user is still told about the lock in force - the row is what
-        # describes a restriction, not the stage that aimed at it - rather than being told nothing at all.
+        # weakening and records no outcome. The row - and the wording the requests it refuses will read - is the
+        # one that actually stands, not the one the second stage aimed at.
         self._make_policy(name="permanent", counter_type=AuthEventType.MFA_FAIL, priority=1,
                           stages=(StageDefinition(3, [StageActionDefinition(
                               ConditionalAccessAction.PERMANENT_LOCK_USER)], error_message="Permanently locked."),))
@@ -3000,21 +2939,22 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                                                                {"duration_seconds": 600})],
                                                   error_message="Locked for a short while."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        self.assertListEqual([StageMessage("Permanently locked.", ConditionalAccessAction.PERMANENT_LOCK_USER)],
-                             evaluation.messages)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertEqual("Permanently locked.", self._state().error_message)
         # And the declined write is left out of the history, since nothing happened.
         self.assertListEqual([str(ConditionalAccessAction.PERMANENT_LOCK_USER)],
-                             [outcome.action_type for outcome in evaluation.outcomes])
+                             [outcome.action_type for outcome in outcomes])
 
-    def test_a_permanent_action_sets_the_rank_whatever_the_order(self):
-        # The permanent lock is written second here, and still decides both the rank and the error message.
+    def test_a_permanent_action_wins_whatever_the_order(self):
+        # The permanent lock is written second here and still decides what stands: a restriction is never
+        # weakened, so the row is permanent and the stage's wording sits on it with no remaining time for
+        # {duration} to be substituted against.
         actions = [StageActionDefinition(ConditionalAccessAction.LOCK_USER, {"duration_seconds": 600}),
                    StageActionDefinition(ConditionalAccessAction.PERMANENT_LOCK_USER)]
         self._make_policy(name="mixed", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(3, actions, error_message="Locked for {duration}."),))
         self._seed_events(AuthEventType.MFA_FAIL, 3)
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
-        # No remaining time to substitute, so the tag is left as written - and the rank is the permanent one.
-        self.assertListEqual([StageMessage("Locked for {duration}.", ConditionalAccessAction.PERMANENT_LOCK_USER)],
-                             evaluation.messages)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        state = self._state()
+        self.assertIsNone(state.lock_expires_at)
+        self.assertEqual("Locked for {duration}.", state.error_message)

@@ -35,7 +35,7 @@ from .lib.utils import (get_all_params, get_before_request_config, get_optional,
                         logged_in_user_from_token, hide_specific_error_message, construct_radius_response)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
-from .lib.conditional_access import surface_conditional_access_message
+from .lib.conditional_access import restore_rejection_audit
 from ..lib.conditional_access.request_context import peek_ca_context, reset_ca_context
 from ..lib.framework import get_app_config_value
 from ..lib.clients import identify_client_by_key, touch_client
@@ -561,16 +561,13 @@ def after_request(response):
     """
     response = mask_authentication_error_response(request, response)
 
-    # Report what conditional access did to this request, if anything. Central rather than per endpoint for two
-    # reasons: this also runs for a response an *error handler* built, where every post-policy is skipped, and no
-    # gated endpoint can forget to opt in. One lookup and it is done for every request. After the masking above,
-    # which is where hide_specific_error_message has its say, so a notification composes onto what survived it -
-    # and before sign_response, which the decorator above applies to whatever this function returns.
-    response = surface_conditional_access_message(response)
+    # Re-apply the audit entry of a request the pre-check refused, which the endpoint's own view may since have
+    # overwritten. Central rather than per endpoint for two reasons: this also runs for a response an *error
+    # handler* built, where every post-policy is skipped, and no gated endpoint can forget to opt in. Only the
+    # audit entry is touched, never the body, so unlike the shaping steps around it this carries no ordering
+    # constraint beyond running before teardown finalizes the entry.
+    response = restore_rejection_audit(response)
 
-    # Last of the three, because it drops the JSON body: conditional access has to have had its say on the verdict
-    # before the body carrying it is thrown away, or a request that authenticates *and* trips a restriction in one
-    # breath would be answered 204 while /validate/check answers the same request with a rejection.
     response = shape_radius_response(request, response)
 
     # Strip version information before signing if the hide_version policy
@@ -623,10 +620,8 @@ def shape_radius_response(request, response):
     Apply :func:`construct_radius_response` to ``/validate/radiuscheck``, shaping it into the RADIUS empty-body
     ``204``/``400`` form.
 
-    Applied from ``after_request`` for the same reason as :func:`mask_authentication_error_response` - so an error
-    response built by an error handler is shaped too - but **after**
-    :func:`~privacyidea.api.lib.conditional_access.surface_conditional_access_message`, because dropping the JSON
-    body also drops the verdict conditional access still has to correct.
+    Applied from ``after_request`` for the same reason as :func:`mask_authentication_error_response`: so an error
+    response built by an error handler is shaped too.
 
     :param request: the request object
     :param response: the response object

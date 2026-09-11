@@ -29,8 +29,12 @@ its own **error message** to say, and the generic ``Authentication failed.``
 where none was written. A stage's own error message always takes precedence over
 this policy.
 
-Because the wording is per action, a stage that both restricts and notifies is
-described by one sentence per action, most severe first.
+Because the wording is per action, a stage that restricts more than one thing -
+the user and the source address - is described by one sentence per restriction in
+force, most severe first. There is wording only for the actions that turn a
+request away, so a stage that locks the user *and* emails them is described by the
+lock alone: the email is a one-off event that no lock records, and nothing is left
+to report it on a later request.
 
 The default wording is not stored on the lock or the block it describes - this
 policy is matched on every request - so switching it on or off immediately

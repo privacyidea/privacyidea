@@ -82,11 +82,7 @@ class CAContext:
         ``admin-internal`` it is what a ``user``-target policy counts and locks them by (see
         :func:`~privacyidea.lib.conditional_access.engine.lock_subject`). For everyone else it merely repeats the
         user's login, and for an unknown login it is the name that was tried.
-    :ivar use_default_error_message: Whether a rejection with no error message of its own falls back to the
-        default wording for what it did (the ``show_default_ca_error_message`` policy), rather than saying nothing.
-        Not about the generic "Authentication failed." - that is what a rejection with nothing to say ends up
-        carrying, decided in the API layer. Resolved there too, because matching a policy needs Flask and this
-        package deliberately does not.
+
     Note what is deliberately *absent*: the authentication log's ``client_label``
     (the ``client_id`` parameter, falling back to the User-Agent header). It
     identifies the calling application well enough to be worth recording
@@ -99,6 +95,5 @@ class CAContext:
     source_ip: str | None = None
     endpoint: str | None = None
     user_role: str | None = None
-    use_default_error_message: bool = False
     # Last, so the positional order callers build this with - (user, source_ip) - keeps meaning what it did.
     username: str | None = None

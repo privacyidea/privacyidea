@@ -136,6 +136,9 @@
             (input)="onErrorMessageInput($any($event.target).value)"></textarea>
           <mat-hint>
             <span i18n>{{ durationTag }} is replaced with the remaining time for temporary lock/block actions.</span>
+            @if (messageUnreachable()) {
+              <span class="ca-stage-message-warning">{{ messageUnreachableHint }}</span>
+            }
             @if (unknownTags().length) {
               <span
                 class="ca-stage-message-warning"

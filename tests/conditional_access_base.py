@@ -138,5 +138,5 @@ class ConditionalAccessTestCase(MyTestCase):
         The threshold is a stage's natural key within its policy, so this identifies which stage acted without
         depending on a surrogate id that a policy edit would replace. Empty when nothing fired.
         """
-        evaluation = evaluate_conditional_access_policies(CAContext(self.user, source_ip), event_type)
-        return [outcome.threshold for outcome in evaluation.outcomes]
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user, source_ip), event_type)
+        return [outcome.threshold for outcome in outcomes]

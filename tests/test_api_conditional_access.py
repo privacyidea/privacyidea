@@ -293,26 +293,6 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(self.realm1, entry["realm"], entry)
         self.assertEqual(self.resolvername1, entry["resolver"], entry)
 
-    def test_the_audit_entry_of_a_request_refused_after_the_fact_says_so_too(self):
-        # The other half: this request was not turned away by the pre-check but by the restriction it wrote itself,
-        # and its endpoint had already logged the challenge it triggered as a success. The entry is corrected to
-        # say what the response says, keeping its own account of what it did alongside the reason.
-        create_conditional_access_policy(
-            name="ca_lock_on_trigger", time_window_seconds=3600,
-            counter_types_to_track=_counter_types(AuthEventType.CHALLENGE_TRIGGERED),
-            stages=[{"failure_threshold": 1,
-                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
-            target=ConditionalAccessTarget.USER, priority=1)
-        with self.app.test_request_context('/validate/triggerchallenge', method='POST',
-                                           data={"user": "cornelius", "realm": self.realm1},
-                                           headers={"Authorization": self.at}):
-            body = self.app.full_dispatch_request().json
-        self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
-        entry = self.find_most_recent_audit_entry(action="*/validate/triggerchallenge")
-        self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
-        self.assertEqual(0, entry["success"], entry)
-        self.assertEqual("triggered 1 challenges,Rejected: account is now locked", entry["info"], entry)
-
     def test_outcome_statistics_counts_the_lock_and_not_the_requests_it_turns_away(self):
         # End to end over the real engine: the second failure trips the stage and writes the LOCK_USER outcome, and
         # every request after it is turned away and logged as USER_LOCKED. Counting the event types would report five
@@ -387,9 +367,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         finally:
             delete_policy("ca_other_admin")
 
-    def test_the_request_that_trips_the_lock_reports_it(self):
-        # The lock is written during this very request - and any EMAIL_* action is sent now, not on the
-        # next login - so this is the response that reports it, not merely the ones after it.
+    def test_the_request_that_trips_the_lock_is_answered_as_if_it_had_not(self):
+        # The whole rule in one test: the request that writes the lock keeps the answer it had coming, and the
+        # lock speaks from the next request onwards. So the wording appears one request later than the write,
+        # and a silent lock is undetectable at the moment it trips.
         self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600,
                                error_message="Locked. Try again in about {duration}.")
         first = self._check({"user": "cornelius", "pass": "wrongpin123456"})
@@ -398,52 +379,55 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual("wrong otp pin", first["detail"]["message"], first)
 
         tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
-        self.assertFalse(tripping["result"]["value"], tripping)
-        self.assertEqual("Locked. Try again in about 10 minute(s).", tripping["detail"]["message"], tripping)
         self.assertTrue(is_user_locked(self.user))
+        # Indistinguishable from the request before it, though it just locked the account.
+        self.assertFalse(tripping["result"]["value"], tripping)
+        self.assertEqual("wrong otp pin", tripping["detail"]["message"], tripping)
+        self.assertEqual(AUTH_RESPONSE.REJECT, first["result"]["authentication"], first)
 
-    def test_the_request_that_trips_a_lock_on_triggerchallenge_reports_it(self):
-        # /validate/triggerchallenge has the gate, so it must also report a stage it trips - otherwise the
-        # admin driving it is answered with the plain result while the *next* request carries the message.
-        # A user with no challenge-capable token logs NO_TOKEN, which a policy may count like any failure.
+        # Only now is the lock in force for the pre-check, and only now is it reported.
+        refused = self._check({"user": "cornelius", "pass": "wrongpin123456"})
+        self.assertFalse(refused["result"]["value"], refused)
+        self.assertEqual("Locked. Try again in about 10 minute(s).", refused["detail"]["message"], refused)
+
+    def test_the_request_that_trips_a_lock_on_triggerchallenge_keeps_its_own_answer(self):
+        # /validate/triggerchallenge has the gate, so it is refused like any other endpoint - but only from the
+        # request after the one that wrote the lock. A user with no challenge-capable token logs NO_TOKEN, which
+        # a policy may count like any failure.
         self._make_lock_policy(counter_type=AuthEventType.NO_TOKEN, threshold=1, duration=600,
                                error_message="Locked. Try again in about {duration}.")
-        with self.app.test_request_context("/validate/triggerchallenge", method="POST",
-                                           data={"user": "selfservice", "realm": self.realm1},
-                                           headers={"PI-Authorization": self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res.json)
-            body = res.json
-        # No token to challenge, so nothing was triggered - and the lock this very request wrote is what the
-        # response leads with rather than the bare count.
-        self.assertEqual(0, body["result"]["value"], body)
-        self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
-        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
-        self.assertTrue(is_user_locked(User("selfservice", self.realm1)))
+        locked_user = User("selfservice", self.realm1)
+        tripping = self._trigger_challenge(data={"user": "selfservice", "realm": self.realm1})
+        self.assertTrue(is_user_locked(locked_user))
+        # No token to challenge, so nothing was triggered - and that, not the lock, is what this request says.
+        self.assertEqual(0, tripping["result"]["value"], tripping)
+        self.assertNotIn("Locked", tripping.get("detail", {}).get("message", ""), tripping)
 
-    def test_a_challenge_that_succeeds_and_trips_a_lock_is_still_withdrawn(self):
-        # What decides is the restriction, not whether the response looked like a failure. That distinction matters
-        # here because result.value is the *number of challenges triggered*, so a request that both triggers one and
-        # trips a lock reads as a success - yet handing the client a transaction_id the pre-check would refuse on the
-        # very next request would answer differently from every request the lock then refuses.
+        refused = self._trigger_challenge(data={"user": "selfservice", "realm": self.realm1})
+        self.assertEqual(0, refused["result"]["value"], refused)
+        self.assertSetEqual({"message", "threadid"}, set(refused["detail"]), refused)
+        self.assertEqual("Locked. Try again in about 10 minute(s).", refused["detail"]["message"], refused)
+
+    def test_a_challenge_that_succeeds_and_trips_a_lock_is_handed_out_but_unanswerable(self):
+        # The sharpest case for the rule, because result.value here is the *number of challenges triggered*: a
+        # request that both triggers one and trips a lock reads as a success, and it is answered as one. The
+        # challenge is real and the client gets its transaction_id - it simply cannot be answered, because the
+        # lock refuses the request that would answer it.
         self._make_lock_policy(counter_type=AuthEventType.CHALLENGE_TRIGGERED, threshold=1, duration=600,
                                error_message="Locked. Try again in about {duration}.")
-        with self.app.test_request_context("/validate/triggerchallenge", method="POST",
-                                           data={"user": "cornelius", "realm": self.realm1},
-                                           headers={"PI-Authorization": self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res.json)
-            body = res.json
+        body = self._trigger_challenge(data={"user": "cornelius", "realm": self.realm1})
         self.assertTrue(is_user_locked(self.user))
-        # 0, not False: the value is a count on this endpoint, so a rejection answers with its kind of nothing.
-        self.assertEqual(0, body["result"]["value"], body)
+        # A count, and a truthy one: the challenge was triggered and is reported as such.
+        self.assertEqual(1, body["result"]["value"], body)
         self.assertNotIsInstance(body["result"]["value"], bool, body)
-        self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
-        # The reason and nothing that describes the challenge it overtook.
-        self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
-        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
-        # Withdrawn, not invalidated: the row is left to expire unanswered, exactly as on /validate/check.
+        transaction_id = body["detail"]["transaction_id"]
         self.assertTrue(get_challenges(serial=self.serial))
+
+        # Answering it meets the lock in the pre-check, before the challenge is ever looked up.
+        answered = self._check({"user": "cornelius", "pass": "287082",
+                                "transaction_id": transaction_id})
+        self.assertFalse(answered["result"]["value"], answered)
+        self.assertEqual("Locked. Try again in about 10 minute(s).", answered["detail"]["message"], answered)
 
     def test_triggering_a_challenge_without_a_restriction_is_untouched(self):
         # The other half of the count-as-value shape, and what the rewritten test above must not cost: with a
@@ -463,34 +447,6 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertTrue(body["detail"]["transaction_ids"], body)
         self.assertEqual([self.serial], [entry["serial"] for entry in body["detail"]["multi_challenge"]], body)
 
-    def test_a_challenge_that_trips_a_lock_is_refused_like_any_other_request(self):
-        # A stage can be tripped by a challenge trigger like by any other tracked event. When it restricts, this
-        # request is refused - so the response carries the reason and nothing else, the challenge it was about to
-        # hand out included.
-        set_policy(name="ca_chalresp", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
-        self._make_lock_policy(counter_type=AuthEventType.CHALLENGE_TRIGGERED, threshold=1, duration=600,
-                               error_message="Locked. Try again in about {duration}.")
-        try:
-            body = self._check({"user": "cornelius", "pass": "pin"})
-        finally:
-            delete_policy("ca_chalresp")
-        self.assertFalse(body["result"]["value"], body)
-        self.assertTrue(is_user_locked(self.user))
-        # One rule for what a conditional-access rejection says, whatever the request was doing when it was
-        # refused: the reason, and nothing that describes what it overtook.
-        # The whole detail, not just the absence of the keys this test thought to name: everything else in it
-        # described the challenge, and none of it may survive a rejection. threadid identifies the request
-        # rather than saying anything about it, so it stays.
-        self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
-        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
-        # REJECT rather than CHALLENGE: the challenge was withdrawn, so this response is a refusal like any other.
-        self.assertEqual(AUTH_RESPONSE.REJECT, body["result"]["authentication"], body)
-        # Writing the lock does not reclassify the request: USER_LOCKED is what the *pre-check* of a later
-        # request logs, so this one is still filed as the challenge trigger it was.
-        self.assertListEqual([AuthEventType.CHALLENGE_TRIGGERED],
-                             [entry.event_type for entry in get_authentication_logs()])
-
     def test_the_challenge_row_is_left_alone_by_the_rejection(self):
         # Withdrawing the challenge from the response is not invalidating it: conditional access does not reach
         # into the challenge itself, it simply never tells the client about it, and the row expires unanswered.
@@ -506,39 +462,6 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # challenge lives in Redis and the table is empty, so a table count would "prove" the row was deleted on
         # every run. Keyed by serial because the cache cannot enumerate.
         self.assertEqual(1, len(get_challenges(serial=self.serial)))
-
-    def test_a_notification_is_appended_to_a_challenge_it_was_tripped_by(self):
-        # The other shape: a notify-only stage adds to what the response already said instead of replacing it,
-        # on a challenge exactly as on a failure. Threshold 2, so the first call is an untripped challenge to
-        # measure the second against - the detail must differ in nothing but the message.
-        set_policy(name="ca_chalresp", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
-        add_smtpserver(identifier="ca_notify_mail", server="1.2.3.4", tls=False)
-        create_conditional_access_policy(
-            name="notify_on_challenge", time_window_seconds=3600,
-            counter_types_to_track=_counter_types(AuthEventType.CHALLENGE_TRIGGERED),
-            stages=[{"failure_threshold": 2, "error_message": "Your administrator was notified.",
-                     "actions": [{"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
-                                  "action_value": {"smtp_identifier": "ca_notify_mail",
-                                                   "recipient_group": "soc@example.com",
-                                                   "subject": "s", "body": "b"}}]}],
-            target=ConditionalAccessTarget.USER, priority=1)
-        try:
-            with mock.patch("privacyidea.lib.conditional_access.engine._send_action_email", return_value=True):
-                untripped = self._check({"user": "cornelius", "pass": "pin"})
-                body = self._check({"user": "cornelius", "pass": "pin"})
-        finally:
-            delete_policy("ca_chalresp")
-            delete_smtpserver("ca_notify_mail")
-        self.assertNotIn("Your administrator was notified.", untripped["detail"]["message"], untripped)
-        # Appended to the challenge's own prompt, not in place of it.
-        self.assertEqual(f"{untripped['detail']['message'].rstrip('.')}. Your administrator was notified.",
-                         body["detail"]["message"], body)
-        # And nothing else moved: the same keys an untripped challenge carries, and a usable challenge in them.
-        self.assertSetEqual(set(untripped["detail"]), set(body["detail"]), body)
-        self.assertTrue(body["detail"]["transaction_id"], body)
-        self.assertEqual(self.serial, body["detail"]["serial"], body)
-        self.assertFalse(is_user_locked(self.user))
 
     def test_a_challenge_from_before_the_lock_is_refused_when_it_is_answered(self):
         # A challenge handed out below the threshold stays answerable, and the answer is what meets the lock:
@@ -561,16 +484,6 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             delete_policy("ca_chalresp")
         self.assertFalse(answered["result"]["value"], answered)
         self.assertEqual("Locked. Try again in about 10 minute(s).", answered["detail"]["message"], answered)
-
-    def test_the_tripping_request_says_only_what_a_rejection_says(self):
-        # With no wording configured the rejection says what every other failed authentication says - not what the
-        # token said about the credential it overtook. See
-        # test_a_silent_restriction_answers_like_the_rejections_after_it for the whole-response comparison.
-        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600)
-        self._check({"user": "cornelius", "pass": "wrongpin123456"})
-        tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
-        self.assertEqual(str(GENERIC_AUTH_FAILURE), tripping["detail"]["message"], tripping)
-        self.assertTrue(is_user_locked(self.user))
 
     def test_both_restrictions_are_reported_on_validate_check(self):
         # Both restrictions are reported, most severe first: a user facing a permanent block behind a timed
@@ -606,33 +519,6 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(str(AuthEventType.USER_LOCKED), entries[0].event_type, entries[0])
         self.assertNotIn("additional_event_types", entries[0].other_info or {}, entries[0])
 
-    def test_a_restriction_written_by_a_raising_request_is_still_answered_as_a_rejection(self):
-        # A view that raises skips every post-policy, so the response is built by an error handler. The engine
-        # still runs (at teardown), so the lock is written either way - and the response has to say so, as a
-        # rejection: the endpoint's own error must not survive, because "the token is locked" states the very
-        # reason a rejection withholds.
-        remove_token(self.serial)
-        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
-        revoke_token(self.serial)
-        self._make_lock_policy(counter_type=AuthEventType.NO_USABLE_TOKEN, threshold=1, duration=600,
-                               error_message="Locked. Try again in about {duration}.")
-
-        tripping = self._check({"user": "cornelius", "pass": "pin755224"})
-        self.assertTrue(is_user_locked(self.user))
-        # The rejection shape, not the error shape: no result.error, and nothing of ERR1007 anywhere.
-        self.assertNotIn("error", tripping["result"], tripping)
-        self.assertTrue(tripping["result"]["status"], tripping)
-        self.assertFalse(tripping["result"]["value"], tripping)
-        self.assertEqual(AUTH_RESPONSE.REJECT, tripping["result"]["authentication"], tripping)
-        self.assertSetEqual({"message", "threadid"}, set(tripping["detail"]), tripping)
-        self.assertEqual("Locked. Try again in about 10 minute(s).", tripping["detail"]["message"], tripping)
-        self.assertNotIn("locked", str(tripping).replace("Locked.", ""), tripping)
-
-        # And it is the same answer the pre-check gives the requests after it.
-        after = self._check({"user": "cornelius", "pass": "pin755224"})
-        self.assertEqual(after["result"], tripping["result"], tripping)
-        self.assertEqual(after["detail"], tripping["detail"], tripping)
-
     def test_a_raising_request_without_a_restriction_keeps_its_own_error(self):
         # The counterpart: conditional access only overtakes a response it actually refused. With nothing
         # restricted the endpoint's error stands exactly as it did, code and all.
@@ -644,20 +530,6 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
         self.assertEqual(400, res.status_code, res.json)
         self.assertEqual(Error.TOKEN_LOCKED, res.json["result"]["error"]["code"], res.json)
-
-    def test_a_silent_restriction_on_a_raising_request_answers_generically(self):
-        # Silent stays silent here too: the rejection says what every other failed authentication says, which is
-        # again exactly what the pre-check answers the following requests with.
-        remove_token(self.serial)
-        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
-        revoke_token(self.serial)
-        self._make_lock_policy(counter_type=AuthEventType.NO_USABLE_TOKEN, threshold=1, duration=600)
-
-        tripping = self._check({"user": "cornelius", "pass": "pin755224"})
-        self.assertTrue(is_user_locked(self.user))
-        self.assertEqual(str(GENERIC_AUTH_FAILURE), tripping["detail"]["message"], tripping)
-        after = self._check({"user": "cornelius", "pass": "pin755224"})
-        self.assertEqual(after["detail"], tripping["detail"], tripping)
 
     def test_hide_specific_error_message_leaves_the_message_alone_on_validate_check(self):
         # The /validate mirror: the postpolicy replaces the whole detail, but not this error message.
@@ -672,31 +544,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         finally:
             delete_policy("ca_hide")
 
-    def test_a_silent_restriction_answers_like_the_rejections_after_it(self):
-        # The request that writes a lock is answered exactly as the requests the lock then refuses: the whole
-        # response, not merely the wording, and whether or not a stage carried any. So the token's own "wrong otp
-        # pin" and its details give way to the ordinary failure, because that is what the pre-check returns.
-        #
-        # The cost is accepted deliberately: a silent lock *is* detectable at the moment it trips, since the
-        # response changes shape. The alternative was worse - one lock answering two different ways depending on
-        # which request you happened to catch it on.
-        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600)
-        below = self._check({"user": "cornelius", "pass": "wrongpin123456"})
-        self.assertEqual("wrong otp pin", below["detail"]["message"], below)
-
-        tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
-        self.assertTrue(is_user_locked(self.user))
-        # The correct password, refused by the pre-check - so any difference here is the two paths disagreeing.
-        after = self._check({"user": "cornelius", "pass": "pin755224"})
-        self.assertEqual(after["result"], tripping["result"], tripping)
-        self.assertEqual(after["detail"], tripping["detail"], tripping)
-        self.assertEqual(str(GENERIC_AUTH_FAILURE), tripping["detail"]["message"], tripping)
-
-    def test_a_tripping_request_is_refused_at_radiuscheck_too(self):
-        # /validate/radiuscheck answers with a status code and an empty body, so construct_radius_response drops the
-        # JSON body - and with it the verdict. It therefore has to run *after* the conditional-access response hook,
-        # or the request that writes a restriction is answered 204 while /validate/check answers the very same
-        # request with a rejection: the RADIUS client would authenticate the user on the request that locks them.
+    def test_a_restriction_is_refused_at_radiuscheck_from_the_next_request(self):
+        # /validate/radiuscheck answers with a status code and an empty body, so a rejection there is the 400 every
+        # other failure gets. The request that writes the lock is still authenticated - it succeeded, and the
+        # evaluation does not revisit that - so the refusal begins with the request after it.
         #
         # A rate limit is the reachable shape of "authenticates and trips in one breath": LOGIN_SUCCESS is trackable
         # and reset_on_success=False keeps the success from clearing the counter it just fed.
@@ -706,10 +557,13 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertEqual(204, self._radiuscheck({"user": "cornelius", "pass": "pin755224"}))
         self.assertFalse(is_user_locked(self.user))
 
-        # Second success reaches the threshold and locks. Same endpoint, same kind of request - the only difference
-        # is that this one tripped the restriction, and that has to reach the status code.
-        self.assertEqual(400, self._radiuscheck({"user": "cornelius", "pass": "pin287082"}))
+        # The second success reaches the threshold and locks - and is still answered as the success it was.
+        self.assertEqual(204, self._radiuscheck({"user": "cornelius", "pass": "pin287082"}))
         self.assertTrue(is_user_locked(self.user))
+
+        # From here the lock is in force, and the RADIUS client is told the same "not authenticated" it gets for
+        # any other failure.
+        self.assertEqual(400, self._radiuscheck({"user": "cornelius", "pass": "pin359152"}))
 
     def test_hide_specific_error_message_still_masks_an_ordinary_token_failure(self):
         # The policy keeps doing its job on everything that is not conditional access's: a wrong PIN is still
@@ -760,87 +614,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         finally:
             delete_policy("ca_nodetail")
 
-    def test_the_request_that_trips_the_lock_reports_it_under_no_detail_on_fail(self):
-        # The other half of the pair above: the pre-check and the request that writes the lock must answer with the
-        # same wording, whichever of them the policy stack happens to reach.
-        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
-        from privacyidea.lib.policies.actions import PolicyAction
-        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=1, duration=600,
-                               error_message="Locked. Try again in about {duration}.")
-        set_policy(name="ca_nodetail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.NODETAILFAIL}")
-        try:
-            tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
-            self.assertTrue(is_user_locked(self.user))
-            self.assertEqual("Locked. Try again in about 10 minute(s).", tripping["detail"]["message"], tripping)
-            # And the next request, refused by the pre-check, says exactly the same thing.
-            after = self._check({"user": "cornelius", "pass": "pin755224"})
-            self.assertEqual(tripping["detail"]["message"], after["detail"]["message"], after)
-        finally:
-            delete_policy("ca_nodetail")
-
     @smtpmock.activate
-    def test_no_detail_on_fail_masks_the_reason_a_notification_was_appended_to(self):
-        # A notification is appended to the failure's own reason, and that reason is exactly what this action
-        # strips. Only the stage's own sentence may come through.
-        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
-        from privacyidea.lib.policies.actions import PolicyAction
-        smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
-        set_policy(name="ca_nodetail", scope=SCOPE.AUTHZ, action=f"{PolicyAction.NODETAILFAIL}")
-        try:
-            create_conditional_access_policy(
-                name="ca_mail", time_window_seconds=3600,
-                counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
-                stages=[{"failure_threshold": 1, "error_message": "Your administrator has been notified.",
-                         "actions": [{"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
-                                      "action_value": {"smtp_identifier": "lockoutmail",
-                                                       "recipient_group": "soc@example.com",
-                                                       "subject": "s", "body": "b"}}]}],
-                target=ConditionalAccessTarget.USER, priority=1)
-
-            body = self._check({"user": "cornelius", "pass": "wrongpin123456"})
-            self.assertNotIn("wrong otp pin", body["detail"]["message"], body)
-            self.assertIn("Your administrator has been notified.", body["detail"]["message"], body)
-        finally:
-            delete_policy("ca_nodetail")
-            delete_smtpserver("lockoutmail")
-
-    @smtpmock.activate
-    def test_hide_specific_error_message_masks_the_reason_a_notification_was_appended_to(self):
-        # A notify-only stage is *appended* to the failure's own reason, so the response reads "wrong otp pin. Your
-        # administrator has been notified." Only the second half is conditional access's to keep: keeping the whole
-        # sentence would carry the token-layer reason straight past the policy that exists to suppress it.
-        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
-        from privacyidea.lib.policies.actions import PolicyAction
-        smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
-        set_policy(name="ca_hide", scope=SCOPE.AUTH, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}")
-        try:
-            create_conditional_access_policy(
-                name="ca_mail", time_window_seconds=3600,
-                counter_types_to_track=_counter_types(AuthEventType.PIN_FAIL),
-                stages=[{"failure_threshold": 1, "error_message": "Your administrator has been notified.",
-                         "actions": [{"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
-                                      "action_value": {"smtp_identifier": "lockoutmail",
-                                                       "recipient_group": "soc@example.com",
-                                                       "subject": "s", "body": "b"}}]}],
-                target=ConditionalAccessTarget.USER, priority=1)
-
-            body = self._check({"user": "cornelius", "pass": "wrongpin123456"})
-            self.assertFalse(body["result"]["value"], body)
-            # The stage's own sentence survives; the reason it was appended to does not.
-            self.assertEqual(f"{str(GENERIC_AUTH_FAILURE).rstrip('.')}. Your administrator has been notified.",
-                             body["detail"]["message"], body)
-            self.assertNotIn("wrong otp pin", body["detail"]["message"], body)
-            self.assertListEqual(["soc@example.com"], smtpmock.get_sent_recipient())
-        finally:
-            delete_policy("ca_hide")
-            delete_smtpserver("lockoutmail")
-
-    @smtpmock.activate
-    def test_a_notification_keeps_the_failure_reason_when_nothing_masks_it(self):
-        # The counterpart: with no masking policy the credential failure is still why the request was refused, so
-        # the notification is appended to it rather than replacing it.
+    def test_a_notification_leaves_the_response_untouched(self):
+        # A notify-only stage refuses nothing and leaves no row behind, so there is no request it could ever
+        # speak on - not even the one that triggered the mail. The failure keeps its own reason, unchanged.
         smtpmock.setdata(response={})
         add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
         try:
@@ -855,8 +632,9 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
                 target=ConditionalAccessTarget.USER, priority=1)
 
             body = self._check({"user": "cornelius", "pass": "wrongpin123456"})
-            self.assertEqual("wrong otp pin. Your administrator has been notified.",
-                             body["detail"]["message"], body)
+            self.assertEqual("wrong otp pin", body["detail"]["message"], body)
+            # The mail did go out; it is simply not something the response mentions.
+            self.assertIn("soc@example.com", smtpmock.get_sent_recipient())
         finally:
             delete_smtpserver("lockoutmail")
 
@@ -888,23 +666,6 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         try:
             body = self._check({"user": "cornelius", "pass": "pin755224"})
             self.assertEqual("MSG-OWN", body["detail"]["message"], body)
-        finally:
-            delete_policy("ca_show")
-
-    def test_the_policy_describes_the_request_that_trips_the_lock(self):
-        # The post-response evaluation answers the same way the pre-check does - the gate resolves the policy
-        # once and the request context carries it, so one request cannot word a rejection two ways.
-        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
-        from privacyidea.lib.policies.actions import PolicyAction
-        self._make_lock_policy(counter_type=AuthEventType.PIN_FAIL, threshold=2, duration=600)
-        set_policy(name="ca_show", scope=SCOPE.CONDITIONAL_ACCESS,
-                   action=f"{PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE}")
-        try:
-            self._check({"user": "cornelius", "pass": "wrongpin123456"})
-            tripping = self._check({"user": "cornelius", "pass": "wrongpin123456"})
-            self.assertTrue(is_user_locked(self.user))
-            self.assertEqual(str(default_error_message(ConditionalAccessAction.LOCK_USER)).replace(
-                "{duration}", "10 minute(s)"), tripping["detail"]["message"], tripping)
         finally:
             delete_policy("ca_show")
 
@@ -1562,11 +1323,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             self.assertEqual(200, response.status_code, response)
             return response.json
 
-    def test_initialize_that_trips_a_block_hands_out_no_challenge(self):
-        # /validate/initialize says result.value: false even on success, so it is the sharpest case for the rule
-        # that a rejection carries the reason and nothing else: a stage tripped by its own CHALLENGE_TRIGGERED
-        # event withdraws the passkey payload it was about to return. A source-IP policy, because the passkey
-        # flow resolves nobody - there is no user to lock.
+    def test_initialize_that_trips_a_block_still_hands_out_its_challenge(self):
+        # /validate/initialize says result.value: false even on success, so nothing about the verdict distinguishes
+        # the request that trips a stage here - what would have distinguished it is the payload, and that is handed
+        # over unchanged. A source-IP policy, because the passkey flow resolves nobody - there is no user to lock.
         self._set_relying_party_id()
         create_conditional_access_policy(
             name="ca_initialize_block", time_window_seconds=3600,
@@ -1576,12 +1336,15 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             target=ConditionalAccessTarget.SOURCE_IP, count_mode=str(CountMode.PER_REQUEST), priority=1)
 
         body = self._initialize(remote_addr="203.0.113.7")
-        self.assertFalse(body["result"]["value"], body)
         self.assertTrue(is_ip_blocked("203.0.113.7"))
-        self.assertEqual("Blocked. Try again in about 10 minute(s).", body["detail"]["message"], body)
-        # Refused, so the passkey challenge is not handed over: a blocked client gets the reason and nothing
-        # else, exactly as it would from the pre-check on its next attempt.
-        self.assertSetEqual({"message", "threadid"}, set(body["detail"]), body)
+        # The challenge it was about to return is returned, and the block is not mentioned.
+        self.assertIn("passkey", body["detail"], body)
+        self.assertNotIn("Blocked", body["detail"].get("message", ""), body)
+
+        # The next attempt from that address meets the block in the pre-check and gets the reason, nothing else.
+        refused = self._initialize(remote_addr="203.0.113.7")
+        self.assertEqual("Blocked. Try again in about 10 minute(s).", refused["detail"]["message"], refused)
+        self.assertSetEqual({"message", "threadid"}, set(refused["detail"]), refused)
 
     def _set_relying_party_id(self) -> None:
         """The relying-party id the passkey challenge needs; without it the endpoint fails before creating one, which
@@ -1645,16 +1408,14 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._initialize(remote_addr="203.0.113.7")
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED] * 2, same_attempt=False)
         self.assertTrue(is_ip_blocked("203.0.113.7"))
-        # This call both triggered a challenge and tripped the block, so it is answered as the rejection it became:
-        # the challenge is withdrawn from the response (left to expire unanswered, not invalidated).
-        self.assertNotIn("transaction_id", body["detail"], body)
-        self.assertNotIn("passkey", body["detail"], body)
-        # The transaction is taken from the row and then proved, rather than read out of the response: this call's
-        # challenge was withdrawn from the body, and it cannot be looked up in the challenge store either, since a
-        # passkey challenge carries no serial and an unfiltered get_challenges() returns nothing when the challenges
-        # live in Redis (the cache is keyed by serial/transaction and cannot enumerate). So assert what identifies
-        # it - a transaction of its own, not the first call's, naming a challenge that really was created.
+        # This call both triggered a challenge and tripped the block, and it is answered as the challenge request
+        # it was: the payload is handed over exactly as on the call before it.
+        self.assertIn("transaction_id", body["detail"], body)
+        self.assertIn("passkey", body["detail"], body)
+        # Taken from the row rather than the response only so the two are cross-checked: a transaction of its own,
+        # not the first call's, naming a challenge that really was created.
         tripping_transaction = entries.all[1].transaction_id
+        self.assertEqual(tripping_transaction, body["detail"]["transaction_id"], body)
         self.assertNotEqual(first_transaction, tripping_transaction, entries.all[1])
         self.assertTrue(get_challenges(transaction_id=tripping_transaction))
         assert_authentication_log_entry(entries.all[1], user=None, source_ip="203.0.113.7", peer_ip="203.0.113.7",
@@ -1705,12 +1466,15 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self._lock_policy_named("ca_worded", 1, "Locked. Try again in about {duration}.", 600)
         self._lock_policy_named("ca_silent", 2, None, 600)
 
-        body = self._check({"user": "cornelius", "pass": "wrongpin"})
-        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+        self._check({"user": "cornelius", "pass": "wrongpin"})
         self.assertEqual("Locked. Try again in about {duration}.", get_user_lock(self.user).error_message)
-        # Only the write that took effect is history; the one that changed nothing is not.
+        # Only the write that took effect is history; the one that changed nothing is not. Read before the next
+        # request, whose own row is the rejection and carries no outcome of its own.
         entries = get_authentication_logs()
         self.assertListEqual(["ca_worded"], [outcome.policy_name for outcome in get_outcomes(entries[-1].id)])
+        # The wording reaches the user on the request the lock refuses, not on the one that wrote it.
+        body = self._check({"user": "cornelius", "pass": "wrongpin"})
+        self.assertEqual("Locked. Try again in about 10 minute(s).", body["detail"]["message"], body)
 
     def test_a_permanent_lock_restated_keeps_the_first_wording(self):
         # The same for two permanent locks, where there is no expiry to compare at all.
@@ -1718,6 +1482,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
                                 action=ConditionalAccessAction.PERMANENT_LOCK_USER)
         self._lock_policy_named("ca_silent", 2, None, None, action=ConditionalAccessAction.PERMANENT_LOCK_USER)
 
+        self._check({"user": "cornelius", "pass": "wrongpin"})
         body = self._check({"user": "cornelius", "pass": "wrongpin"})
         self.assertEqual("Your account is locked.", body["detail"]["message"], body)
 
@@ -1727,18 +1492,20 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self._lock_policy_named("ca_short", 1, "Locked. Try again in about {duration}.", 600)
         self._lock_policy_named("ca_long", 2, "Locked for a while.", 3600)
 
+        self._check({"user": "cornelius", "pass": "wrongpin"})
+        self.assertAlmostEqual(3600, get_user_lock(self.user).seconds_remaining, delta=10)
         body = self._check({"user": "cornelius", "pass": "wrongpin"})
         self.assertEqual("Locked for a while.", body["detail"]["message"], body)
-        self.assertAlmostEqual(3600, get_user_lock(self.user).seconds_remaining, delta=10)
 
     def test_a_weaker_lock_is_still_declined_wording_and_all(self):
         # And so is declining: the shorter lock neither shortens the restriction nor gets to describe it.
         self._lock_policy_named("ca_long", 1, "Locked for a while.", 3600)
         self._lock_policy_named("ca_short", 2, "Locked. Try again in about {duration}.", 600)
 
+        self._check({"user": "cornelius", "pass": "wrongpin"})
+        self.assertAlmostEqual(3600, get_user_lock(self.user).seconds_remaining, delta=10)
         body = self._check({"user": "cornelius", "pass": "wrongpin"})
         self.assertEqual("Locked for a while.", body["detail"]["message"], body)
-        self.assertAlmostEqual(3600, get_user_lock(self.user).seconds_remaining, delta=10)
 
     def _block_policy_named(self, name, priority, message, duration,
                             action=ConditionalAccessAction.BLOCK_IP) -> None:
@@ -1755,18 +1522,20 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self._block_policy_named("ca_ip_worded", 1, "Blocked. Try again in about {duration}.", 600)
         self._block_policy_named("ca_ip_silent", 2, None, 600)
 
-        body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
-        self.assertEqual("Blocked. Try again in about 10 minute(s).", body["detail"]["message"], body)
+        self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
         self.assertEqual("Blocked. Try again in about {duration}.", get_ip_block(BLOCKED_IP).error_message)
-        # Only the write that took effect is history.
+        # Only the write that took effect is history. Read before the next request, whose own row is the rejection.
         entries = get_authentication_logs()
         self.assertListEqual(["ca_ip_worded"], [outcome.policy_name for outcome in get_outcomes(entries[-1].id)])
+        body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
+        self.assertEqual("Blocked. Try again in about 10 minute(s).", body["detail"]["message"], body)
 
     def test_a_permanent_block_restated_keeps_the_first_wording(self):
         self._block_policy_named("ca_ip_worded", 1, "Access from your address is blocked.", None,
                                  action=ConditionalAccessAction.PERMANENT_BLOCK_IP)
         self._block_policy_named("ca_ip_silent", 2, None, None, action=ConditionalAccessAction.PERMANENT_BLOCK_IP)
 
+        self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
         body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
         self.assertEqual("Access from your address is blocked.", body["detail"]["message"], body)
 
@@ -1774,17 +1543,19 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self._block_policy_named("ca_ip_short", 1, "Blocked. Try again in about {duration}.", 600)
         self._block_policy_named("ca_ip_long", 2, "Blocked for a while.", 3600)
 
+        self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
+        self.assertAlmostEqual(3600, get_ip_block(BLOCKED_IP).seconds_remaining, delta=10)
         body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
         self.assertEqual("Blocked for a while.", body["detail"]["message"], body)
-        self.assertAlmostEqual(3600, get_ip_block(BLOCKED_IP).seconds_remaining, delta=10)
 
     def test_a_weaker_block_is_still_declined_wording_and_all(self):
         self._block_policy_named("ca_ip_long", 1, "Blocked for a while.", 3600)
         self._block_policy_named("ca_ip_short", 2, "Blocked. Try again in about {duration}.", 600)
 
+        self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
+        self.assertAlmostEqual(3600, get_ip_block(BLOCKED_IP).seconds_remaining, delta=10)
         body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
         self.assertEqual("Blocked for a while.", body["detail"]["message"], body)
-        self.assertAlmostEqual(3600, get_ip_block(BLOCKED_IP).seconds_remaining, delta=10)
 
     # --- identity rewriting (legacy setrealm / mangle) --------------------------
 
@@ -2005,15 +1776,6 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             stages=[{"failure_threshold": threshold, "error_message": error_message,
                      "actions": [{"action_type": str(action), "action_value": None}]}],
             target=ConditionalAccessTarget.USER, priority=priority)
-
-    @staticmethod
-    def _make_block_ip_policy(*, threshold, duration=600, window=3600, priority=1, error_message=None):
-        create_conditional_access_policy(
-            name="ca_block_ip", time_window_seconds=window,
-            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": threshold, "error_message": error_message,
-                     "actions": [{"action_type": str(ConditionalAccessAction.BLOCK_IP), "action_value": duration}]}],
-            target=ConditionalAccessTarget.SOURCE_IP, priority=priority)
 
     def test_locked_user_rejected_silently_by_default(self):
         # Nothing is volunteered: with no message configured, a locked user is refused with the same generic
@@ -2289,11 +2051,10 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         finally:
             delete_policy("ca_hide")
 
-    def test_the_tripping_request_at_auth_carries_no_details(self):
-        # What the token made of the credential no longer decides anything once a restriction is written, so
-        # those details describe an overtaken attempt. The rejection carries the error message and nothing else.
-        # Logging in against privacyIDEA rather than the resolver, so the failure carries the token layer's
-        # own detail - the reason it refused, and what it refused with - for the restriction to overtake.
+    def test_the_tripping_request_at_auth_keeps_its_own_details(self):
+        # The login that writes the lock is still a login that failed on its credential, so it keeps the token
+        # layer's own detail and the wrong-credentials id; the lock speaks from the next login. Logging in against
+        # privacyIDEA rather than the resolver, so there is a token-layer detail to keep.
         from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
         from privacyidea.lib.policies.actions import PolicyAction
         set_policy("ca_pi_login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
@@ -2310,18 +2071,25 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             self.assertIn("message", first.json.get("detail") or {}, first.json)
 
             tripping = self._auth("cornelius", "wrongpin123456")
-            self.assertEqual(401, tripping.status_code, tripping)
-            self.assertEqual("MSG-ALPHA", tripping.json["result"]["error"]["message"], tripping.json)
-            self.assertFalse(tripping.json.get("detail"), tripping.json)
             self.assertTrue(is_user_locked(self.user))
+            self.assertEqual(401, tripping.status_code, tripping)
+            # Answered exactly as the login before it: its own reason, its own details, no mention of the lock.
+            self.assertEqual(first.json["result"]["error"]["code"], tripping.json["result"]["error"]["code"],
+                             tripping.json)
+            self.assertNotEqual("MSG-ALPHA", tripping.json["result"]["error"]["message"], tripping.json)
+            self.assertIn("message", tripping.json.get("detail") or {}, tripping.json)
+
+            # The next login meets the lock in the pre-check, and that one carries the stage's wording alone.
+            refused = self._auth("cornelius", "wrongpin123456")
+            self.assertEqual(401, refused.status_code, refused)
+            self.assertEqual("MSG-ALPHA", refused.json["result"]["error"]["message"], refused.json)
+            self.assertFalse(refused.json.get("detail"), refused.json)
         finally:
             delete_policy("ca_pi_login")
 
-    def test_a_challenge_at_auth_that_trips_a_lock_is_refused_as_a_login_failure_is(self):
-        # /auth hands back a challenge as a 200 and returns before it evaluates, so a restriction written on that
-        # request reaches the response hook with a success-shaped body in hand. Editing it in place would answer
-        # with value false and REJECT - a shape no failed login here ever has, and so the one field that would
-        # identify a rejection. It has to be rendered as the error response every failure here is.
+    def test_a_challenge_at_auth_that_trips_a_lock_is_still_handed_out(self):
+        # /auth hands back a challenge as a 200, and a lock written on that request does not take it away: the
+        # login is answered as the challenge request it was, and the lock refuses the answer instead.
         init_token({"serial": "CA_AUTH_HOTP", "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
         set_policy("ca_webui_login", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
         set_policy("ca_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
@@ -2333,49 +2101,27 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             target=ConditionalAccessTarget.USER, priority=1)
         try:
             tripping = self._auth("cornelius", "pin")
-            self.assertEqual(401, tripping.status_code, tripping)
-            self.assertEqual(Error.AUTHENTICATE, tripping.json["result"]["error"]["code"], tripping.json)
             self.assertTrue(is_user_locked(self.user))
-            # The challenge goes with it: a transaction_id the next request would refuse is not handed out.
-            self.assertFalse(tripping.json.get("detail"), tripping.json)
+            # The challenge is handed over: a 200 carrying the transaction to answer, exactly as without a policy.
+            self.assertEqual(200, tripping.status_code, tripping.json)
+            self.assertIn("transaction_id", tripping.json.get("detail") or {}, tripping.json)
 
-            # And it reads exactly as the rejection the lock produces from now on, which is the whole promise.
+            # Answering it is what meets the lock, and that is the ordinary refused login: a 401 error response.
             refused = self._auth("cornelius", "pin")
-            self.assertEqual(tripping.status_code, refused.status_code, refused.json)
-            self.assertEqual(tripping.json["result"], refused.json["result"], refused.json)
-            self.assertEqual(tripping.json.get("detail"), refused.json.get("detail"), refused.json)
+            self.assertEqual(401, refused.status_code, refused.json)
+            self.assertEqual(Error.AUTHENTICATE, refused.json["result"]["error"]["code"], refused.json)
+            self.assertFalse(refused.json.get("detail"), refused.json)
         finally:
             remove_token("CA_AUTH_HOTP")
             delete_policy("ca_webui_login")
             delete_policy("ca_cr")
 
-    def test_ip_block_trip_message_at_auth(self):
-        # The failure that trips the BLOCK_IP stage (by crossing the distinct-user
-        # threshold) already tells the user about the block instead of "Wrong
-        # credentials".
-        self._make_block_ip_policy(threshold=3, error_message="Blocked. Try again in about {duration}.")
-        ip = "203.0.113.7"
-        # Below the threshold, a failure is just a plain wrong-credentials rejection.
-        res = self._auth("cornelius", "wrongpass", remote_addr=ip)
-        self.assertEqual(401, res.status_code, res)
-        self.assertEqual(str(GENERIC_AUTH_FAILURE), res.json["result"]["error"]["message"], res.json)
-        # Two other users spray the same IP: with cornelius that is 3 distinct users.
-        _seed_ip_spray(self.user, AuthEventType.PASSWORD_FAIL, ip, n_users=2)
-        # cornelius's next failure crosses the distinct-user threshold -> IP blocked.
-        res = self._auth("cornelius", "wrongpass", remote_addr=ip)
-        self.assertEqual(401, res.status_code, res)
-        message = res.json["result"]["error"]["message"]
-        self.assertIn("Blocked. Try again in about", message, message)
-        self.assertIn("minute", message.lower(), message)
-        self.assertNotIn(str(GENERIC_AUTH_FAILURE), message, message)
-        # The user themselves is not locked - only the IP was blocked.
-        self.assertFalse(is_user_locked(self.user))
-
     def test_deny_policy_rejects_at_auth(self):
         # After enough prior PASSWORD_FAILs the next login is denied pre-auth, even with
         # the correct password. The message states it was a conditional-access decision
         # (without naming the policy); no new log row and no persisted lock.
-        self._make_decision_policy(name="ca_deny", threshold=3, action=ConditionalAccessAction.DENY, error_message="MSG-DELTA")
+        self._make_decision_policy(name="ca_deny", threshold=3, action=ConditionalAccessAction.DENY,
+                                   error_message="MSG-DELTA")
         for _ in range(3):
             res = self._auth("cornelius", "wrongpass")
             self.assertEqual(401, res.status_code, res)
@@ -2492,85 +2238,32 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
 
     def test_the_error_id_follows_what_the_response_is_about(self):
         # AUTHENTICATE_WRONG_CREDENTIALS is a claim about the credential, so it is kept exactly where that claim
-        # holds and dropped where it does not. The line is the one compose_failure_message already draws for the
-        # message, so the id and the wording can never describe different things.
+        # holds and dropped where it does not. What decides is whether *this* request's credential was checked,
+        # which is also what moves the id: a login that writes a lock was checked, a login the lock refuses was not.
 
         # An ordinary failure: the credential was wrong and nothing else happened.
         ordinary = self._auth("cornelius", "wrongpass")
         self.assertEqual(4031, ordinary.json["result"]["error"]["code"], ordinary.json)
         self._clear()
 
-        # A stage that trips silently still *restricted* this login, so it is answered as the rejection it became -
-        # generic wording, no details, generic id - identically to the logins the lock then refuses. Whether an
-        # admin configured wording changes what is said, never whether this was a rejection.
+        # The login that trips the stage had its credential checked and was refused for it, so the claim still
+        # holds and the id is unchanged - writing a lock is not a statement about the password.
         self._make_password_policy(threshold=2)
         self._auth("cornelius", "wrongpass")
-        silent = self._auth("cornelius", "wrongpass")
+        tripping = self._auth("cornelius", "wrongpass")
         self.assertTrue(is_user_locked(self.user))
-        self.assertEqual(403, silent.json["result"]["error"]["code"], silent.json)
-        self.assertEqual(str(GENERIC_AUTH_FAILURE), silent.json["result"]["error"]["message"], silent.json)
-        self._clear()
+        self.assertEqual(4031, tripping.json["result"]["error"]["code"], tripping.json)
 
-        # With wording the response *is* about the restriction - it says so - so it takes the generic id.
-        create_conditional_access_policy(
-            name="ca_pw_worded", time_window_seconds=3600,
-            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": 2, "error_message": "Locked for {duration}.",
-                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
-            target=ConditionalAccessTarget.USER, priority=1)
-        self._auth("cornelius", "wrongpass")
-        worded = self._auth("cornelius", "wrongpass")
-        self.assertTrue(is_user_locked(self.user))
-        self.assertEqual(403, worded.json["result"]["error"]["code"], worded.json)
-
-        # And every request after it is refused by the pre-check, which never looked at a credential at all - the
-        # case where AUTHENTICATE_WRONG_CREDENTIALS would be false outright. The correct password proves it.
+        # From here the pre-check refuses without looking at a credential at all - the case where
+        # AUTHENTICATE_WRONG_CREDENTIALS would be false outright. The correct password proves it.
         after = self._auth("cornelius", "test")
         self.assertEqual(403, after.json["result"]["error"]["code"], after.json)
+        self.assertEqual(str(GENERIC_AUTH_FAILURE), after.json["result"]["error"]["message"], after.json)
 
     @smtpmock.activate
-    def test_email_notice_surfaced_in_auth_rejection(self):
-        # When an EMAIL_* action fires on the failing request, its notice is appended to the
-        # rejection message so the login screen shows it, just like a lock message.
-        smtpmock.setdata(response={})
-        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
-        try:
-            create_conditional_access_policy(
-                name="ca_mail", time_window_seconds=3600,
-                counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                stages=[{"failure_threshold": 2, "error_message": "MSG-DELTA",
-                         "actions": [{"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
-                                      "action_value": {"smtp_identifier": "actionmail",
-                                                       "recipient_group": "soc@example.com",
-                                                       "subject": "alert", "body": "alert"}}]}],
-                target=ConditionalAccessTarget.USER, priority=1)
-
-            # 1st failure is below the threshold: plain rejection, no email, nothing surfaced.
-            res = self._auth("cornelius", "wrongpass")
-            self.assertEqual(401, res.status_code, res)
-            self.assertEqual(str(GENERIC_AUTH_FAILURE), res.json["result"]["error"]["message"])
-
-            # 2nd failure trips the stage: the email goes out and the stage's own error message rides back on
-            # the 401. A notify-only stage leaves no lock row, so this is the one path where the message
-            # travels with the evaluation rather than being read off a restriction.
-            res = self._auth("cornelius", "wrongpass")
-            self.assertEqual(401, res.status_code, res)
-            # Appended to the ordinary failure, not replacing it: the credential failure is still the reason.
-            # compose_failure_message strips the reason's own full stop before joining, so the two sentences
-            # are separated by exactly one.
-            self.assertEqual(f"{str(GENERIC_AUTH_FAILURE).rstrip('.')}. MSG-DELTA",
-                             res.json["result"]["error"]["message"])
-            self.assertEqual(["soc@example.com"], smtpmock.get_sent_recipient())
-            # An EMAIL-only stage writes no lock state, so the pre-check still lets the user in.
-            self.assertFalse(is_user_locked(self.user))
-        finally:
-            delete_smtpserver("actionmail")
-
-    @smtpmock.activate
-    def test_the_policy_supplies_a_notify_only_stage_its_error_message(self):
-        # The fallback is not restrictions only: a stage that merely notified describes itself too, from the
-        # standard error message for the actions that actually ran. Appended to the failure, because a notification
-        # is not why the request was refused - the credential still is.
+    def test_the_policy_says_nothing_for_a_notify_only_stage(self):
+        # The fallback describes a restriction in force, and a notify-only stage leaves none - so there is no
+        # request for it to speak on and nothing for the policy to fill in. The mail still goes out.
         from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
         from privacyidea.lib.policies.actions import PolicyAction
         smtpmock.setdata(response={})
@@ -2591,46 +2284,13 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             self._auth("cornelius", "wrongpass")
             res = self._auth("cornelius", "wrongpass")
             self.assertEqual(401, res.status_code, res)
-            expected = f"{str(GENERIC_AUTH_FAILURE).rstrip('.')}. {default_error_message(ConditionalAccessAction.EMAIL_ADMIN)}"
-            self.assertEqual(expected, res.json["result"]["error"]["message"], res.json)
+            self.assertEqual(str(GENERIC_AUTH_FAILURE), res.json["result"]["error"]["message"], res.json)
             self.assertListEqual(["soc@example.com"], smtpmock.get_sent_recipient())
             # Still only a notification, so nothing was restricted and the details are the failure's own.
             self.assertFalse(is_user_locked(self.user))
         finally:
             delete_policy("ca_show")
             delete_smtpserver("lockoutmail")
-
-    @smtpmock.activate
-    def test_lock_message_and_email_notice_combined(self):
-        # A stage that both locks the user (timed) and emails the admin leads the locking request's rejection with the
-        # lock message and appends the email notice.
-        smtpmock.setdata(response={})
-        add_smtpserver(identifier="actionmail", server="1.2.3.4", tls=False)
-        try:
-            create_conditional_access_policy(
-                name="ca_lockmail", time_window_seconds=3600,
-                counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                stages=[{"failure_threshold": 2, "error_message": "Locked for {duration}. Your administrator has been notified.",
-                         "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600},
-                                     {"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
-                                      "action_value": {"smtp_identifier": "actionmail",
-                                                       "recipient_group": "soc@example.com",
-                                                       "subject": "s", "body": "b"}}]}],
-                target=ConditionalAccessTarget.USER, priority=1)
-
-            self._auth("cornelius", "wrongpass")  # 1st failure: below the threshold
-            res = self._auth("cornelius", "wrongpass")  # 2nd: trips the stage -> lock + email
-            self.assertEqual(401, res.status_code, res)
-            message = res.json["result"]["error"]["message"]
-            # One message, written by the admin to cover both facts, carried by the lock row. The stage
-            # does not also contribute it through the evaluation, or the user would be told twice.
-            self.assertIn("Locked for", message, message)
-            self.assertIn("minute", message.lower(), message)
-            self.assertEqual(1, message.count("administrator has been notified"), message)
-            self.assertNotIn(str(GENERIC_AUTH_FAILURE), message, message)
-            self.assertTrue(is_user_locked(self.user))
-        finally:
-            delete_smtpserver("actionmail")
 
     def test_endpoint_condition_reaches_the_post_response_lockout(self):
         # The pre-auth decision and the post-response lockout build their CAContext in two different places, so an
@@ -2681,42 +2341,6 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         # a plain failure) rather than turned away by conditional access.
         self.assertEqual(200, response.status_code, response.json)
         self.assertFalse(response.json["result"]["value"], response.json)
-
-    @smtpmock.activate
-    def test_the_policy_describes_every_action_a_stage_ran(self):
-        # A stage that locks and notifies at once. With wording of its own an admin covers both facts in one
-        # sentence; falling back to the standard wording has to cover them too, or the user is told about the
-        # lock and left to discover the email.
-        from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
-        from privacyidea.lib.policies.actions import PolicyAction
-        smtpmock.setdata(response={})
-        add_smtpserver(identifier="lockoutmail", server="1.2.3.4", tls=False)
-        set_policy(name="ca_show", scope=SCOPE.CONDITIONAL_ACCESS,
-                   action=f"{PolicyAction.SHOW_DEFAULT_CA_ERROR_MESSAGE}")
-        try:
-            create_conditional_access_policy(
-                name="ca_lockmail_generic", time_window_seconds=3600,
-                counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-                # No error_message: the policy speaks for the stage, for every action it runs.
-                stages=[{"failure_threshold": 2, "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600},
-                                     {"action_type": str(ConditionalAccessAction.EMAIL_ADMIN),
-                                      "action_value": {"smtp_identifier": "lockoutmail",
-                                                       "recipient_group": "soc@example.com",
-                                                       "subject": "s", "body": "b"}}]}],
-                target=ConditionalAccessTarget.USER, priority=1)
-
-            self._auth("cornelius", "wrongpass")
-            res = self._auth("cornelius", "wrongpass")
-            self.assertEqual(401, res.status_code, res)
-            message = res.json["result"]["error"]["message"]
-            self.assertTrue(is_user_locked(self.user))
-            self.assertEqual(["soc@example.com"], smtpmock.get_sent_recipient())
-            lock = str(default_error_message(ConditionalAccessAction.LOCK_USER)).replace("{duration}", "10 minute(s)")
-            self.assertIn(lock, message, message)
-            self.assertIn(str(default_error_message(ConditionalAccessAction.EMAIL_ADMIN)), message, message)
-        finally:
-            delete_policy("ca_show")
-            delete_smtpserver("lockoutmail")
 
     def test_a_local_admin_is_locked_by_a_user_policy(self):
         # A local database admin has no (resolver, uid, realm) - only a login name - so a user-target policy keys

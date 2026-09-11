@@ -19,8 +19,8 @@ threshold created, so it lifts only when someone lifts it or its own duration
 runs out.
 
 Each entry also shows the error message the restriction carries - what the
-affected user is being told, or nothing where the stage said nothing. It is a
-copy taken when the restriction was written, see
+affected user is being told on the requests it refuses, or nothing where the stage
+said nothing. It is a copy taken when the restriction was written, see
 :ref:`conditional_access_error_messages_snapshot`.
 
 

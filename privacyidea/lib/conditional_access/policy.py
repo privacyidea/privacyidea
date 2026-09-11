@@ -90,13 +90,15 @@ second set of recipients - and no stage may hold two actions of the same mutuall
 * ``PERMANENT_LOCK_USER`` / ``PERMANENT_BLOCK_IP`` / ``DENY`` - no value. These never expire and never read
   one, so a duration on them would only describe an expiry that does not happen.
 
-A stage's optional ``error_message`` is the text an end user sees when a request is turned away by that stage. It is
-opt-in: without one the rejection carries only the generic "Authentication failed.", so privacyIDEA never volunteers
-that an account is locked or an IP blocked unless an admin chose to say so - either by writing this field, or by
-setting the ``show_default_ca_error_message`` policy, which fills in the default wording for the stage's actions
-(:data:`DEFAULT_ERROR_MESSAGES`). ``{duration}`` is substituted with the remaining
-time at rejection, and only where there is one: on a permanent lock, a ``DENY`` or a notify-only stage it
-is left as written, like any other tag that is not substituted. Every other brace expression is left exactly
+A stage's optional ``error_message`` is the text an end user sees on a request that a lock, a block or a ``DENY``
+from that stage turns away - never on the request that trips the stage, which has already been answered on its own
+merits. A stage that only notifies turns no request away and can therefore never show one at all, whatever is
+written on it. It is opt-in: without one the rejection carries only the generic "Authentication failed.", so
+privacyIDEA never volunteers that an account is locked or an IP blocked unless an admin chose to say so - either by
+writing this field, or by setting the ``show_default_ca_error_message`` policy, which fills in the default wording
+for the stage's actions (:data:`DEFAULT_ERROR_MESSAGES`). ``{duration}`` is substituted with the remaining
+time at rejection, and only where there is one: on a permanent lock or a ``DENY`` it is left as written, like any
+other tag that is not substituted. Every other brace expression is left exactly
 as written - braces in prose need no escaping - so only the length is validated here.
 
 ``conditions`` is the *applicability* axis, orthogonal to the counting one: it restricts which requests the policy
@@ -107,7 +109,6 @@ unknown realm or a misspelled role would otherwise silently never match.
 """
 
 import logging
-from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
@@ -120,9 +121,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import (
     CountMode,
 )
 from privacyidea.lib.conditional_access.conditions import CONDITION_TYPES
-from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ADMIN_RECIPIENT_GROUPS,
+from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ADMIN_RECIPIENT_GROUPS, REPORTING_ACTIONS,
                                                        ConditionalAccessAction, ConditionalAccessTarget,
-                                                       NOTIFYING_ACTIONS, parse_lock_duration_seconds)
+                                                       parse_lock_duration_seconds)
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
@@ -415,10 +416,6 @@ DEFAULT_ERROR_MESSAGES: dict[str, object] = {
         lazy_gettext("Access from your IP address is temporarily blocked. Please try again in about {duration}."),
     ConditionalAccessAction.DENY:
         lazy_gettext("Access has been denied."),
-    ConditionalAccessAction.EMAIL_USER:
-        lazy_gettext("A notification email has been sent to your email address."),
-    ConditionalAccessAction.EMAIL_ADMIN:
-        lazy_gettext("Your administrator has been notified by email."),
 }
 
 
@@ -433,22 +430,6 @@ def default_error_message(action: str) -> str | None:
     return str(message) if message else None
 
 
-def compose_default_error_message(action_types: Sequence[str]) -> str | None:
-    """
-    The default error message for a stage that only reported something, given the *action_types* that ran:
-    one sentence per action, most severe first.
-
-    Notifications only. A restriction is described from the row it left behind (see
-    :func:`~privacyidea.lib.conditional_access.engine._restrictions_in_force`), so composing one here would tell
-    the user twice - and with a ``{duration}`` this side cannot substitute. ``None`` when none of the actions has
-    an error message, which keeps such a stage silent.
-    """
-    carried = set(action_types)
-    sentences = [default_error_message(action) for action in ACTION_SEVERITY
-                 if action in NOTIFYING_ACTIONS and action in carried]
-    return " ".join(sentences) if sentences else None
-
-
 def get_default_error_messages() -> list[dict[str, str]]:
     """
     The suggested stage error messages, ordered by :data:`~privacyidea.lib.conditional_access.engine.
@@ -456,13 +437,21 @@ def get_default_error_messages() -> list[dict[str, str]]:
     request locale.
 
     An authoring aid for the policy editor, which composes one suggestion for a stage carrying several actions:
-    one sentence per action, kept in this order. That is the concatenation the runtime performs too - a request
-    reports one sentence per thing that happened to it, ranked the same way - so the wording the editor offers is
-    the wording a user would be shown, and the client needs no rule of its own beyond the order it is given.
+    one sentence per action, kept in this order.
 
-    The same table backs the runtime fallback under ``show_default_ca_error_message`` (:func:`default_error_message`,
-    :func:`compose_default_error_message`), so an admin who edits a suggestion is editing the thing they would
-    otherwise have got by default.
+    Only actions that *describe a standing state* are in here - a restriction in force, or a denial - because
+    those are the only ones anything can report: a message is said by the pre-check refusing a restricted
+    request, off the row in force, and a row records what is in force rather than the notifications a stage also
+    sent. So a notify-only stage gets no suggestion, its wording having nowhere to be shown.
+
+    That the two sets coincide today is not something to build on: this answers "which actions have a default
+    sentence", and :data:`~privacyidea.lib.conditional_access.engine.REPORTING_ACTIONS` - served per target by
+    :func:`get_target_constraints` - answers which actions can report at all. Adding or dropping a suggestion
+    here must not change what anything believes about the second.
+
+    The same table backs the runtime fallback under ``show_default_ca_error_message``
+    (:func:`default_error_message`), so an admin who edits a suggestion is editing the thing they would otherwise
+    have got by default.
 
     Deliberately not scoped by target: the binding is action to message, and a client picks the entry
     whose action the stage actually carries, so error message for an action a target cannot hold simply never
@@ -475,15 +464,21 @@ def get_default_error_messages() -> list[dict[str, str]]:
 def get_target_constraints() -> dict[str, dict[str, list]]:
     """
     The per-target policy constraints, as ``{target_value: {"actions": [...], "count_modes": [...],
-    "repeatable_actions": [...], "exclusive_action_groups": [[...], ...]}}``: for each target the stage actions it
-    allows (``_ACTIONS_BY_TARGET``), the count modes it supports (``_COUNT_MODES_BY_TARGET``), which of its
-    actions may appear more than once in one stage (:data:`REPEATABLE_ACTIONS`) and which of its actions contradict
-    each other within one stage (``_EXCLUSIVE_ACTION_GROUPS``), all sorted.
+    "repeatable_actions": [...], "exclusive_action_groups": [[...], ...], "reporting_actions": [...]}}``: for each
+    target the stage actions it allows (``_ACTIONS_BY_TARGET``), the count modes it supports
+    (``_COUNT_MODES_BY_TARGET``), which of its actions may appear more than once in one stage
+    (:data:`REPEATABLE_ACTIONS`), which of its actions contradict each other within one stage
+    (``_EXCLUSIVE_ACTION_GROUPS``) and which of them a request can ever be told about
+    (:data:`~privacyidea.lib.conditional_access.engine.REPORTING_ACTIONS`), all sorted.
 
-    The last two are served rather than left for the client to hard-code, for the same reason the condition-type
-    registry is: a rule the editor enforces should come from the one place that defines it. They are filtered to
-    the actions the target allows, so a group that cannot arise for this target (the lock pair under
-    ``source_ip``, the block pair under ``user``) is not offered as a rule the editor could never apply.
+    Everything but the first two is served rather than left for the client to hard-code, for the same reason the
+    condition-type registry is: a rule the editor enforces should come from the one place that defines it. In
+    particular the editor warns that a stage's wording can never be shown, which is a question about what its
+    actions *do* - not about which actions happen to have default wording to suggest, a table it would otherwise
+    have to infer this from (see :func:`get_default_error_messages`).
+
+    All three are filtered to the actions the target allows, so a rule that cannot arise for this target (the lock
+    pair under ``source_ip``, the block pair under ``user``) is not offered as one the editor could never apply.
     """
     constraints = {}
     for target in ConditionalAccessTarget:
@@ -494,6 +489,7 @@ def get_target_constraints() -> dict[str, dict[str, list]]:
             "repeatable_actions": sorted(action.value for action in REPEATABLE_ACTIONS & actions),
             "exclusive_action_groups": [sorted(action.value for action in group)
                                         for group in _EXCLUSIVE_ACTION_GROUPS if len(group & actions) > 1],
+            "reporting_actions": sorted(action.value for action in REPORTING_ACTIONS & actions),
         }
     return constraints
 

@@ -67,6 +67,11 @@ export class MockConditionalAccessPolicyService implements ConditionalAccessPoli
   exclusiveGroupsByTarget = signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>>(
     {} as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>
   );
+  // Empty by default like the two above, so a spec that does not opt in sees no action as able to report and
+  // the unreachable-wording warning stays silent rather than firing on every stage.
+  reportingActionsByTarget = signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>>(
+    {} as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
+  );
 
   targets = signal<ConditionalAccessTarget[]>([]);
 
