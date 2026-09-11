@@ -82,7 +82,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import or_
 
 from privacyidea.lib import lazy_gettext
-from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole
 from privacyidea.models import AuthenticationLog
 
 if TYPE_CHECKING:

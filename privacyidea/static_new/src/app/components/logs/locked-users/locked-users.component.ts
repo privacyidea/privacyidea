@@ -31,6 +31,7 @@ import { ExpandableMessageComponent } from "@components/shared/expandable-messag
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { ADMIN_INTERNAL_ROLE } from "@core/models/user_role/user-role";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -55,6 +56,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { UserRoleBadge, userRoleBadge } from "../user-roles";
 import { from } from "rxjs";
 import { concatMap, reduce } from "rxjs/operators";
 
@@ -163,10 +165,33 @@ export class LockedUsersComponent {
     return row.username || row.uid;
   }
 
-  // Pre-seeds the authentication-log filter with this user's identity - username, or uid for username-less rows, scoped
-  // to the same realm/resolver - so the log shows only that user's events; the template's routerLink does the
+  // The badge for a row that locks something other than an ordinary user, from the same table the authentication
+  // log reads (see user-roles.ts); null for a user, who is the default and would wear one on nearly every row.
+  roleBadge(row: LockedUserEntry): UserRoleBadge | null {
+    return userRoleBadge(row.user_role);
+  }
+
+  // Whether this row locks a local database admin, who has no user page to link to and is unlocked by login name.
+  isLocalAdmin(row: LockedUserEntry): boolean {
+    return row.user_role === ADMIN_INTERNAL_ROLE;
+  }
+
+  // Pre-seeds the authentication-log filter with this row's identity - username, or uid for username-less rows, scoped
+  // to the same realm/resolver - so the log shows only that principal's events; the template's routerLink does the
   // navigation.
+  //
+  // A local admin is filtered by login name and role instead: their row carries no realm or resolver, and sending
+  // those empty would filter on an empty string, while the login name alone would pull in a same-named ordinary
+  // user's events - the two the role keeps apart everywhere else.
   showAuthenticationLog(row: LockedUserEntry): void {
+    if (this.isLocalAdmin(row)) {
+      this.authenticationLogService.authenticationLogFilter.set(
+        new FilterValue()
+          .addEntry("username", this.displayLogin(row))
+          .addEntry("user_role", ADMIN_INTERNAL_ROLE)
+      );
+      return;
+    }
     const identity = row.username
       ? new FilterValue().addEntry("username", row.username)
       : new FilterValue().addEntry("uid", row.uid);
@@ -302,7 +327,13 @@ export class LockedUsersComponent {
         from(rows)
           .pipe(
             concatMap((row) =>
-              this.casService.resetUserLock({ uid: row.uid, realm: row.realm, resolver: row.resolver })
+              // Every row is acted on by its own key, the local admin's included: theirs is the login name in uid,
+              // with no realm or resolver, so the role is what tells the server which kind of row to look for.
+              this.casService.resetUserLock(
+                this.isLocalAdmin(row)
+                  ? { uid: row.uid, userRole: ADMIN_INTERNAL_ROLE }
+                  : { uid: row.uid, realm: row.realm, resolver: row.resolver }
+              )
             ),
             reduce((count, success) => count + (success ? 1 : 0), 0)
           )

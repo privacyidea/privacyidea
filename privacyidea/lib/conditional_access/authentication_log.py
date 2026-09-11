@@ -28,7 +28,7 @@ from sqlalchemy.sql import ColumnElement
 
 from privacyidea.models import (AuthenticationLog, AuthenticationLogReason, ConditionalAccessOutcome,
                                 authentication_log_column_length, authentication_log_reason_column_length)
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.sqlutils import delete_matching_rows
@@ -60,32 +60,14 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
 DEFAULT_PAGE_SIZE = 15
 
 
-class AuthLogUserRole(str, Enum):
-    """
-    Role of the authenticating principal recorded in the authentication log. The two admin values are kept distinct
-    because conditional-access rules may treat them differently: ``admin-external`` admins come from an admin realm
-    (an external identity source) and are the everyday admins, while ``admin-internal`` admins are local database
-    accounts (created via the CLI, used for initial setup and as fallback/recovery) that authenticate only at the
-    ``/auth`` endpoint. Both share the ``admin-`` prefix so a single ``user_role=admin*`` filter matches either.
-
-    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python 3.10; the ``__str__`` override
-    normalizes ``str()``/f-string output to the value across versions (mirrors :class:`AuthEventType`).
-    """
-    USER = "user"
-    ADMIN_INTERNAL = "admin-internal"
-    ADMIN_EXTERNAL = "admin-external"
-
-    def __str__(self) -> str:
-        return self.value
-
-
 class ClientLabelSource(str, Enum):
     """
     Where a row's ``client_label`` came from: the ``client_id`` request parameter the client chose for itself, or
     the User-Agent header it sent. Recorded because the two are worth very different amounts - one is a name an
     integration deliberately gives itself, the other is a string any browser sends.
 
-    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthLogUserRole`.
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`.
     """
     CLIENT_ID = "client_id"
     USER_AGENT = "user_agent"
@@ -105,7 +87,9 @@ class AuthenticationLogVisibilityScope:
     *username_case_insensitive* mirrors the originating policy's ``user_case_insensitive`` option and forces a
     case-insensitive match on the ``usernames`` dimension only; realm and resolver always match case-sensitively.
 
-    *user_roles* restricts to entries of those :class:`AuthLogUserRole` values. It is not derived from policy scoping
+    *user_roles* restricts to entries of those
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`
+    values. It is not derived from policy scoping
     (policies do not scope by role); it is used to express a principal's own entries -- a local/internal admin has no
     realm, so their own entries are matched by username plus ``user_role=admin-internal`` instead of by realm.
     """
@@ -692,6 +676,17 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
     how that policy option is applied during policy matching. realm and resolver are always case-sensitive (realm is
     additionally always stored lower case, so its casing never varies in practice).
 
+
+    A scope that names no ``user_roles`` does not reach the rows of a **local database administrator**. Realm,
+    resolver and user are userstore terms, and none of them describes such an account, whose row carries a login
+    name and nothing else, so a boundary drawn only in those terms does not contain one. Without this, a policy
+    scoped to a user name would reach a local admin of that name - by coincidence of the shared ``username``
+    column rather than by anyone's intent, and the admin policy the boundary comes from has no way to say
+    otherwise, carrying only realm, resolver and user (see
+    :func:`~privacyidea.lib.policies.helper.get_policy_visibility_scopes`). A local admin's rows are therefore
+    reachable only by a caller that is unscoped altogether, or by a scope naming the role outright - which is how
+    a scoped admin still sees their **own** entries.
+
     An empty scope list (or scopes that set no dimension at all) restricts to *nothing*: it returns ``false()`` rather
     than an empty ``or_()``, so the visibility boundary fails closed instead of degrading to "no restriction".
     """
@@ -710,6 +705,11 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
                 dimensions.append(AuthenticationLog.username.in_(scope.usernames))
         if scope.user_roles:
             dimensions.append(AuthenticationLog.user_role.in_([str(role) for role in scope.user_roles]))
+        elif dimensions:
+            # Stated as "not a local admin" rather than "is a user": this column is nullable, and a row that names
+            # no role is an ordinary one - only a local admin's is ever labelled explicitly.
+            dimensions.append(or_(AuthenticationLog.user_role.is_(None),
+                                  AuthenticationLog.user_role != str(AuthLogUserRole.ADMIN_INTERNAL)))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
     if not scope_conditions:

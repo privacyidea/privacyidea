@@ -30,7 +30,10 @@ from werkzeug.test import TestResponse
 
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
-from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthLogUserRole,
+                                                                           RestrictionCause)
+from privacyidea.lib.conditional_access.state import lock_internal_admin
+from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.audit import Audit
@@ -81,6 +84,17 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         user = user or self.user
         db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm, username=user.login,
                                         lock_expires_at=lock_expires_at))
+        db.session.commit()
+
+    @staticmethod
+    def _orphan_admin_lock(uid: str) -> None:
+        """
+        A local-admin lock row standing under *uid* with no account of that exact spelling behind it - what an
+        account removed and recreated under a different one leaves behind. Written directly, there being no
+        supported way to produce it: lock_internal_admin only ever writes the spelling the admin table holds.
+        """
+        db.session.add(UserLockState(resolver="", uid=uid, realm="", username=uid,
+                                     user_role=str(AuthLogUserRole.ADMIN_INTERNAL)))
         db.session.commit()
 
     def _block(self, ip, block_expires_at) -> None:
@@ -265,6 +279,85 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertFalse(res.json["result"]["value"])
         self.assertEqual(0, UserLockState.query.count())
+
+    def test_reset_local_admin_by_login(self):
+        # A local database admin has no realm or resolver - the login name is the whole identity and the key of
+        # their row - so the call names them by role instead, and needs no realm.
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            res = self._request("lock/user", method="DELETE",
+                                json_data={"user": "lockadmin",
+                                           "user_role": str(AuthLogUserRole.ADMIN_INTERNAL)})
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"])
+            self.assertEqual(0, UserLockState.query.count())
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_reset_local_admin_not_locked_returns_false(self):
+        res = self._request("lock/user", method="DELETE",
+                            json_data={"user": "lockadmin", "user_role": str(AuthLogUserRole.ADMIN_INTERNAL)})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertFalse(res.json["result"]["value"])
+
+    def test_reset_local_admin_by_the_key_of_the_listed_row(self):
+        # What the locked-users list holds is the row's own key, so it is what the list sends back: nothing is
+        # re-derived from a name, and the row asked for is the row removed.
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            res = self._request("lock/user", method="DELETE",
+                                json_data={"user_id": "lockadmin",
+                                           "user_role": str(AuthLogUserRole.ADMIN_INTERNAL)})
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"])
+            self.assertEqual(0, UserLockState.query.count())
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_reset_local_admin_by_row_key_leaves_a_row_under_another_spelling_alone(self):
+        # The two forms differ in reach on purpose: this one clears the row named and nothing else, while the
+        # by-login form clears every spelling of the name (see
+        # test_unlock_internal_admin_clears_the_row_left_by_an_earlier_spelling).
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            self._orphan_admin_lock("LockAdmin")
+            res = self._request("lock/user", method="DELETE",
+                                json_data={"user_id": "LockAdmin",
+                                           "user_role": str(AuthLogUserRole.ADMIN_INTERNAL)})
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"])
+            self.assertEqual(["lockadmin"], [row.uid for row in UserLockState.query.all()])
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_reset_rejects_an_unknown_user_role(self):
+        # Read as "an ordinary user", an unknown role would look up a different principal from the one asked for.
+        res = self._request("lock/user", method="DELETE",
+                            json_data={"user": "cornelius", "realm": self.realm1, "user_role": "wizard"})
+        self.assertEqual(400, res.status_code, res.json)
+        # admin-external is not this form either: an admin-realm admin is a resolved user and is unlocked as one.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        res = self._request("lock/user", method="DELETE",
+                            json_data={"user": "cornelius", "realm": self.realm1,
+                                       "user_role": str(AuthLogUserRole.ADMIN_EXTERNAL)})
+        self.assertEqual(400, res.status_code, res.json)
+        self.assertEqual(1, UserLockState.query.count())
+
+    def test_locked_users_list_names_the_shape_of_each_row(self):
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            self._lock_user(utc_now() + timedelta(seconds=600))
+            res = self._request("lock/users")
+            self.assertEqual(200, res.status_code, res.json)
+            rows = {row["username"]: row["user_role"] for row in res.json["result"]["value"]["locked_users"]}
+            self.assertEqual({"lockadmin": str(AuthLogUserRole.ADMIN_INTERNAL),
+                              "cornelius": str(AuthLogUserRole.USER)}, rows)
+        finally:
+            delete_db_admin("lockadmin")
 
     # --- GET blocklist --------------------------------------------------------
 

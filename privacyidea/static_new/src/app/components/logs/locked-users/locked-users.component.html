@@ -130,7 +130,7 @@
           *matCellDef="let row"
           mat-cell>
           <span class="username-cell">
-            @if (authService.actionAllowed("userlist") && row.username) {
+            @if (authService.actionAllowed("userlist") && row.username && !isLocalAdmin(row)) {
               <a
                 (click)="contentService.userSelected(row.username, row.realm)"
                 (keydown.enter)="contentService.userSelected(row.username, row.realm)"
@@ -141,6 +141,14 @@
               </a>
             } @else {
               {{ displayLogin(row) }}
+            }
+            @let roleBadgeValue = roleBadge(row);
+            @if (roleBadgeValue) {
+              <span
+                class="role-badge {{ roleBadgeValue.class }}"
+                [matTooltip]="roleBadgeValue.tooltip">
+                {{ roleBadgeValue.label }}
+              </span>
             }
             @if (row.username) {
               <app-filter-value-button
