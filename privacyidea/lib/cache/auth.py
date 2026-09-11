@@ -45,10 +45,11 @@ physically disappears the moment the policy stops honouring it.
 Data at rest
 ------------
 
-An entry holds an Argon2 hash of the user's password - a credential-derived
-secret that can be attacked offline if it leaks. Every entry is therefore
-encrypted with the server's encryption key before it reaches Redis, so a dump
-of the Redis database yields nothing usable on its own.
+An entry holds a hash of the user's password, made with the algorithm and the
+parameters that ``PI_HASH_ALGO_LIST`` and ``PI_HASH_ALGO_PARAMS`` configure - a
+credential-derived secret that can be attacked offline if it leaks. Every entry
+is therefore encrypted with the server's encryption key before it reaches Redis,
+so a dump of the Redis database yields nothing usable on its own.
 
 Note that, exactly as with the database-backed cache, a password changed in the
 user store stays usable until the entry expires. Keep the ``auth_cache`` policy
@@ -61,10 +62,9 @@ from urllib.parse import quote
 from uuid import uuid4
 
 import redis as redis_lib
-from passlib.hash import argon2
 
 from privacyidea.lib.cache.redis import _disable_redis, redis_client_for_feature, redis_feature_configured
-from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword
+from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword, encryptPassword, verify_pass_hash
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.models.utils import utc_now
 
@@ -216,7 +216,7 @@ def add_to_cache(username: str, realm: str, resolver: str, auth_hash: str,
     :param username: The login name of the user
     :param realm: The realm of the user
     :param resolver: The resolver of the user
-    :param auth_hash: The Argon2 hash of the password that authenticated
+    :param auth_hash: The hash of the password that authenticated
     :param max_age_seconds: How long the entry may be used, from the policy
     :return: True if the entry was cached, False if the database has to do it
     """
@@ -273,8 +273,8 @@ def verify_in_cache(username: str, realm: str, resolver: str, password: str,
     already. On a match the entry's counter and last use are updated.
 
     Entries that are past ``first_auth`` are dropped while we are looking at
-    them. Without that, expired records would keep costing an Argon2
-    verification on every attempt until the whole key expires.
+    them. Without that, expired records would keep costing a key derivation on
+    every attempt until the whole key expires.
 
     :param username: The login name of the user
     :param realm: The realm of the user
@@ -307,12 +307,14 @@ def verify_in_cache(username: str, realm: str, resolver: str, password: str,
         if last_auth and record["last_auth"] <= last_auth:
             continue
         try:
-            if not argon2.verify(password, record["authentication"]):
+            if not verify_pass_hash(password, record["authentication"]):
                 continue
         except ValueError:
-            # Not an Argon2 hash - the same case the database path treats as an
-            # old entry and discards
-            log.debug(f"Discarding a non-argon2 authentication cache entry for {username!s}@{realm!s}.")
+            # Not a hash any configured algorithm can read, either unrecognised or
+            # malformed - the same case the database path treats as an old entry and
+            # discards. An over-long password does not arrive here, because
+            # verify_pass_hash() answers that with False.
+            log.debug(f"Discarding an unreadable authentication cache entry for {username!s}@{realm!s}.")
             _forget(client, key, [entry_id])
             continue
         if max_auths > 0 and record["auth_count"] >= max_auths:
@@ -390,10 +392,10 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
             doomed.append(entry_id)
         else:
             try:
-                if argon2.verify(password, record["authentication"]):
+                if verify_pass_hash(password, record["authentication"]):
                     doomed.append(entry_id)
             except ValueError:
-                # Not an Argon2 hash, so it can never verify again
+                # The stored value can not be read, so it can never verify again
                 doomed.append(entry_id)
     _forget(client, key, doomed)
     return len(doomed)
