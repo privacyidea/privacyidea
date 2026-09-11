@@ -19,11 +19,16 @@
 
 <div class="policy-panel-edit-container">
   <div class="policy-metadata-group">
-    <div class="name-priority-row">
+    <div class="name-scope-priority-row">
       <app-policy-name-edit
         class="input-width-l"
         [policyName]="editedPolicy().name"
         (policyNameChange)="addPolicyEdit({ name: $event })" />
+      <app-policy-scope-edit
+        class="input-width-m"
+        [scope]="editedPolicy().scope"
+        [disabled]="policyHasActions()"
+        (scopeChange)="onPolicyScopeChange($event)" />
       <app-policy-priority-edit
         class="input-width-s"
         [priority]="editedPolicy().priority"
@@ -48,6 +53,8 @@
   @if (activeTab() === "actions") {
     <app-edit-action-tab
       [policy]="editedPolicy()"
+      [(actionFilter)]="actionFilter"
+      [searchInHeader]="searchInHeader()"
       (actionsUpdate)="updateActions($event)"
       (policyScopeChange)="onPolicyScopeChange($event)" />
   }
