@@ -25,7 +25,7 @@ from sqlalchemy import select
 
 from privacyidea.lib.challenge import delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import (CA_ENFORCEMENT_EVENT_TYPES, AuthEventType)
-from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessEvaluation, StageMessage
+from privacyidea.lib.conditional_access.engine import ConditionalAccessAction
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes
 from privacyidea.lib.conditional_access.authentication_log import (AuthLogUserRole, PendingAuthEvent,
                                                                   get_authentication_logs,
@@ -291,7 +291,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
 
         context.reclassify(AuthEventType.NOT_AUTHORIZED)
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
-            evaluate.return_value = ConditionalAccessEvaluation()
+            evaluate.return_value = []
             context.run_post_eval()
 
         # The engine is handed only the classification and the subject, as a CAContext describing the identity the row
@@ -310,7 +310,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.principal = AuthPrincipal(username="admin", internal_admin=True)
 
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
-            evaluate.return_value = ConditionalAccessEvaluation()
+            evaluate.return_value = []
             context.run_post_eval()
 
         ca_context = evaluate.call_args.args[0]
@@ -328,7 +328,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context.principal = AuthPrincipal(user=User("cornelius", self.realm1))
 
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
-            evaluate.return_value = ConditionalAccessEvaluation()
+            evaluate.return_value = []
             context.run_post_eval()
 
         self.assertEqual("/validate/check", evaluate.call_args.args[0].endpoint)
@@ -403,7 +403,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context = ConditionalAccessContext()
         context.stage(self._event("alice"))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
-            evaluate.return_value = ConditionalAccessEvaluation(messages=[StageMessage("a message", ConditionalAccessAction.EMAIL_ADMIN)])
+            evaluate.return_value = []
             self.assertListEqual([StageMessage("a message", ConditionalAccessAction.EMAIL_ADMIN)], context.run_post_eval().messages)
             self.assertListEqual([], context.run_post_eval().messages)
         self.assertEqual(1, evaluate.call_count)
@@ -415,7 +415,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         context = ConditionalAccessContext()
         context.stage(self._event("alice", AuthEventType.LOGIN_SUCCESS))
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
-            evaluate.return_value = ConditionalAccessEvaluation()
+            evaluate.return_value = []
             context.run_post_eval()
             context.reclassify(AuthEventType.NOT_AUTHORIZED)
             context.run_post_eval()
@@ -444,8 +444,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
             self.assertListEqual([], context.run_post_eval().messages)
 
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
-            evaluate.return_value = ConditionalAccessEvaluation(
-                messages=[StageMessage("locked", ConditionalAccessAction.LOCK_USER)], outcomes=[])
+            evaluate.return_value = []
             self.assertListEqual([StageMessage("locked", ConditionalAccessAction.LOCK_USER)], context.run_post_eval().messages)
         evaluate.assert_called_once()
 
@@ -459,7 +458,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         self.assertTrue(get_ca_session().in_transaction())
 
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
-            evaluate.return_value = ConditionalAccessEvaluation()
+            evaluate.return_value = []
             context.finalize()
 
         evaluate.assert_called_once()
@@ -537,8 +536,7 @@ class ConditionalAccessContextTestCase(MyTestCase):
         event = context.stage(self._event("alice"))
         context.flush()
         with mock.patch("privacyidea.lib.conditional_access.engine.evaluate_conditional_access_policies") as evaluate:
-            evaluate.return_value = ConditionalAccessEvaluation(messages=[StageMessage("a message", ConditionalAccessAction.EMAIL_ADMIN)],
-                                                      outcomes=[self._make_outcome(ConditionalAccessAction.PERMANENT_LOCK_USER)])
+            evaluate.return_value = [self._make_outcome(ConditionalAccessAction.PERMANENT_LOCK_USER)]
             self.assertListEqual([StageMessage("a message", ConditionalAccessAction.EMAIL_ADMIN)], context.run_post_eval().messages)
 
         outcomes = get_outcomes(event.row_id)

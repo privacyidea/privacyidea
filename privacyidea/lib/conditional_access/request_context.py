@@ -403,14 +403,14 @@ class ConditionalAccessContext:
                             user_role=event.user_role, endpoint=event.endpoint,
                             use_default_error_message=self.use_default_error_message)
         try:
-            evaluation = evaluate_conditional_access_policies(context, event.event_type)
+            outcomes = evaluate_conditional_access_policies(context, event.event_type)
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
             return
         # Marked evaluated only now: a failure above leaves the classification unevaluated, so the teardown call is
         # the retry rather than a skipped second attempt.
         self._evaluated_as = event.event_type
-        record_outcomes(evaluation.outcomes, event.row_id)
+        record_outcomes(outcomes, event.row_id)
 
     def finalize(self) -> None:
         """

@@ -19,7 +19,7 @@
 import ipaddress
 import logging
 import re
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
@@ -126,9 +126,10 @@ class ConditionalAccessAction(str, Enum):
 
 
 #: Every action that has something to tell the user, most severe first - the one ordering there is. It ranks the
-#: messages a request produced (:func:`rank_and_deduplicate`) and orders the suggestions the policy editor offers
-#: (:data:`~privacyidea.lib.conditional_access.policy.DEFAULT_ERROR_MESSAGES`), so an action reads the same
-#: wherever it is met. An action that turns nobody away has nothing to say, so it has no entry.
+#: messages of the restrictions a request is refused by (:func:`rank_and_deduplicate`) and orders the suggestions
+#: the policy editor offers (:data:`~privacyidea.lib.conditional_access.policy.DEFAULT_ERROR_MESSAGES`), so an
+#: action reads the same wherever it is met. An action that turns nobody away has nothing to say, so it has no
+#: entry.
 ACTION_SEVERITY: tuple[ConditionalAccessAction, ...] = (
     ConditionalAccessAction.PERMANENT_LOCK_USER,
     ConditionalAccessAction.PERMANENT_BLOCK_IP,
@@ -146,16 +147,6 @@ _ACTION_RANK: dict[ConditionalAccessAction, int] = {action: rank for rank, actio
 #: The actions that only report something, rather than restricting anything. Used to compose the default error message
 #: for what a stage did (see :func:`~privacyidea.lib.conditional_access.policy.compose_default_error_message`).
 NOTIFYING_ACTIONS = frozenset({ConditionalAccessAction.EMAIL_USER, ConditionalAccessAction.EMAIL_ADMIN})
-
-
-def most_severe_action(action_types: Iterable[str]) -> ConditionalAccessAction | None:
-    """
-    The most severe of *action_types* by :data:`ACTION_SEVERITY`, or ``None`` when none of them ranks - an
-    action with nothing to say, or one added to :class:`ConditionalAccessAction` without an entry there. So a
-    caller never has to know which actions are covered.
-    """
-    carried = {str(action_type) for action_type in action_types}
-    return next((action for action in ACTION_SEVERITY if action.value in carried), None)
 
 
 class AccessDecision(str, Enum):
@@ -219,12 +210,6 @@ RESTRICTION_ACTIONS: dict[tuple[ConditionalAccessTarget, bool], ConditionalAcces
     (ConditionalAccessTarget.SOURCE_IP, True): ConditionalAccessAction.PERMANENT_BLOCK_IP,
 }
 
-#: The targets a restricting action writes to, so a stage that sets out to enforce is described from the row that
-#: ends up in force rather than by the action that aimed at it (see :func:`_restrictions_in_force`).
-RESTRICTED_TARGET_BY_ACTION: dict[ConditionalAccessAction, ConditionalAccessTarget] = {
-    action: target for (target, _permanent), action in RESTRICTION_ACTIONS.items()
-}
-
 
 @dataclass(frozen=True)
 class RestrictionStatus:
@@ -277,12 +262,13 @@ def _render_duration(restriction: "RestrictionStatus") -> str:
 @dataclass(frozen=True)
 class StageMessage:
     """
-    One user-facing message a triggered stage produced, already rendered.
+    One user-facing message describing a restriction in force, already rendered (see
+    :func:`restriction_messages`).
 
-    :ivar text: what to show; ``{duration}`` is substituted here, where the duration just written is known.
+    :ivar text: what to show; ``{duration}`` is substituted here, against the time the restriction has left now.
     :ivar action: the action this message is about, which ranks it (:data:`ACTION_SEVERITY`) so a caller showing
-        several leads with the one the user can do least about. Read off the one thing that happened rather than
-        derived a second time.
+        several leads with the one the user can do least about. Named by the row's own target and expiry rather
+        than by the action that happened to write it (see :data:`RESTRICTION_ACTIONS`).
     """
     text: str
     action: ConditionalAccessAction
@@ -331,14 +317,11 @@ def rank_and_deduplicate(messages: list["StageMessage"]) -> list["StageMessage"]
     """
     The messages to show, ordered by :data:`ACTION_SEVERITY` and with each distinct sentence kept once.
 
-    Ranked before de-duplicating, so where an admin configured the same sentence on a notify-only stage and on a
-    locking one, the copy kept is the one labelled with the severer action - and a reader of the result sees the
-    ranking the stage earned. The sort is stable, so messages of equal severity stay in the order they were
-    collected in. A message about an action with no rank sorts last, so an oversight in :data:`ACTION_SEVERITY`
-    costs the order rather than the message.
-
-    Used by both paths that describe a restriction - the post-response evaluation and the pre-check that refuses
-    the requests after it - so the same state cannot be worded differently depending on which one answers.
+    Ranked before de-duplicating, so where the same sentence stands on a user lock and on a source-IP block, the
+    copy kept is the one labelled with the severer action - and a reader of the result sees the ranking the
+    restriction earned. The sort is stable, so messages of equal severity stay in the order they were collected
+    in. A message about an action with no rank sorts last, so an oversight in :data:`ACTION_SEVERITY` costs the
+    order rather than the message.
     """
     seen: set[str] = set()
     unique: list[StageMessage] = []
@@ -361,12 +344,12 @@ def restriction_messages(*restrictions: "RestrictionStatus | None",
     generic: producing no message is what leaves a rejection indistinguishable from any other failure, and what
     the response then says instead is the caller's question to answer.
 
-    Both paths that describe a restriction come through here, so the error message cannot depend on which one
-    answered: the pre-check that refuses a request already restricted, and the evaluation that just restricted
-    it.
+    Called only by the pre-check that refuses a restricted request
+    (:func:`~privacyidea.api.lib.conditional_access._evaluate_rejection`): a restriction is described from the row
+    in force, on the requests it actually refuses, and never by the evaluation that wrote it.
     """
     # Deferred: policy imports the action/target enums from here, so importing it at module level
-    # would close a cycle. Same reason as run_post_eval's import of this module.
+    # would close a cycle.
     from privacyidea.lib.conditional_access.policy import default_error_message
 
     messages = []
@@ -385,33 +368,6 @@ def restriction_messages(*restrictions: "RestrictionStatus | None",
 
 
 @dataclass
-class ConditionalAccessEvaluation:
-    """
-    What one post-response evaluation produced: the user-facing messages to surface on the current response, and the
-    outcomes to record as the request's conditional-access history.
-
-    Each message is a :class:`StageMessage`, already rendered and ordered by :data:`ACTION_SEVERITY` so a caller
-    showing several leads with the one the user can do least about. Wording for a restriction is rendered from the
-    row now in force, not by the stage that wrote it: several policies can restrict the same subject in one request
-    and only one row survives them. Notification error message comes from the stage, the only place it exists.
-
-    The engine returns these instead of writing the history itself. It has no access to the id of the
-    authentication-log row (it runs before the row exists on the pre-auth path, and never sees it on the other), and
-    keeping the write out of here is what leaves the engine free of Flask and of the request lifecycle - see
-    :mod:`privacyidea.lib.conditional_access.outcome_log`.
-
-    Also used as the per-policy result inside :func:`_evaluate_policy`, since "what this produced" is the same shape
-    for one policy and for all of them.
-    """
-    messages: list[StageMessage] = field(default_factory=list)
-    outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
-    #: Which rows this evaluation left a restriction on, so the caller describes what ended up in force there -
-    #: see :func:`_restrictions_in_force`. A restricting action that never wrote anything is not in here: the
-    #: caller answers a request as a rejection on the strength of this set.
-    enforced_targets: set[ConditionalAccessTarget] = field(default_factory=set)
-
-
-@dataclass
 class AccessDecisionResult:
     """
     The verdict of the pre-auth decision step plus the outcomes it produced.
@@ -420,8 +376,7 @@ class AccessDecisionResult:
     nothing to record.
 
     One type for a single policy's contribution (:func:`_policy_access_decision`) and for the whole evaluation
-    (:func:`evaluate_access_decision`), the way :class:`ConditionalAccessEvaluation` serves one policy and all of
-    them. Hence the default: :attr:`AccessDecision.CONTINUE` reads "this policy has no opinion" for the one and
+    (:func:`evaluate_access_decision`). Hence the default: :attr:`AccessDecision.CONTINUE` reads "this policy has no opinion" for the one and
     "no policy decided" for the other - which is what ``CONTINUE`` already means, so nothing needs a separate
     ``None`` to say it.
     """
@@ -1305,33 +1260,8 @@ def _stage_denies(stage: ConditionalAccessPolicyStage, count: int) -> bool:
     return False
 
 
-def _restrictions_in_force(context: CAContext, targets: set[ConditionalAccessTarget]) -> list[StageMessage]:
-    """
-    The error message of the restrictions in force on the targets an evaluation restricted, one message per row.
-
-    Read back rather than rendered by the stage that aimed at it. Several policies can restrict the same subject
-    in one request and a stage can carry several restricting actions, but only one row survives them all - so the
-    stage that wrote the weaker restriction would otherwise describe a lock that is not in force, and two
-    policies locking the same user would tell the user twice. Reading the row also means ``{duration}`` counts
-    down the expiry that actually stands, whatever the upserts decided to keep, and that a write declined as
-    weakening still leaves the user told about the restriction that stands instead of about nothing.
-
-    Silent by default holds here as everywhere: a row carrying no error message produces none. A target whose
-    write failed outright is not passed here at all - it restricted nothing, so there is no row to describe and no
-    request to refuse (see :func:`_execute_stage_actions`).
-
-    :param targets: the targets this evaluation restricted, so an untouched row is never read
-    """
-    statuses = []
-    if ConditionalAccessTarget.USER in targets and context.user is not None:
-        statuses.append(get_user_lock(context.user))
-    if ConditionalAccessTarget.SOURCE_IP in targets and context.source_ip:
-        statuses.append(get_ip_block(context.source_ip))
-    return restriction_messages(*statuses, use_default_error_message=context.use_default_error_message)
-
-
 def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEventType | None,
-                                         now: datetime | None = None) -> "ConditionalAccessEvaluation":
+                                         now: datetime | None = None) -> list[ConditionalAccessOutcome]:
     """
     Evaluate every enabled conditional-access policy that tracks *event_type* and execute
     the actions of the triggered stage, if any. This runs post-response, *after*
@@ -1350,14 +1280,13 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     successful login (see :func:`count_user_events`), so a fresh burst
     re-triggers the fire-once actions too.
 
-    The persistent side effects (lock state) are consulted by the *next* inbound
-    request via the pre-check, which reads the error message back off the row they wrote. A stage that only
-    notified leaves no such row, so its message is returned here instead, for the caller to surface on
-    the response this evaluation belongs to. Any error is the caller's to swallow; this
-    function itself only guards individual DB writes (see
+    Nothing is reported to the client from here. The persistent side effects (lock state) are consulted by the
+    *next* inbound request via the pre-check, which reads the error message back off the row they wrote, and that
+    is the only moment a conditional-access message is ever said. The request being evaluated has already been
+    answered. Any error is the caller's to swallow; this function itself only guards individual DB writes (see
     :func:`_upsert_user_lock_state`).
 
-    Alongside the messages, every action that actually ran (or, in dry run, would have run) is returned as a
+    Every action that actually ran (or, in dry run, would have run) is returned as a
     :class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome` for the caller to record as this
     request's history.
     The engine deliberately does not write them: it never sees the id of the authentication-log row they belong to.
@@ -1370,11 +1299,10 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     :param event_type: the classified outcome of the request
         (:class:`AuthEventType`)
     :param now: the reference time; defaults to :func:`utc_now`
-    :return: a :class:`ConditionalAccessEvaluation` holding the de-duplicated, order-preserving user-facing
-        messages produced by executed actions, and the outcomes to record (both empty if nothing was triggered)
+    :return: the outcomes to record, one per action that ran (empty if nothing was triggered)
     """
     if not event_type:
-        return ConditionalAccessEvaluation()
+        return []
     now = naive_utc(now) if now is not None else utc_now()
     event_type = str(event_type)
     # Selects only enabled policies tracking the current event type via an indexed equality filter on the normalized
@@ -1388,33 +1316,19 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
                ConditionalAccessPolicyCounterType.counter_type == event_type)
         .order_by(ConditionalAccessPolicy.priority.asc())
     ).all()
-    messages: list[StageMessage] = []
     outcomes: list[ConditionalAccessOutcome] = []
-    enforced: set[ConditionalAccessTarget] = set()
     for policy in policies:
         # Each policy is evaluated inside its own guard, so a broken policy cannot disable every policy ordered
         # behind it. The only unguarded step is the policy query above, which runs before any action, so a retry
         # always starts clean.
         try:
-            evaluation = _evaluate_policy(policy, context, event_type, now)
+            outcomes.extend(_evaluate_policy(policy, context, event_type, now))
         except Exception as ex:
             log.warning(f"Conditional-access policy {policy.name!r} failed to evaluate: {ex!r}; skipping it.")
             continue
-        messages.extend(evaluation.messages)
-        outcomes.extend(evaluation.outcomes)
-        enforced |= evaluation.enforced_targets
-    # Every restriction is described once, from the row left in force, ahead of the notifications the stages
-    # carry: two policies locking the same user leave one lock, and so must say so once.
-    messages = _restrictions_in_force(context, enforced) + messages
-    # Ranked and de-duplicated by rank_and_deduplicate, which is stable, so messages of equal severity stay in
-    # policy-priority order. The outcomes are *not* de-duplicated - each is a distinct thing that happened, and
-    # two policies locking the same user are two facts worth keeping apart.
-    #
-    # enforced_targets is carried out of here, not just used above: it is the only thing that says this request was
-    # restricted at all, and a *silent* restriction produces no message to infer it from. The caller needs it to
-    # answer such a request as the rejection it now is.
-    return ConditionalAccessEvaluation(messages=rank_and_deduplicate(messages), outcomes=outcomes,
-                                       enforced_targets=enforced)
+    # The outcomes are deliberately not de-duplicated - each is a distinct thing that happened, and two policies
+    # locking the same user are two facts worth keeping apart.
+    return outcomes
 
 
 def _stage_in_range(policy: ConditionalAccessPolicy, count: int) -> ConditionalAccessPolicyStage | None:
@@ -1457,7 +1371,7 @@ def _pending_actions(stage: ConditionalAccessPolicyStage, count: int) -> list[Co
 
 
 def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_type: str,
-                     now: datetime) -> "ConditionalAccessEvaluation":
+                     now: datetime) -> list[ConditionalAccessOutcome]:
     """
     Evaluate a single policy: count the user's events over the policy window,
     find the stage that owns the count (see :func:`_stage_in_range`), then execute
@@ -1471,14 +1385,13 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
     So one stage can, for example, email once at threshold 8 while keeping the
     user locked for every further failure up to the threshold that supersedes it.
 
-    :return: a :class:`ConditionalAccessEvaluation` with the user-facing messages produced by the executed actions
-        and the outcomes describing what was done (both empty if no stage triggered; in dry run there are outcomes
-        but no messages, since nothing ran)
+    :return: the outcomes describing what was done, empty if no stage triggered. A dry run still produces them,
+        recording what enforcing the policy would have done.
     """
     # Applicability is checked first: a policy whose conditions exclude this request neither counts nor acts, and
     # costs no counting query.
     if not policy_matches_context(policy, context):
-        return ConditionalAccessEvaluation()
+        return []
     # A policy's conditions scope what is counted, not just whether it applies (see _count_scoping); matches_missing
     # and the SQL filter treat a missing value the same way, so the gate and the count never disagree.
     # This matters for a source-IP policy, whose rows span many identities and roles and would otherwise count the
@@ -1492,7 +1405,7 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
         if not source_ip:
             # An IP-targeted policy cannot count or act without a source IP.
             log.debug(f"Skipping source-IP policy {policy.name!r}: the request carries no source IP.")
-            return ConditionalAccessEvaluation()
+            return []
         # Counts per the policy's mode: distinct targeted accounts (spraying) or plain per-IP volume; no mode resets
         # on success, since one account's login must not clear a signal aggregated across the whole IP (see
         # _policy_count_ip).
@@ -1503,7 +1416,7 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
             # A user-target policy is keyed on the resolved (resolver, uid, realm)
             # user, so an unresolved user (unknown login, local admin) is never
             # locked. Source-IP policies above still run for such requests.
-            return ConditionalAccessEvaluation()
+            return []
         # With the policy's reset_on_success (the default) the lock counts consecutive
         # failures since the user's last completed login: a successful authentication
         # clears the slate, so a legitimate user is not re-locked by stale pre-login
@@ -1529,7 +1442,7 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
     triggered_stage = _stage_in_range(policy, count)
     pending_actions = _pending_actions(triggered_stage, count) if triggered_stage else []
     if not pending_actions:
-        return ConditionalAccessEvaluation()
+        return []
 
     if policy.dry_run:
         log.info(f"[dry-run] policy {policy.name!r} would trigger stage {triggered_stage.id} "
@@ -1544,7 +1457,7 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
                                       expires_at=_action_expiry(action, now))
                     for action in pending_actions
                     if action.action_type != ConditionalAccessAction.DENY]
-        return ConditionalAccessEvaluation(outcomes=outcomes)
+        return outcomes
 
     log.info(f"Policy {policy.name!r} triggered stage {triggered_stage.id} "
              f"(threshold {triggered_stage.failure_threshold}) for {subject_label}: "
@@ -1734,7 +1647,7 @@ def _send_action_email(action_type: "ConditionalAccessAction", stage_action: Con
 
 def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAccessPolicyStage,
                            actions: Sequence[ConditionalAccessStageAction], context: CAContext,
-                           now: datetime, count: int, tags: dict) -> "ConditionalAccessEvaluation":
+                           now: datetime, count: int, tags: dict) -> list[ConditionalAccessOutcome]:
     """
     Execute the given *actions* of a triggered *stage* (the stage's pending
     actions, i.e. those whose per-action threshold condition is met). Each action
@@ -1754,39 +1667,16 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
 
     :param policy: the triggering policy, for the outcomes
     :param count: the count that tripped the stage, for the outcomes
-    :return: a :class:`ConditionalAccessEvaluation` with this stage's message when it only notified, one outcome
-        per action that ran, and the targets those actions restricted (all empty if every action was skipped).
+    :return: one outcome per action that ran (empty if every action was skipped).
     """
     outcomes: list[ConditionalAccessOutcome] = []
-    # Which rows this stage left a restriction on - noted for an action that actually restricted one, not for one
-    # that was configured to. The caller answers a request as a rejection on the strength of this set, so an action
-    # whose write never happened - no valid duration, no source IP, a failed write - must not put a target here
-    # that no later request would be refused by.
-    #
-    # A write *declined as weakening* wrote nothing either, and the row it declined to weaken is still described:
-    # only a stronger restriction in force declines one, and that one was written either by an earlier action here
-    # or by another policy in this same evaluation - which recorded the target. (It cannot have been in force
-    # beforehand: the pre-check would have refused the request, and a rejection is never evaluated.) The union
-    # evaluate_conditional_access_policies collects therefore holds it, and the message comes from whatever stands
-    # on that row - never from the action that aimed at it.
-    enforced: set[ConditionalAccessTarget] = set()
-    # Whether the stage *aimed* at a restriction or a denial, which is a different question from what it achieved
-    # and is why these two are not read off `enforced`. The stage's one error message describes whatever the stage
-    # does; for those two the description belongs elsewhere - the row in force, or the pre-auth decision step - so
-    # the stage says nothing from here either way. A write that was declined or skipped leaves nothing to describe,
-    # not a lock-shaped sentence to append to the failure as though it were a notification.
-    restricts = False
-    decides = False
 
     user = context.user
     source_ip = context.source_ip
 
     def record(action_type: str, expires_at: datetime | None = None) -> None:
-        """Note that *action_type* ran, with the expiry it wrote (if any), and what it restricted."""
+        """Note that *action_type* ran, with the expiry it wrote (if any)."""
         outcomes.append(outcome_for_stage(policy, stage, action_type, count, expires_at=expires_at))
-        target = RESTRICTED_TARGET_BY_ACTION.get(action_type)
-        if target is not None:
-            enforced.add(target)
 
     for action in actions:
         try:
@@ -1794,8 +1684,6 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
         except ValueError:
             log.warning(f"Unknown conditional-access action type {action.action_type!r} on stage {stage.id}; skipping.")
             continue
-        restricts = restricts or action_type in RESTRICTED_TARGET_BY_ACTION
-        decides = decides or action_type is ConditionalAccessAction.DENY
 
         try:
             if action_type == ConditionalAccessAction.LOCK_USER:
@@ -1846,29 +1734,7 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
         except Exception as ex:
             log.warning(f"Conditional-access action {action_type} (id {action.id}) on stage {stage.id} "
                         f"failed: {ex!r}; skipping.")
-    if not outcomes:
-        # Nothing ran, so there is nothing to report - whatever the stage was configured to say.
-        rendered = None
-    elif stage.error_message:
-        # One free-text field for whatever the stage does, so it is rendered wherever that thing is described: a
-        # restriction from the row it left behind (_restrictions_in_force), a denial by the pre-auth decision step
-        # that makes it. Either way, repeating it here would tell the user twice - or tell them about a denial
-        # that did not turn this request away.
-        rendered = None if restricts or decides else render_error_message(stage.error_message)
-    elif context.use_default_error_message:
-        # The default error message is per action rather than per stage, so nothing is described twice and no
-        # such rule is needed: compose_default_error_message carries only what reports something, and leaves any
-        # restriction to its row. That is what lets a stage that locks *and* emails describe both.
-        # Deferred for the same reason as in restriction_messages: policy imports this module.
-        from privacyidea.lib.conditional_access.policy import compose_default_error_message
-        rendered = render_error_message(
-            compose_default_error_message([outcome.action_type for outcome in outcomes]))
-    else:
-        rendered = None
-    # Ranked by the most severe thing the stage actually did, so a caller showing several messages leads with that.
-    action = most_severe_action(outcome.action_type for outcome in outcomes)
-    messages = [StageMessage(rendered, action)] if rendered and action else []
-    return ConditionalAccessEvaluation(messages=messages, outcomes=outcomes, enforced_targets=enforced)
+    return outcomes
 
 
 def _delete_user_lock_state(state: UserLockState) -> None:

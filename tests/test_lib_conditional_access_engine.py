@@ -56,7 +56,6 @@ from privacyidea.lib.conditional_access.engine import (
     get_ip_block,
     parse_lock_duration_seconds,
     render_error_message,
-    most_severe_action,
     ACTION_SEVERITY,
     StageMessage,
     RestrictionStatus,
@@ -2776,17 +2775,13 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertIsNone(undecided.error_message)
 
     def test_every_action_that_can_report_something_has_a_severity_rank(self):
-        # ACTION_SEVERITY has to cover the enum, not merely agree with the message table.
-        # A member added without a rank fails silently:
-        # most_severe_action answers None for it, and _execute_stage_actions drops the stage's error message
-        # rather than showing it out of order - so the admin's wording disappears with nothing to say why.
+        # ACTION_SEVERITY has to cover the enum, not merely agree with the message table: a member added without
+        # a rank sorts last among the messages of the restrictions in force (rank_and_deduplicate), so a wording
+        # would silently come out in the wrong order.
         #
         # The exemption is for an action that decides a request without turning anyone away, having nothing to
         # tell a user - and since ALLOW was removed there is no longer any such action.
         self.assertSetEqual(set(ConditionalAccessAction), set(ACTION_SEVERITY))
-        # And the rank is what a stage's message hangs on, so every covered action has to answer.
-        for action in ACTION_SEVERITY:
-            self.assertEqual(action, most_severe_action([action.value]), action)
 
     def test_a_stage_message_describes_its_longest_restriction(self):
         # One message covers however many actions a stage runs, and the row keeps the last expiry written, so
