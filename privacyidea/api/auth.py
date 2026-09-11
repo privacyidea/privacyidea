@@ -70,8 +70,7 @@ import jwt
 from flask import (Blueprint, request, current_app, g)
 from flask_babel import _
 
-from privacyidea.api.lib.conditional_access import (compose_failure_message, conditional_access_login_gate,
-                                                    rejection_message)
+from privacyidea.api.lib.conditional_access import conditional_access_login_gate
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
@@ -90,7 +89,7 @@ from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                           AUTH_EVENT_TYPE_KEY, build_reason_detail,
                                                                           LOG_TRANSACTION_ID_KEY)
-from privacyidea.lib.conditional_access.request_context import continue_attempt, get_ca_context
+from privacyidea.lib.conditional_access.request_context import continue_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
@@ -618,45 +617,12 @@ def get_auth_token():
                        internal_admin=internal_admin,
                        reasons=auth_reasons, reason_detail=auth_reason_detail)
 
-    # Feed the classified outcome to the conditional-access engine here, in the view, because this endpoint
-    # *raises* its rejection: the error message, the error id and the details all go into the AuthError below, and
-    # the lock or block this login may have just written is read back for them. The staged row is flushed first,
-    # so the count includes this request's own event. Both halves are guarded and idempotent, so after_request
-    # and teardown find nothing left to do and this can never break the login response.
-    context = get_ca_context()
-    context.flush()
-    evaluation = context.run_post_eval()
-
     if not admin_auth and not user_auth:
-        # If this very request tripped a stage, the evaluation above carries its wording: a restriction replaces
-        # the reason, a notification is appended to it (see compose_failure_message). Anything already in force
-        # was refused by the pre-check before the credentials were ever checked, so there is nothing to read back.
-        # With no wording at all the failure is the ordinary one, which is what keeps a locked account
-        # indistinguishable from a wrong password in everything a human or a client reads: the status, the
-        # message and the detail. Not in the error *id*, deliberately - see the rejection branch below - and
-        # hide_specific_error_message closes even that.
-        details = details or {}
-        message = str(GENERIC_AUTH_FAILURE)
-        error_id = Error.AUTHENTICATE_WRONG_CREDENTIALS
-        if evaluation.restricted:
-            # This login is refused by conditional access rather than by the credential it happened to carry, so it
-            # is answered exactly as the pre-check answers every login after it: the restriction's wording if there
-            # is any, the ordinary failure if not, and nothing else. The details describe the overtaken attempt -
-            # "wrong otp pin" and the token it was aimed at - and a rejection carries none of that. The id drops
-            # WRONG_CREDENTIALS for the same reason: nothing here is a statement about the credential.
-            message = rejection_message(context.rejection_shape, evaluation.messages)
-            details = {}
-            error_id = Error.AUTHENTICATE
-            if evaluation.messages:
-                # Only configured wording is claimed, so hide_specific_error_message shows it instead of its own; a
-                # silent rejection is the ordinary failure and is masked with every other one.
-                context.claim_message(message)
-        elif evaluation.messages:
-            # A stage that only notified refused nothing, so the credential failure is still the reason and keeps
-            # its id and its details; the notification is appended to it.
-            message = compose_failure_message(message, evaluation.messages)
-            context.claim_message(message)
-        raise AuthError(message, id=error_id, details=details)
+        # The ordinary failed login, whatever conditional access made of this request. Anything it had in force
+        # was refused by the pre-check before the credentials were ever checked, and a stage this request trips
+        # applies from the next login onwards - so nothing here is a statement about conditional access, and the
+        # staged row is left to request teardown to flush and evaluate like any other.
+        raise AuthError(GENERIC_AUTH_FAILURE, id=Error.AUTHENTICATE_WRONG_CREDENTIALS, details=details or {})
     else:
         g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
         request.User = user

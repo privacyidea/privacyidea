@@ -70,11 +70,11 @@ from typing import Any
 from flask import request, g, Response
 
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication, build_ca_context,
-                                      send_error, send_result, get_optional_one_of)
+                                      send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import (get_user_lock, get_ip_block, evaluate_access_decision,
                                                        render_error_message, restriction_messages, AccessDecision,
-                                                       ConditionalAccessAction, RestrictionStatus, StageMessage)
+                                                       ConditionalAccessAction, RestrictionStatus)
 from privacyidea.lib.conditional_access.policy import default_error_message
 from privacyidea.lib.conditional_access.session import release_ca_connection
 from privacyidea.lib.conditional_access.request_context import RejectionShape, get_ca_context
@@ -250,56 +250,21 @@ def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection
     return rejection
 
 
-def _rejection_wording(shape: RejectionShape, message: str | None, detail_stripped: bool = False) -> str | None:
+def _rejection_wording(shape: RejectionShape, message: str | None) -> str | None:
     """
     What a rejection says on the endpoint *shape* describes, given the wording the restrictions carry.
 
     A configured message is said everywhere. A silent restriction is the interesting half: where an ordinary
     failure carries a ``detail`` it says what every other failed authentication says, because a response *without*
-    one could only have come from conditional access; where an ordinary failure carries none - ``/ttype/push``, or
-    a response ``no_detail_on_fail`` has already stripped - it says nothing, because there the generic message
-    would be that same tell.
+    one could only have come from conditional access; where an ordinary failure carries none - ``/ttype/push`` -
+    it says nothing, because there the generic message would be that same tell.
 
     :param message: the wording the restrictions in force carry, or ``None`` for the normal, silent case
-    :param detail_stripped: whether a post-policy removed the detail this endpoint would otherwise have carried
     :return: the wording, or ``None`` when the rejection carries no detail at all
     """
     if message:
         return message
-    return None if detail_stripped or not shape.carries_detail else str(GENERIC_AUTH_FAILURE)
-
-
-def rejection_message(shape: RejectionShape, messages: list[StageMessage],
-                      detail_stripped: bool = False) -> str | None:
-    """
-    What a request that has just been restricted says: the wording of the restrictions now in force, rendered as
-    :func:`_rejection_wording` renders every rejection on this endpoint.
-
-    Deliberately the same answer :func:`conditional_access_precheck` gives every request after this one. A
-    restriction reads the same whether this request wrote it or an earlier one did, so the request that trips a
-    lock cannot be told apart from the requests the lock then refuses - which is the property that makes a lock
-    say one thing rather than two.
-
-    :param messages: the wording the restrictions carry; empty is the normal, silent case
-    """
-    return _rejection_wording(shape, " ".join(message.text for message in messages) or None, detail_stripped)
-
-
-def compose_failure_message(existing: str | None, messages: list[StageMessage]) -> str:
-    """
-    What a failed authentication should say when conditional access has something to *add* to it.
-
-    Only ever the notification case. A stage that merely notified refused nothing, so the credential failure is
-    still why the request was turned away and its own reason stays the lead; the notification follows it. A
-    restriction is the other case entirely and is not composed at all - it *is* the answer, see
-    :func:`rejection_message`.
-
-    :param existing: the error message the failure already carried, if any
-    :param messages: what conditional access did - **never empty**. A caller with nothing to report leaves its own
-        error message alone rather than asking here, which is also what lets this always answer with a sentence.
-    """
-    joined = " ".join(message.text for message in messages)
-    return f"{existing.rstrip('.')}. {joined}" if existing else joined
+    return None if not shape.carries_detail else str(GENERIC_AUTH_FAILURE)
 
 
 def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
@@ -310,17 +275,14 @@ def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
     Nothing of the request it refuses survives: a rejection says the wording and no more, the credentials it
     carried having never been checked.
 
+    Only the endpoints that *return* their rejection render one here. ``/auth`` raises its own
+    :class:`AuthError` instead (see :func:`_reject_restricted_login`), which the error handler renders as the
+    ``401`` every failed login there returns.
+
     :param shape: how this endpoint answers a refusal
     :param message: the wording, or ``None`` where this endpoint's failures carry no detail (see
         :func:`_rejection_wording`)
     """
-    if shape.as_error:
-        # /auth, the one entry point whose failed authentication is an error response - so its rejection is one
-        # too, carrying the generic authentication id and never the endpoint's own. The status stays as the error
-        # handler set it, which is the 401 every failed login there returns.
-        rejection = send_error(message, error_code=Error.AUTHENTICATE, details={})
-        rejection.status_code = 401
-        return rejection
     # An empty detail is dropped by prepare_result, which is exactly what an endpoint carrying none needs.
     return send_result(shape.value, rid=shape.rid, details={"message": message} if message else {})
 
@@ -469,7 +431,6 @@ def _reject_restricted_login(user: User) -> None:
     ``internal_admin`` comes from the flag ``before_request`` already resolved, so a blocked local admin is recorded as
     ``admin-internal`` rather than falling back to ``user``.
     """
-    get_ca_context().rejection_shape = RejectionShape(as_error=True)
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return
