@@ -282,9 +282,7 @@ class StageMessage:
     :ivar text: what to show; ``{duration}`` is substituted here, where the duration just written is known.
     :ivar action: the action this message is about, which ranks it (:data:`ACTION_SEVERITY`) so a caller showing
         several leads with the one the user can do least about. Read off the one thing that happened rather than
-        derived a second time. Whether the message *replaces* the failure's reason or is appended to it is a
-        separate question, answered by whether the request was restricted at all - see
-        :attr:`~privacyidea.lib.conditional_access.request_context.PostEvaluation.restricted`.
+        derived a second time.
     """
     text: str
     action: ConditionalAccessAction

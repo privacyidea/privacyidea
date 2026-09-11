@@ -35,8 +35,8 @@ Silent is the default on all three: a rejection says what an admin configured on
 nothing configured only what every other failed authentication says.
 
 What "like any other failed authentication" *is* differs per endpoint, which is the one thing a gate has to hand on:
-each passes a :class:`~privacyidea.lib.conditional_access.request_context.RejectionShape` saying how its endpoint
-answers a refusal, down to the fields the endpoint does not have. ``/ttype/push`` is where that bites: it renders
+each passes a :class:`RejectionShape` saying how its endpoint answers a refusal, down to the fields the endpoint
+does not have. ``/ttype/push`` is where that bites: it renders
 with ``rid`` 1, so it reports no ``authentication`` verdict, and an ordinary failed answer there carries no
 ``detail`` at all, so a silent rejection carries none either - the opposite of ``/validate/*``, where every failure
 has one and a silent rejection needs the generic message to have one too.
@@ -77,13 +77,38 @@ from privacyidea.lib.conditional_access.engine import (get_user_lock, get_ip_blo
                                                        ConditionalAccessAction, RestrictionStatus)
 from privacyidea.lib.conditional_access.policy import default_error_message
 from privacyidea.lib.conditional_access.session import release_ca_connection
-from privacyidea.lib.conditional_access.request_context import RejectionShape, get_ca_context
+from privacyidea.lib.conditional_access.request_context import get_ca_context
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.user import User
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class RejectionShape:
+    """
+    How one endpoint answers a request conditional access refuses.
+
+    Passed by whichever gate guards the endpoint, because looking like an ordinary failed authentication is the
+    whole requirement and what one looks like differs per endpoint.
+
+    :ivar value: what ``result.value`` says. ``False`` everywhere except ``/validate/triggerchallenge``, where the
+        value is the number of challenges triggered and a boolean would change the type of a field its callers may
+        be reading as a number.
+    :ivar rid: the response id this endpoint renders with. ``prepare_result`` adds ``result.authentication`` only
+        for ``rid > 1``, so a rejection at ``/ttype/push`` - which renders with ``1`` - must not grow a field the
+        endpoint never carries.
+    :ivar carries_detail: whether an ordinary failed authentication here carries a ``detail`` at all. On
+        ``/validate/*`` every failure does, so a silent rejection carries the generic failure to have one too; at
+        ``/ttype/push`` none does, so a silent rejection carries none either - the generic message would be exactly
+        the tell that including it on ``/validate`` avoids.
+    """
+    value: Any = False
+    rid: int = 2
+    carries_detail: bool = True
+
 
 #: How ``/ttype/push`` answers a refused challenge answer. The push token renders its own response through
 #: ``prepare_result`` with ``rid`` 1, so it carries no ``result.authentication``, and an ordinary failed answer there
@@ -230,8 +255,7 @@ def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection
     unconditionally, on both.
 
     :param user: the identity to gate on
-    :param shape: how this endpoint answers a refusal (see :class:`~privacyidea.lib.conditional_access.
-        request_context.RejectionShape`)
+    :param shape: how this endpoint answers a refusal (see :class:`RejectionShape`)
     :return: the :class:`Rejection` to render, or ``None`` to continue with the normal flow
     """
     rejection = _evaluate_rejection(user)
@@ -270,7 +294,7 @@ def _rejection_wording(shape: RejectionShape, message: str | None) -> str | None
 def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
     """
     The response a refused request gets, in the shape its endpoint's gate describes
-    (:class:`~privacyidea.lib.conditional_access.request_context.RejectionShape`).
+    (:class:`RejectionShape`).
 
     Nothing of the request it refuses survives: a rejection says the wording and no more, the credentials it
     carried having never been checked.

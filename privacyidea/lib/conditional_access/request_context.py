@@ -28,7 +28,7 @@ session it writes on.
 import logging
 import secrets
 from dataclasses import dataclass, field
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
 from flask import has_request_context
 
@@ -42,11 +42,6 @@ from privacyidea.lib.conditional_access.outcome_log import record_outcomes
 from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.user import User
 from privacyidea.models import ConditionalAccessOutcome
-
-if TYPE_CHECKING:
-    # Only for the annotation below: importing the engine at module level would risk an import-order cycle
-    # during app startup, which is why run_post_eval imports it inside the function instead.
-    from privacyidea.lib.conditional_access.engine import StageMessage
 
 log = logging.getLogger(__name__)
 
@@ -78,45 +73,6 @@ class AuthPrincipal:
     user: User = field(default_factory=User)
     username: str | None = None
     internal_admin: bool = False
-
-
-@dataclass(frozen=True)
-class PostEvaluation:
-    """
-    What the post-response evaluation left for the current response to say.
-
-    :ivar messages: the user-facing wording the triggered stages carry, most severe first. Empty when nothing was
-        triggered *and* when what was triggered carries no wording - silent by default holds here as everywhere.
-    :ivar restricted: whether this request left a restriction in force. Independent of :attr:`messages`, and that
-        is the whole reason it exists: a silent restriction produces no wording, yet the request still has to be
-        answered as the rejection it now is, exactly like every request the pre-check refuses after it.
-    """
-    messages: list["StageMessage"] = field(default_factory=list)
-    restricted: bool = False
-
-
-@dataclass(frozen=True)
-class RejectionShape:
-    """
-    How one endpoint answers a request conditional access refuses.
-
-    Passed by whichever gate guards the endpoint, because looking like an ordinary failed authentication is the
-    whole requirement and what one looks like differs per endpoint.
-
-    :ivar value: what ``result.value`` says. ``False`` everywhere except ``/validate/triggerchallenge``, where the
-        value is the number of challenges triggered and a boolean would change the type of a field its callers may
-        be reading as a number.
-    :ivar rid: the response id this endpoint renders with. ``prepare_result`` adds ``result.authentication`` only
-        for ``rid > 1``, so a rejection at ``/ttype/push`` - which renders with ``1`` - must not grow a field the
-        endpoint never carries.
-    :ivar carries_detail: whether an ordinary failed authentication here carries a ``detail`` at all. On
-        ``/validate/*`` every failure does, so a silent rejection carries the generic failure to have one too; at
-        ``/ttype/push`` none does, so a silent rejection carries none either - the generic message would be exactly
-        the tell that including it on ``/validate`` avoids.
-    """
-    value: Any = False
-    rid: int = 2
-    carries_detail: bool = True
 
 
 class ConditionalAccessContext:
@@ -152,8 +108,8 @@ class ConditionalAccessContext:
         Claim *message* as conditional access's own wording for this response, so ``hide_specific_error_message``
         and ``no_detail_on_fail`` show it instead of their own generic text (see :func:`claimed_ca_message`).
 
-        Only the gates claim: their responses are built inside the decorator stack, where those two actions can
-        still reach them. The ``after_request`` hook needs no claim, since it runs after both.
+        Only the gates claim, they being the only place a conditional-access message is ever said: their responses
+        are built inside the decorator stack, where those two actions can still reach them.
         """
         self.own_message = message
 
@@ -376,11 +332,14 @@ class ConditionalAccessContext:
         for name, value in fields.items():
             setattr(event, name, value)
 
-    def run_post_eval(self) -> PostEvaluation:
+    def run_post_eval(self) -> None:
         """
-        Let the conditional-access engine react to what this request logged, and report back what the current
-        response has to say about it: the wording the triggered stages carry, and whether this request left a
-        restriction in force (see :class:`PostEvaluation`).
+        Let the conditional-access engine react to what this request logged.
+
+        Nothing is reported back, because nothing is reported to the client: a restriction this request writes
+        applies from the *next* request, which the pre-check refuses (see
+        :func:`~privacyidea.api.lib.conditional_access.conditional_access_precheck`). The response in flight keeps
+        whatever it had coming.
 
         Nothing has to be scheduled: staging an authentication event *is* the signal, and everything the engine needs
         is already recorded - the classification comes from the latest staged event, the principal and source IP from
@@ -392,11 +351,11 @@ class ConditionalAccessContext:
         (``push_wait``: the challenge trigger, then the terminal outcome) the earlier ones are still counted - counts
         are taken over the stored rows - they just do not each provoke their own evaluation.
 
-        Runs **once per distinct classification**, not merely once: an endpoint that needs the messages in its own
-        response can run it early (``/auth`` does) and request teardown will not repeat the same evaluation. Should a
-        post-policy correct the outcome in between, however, teardown *does* evaluate again - otherwise the engine
-        would be left having judged a classification that no longer holds. A classification counts as evaluated only
-        once the engine returned, so an early call that failed is retried at teardown rather than swallowed.
+        Runs **once per distinct classification**, not merely once: a caller that has already evaluated will not
+        make request teardown repeat the same evaluation. Should a post-policy correct the outcome in between,
+        however, teardown *does* evaluate again - otherwise the engine would be left having judged a classification
+        that no longer holds. A classification counts as evaluated only once the engine returned, so a call that
+        failed is retried at teardown rather than swallowed.
 
         The evaluation counts events over the authentication log, so it must run **after** :meth:`flush` - otherwise
         the count would miss the very event that triggered it. That ordering also keeps the counts from reading a stale
@@ -429,11 +388,11 @@ class ConditionalAccessContext:
         """
         event = self.latest
         if event is None or event.event_type == self._evaluated_as:
-            return PostEvaluation()
+            return
         if event.event_type in CA_ENFORCEMENT_EVENT_TYPES:
             log.debug(f"Not evaluating conditional-access policies for {event.event_type}: this request was rejected "
                       f"by conditional access itself.")
-            return PostEvaluation()
+            return
         # Deferred import: the engine pulls in the ORM models, so importing it at module level would risk an
         # import-order cycle during app startup.
         from privacyidea.lib.conditional_access.engine import evaluate_conditional_access_policies
@@ -447,12 +406,11 @@ class ConditionalAccessContext:
             evaluation = evaluate_conditional_access_policies(context, event.event_type)
         except Exception as ex:
             log.warning(f"Conditional-access policy evaluation failed: {ex!r}")
-            return PostEvaluation()
+            return
         # Marked evaluated only now: a failure above leaves the classification unevaluated, so the teardown call is
         # the retry rather than a skipped second attempt.
         self._evaluated_as = event.event_type
         record_outcomes(evaluation.outcomes, event.row_id)
-        return PostEvaluation(messages=evaluation.messages, restricted=bool(evaluation.enforced_targets))
 
     def finalize(self) -> None:
         """
