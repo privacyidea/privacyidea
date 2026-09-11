@@ -125,11 +125,12 @@ class ConditionalAccessAction(str, Enum):
         return self.value
 
 
-#: Every action that has something to tell the user, most severe first - the one ordering there is. It ranks the
-#: messages of the restrictions a request is refused by (:func:`rank_and_deduplicate`) and orders the suggestions
-#: the policy editor offers (:data:`~privacyidea.lib.conditional_access.policy.DEFAULT_ERROR_MESSAGES`), so an
-#: action reads the same wherever it is met. An action that turns nobody away has nothing to say, so it has no
-#: entry.
+#: Every action, most severe first - the one severity ordering there is, so an action reads the same wherever it
+#: is met. It ranks the messages of the restrictions a request is refused by (:func:`rank_and_deduplicate`) and
+#: orders the suggestions the policy editor offers
+#: (:data:`~privacyidea.lib.conditional_access.policy.DEFAULT_ERROR_MESSAGES`). Both consumers filter it to what
+#: they cover - only a restriction in force or a denial has anything to say - so an action that reports nothing
+#: to the user still belongs here, ranked, against the day it does.
 ACTION_SEVERITY: tuple[ConditionalAccessAction, ...] = (
     ConditionalAccessAction.PERMANENT_LOCK_USER,
     ConditionalAccessAction.PERMANENT_BLOCK_IP,
@@ -143,10 +144,6 @@ ACTION_SEVERITY: tuple[ConditionalAccessAction, ...] = (
 #: Severity rank of each action, mirroring
 #: ``_EVENT_RANK`` in :mod:`~privacyidea.lib.conditional_access.authentication_event_types`.
 _ACTION_RANK: dict[ConditionalAccessAction, int] = {action: rank for rank, action in enumerate(ACTION_SEVERITY)}
-
-#: The actions that only report something, rather than restricting anything. Used to compose the default error message
-#: for what a stage did (see :func:`~privacyidea.lib.conditional_access.policy.compose_default_error_message`).
-NOTIFYING_ACTIONS = frozenset({ConditionalAccessAction.EMAIL_USER, ConditionalAccessAction.EMAIL_ADMIN})
 
 
 class AccessDecision(str, Enum):

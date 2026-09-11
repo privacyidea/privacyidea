@@ -39,7 +39,6 @@ from privacyidea.lib.conditional_access.policy import (
     MAX_COLUMN_INT,
     MAX_ERROR_MESSAGE_LENGTH,
     MAX_PRIORITY,
-    compose_default_error_message,
     create_conditional_access_policy,
     default_error_message,
     delete_conditional_access_policy,

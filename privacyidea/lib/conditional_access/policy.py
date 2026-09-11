@@ -107,7 +107,6 @@ unknown realm or a misspelled role would otherwise silently never match.
 """
 
 import logging
-from collections.abc import Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
@@ -122,7 +121,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (
 from privacyidea.lib.conditional_access.conditions import CONDITION_TYPES
 from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ADMIN_RECIPIENT_GROUPS,
                                                        ConditionalAccessAction, ConditionalAccessTarget,
-                                                       NOTIFYING_ACTIONS, parse_lock_duration_seconds)
+                                                       parse_lock_duration_seconds)
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
@@ -410,10 +409,6 @@ DEFAULT_ERROR_MESSAGES: dict[str, object] = {
         lazy_gettext("Access from your IP address is temporarily blocked. Please try again in about {duration}."),
     ConditionalAccessAction.DENY:
         lazy_gettext("Access has been denied."),
-    ConditionalAccessAction.EMAIL_USER:
-        lazy_gettext("A notification email has been sent to your email address."),
-    ConditionalAccessAction.EMAIL_ADMIN:
-        lazy_gettext("Your administrator has been notified by email."),
 }
 
 
@@ -428,22 +423,6 @@ def default_error_message(action: str) -> str | None:
     return str(message) if message else None
 
 
-def compose_default_error_message(action_types: Sequence[str]) -> str | None:
-    """
-    The default error message for a stage that only reported something, given the *action_types* that ran:
-    one sentence per action, most severe first.
-
-    Notifications only. A restriction is described from the row it left behind (see
-    :func:`~privacyidea.lib.conditional_access.engine._restrictions_in_force`), so composing one here would tell
-    the user twice - and with a ``{duration}`` this side cannot substitute. ``None`` when none of the actions has
-    an error message, which keeps such a stage silent.
-    """
-    carried = set(action_types)
-    sentences = [default_error_message(action) for action in ACTION_SEVERITY
-                 if action in NOTIFYING_ACTIONS and action in carried]
-    return " ".join(sentences) if sentences else None
-
-
 def get_default_error_messages() -> list[dict[str, str]]:
     """
     The suggested stage error messages, ordered by :data:`~privacyidea.lib.conditional_access.engine.
@@ -451,13 +430,16 @@ def get_default_error_messages() -> list[dict[str, str]]:
     request locale.
 
     An authoring aid for the policy editor, which composes one suggestion for a stage carrying several actions:
-    one sentence per action, kept in this order. That is the concatenation the runtime performs too - a request
-    reports one sentence per thing that happened to it, ranked the same way - so the wording the editor offers is
-    the wording a user would be shown, and the client needs no rule of its own beyond the order it is given.
+    one sentence per action, kept in this order.
 
-    The same table backs the runtime fallback under ``show_default_ca_error_message`` (:func:`default_error_message`,
-    :func:`compose_default_error_message`), so an admin who edits a suggestion is editing the thing they would
-    otherwise have got by default.
+    Only actions that *describe a standing state* are in here - a restriction in force, or a denial - because
+    those are the only ones anything can report: a message is said by the pre-check refusing a restricted
+    request, off the row in force, and a row records what is in force rather than the notifications a stage also
+    sent. So a notify-only stage gets no suggestion, its wording having nowhere to be shown.
+
+    The same table backs the runtime fallback under ``show_default_ca_error_message``
+    (:func:`default_error_message`), so an admin who edits a suggestion is editing the thing they would otherwise
+    have got by default.
 
     Deliberately not scoped by target: the binding is action to message, and a client picks the entry
     whose action the stage actually carries, so error message for an action a target cannot hold simply never
