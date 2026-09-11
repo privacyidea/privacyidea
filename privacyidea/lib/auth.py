@@ -23,8 +23,11 @@ import logging
 
 from sqlalchemy import select
 
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
+                                                                          AuthEventReason, AUTH_EVENT_REASON_KEY)
 from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
+from privacyidea.lib.error import AuthError, Error, TokenAdminError, UserError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import libpolicy, login_mode
 from privacyidea.lib.token import check_user_pass
@@ -96,6 +99,34 @@ def get_db_admin(username: str) -> Admin:
     return db.session.scalars(stmt).first()
 
 
+def canonical_db_admin_login(username: str | None) -> str | None:
+    """
+    The spelling the ``admin`` table holds for the local database admin *username*, which is the name their
+    authentication-log rows and their lock are keyed by.
+
+    The lookup that authenticates them (:func:`~privacyidea.lib.auth.verify_db_admin`) compares in the database's
+    own collation, so on a case-insensitive one - MySQL's default - ``Admin`` and ``admin`` are one account, while
+    the log and the lock state both match case-sensitively. Recording the stored spelling is what keeps those one
+    subject: without it a lock is walked around by varying the case, each spelling counting only its own failures.
+
+    Only the account's own spelling is kept, not the one that was typed. This is called for a name that matched an
+    account, where the account is the fact worth recording; an unknown login never reaches here. A name that no
+    longer matches one (deleted mid-request) is returned unchanged, and so is anything a lookup failure prevents
+    canonicalizing - recording the row matters more than recording it under the better name.
+
+    :param username: the login as it was typed
+    :return: the stored spelling, or *username* itself when there is no account to take one from
+    """
+    if not username:
+        return username
+    try:
+        admin = get_db_admin(username)
+    except Exception as ex:
+        log.debug(f"Could not canonicalize the local admin login {username!r}: {ex!r}")
+        return username
+    return admin.username if admin else username
+
+
 def delete_db_admin(username):
     print(f"Deleting admin {username!s}")
     admin = fetch_one_resource(Admin, username=username)
@@ -147,10 +178,26 @@ def check_webui_user(user, password, options=None, superuser_realms=None, check_
                         log.debug(f"Could not find container for token {details.get('serial')}: {e}")
         except Exception as e:
             log.debug(f"Error authenticating user against privacyIDEA: {e!r}")
+            # check_user_pass raises for outcomes it cannot classify by return value alone: a locked/revoked token
+            # (TOKEN_LOCKED) or an unknown user (the auth_user_does_not_exist decorator). The login fails either
+            # way, but the authentication log must still record the real reason.
+            details = details or {}
+            if isinstance(e, TokenAdminError) and e.id == Error.TOKEN_LOCKED:
+                details[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_USABLE_TOKEN
+                # TOKEN_LOCKED is raised only for a revoked token, which check_token_list drops before any other check.
+                details[AUTH_EVENT_REASON_KEY] = AuthEventReason.TOKEN_REVOKED
+            elif isinstance(e, (UserError, AuthError)) and (not user or not user.exist()):
+                details[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
     else:
-        # check the password of the user against the userstore
+        # check the password of the user against the user store
+        details = {}
         if user.check_password(password):
             user_auth = True
+            details[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
+        else:
+            # LOGINMODE=userstore: the credential checked here *is* the user store password, which PASSWORD_FAIL
+            # already says - no reason of its own.
+            details[AUTH_EVENT_TYPE_KEY] = AuthEventType.PASSWORD_FAIL
 
     # If the realm is in the SUPERUSER_REALM then the authorization role
     # is risen to "admin".

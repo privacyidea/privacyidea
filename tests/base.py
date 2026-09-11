@@ -12,8 +12,10 @@ from privacyidea.models import Token, db, save_config_timestamp
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.user import User
-from privacyidea.lib.auth import create_db_admin
+from privacyidea.lib.auth import create_db_admin, delete_db_admin, get_db_admin
 from privacyidea.lib.auditmodules.base import Audit
+from privacyidea.lib.conditional_access.request_context import reset_ca_context
+from privacyidea.lib.conditional_access.session import close_ca_session
 from privacyidea.lib.lifecycle import call_finalizers
 
 
@@ -51,6 +53,32 @@ def force_expire_challenges(transaction_id):
     else:
         from privacyidea.models import db
         db.session.commit()
+
+
+# A login used only to find out how this database matches one, created and removed again by
+# skip_unless_admin_lookup_folds_case.
+_CASE_PROBE_ADMIN = "caseProbeAdmin"
+
+
+def skip_unless_admin_lookup_folds_case(testcase):
+    """
+    Skip *testcase* unless the ``admin`` table matches a login name case-insensitively.
+
+    Whether two spellings of one login are one account is the database's decision, not privacyIDEA's:
+    ``admin.username`` carries the server's default collation, which folds case on MySQL/MariaDB and does not on
+    SQLite, PostgreSQL or Oracle. The canonicalization that keeps such an account one subject in the authentication
+    log and one row in the lock state therefore has something to do only where the lookup folds, and only there can a
+    test tell it apart from its absence. Probed rather than keyed off the dialect name, because a MySQL server
+    configured with a binary collation folds nothing either.
+    """
+    create_db_admin(_CASE_PROBE_ADMIN)
+    try:
+        folds_case = get_db_admin(_CASE_PROBE_ADMIN.upper()) is not None
+    finally:
+        delete_db_admin(_CASE_PROBE_ADMIN)
+    if not folds_case:
+        testcase.skipTest("the admin lookup matches case-sensitively on this database, so one account cannot be "
+                          "reached under a second spelling")
 
 
 class FakeFlaskG(object):
@@ -280,6 +308,11 @@ class MyTestCase(unittest.TestCase):
             self.app.config[f"PI_REDIS_CACHE_{feature.upper()}"] = False
 
     def tearDown(self):
+        # Closes the conditional-access session, mirroring what a real request does at teardown: with one app
+        # context shared across a whole test class, an unclosed session would outlive its test and serve stale
+        # rows next time (SQLite reuses deleted rows' primary keys); staged events are cleared for the same reason.
+        close_ca_session()
+        reset_ca_context()
         # Rollback uncommitted changes to the DB and close the session to
         # avoid breaking following tests due to unfinished transactions
         try:

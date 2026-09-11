@@ -1,0 +1,70 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+// The list primitives shared by the two authentication-log cells that render a list instead of a scalar: the Info cell
+// and the Conditional access cell. They render entirely different things, but they sit in equally narrow columns of the
+// same table and must look like siblings there.
+//
+// A partial rather than a global stylesheet: view encapsulation keeps a parent's rules out of a child component's DOM,
+// so each cell has to carry these itself, and only these two ever should (the same reason the dashboard widgets share
+// ../widget).
+
+// The columns are narrow, so the lists claim no horizontal space of their own: no bullets, no indentation and no
+// margins at the top level. Hierarchy is carried by the muted keys, the rules between entries and the bulleted
+// sub-lists instead.
+.info-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+// One top-level element of an info list: an other_info key or a conditional-access outcome. Successive entries are
+// separated by a horizontal rule rather than a left border, which would cost width the column does not have - and it
+// does the same job as vertical spacing without adding height to an already dense row.
+.info-group {
+  margin: 0;
+
+  & + .info-group {
+    margin-top: 2px;
+    padding-top: 2px;
+    border-top: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+// The fields belonging to one entry. Indented and bulleted so they read as parts of the entry above them rather than as
+// entries of their own; the marker is scaled down because at the column's font size a full-size disc dominates the line
+// it belongs to.
+.info-sublist {
+  padding-left: 14px;
+  list-style: disc;
+
+  li::marker {
+    font-size: 0.7em;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+// Separates a prefix from the entry name that follows it. Done here rather than with trailing whitespace in the prefix
+// string, which Angular collapses between elements and translators would drop.
+.info-group-prefix {
+  margin-right: 4px;
+}
+
+.info-key {
+  color: var(--mat-sys-on-surface-variant);
+}

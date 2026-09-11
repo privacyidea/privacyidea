@@ -1,0 +1,192 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+@use "../widget";
+
+:host {
+  @include widget.host;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  overflow: auto;
+}
+
+.ca-table {
+  @include widget.stat-table;
+}
+
+// A breakdown of the row above it (dry-run policies, permanent locks): muted and indented, so the numbers that
+// matter at a glance stay the top-level ones.
+.ca-sub-label {
+  color: var(--mat-sys-on-surface-variant);
+  padding-left: 24px !important;
+}
+
+.ca-section-title {
+  display: flex;
+  align-items: center;
+  // The title and its info hint stay side by side; anything else in the row (the in-range count) is pushed right.
+  gap: 4px;
+  margin: 8px 0;
+  padding-inline: 16px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// The cell itself stays a normal table cell, so the row keeps the same height as the state cell next to it. The
+// icon and the label form one inline-flex unit inside it, which is what keeps them together on one line.
+td.ca-highlight-cell {
+  white-space: nowrap;
+}
+
+.ca-highlight-subject {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// The row's glyph is smaller than the navigation's, so the letters are scaled up to keep the same weight. The gap to
+// the label belongs to the stack: an inner margin would widen its box and push the centered text off the glyph.
+.icon-block-ip {
+  --icon-block-ip-text-size: 10px;
+  margin-right: 4px;
+
+  .ca-kind-icon {
+    margin-right: 0;
+  }
+}
+
+// Marks a highlight row as a blocked IP or a locked user, so the two kinds are told apart at a glance.
+.ca-kind-icon {
+  font-size: 1.125rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  vertical-align: text-bottom;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.ca-range-count {
+  margin-left: auto;
+  text-transform: none;
+}
+
+// The two toggle groups on one line: the window on the left, the restrictions charted on the right. The wrap is what
+// keeps a narrow widget from scrolling sideways: measured, the pair overflows by 13px at 260px wide without it, and
+// takes a second line with it. One line from about 290px up, which is what six columns give this widget.
+.ca-range-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+  padding: 0 16px 4px;
+}
+
+.chart-range-presets {
+  @include widget.range-presets;
+}
+
+// The brush and its histogram have the row to themselves now that the presets sit above them, so both span the
+// section: a plain block rather than a flex row, which would size its single child to the content.
+//
+// The 24px is load-bearing, and measured: Material lays the slider's own range input out wider than the track it
+// draws (calc(100% + 10px), offset -21px, so it reaches past both ends of it). This widget's :host is itself
+// `overflow: auto`, unlike the activity chart's, so it has no padding of its own to absorb that - it answers the
+// overhang with a horizontal scrollbar over a few pixels of nothing. At 24px the widest thing in the widget is the
+// widget; at 16px the input sticks out 5px.
+.ca-range {
+  padding-inline: 24px;
+}
+
+// The bars, the slider and the date axis, stacked. The bars used to sit behind the track, which cost nothing while
+// they were decorative; a bar that takes a click cannot, because the slider's own input covers the whole of its box.
+.ca-activity-histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 28px;
+}
+
+// One bucket's share of the width, the full height of it, so hovering or clicking anywhere in the column hits the
+// bucket - the bar itself can be a pixel tall.
+.ca-bar-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container-high);
+  }
+}
+
+.ca-activity-bar {
+  width: 100%;
+  min-height: 1px;
+  background-color: var(--mat-sys-primary);
+  opacity: 0.4;
+  border-radius: 1px 1px 0 0;
+}
+
+// A bucket the brush leaves out. It keeps its full height - the shape of the window is what the chart is for - but
+// fades back, so the part of it the count beside the title is counting is the part that reads as solid.
+.ca-activity-bar-muted {
+  opacity: 0.12;
+}
+
+.ca-range-slider {
+  width: 100%;
+  // No side margin, so the track spans the section exactly rather than Material's default inset - which is also what
+  // lines it up with the bars above it.
+  margin: 0;
+  // Material keeps a slider at least 112px wide, which a narrow widget is not: the track would then reach past the
+  // section instead of ending where the bars do.
+  min-width: 0;
+}
+
+// The two timestamps at the ends of the track. A narrow widget can be narrower than the pair of them, so they give
+// way rather than widening the row: whatever the section cannot hold is clipped here instead of reaching the widget
+// body, which would scroll sideways for it.
+.ca-range-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+  margin-top: -8px;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.ca-more {
+  margin: 0;
+  padding: 4px 16px;
+  text-align: right;
+}

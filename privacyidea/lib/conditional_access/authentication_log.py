@@ -1,0 +1,1004 @@
+# (c) NetKnights GmbH 2026,  https://netknights.it
+#
+# This code is free software; you can redistribute it and/or
+# modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+# as published by the Free Software Foundation; either
+# version 3 of the License, or any later version.
+#
+# This code is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+import logging
+from collections.abc import Sequence
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any
+
+from sqlalchemy import and_, false, func, or_, select
+from sqlalchemy.orm import InstrumentedAttribute, selectinload
+from sqlalchemy.sql import ColumnElement
+
+from privacyidea.models import (AuthenticationLog, AuthenticationLogReason, ConditionalAccessOutcome,
+                                authentication_log_column_length, authentication_log_reason_column_length)
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole
+from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.sqlutils import delete_matching_rows
+
+log = logging.getLogger(__name__)
+
+# Columns a paginated authentication-log query can sort by, keyed by the name the API accepts; every scalar column
+# is sortable, but ``other_info`` is excluded because JSON column ordering is neither meaningful nor portable, and
+# ``reasons`` because an entry has a list of them, in their own table (sorting rows by a collection is not defined).
+#: The columns a paginated authentication-log query may sort by, keyed by the name the API accepts.
+SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
+    "id": AuthenticationLog.id,
+    "timestamp": AuthenticationLog.timestamp,
+    "event_type": AuthenticationLog.event_type,
+    "resolver": AuthenticationLog.resolver,
+    "uid": AuthenticationLog.uid,
+    "realm": AuthenticationLog.realm,
+    "username": AuthenticationLog.username,
+    "source_ip": AuthenticationLog.source_ip,
+    "peer_ip": AuthenticationLog.peer_ip,
+    "source_ip_source": AuthenticationLog.source_ip_source,
+    "client_label": AuthenticationLog.client_label,
+    "client_label_source": AuthenticationLog.client_label_source,
+    "endpoint": AuthenticationLog.endpoint,
+    "serial": AuthenticationLog.serial,
+    "transaction_id": AuthenticationLog.transaction_id,
+    "attempt_id": AuthenticationLog.attempt_id,
+}
+DEFAULT_PAGE_SIZE = 15
+
+
+class ClientLabelSource(str, Enum):
+    """
+    Where a row's ``client_label`` came from: the ``client_id`` request parameter the client chose for itself, or
+    the User-Agent header it sent. Recorded because the two are worth very different amounts - one is a name an
+    integration deliberately gives itself, the other is a string any browser sends.
+
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`.
+    """
+    CLIENT_ID = "client_id"
+    USER_AGENT = "user_agent"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass
+class AuthenticationLogVisibilityScope:
+    """
+    One policy's target scope, restricting which authentication-log entries an admin may see/delete. An entry must
+    match all dimensions a policy sets (logical AND); across several scopes (from several policies) an entry is
+    visible if it matches any one of them (logical OR) -- see :func:`get_authentication_logs_paginate`. Empty lists
+    mean "no restriction on that dimension".
+
+    *username_case_insensitive* mirrors the originating policy's ``user_case_insensitive`` option and forces a
+    case-insensitive match on the ``usernames`` dimension only; realm and resolver always match case-sensitively.
+
+    *user_roles* restricts to entries of those
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`
+    values. It is not derived from policy scoping
+    (policies do not scope by role); it is used to express a principal's own entries -- a local/internal admin has no
+    realm, so their own entries are matched by username plus ``user_role=admin-internal`` instead of by realm.
+
+    *uids* is the resolver's immutable user id and is only meaningful together with a ``resolvers`` (and ``realms``)
+    dimension, since a uid is unique per resolver only. It names an *account* where ``usernames`` names a login, which
+    is not an identity: a login can be renamed, and a freed one can be handed to a different account. Policy scoping
+    cannot produce this dimension -- a policy targets logins -- so it is how a principal's *own* entries are expressed
+    (see :func:`~privacyidea.lib.policies.helper.own_entries_scope`), matching what the log records the subject as and
+    what the engine counts it by.
+    """
+    realms: list[str]
+    resolvers: list[str]
+    usernames: list[str]
+    uids: list[str] = field(default_factory=list)
+    username_case_insensitive: bool = False
+    user_roles: list[str] = field(default_factory=list)
+
+
+@dataclass
+class AuthenticationLogPage:
+    """One page of an authentication-log query plus its pagination metadata."""
+    # A Sequence, not a list: this is what Session.scalars(...).all() returns.
+    auth_logs: Sequence[AuthenticationLog]
+    count: int
+    current: int
+    prev: int | None
+    next: int | None
+
+    def to_dict(self) -> dict:
+        """Serialize the page (entries plus pagination metadata) for the API response."""
+        return {
+            # The entries were loaded with their reasons and outcomes (see get_authentication_logs_paginate), so
+            # this is the one place that may serialize them.
+            "auth_logs": [entry.to_dict(include_outcomes=True, include_reasons=True) for entry in self.auth_logs],
+            "count": self.count,
+            "current": self.current,
+            "prev": self.prev,
+            "next": self.next,
+        }
+
+
+def naive_utc(value: datetime) -> datetime:
+    """
+    Normalize a datetime to naive UTC, matching how the ``timestamp`` column is stored. A timezone-aware value is
+    converted to UTC and stripped of its tzinfo; a naive value is assumed to already be in UTC and returned unchanged.
+    This lets callers pass either form without risking a naive-vs-aware comparison against the column.
+    """
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
+@dataclass
+class _TruncatedValue:
+    """
+    Result of truncating one column value: *stored* goes into the column, *overflow* is the part that did not fit and
+    is recorded in the entry's ``other_info`` (see :func:`_describe_overflow`, :func:`_store_overflow`) so no cut goes
+    unrecorded. *overflow* is ``None`` when nothing was cut.
+    """
+    stored: str | None
+    overflow: str | None
+
+
+def _split_at(value: str, max_length: int, separator: str | None = None) -> tuple[str, str]:
+    """
+    Split *value*, which is longer than *max_length*, into the part that fits and the remainder.
+
+    With a *separator*, the cut is made on the last separator that fits, so neither part holds a broken item; a value
+    whose first item alone is too long has none that fits and is cut mid-item after all.
+    """
+    if separator:
+        cut = value.rfind(separator, 0, max_length + 1)
+        if cut > 0:
+            return value[:cut], value[cut + len(separator):]
+    return value[:max_length], value[max_length:]
+
+
+def _truncate(column: str, value: Any, separator: str | None = None) -> _TruncatedValue:
+    """
+    Convert *value* to a string and truncate it to the length of the given column of the authentication_log table, so a
+    pathological value (e.g. a very long User-Agent or login name) can never overflow the column on insert. The cut-off
+    remainder is returned alongside the stored value, for the caller to record (see :func:`_row_values`).
+
+    :param column: the column name, a key of
+        ``authentication_log_column_length`` in :mod:`privacyidea.models.authentication_log`
+    :param value: the value to store, or None
+    :param separator: if given, cut on the last separator that fits instead of mid-character, so neither the stored
+        value nor the overflow holds a broken item (used for ``serial``, which may carry a separator-joined list, to
+        keep whole, filterable serials in the column)
+    :return: a :class:`_TruncatedValue` holding the value to store and the overflow (or None if *value* is None)
+    """
+    if value is None:
+        return _TruncatedValue(None, None)
+    value = str(value)
+    max_length = authentication_log_column_length[column]
+    if len(value) <= max_length:
+        return _TruncatedValue(value, None)
+    log.debug(f"Truncating authentication log column {column!r} to {max_length} characters.")
+    return _TruncatedValue(*_split_at(value, max_length, separator))
+
+
+# How much of the cut-off remainder ``other_info["truncated"]`` keeps verbatim. Anything past this is summarized
+# (see _describe_overflow), because other_info is unbounded JSON on a write path any client can reach: a column holds
+# a fixed number of characters, but a value that overflows it - a login name, an unknown realm, a ``client_id`` label -
+# is bounded only by the request body, so keeping every remainder whole would let the request decide how large a row
+# is, and a large enough one would fail the insert the truncation exists to protect. A cut of realistic size (a long
+# resolver name, the serials that did not fit) stays well below this and is kept in full.
+_MAX_OVERFLOW_LENGTH = 256
+
+
+def _describe_overflow(overflow: str, separator: str | None = None) -> str:
+    """
+    What ``other_info["truncated"]`` records for a cut value: the remainder itself, or - once past
+    :data:`_MAX_OVERFLOW_LENGTH` - as much of it as is kept plus how many characters follow, as
+    ``"...(N more characters)"``. *separator* cuts the kept part on an item boundary, as it does for the column.
+    """
+    if len(overflow) <= _MAX_OVERFLOW_LENGTH:
+        return overflow
+    kept, rest = _split_at(overflow, _MAX_OVERFLOW_LENGTH, separator)
+    return f"{kept}...({len(rest)} more characters)"
+
+
+def _store_overflow(other_info: dict | None, overflow: dict[str, str]) -> dict | None:
+    """
+    Fold any truncation overflow into a copy of *other_info* under the ``truncated`` key so it is recorded without
+    clobbering caller-supplied keys, merging with overflow already recorded there. Returns *other_info* unchanged when
+    nothing overflowed.
+    """
+    if not overflow:
+        return other_info
+    merged = dict(other_info) if other_info else {}
+    merged["truncated"] = {**merged.get("truncated", {}), **overflow}
+    return merged
+
+
+@dataclass
+class PendingAuthEvent:
+    """
+    One authentication-log row, described here rather than written straight away.
+
+    The event is the **source of truth for its row**: assigning to a field is all a later request stage has to do,
+    whether or not the row exists yet. Until it exists the assignment simply lands in the eventual ``INSERT``; once it
+    exists the event is marked :attr:`changed` and the next flush issues an ``UPDATE``. Without that, an assignment
+    after the row was written would be lost twice over - skipped by the next flush *and* invisible to the stored row,
+    since :func:`_build_entry` copies the values into a separate ORM object.
+
+    The values are held **raw**: truncation to the column lengths happens when the row is built, so a value a later
+    stage lengthens - a post-policy extending ``serial``, say - is cut against its final length rather than an
+    intermediate one. ``other_info`` is likewise the caller's dict, which the row build merges truncation overflow
+    into.
+    """
+    event_type: AuthEventType
+    transaction_id: str | None = None
+    resolver: str | None = None
+    uid: str | None = None
+    realm: str | None = None
+    username: str | None = None
+    user_role: str | None = None
+    source_ip: str | None = None
+    # How source_ip was derived: the TCP peer it arrived from, which hop it was taken from, and the whole path
+    # that was considered (see the AuthenticationLog model). None throughout for an event staged outside a
+    # request context, where there is no request to derive anything from.
+    peer_ip: str | None = None
+    source_ip_source: str | None = None
+    client_label: str | None = None
+    client_label_source: str | None = None
+    ip_chain: list | None = None
+    endpoint: str | None = None
+    serial: str | None = None
+    attempt_id: str | None = None
+    other_info: dict | None = None
+    # Why this event came out the way it did: every classified reason (see AuthEventReason), in the order that
+    # vocabulary declares them; empty when nothing classified one. Not a column of the row - they become rows of
+    # authentication_log_reason.
+    reasons: list[str] = field(default_factory=list)
+    # A point-in-time record another in-flight request has to see (the push_wait challenge trigger) rather than this
+    # request's own classification, and must never be reclassified afterwards - see ConditionalAccessContext.amendable.
+    immediate: bool = False
+    # Id of the stored row, set once it has been committed; None means "not written yet".
+    row_id: int | None = None
+    # What conditional access did for this request, held here until the row id to record it against exists (see
+    # ConditionalAccessContext.flush); it becomes rows in conditional_access_outcome, not columns on this row.
+    outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
+    # Set when a field is assigned after the row was written, i.e. the stored row no longer matches this event.
+    _changed: bool = field(init=False, default=False, repr=False, compare=False)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        # ``row_id``, ``outcomes``, ``immediate`` and the flag itself are bookkeeping, not row content, so assigning
+        # them never marks the event changed. ``self.__dict__`` is read directly because the dataclass __init__ also
+        # assigns fields through this method, before ``row_id`` exists.
+        if name not in ("row_id", "outcomes", "immediate", "_changed") and self.__dict__.get("row_id") is not None:
+            object.__setattr__(self, "_changed", True)
+        object.__setattr__(self, name, value)
+
+    @property
+    def written(self) -> bool:
+        """Whether the row has been committed."""
+        return self.row_id is not None
+
+    @property
+    def changed(self) -> bool:
+        """Whether the stored row is out of date because a field was assigned after it was written."""
+        return self.written and self._changed
+
+
+# The columns of an entry that are truncated to their column length, and the separator to cut on (see _truncate).
+_TRUNCATED_COLUMNS = {
+    "event_type": None,
+    "transaction_id": None,
+    "resolver": None,
+    "uid": None,
+    "realm": None,
+    "username": None,
+    "user_role": None,
+    "source_ip": None,
+    "peer_ip": None,
+    "source_ip_source": None,
+    "client_label": None,
+    "client_label_source": None,
+    "endpoint": None,
+    # A comma-joined serial list: cut on the last whole serial that fits.
+    "serial": ",",
+    "attempt_id": None,
+}
+
+
+def _row_values(event: PendingAuthEvent) -> dict:
+    """
+    The column values to store for *event*: every column truncated to its length, with the cut-off remainder folded
+    into ``other_info`` - up to :data:`_MAX_OVERFLOW_LENGTH` of it, the rest as a count - so no cut goes unrecorded.
+    Shared by the insert and the update path, so an amended event is truncated exactly like a fresh one.
+    """
+    stored: dict[str, str | None] = {}
+    overflow: dict[str, str] = {}
+    for column, separator in _TRUNCATED_COLUMNS.items():
+        result = _truncate(column, getattr(event, column), separator=separator)
+        stored[column] = result.stored
+        if result.overflow is not None:
+            overflow[column] = _describe_overflow(result.overflow, separator)
+    # ip_chain is JSON rather than a truncated string, but still a column of the row, so it belongs in the
+    # dict that both the insert and the update path treat as the authoritative column set.
+    return {**stored, "ip_chain": event.ip_chain, "other_info": _store_overflow(event.other_info, overflow)}
+
+
+def _reason_rows(event: PendingAuthEvent) -> list[AuthenticationLogReason]:
+    """
+    The child rows recording why *event* came out the way it did, in the order the event lists them (the
+    vocabulary's own, see
+    :func:`~privacyidea.lib.conditional_access.authentication_event_types.order_request_reasons`), which is the order
+    their ids then ascend in.
+
+    Each value is truncated like a column value would be, and empty ones are dropped: a reason column is ``NOT NULL``
+    and an unclassified reason is the absence of a row, not a row saying nothing.
+    """
+    max_length = authentication_log_reason_column_length["reason"]
+    return [AuthenticationLogReason(reason=str(reason)[:max_length]) for reason in event.reasons if reason]
+
+
+def _update_reason_rows(session, event: PendingAuthEvent) -> None:
+    """
+    Bring the stored reason rows of *event* in line with the reasons it now lists, replacing them when they moved and
+    leaving them untouched when they did not (an equal list re-written would delete and re-insert every row).
+
+    The rows are read and written **directly**, not through the parent's ``reasons`` relationship: that collection is
+    ``lazy="raise"``, and assigning to it loads the old rows to work out the delete-orphan diff - which the flag
+    refuses on an entry that was not loaded with them, as an amended one never is.
+    """
+    stored = session.scalars(select(AuthenticationLogReason)
+                             .where(AuthenticationLogReason.auth_log_id == event.row_id)
+                             .order_by(AuthenticationLogReason.id)).all()
+    reasons = _reason_rows(event)
+    if [row.reason for row in stored] == [row.reason for row in reasons]:
+        return
+    for row in stored:
+        session.delete(row)
+    for row in reasons:
+        row.auth_log_id = event.row_id
+        session.add(row)
+
+
+def _build_entry(event: PendingAuthEvent) -> AuthenticationLog:
+    """Build the :class:`AuthenticationLog` row for *event*, with its reason rows."""
+    return AuthenticationLog(**_row_values(event), reasons=_reason_rows(event))
+
+
+def write_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
+    """
+    Insert *events* as **one** transaction, in the given order, and record each row's id on its event.
+
+    Writing the authentication log must never break the authentication itself, so a failure is logged and swallowed
+    and the events keep ``row_id is None`` - which makes them eligible for a later retry. The insert runs on the
+    conditional-access session, so neither the commit nor a rollback touches the request's own pending writes.
+
+    :return: whether the transaction was committed
+    """
+    if not events:
+        return True
+    entries = [_build_entry(event) for event in events]
+    label = ("the authentication log entry" if len(entries) == 1
+             else f"the {len(entries)} authentication log entries")
+    # Ids are read inside the guarded block from an explicit flush, then published to the events only once the
+    # commit has succeeded; reading them after the commit would leave that read unguarded, and a row committed but
+    # never stamped would be re-inserted by the next flush.
+    row_ids: list[int] = []
+    with guarded_write(label) as outcome:
+        session = get_ca_session()
+        session.add_all(entries)
+        session.flush()
+        row_ids = [entry.id for entry in entries]
+    if not outcome.succeeded:
+        return False
+    for event, row_id in zip(events, row_ids):
+        event.row_id = row_id
+    return True
+
+
+def update_authentication_events(events: Sequence[PendingAuthEvent]) -> bool:
+    """
+    Re-write the stored rows of *events* that were amended after being written, as **one** transaction, and clear
+    their changed flag.
+
+    This is what makes a :class:`PendingAuthEvent` the source of truth for its row: a later request stage - a
+    post-policy correcting the classification, say - just assigns to the event, and the row is brought back in line
+    here. Like the insert, a failure is logged and swallowed; the events keep their changed flag, so a later flush
+    retries them.
+
+    :return: whether the transaction was committed
+    """
+    if not events:
+        return True
+    label = ("the amended authentication log entry" if len(events) == 1
+             else f"the {len(events)} amended authentication log entries")
+    with guarded_write(label) as outcome:
+        session = get_ca_session()
+        for event in events:
+            entry = session.get(AuthenticationLog, event.row_id)
+            if entry is None:
+                log.info(f"Cannot update authentication log entry {event.row_id!r}: not found.")
+                continue
+            values = _row_values(event)
+            for column, value in values.items():
+                setattr(entry, column, value)
+            _update_reason_rows(session, event)
+    if not outcome.succeeded:
+        return False
+    for event in events:
+        event._changed = False
+    return True
+
+
+def log_authentication_event(event_type: AuthEventType,
+                             reasons: list[str] | None = None,
+                             transaction_id: str | None = None,
+                             resolver: str | None = None,
+                             uid: str | None = None,
+                             realm: str | None = None,
+                             username: str | None = None,
+                             user_role: str | None = None,
+                             source_ip: str | None = None,
+                             peer_ip: str | None = None,
+                             source_ip_source: str | None = None,
+                             client_label: str | None = None,
+                             client_label_source: str | None = None,
+                             ip_chain: list | None = None,
+                             endpoint: str | None = None,
+                             serial: str | None = None,
+                             attempt_id: str | None = None,
+                             other_info: dict | None = None) -> int | None:
+    """
+    Create a new authentication log entry and return its id, or ``None`` if it could not be written.
+
+    The single-event convenience wrapper over :func:`write_authentication_events`, for callers that have no request
+    context to collect on (tests and lib code outside a view; no authentication takes this path, since every
+    authentication reaches the server as a request).
+    """
+    event = PendingAuthEvent(event_type=event_type, reasons=list(reasons or []), transaction_id=transaction_id,
+                             resolver=resolver, uid=uid, realm=realm, username=username, user_role=user_role,
+                             source_ip=source_ip, peer_ip=peer_ip, source_ip_source=source_ip_source,
+                             client_label=client_label, client_label_source=client_label_source, ip_chain=ip_chain,
+                             endpoint=endpoint, serial=serial,
+                             attempt_id=attempt_id, other_info=other_info)
+    write_authentication_events([event])
+    return event.row_id
+
+
+def delete_authentication_log_event(event_id: int) -> None:
+    """
+    Delete a single authentication log entry by id.
+
+    A management operation, so a failure surfaces to the caller instead of being swallowed.
+    """
+    with guarded_write(f"the deletion of authentication log entry {event_id}", reraise=True):
+        session = get_ca_session()
+        entry = session.get(AuthenticationLog, event_id)
+        if entry is not None:
+            # Deleted as an *object*, so the relationship cascades remove this entry's reasons and its
+            # conditional-access history too, on every backend, since SQLite does not enforce foreign keys.
+            session.delete(entry)
+
+
+def get_authentication_log_event(event_id: int) -> AuthenticationLog | None:
+    """
+    Return a single AuthenticationLog entry by event_id, with its classified reasons, or None if not found.
+
+    The reasons are eagerly loaded because they are ``lazy="raise"`` and a single entry read by id is worth nothing
+    without them; one extra statement for one row is not the fan-out that flag guards against. The conditional-access
+    outcomes are *not*, so ``to_dict(include_outcomes=True)`` still belongs to the paginated listing alone.
+    """
+    return get_ca_session().get(AuthenticationLog, event_id,
+                                options=[selectinload(AuthenticationLog.reasons)])
+
+
+def _wildcard_pattern(value: str) -> str:
+    """
+    Turn a filter value into a SQL ``LIKE`` pattern in which only ``*`` is a wildcard. The ``LIKE`` special
+    characters ``%`` and ``_`` (and the ``\\`` escape character itself) are escaped so they match literally -- e.g.
+    the ``_`` in an event type like ``MFA_FAIL`` is not treated as a single-character wildcard -- and only ``*`` is
+    then mapped to the wildcard ``%``. Used with ``like(..., escape="\\")``.
+    """
+    escaped = value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return escaped.replace("*", "%")
+
+
+def match_condition(column: InstrumentedAttribute, value: str | list[str] | None,
+                     case_insensitive: bool = False) -> ColumnElement[bool] | None:
+    """
+    Build the match condition for one column from a single value or a list of values, or ``None`` for no filter on
+    that field. An entry matches if it equals any plain value, or matches any value containing a ``*`` wildcard;
+    ``*`` is the only wildcard (see :func:`_wildcard_pattern`). Plain values are batched into a single ``IN``; only
+    wildcard values cost a ``LIKE`` each, so a list without wildcards stays a single indexed ``IN``.
+
+    Plain values are matched with a plain ``IN`` so an index on the column can still be used. The match is
+    **case-sensitive on every backend**. Setting *case_insensitive* lowers both sides to match case-insensitively
+    instead -- note this defeats the column index (the ``LOWER()`` wrapper prevents an index seek), so it is the slower
+    path. Wildcard values always match case-insensitively (via ``ILIKE``), since the DB-default ``LIKE`` case semantics
+    differ per backend.
+    """
+    if value is None:
+        return None
+    values = [str(item) for item in value] if isinstance(value, (list, tuple)) else [str(value)]
+    if not values:
+        return None
+    exact = [v for v in values if "*" not in v]
+    terms = [column.ilike(_wildcard_pattern(v), escape="\\") for v in values if "*" in v]
+    if exact:
+        if case_insensitive:
+            terms.append(func.lower(column).in_([v.lower() for v in exact]))
+        else:
+            terms.append(column.in_(exact))
+    return or_(*terms) if len(terms) > 1 else terms[0]
+
+
+def _reason_condition(reasons: str | list[str] | None = None,
+                      case_insensitive: bool = False) -> ColumnElement[bool] | None:
+    """
+    Build the condition "this entry was classified with such a reason", or ``None`` when no reason filter is set.
+
+    The values behave like every other filter on the log (a value or a list of them, ``*`` as the only wildcard,
+    *case_insensitive* for the plain values -- see :func:`match_condition`), and an entry matches when **any** of its
+    reasons does: an entry lists every reason its request produced, so "show me the revoked-token failures" must find
+    the request whose second token merely got the wrong OTP as well.
+
+    An ``EXISTS`` rather than a join, for the reason :func:`_outcome_condition` uses one: a join multiplies an entry by
+    its reasons, which would break both a page's ``LIMIT`` and the ``count`` that shares these conditions. It is
+    correlated on the parent, so it applies unchanged to the ``DELETE`` statements that reuse these conditions.
+    """
+    term = match_condition(AuthenticationLogReason.reason, reasons, case_insensitive)
+    if term is None:
+        return None
+    return (select(1)
+            .where(AuthenticationLogReason.auth_log_id == AuthenticationLog.id, term)
+            .exists())
+
+
+def filter_conditions(resolvers: str | list[str] | None = None,
+                      uids: str | list[str] | None = None,
+                      realms: str | list[str] | None = None,
+                      usernames: str | list[str] | None = None,
+                      user_roles: str | list[str] | None = None,
+                      event_types: str | list[str] | None = None,
+                      reasons: str | list[str] | None = None,
+                      source_ips: str | list[str] | None = None,
+                      serials: str | list[str] | None = None,
+                      transaction_ids: str | list[str] | None = None,
+                      attempt_ids: str | list[str] | None = None,
+                      client_labels: str | list[str] | None = None,
+                      client_label_sources: str | list[str] | None = None,
+                      peer_ips: str | list[str] | None = None,
+                      source_ip_sources: str | list[str] | None = None,
+                      endpoints: str | list[str] | None = None,
+                      start_time: datetime | None = None,
+                      end_time: datetime | None = None,
+                      case_insensitive: bool = False) -> list:
+    """
+    Build the list of SQLAlchemy ``where`` conditions for the provided filters (``None`` means no filter on that
+    field). Each scalar filter accepts a single value or a list of values; an entry matches the field if it equals any
+    of the values, or (for a value containing a ``*`` wildcard) matches it with a ``LIKE``. Returned as a list so it
+    can be applied to both ``select`` and ``delete`` statements. timestamp filters are inclusive on both ends.
+
+    ``reasons`` is the one filter that does not match a column of the entry: an entry has a list of reasons, in a
+    table of its own, and matches if **any** of them matches (see :func:`_reason_condition`).
+
+    With *case_insensitive* set, plain (non-wildcard) filter values match case-insensitively; wildcard values always
+    match case-insensitively (see :func:`match_condition`).
+    """
+    match_filters: dict[InstrumentedAttribute, str | list[str] | None] = {
+        AuthenticationLog.resolver: resolvers,
+        AuthenticationLog.uid: uids,
+        AuthenticationLog.realm: realms,
+        AuthenticationLog.username: usernames,
+        AuthenticationLog.user_role: user_roles,
+        AuthenticationLog.event_type: event_types,
+        AuthenticationLog.source_ip: source_ips,
+        AuthenticationLog.serial: serials,
+        AuthenticationLog.transaction_id: transaction_ids,
+        AuthenticationLog.attempt_id: attempt_ids,
+        AuthenticationLog.client_label: client_labels,
+        AuthenticationLog.client_label_source: client_label_sources,
+        AuthenticationLog.peer_ip: peer_ips,
+        AuthenticationLog.source_ip_source: source_ip_sources,
+        AuthenticationLog.endpoint: endpoints,
+    }
+    conditions = [condition for column, value in match_filters.items()
+                  if (condition := match_condition(column, value, case_insensitive)) is not None]
+    reason_condition = _reason_condition(reasons, case_insensitive)
+    if reason_condition is not None:
+        conditions.append(reason_condition)
+    if start_time is not None:
+        conditions.append(AuthenticationLog.timestamp >= naive_utc(start_time))
+    if end_time is not None:
+        conditions.append(AuthenticationLog.timestamp <= naive_utc(end_time))
+    return conditions
+
+
+def _outcome_condition(ca_action_types: str | list[str] | None = None,
+                       ca_policy_names: str | list[str] | None = None,
+                       ca_dry_run: bool | None = None,
+                       case_insensitive: bool = False) -> ColumnElement[bool] | None:
+    """
+    Build the condition "this entry has a conditional-access outcome like this", or ``None`` when none of the outcome
+    filters is set.
+
+    The string filters behave like every other filter on the log (a value or a list of them, ``*`` as the only
+    wildcard, *case_insensitive* for the plain values -- see :func:`match_condition`); ``ca_dry_run`` is a boolean, so
+    ``None`` means "either" rather than "unset". ``ca_action_types="*"`` therefore reads as "entries conditional access
+    acted on at all".
+
+    **All conditions apply to the same outcome row.** An entry matches when *one* of its outcomes satisfies all of
+    them, which is what the filter says: ``ca_action_types=LOCK_USER`` with ``ca_policy_names=Notify`` must
+    not match a request where *Notify* sent an email and some other policy locked the user.
+
+    An ``EXISTS`` rather than a join, for the reason the listing reads the outcomes with ``selectinload``
+    (:func:`get_authentication_logs_paginate`): a join multiplies an entry by its outcomes, which would break both the
+    page's ``LIMIT`` and the ``count`` that shares these conditions -- an entry with three matching outcomes would be
+    counted three times and appear three times.
+
+    :param ca_action_types: match outcomes with one of these ``action_type`` values (``ConditionalAccessAction``
+        values)
+    :param ca_policy_names: match outcomes recorded for one of these policy names (the denormalized copy, so a
+        deleted policy is still matchable)
+    :param ca_dry_run: match only dry-run outcomes (``True``) or only enforced ones (``False``)
+    :param case_insensitive: match the plain string values case-insensitively
+    """
+    terms = [condition for column, value in ((ConditionalAccessOutcome.action_type, ca_action_types),
+                                             (ConditionalAccessOutcome.policy_name, ca_policy_names))
+             if (condition := match_condition(column, value, case_insensitive)) is not None]
+    if ca_dry_run is not None:
+        terms.append(ConditionalAccessOutcome.dry_run.is_(ca_dry_run))
+    if not terms:
+        return None
+    return (select(1)
+            .where(ConditionalAccessOutcome.auth_log_id == AuthenticationLog.id, *terms)
+            .exists())
+
+
+def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> ColumnElement[bool]:
+    """
+    Build a single ``where`` condition restricting the visible entries to the given scopes: an entry must match all
+    dimensions a scope sets (AND), and is included if it matches any one scope (OR). Entries with a NULL value in a
+    restricted dimension are excluded.
+
+    The visibility scope is an authorization boundary (which entries a principal may see). Each dimension matches by
+    equality via a plain ``IN`` (which keeps the column index). The boundary columns (realm, resolver, uid, username)
+    are pinned to a **case-sensitive collation** at the schema level
+    (:func:`~privacyidea.models.utils.case_sensitive_unicode`: ``utf8mb4_bin`` on MySQL/MariaDB; SQLite,
+    PostgreSQL and Oracle compare case-sensitively by default), so the match is case-sensitive on every backend rather
+    than depending on the server-default collation. This fails closed: an admin scoped to resolver ``res`` or user
+    ``alice`` never sees a distinct ``Res`` / ``Alice``.
+
+    The one exception is the **username** dimension when the originating policy set ``user_case_insensitive`` (carried
+    on the scope): it is then matched case-insensitively via ``LOWER()`` on both sides -- only this dimension, mirroring
+    how that policy option is applied during policy matching. realm and resolver are always case-sensitive (realm is
+    additionally always stored lower case, so its casing never varies in practice).
+
+
+    A scope that names no ``user_roles`` does not reach the rows of a **local database administrator**. Realm,
+    resolver and user are userstore terms, and none of them describes such an account, whose row carries a login
+    name and nothing else, so a boundary drawn only in those terms does not contain one. Without this, a policy
+    scoped to a user name would reach a local admin of that name - by coincidence of the shared ``username``
+    column rather than by anyone's intent, and the admin policy the boundary comes from has no way to say
+    otherwise, carrying only realm, resolver and user (see
+    :func:`~privacyidea.lib.policies.helper.get_policy_visibility_scopes`). A local admin's rows are therefore
+    reachable only by a caller that is unscoped altogether, or by a scope naming the role outright - which is how
+    a scoped admin still sees their **own** entries.
+
+    An empty scope list (or scopes that set no dimension at all) restricts to *nothing*: it returns ``false()`` rather
+    than an empty ``or_()``, so the visibility boundary fails closed instead of degrading to "no restriction".
+    """
+    scope_conditions = []
+    for scope in scopes:
+        dimensions = []
+        if scope.realms:
+            dimensions.append(AuthenticationLog.realm.in_(scope.realms))
+        if scope.resolvers:
+            dimensions.append(AuthenticationLog.resolver.in_(scope.resolvers))
+        if scope.uids:
+            dimensions.append(AuthenticationLog.uid.in_(scope.uids))
+        if scope.usernames:
+            if scope.username_case_insensitive:
+                dimensions.append(func.lower(AuthenticationLog.username).in_([name.lower()
+                                                                              for name in scope.usernames]))
+            else:
+                dimensions.append(AuthenticationLog.username.in_(scope.usernames))
+        if scope.user_roles:
+            dimensions.append(AuthenticationLog.user_role.in_([str(role) for role in scope.user_roles]))
+        elif dimensions:
+            # Stated as "not a local admin" rather than "is a user": this column is nullable, and a row that names
+            # no role is an ordinary one - only a local admin's is ever labelled explicitly.
+            dimensions.append(or_(AuthenticationLog.user_role.is_(None),
+                                  AuthenticationLog.user_role != str(AuthLogUserRole.ADMIN_INTERNAL)))
+        if dimensions:
+            scope_conditions.append(and_(*dimensions))
+    if not scope_conditions:
+        return false()
+    return or_(*scope_conditions)
+
+
+def get_authentication_logs(resolvers: str | list[str] | None = None,
+                            uids: str | list[str] | None = None,
+                            realms: str | list[str] | None = None,
+                            usernames: str | list[str] | None = None,
+                            user_roles: str | list[str] | None = None,
+                            event_types: str | list[str] | None = None,
+                            reasons: str | list[str] | None = None,
+                            source_ips: str | list[str] | None = None,
+                            serials: str | list[str] | None = None,
+                            transaction_ids: str | list[str] | None = None,
+                            attempt_ids: str | list[str] | None = None,
+                            client_labels: str | list[str] | None = None,
+                            client_label_sources: str | list[str] | None = None,
+                            peer_ips: str | list[str] | None = None,
+                            source_ip_sources: str | list[str] | None = None,
+                            endpoints: str | list[str] | None = None,
+                            start_time: datetime | None = None,
+                            end_time: datetime | None = None) -> Sequence[AuthenticationLog]:
+    """
+    Return authentication log entries matching all provided filter criteria, ordered by id (i.e. chronologically).
+    All parameters are optional; omitting a parameter means no filtering on that field. Each scalar filter accepts a
+    single value or a list of values; an entry matches the field if it equals any of the listed values, or (for a
+    value containing a ``*`` wildcard) matches it with a ``LIKE``. timestamp filters are inclusive on both ends.
+
+    The entries come with their classified reasons loaded (``lazy="raise"`` otherwise), which is one extra statement
+    for the whole result: an entry read here is read to be looked at, and its reasons are part of it. The
+    conditional-access outcomes are not - the paginated listing is the one query that reads those.
+    """
+    conditions = filter_conditions(resolvers=resolvers, uids=uids, realms=realms, usernames=usernames,
+                                    user_roles=user_roles,
+                                    event_types=event_types, reasons=reasons,
+                                    source_ips=source_ips, serials=serials, transaction_ids=transaction_ids,
+                                    attempt_ids=attempt_ids,
+                                    client_labels=client_labels,
+                                    client_label_sources=client_label_sources,
+                                    peer_ips=peer_ips, source_ip_sources=source_ip_sources,
+                                    endpoints=endpoints,
+                                    start_time=start_time, end_time=end_time)
+    stmt = (select(AuthenticationLog).where(*conditions).order_by(AuthenticationLog.id)
+            .options(selectinload(AuthenticationLog.reasons)))
+    return get_ca_session().scalars(stmt).all()
+
+
+def get_authentication_logs_paginate(resolvers: str | list[str] | None = None,
+                                     uids: str | list[str] | None = None,
+                                     realms: str | list[str] | None = None,
+                                     usernames: str | list[str] | None = None,
+                                     user_roles: str | list[str] | None = None,
+                                     event_types: str | list[str] | None = None,
+                                     reasons: str | list[str] | None = None,
+                                     source_ips: str | list[str] | None = None,
+                                     serials: str | list[str] | None = None,
+                                     transaction_ids: str | list[str] | None = None,
+                                     attempt_ids: str | list[str] | None = None,
+                                     client_labels: str | list[str] | None = None,
+                                     client_label_sources: str | list[str] | None = None,
+                                     peer_ips: str | list[str] | None = None,
+                                     source_ip_sources: str | list[str] | None = None,
+                                     endpoints: str | list[str] | None = None,
+                                     ca_action_types: str | list[str] | None = None,
+                                     ca_policy_names: str | list[str] | None = None,
+                                     ca_dry_run: bool | None = None,
+                                     start_time: datetime | None = None,
+                                     end_time: datetime | None = None,
+                                     visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
+                                     case_insensitive: bool = False,
+                                     page: int = 1,
+                                     page_size: int = DEFAULT_PAGE_SIZE,
+                                     sort_column: str = "id",
+                                     sort_order: str = "desc") -> AuthenticationLogPage:
+    """
+    Return a single page of authentication log entries matching the given filters.
+
+    The filter parameters -- ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``,
+    ``reasons``, ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels``,
+    ``client_label_sources``, ``peer_ips``, ``source_ip_sources``, ``endpoints``, ``start_time`` and ``end_time`` --
+    behave exactly like :func:`get_authentication_logs`. The
+    ``ca_*`` parameters filter on what conditional access *did* to the request and are only offered here, since this
+    is the endpoint that reads the outcomes:
+
+    :param ca_action_types: only entries with an outcome of one of these action types; ``"*"`` reads as "conditional
+        access acted on this request at all"
+    :param ca_policy_names: only entries with an outcome recorded for one of these policy names
+    :param ca_dry_run: only entries with a dry-run outcome (``True``) or with an enforced one (``False``); ``None``
+        does not filter
+    :param visibility_scopes: restrict the result to entries matching any of these scopes
+        (see :func:`visibility_condition`); ``None`` means no restriction
+    :param case_insensitive: if set, plain (non-wildcard) filter values match case-insensitively; wildcard values
+        always match case-insensitively
+    :param page: the page number to return, 1-indexed
+    :param page_size: the number of entries per page
+    :param sort_column: the column to sort by; one of :data:`SORTABLE_COLUMNS` (falling back to ``id``), always
+        tie-broken by id so the order is stable across pages
+    :param sort_order: ``asc`` or ``desc``
+    :return: an :class:`AuthenticationLogPage` with the page's entries and the pagination metadata
+    """
+    conditions = filter_conditions(resolvers=resolvers, uids=uids, realms=realms, usernames=usernames,
+                                    user_roles=user_roles,
+                                    event_types=event_types, reasons=reasons,
+                                    source_ips=source_ips, serials=serials, transaction_ids=transaction_ids,
+                                    attempt_ids=attempt_ids,
+                                    client_labels=client_labels,
+                                    client_label_sources=client_label_sources,
+                                    peer_ips=peer_ips, source_ip_sources=source_ip_sources,
+                                    endpoints=endpoints,
+                                    start_time=start_time, end_time=end_time,
+                                    case_insensitive=case_insensitive)
+    # An EXISTS over the outcome table, kept out of filter_conditions because those conditions also apply to DELETE
+    # statements (see delete_authentication_logs), and matching an outcome is not a valid reason to delete an entry.
+    outcome_condition = _outcome_condition(ca_action_types=ca_action_types, ca_policy_names=ca_policy_names,
+                                           ca_dry_run=ca_dry_run, case_insensitive=case_insensitive)
+    if outcome_condition is not None:
+        conditions.append(outcome_condition)
+    if visibility_scopes is not None:
+        conditions.append(visibility_condition(visibility_scopes))
+    stmt = select(AuthenticationLog).where(*conditions)
+
+    count = get_ca_session().scalar(select(func.count()).select_from(AuthenticationLog).where(*conditions))
+
+    order_column = SORTABLE_COLUMNS.get(sort_column)
+    if order_column is None:
+        log.warning(f"Unknown sort column '{sort_column}'. Using 'id' instead.")
+        order_column = AuthenticationLog.id
+    if sort_order == "asc":
+        stmt = stmt.order_by(order_column.asc(), AuthenticationLog.id.asc())
+    else:
+        stmt = stmt.order_by(order_column.desc(), AuthenticationLog.id.desc())
+
+    page = max(1, page)
+    page_size = max(1, page_size)
+    offset = (page - 1) * page_size
+    # The only place that eagerly loads an entry's reasons and conditional-access outcomes: selectinload fetches a
+    # whole page's children in one extra statement each, so the statement count does not grow with the page size,
+    # whereas a JOIN would multiply each entry by its children and break both LIMIT and the count above.
+    stmt = stmt.options(selectinload(AuthenticationLog.reasons), selectinload(AuthenticationLog.outcomes))
+    auth_logs = get_ca_session().scalars(stmt.limit(page_size).offset(offset)).all()
+    return AuthenticationLogPage(auth_logs=auth_logs,
+                                 count=count,
+                                 current=page,
+                                 prev=page - 1 if page > 1 else None,
+                                 next=page + 1 if offset + page_size < count else None)
+
+
+
+def _delete_outcomes_of(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
+    """
+    Delete the conditional-access outcomes of every authentication-log row matching *criterion*, and return how many
+    were removed.
+
+    Always called **before** the parent rows: the ``auth_log_id`` foreign key cascades on MySQL/MariaDB and PostgreSQL
+    but not on SQLite, where ``PRAGMA foreign_keys`` is off by default and privacyIDEA never enables it. Deleting the
+    children explicitly is what makes all supported backends behave the same.
+
+    An ORM ``cascade="all, delete-orphan"`` relationship would **not** do this job. That cascade is only consulted when
+    a mapped object is deleted through the session (``session.delete(entry)``); every delete path here is set-based Core
+    SQL - ``table.delete().where(...)``, or ``DeleteLimit`` when chunking - which SQLAlchemy does not run relationship
+    cascades for. Declaring one would leave the children behind on SQLite while looking like it handled them. Loading
+    every doomed parent to delete it object-by-object is the only way to make the cascade fire, and that defeats the
+    point of :func:`~privacyidea.lib.sqlutils.delete_matching_rows`: retention has to remove millions of rows with
+    bounded memory.
+
+    The children are matched through the parents (``auth_log_id IN (SELECT id FROM authentication_log WHERE …)``).
+
+    This commits separately from the parent delete (:func:`~privacyidea.lib.sqlutils.delete_matching_rows` commits per
+    call, and chunked deletes commit per chunk). A failure of the parent delete afterwards therefore leaves entries
+    whose history is already gone - acceptable for a management operation, where the alternative is holding one
+    transaction open across an unbounded number of chunked deletes.
+    """
+    return delete_matching_rows(get_ca_session(), ConditionalAccessOutcome.__table__,
+                                ConditionalAccessOutcome.auth_log_id.in_(select(AuthenticationLog.id).where(criterion)),
+                                chunk_size)
+
+
+def _delete_reasons_of(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
+    """
+    Delete the classified reasons of every authentication-log row matching *criterion*, and return how many were
+    removed.
+
+    The same contract as :func:`_delete_outcomes_of`, and for the same reasons: always before the parent rows, because
+    the foreign key does not cascade on SQLite, and explicitly rather than through the ORM cascade, which set-based
+    Core deletes never run.
+    """
+    return delete_matching_rows(get_ca_session(), AuthenticationLogReason.__table__,
+                                AuthenticationLogReason.auth_log_id.in_(select(AuthenticationLog.id).where(criterion)),
+                                chunk_size)
+
+
+def _delete_entries(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
+    """
+    Delete the authentication-log rows matching *criterion* **together with their classified reasons and their
+    conditional-access outcomes**, and return how many entries were removed.
+
+    Every set-based delete of authentication-log rows goes through here (the single-row path,
+    :func:`delete_authentication_log_event`, does both deletes in one transaction instead). That is deliberate: neither
+    an explicit call per delete path nor an ORM cascade is self-enforcing, so the one thing that can be enforced is that
+    there is a single place to route through - a new delete path calls this instead of assembling the two halves again.
+
+    :param criterion: the ``where`` clause selecting the entries to delete
+    :param chunk_size: delete in chunks of this size to avoid long locks on large tables
+    :return: the number of authentication-log entries deleted (the outcome count is logged, not returned: the caller
+        asked to delete entries, and their history is part of them)
+    """
+    outcomes = _delete_outcomes_of(criterion, chunk_size)
+    reasons = _delete_reasons_of(criterion, chunk_size)
+    deleted = delete_matching_rows(get_ca_session(), AuthenticationLog.__table__, criterion, chunk_size)
+    if outcomes or reasons:
+        log.debug(f"Deleted {outcomes} conditional-access outcome(s) and {reasons} reason(s) along with {deleted} "
+                  f"authentication log entries.")
+    return deleted
+
+
+def delete_authentication_logs(resolvers: str | list[str] | None = None,
+                               uids: str | list[str] | None = None,
+                               realms: str | list[str] | None = None,
+                               usernames: str | list[str] | None = None,
+                               user_roles: str | list[str] | None = None,
+                               event_types: str | list[str] | None = None,
+                               reasons: str | list[str] | None = None,
+                               source_ips: str | list[str] | None = None,
+                               serials: str | list[str] | None = None,
+                               transaction_ids: str | list[str] | None = None,
+                               attempt_ids: str | list[str] | None = None,
+                               client_labels: str | list[str] | None = None,
+                               client_label_sources: str | list[str] | None = None,
+                               peer_ips: str | list[str] | None = None,
+                               source_ip_sources: str | list[str] | None = None,
+                               endpoints: str | list[str] | None = None,
+                               start_time: datetime | None = None,
+                               end_time: datetime | None = None,
+                               visibility_scopes: list[AuthenticationLogVisibilityScope] | None = None,
+                               chunk_size: int | None = None) -> int:
+    """
+    Delete all authentication log entries matching the given filters and return the number deleted.
+
+    The filter parameters -- ``resolvers``, ``uids``, ``realms``, ``usernames``, ``user_roles``, ``event_types``,
+    ``reasons``, ``source_ips``, ``serials``, ``transaction_ids``, ``attempt_ids``, ``client_labels``,
+    ``client_label_sources``, ``peer_ips``, ``source_ip_sources``, ``endpoints``, ``start_time`` and ``end_time`` --
+    behave exactly like :func:`get_authentication_logs` (to delete
+    entries older than a point in time, pass ``end_time``). The caller must pass at least one filter: with no filter
+    this would delete the entire log, which this function refuses.
+
+    :param visibility_scopes: restrict the deletion to entries matching any of these scopes
+        (see :func:`visibility_condition`); ``None`` means no restriction
+    :param chunk_size: if given, delete in chunks of this size to avoid long locks on large tables
+    :return: the number of deleted entries
+    """
+    conditions = filter_conditions(resolvers=resolvers, uids=uids, realms=realms, usernames=usernames,
+                                    user_roles=user_roles,
+                                    event_types=event_types, reasons=reasons,
+                                    source_ips=source_ips, serials=serials, transaction_ids=transaction_ids,
+                                    attempt_ids=attempt_ids,
+                                    client_labels=client_labels,
+                                    client_label_sources=client_label_sources,
+                                    peer_ips=peer_ips, source_ip_sources=source_ip_sources,
+                                    endpoints=endpoints,
+                                    start_time=start_time, end_time=end_time)
+    # Guard on the caller's filters before adding the visibility restriction, so a scoped admin also cannot wipe a
+    # whole scope with an unfiltered request.
+    if not conditions:
+        raise ParameterError("Refusing to delete the whole authentication log: at least one filter is required.")
+    if visibility_scopes is not None:
+        conditions.append(visibility_condition(visibility_scopes))
+    return _delete_entries(and_(*conditions), chunk_size)
+
+
+def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = None) -> int:
+    """
+    Delete all authentication log entries with a timestamp strictly older than the given datetime.
+
+    :param older_than: delete entries whose timestamp is older than this (naive or timezone-aware; aware values are
+        converted to UTC)
+    :param chunk_size: if given, delete in chunks of this size to avoid long locks / deadlocks on large tables
+    :return: the number of deleted rows
+    """
+    return _delete_entries(AuthenticationLog.timestamp < naive_utc(older_than), chunk_size)

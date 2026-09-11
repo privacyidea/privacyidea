@@ -8,6 +8,7 @@ import datetime
 import json
 
 from privacyidea.api.lib.postpolicy import DEFAULT_POLICY_TEMPLATE_URL
+from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy,
                                     LOGINMODE, ACTIONVALUE)
@@ -1752,7 +1753,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
-            self.assertIn("Wrong credentials", result["error"]["message"])
+            self.assertEqual(GENERIC_AUTH_FAILURE, result["error"]["message"])
 
         # manager can log in with the OTP PIN, because he is in the helpdesk group
         with self.app.test_request_context('/auth',
@@ -1771,7 +1772,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
-            self.assertIn("Wrong credentials", result["error"]["message"])
+            self.assertEqual(GENERIC_AUTH_FAILURE, result["error"]["message"])
 
         # if we now disable the condition on userstore and privacyidea, we get a conflicting policy error
         with self.app.test_request_context('/policy/privacyidea',

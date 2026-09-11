@@ -45,6 +45,7 @@ Table of Contents
    tokens/index
    container/index
    policies/index
+   conditional_access/index
    eventhandler/index
    periodictask/index
    audit/index

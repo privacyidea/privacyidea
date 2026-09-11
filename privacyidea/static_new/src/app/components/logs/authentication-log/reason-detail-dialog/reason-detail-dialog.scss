@@ -1,0 +1,70 @@
+// Capped so a handful of short serial/reason pairs does not stretch the dialog across a wide viewport, and given a
+// floor so the table's two columns keep their headers on one line.
+:host {
+  display: block;
+  min-width: 320px;
+  max-width: 560px;
+}
+
+.reason-detail-section + .reason-detail-section {
+  margin-top: 24px;
+}
+
+.reason-detail-heading {
+  margin: 0;
+}
+
+.reason-detail-hint {
+  margin: 4px 0 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+// The per-serial findings. Left-aligned and full width, so serial and reason line up in columns rather than being
+// read as one run of text - which is the whole point of showing them here instead of in the log's Info column.
+//
+// The app stripes the even *column* of every table (see styles/table.scss); this one is read along its rows - a serial
+// and the finding beside it - so it opts out and stripes the rows instead, the way the detail cards' key/value tables
+// do (details-key-value-table).
+.reason-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+    background: transparent;
+  }
+
+  th {
+    color: var(--mat-sys-on-surface-variant);
+    font-weight: 500;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  tbody tr:nth-child(odd) td {
+    background: var(--mat-sys-surface-variant);
+  }
+}
+
+// A serial is an identifier, never a sentence: it keeps its own line rather than wrapping mid-serial when the reason
+// beside it is the long half.
+.reason-detail-serial {
+  white-space: nowrap;
+}
+
+.reason-detail-policies {
+  margin: 0;
+  padding-left: 20px;
+}
+
+// Named tokens with no finding of their own: serials alone, rather than a table with an empty column.
+.reason-detail-serials {
+  margin: 0;
+  padding-left: 20px;
+
+  li {
+    white-space: nowrap;
+  }
+}

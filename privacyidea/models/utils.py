@@ -17,9 +17,18 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import datetime, timezone
+
+from sqlalchemy.dialects import sqlite, mysql
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import FunctionElement
+from sqlalchemy.sql.sqltypes import BigInteger, Unicode
+
 from privacyidea.models import db
+
+# SQLite cannot auto-increment a BigInteger column, so the type is declared as a variant that maps to INTEGER there.
+# https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#allowing-autoincrement-behavior-sqlalchemy-types-other-than-integer-integer  # noqa: E501
+BigIntegerType = BigInteger()
+BigIntegerType = BigIntegerType.with_variant(sqlite.INTEGER(), "sqlite")
 
 
 def utc_now() -> datetime:
@@ -39,6 +48,29 @@ def utc_isoformat(value: "datetime | None") -> "str | None":
     shifted value, so attach the UTC zone on the way out.
     """
     return value.replace(tzinfo=timezone.utc).isoformat() if value else None
+
+
+def case_sensitive_unicode(length: int):
+    """
+    A ``Unicode`` column pinned to a case-sensitive collation on MySQL/MariaDB.
+
+    Used to match **case-sensitive by default on every backend**, giving one uniform rule: an unflagged query matches
+    case-sensitively, and the ``case_insensitive`` filter flag / the ``user_case_insensitive`` policy option opt into
+    case-insensitive matching via ``LOWER()``.
+    This is important if you need exact matches for security operations / visibility boundaries.
+
+    ``utf8mb4_bin`` makes equality case-sensitive on MySQL/MariaDB; SQLite, PostgreSQL and Oracle already compare
+    case-sensitively by default. The migration declares the same collation on the table columns.
+
+    ``utf8mb4_bin`` is a *binary* collation, so it is accent- and normalization-sensitive as well: ``jose`` and
+    ``josé`` differ, and so do the NFC and NFD spellings of ``josé``. That is not a divergence but the point -
+    equality on SQLite, PostgreSQL and Oracle is byte-wise too, while MySQL's own default (``utf8mb4_general_ci``
+    and friends) is case- *and* accent-insensitive, which is the fail-open this pin exists to close. A boundary
+    that has to distinguish two spellings therefore does so on every backend, and one that must treat them alike
+    needs the explicit case-insensitive path rather than the collation.
+    """
+    return Unicode(length).with_variant(mysql.VARCHAR(length, charset="utf8mb4", collation="utf8mb4_bin"),
+                                        "mysql", "mariadb")
 
 
 # Define a function to convert Oracle CLOBs to VARCHAR before using them in a

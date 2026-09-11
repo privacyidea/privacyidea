@@ -1,0 +1,114 @@
+.ca-stage-item {
+  // Recessed panel one step shallower than the dashboard well: the mid inset-shadow
+  // level over a surface tone halfway between the surrounding grey and the card white,
+  // so each stage reads as a "well" holding its card without the full dashboard depth.
+  background: var(--inset-surface-3);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  box-shadow: var(--inset-shadow-3);
+}
+
+.ca-stage-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.ca-stage-number {
+  flex: 0 0 auto;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ca-stage-name {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ca-stage-name-field {
+  flex: 1 1 auto;
+}
+
+.ca-stage-title-name {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ca-stage-title-name--empty {
+  color: var(--mat-sys-on-surface-variant);
+  font-style: italic;
+  font-weight: 400;
+}
+
+// Edit/confirm affordances stay hidden until the stage card is hovered, keeping
+// the header uncluttered; focus keeps them reachable via the keyboard.
+.ca-stage-name-action {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.ca-stage-item:hover .ca-stage-name-action,
+.ca-stage-name-action:focus-visible {
+  opacity: 1;
+}
+
+.ca-stage-hint {
+  margin: 0 0 16px 8px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.ca-stage-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+// The checkbox and the field it reveals sit on one line, so the checkbox reads as that field's
+// own on/off switch rather than a separate setting stacked above it. Its own row under the
+// threshold (the message is prose, not a value), and it wraps rather than overflowing once the
+// checkbox plus a 616px field no longer fit. Items are top-aligned, not centred, so nothing
+// drifts as the field's hints wrap and grow.
+.ca-stage-error-message {
+  align-items: flex-start;
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+// The checkbox and its info icon stay glued together as one control, so the parent's 16px gap
+// separates them from the field rather than pushing the icon away from the label it explains.
+.ca-stage-error-message-toggle {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+}
+
+// The reset button sits beside the field, aligned to the input rather than centred on the
+// whole control, so it does not drift as the hints below the field grow.
+//
+// The basis is the field's own width so the wrap decision is made against the width we actually
+// want: .input-width-xl is a max-width, not a floor, so with a basis of auto the field would
+// silently shrink to whatever the checkbox left over rather than moving to its own line. Sharing
+// the line stays the preferred layout; the checkbox wraps above only once 616px no longer fits.
+.ca-stage-error-message-row {
+  align-items: flex-start;
+  display: flex;
+  flex: 1 1 var(--input-width-xl);
+  gap: 8px;
+}
+
+// Both message warnings: a tag that will not be substituted, and a {duration} the server cannot render
+// at all. Neither blocks saving, but both mean the message will not read as the admin intends, so they
+// use the error colour. They sit in the subscript with the hints rather than in a <mat-error> because
+// the field has no form control, and Material only renders mat-error once a control reports an error.
+.ca-stage-message-warning {
+  color: var(--mat-sys-error);
+  display: block;
+}

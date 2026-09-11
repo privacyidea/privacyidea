@@ -1,0 +1,55 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<app-dialog-wrapper
+  [title]="title"
+  (wrapperClose)="cancel()"
+  [actions]="actions"
+  [showCloseButton]="true"
+  (actionTriggered)="confirm()">
+  <div class="margin-right-16 content-width">
+    @if (data.policyNames.length === 1) {
+      <p i18n>
+        "{{ data.policyNames[0] }}" starts enforcing immediately and counts only events from now on. Events recorded
+        earlier are ignored.
+      </p>
+    } @else {
+      <p i18n>
+        The following policies start enforcing immediately and count only events from now on. Events recorded earlier
+        are ignored.
+      </p>
+      <ul>
+        @for (name of data.policyNames; track name) {
+          <li>{{ name }}</li>
+        }
+      </ul>
+    }
+    <mat-checkbox
+      [checked]="countPastEvents()"
+      (change)="countPastEvents.set($event.checked)">
+      <span i18n>Also count the events already in the policy's time window</span>
+    </mat-checkbox>
+    <p
+      class="consequence on-surface-variant"
+      i18n>
+      The policy may trip at once. And a stage fires as the count reaches its threshold - if the count already sits
+      above it, that stage stays silent until those events age out of the window, so a real attack may raise no alarm.
+    </p>
+  </div>
+</app-dialog-wrapper>

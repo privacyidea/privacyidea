@@ -51,9 +51,11 @@ from flaskext.versioned import Versioned
 import privacyidea.api.before_after  # noqa: F401
 from privacyidea.api.application import application_blueprint
 from privacyidea.api.audit import audit_blueprint
+from privacyidea.api.authentication_log import authentication_log_blueprint
 from privacyidea.api.auth import jwtauth
 from privacyidea.api.caconnector import caconnector_blueprint
 from privacyidea.api.clienttype import client_blueprint
+from privacyidea.api.conditional_access import conditional_access_blueprint
 from privacyidea.api.container import container_blueprint
 from privacyidea.api.event import eventhandling_blueprint
 from privacyidea.api.healthcheck import healthz_blueprint
@@ -84,6 +86,7 @@ from privacyidea.api.user import user_blueprint
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
 from privacyidea.lib import queue
+from privacyidea.lib.conditional_access.session import init_ca_session
 from privacyidea.lib.crypto import init_hsm
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
@@ -151,6 +154,8 @@ def _register_blueprints(app):
     app.register_blueprint(jwtauth, url_prefix='/auth')
     app.register_blueprint(user_blueprint, url_prefix='/user')
     app.register_blueprint(audit_blueprint, url_prefix='/audit')
+    app.register_blueprint(authentication_log_blueprint, url_prefix='/authenticationlog')
+    app.register_blueprint(conditional_access_blueprint, url_prefix='/conditionalaccess')
     app.register_blueprint(machineresolver_blueprint, url_prefix='/machineresolver')
     app.register_blueprint(machine_blueprint, url_prefix='/machine')
     app.register_blueprint(application_blueprint, url_prefix='/application')
@@ -444,6 +449,7 @@ def create_app(config_name="development",
     # Set up Plug-Ins
     _setup_database_engine_options(app)
     db.init_app(app)
+    init_ca_session(app)
 
     # TODO: This is not necessary except for the pi-manage command line util
     # Try to get the path of the migration directory from the installed package
@@ -567,6 +573,7 @@ def create_docker_app():
     # Set up Plug-Ins
     _setup_database_engine_options(app)
     db.init_app(app)
+    init_ca_session(app)
 
     Versioned(app, format='%(path)s?v=%(version)s')
 

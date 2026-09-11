@@ -1,0 +1,133 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<app-dialog-wrapper
+  [cancelButtonPrimary]="true"
+  cancelButtonLabel="Close"
+  i18n-cancelButtonLabel="@@common.close"
+  icon="help_outline"
+  i18n-title
+  title="Reason Details">
+  <!-- Each part is shown only when the request recorded it: the token layer records the per-serial findings, a policy
+    layer the rules that decided, and most requests produce one of the two. The findings come in the two groups the
+    entry distinguishes (see ReasonDetail), since read as one list a wrong password beside a disabled token makes
+    being disabled look like the reason the login failed. Policies are shown first: the policy decision is what
+    determines the outcome, the per-token reasons are side notes. -->
+  @if (data.policies.length) {
+    <section class="reason-detail-section">
+      <h4
+        class="reason-detail-heading"
+        i18n>Deciding policies</h4>
+      <p
+        class="reason-detail-hint"
+        i18n>
+        The policies whose decision produced this outcome.
+      </p>
+      <ul class="reason-detail-policies">
+        @for (policy of data.policies; track policy) {
+          <li>{{ policy }}</li>
+        }
+      </ul>
+    </section>
+  }
+  @if (data.used.length) {
+    <section class="reason-detail-section">
+      <!-- What the entry named, not whether a second group happens to exist: an entry naming the tokens it was made
+        against says so even when no other token was found wanting. -->
+      @if (data.namesTokens) {
+        <h4
+          class="reason-detail-heading"
+          i18n>Tokens used for this attempt</h4>
+        @if (showsUsedReasons) {
+          <p
+            class="reason-detail-hint"
+            i18n>
+            The tokens the credentials were checked against, and what this request found about them.
+          </p>
+        } @else {
+          <p
+            class="reason-detail-hint"
+            i18n>
+            The tokens that produced {{ data.eventType }}.
+          </p>
+        }
+      } @else {
+        <h4
+          class="reason-detail-heading"
+          i18n>Tokens</h4>
+        <p
+          class="reason-detail-hint"
+          i18n>
+          What each of the user's tokens was found to be during this request.
+        </p>
+      }
+      <!-- A wrong first factor records no finding - PASSWORD_FAIL and PIN_FAIL already name the credential - so
+        those tokens are listed as the serials they are rather than against a column of dashes. -->
+      @if (showsUsedReasons) {
+        <ng-container *ngTemplateOutlet="findings; context: { $implicit: data.used }" />
+      } @else {
+        <ul class="reason-detail-serials">
+          @for (token of data.used; track token.serial) {
+            <li>{{ token.serial }}</li>
+          }
+        </ul>
+      }
+    </section>
+  }
+  @if (data.other.length) {
+    <section class="reason-detail-section">
+      <h4
+        class="reason-detail-heading"
+        i18n>Other tokens of the user</h4>
+      <p
+        class="reason-detail-hint"
+        i18n>
+        Tokens this request never got to check, so they had no part in the outcome.
+      </p>
+      <ng-container *ngTemplateOutlet="findings; context: { $implicit: data.other }" />
+    </section>
+  }
+
+  <!-- One table for both groups: the same serial/reason pairs, about tokens that took a different part. -->
+  <ng-template
+    #findings
+    let-tokens>
+    <table class="reason-detail-table">
+      <thead>
+        <tr>
+          <th
+            scope="col"
+            i18n>Serial</th>
+          <th
+            scope="col"
+            i18n>Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (token of tokens; track token.serial) {
+          <tr>
+            <td class="reason-detail-serial">{{ token.serial }}</td>
+            <!-- A named token with no finding of its own, beside one that has: nothing to add past the serial. -->
+            <td>{{ token.reason || "—" }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </ng-template>
+</app-dialog-wrapper>
