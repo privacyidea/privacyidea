@@ -39,9 +39,11 @@ def _make_deprecated(serial: str, original: str) -> None:
     db_token.active = False
     db_token.save()
     token = DeprecatedTokenClass(db_token)
-    token.add_tokeninfo("original_tokentype", original)
-    token.add_tokeninfo("original_active", "1")
-    token.add_tokeninfo("deprecated_in", "3.14")
+    # The migration is what writes these, so they go through the writer the server uses and not through the
+    # path a request takes, which refuses them
+    token.write_tokeninfo("original_tokentype", original)
+    token.write_tokeninfo("original_active", "1")
+    token.write_tokeninfo("deprecated_in", "3.14")
 
 
 class TestJanitorDeprecatedList:

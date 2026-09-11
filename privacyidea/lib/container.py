@@ -1168,7 +1168,7 @@ def set_container_realms(serial: str, realms: list[str],
                                  not_removed=sorted(attached - requested))
 
 
-def add_container_realms(serial: str, realms: list[str], allowed_realms: list[str] | None) -> dict[str, bool]:
+def add_container_realms(serial: str, realms: list[str], allowed_realms: list[str] | None) -> dict:
     """
     Add the realms to the container realms.
 
@@ -1176,8 +1176,9 @@ def add_container_realms(serial: str, realms: list[str], allowed_realms: list[st
     :param realms: new realms as list of str
     :param allowed_realms: A list of realms the admin is allowed to set, None if all realms are allowed and an
         empty list if none is
-    :returns: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
-              deleted.
+    :returns: Dictionary with the entry 'realms' in the format {realm: success} and the entry 'deleted' indicating
+              whether existing realms were deleted, as returned by
+              :py:meth:`~privacyidea.lib.containerclass.TokenContainerClass.set_realms`.
     """
     container = find_container_by_serial(serial)
 
@@ -1194,7 +1195,7 @@ def add_container_realms(serial: str, realms: list[str], allowed_realms: list[st
 
     # Add realms
     res = container.set_realms(matching_realms, add=True)
-    res.update(res_failed)
+    res["realms"].update(res_failed)
     return res
 
 

@@ -98,10 +98,18 @@ class AuthenticationLog(MethodsMixin, db.Model):
     __table_args__ = (
         Index("ix_authlog_user_event_time", "resolver", "uid", "realm", "event_type", "timestamp"),
         Index("ix_authlog_ip_event_time", "source_ip", "event_type", "timestamp"),
-        # PER_ATTEMPT counting (count_user_attempts / count_ip_attempts) range-scans a subject's rows by time with no
-        # event_type predicate, so each needs timestamp right after the subject column(s).
+        # PER_ATTEMPT counting (count_subject_attempts / count_ip_attempts) range-scans a subject's rows by time
+        # with no event_type predicate, so each needs timestamp right after the subject column(s): behind an
+        # event_type it cannot bound, the range degrades to a scan of everything the subject ever did.
         Index("ix_authlog_user_time", "resolver", "uid", "realm", "timestamp"),
         Index("ix_authlog_ip_time", "source_ip", "timestamp"),
+        # A local database admin has no resolver, uid or realm to be found by: their rows carry only the login
+        # name, and the role is what separates them from a same-named user's (see LockSubject in
+        # lib.conditional_access.engine). So they need the same pair of subject indexes every other subject has,
+        # keyed on that pair instead - one with event_type for the event count, one with timestamp straight after
+        # it for the attempt count - or every local-admin authentication scans.
+        Index("ix_authlog_admin_event_time", "username", "user_role", "event_type", "timestamp"),
+        Index("ix_authlog_admin_time", "username", "user_role", "timestamp"),
         # The TCP peer is the second pivot a forensic query starts from - "what came from this machine",
         # whatever it claimed to be forwarding for. 50*4 + 8 = 208 bytes, well under the same key limit.
         Index("ix_authlog_peer_ip_time", "peer_ip", "timestamp"),

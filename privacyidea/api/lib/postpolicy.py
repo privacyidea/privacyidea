@@ -63,12 +63,12 @@ from privacyidea.lib.conditional_access.request_context import get_ca_context, c
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node)
-from privacyidea.lib.crypto import Sign
+from privacyidea.lib.crypto import get_sign_object
 from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
-                                    SCOPE, AUTOASSIGNVALUE, AUTHORIZED, Match)
+                                    SCOPE, AUTOASSIGNVALUE, AUTHORIZED, SESSION_PERSISTENCE, Match)
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            check_subscription,
@@ -96,6 +96,7 @@ DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_CONTAINER_TYPE = "generic"
 DEFAULT_TIMEOUT_ACTION = "lockscreen"
+DEFAULT_SESSION_PERSISTENCE = SESSION_PERSISTENCE.TAB
 DEFAULT_POLICY_TEMPLATE_URL = "/static/policy-templates/"
 BODY_TEMPLATE = lazy_gettext("""
 <--- Please describe your Problem in detail --->
@@ -206,9 +207,7 @@ def sign_response(request, response):
     # Disable the costly checking of private RSA keys when loading them.
     check_private_key = not current_app.config.get(ConfigKey.RESPONSE_NO_PRIVATE_KEY_CHECK, False)
     try:
-        with open(private_key_file, 'rb') as file:
-            private_key = file.read()
-        sign_object = Sign(private_key, public_key=None, check_private_key=check_private_key)
+        sign_object = get_sign_object(private_key_file, check_private_key=check_private_key)
     except (OSError, ValueError, TypeError) as e:
         log.info('Could not load private key from '
                  f'file {private_key_file!s}: {e!r}!')
@@ -634,7 +633,7 @@ def save_pin_change(request, response, serial=None):
             pin = request.all_data.get("pin")
             # The user sets a pin or enrolls a token. -> delete the pin_change
             if otppin or pin:
-                token.delete_tokeninfo("next_pin_change")
+                token.remove_tokeninfo("next_pin_change")
 
                 # If there is a change_pin_every policy, we need to set the PIN anew.
                 policy = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
@@ -697,6 +696,9 @@ def get_webui_settings(request, response):
                                         user=username, realm=realm).action_values(unique=True)
         timeout_action_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TIMEOUT_ACTION, user_object=user,
                                            user=username, realm=realm).action_values(unique=True)
+        session_persistence_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SESSION_PERSISTENCE,
+                                                user_object=user, user=username,
+                                                realm=realm).action_values(unique=True)
         audit_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.AUDITPAGESIZE, user_object=user,
                                             user=username, realm=realm).action_values(unique=True)
         token_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENPAGESIZE, user_object=user,
@@ -818,6 +820,13 @@ def get_webui_settings(request, response):
         if len(timeout_action_pol) == 1:
             timeout_action = list(timeout_action_pol)[0]
 
+        # The WebUI stores its bearer token in the browser storage this value selects, so it is
+        # the deployment's decision, not the user's: a session that outlives the tab it was
+        # opened in leaves the token on disk until the JWT expires.
+        session_persistence = DEFAULT_SESSION_PERSISTENCE
+        if len(session_persistence_pol) == 1:
+            session_persistence = list(session_persistence_pol)[0]
+
         policy_template_url_pol = Match.action_only(g, scope=SCOPE.WEBUI,
                                                     action=PolicyAction.POLICYTEMPLATEURL).action_values(unique=True)
         policy_template_url = DEFAULT_POLICY_TEMPLATE_URL
@@ -843,6 +852,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["dialog_no_token"] = dialog_no_token
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
+        content["result"]["value"]["session_persistence"] = session_persistence
         content["result"]["value"]["token_rollover"] = token_rollover
         content["result"]["value"]["hide_welcome"] = hide_welcome
         content["result"]["value"]["hide_buttons"] = hide_buttons

@@ -105,6 +105,7 @@ function lockedUser(username: string, lockedAt: string): LockedUserEntry {
     permanent: true,
     lock_expires_at: null,
     seconds_remaining: null,
+    user_role: "user",
     lock_cause: "POLICY",
     locked_at: lockedAt,
     error_message: null
@@ -287,6 +288,7 @@ describe("ConditionalAccessWidgetComponent", () => {
         permanent: false,
         lock_expires_at: new Date(Date.now() + MS_PER_HOUR).toISOString(),
         seconds_remaining: 600,
+        user_role: "user",
         lock_cause: "POLICY",
         locked_at: hoursAgo(1),
         error_message: null
@@ -315,6 +317,7 @@ describe("ConditionalAccessWidgetComponent", () => {
         permanent: true,
         lock_expires_at: null,
         seconds_remaining: null,
+        user_role: "user",
         lock_cause: "POLICY",
         locked_at: hoursAgo(400),
         error_message: null

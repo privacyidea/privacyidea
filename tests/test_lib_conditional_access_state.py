@@ -22,8 +22,11 @@ the live user-lock state and blocklist entries.
 """
 from datetime import timedelta
 
+from sqlalchemy.dialects import mysql
+
 from privacyidea.lib.conditional_access.authentication_log import AuthenticationLogVisibilityScope
-from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole, RestrictionCause
+from privacyidea.lib.conditional_access.engine import is_ip_blocked
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.conditional_access.state import (
     block_ip,
@@ -35,9 +38,13 @@ from privacyidea.lib.conditional_access.state import (
     purge_expired_blocklist,
     purge_expired_user_locks,
     remove_blocklist_entry,
+    lock_internal_admin,
+    unlock_internal_admin,
+    unlock_internal_admin_by_uid,
     unlock_user_by_id,
     user_matches_scopes, unlock_user_by_username,
 )
+from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from privacyidea.models.authentication_log import AuthenticationLog
@@ -50,7 +57,7 @@ from privacyidea.models.conditional_access_policy import (
     UserLockState,
 )
 from privacyidea.models.utils import utc_now
-from .base import MyTestCase
+from .base import MyTestCase, skip_unless_admin_lookup_folds_case
 
 
 class UserLockStateTestCase(MyTestCase):
@@ -100,11 +107,151 @@ class UserLockStateTestCase(MyTestCase):
         self.assertIsNone(row.lock_expires_at)
         self.assertEqual(RestrictionCause.MANUAL, row.lock_cause)
         self.assertEqual(self.user.login, row.username)
+        # A row locking a resolved user says so, which is what tells it from a local admin's - keyed by login
+        # name alone, so carrying an empty resolver and realm rather than a missing one.
+        self.assertEqual(str(AuthLogUserRole.USER), row.user_role)
+        self.assertEqual(str(AuthLogUserRole.USER), lock["user_role"])
 
     def test_lock_user_with_a_duration_sets_the_expiry(self):
         lock = lock_user(self.user, duration_seconds=600)
         self.assertFalse(lock["permanent"])
         self.assertAlmostEqual(600, lock["seconds_remaining"], delta=5)
+
+    # --- the local-admin form: keyed by login name, since that is all there is -------------------------------
+
+    def test_lock_internal_admin_writes_the_admin_shape(self):
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock = lock_internal_admin("lockadmin", duration_seconds=600)
+            self.assertFalse(lock["permanent"])
+            self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), lock["user_role"])
+            row = db.session.query(UserLockState).one()
+            # The login name is the key; there is no resolver or realm to put in one.
+            self.assertEqual(("", "lockadmin", ""), (row.resolver, row.uid, row.realm))
+            self.assertEqual("lockadmin", row.username)
+            self.assertEqual(RestrictionCause.MANUAL, row.lock_cause)
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_lock_internal_admin_keys_on_the_stored_spelling(self):
+        # The authentication path counts and locks the name the admin table holds, so a lock written under any
+        # other spelling would never be met. Holds on every database, the name here being spelled as the account
+        # is; reaching the same account under a second spelling is what
+        # test_lock_internal_admin_reaches_the_account_under_a_folded_login covers.
+        create_db_admin("CaseAdmin", password="secret")
+        try:
+            lock_internal_admin("CaseAdmin")
+            self.assertEqual("CaseAdmin", db.session.query(UserLockState).one().uid)
+        finally:
+            delete_db_admin("CaseAdmin")
+
+    def test_lock_internal_admin_reaches_the_account_under_a_folded_login(self):
+        # Where the admin table treats two spellings as one account, so must the lock: a lock asked for under the
+        # folded name has to land on the row the authentication path will look under, which is the stored spelling.
+        # Removing it again works from either spelling for the same reason.
+        skip_unless_admin_lookup_folds_case(self)
+        create_db_admin("CaseAdmin", password="secret")
+        try:
+            lock_internal_admin("caseadmin")
+
+            self.assertEqual("CaseAdmin", db.session.query(UserLockState).one().uid)
+            self.assertTrue(unlock_internal_admin("CASEADMIN"))
+            self.assertEqual(0, db.session.query(UserLockState).count())
+        finally:
+            delete_db_admin("CaseAdmin")
+
+    def test_lock_internal_admin_refuses_a_name_that_is_not_one(self):
+        # A row nothing ever reads is a silent no-op, and a local admin can only come from the one table.
+        self.assertRaises(ParameterError, lock_internal_admin, "no-such-admin")
+        self.assertRaises(ParameterError, lock_internal_admin, "")
+        self.assertEqual(0, db.session.query(UserLockState).count())
+
+    def test_unlock_internal_admin_removes_the_lock(self):
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            self.assertTrue(unlock_internal_admin("lockadmin"))
+            self.assertEqual(0, db.session.query(UserLockState).count())
+            # Nothing left to remove reads as False rather than as an error.
+            self.assertFalse(unlock_internal_admin("lockadmin"))
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_unlock_internal_admin_clears_the_row_left_by_an_earlier_spelling(self):
+        # An account removed and recreated under a different spelling leaves its lock standing under the old one.
+        # Canonicalizing the name alone would look only where the account is spelled now and never find that row,
+        # leaving a lock that bars the account from logging in and cannot be lifted.
+        skip_unless_admin_lookup_folds_case(self)
+        create_db_admin("CaseAdmin", password="secret")
+        lock_internal_admin("CaseAdmin")
+        delete_db_admin("CaseAdmin")
+        create_db_admin("caseadmin", password="secret")
+        try:
+            self.assertTrue(unlock_internal_admin("CaseAdmin"))
+            self.assertEqual(0, db.session.query(UserLockState).count())
+        finally:
+            delete_db_admin("caseadmin")
+
+    def test_unlock_internal_admin_by_uid_removes_only_the_row_it_names(self):
+        # The exact-key form, for a caller acting on a row it has just listed: nothing is derived from the name,
+        # so a second row under a second spelling stays where it is rather than going along with it.
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            db.session.add(UserLockState(resolver="", uid="LockAdmin", realm="", username="LockAdmin",
+                                         user_role=str(AuthLogUserRole.ADMIN_INTERNAL)))
+            db.session.commit()
+
+            self.assertTrue(unlock_internal_admin_by_uid("LockAdmin"))
+
+            self.assertEqual(["lockadmin"], [row.uid for row in db.session.query(UserLockState).all()])
+            # Nothing left under that key reads as False rather than as an error, as everywhere else here.
+            self.assertFalse(unlock_internal_admin_by_uid("LockAdmin"))
+            self.assertFalse(unlock_internal_admin_by_uid(""))
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_unlock_internal_admin_outlives_the_account(self):
+        # A lock outliving the admin it was written for is exactly the row an operator needs to be able to clear.
+        create_db_admin("goneadmin", password="secret")
+        lock_internal_admin("goneadmin")
+        delete_db_admin("goneadmin")
+        self.assertTrue(unlock_internal_admin("goneadmin"))
+        self.assertEqual(0, db.session.query(UserLockState).count())
+
+    def test_unlock_internal_admin_is_refused_to_a_target_scoped_admin(self):
+        # Realm, resolver and user are userstore terms and a local admin is not a userstore user, so a boundary
+        # drawn in them does not contain one - by name no more than by realm. The admin policy those scopes come
+        # from cannot say "including local administrators", so a name-scoped delegation reaching a privileged
+        # account would be a grant nobody wrote. The scoped administrator is told the same "no lock" a missing row
+        # would give them.
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            by_realm = [AuthenticationLogVisibilityScope(realms=[self.realm1], resolvers=[], usernames=[])]
+            self.assertFalse(unlock_internal_admin("lockadmin", visibility_scopes=by_realm))
+            by_name = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["lockadmin"])]
+            self.assertFalse(unlock_internal_admin("lockadmin", visibility_scopes=by_name))
+            self.assertEqual(1, db.session.query(UserLockState).count())
+
+            # A boundary naming the role does contain it, and so does an unscoped caller - the two ways the lock
+            # can still be lifted (see also pi-manage conditionalaccess unlock-user --admin).
+            by_role = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["lockadmin"],
+                                                        user_roles=[str(AuthLogUserRole.ADMIN_INTERNAL)])]
+            self.assertTrue(unlock_internal_admin("lockadmin", visibility_scopes=by_role))
+            lock_internal_admin("lockadmin")
+            self.assertTrue(unlock_internal_admin("lockadmin"))
+            self.assertEqual(0, db.session.query(UserLockState).count())
+        finally:
+            delete_db_admin("lockadmin")
+
+    def test_a_target_scoped_admin_still_reaches_an_ordinary_users_lock(self):
+        # The role dimension narrows the boundary to local admins only: a delegation scoped by name goes on
+        # working for the users it was written for.
+        lock_user(self.user)
+        by_name = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[self.user.login])]
+        self.assertTrue(unlock_user_by_username(self.user.login, self.user.realm, visibility_scopes=by_name))
+        self.assertEqual(0, db.session.query(UserLockState).count())
 
     def test_lock_user_rejects_a_non_positive_duration(self):
         for duration in (0, -1, True, "600"):
@@ -160,6 +307,16 @@ class UserLockStateTestCase(MyTestCase):
         block_ip("2001:0DB8::0:1", duration_seconds=300)
         block_ip("2001:db8::1", duration_seconds=600)
         self.assertEqual(1, db.session.query(BlockList).count())
+
+    def test_block_ip_stores_an_ipv4_mapped_address_the_way_the_pre_check_sees_it(self):
+        # A dual-stack listener puts an IPv4 client in REMOTE_ADDR as ::ffff:192.0.2.1, and that is what
+        # g.client_ip carries into the pre-check. "Canonical" therefore has to mean netaddr's rendering,
+        # which keeps that notation - ipaddress would store ::ffff:c000:201, which the lookup never matches
+        # and which no admin recognizes in the blocklist next to the same client's authentication log.
+        entry = block_ip("::ffff:192.0.2.1", duration_seconds=300)
+        self.assertEqual("::ffff:192.0.2.1", entry["identifier"])
+        self.assertEqual("::ffff:192.0.2.1", db.session.query(BlockList).one().ip)
+        self.assertTrue(is_ip_blocked("::ffff:192.0.2.1"))
 
     # --- the lock cause --------------------------------------------------------
 
@@ -217,6 +374,37 @@ class UserLockStateTestCase(MyTestCase):
         matched = list_locked_users(error_messages=["*administrator*"])
         self.assertEqual(1, len(matched))
         self.assertEqual("cornelius", matched[0]["username"])
+
+    def test_list_locked_users_wording_filter_matches_case_sensitively(self):
+        # An exact filter value matches case-sensitively on every backend: error_message is pinned to
+        # utf8mb4_bin, so MySQL/MariaDB's default (*_ci, and accent-insensitive too) cannot widen it. Only
+        # case_insensitive opts in - a wildcard value goes through ILIKE and is case-insensitive anyway.
+        self._lock(utc_now() + timedelta(seconds=600), error_message="Locked. Contact your administrator.")
+        self.assertListEqual([], list_locked_users(error_messages=["locked. contact your administrator."]))
+        matched = list_locked_users(error_messages=["locked. contact your administrator."], case_insensitive=True)
+        self.assertEqual(1, len(matched))
+        self.assertEqual("cornelius", matched[0]["username"])
+
+    def test_migrations_pin_error_message_to_a_case_sensitive_mysql_collation(self):
+        # The test above only proves the ORM model (db.create_all()) is case-sensitive; SQLite is
+        # case-sensitive by default regardless, so it can't catch a MySQL-only collation regression. This
+        # reads the actual migration modules that create these tables and checks the column type they build,
+        # independent of whichever backend the test suite itself runs on.
+        import importlib
+
+        migrations_and_tables = [
+            ("privacyidea.migrations.versions.173d32328846_conditional_access_policies",
+             "conditional_access_policy_stages"),
+            ("privacyidea.migrations.versions.c1a9f7e2b840_user_lock_state", "user_lock_state"),
+            ("privacyidea.migrations.versions.b2f5c9e1a7d4_block_list", "block_list"),
+        ]
+        for module_name, table_name in migrations_and_tables:
+            module = importlib.import_module(module_name)
+            column_type = module._unicode_case_sensitive(500)
+            mysql_variant = column_type.dialect_impl(mysql.dialect())
+            self.assertEqual("utf8mb4_bin", mysql_variant.collation,
+                             f"{module_name} (table {table_name!r}) no longer pins error_message "
+                             "to a case-sensitive MySQL collation")
 
     def test_list_locked_users_default_returns_all_states(self):
         # No states filter -> everything, including expired records.
@@ -463,6 +651,20 @@ class UserLockStateTestCase(MyTestCase):
         self.assertIsNone(db.session.get(BlockList, "203.0.113.7"))
         # A second removal finds nothing.
         self.assertFalse(remove_blocklist_entry("203.0.113.7"))
+
+    def test_remove_blocklist_entry_accepts_another_spelling_of_the_address(self):
+        # Blocking accepts any spelling of an address, so unblocking has to as well - otherwise an admin
+        # who types the address the same way twice can create a block they cannot clear.
+        self._block("2001:db8::1", utc_now() + timedelta(seconds=600))
+        self.assertTrue(remove_blocklist_entry("2001:0DB8::0:1"))
+        self.assertEqual(0, db.session.query(BlockList).count())
+
+    def test_remove_blocklist_entry_keeps_taking_the_identifier_as_typed(self):
+        # An identifier that is not an IP address at all - a future entry type, or a row from a path that
+        # did not canonicalize - stays deletable by exactly the string it is stored under.
+        self._block("not-an-ip", None)
+        self.assertTrue(remove_blocklist_entry("not-an-ip"))
+        self.assertEqual(0, db.session.query(BlockList).count())
 
     def test_list_blocklist_include_expired_marks_stale(self):
         self._block("203.0.113.8", utc_now() - timedelta(seconds=60))

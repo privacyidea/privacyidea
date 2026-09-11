@@ -83,15 +83,23 @@ set description
 If all conditions are matched the description of the token identified in the
 request will be set.
 
-You can use the tag ``{current_time}`` or ``{now}`` to set the current
-timestamp. In addition you can append an offset to *current_time* or *now*
-like ``{now}-12d`` or ``{now}+10m``. This would write a timestamp which is 12
+You can use the tag ``{now}`` to set the current timestamp. ``{current_time}``
+is a deprecated alias for ``{now}``. In addition you can append an offset to
+*now* like ``{now}-12d`` or ``{now}+10m``. This would write a timestamp which is 12
 days in the past or 10 minutes in the future. The plus or minus must follow
 without blank, allowed time identifiers are s (seconds), m (minutes), h
 (hours) and d (days).
 
-Other tags are ``{client_ip}`` for the client IP address and ``{ua_browser}``
-and ``{ua_string}`` for information on the user agent.
+The same tags as in the notification handlers are available, for example
+``{client_ip}`` for the client IP address, ``{ua_browser}`` for the name of the
+client application and ``{ua_string}`` for the complete user agent, as well as
+``{serial}``, ``{tokentype}``, ``{tokendescription}``, ``{username}``,
+``{userrealm}``, ``{admin}``, ``{date}`` and ``{time}``.
+
+.. note:: ``{username}`` and ``{userrealm}`` refer to the owner of the token, while
+   ``{admin}`` and ``{realm}`` refer to the acting administrator. A tag that can not
+   be replaced does not fail the event handling, the text is then written as it was
+   entered.
 
 set validity
 ............
@@ -149,16 +157,23 @@ Using the action ``set tokeninfo`` you can set any arbitrary tokeninfo
 attribute for the token. You need to specify the ``key`` of the
 tokeninfo and the ``value``.
 
-In the value field you can use the tag ``{current_time}`` to set the current
-timestamp. In addition you can append an offset to *current_time* or *now*
-like ``{now}-12d`` or ``{now}+10m``. This would write a timestamp which is 12
-days in the passt or 10 minutes in the future. The plus or minus must follow
-without blank, allowed time identifiers are s (seconds), m (minutes), h
-(hours) and d (days).
+In the value field you can use the tag ``{now}`` to set the current timestamp.
+``{current_time}`` is a deprecated alias for ``{now}``. In addition you can append
+an offset to *now* like ``{now}-12d`` or ``{now}+10m``. This would write a
+timestamp which is 12 days in the past or 10 minutes in the future. The plus or
+minus must follow without blank, allowed time identifiers are s (seconds),
+m (minutes), h (hours) and d (days).
 
-Other tags are ``{client_ip}`` for the client IP address and ``{ua_browser}``
-and ``{ua_string}`` for information on the user agent and ``{username}`` and
-``{realm}`` for information on the user in the parameters.
+The same tags as in the notification handlers are available, for example
+``{client_ip}`` for the client IP address, ``{ua_browser}`` for the name of the
+client application and ``{ua_string}`` for the complete user agent, as well as
+``{serial}``, ``{tokentype}``, ``{tokendescription}``, ``{username}``,
+``{userrealm}``, ``{admin}``, ``{date}`` and ``{time}``.
+
+.. note:: ``{username}`` and ``{userrealm}`` refer to the owner of the token, while
+   ``{admin}`` and ``{realm}`` refer to the acting administrator. A tag that can not
+   be replaced does not fail the event handling, the value is then written as it was
+   entered.
 
 .. note:: Some tokens have token specific required attributes that are stored
    in the tokeninfo. The TOTP token type has a ``timeStep`` attribute, the TOTP

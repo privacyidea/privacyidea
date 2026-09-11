@@ -32,7 +32,8 @@ from sqlalchemy import (
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from privacyidea.lib.conditional_access.authentication_event_types import CountMode, RestrictionCause
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthLogUserRole, CountMode,
+                                                                           RestrictionCause)
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now, case_sensitive_unicode
 
@@ -223,7 +224,7 @@ class ConditionalAccessPolicyStage(MethodsMixin, db.Model):
     name: Mapped[str | None] = mapped_column(Unicode(255), nullable=True)
     # Optional error text shown to the end user when a request is turned away by
     # this stage. NULL (or blank) means nothing is surfaced, which is the default.
-    error_message: Mapped[str | None] = mapped_column(Unicode(500), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(case_sensitive_unicode(500), nullable=True)
     failure_threshold: Mapped[int] = mapped_column(Integer, nullable=False)
 
     policy: Mapped["ConditionalAccessPolicy"] = relationship("ConditionalAccessPolicy", back_populates="stages")
@@ -287,6 +288,12 @@ class UserLockState(MethodsMixin, db.Model):
     lifts a lock by deleting the row (timestamps are naive UTC, see
     :func:`~privacyidea.models.utils.utc_now`).
 
+    A **local database admin** is locked here too, and has none of those three values - only a login name. Their
+    row carries the login name as the ``uid`` with an empty ``resolver`` and ``realm``, which cannot collide with a
+    user's: a user row is only ever written for a principal that has all three. ``user_role`` says which of the two
+    a row is, so nothing has to infer it from what the row lacks; see
+    :class:`~privacyidea.lib.conditional_access.engine.LockSubject`, which is what builds both shapes.
+
     The row records the lock itself, not which policy produced it: what a stage
     did, and to whom, is the conditional-access history
     (:class:`~privacyidea.models.conditional_access_outcome.ConditionalAccessOutcome`).
@@ -301,6 +308,11 @@ class UserLockState(MethodsMixin, db.Model):
     # Denormalized login captured at lock time; lets management views display/filter by name and lets
     # a user-scoped read policy be enforced in SQL without a live resolver lookup, which fails for a deleted user.
     username: Mapped[str | None] = mapped_column(case_sensitive_unicode(255), nullable=True)
+    # Which kind of principal this row locks, as the authentication log names it
+    # (:class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`): ``user`` for a resolved
+    # user, ``admin-internal`` for a local database admin. Part of the identity rather than of the lock, so it is
+    # written when the row is created and never changed - the key it was created under fixes what it is.
+    user_role: Mapped[str] = mapped_column(Unicode(20), default=str(AuthLogUserRole.USER), nullable=False)
     lock_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     # Who imposed this lock: the engine acting on a policy, or an administrator by hand. Written together with
     # ``lock_expires_at``, so it always describes the lock now in force; see
@@ -312,7 +324,7 @@ class UserLockState(MethodsMixin, db.Model):
     # survives the policy being edited or deleted, costs no join on the authentication path, and works
     # for a lock no policy wrote. NULL means say nothing. {duration} is left as written on a permanent
     # lock, which has no remaining time to substitute.
-    error_message: Mapped[str | None] = mapped_column(Unicode(500), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(case_sensitive_unicode(500), nullable=True)
     # When the lock was applied; refreshed on each (re)lock, so it reflects the start of the
     # current active lock rather than a generic audit timestamp.
     locked_at: Mapped[datetime] = mapped_column(
@@ -349,7 +361,7 @@ class BlockList(MethodsMixin, db.Model):
     # Who imposed this block, the IP counterpart of :attr:`UserLockState.lock_cause`.
     block_cause: Mapped[str] = mapped_column(Unicode(20), default=RestrictionCause.POLICY, nullable=False)
     # The message template to show while this block is in force; see UserLockState.error_message.
-    error_message: Mapped[str | None] = mapped_column(Unicode(500), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(case_sensitive_unicode(500), nullable=True)
     # When the block was applied; refreshed on each (re)block, so it reflects the start of the
     # current active block rather than a generic audit timestamp.
     blocked_at: Mapped[datetime] = mapped_column(

@@ -35,6 +35,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    get_useragent_name,
                                    redacted_email, redacted_phone_number,
                                    convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from .base import MyTestCase, OverrideConfigTestCase
 
 
@@ -994,6 +995,18 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(plugin_tags["ua_string"], "privacyidea-keycloak/1.2.3")
         # Without a request there is no client application
         self.assertEqual(create_tag_dict()["ua_browser"], "")
+
+        # {now} and {current_time} render the current timestamp and honor an offset
+        tags_now = create_tag_dict()
+        self.assertIn("now", tags_now)
+        self.assertIn("current_time", tags_now)
+        self.assertEqual(tags_now["now"], tags_now["current_time"])
+        self.assertIn(str(datetime.now().year), tags_now["now"])
+        # A one hour offset must move the rendered timestamp roughly one hour ahead
+        base = datetime.strptime(create_tag_dict()["now"], AUTH_DATE_FORMAT)
+        offset = datetime.strptime(
+            create_tag_dict(time_offset=timedelta(hours=1))["now"], AUTH_DATE_FORMAT)
+        self.assertAlmostEqual((offset - base).total_seconds(), 3600, delta=5)
 
     def test_31a_get_useragent_name(self):
         class RequestMock:

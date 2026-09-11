@@ -342,6 +342,12 @@ class TIMEOUT_ACTION:
     LOCKSCREEN = 'lockscreen'
 
 
+class SESSION_PERSISTENCE:
+    __doc__ = """This is a list of action values for where the WebUI keeps a session"""
+    TAB = "tab"
+    BROWSER = "browser"
+
+
 class PolicyClass:
     """
     A policy object can be used to query the current set of policies.
@@ -1760,6 +1766,12 @@ def get_static_policy_definitions(scope=None):
                                         'desc': _('Admin is allowed to manually set and delete token info.'),
                                         'mainmenu': [MAIN_MENU.TOKENS],
                                         'group': GROUP.TOKEN},
+            PolicyAction.TOKENROLLOVER: {'type': 'bool',
+                                         'desc': _('Admin is allowed to roll over a token that is already '
+                                                   'enrolled, which gives it a new secret. Enrolling a new token '
+                                                   'only needs the enrollment action of its token type.'),
+                                         'mainmenu': [MAIN_MENU.TOKENS],
+                                         'group': GROUP.TOKEN},
             PolicyAction.ENROLLPIN: {'type': 'bool',
                                      "desc": _("Admin is allowed to set the OTP "
                                                "PIN during enrollment."),
@@ -2350,6 +2362,13 @@ def get_static_policy_definitions(scope=None):
                                   "desc": _('The user is allowed to delete his own tokens.'),
                                   'mainmenu': [MAIN_MENU.TOKENS],
                                   'group': GROUP.TOKEN},
+            PolicyAction.TOKENROLLOVER: {'type': 'bool',
+                                         'desc': _('The user is allowed to roll over one of his own tokens that '
+                                                   'is already enrolled, which gives it a new secret. Enrolling '
+                                                   'a new token only needs the enrollment action of its token '
+                                                   'type.'),
+                                         'mainmenu': [MAIN_MENU.TOKENS],
+                                         'group': GROUP.TOKEN},
             PolicyAction.SSHKEY_READ: {'type': 'bool',
                                        'desc': _('The user is allowed to read the public SSH key '
                                                  'of his own SSH key token.'),
@@ -2998,6 +3017,15 @@ def get_static_policy_definitions(scope=None):
                 'type': 'int',
                 'desc': _("Set the time in seconds after which the user will "
                           "be logged out from the WebUI. Default: 120")
+            },
+            PolicyAction.SESSION_PERSISTENCE: {
+                'type': 'str',
+                'value': [SESSION_PERSISTENCE.TAB, SESSION_PERSISTENCE.BROWSER],
+                'desc': _("Where the WebUI keeps the session of the logged-in user. With "
+                          '"tab" the session belongs to the browser tab it was opened in and '
+                          'ends when that tab is closed. With "browser" the session is shared '
+                          "by all tabs of the browser and survives closing it, until the JWT "
+                          'expires. Defaults to "tab".')
             },
             PolicyAction.JWTVALIDITY: {
                 'type': 'int',

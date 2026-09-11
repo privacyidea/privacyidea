@@ -84,6 +84,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { toFilterDisplay } from "@utils/date-format.utils";
+import { USER_ROLE_CONFIG, UserRoleBadge, userRoleBadge as roleBadgeFor } from "../user-roles";
 
 // CSS highlight class per event outcome; outcome values come from the backend's AuthEventOutcome (GET
 // /authenticationlog/eventtypes), and this file only maps each one to a color.
@@ -96,38 +97,6 @@ const OUTCOME_CLASS: Record<string, string> = {
 // User-identifying columns hidden in self-service: every row is already the logged-in user, and their realm/user
 // links target admin-only pages.
 const USER_SCOPED_COLUMN_KEYS = ["username", "realm"];
-
-// Single source for user roles: filter-menu label plus badge metadata for admin roles; regular users get no badge
-// since they are the default, appearing on almost every row.
-const ROLE_CONFIG: readonly {
-  value: string;
-  filterLabel: string;
-  badge?: { label: string; tooltip: string; class: string };
-}[] = [
-  { value: "user", filterLabel: $localize`User` },
-  {
-    value: "admin-internal",
-    filterLabel: $localize`Internal Admin`,
-    badge: {
-      label: $localize`internal admin`,
-      tooltip: $localize`Local database administrator.`,
-      class: "role-badge-admin-internal"
-    }
-  },
-  {
-    value: "admin-external",
-    filterLabel: $localize`External Admin`,
-    badge: {
-      label: $localize`external admin`,
-      tooltip: $localize`Administrator from an admin realm.`,
-      class: "role-badge-admin-external"
-    }
-  }
-];
-
-const USER_ROLE_BADGES: Record<string, { label: string; tooltip: string; class: string }> = Object.fromEntries(
-  ROLE_CONFIG.filter((role) => role.badge).map((r) => [r.value, r.badge!])
-);
 
 // `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py; every column is
 // sortable except `other_info`, a JSON column the backend cannot order on meaningfully, and `reason`, of which an
@@ -342,7 +311,7 @@ export class AuthenticationLog {
     value: preset.identifier
   }));
   // user_role has no table column (it is "user" on almost every row); it is filtered via the "More Filter" menu.
-  readonly userRoleOptions: readonly MultiSelectFilterOption[] = ROLE_CONFIG.map((role) => ({
+  readonly userRoleOptions: readonly MultiSelectFilterOption[] = USER_ROLE_CONFIG.map((role) => ({
     label: role.filterLabel,
     value: role.value
   }));
@@ -860,8 +829,8 @@ export class AuthenticationLog {
   }
 
   // Badge for an admin principal, or null for a regular user / unknown value so the template renders nothing.
-  userRoleBadge(value: string | null | undefined): { label: string; tooltip: string; class: string } | null {
-    return (value && USER_ROLE_BADGES[value]) || null;
+  userRoleBadge(value: string | null | undefined): UserRoleBadge | null {
+    return roleBadgeFor(value);
   }
 
   // The serial column may hold several comma-separated serials; render each as its own token link.
