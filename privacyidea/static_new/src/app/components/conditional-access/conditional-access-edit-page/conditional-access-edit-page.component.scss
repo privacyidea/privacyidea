@@ -33,6 +33,12 @@
   gap: 16px;
 }
 
+.ca-enforced-since-hint {
+  font-size: 0.85em;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
 .edit-policy-fields {
   display: flex;
   flex-wrap: wrap;

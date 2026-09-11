@@ -102,6 +102,10 @@ class ConditionalAccessContext:
         # (the show_default_ca_error_message policy). Resolved once by the gate, where policies can be matched, and
         # read back there: a restriction is only ever described on the requests it refuses.
         self.use_default_error_message = False
+        # The audit entry of a request the pre-check turned away, or None for one it let through. Re-applied on the
+        # way out, because the gate does not have the last word on it: /ttype/push runs a view afterwards that logs
+        # success and the identity itself (see _audit_rejection).
+        self.rejection_audit: dict | None = None
 
     def claim_message(self, message: str) -> None:
         """

@@ -64,9 +64,10 @@ from privacyidea.lib.conditional_access.engine import (
     _upsert_ip_block,
     _resolve_admin_recipients,
 )
+from privacyidea.lib.conditional_access.session import release_ca_connection
 from privacyidea.lib.conditional_access.state import lock_user
 from privacyidea.lib.conditional_access.policy import (StageDefinition, StageActionDefinition,
-                                                               _build_stages)
+                                                               _build_stages, update_conditional_access_policy)
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
@@ -1043,6 +1044,72 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         outcome = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)[0]
         self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcome.action_type)
         self.assertIsNone(outcome.info)
+
+    def test_leaving_dry_run_does_not_count_failures_from_the_trial(self):
+        # Failures accumulated while the policy was dry-run must not count once it starts enforcing - flipping
+        # dry_run off is the transition dry-run exists to make safe.
+        policy, _stages = self._make_policy(name="was_dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertFalse(is_user_locked(self.user))  # still dry-run: no lock
+
+        # Through the lib function, not the ORM directly: that is what actually sets enforced_since on the
+        # True -> False transition (see update_conditional_access_policy).
+        update_conditional_access_policy(policy.id, dry_run=False)
+        # The engine reads policies on its own ca-session transaction (see session.get_ca_session); release it so
+        # the next evaluate() call starts a fresh one and observes the update just committed above.
+        release_ca_connection()
+
+        # The 3 failures from the trial are still within time_window_seconds, but must not count: only a new
+        # failure after enforced_since does.
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertFalse(is_user_locked(self.user))
+
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_leaving_dry_run_with_reset_counters_on_enforce_false_keeps_trial_failures(self):
+        # The opt-out: an admin who wants to enforce immediately against what the trial already
+        # accumulated skips the enforced_since floor by passing reset_counters_on_enforce=False.
+        policy, _stages = self._make_policy(name="was_dry_kept", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertFalse(is_user_locked(self.user))  # still dry-run: no lock
+
+        update_conditional_access_policy(policy.id, dry_run=False, reset_counters_on_enforce=False)
+        release_ca_connection()
+
+        # The 3 failures from the trial still count, so the very next evaluation (with no new failure)
+        # already sees the threshold met and locks.
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_returning_to_dry_run_keeps_the_count_floor(self):
+        # A policy switched back to dry-run mid-enforcement is asked what it *would* do right now, and right now it
+        # would still be counting from its floor. Counting the discarded trial failures again would report a lock
+        # the enforcing policy would never have applied.
+        policy, _stages = self._make_policy(name="dry_again", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+
+        update_conditional_access_policy(policy.id, dry_run=False)
+        release_ca_connection()
+        self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user),
+                                                                      AuthEventType.MFA_FAIL))
+
+        update_conditional_access_policy(policy.id, dry_run=True)
+        release_ca_connection()
+        self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user),
+                                                                      AuthEventType.MFA_FAIL))
+        self.assertFalse(is_user_locked(self.user))
+
+        # The floor still only hides what came before it: failures seeded now do reach the threshold, and the
+        # trial reports the lock it would have applied.
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertEqual(1, len(outcomes))
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcomes[0].action_type)
+        self.assertFalse(is_user_locked(self.user))
 
     def test_dry_run_source_ip_policy_records_a_outcome_without_blocking(self):
         ip = "10.10.0.5"

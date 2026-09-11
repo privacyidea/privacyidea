@@ -78,11 +78,12 @@ from privacyidea.lib.conditional_access.engine import (get_subject_lock, get_use
                                                        AccessDecision, ConditionalAccessAction, RestrictionStatus)
 from privacyidea.lib.conditional_access.policy import default_error_message
 from privacyidea.lib.conditional_access.session import release_ca_connection
-from privacyidea.lib.conditional_access.request_context import get_ca_context
+from privacyidea.lib.conditional_access.request_context import get_ca_context, peek_ca_context
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.user import User
+from privacyidea.lib.utils import AUTH_RESPONSE
 
 log = logging.getLogger(__name__)
 
@@ -279,12 +280,12 @@ def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return None
-    g.audit_object.log({"success": False, "info": rejection.audit_info})
     # Staged like any other event, so request teardown writes it. A rejection row *replaces* the row the request
     # would have written anyway, which is why every gated endpoint wants one: they all log an authentication event
     # when they succeed. The one endpoint that does not - /validate/polltransaction - is not gated at all.
     log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
                        transaction_id=_rejected_transaction_id())
+    _audit_rejection(rejection.audit_info, user)
     if rejection.message:
         # Claimed before the post-policies run, so hide_specific_error_message shows this error message rather than
         # its own. A rejection *is* the whole message, so there is no failure reason it could carry past the mask.
@@ -327,6 +328,34 @@ def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
     """
     # An empty detail is dropped by prepare_result, which is exactly what an endpoint carrying none needs.
     return send_result(shape.value, rid=shape.rid, details={"message": message} if message else {})
+
+
+def restore_rejection_audit(response: Response) -> Response:
+    """
+    Re-apply the audit entry of a request the pre-check turned away.
+
+    Called from :func:`~privacyidea.api.before_after.after_request`: the last point that can still shape the *audit*
+    entry, which is finalized at teardown. The gate does not have the last word on it - ``/ttype/push`` runs its view
+    afterwards and logs ``success`` true, plus the user it reads off the request parameters, as soon as the token
+    class returns - so the entry the gate decided on is kept on the context and written once more here (see
+    :func:`_audit_rejection`). The reason is not re-applied: it is written once at the gate, and ``/auth``'s error
+    handler *appends* to it, which a second write would undo.
+
+    Reads the buffer with :func:`~privacyidea.lib.conditional_access.request_context.peek_ca_context` rather than
+    creating one. This runs on every response of every blueprint, and "has no buffer" is exactly the question to
+    ask - a request that authenticated nothing has none - answered in a single lookup.
+
+    The response body is never touched here. A restriction this request wrote itself says nothing on it: the request
+    has already been answered on its own merits, and the restriction applies from the next request onwards.
+    """
+    context = peek_ca_context()
+    if context is None:
+        return response
+    # Outside any check on the body, because this is also the last word on the entry of a request that
+    # /validate/radiuscheck answered with an empty, non-JSON one.
+    if context.rejection_audit and "audit_object" in g:
+        g.audit_object.log(context.rejection_audit)
+    return response
 
 
 def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
@@ -416,6 +445,46 @@ def _audit_reason(user_lock: RestrictionStatus | None, ip_block: RestrictionStat
     return f"Rejected: {' and '.join(parts)}"
 
 
+def _audit_rejection(reason: str, user: User | None = None, as_administrator: bool = False) -> None:
+    """
+    Record on this request's audit entry that conditional access turned it away.
+
+    A rejection is a failed authentication like any other, so the entry says so the way every other failure does:
+    ``success`` false and ``authentication`` ``REJECT``. That column is the one an admin filters on and the one a
+    rejection would otherwise leave empty, since its value is normally read off the response the *endpoint* built -
+    and a rejected request never reaches its endpoint. ``info`` carries the whole reason, which belongs to the
+    audit log alone: the client is told only what an admin configured, if anything.
+
+    The identity is named here too, because the one the gate decided on is not always the one ``before_request``
+    logged: a serial-only or credential-id request resolves the token owner
+    (:func:`~privacyidea.api.validate._conditional_access_identity`), and the smartphone's ``/ttype/push`` answer
+    carries no user parameter at all. An empty one is not logged, so a rejection with no identity to name leaves
+    whatever the request itself was made under.
+
+    Everything but the reason is kept on the context and re-applied on the way out (see
+    :func:`restore_rejection_audit`), because the gate does not have the last word on it: ``/ttype/push``
+    runs its view afterwards and logs ``success`` true, plus the user it reads off the request parameters, as soon as
+    the token class returns. The reason is written once, here, since nothing overwrites it and ``/auth``'s error
+    handler *appends* to it - which a second write would undo.
+
+    :param reason: the free-text reason for the ``info`` column
+    :param user: the identity the gate decided on, or ``None`` when there is none to name
+    :param as_administrator: record the identity in ``administrator`` rather than in ``user``, as ``/auth`` does for
+        a login it lets through
+    """
+    entry = {"success": False, "authentication": AUTH_RESPONSE.REJECT}
+    if user and user.login:
+        # An admin is named in one column or the other, never both: the login gate logged ``user`` eagerly, before
+        # it knew whether this request would be refused at all, and ``/auth`` moves an admin out of it. The realm and
+        # resolver are written either way rather than left at what the gate logged, so that a local database admin -
+        # who has neither - is not left carrying a realm the gate guessed from the login name, and an admin-realm
+        # one is named as fully as the view names them when it lets them in.
+        entry.update({"realm": user.realm, "resolver": user.resolver})
+        entry.update({"user": "", "administrator": user.login} if as_administrator else {"user": user.login})
+    get_ca_context().rejection_audit = entry
+    g.audit_object.log({**entry, "info": reason})
+
+
 def _additional_event_types(binding: AuthEventType, user_lock: RestrictionStatus | None,
                             ip_block: RestrictionStatus | None) -> dict | None:
     """
@@ -477,12 +546,17 @@ def _reject_restricted_login(user: User) -> None:
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return
-    g.audit_object.log({"success": False, "info": rejection.audit_info})
     # Staged rather than written, so request teardown records it even though the AuthError below unwinds the view -
     # and staged after _evaluate_rejection, so an enforced DENY's buffered outcome lands on this row.
-    log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
-                       transaction_id=_rejected_transaction_id(),
-                       internal_admin=g.get("resolved_user", {}).get("is_local_admin", False))
+    event = log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
+                               transaction_id=_rejected_transaction_id(),
+                               internal_admin=g.get("resolved_user", {}).get("is_local_admin", False))
+    # /auth records an admin under ``administrator`` rather than under ``user``, the way the view does for a login it
+    # lets through, so a rejected admin login is found by the same filter as every other one. The role is read off the
+    # row just staged, which is where it was classified - a local database admin from the flag before_request
+    # resolved, an admin-realm one from its realm.
+    admin = event is not None and str(event.user_role).startswith("admin")
+    _audit_rejection(rejection.audit_info, user, as_administrator=admin)
     if rejection.message:
         # Only when there is error message of our own: a generic rejection is the ordinary failure and should be
         # masked with every other one.

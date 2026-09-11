@@ -34,7 +34,7 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
-import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
@@ -55,6 +55,11 @@ import {
   ConditionalAccessToggleAction,
   ConditionalAccessToggleDialogComponent
 } from "./conditional-access-toggle-dialog/conditional-access-toggle-dialog.component";
+import {
+  ConditionalAccessDryRunOffDialogComponent,
+  ConditionalAccessDryRunOffDialogData,
+  ConditionalAccessDryRunOffDialogResult
+} from "./conditional-access-dry-run-off-dialog/conditional-access-dry-run-off-dialog.component";
 
 @Component({
   selector: "app-conditional-access",
@@ -441,12 +446,30 @@ export class ConditionalAccessComponent implements OnDestroy {
         }
       })
       .afterClosed()
-      .subscribe((action: ConditionalAccessToggleAction | undefined) => {
+      .subscribe(async (action: ConditionalAccessToggleAction | undefined) => {
         if (!action) {
           return;
         }
-        selected.forEach((policy) =>
-          this.policyService.setDryRun(policy.id, this.resolveToggle(action, policy.dry_run))
+        const targets = selected.map((policy) => ({ policy, target: this.resolveToggle(action, policy.dry_run) }));
+        // Policies actually leaving dry-run in this batch: ask once, up front, whether to reset
+        // their counters, same as the single-row toggle.
+        const leavingDryRun = targets.filter(({ policy, target }) => policy.dry_run && !target);
+        let resetCounters = true;
+        if (leavingDryRun.length > 0) {
+          const result = await this.dialogService.openDialogAsync<
+            ConditionalAccessDryRunOffDialogData,
+            ConditionalAccessDryRunOffDialogResult
+          >({
+            component: ConditionalAccessDryRunOffDialogComponent,
+            data: { policyNames: leavingDryRun.map(({ policy }) => policy.name) }
+          });
+          if (!result) {
+            return;
+          }
+          resetCounters = result.resetCounters;
+        }
+        targets.forEach(({ policy, target }) =>
+          this.policyService.setDryRun(policy.id, target, target ? undefined : resetCounters)
         );
         this.policySelection.set([]);
       });
@@ -472,8 +495,30 @@ export class ConditionalAccessComponent implements OnDestroy {
     }
   }
 
-  onToggleDryRun(policy: ConditionalAccessPolicy): void {
-    this.policyService.setDryRun(policy.id, !policy.dry_run);
+  async onToggleDryRun(policy: ConditionalAccessPolicy, toggle?: MatSlideToggle): Promise<void> {
+    if (!policy.dry_run) {
+      // Turning dry run on: nothing to ask.
+      this.policyService.setDryRun(policy.id, true);
+      return;
+    }
+    const result = await this.dialogService.openDialogAsync<
+      ConditionalAccessDryRunOffDialogData,
+      ConditionalAccessDryRunOffDialogResult
+    >({
+      component: ConditionalAccessDryRunOffDialogComponent,
+      data: { policyNames: [policy.name] }
+    });
+    if (!result) {
+      // Cancelled: the policy keeps its dry run, but the control already flipped itself to report
+      // the click. [checked] is one-way and the value it reads is unchanged, so Angular writes
+      // nothing back - put the control where the policy actually is, or the next click on this row
+      // acts on a state the row only appears to be in.
+      if (toggle) {
+        toggle.checked = policy.dry_run;
+      }
+      return;
+    }
+    this.policyService.setDryRun(policy.id, false, result.resetCounters);
   }
 
   onFilterInput(value: string): void {

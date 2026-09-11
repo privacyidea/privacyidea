@@ -7,6 +7,11 @@ lookup), conditional_access_policy_conditions (the restrictions on which request
 applies to at all), conditional_access_policy_stages (the failure thresholds within a
 policy) and conditional_access_stage_actions (the reactions when a stage is triggered).
 
+conditional_access_policies.enforced_since records the instant a policy's current enforcement episode starts
+counting (NULL to count the full time window), so a policy leaving dry-run is not judged against events
+accumulated during the trial - see privacyidea.lib.conditional_access.engine._effective_window_seconds. Folded
+into this still-unreleased revision rather than added as a new one.
+
 Revision ID: 173d32328846
 Revises: 0147d78cbace
 Create Date: 2026-06-03 00:00:00.000000
@@ -122,6 +127,7 @@ def upgrade():
         sa.Column('count_mode', sa.Unicode(length=20), nullable=False),
         sa.Column('reset_on_success', sa.Boolean(), nullable=False),
         sa.Column('target', sa.Unicode(length=100), nullable=False),
+        sa.Column('enforced_since', sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('name'),
         sa.UniqueConstraint('priority', name='uq_ca_policy_priority'),

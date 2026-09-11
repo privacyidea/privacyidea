@@ -345,7 +345,8 @@
         class="ca-toggle-column"
         mat-cell>
         <mat-slide-toggle
-          (click)="onToggleDryRun(policy); $event.stopPropagation()"
+          #dryRunToggle="matSlideToggle"
+          (click)="onToggleDryRun(policy, dryRunToggle); $event.stopPropagation()"
           [checked]="policy.dry_run"
           [disableRipple]="true"
           [disabled]="!authService.actionAllowed('conditional_access_policy_write') || reorderMode()"

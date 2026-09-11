@@ -125,6 +125,7 @@ from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ADMIN_RE
 from privacyidea.lib.error import ConflictError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.models import db
+from privacyidea.models.utils import utc_isoformat, utc_now
 from privacyidea.models.conditional_access_policy import (ConditionalAccessPolicy, ConditionalAccessPolicyCondition,
                                                ConditionalAccessPolicyStage, ConditionalAccessStageAction)
 
@@ -223,6 +224,10 @@ def conditional_access_policy_to_dict(policy: ConditionalAccessPolicy) -> dict:
     # Scalar columns (id, name, time_window_seconds, enabled, dry_run, priority) map straight through, while
     # counter_types_to_track and stages are not table columns, so both are serialized explicitly below.
     result = {column: getattr(policy, column) for column in policy.__table__.columns.keys()}
+    # enforced_since is stored naive-UTC; rendered by jsonify as it stands it would come out as an RFC 1123 date,
+    # while every other timestamp this API serves is ISO-8601 with an explicit +00:00 (see outcome_log,
+    # authentication_log_statistics).
+    result["enforced_since"] = utc_isoformat(policy.enforced_since)
     result["counter_types_to_track"] = list(policy.counter_types_to_track)
     # An empty list means the policy applies to everyone; conditions carry no id because updates replace them wholesale.
     # They serialize in condition_type order (canonical for an ANDed set), so identical conditions diff cleanly.
@@ -1120,6 +1125,7 @@ def update_conditional_access_policy(
     target: str | None = None,
     count_mode: str | None = None,
     conditions: list[dict] | None = None,
+    reset_counters_on_enforce: bool = True,
 ) -> tuple[int, list[str]]:
     """
     Update a conditional-access policy. Only the given (non-``None``) fields are changed.
@@ -1138,6 +1144,17 @@ def update_conditional_access_policy(
     clears the flag (and reports it as changed), since the policy no longer resets.
     Existing locks/blocks written before the change are timed and expire on their
     own, so no stale state is left enforced.
+
+    Turning ``dry_run`` off (``True`` -> ``False``) sets ``enforced_since`` to now, so the count functions floor
+    their look-back window there and the policy is judged only on events from this point on, not on whatever
+    accumulated before - see
+    :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.enforced_since`. Pass
+    ``reset_counters_on_enforce=False`` to clear the floor instead and count the policy's full time window from the
+    first enforced request on (e.g. an admin who ran the dry run specifically to see how many people would already
+    be caught). Mind that a count which already sits above a stage's threshold never *reaches* it, so that stage
+    stays silent until the old events age out of the window. This has no effect unless ``dry_run`` is also being
+    turned off in this same call. Turning ``dry_run`` on leaves ``enforced_since`` untouched: the trial simulates
+    the enforcement it interrupted, floor included.
 
     All fields are validated before anything is written. Only the fields the caller
     *sends* are validated, which is what keeps a policy stored before a validation
@@ -1212,7 +1229,15 @@ def update_conditional_access_policy(
             policy.enabled = bool(enabled)
             changed_fields.append("enabled")
         if dry_run is not None:
-            policy.dry_run = bool(dry_run)
+            dry_run = bool(dry_run)
+            if dry_run != policy.dry_run and not dry_run:
+                # Leaving dry-run writes the floor either way, so it always describes the enforcement episode that
+                # starts here: this instant when the counts are reset, NULL when the caller opted out via
+                # reset_counters_on_enforce and wants the full window counted (see
+                # ConditionalAccessPolicy.enforced_since). Entering dry-run leaves it alone - the trial keeps
+                # simulating the enforcement it interrupted.
+                policy.enforced_since = utc_now() if reset_counters_on_enforce else None
+            policy.dry_run = dry_run
             changed_fields.append("dry_run")
         if reset_on_success is not None:
             policy.reset_on_success = reset_on_success

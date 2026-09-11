@@ -35,6 +35,7 @@ from .lib.utils import (get_all_params, get_before_request_config, get_optional,
                         logged_in_user_from_token, hide_specific_error_message, construct_radius_response)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
+from .lib.conditional_access import restore_rejection_audit
 from ..lib.conditional_access.request_context import peek_ca_context, reset_ca_context
 from ..lib.framework import get_app_config_value
 from ..lib.clients import identify_client_by_key, touch_client
@@ -559,6 +560,13 @@ def after_request(response):
     :return: The response
     """
     response = mask_authentication_error_response(request, response)
+
+    # Re-apply the audit entry of a request the pre-check refused, which the endpoint's own view may since have
+    # overwritten. Central rather than per endpoint for two reasons: this also runs for a response an *error
+    # handler* built, where every post-policy is skipped, and no gated endpoint can forget to opt in. Only the
+    # audit entry is touched, never the body, so unlike the shaping steps around it this carries no ordering
+    # constraint beyond running before teardown finalizes the entry.
+    response = restore_rejection_audit(response)
 
     response = shape_radius_response(request, response)
 

@@ -316,6 +316,35 @@ have done, then disable dry run once the threshold fits. Dry run can also be
 switched on and off from the command line, which defuses a policy that has
 locked everybody out without losing what it records.
 
+Turning dry run off starts a fresh count by default: events that accumulated
+before are not counted towards the threshold once the policy starts enforcing,
+so a policy that would have locked someone out several times over during the
+trial does not lock them out on the very next request just because it is now
+enforced. Only events from the moment dry run was disabled count towards the
+threshold, until one full time window has passed and the policy counts its
+configured window again.
+
+Switching a policy back to dry run keeps that starting point rather than
+discarding it, so the trial keeps simulating the enforcement it interrupted -
+asked what the policy would do right now, dry run answers with the same count
+the policy would really be using.
+
+The reset can be turned off, both in the WebUI (a dialog appears when disabling
+dry run) and via the API (:http:patch:`/conditionalaccess/policy/(policy_id)`
+with ``reset_counters_on_enforce=false``). The policy then counts its full time
+window from the first enforced request on - for example when the trial was run
+specifically to see how many requests would already be caught, and enforcing on
+the very next matching request is the point.
+
+.. warning:: Counting events from before enforcement began can leave a policy
+   silent rather than strict. A stage fires as the count *reaches* its
+   threshold (unless the action sets *retrigger above threshold*), so a count
+   that already sits above a threshold never reaches it: that stage stays quiet
+   until the old events age out of the time window and the count climbs through
+   the threshold again. On a busy policy the count may not drop below the
+   threshold at all, and a real attack then raises no alarm. This is why the
+   reset is the default.
+
 .. _conditional_access_policies_cli:
 
 Managing policies on the command line
