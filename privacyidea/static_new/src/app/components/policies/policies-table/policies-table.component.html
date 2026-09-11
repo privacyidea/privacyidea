@@ -80,9 +80,7 @@
                 <div>{{ column.value.label }}</div>
               }
               @if (isFilterable(column.key)) {
-                <div
-                  class="flex"
-                  (click)="$event.stopPropagation()">
+                <div class="flex">
                   @if (column.key === "scope") {
                     <app-multi-select-filter
                       [label]="column.value.label"
@@ -91,7 +89,7 @@
                       (selectionChange)="setScopeFilter($event)" />
                   } @else {
                     <button
-                      (click)="onFilterClick(column.key)"
+                      (click)="$event.stopPropagation(); onFilterClick(column.key)"
                       [disabled]="policyService.allPolicies().length === 0"
                       class="filter-button"
                       mat-icon-button>
