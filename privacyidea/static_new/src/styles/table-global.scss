@@ -12,7 +12,7 @@ table.mat-mdc-table {
 .mdc-checkbox
   .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not([aria-checked="mixed"])
   ~ .mdc-checkbox__background {
-  border: 2px solid #999;
+  border: 2px solid var(--mat-sys-outline);
 }
 
 // Material styles the paginator's own parts with the same specificity from component styles
@@ -75,7 +75,7 @@ table.column-striped-explicit {
 // styles, which are injected after this sheet; leading with the "table" element beats that on
 // specificity rather than on order, so none of these need !important.
 table.mat-mdc-table .mat-mdc-header-cell {
-  background: table.$header-bg;
+  background: var(--mat-sys-surface-container-lowest);
 }
 
 table.mat-mdc-table#{$default-mode} .mat-mdc-header-cell:nth-child(even) {
@@ -145,7 +145,7 @@ table.mat-mdc-table#{$default-mode} .mat-mdc-header-cell:nth-child(even) {
   }
 
   &.highlight-disabled {
-    background-color: #a0a0a0;
+    background-color: var(--grey-light);
   }
 
   &.highlight-true-clickable,
