@@ -27,8 +27,7 @@ import { U2F_APP_ID } from "@constants/token.constants";
   selector: "app-u2f-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
-  templateUrl: "./u2f-config.component.html",
-  styleUrl: "./u2f-config.component.scss"
+  templateUrl: "./u2f-config.component.html"
 })
 export class U2fConfigComponent {
   protected readonly U2F_APP_ID = U2F_APP_ID;

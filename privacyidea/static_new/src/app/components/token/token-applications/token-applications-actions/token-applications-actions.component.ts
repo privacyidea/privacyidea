@@ -28,8 +28,7 @@ import { MachineService, MachineServiceInterface } from "@services/machine/machi
   selector: "app-token-applications-actions",
   standalone: true,
   imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
-  templateUrl: "./token-applications-actions.component.html",
-  styleUrls: ["./token-applications-actions.component.scss"]
+  templateUrl: "./token-applications-actions.component.html"
 })
 export class TokenApplicationsActionsComponent {
   protected readonly machineService: MachineServiceInterface = inject(MachineService);

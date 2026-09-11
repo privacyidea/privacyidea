@@ -53,8 +53,7 @@ import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-
     MatButtonModule,
     TokenEnrolledTextComponent
   ],
-  templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html",
-  styleUrl: "./token-enrollment-last-step-dialog.component.scss"
+  templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html"
 })
 export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
   protected override readonly Object = Object;

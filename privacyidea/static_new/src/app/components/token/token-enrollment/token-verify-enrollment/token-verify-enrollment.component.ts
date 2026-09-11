@@ -47,8 +47,7 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
     TokenEnrolledTextComponent,
     FormField
   ],
-  templateUrl: "./token-verify-enrollment.component.html",
-  styleUrl: "./token-verify-enrollment.component.scss"
+  templateUrl: "./token-verify-enrollment.component.html"
 })
 export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<
   TokenEnrollmentDialogData,

@@ -39,8 +39,7 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
 @Component({
   selector: "app-container-table-actions",
   imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective, RouterLink],
-  templateUrl: "./container-table-actions.component.html",
-  styleUrl: "./container-table-actions.component.scss"
+  templateUrl: "./container-table-actions.component.html"
 })
 export class ContainerTableActionsComponent {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);

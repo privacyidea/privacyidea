@@ -37,8 +37,7 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
 @Component({
   selector: "app-token-complete-enrollment",
   imports: [DialogWrapperComponent, MatFormField, MatHint, MatInput, MatLabel, TokenEnrollmentDataComponent, FormField],
-  templateUrl: "./token-complete-enrollment.component.html",
-  styleUrl: "./token-complete-enrollment.component.scss"
+  templateUrl: "./token-complete-enrollment.component.html"
 })
 export class TokenCompleteEnrollmentComponent extends AbstractDialogComponent<
   TokenEnrollmentDialogData,

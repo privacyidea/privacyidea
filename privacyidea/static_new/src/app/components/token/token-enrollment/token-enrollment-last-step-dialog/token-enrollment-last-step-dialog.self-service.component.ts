@@ -40,7 +40,6 @@ export interface TokenEnrollmentLastStepDialogData {
 @Component({
   selector: "app-token-enrollment-last-step-dialog-self-service",
   imports: [MatButtonModule, DialogWrapperComponent, TokenEnrollmentDataComponent, TokenEnrolledTextComponent],
-  templateUrl: "./token-enrollment-last-step-dialog.self-service.component.html",
-  styleUrl: "./token-enrollment-last-step-dialog.component.scss"
+  templateUrl: "./token-enrollment-last-step-dialog.self-service.component.html"
 })
 export class TokenEnrollmentLastStepDialogSelfServiceComponent extends TokenEnrollmentLastStepDialogComponent {}

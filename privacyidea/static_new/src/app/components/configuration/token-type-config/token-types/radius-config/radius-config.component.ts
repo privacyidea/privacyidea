@@ -30,8 +30,7 @@ import { RADIUS_SERVER } from "@constants/token.constants";
   selector: "app-radius-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatSelectModule, RouterLink, ClearButtonComponent],
-  templateUrl: "./radius-config.component.html",
-  styleUrl: "./radius-config.component.scss"
+  templateUrl: "./radius-config.component.html"
 })
 export class RadiusConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;

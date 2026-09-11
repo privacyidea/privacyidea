@@ -29,8 +29,7 @@ export interface EditableElement<V = unknown> {
 @Component({
   selector: "app-edit-buttons",
   imports: [MatIconButton, MatIcon],
-  templateUrl: "./edit-buttons.component.html",
-  styleUrl: "./edit-buttons.component.scss"
+  templateUrl: "./edit-buttons.component.html"
 })
 export class EditButtonsComponent<T extends EditableElement> {
   toggleEdit = input.required<(element: T) => void>();

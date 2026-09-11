@@ -35,7 +35,6 @@ export interface U2fEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [],
   templateUrl: "./enroll-u2f.component.html",
-  styleUrl: "./enroll-u2f.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollU2fComponent) }
   ]

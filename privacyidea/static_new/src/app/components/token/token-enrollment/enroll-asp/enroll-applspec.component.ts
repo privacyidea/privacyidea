@@ -57,7 +57,6 @@ export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
     FormField
   ],
   templateUrl: "./enroll-applspec.component.html",
-  styleUrl: "./enroll-applspec.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollApplspecComponent) }
   ]

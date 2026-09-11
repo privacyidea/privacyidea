@@ -35,7 +35,6 @@ export type GetSerialResultDialogReturn = "reset";
   selector: "app-find-serial-result-dialog",
   imports: [DialogWrapperComponent],
   templateUrl: "./find-serial-result-dialog.component.html",
-  styleUrl: "./find-serial-result-dialog.component.scss",
   standalone: true
 })
 export class FindSerialResultDialogComponent extends AbstractDialogComponent<

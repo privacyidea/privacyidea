@@ -23,8 +23,7 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
   selector: "app-copyable",
   standalone: true,
   imports: [CopyButtonComponent],
-  templateUrl: "./copyable.component.html",
-  styleUrl: "./copyable.component.scss"
+  templateUrl: "./copyable.component.html"
 })
 export class CopyableComponent {
   copyText = input.required<string>();
