@@ -37,11 +37,23 @@ The error message of a stage
 
 Each stage of a :ref:`conditional access policy <conditional_access_policies_stages>`
 has one optional **error message** - free text, at most 500 characters. It is
-shown when a request is turned away while that stage applies, including on the
-later attempts that a lock or block written by that stage refuses.
+shown on a request that is turned away *before* the password or OTP is checked:
+while a lock or block written by that stage is in force, or when that stage
+denies access.
 
-There is one field per stage rather than one per action, because a stage can
-lock the user, block the address and send two emails at once; the administrator
+.. important:: It is **not** shown on the request that trips the stage. That
+   request has already been answered on its own merits - its own failure, its own
+   challenge, even its own success - and the lock or block it wrote applies from
+   the next request onwards. See :ref:`conditional_access_evaluation`.
+
+This has a consequence worth planning for: a stage that **only notifies** - one
+carrying nothing but ``EMAIL_USER`` or ``EMAIL_ADMIN`` - turns no request away at
+any point, so there is never a moment at which its error message could be shown.
+Such a stage is silent whatever is written on it, and the policy editor points
+that out.
+
+There is one field per stage rather than one per action, because a stage can lock
+the user, block the address and send two emails at once; the administrator
 writing one sentence for the stage decides what all of that should sound like.
 
 ``{duration}`` is the only tag substituted, with the time remaining **at the
@@ -54,32 +66,35 @@ Every other brace expression is left exactly as written, so braces in ordinary
 prose need no escaping. That also means a mistyped tag is shown to the user as
 written; the policy editor points out an unrecognised tag but does not refuse to
 save it. ``{duration}`` itself is only substituted where there *is* a remaining
-time. On a permanent lock or block, on a ``DENY`` and on a stage that only
-notified there is none, so the tag is shown as written - the editor flags that
-combination too.
+time. A permanent lock or block has none, and a ``DENY`` counts down nothing at
+all, so there the tag is shown as written - the editor flags that combination
+too.
 
 In the WebUI the field is under each stage of *Policies → Conditional Access*,
 behind the *Show specific error message* checkbox. The refresh button next to it
 replaces the text with the suggested wording for the stage's current actions,
-which is the same wording ``show_default_ca_error_message`` would apply.
+which is the same wording ``show_default_ca_error_message`` would apply. A stage
+that carries wording but nothing that could ever show it - no lock, no block, no
+``DENY`` - is flagged there as well.
 
 Using the default wording instead
 ---------------------------------
 
 Writing a message on every stage of every policy is tedious, and for most
 installations the wording would be the same everywhere. The
-``show_default_ca_error_message`` policy is the short form: with it set, a stage
-that carries no error message of its own is described by privacyIDEA's default
-wording for what it actually did, for example
+``show_default_ca_error_message`` policy is the short form: with it set, a
+restriction that carries no error message of its own is described by privacyIDEA's
+default wording for what it is, for example
 
 * *Your account is temporarily locked. Please try again in about 10 minute(s).*
 * *Access from your IP address has been blocked. Please contact your administrator.*
 * *Access has been denied.*
-* *Your administrator has been notified by email.*
 
 See :ref:`policy_show_default_ca_error_message` for the policy itself. Unlike a
-stage's error message, the default wording is per *action*, so a stage that locks
-the user and notifies them reports both, one sentence per action. It is also
+stage's error message, the default wording is per *action*, and there is wording
+only for the actions that turn a request away: the four lock and block actions and
+``DENY``. A notification is a one-off event that no restriction records, so a stage
+that locks the user *and* emails them is described by the lock alone. It is also
 applied live rather than stored, so it covers the locks and blocks that already
 exist - see :ref:`conditional_access_error_messages_snapshot`.
 
@@ -105,9 +120,10 @@ the restriction that lasts longest, and the other one is recorded in the entry's
 honest about both without pretending the second one is filterable - only
 ``event_type`` is.
 
-A stage that only **notified** refused nothing, so its message does not replace
-anything. The credential failure is still the reason the request failed and keeps
-its own message and details, with the notification appended to it.
+Only a restriction is described. A stage that merely **notified** refused nothing
+and left nothing behind for a later request to be refused by, so no request ever
+carries wording for it - the failure that happened to trip it keeps its own
+message and details, unchanged.
 
 .. _conditional_access_error_messages_snapshot:
 
@@ -183,10 +199,12 @@ silent rejection carries none either.
 rather than attempting an authentication - and so never produces a rejection
 message.
 
-The request that *creates* a lock is answered exactly as the requests the lock
-then refuses: the same body, the same wording, and nothing of the credential
-failure it overtook. The message is failure-only in every case and is never shown
-on a successful login.
+The request that *creates* a lock is the one exception to all of this: it carries
+no conditional access wording at all. It is answered exactly as it would have been
+had no stage tripped - the token's own failure reason, or the challenge it was
+about to hand out - and the lock speaks from the next request onwards. A silent
+restriction is therefore undetectable at the moment it is written, the response
+being the one the request had coming either way.
 
 .. _conditional_access_error_messages_masking:
 
@@ -219,8 +237,8 @@ The reverse case follows the same rule from the other side. A **silent** rejecti
 * ``hide_specific_error_message`` replaces it with its own generic message, which
   is the same sentence a silent rejection already carried.
 * ``no_detail_on_fail`` strips the ``detail`` from a ``/validate/check``
-  response, and a silent rejection then says nothing rather than putting a
-  generic message back where that policy has just removed one.
+  response, so a silent rejection ends up saying nothing at all - it had only the
+  generic sentence to lose.
 
 To keep conditional access invisible, therefore, simply leave the error messages
 empty and do not set ``show_default_ca_error_message`` - that is the default. The

@@ -187,10 +187,11 @@ over like any other, so *always* reaches up to the next threshold.
    ``pi-manage conditionalaccess disable-policy <name>`` if it has locked you
    out of the WebUI, see :ref:`conditional_access_policies_cli`.
 
-Each stage also has an optional **error message**, the text an end user sees when
-a request is turned away by that stage. It is empty by default, which keeps a
-rejection indistinguishable from any other failed authentication, see
-:ref:`conditional_access_error_messages`.
+Each stage also has an optional **error message**, the text an end user sees on a
+request that a lock, block or ``DENY`` from that stage turns away - never on the
+request that trips the stage, which is answered on its own merits. It is empty by
+default, which keeps a rejection indistinguishable from any other failed
+authentication, see :ref:`conditional_access_error_messages`.
 
 .. _conditional_access_policies_actions:
 
@@ -215,6 +216,10 @@ Actions
     Notify the user, or an administrator, that the threshold was reached.
     ``EMAIL_USER`` sends to the address in the user store. ``EMAIL_ADMIN`` sends
     to a list of addresses or to the internal administrators.
+
+    Neither turns a request away, so neither is ever reported in a response: a
+    stage carrying nothing but these is silent whatever error message is written
+    on it, see :ref:`conditional_access_error_messages`.
 
     An email action needs the identifier of an :ref:`smtpserver` configuration
     plus subject and body. Subject and body may contain ``{username}``,
