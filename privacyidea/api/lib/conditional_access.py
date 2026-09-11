@@ -35,22 +35,17 @@ Silent is the default on all three: a rejection says what an admin configured on
 nothing configured only what every other failed authentication says.
 
 What "like any other failed authentication" *is* differs per endpoint, which is the one thing a gate has to hand on:
-each records a :class:`~privacyidea.lib.conditional_access.request_context.RejectionShape` on the request, so the
-response hook can answer a restriction this very request wrote in the same shape - down to the fields the endpoint
-does not have. ``/ttype/push`` is where that bites: it renders with ``rid`` 1, so it reports no ``authentication``
-verdict, and an ordinary failed answer there carries no ``detail`` at all, so a silent rejection carries none either -
-the opposite of ``/validate/*``, where every failure has one and a silent rejection needs the generic message to have
-one too.
+each passes a :class:`~privacyidea.lib.conditional_access.request_context.RejectionShape` saying how its endpoint
+answers a refusal, down to the fields the endpoint does not have. ``/ttype/push`` is where that bites: it renders
+with ``rid`` 1, so it reports no ``authentication`` verdict, and an ordinary failed answer there carries no
+``detail`` at all, so a silent rejection carries none either - the opposite of ``/validate/*``, where every failure
+has one and a silent rejection needs the generic message to have one too.
 
-A restriction reads the same whichever request meets it. The request that *writes* a lock is answered exactly as the
-requests the lock then refuses - the whole response, not just the wording, and whether or not a stage configured any
-(see :func:`rejection_message`). The failure's own details go with it, since the credential that request happened to
-carry no longer decides anything. The cost is that a silent lock is detectable at the moment it trips, because the
-response changes shape.
-
-A stage that only *notified* is the exception throughout: it refused nothing, so the credential failure is still the
-reason and keeps its own id, message and details, with the notification appended (see
-:func:`compose_failure_message`).
+Only a request refused *here*, before its credentials are checked, is told anything at all. The post-response
+evaluation reports nothing: a request that trips a stage gets the answer it had coming - its own failure, its own
+challenge, its own success - and the restriction it wrote applies from the next request, which these gates then
+refuse. A lock therefore reaches a user in one shape only, and a silent one is not detectable at the moment it
+trips.
 
 Both classify their rejection in the authentication log, since that row is the only thing an admin can filter for: the
 request is turned away before anything else logs an outcome for it. Both link it to the transaction the request
@@ -65,11 +60,8 @@ places that would otherwise mask it read it back through
 :func:`~privacyidea.lib.conditional_access.request_context.claimed_ca_message`:
 :func:`~privacyidea.api.before_after.auth_error` on ``/auth``, and both actions on ``/validate/*``. Only the message
 survives; the rest of the detail is collapsed, which is what those actions are for and costs a rejection nothing.
-
-:func:`surface_conditional_access_message` claims nothing - it runs from ``after_request``, after all three.
 """
 import functools
-import json
 import logging
 from dataclasses import dataclass
 from collections.abc import Callable
@@ -85,13 +77,11 @@ from privacyidea.lib.conditional_access.engine import (get_user_lock, get_ip_blo
                                                        ConditionalAccessAction, RestrictionStatus, StageMessage)
 from privacyidea.lib.conditional_access.policy import default_error_message
 from privacyidea.lib.conditional_access.session import release_ca_connection
-from privacyidea.lib.conditional_access.request_context import (ConditionalAccessContext, PostEvaluation,
-                                                                 RejectionShape, get_ca_context, peek_ca_context)
+from privacyidea.lib.conditional_access.request_context import RejectionShape, get_ca_context
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import AUTH_RESPONSE
 
 log = logging.getLogger(__name__)
 
@@ -213,15 +203,13 @@ def conditional_access_precheck(user: User, rejection_value: Any = False) -> Res
     :param rejection_value: what ``result.value`` says on a rejection. ``False`` everywhere except
         ``/validate/triggerchallenge``, where the value is the *number of challenges triggered* rather than a
         boolean - answering that endpoint with ``False`` would change the type of a field its callers may be
-        reading as a number. See :func:`_rejected_value`, which keeps the same promise on the other path.
+        reading as a number.
     """
     shape = RejectionShape(value=rejection_value)
     rejection = conditional_access_rejection(user, shape)
     if rejection is None:
         return None
-    # Rendered by the one renderer both moments of one request use, so the response that *writes* a restriction
-    # cannot be a different shape from the ones the restriction then refuses.
-    return _rejection_response(get_ca_context(), _rejection_wording(shape, rejection.message))
+    return _rejection_response(shape, _rejection_wording(shape, rejection.message))
 
 
 def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection | None:
@@ -243,12 +231,9 @@ def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection
 
     :param user: the identity to gate on
     :param shape: how this endpoint answers a refusal (see :class:`~privacyidea.lib.conditional_access.
-        request_context.RejectionShape`). Recorded whether or not this request is refused: should a *later* stage
-        restrict it, the response hook has to answer in the same shape, and by then the endpoint is no longer
-        identifiable.
+        request_context.RejectionShape`)
     :return: the :class:`Rejection` to render, or ``None`` to continue with the normal flow
     """
-    get_ca_context().rejection_shape = shape
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return None
@@ -263,22 +248,6 @@ def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection
         # its own. A rejection *is* the whole message, so there is no failure reason it could carry past the mask.
         get_ca_context().claim_message(rejection.message)
     return rejection
-
-
-def _rejected_value(value: Any) -> Any:
-    """
-    What ``result.value`` becomes on a request conditional access refused, in the type the endpoint uses.
-
-    ``False`` almost everywhere, because that is what the value already is on a failed authentication. Not on
-    ``/validate/triggerchallenge``, where it is the *number of challenges triggered*: answering that endpoint with
-    a boolean would change the type of a field its callers may be reading as a number, so it gets ``0``. Anything
-    already falsy is left exactly as it stands.
-
-    ``bool`` is a subclass of ``int``, hence the second check - without it every ``True`` would become ``0``.
-    """
-    if not value:
-        return value
-    return 0 if isinstance(value, int) and not isinstance(value, bool) else False
 
 
 def _rejection_wording(shape: RejectionShape, message: str | None, detail_stripped: bool = False) -> str | None:
@@ -333,24 +302,18 @@ def compose_failure_message(existing: str | None, messages: list[StageMessage]) 
     return f"{existing.rstrip('.')}. {joined}" if existing else joined
 
 
-def _rejection_response(context: "ConditionalAccessContext", message: str | None) -> Response:
+def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
     """
-    The response a refused request gets, in the shape the endpoint's gate recorded
+    The response a refused request gets, in the shape its endpoint's gate describes
     (:class:`~privacyidea.lib.conditional_access.request_context.RejectionShape`).
 
-    The one renderer, used by the pre-check and by the response hook alike, so a rejection cannot come out shaped
-    differently depending on which moment produced it. The hook's other case - a restriction on a response that is
-    already a *failure* of this endpoint's own - edits that body in place instead, keeping the ``threadid`` it
-    already carries; everything a renderer would decide is decided here.
+    Nothing of the request it refuses survives: a rejection says the wording and no more, the credentials it
+    carried having never been checked.
 
-    Nothing is carried over from a body this replaces: a rejection says the wording and no more, and an error's
-    own code and detail describe the attempt the rejection overtook.
-
-    :param context: this request's buffer, holding the rejection shape its gate recorded
+    :param shape: how this endpoint answers a refusal
     :param message: the wording, or ``None`` where this endpoint's failures carry no detail (see
         :func:`_rejection_wording`)
     """
-    shape = context.rejection_shape
     if shape.as_error:
         # /auth, the one entry point whose failed authentication is an error response - so its rejection is one
         # too, carrying the generic authentication id and never the endpoint's own. The status stays as the error
@@ -360,102 +323,6 @@ def _rejection_response(context: "ConditionalAccessContext", message: str | None
         return rejection
     # An empty detail is dropped by prepare_result, which is exactly what an endpoint carrying none needs.
     return send_result(shape.value, rid=shape.rid, details={"message": message} if message else {})
-
-
-def surface_conditional_access_message(response):
-    """
-    Report on the response what conditional access just did to this request: refuse it if this very request wrote a
-    restriction, or add what a stage that only notified did.
-
-    Called from :func:`~privacyidea.api.before_after.after_request`: the last point that can still shape a body,
-    and - unlike a decorator - one that also runs for a response an *error handler* built. Being central also means
-    no gated endpoint can forget to opt in.
-
-    Reads the buffer with :func:`~privacyidea.lib.conditional_access.request_context.peek_ca_context` rather than
-    creating one. This runs on every response of every blueprint, and "has no buffer" is exactly the question to
-    ask - a request that authenticated nothing has none - answered in a single lookup.
-
-    Running after the post-policies rather than among them is what makes ``hide_specific_error_message`` and
-    ``no_detail_on_fail`` a non-issue here: they have already had their say, so a notification composes onto
-    whatever survived them and needs no claim to protect it. The gates still claim, their responses being built
-    where those actions can reach them.
-    """
-    context = peek_ca_context()
-    if context is None or not response or not response.is_json:
-        return response
-    try:
-        context.flush()
-        evaluation = context.run_post_eval()
-        content = response.json
-        if evaluation.restricted:
-            return _refuse(response, content, context, evaluation)
-        if evaluation.messages:
-            return _append_notification(response, content, evaluation)
-    except Exception as ex:
-        # Never break an authentication response over the error message of its own rejection.
-        log.warning(f"Could not surface the conditional-access message on this response: {ex!r}")
-    return response
-
-
-def _refuse(response: Response, content: dict, context: "ConditionalAccessContext",
-            evaluation: PostEvaluation) -> Response:
-    """
-    Answer a request that has just written a restriction as the rejection it now is - word for word the answer the
-    pre-check gives every request the restriction refuses after it.
-
-    Keyed on the restriction rather than on having something to say, because a silent lock refuses this request
-    too; and rather than on the response looking like a failure, because ``result.value`` is a *count* on
-    ``/validate/triggerchallenge``, where a request that triggers a challenge and trips a lock in one breath reads
-    as a success. Withdrawing that challenge is not invalidating it: the row is left to expire unanswered, and the
-    client never learns the ``transaction_id``, so it could not use it anyway.
-    """
-    result = content.get("result") or {}
-    detail = content.get("detail") or {}
-    shape = context.rejection_shape
-    if "error" in result or shape.as_error:
-        # The body is the wrong kind to edit into a rejection, so one is built instead. An error body has no
-        # value to falsify - and must not survive anyway, "ERR1007: the token is locked" stating the very reason a
-        # rejection withholds. On /auth the reverse: a refusal there *is* an error response, so even the 200 a
-        # challenge returned before the engine ran (auth.py) has to be replaced by one.
-        return _rejection_response(context, rejection_message(shape, evaluation.messages))
-    # Editable: this endpoint answers a refusal with an ordinary result body, which is what is already in hand.
-    # A detail that is gone was stripped by no_detail_on_fail, and a silent restriction then says nothing rather
-    # than putting a generic message where that action left none.
-    message = rejection_message(shape, evaluation.messages, detail_stripped="detail" not in content)
-    result["value"] = _rejected_value(result.get("value"))
-    if shape.reports_authentication:
-        # Only where the endpoint reports a verdict at all - /ttype/push renders with rid 1 and has no such field.
-        result["authentication"] = AUTH_RESPONSE.REJECT
-    content["result"] = result
-    if message is None:
-        content.pop("detail", None)
-    else:
-        # The threadid stays - it identifies the request rather than describing it. Everything else described what
-        # the rejection overtook: the attempt that failed, or the challenge about to be handed out.
-        kept = {"threadid": detail["threadid"]} if "threadid" in detail else {}
-        content["detail"] = {**kept, "message": message}
-    response.set_data(json.dumps(content))
-    return response
-
-
-def _append_notification(response: Response, content: dict, evaluation: PostEvaluation) -> Response:
-    """
-    Add what a stage that only *notified* did to a response it did not refuse.
-
-    It refused nothing, so the credential failure is still why the request failed and keeps its own id, message and
-    details - a challenge included - with the notification following it (see :func:`compose_failure_message`).
-
-    Left alone on a response that did not fail, the message being failure-only, and on an error, which failed for a
-    reason of its own that the notification merely coincided with.
-    """
-    result = content.get("result") or {}
-    if "error" in result or result.get("value"):
-        return response
-    detail = content.get("detail") or {}
-    detail["message"] = compose_failure_message(detail.get("message"), evaluation.messages)
-    content["detail"] = detail
-    response.set_data(json.dumps(content))
-    return response
 
 
 def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
