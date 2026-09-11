@@ -34,7 +34,8 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
-from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
+from privacyidea.lib.token import (get_tokens, remove_token, init_token, import_tokens,
+                                   create_challenge)
 from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.tokens.push_types import PushMode, PushCapability
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
@@ -2108,8 +2109,8 @@ class PushTokenTestCase(MyTestCase):
         self._trigger_challenge(client_ip="10.1.2.3")
         triggered_nonce = get_challenges(serial=serial)[0].challenge
         # A challenge without a stored text, as an earlier server version left it behind
-        legacy = Challenge(serial, challenge=b32encode_and_unicode(geturandom()))
-        legacy.save()
+        legacy_nonce = b32encode_and_unicode(geturandom())
+        create_challenge(serial, challenge=legacy_nonce)
 
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
@@ -2120,7 +2121,7 @@ class PushTokenTestCase(MyTestCase):
                          polled[triggered_nonce])
         # The policy does not match the polling client, so the challenge without a stored
         # text falls back to the default - this is what every challenge looked like before.
-        self.assertEqual(str(DEFAULT_MOBILE_TEXT), polled[legacy.challenge])
+        self.assertEqual(str(DEFAULT_MOBILE_TEXT), polled[legacy_nonce])
 
         delete_policy("push_16i_text")
         delete_policy("push_16i_enroll")
