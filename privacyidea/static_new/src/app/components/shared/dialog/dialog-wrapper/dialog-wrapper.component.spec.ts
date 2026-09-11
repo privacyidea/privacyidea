@@ -142,7 +142,7 @@ describe("DialogWrapperComponent", () => {
   it("should style a destructive action that is not primary as outlined only", () => {
     fixture.componentRef.setInput("actions", [{ value: "d", label: "D", type: "destruct" }]);
     fixture.detectChanges();
-    const btn = nativeElement.querySelector(".pi-dialog-footer button:last-child");
+    const btn = nativeElement.querySelector(".pi-dialog-footer > button:last-child");
     expect(btn?.classList).toContain("action-button-delete-secondary");
     expect(btn?.classList).not.toContain("action-button-secondary");
   });
