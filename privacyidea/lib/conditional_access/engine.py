@@ -373,9 +373,9 @@ class AccessDecisionResult:
     nothing to record.
 
     One type for a single policy's contribution (:func:`_policy_access_decision`) and for the whole evaluation
-    (:func:`evaluate_access_decision`). Hence the default: :attr:`AccessDecision.CONTINUE` reads "this policy has no opinion" for the one and
-    "no policy decided" for the other - which is what ``CONTINUE`` already means, so nothing needs a separate
-    ``None`` to say it.
+    (:func:`evaluate_access_decision`). Hence the default: :attr:`AccessDecision.CONTINUE` reads "this policy has no
+    opinion" for the one and "no policy decided" for the other - which is what ``CONTINUE`` already means, so nothing
+    needs a separate ``None`` to say it.
     """
     decision: AccessDecision = AccessDecision.CONTINUE
     outcomes: list[ConditionalAccessOutcome] = field(default_factory=list)
