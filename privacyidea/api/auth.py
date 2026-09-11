@@ -622,7 +622,9 @@ def get_auth_token():
         # was refused by the pre-check before the credentials were ever checked, and a stage this request trips
         # applies from the next login onwards - so nothing here is a statement about conditional access, and the
         # staged row is left to request teardown to flush and evaluate like any other.
-        raise AuthError(GENERIC_AUTH_FAILURE, id=Error.AUTHENTICATE_WRONG_CREDENTIALS, details=details or {})
+        # Resolved to a str here, not left lazy: auth_error hands the message to the audit log, which stores only
+        # str and would drop the whole entry on a lazy proxy.
+        raise AuthError(str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE_WRONG_CREDENTIALS, details=details or {})
     else:
         g.audit_object.log({"success": True, "authentication": AUTH_RESPONSE.ACCEPT})
         request.User = user
