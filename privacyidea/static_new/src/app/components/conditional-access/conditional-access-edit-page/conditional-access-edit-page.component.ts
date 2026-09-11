@@ -183,6 +183,17 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   readonly editConditions = computed<ConditionalAccessPolicyCondition[]>(() => this.editPolicy().conditions ?? []);
 
   timeWindowValid = computed(() => this.editPolicy().time_window_seconds >= 1);
+  // enforced_since floors the counts only until one full time window has passed since it; after
+  // that the backend counts the configured window unchanged, so showing it would be noise. Shown
+  // in dry run too, because the trial simulates against the same floor.
+  readonly countFloorStillBites = computed(() => {
+    const enforcedSince = this.editPolicy().enforced_since;
+    if (!enforcedSince) {
+      return false;
+    }
+    const elapsed = (Date.now() - new Date(enforcedSince).getTime()) / 1000;
+    return elapsed < this.editPolicy().time_window_seconds;
+  });
   // Raw text of the priority field, kept separate from the parsed value so an invalid entry is
   // reported instead of silently rewritten (see onPriorityInput).
   priorityInput = signal<string>("");

@@ -633,6 +633,39 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.canSave()).toBe(false);
     });
   });
+
+  describe("count floor", () => {
+    const withEnforcedSince = (enforcedSince: string | null, timeWindowSeconds = 600) =>
+      component.editPolicy.update((policy) => ({
+        ...policy,
+        enforced_since: enforcedSince,
+        time_window_seconds: timeWindowSeconds
+      }));
+
+    it("should not report a floor for a policy that counts its full window", () => {
+      withEnforcedSince(null);
+      expect(component.countFloorStillBites()).toBe(false);
+    });
+
+    it("should report a floor set within the time window", () => {
+      withEnforcedSince(new Date(Date.now() - 60_000).toISOString());
+      expect(component.countFloorStillBites()).toBe(true);
+    });
+
+    // Once a full window has passed the backend counts the configured width unchanged, so the hint
+    // would only be noise.
+    it("should stop reporting a floor older than the time window", () => {
+      withEnforcedSince(new Date(Date.now() - 3_600_000).toISOString());
+      expect(component.countFloorStillBites()).toBe(false);
+    });
+
+    // The trial simulates against the same floor, so dry run does not hide it.
+    it("should report a floor while the policy is back in dry run", () => {
+      withEnforcedSince(new Date(Date.now() - 60_000).toISOString());
+      component.editPolicy.update((policy) => ({ ...policy, dry_run: true }));
+      expect(component.countFloorStillBites()).toBe(true);
+    });
+  });
 });
 
 describe("ConditionalAccessEditPageComponent — new mode", () => {

@@ -82,12 +82,12 @@
           matTooltip="Toggle Dry Run (evaluate but do not enforce)">
           <span i18n>Dry run</span>
         </mat-slide-toggle>
-        @if (!editPolicy().dry_run && editPolicy().enforced_since) {
+        @if (countFloorStillBites()) {
           <span
             class="ca-enforced-since-hint"
             i18n-matTooltip
-            matTooltip="Failures from before this instant are not counted towards the thresholds">
-            <span i18n>Enforcing since</span>
+            matTooltip="Events from before this instant are not counted towards the thresholds">
+            <span i18n>Counting events since</span>
             {{ editPolicy().enforced_since | date: "yyyy-MM-dd HH:mm:ss" }}
           </span>
         }

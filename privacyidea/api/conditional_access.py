@@ -448,10 +448,11 @@ def update_policy(policy_id):
     (otherwise a 400).
 
     :jsonparam reset_counters_on_enforce: when ``dry_run`` is sent as ``false`` and the policy is
-        currently in dry-run, whether to reset the failure counters so the policy is judged only on
-        failures from now on (the default) rather than on whatever accumulated during the trial. Send
-        ``false`` to enforce immediately against the counts the trial already accumulated. Ignored
-        unless ``dry_run`` is being turned off in this same call.
+        currently in dry-run, whether to start counting from now on (the default) rather than from
+        whatever accumulated before. Send ``false`` to count the policy's full time window from the
+        first enforced request on - mind that a count already sitting above a stage's threshold never
+        *reaches* it, so that stage stays silent until those events age out. Ignored unless
+        ``dry_run`` is being turned off in this same call.
     :status 200: the id of the updated policy in ``result.value``
     :status 400: invalid parameter
     :status 404: no policy with this id exists

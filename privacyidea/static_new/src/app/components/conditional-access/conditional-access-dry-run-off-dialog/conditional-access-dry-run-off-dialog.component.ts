@@ -29,58 +29,30 @@ export interface ConditionalAccessDryRunOffDialogData {
   policyNames: string[];
 }
 
-// Whether the failure counters accumulated during the trial are cleared once the policy starts
-// enforcing (the default), or kept so it enforces immediately against what the trial already
-// recorded. undefined means the dialog was cancelled and dry run must stay on.
+// Whether the policy starts counting from the moment it begins enforcing (the default), or counts
+// its full time window straight away, including the events already in it. undefined means the
+// dialog was cancelled and dry run must stay on.
 export type ConditionalAccessDryRunOffDialogResult = { resetCounters: boolean } | undefined;
 
 @Component({
   selector: "app-conditional-access-dry-run-off-dialog",
   imports: [DialogWrapperComponent, MatCheckboxModule],
-  template: `
-    <app-dialog-wrapper
-      [title]="title"
-      (wrapperClose)="cancel()"
-      [actions]="actions"
-      [showCloseButton]="true"
-      (actionTriggered)="confirm()">
-      <div class="margin-right-16">
-        @if (data.policyNames.length === 1) {
-          <p i18n>
-            Turning dry run off starts enforcing "{{ data.policyNames[0] }}" immediately. By default
-            the failure counters from the trial are reset, so the policy is judged only on failures
-            from now on.
-          </p>
-        } @else {
-          <p i18n>
-            Turning dry run off starts enforcing the following policies immediately. By default the
-            failure counters from the trial are reset, so each policy is judged only on failures
-            from now on.
-          </p>
-          <ul>
-            @for (name of data.policyNames; track name) {
-              <li>{{ name }}</li>
-            }
-          </ul>
-        }
-        <mat-checkbox [checked]="keepCounters()" (change)="keepCounters.set($event.checked)">
-          <span i18n>Keep the counters accumulated during the trial</span>
-        </mat-checkbox>
-      </div>
-    </app-dialog-wrapper>
-  `
+  templateUrl: "conditional-access-dry-run-off-dialog.component.html",
+  styleUrl: "conditional-access-dry-run-off-dialog.component.scss"
 })
 export class ConditionalAccessDryRunOffDialogComponent extends AbstractDialogComponent<
   ConditionalAccessDryRunOffDialogData,
   ConditionalAccessDryRunOffDialogResult
 > {
   title = $localize`Disable Dry Run`;
-  keepCounters = signal(false);
+  countPastEvents = signal(false);
 
-  actions: DialogAction<void>[] = [{ label: $localize`Disable Dry Run`, value: undefined, type: "confirm", primary: true }];
+  actions: DialogAction<void>[] = [
+    { label: $localize`Disable Dry Run`, value: undefined, type: "confirm", primary: true }
+  ];
 
   confirm(): void {
-    this.close({ resetCounters: !this.keepCounters() });
+    this.close({ resetCounters: !this.countPastEvents() });
   }
 
   cancel(): void {

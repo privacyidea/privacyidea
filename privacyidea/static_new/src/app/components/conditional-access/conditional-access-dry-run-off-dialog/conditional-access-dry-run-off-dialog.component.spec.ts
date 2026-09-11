@@ -55,15 +55,24 @@ describe("ConditionalAccessDryRunOffDialogComponent", () => {
     expect(text).toContain("My Policy");
   });
 
-  it("defaults to resetting the counters", () => {
+  it("defaults to counting only from now on", () => {
     component.confirm();
     expect(dialogRef.close).toHaveBeenCalledWith({ resetCounters: true });
   });
 
-  it("keeps the counters when the checkbox is checked", () => {
-    component.keepCounters.set(true);
+  it("counts the events already in the window when the checkbox is checked", () => {
+    component.countPastEvents.set(true);
     component.confirm();
     expect(dialogRef.close).toHaveBeenCalledWith({ resetCounters: false });
+  });
+
+  it("spells out the consequence only once the checkbox is checked", () => {
+    const consequence = () => (fixture.nativeElement as HTMLElement).querySelector(".consequence")?.textContent ?? "";
+    expect(consequence()).toBe("");
+
+    component.countPastEvents.set(true);
+    fixture.detectChanges();
+    expect(consequence()).toContain("stays silent");
   });
 
   it("closes with undefined on cancel", () => {
