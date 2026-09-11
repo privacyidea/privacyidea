@@ -46,7 +46,7 @@ from privacyidea.models import ConditionalAccessOutcome
 if TYPE_CHECKING:
     # Only for the annotation below: importing the engine at module level would risk an import-order cycle
     # during app startup, which is why run_post_eval imports it inside the function instead.
-    from privacyidea.lib.conditional_access.engine import StageMessage
+    from privacyidea.lib.conditional_access.engine import ConditionalAccessTarget, StageMessage
 
 log = logging.getLogger(__name__)
 
@@ -87,12 +87,19 @@ class PostEvaluation:
 
     :ivar messages: the user-facing wording the triggered stages carry, most severe first. Empty when nothing was
         triggered *and* when what was triggered carries no wording - silent by default holds here as everywhere.
-    :ivar restricted: whether this request left a restriction in force. Independent of :attr:`messages`, and that
-        is the whole reason it exists: a silent restriction produces no wording, yet the request still has to be
-        answered as the rejection it now is, exactly like every request the pre-check refuses after it.
+    :ivar enforced_targets: the subjects this request left a restriction on, empty when it restricted nothing.
+        Independent of :attr:`messages`, and that is the whole reason it exists: a silent restriction produces no
+        wording, yet the request still has to be answered as the rejection it now is, exactly like every request
+        the pre-check refuses after it. Which subjects they are is what the audit entry of such a request reports,
+        the log being the one place the whole reason is said.
     """
     messages: list["StageMessage"] = field(default_factory=list)
-    restricted: bool = False
+    enforced_targets: "set[ConditionalAccessTarget]" = field(default_factory=set)
+
+    @property
+    def restricted(self) -> bool:
+        """Whether this request left a restriction in force, and so has to be answered as a rejection."""
+        return bool(self.enforced_targets)
 
 
 @dataclass(frozen=True)
@@ -160,6 +167,10 @@ class ConditionalAccessContext:
         # answer a *restricted* request the same way - even when the view raised and the body to replace is an error.
         # The default is the /validate shape, which is also the safest thing to assume for a request no gate ran on.
         self.rejection_shape = RejectionShape()
+        # The audit entry of a request the pre-check turned away, or None for one it let through. Re-applied on the
+        # way out, because the gate does not have the last word on it: /ttype/push runs a view afterwards that logs
+        # success and the identity itself (see _audit_rejection).
+        self.rejection_audit: dict | None = None
 
     def claim_message(self, message: str) -> None:
         """
@@ -469,7 +480,7 @@ class ConditionalAccessContext:
         # the retry rather than a skipped second attempt.
         self._evaluated_as = event.event_type
         record_outcomes(evaluation.outcomes, event.row_id)
-        return PostEvaluation(messages=evaluation.messages, restricted=bool(evaluation.enforced_targets))
+        return PostEvaluation(messages=evaluation.messages, enforced_targets=evaluation.enforced_targets)
 
     def finalize(self) -> None:
         """
