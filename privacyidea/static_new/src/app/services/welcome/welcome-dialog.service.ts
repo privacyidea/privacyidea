@@ -49,9 +49,7 @@ export class WelcomeDialogService {
         this.opened.set(true);
         this.dialog.open(WelcomeDialogComponent, {
           disableClose: true,
-          autoFocus: false,
-          width: "720px",
-          panelClass: "welcome-dialog-panel"
+          autoFocus: false
         });
       }
     });

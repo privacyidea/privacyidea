@@ -1,18 +1,5 @@
-@use "styles";
-
-.expiry-container {
-  max-width: 720px;
-  padding: 16px;
-}
-
-h2 {
-  margin: 0 0 12px;
-}
-
 .content {
   line-height: 1.6;
-  margin-left: 16px;
-  margin-bottom: 12px;
 }
 
 .items {
@@ -23,6 +10,7 @@ h2 {
 
 .row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 8px;
 }
@@ -33,11 +21,4 @@ h2 {
 
 .value {
   font-family: monospace;
-}
-
-.actions {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }

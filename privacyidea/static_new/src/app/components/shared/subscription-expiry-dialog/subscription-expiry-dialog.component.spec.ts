@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MAT_DIALOG_DATA, MatDialogModule } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
   SubscriptionExpiryDialogComponent,
   SubscriptionExpiryDialogData
@@ -38,7 +39,10 @@ describe("SubscriptionExpiryDialogComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SubscriptionExpiryDialogComponent, MatDialogModule],
-      providers: [{ provide: MAT_DIALOG_DATA, useValue: dialogData }]
+      providers: [
+        { provide: MAT_DIALOG_DATA, useValue: dialogData },
+        { provide: MatDialogRef, useValue: new MockMatDialogRef<SubscriptionExpiryDialogComponent>() }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(SubscriptionExpiryDialogComponent);

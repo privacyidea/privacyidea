@@ -93,6 +93,17 @@ describe("DialogWrapperComponent", () => {
     expect(dialogRef.close).not.toHaveBeenCalled();
   });
 
+  it("caps its width at the m tier unless the caller picks another", () => {
+    expect(nativeElement.querySelector(".pi-dialog")?.classList).toContain("pi-dialog-m");
+
+    fixture.componentRef.setInput("width", "l");
+    fixture.detectChanges();
+
+    const dialog = nativeElement.querySelector(".pi-dialog");
+    expect(dialog?.classList).toContain("pi-dialog-l");
+    expect(dialog?.classList).not.toContain("pi-dialog-m");
+  });
+
   it("should display the title", () => {
     const titleEl = nativeElement.querySelector("h3");
     expect(titleEl?.textContent).toContain("Test Title");

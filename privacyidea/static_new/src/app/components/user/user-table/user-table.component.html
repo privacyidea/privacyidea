@@ -135,14 +135,15 @@
                     }
                     @case ("resolver") {
                       <app-copyable [copyText]="element[column.key]">
-                        <a
-                          (click)="onClickResolver(element[column.key]); $event.preventDefault()"
-                          (keydown.enter)="onClickResolver(element[column.key]); $event.preventDefault()"
-                          [attr.aria-label]="linkLabel(column.label)"
-                          role="button"
-                          tabindex="0">
+                        @if (resolverLinkAllowed()) {
+                          <a
+                            [attr.aria-label]="linkLabel(column.label)"
+                            [routerLink]="resolverLink(element[column.key])">
+                            {{ element[column.key] }}
+                          </a>
+                        } @else {
                           {{ element[column.key] }}
-                        </a>
+                        }
                       </app-copyable>
                     }
                     @default {

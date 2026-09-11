@@ -15,6 +15,8 @@
   max-height: 82vh;
 }
 
-.width-36 {
-  width: 36rem;
+// Caps a block of dialog prose at a readable measure. It lives here rather than in the wrapper
+// because view encapsulation keeps the wrapper's own styles off the content projected into it.
+.dialog-prose {
+  max-width: var(--dialog-prose-width);
 }

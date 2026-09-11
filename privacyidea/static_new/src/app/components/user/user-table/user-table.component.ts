@@ -50,7 +50,6 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 import { NgClass } from "@angular/common";
 import { MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
@@ -63,11 +62,9 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_generic/filter-value-generic";
 import { TableState } from "@core/models/table_state/table-state";
-import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
 const columnKeysMap = [
@@ -140,9 +137,7 @@ export class UserTableComponent implements OnDestroy {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly userService: UserServiceInterface = inject(UserService);
-  protected readonly resolverService = inject(ResolverService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly dialog = inject(MatDialog);
   readonly apiFilterKeys = this.userService.apiFilterKeys;
   readonly filterHint = inlineFilterHint();
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
@@ -244,19 +239,6 @@ export class UserTableComponent implements OnDestroy {
 
   onClickUsername(user: UserData): void {
     this.userService.detailsUser.set({ username: user.username, realm: this.userService.selectedUserRealm() });
-  }
-
-  onClickResolver(resolverName: string): void {
-    const resolver = this.resolverService.resolvers().find((r) => r.resolvername === resolverName);
-    if (resolver) {
-      this.dialog.open(UserNewResolverComponent, {
-        data: { resolver },
-        width: "auto",
-        height: "auto",
-        maxWidth: "100vw",
-        maxHeight: "100vh"
-      });
-    }
   }
 
   // Keeps users where every term matches at least one column (AND across terms, OR across columns).

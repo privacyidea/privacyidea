@@ -25,8 +25,7 @@ import { DialogAction } from "@models/dialog";
 @Component({
   selector: "app-realm-delete-attributes-dialog",
   imports: [DialogWrapperComponent],
-  templateUrl: "./realm-delete-attributes-dialog.component.html",
-  styleUrl: "./realm-delete-attributes-dialog.component.scss"
+  templateUrl: "./realm-delete-attributes-dialog.component.html"
 })
 export class RealmDeleteAttributesDialogComponent extends AbstractDialogComponent<
   RealmDeleteAttributesDialogData,

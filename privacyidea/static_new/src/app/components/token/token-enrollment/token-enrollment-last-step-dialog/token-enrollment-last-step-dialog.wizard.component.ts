@@ -20,7 +20,6 @@ import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -43,7 +42,6 @@ import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-
 @Component({
   selector: "app-token-enrollment-last-step-dialog-wizard",
   imports: [
-    MatDialogContent,
     AsyncPipe,
     OtpKeyComponent,
     TiqrEnrollUrlComponent,

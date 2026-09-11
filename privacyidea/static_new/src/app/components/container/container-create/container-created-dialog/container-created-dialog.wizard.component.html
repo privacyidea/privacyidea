@@ -16,20 +16,19 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-dialog-content>
+<app-dialog-wrapper
+  (actionTriggered)="onAction()"
+  [actions]="actions"
+  [showCloseButton]="false"
+  i18n-title="@@container.containerSuccessfully"
+  title="Container Successfully Created"
+  width="l">
   @let postTopHtml = postTopHtml$ | async;
   @if (postTopHtml?.hasContent) {
     <div
       [innerHTML]="postTopHtml?.sanitized"
       class="margin-top-16"></div>
   } @else {
-    <div class="margin-bottom-16">
-      <h3
-        class="margin-8"
-        i18n="@@container.containerSuccessfully"
-        >Container Successfully Created</h3
-      >
-    </div>
     <span i18n="@@container.containerWasSuccessfullyCreated"
       >The container was successfully created with serial number
       <a
@@ -54,7 +53,9 @@
     }
     @if (!postTopHtml?.hasContent && data()?.response?.result?.value?.container_url?.value) {
       <div class="flex-column gap-16">
-        <p i18n="@@container.pleaseScanQrCode"
+        <p
+          class="dialog-prose"
+          i18n="@@container.pleaseScanQrCode"
           >Please scan the QR code with the privacyIDEA Authenticator App or click this
           <a href="{{ data()?.response?.result?.value?.container_url?.value }}">link</a> on your smartphone to register
           your container. It will send the missing registration data to the configured endpoint.</p
@@ -66,15 +67,4 @@
   <div
     [innerHTML]="postBottomHtml$ | async"
     class="margin-bottom-16"></div>
-</mat-dialog-content>
-
-<mat-dialog-actions>
-  <button
-    (click)="authService.logout()"
-    class="action-button-primary button-width-s"
-    mat-button
-    mat-dialog-close
-    i18n="@@common.logout"
-    >Logout</button
-  >
-</mat-dialog-actions>
+</app-dialog-wrapper>
