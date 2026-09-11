@@ -1040,6 +1040,32 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
         self.assertTrue(is_user_locked(self.user))
 
+    def test_returning_to_dry_run_keeps_the_count_floor(self):
+        # A policy switched back to dry-run mid-enforcement is asked what it *would* do right now, and right now it
+        # would still be counting from its floor. Counting the discarded trial failures again would report a lock
+        # the enforcing policy would never have applied.
+        policy, _stages = self._make_policy(name="dry_again", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+
+        update_conditional_access_policy(policy.id, dry_run=False)
+        release_ca_connection()
+        self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user),
+                                                                      AuthEventType.MFA_FAIL).outcomes)
+
+        update_conditional_access_policy(policy.id, dry_run=True)
+        release_ca_connection()
+        self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user),
+                                                                      AuthEventType.MFA_FAIL).outcomes)
+        self.assertFalse(is_user_locked(self.user))
+
+        # The floor still only hides what came before it: failures seeded now do reach the threshold, and the
+        # trial reports the lock it would have applied.
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        self.assertEqual(1, len(outcomes))
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcomes[0].action_type)
+        self.assertFalse(is_user_locked(self.user))
+
     def test_dry_run_source_ip_policy_records_a_outcome_without_blocking(self):
         ip = "10.10.0.5"
         self._make_policy(name="dry_ip", counter_type=AuthEventType.PASSWORD_FAIL, dry_run=True,
