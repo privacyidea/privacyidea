@@ -1019,11 +1019,11 @@ class PushTokenClass(TokenClass):
             # answer) - never on enrollment or firebase token updates. The smartphone sends only the serial, so
             # the owner is resolved from it, and the answer is refused before the signature is verified.
             #
-            # A silent rejection carries no detail, because an ordinary failed answer here carries none either -
-            # the opposite of /validate/*, where every failure has one and a silent rejection needs the generic
-            # message to have one too. Configured wording is surfaced on both. PUSH_ANSWER_REJECTION states that
-            # shape once, for the pre-check below - the only thing that reports a restriction, and only on the
-            # answers it refuses. A restriction *this* answer trips speaks from the next one.
+            # PUSH_ANSWER_REJECTION describes how this endpoint answers a refusal - an ordinary failed answer here
+            # carries no detail at all, unlike /validate/* - and the pre-check resolves the wording against it, so
+            # rejection.message is already what to say and nothing here decides it again. The pre-check is the only
+            # thing that reports a restriction, and only on the answers it refuses: a restriction *this* answer
+            # trips speaks from the next one.
             from privacyidea.api.lib.conditional_access import (PUSH_ANSWER_REJECTION,
                                                                 conditional_access_rejection)
             rejection = conditional_access_rejection(cls._resolve_token_owner(serial), PUSH_ANSWER_REJECTION)

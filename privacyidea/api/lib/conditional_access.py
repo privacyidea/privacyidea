@@ -63,7 +63,7 @@ survives; the rest of the detail is collapsed, which is what those actions are f
 """
 import functools
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from collections.abc import Callable
 from typing import Any
 
@@ -136,7 +136,9 @@ class Rejection:
 
     :ivar event_type: how the authentication log classifies the rejection
     :ivar audit_info: the free-text reason for the audit entry
-    :ivar message: the error message the triggering stage configured, or ``None`` to stay generic
+    :ivar message: what the refused request is told. :func:`_evaluate_rejection` fills in the wording the
+        triggering stage configured, or ``None`` where it configured none; the gate then resolves that against
+        its endpoint's shape (:func:`_rejection_wording`), so what a caller receives is already what to say.
     :ivar other_info: extra fields for the authentication-log row, or ``None``
     """
     event_type: AuthEventType
@@ -253,7 +255,7 @@ def conditional_access_precheck(user: User, rejection_value: Any = False) -> Res
     rejection = conditional_access_rejection(user, shape)
     if rejection is None:
         return None
-    return _rejection_response(shape, _rejection_wording(shape, rejection.message))
+    return _rejection_response(shape, rejection.message)
 
 
 def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection | None:
@@ -266,12 +268,11 @@ def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection
     those that can; ``/ttype/push`` is the one that cannot, since the push token hands its result back to
     :func:`~privacyidea.api.ttype.token` as a ``(bool, dict)`` pair that ``prepare_result`` renders.
 
-    Rendering is the caller's because "what an ordinary failure looks like" differs per endpoint, and looking like
-    one is the whole requirement. On ``/validate/*`` every failure carries a ``detail``, so a silent rejection
-    carries the generic message rather than nothing. On ``/ttype/push`` an ordinary failed answer carries no
-    detail at all, so a silent rejection must carry none either - putting the generic message there would be
-    exactly the tell that including it on ``/validate`` avoids. Only wording an admin configured is surfaced
-    unconditionally, on both.
+    Only the envelope is the caller's, because "what an ordinary failure looks like" differs per endpoint and
+    looking like one is the whole requirement. *What it says* is resolved here from *shape*
+    (:func:`_rejection_wording`), so the returned :attr:`Rejection.message` is already the wording this endpoint
+    answers with - carried straight into the response by whoever renders it, with no second reading of the same
+    rule at the call site.
 
     :param user: the identity to gate on
     :param shape: how this endpoint answers a refusal (see :class:`RejectionShape`)
@@ -289,8 +290,10 @@ def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection
     if rejection.message:
         # Claimed before the post-policies run, so hide_specific_error_message shows this error message rather than
         # its own. A rejection *is* the whole message, so there is no failure reason it could carry past the mask.
+        # Claimed from the configured wording, before the endpoint's stand-in for a silent rejection is filled in
+        # below: a generic rejection is the ordinary failure and must be masked along with every other one.
         get_ca_context().claim_message(rejection.message)
-    return rejection
+    return replace(rejection, message=_rejection_wording(shape, rejection.message))
 
 
 def _rejection_wording(shape: RejectionShape, message: str | None) -> str | None:
@@ -564,7 +567,9 @@ def _reject_restricted_login(user: User) -> None:
     # AUTHENTICATE rather than AUTHENTICATE_WRONG_CREDENTIALS: the credential this request carried may well have
     # been correct - it was never checked. A rejection is refused for a reason of conditional access's own, so it
     # takes the generic authentication-failure id and claims nothing about the credential.
-    raise AuthError(rejection.message or GENERIC_AUTH_FAILURE, id=Error.AUTHENTICATE)
+    # The fallback is resolved to a str, not left lazy: auth_error hands the message to the audit log, which
+    # stores only str and would drop the whole entry on a lazy proxy.
+    raise AuthError(rejection.message or str(GENERIC_AUTH_FAILURE), id=Error.AUTHENTICATE)
 
 
 def conditional_access_login_gate() -> Callable[[Callable], Callable]:
