@@ -1,4 +1,6 @@
-// The user roles the authentication log records, and how each is shown. Shared by every view that displays one -
+import { UserRole } from "@core/models/user_role/user-role";
+
+// How each of the user roles the authentication log records is shown. Shared by every view that displays one -
 // the authentication log's filter menu and role badge, and the locked-users table, whose rows carry the same
 // value - so a role cannot come out named one thing in one table and another in the next.
 //
@@ -12,7 +14,7 @@ export interface UserRoleBadge {
 }
 
 export const USER_ROLE_CONFIG: readonly {
-  value: string;
+  value: UserRole;
   filterLabel: string;
   badge?: UserRoleBadge;
 }[] = [
@@ -40,9 +42,6 @@ export const USER_ROLE_CONFIG: readonly {
 const USER_ROLE_BADGES: Record<string, UserRoleBadge> = Object.fromEntries(
   USER_ROLE_CONFIG.filter((role) => role.badge).map((role) => [role.value, role.badge!])
 );
-
-// The value of user_role a local database admin carries, in the log and on their lock row alike.
-export const ADMIN_INTERNAL_ROLE = "admin-internal";
 
 export function userRoleBadge(value: string | null | undefined): UserRoleBadge | null {
   return (value && USER_ROLE_BADGES[value]) || null;

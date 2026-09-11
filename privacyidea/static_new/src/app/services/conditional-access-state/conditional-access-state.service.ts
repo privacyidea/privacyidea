@@ -21,8 +21,8 @@ import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, Wri
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
+import { ADMIN_INTERNAL_ROLE } from "@core/models/user_role/user-role";
 import { environment } from "@env/environment";
-import { ADMIN_INTERNAL_ROLE } from "@app/components/logs/user-roles";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -86,8 +86,13 @@ export type ResetUserLockRequest =
       realm: string;
       resolver: string;
     }
-  // A local database admin, who has neither realm nor resolver nor uid: the login name is the whole identity,
-  // and the role is what tells the server to look for one.
+  // A local database admin, who has neither realm nor resolver: the login name is the whole identity, and the role
+  // is what tells the server to look for one. A caller holding the row sends its uid and gets that row removed;
+  // one holding only a name sends the login, and every spelling of it is cleared - they all bar the same account.
+  | {
+      uid: string;
+      userRole: typeof ADMIN_INTERNAL_ROLE;
+    }
   | {
       login: string;
       userRole: typeof ADMIN_INTERNAL_ROLE;
@@ -300,7 +305,9 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
   resetUserLock(request: ResetUserLockRequest): Observable<boolean> {
     const payload =
       "userRole" in request
-        ? { user: request.login, user_role: request.userRole }
+        ? "uid" in request
+          ? { user_id: request.uid, user_role: request.userRole }
+          : { user: request.login, user_role: request.userRole }
         : "uid" in request
           ? { user_id: request.uid, realm: request.realm, resolver: request.resolver }
           : { user: request.login, realm: request.realm, resolver: request.resolver };

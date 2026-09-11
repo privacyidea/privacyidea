@@ -288,6 +288,25 @@ describe("ConditionalAccessStateService", () => {
     expect(result).toBe(false);
   });
 
+  it("resetUserLock for a local admin sends the row key as user_id with the role", () => {
+    let result: boolean | undefined;
+    service.resetUserLock({ uid: "superadmin", userRole: "admin-internal" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user" && r.method === "DELETE");
+    // No realm or resolver: a local admin has neither, and the key alone says which row to remove.
+    expect(req.request.body).toEqual({ user_id: "superadmin", user_role: "admin-internal" });
+    req.flush(MockPiResponse.fromValue(true));
+    expect(result).toBe(true);
+  });
+
+  it("resetUserLock for a local admin named only by login sends the login with the role", () => {
+    let result: boolean | undefined;
+    service.resetUserLock({ login: "superadmin", userRole: "admin-internal" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user" && r.method === "DELETE");
+    expect(req.request.body).toEqual({ user: "superadmin", user_role: "admin-internal" });
+    req.flush(MockPiResponse.fromValue(true));
+    expect(result).toBe(true);
+  });
+
   it("resetUserLock returns false and notifies on error", () => {
     let result: boolean | undefined;
     service.resetUserLock({ uid: "uid-1", realm: "realm1", resolver: "reso1" }).subscribe((v) => (result = v));

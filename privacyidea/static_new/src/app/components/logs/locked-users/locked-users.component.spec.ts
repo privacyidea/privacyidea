@@ -45,8 +45,8 @@ import { provideHttpClient } from "@angular/common/http";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { LockedUserEntry } from "@services/conditional-access-state/conditional-access-state.service";
 
-// A local database admin: the login name is the whole identity, so the row carries no resolver, realm or uid
-// of its own and is unlocked by name and role instead.
+// A local database admin: the login name is the whole identity, so it stands in uid with no resolver or realm
+// beside it, and the role is what tells that row apart from an ordinary user's.
 const adminEntry: LockedUserEntry = {
   resolver: "",
   uid: "superadmin",
@@ -156,6 +156,17 @@ describe("LockedUsersComponent", () => {
       expect(filter.get("realm")).toBe("myrealm");
       expect(filter.get("resolver")).toBe("ldapResolver");
     });
+
+    it("filters a local admin by login name and role, without the realm and resolver they do not have", () => {
+      component.showAuthenticationLog(adminEntry);
+      const filter = authLogService.authenticationLogFilter().filterMap;
+      expect(filter.get("username")).toBe("superadmin");
+      expect(filter.get("user_role")).toBe("admin-internal");
+      // Sent empty these would filter on an empty string; the login name alone would pull in a same-named
+      // ordinary user's events.
+      expect(filter.has("realm")).toBe(false);
+      expect(filter.has("resolver")).toBe(false);
+    });
   });
 
   it("dataSource is empty when the resource has no value", () => {
@@ -253,7 +264,7 @@ describe("LockedUsersComponent", () => {
     expect(casService.lockedUsersResource.reload).toHaveBeenCalled();
   });
 
-  it("unlocks a local admin by login and role, who has no uid or realm to be named by", () => {
+  it("unlocks a local admin by the key of the listed row and the role, having no realm to be named by", () => {
     casService.setLockedUsers([adminEntry]);
     component.selection.set([adminEntry]);
     const dialogRef = new MockMatDialogRef<unknown, boolean>();
@@ -264,7 +275,7 @@ describe("LockedUsersComponent", () => {
     dialogRef.close(true);
 
     expect(casService.resetUserLock).toHaveBeenCalledWith({
-      login: adminEntry.username,
+      uid: adminEntry.uid,
       userRole: "admin-internal"
     });
   });
