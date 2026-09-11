@@ -539,11 +539,11 @@ describe("SubscriptionsWidgetComponent", () => {
   });
 
   it("should return null for components without a landing-page slug", () => {
-    expect(component.componentLink(status({ application: "unknown-app" }))).toBeNull();
+    expect(component["componentLink"](status({ application: "unknown-app" }))).toBeNull();
   });
 
   it("should report no note for a component without an expiry date", () => {
-    expect(component.expiryNote(status({ application: "freeradius", subscription: "none" }))).toBe(
+    expect(component["expiryNote"](status({ application: "freeradius", subscription: "none" }))).toBe(
       "no subscription"
     );
   });

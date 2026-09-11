@@ -19,6 +19,7 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
@@ -32,6 +33,7 @@ import {
 } from "@services/conditional-access/conditional-access-policy.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { DialogService } from "@services/dialog/dialog.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import {
   MockAuthService,
@@ -41,6 +43,7 @@ import {
   MockRouter,
   MockSmtpService
 } from "@testing/mock-services";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { BehaviorSubject } from "rxjs";
 import { ConditionalAccessEditPageComponent } from "./conditional-access-edit-page.component";
 
@@ -86,6 +89,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
   let policyServiceMock: MockConditionalAccessPolicyService;
   let pendingChangesServiceMock: MockPendingChangesService;
   let routerMock: MockRouter;
+  let dialogServiceMock: MockDialogService;
   let paramMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   beforeEach(async () => {
@@ -100,6 +104,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: SmtpService, useClass: MockSmtpService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: Router, useClass: MockRouter },
         {
           provide: ActivatedRoute,
@@ -114,6 +119,7 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     policyServiceMock = TestBed.inject(ConditionalAccessPolicyService) as unknown as MockConditionalAccessPolicyService;
     pendingChangesServiceMock = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     routerMock = TestBed.inject(Router) as unknown as MockRouter;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
 
     policyServiceMock.policies.set([mockPolicy]);
 
@@ -442,11 +448,73 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
     expect(renderedErrors()).toEqual([]);
   });
 
+  // The dialog asks what to do with a trial's events, so it is the stored policy that decides
+  // whether it appears at all - put the component in the state of one saved in dry run.
+  const storedPolicyInDryRun = () => {
+    component.policy.set({ ...component.policy(), dry_run: true });
+    component.editPolicy.set({ ...component.editPolicy(), dry_run: true });
+  };
+
   it("should toggle dry_run without calling the enable/disable endpoints", () => {
     component.toggleDryRun(true);
     expect(component.editPolicy().dry_run).toBe(true);
     expect(policyServiceMock.enablePolicy).not.toHaveBeenCalled();
     expect(policyServiceMock.disablePolicy).not.toHaveBeenCalled();
+  });
+
+  it("should ask via a dialog before turning dry_run off, and reset counters by default", async () => {
+    storedPolicyInDryRun();
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue({ resetCounters: true });
+
+    await component.toggleDryRun(false);
+
+    expect(dialogServiceMock.openDialogAsync).toHaveBeenCalled();
+    expect(component.editPolicy().dry_run).toBe(false);
+    expect(component.editPolicy().reset_counters_on_enforce).toBe(true);
+  });
+
+  it("should keep the trial's counters when the dialog says so", async () => {
+    storedPolicyInDryRun();
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue({ resetCounters: false });
+
+    await component.toggleDryRun(false);
+
+    expect(component.editPolicy().dry_run).toBe(false);
+    expect(component.editPolicy().reset_counters_on_enforce).toBe(false);
+  });
+
+  it("should leave dry_run on when the dialog is cancelled", async () => {
+    storedPolicyInDryRun();
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue(undefined);
+
+    await component.toggleDryRun(false);
+
+    expect(component.editPolicy().dry_run).toBe(true);
+  });
+
+  // The control flips itself on the change and [checked] reads an unchanged value, so nothing puts
+  // it back: without this the page would show "dry run off" for a policy still in dry run.
+  it("should put the toggle back when the dialog is cancelled", async () => {
+    storedPolicyInDryRun();
+    dialogServiceMock.openDialogAsync = jest.fn().mockResolvedValue(undefined);
+    const toggle = { checked: false } as MatSlideToggle;
+
+    await component.toggleDryRun(false, toggle);
+
+    expect(toggle.checked).toBe(true);
+  });
+
+  // Switching a stored enforcing policy to dry run and back, without saving in between, changes
+  // nothing and accumulates no trial - there is nothing to ask about.
+  it("should not ask when the stored policy is not in dry run", async () => {
+    dialogServiceMock.openDialogAsync = jest.fn();
+    component.toggleDryRun(true);
+
+    await component.toggleDryRun(false);
+
+    expect(dialogServiceMock.openDialogAsync).not.toHaveBeenCalled();
+    expect(component.editPolicy().dry_run).toBe(false);
+    expect(component.editPolicy().reset_counters_on_enforce).toBeUndefined();
   });
 
   it("should call disablePolicy immediately when toggling enabled off", () => {
@@ -598,6 +666,47 @@ describe("ConditionalAccessEditPageComponent — edit mode", () => {
       expect(component.canSave()).toBe(false);
     });
   });
+
+  describe("count floor", () => {
+    const withEnforcedSince = (enforcedSince: string | null, timeWindowSeconds = 600) =>
+      component.editPolicy.update((policy) => ({
+        ...policy,
+        enforced_since: enforcedSince,
+        time_window_seconds: timeWindowSeconds
+      }));
+
+    it("should not report a floor for a policy that counts its full window", () => {
+      withEnforcedSince(null);
+      expect(component.countFloorStillBites()).toBe(false);
+    });
+
+    it("should report a floor set within the time window", () => {
+      withEnforcedSince(new Date(Date.now() - 60_000).toISOString());
+      expect(component.countFloorStillBites()).toBe(true);
+    });
+
+    // What utc_isoformat actually sends: microsecond precision and a "+00:00" offset, where the
+    // Date Time String Format allows three fractional digits. V8 happens to accept it, so this
+    // pins the shape the component must keep handling rather than reproducing a visible bug.
+    it("should read the microsecond precision the server sends", () => {
+      withEnforcedSince(new Date(Date.now() - 60_000).toISOString().replace(/\.(\d{3})Z$/, ".$1789+00:00"));
+      expect(component.countFloorStillBites()).toBe(true);
+    });
+
+    // Once a full window has passed the backend counts the configured width unchanged, so the hint
+    // would only be noise.
+    it("should stop reporting a floor older than the time window", () => {
+      withEnforcedSince(new Date(Date.now() - 3_600_000).toISOString());
+      expect(component.countFloorStillBites()).toBe(false);
+    });
+
+    // The trial simulates against the same floor, so dry run does not hide it.
+    it("should report a floor while the policy is back in dry run", () => {
+      withEnforcedSince(new Date(Date.now() - 60_000).toISOString());
+      component.editPolicy.update((policy) => ({ ...policy, dry_run: true }));
+      expect(component.countFloorStillBites()).toBe(true);
+    });
+  });
 });
 
 describe("ConditionalAccessEditPageComponent — new mode", () => {
@@ -617,6 +726,7 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: SmtpService, useClass: MockSmtpService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: Router, useClass: MockRouter },
         {
           provide: ActivatedRoute,
@@ -652,6 +762,21 @@ describe("ConditionalAccessEditPageComponent — new mode", () => {
 
   it("should show the create title", () => {
     expect(component.title()).toEqual("Create Conditional-Access Policy");
+  });
+
+  // A policy that does not exist yet has no trial to reset, so switching dry run on and off again
+  // while drafting it must not raise the question - and must not send a choice the create call
+  // would ignore anyway.
+  it("should not ask about the counters while creating a policy", async () => {
+    const dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    dialogServiceMock.openDialogAsync = jest.fn();
+    component.toggleDryRun(true);
+
+    await component.toggleDryRun(false);
+
+    expect(dialogServiceMock.openDialogAsync).not.toHaveBeenCalled();
+    expect(component.editPolicy().dry_run).toBe(false);
+    expect(component.editPolicy().reset_counters_on_enforce).toBeUndefined();
   });
 
   it("should not show the enabled toggle affordance calls without an id", () => {

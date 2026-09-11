@@ -29,6 +29,7 @@ export type AdminRealms = string[];
 export type Realms = Record<string, Realm>;
 
 export const REALM_CUSTOM_ATTRIBUTES_ERROR_CODE = 908;
+export const REALM_CA_POLICY_REFERENCE_ERROR_CODE = 909;
 
 export interface Realm {
   default: boolean;
@@ -82,7 +83,11 @@ export interface RealmServiceInterface {
     resolvers: { name: string; priority?: number | null }[]
   ): Observable<PiResponse<number>>;
 
-  deleteRealm(realm: string, deleteCustomAttributes?: boolean): Observable<PiResponse<number>>;
+  deleteRealm(
+    realm: string,
+    deleteCustomAttributes?: boolean,
+    confirmCaPolicies?: boolean
+  ): Observable<PiResponse<number>>;
 
   setDefaultRealm(realm: string): Observable<PiResponse<number>>;
 }
@@ -261,13 +266,21 @@ export class RealmService implements RealmServiceInterface {
       );
   }
 
-  deleteRealm(realm: string, deleteCustomAttributes = false): Observable<PiResponse<number>> {
+  deleteRealm(
+    realm: string,
+    deleteCustomAttributes = false,
+    confirmCaPolicies = false
+  ): Observable<PiResponse<number>> {
     const encodedRealm = encodeURIComponent(realm);
     const url = `${environment.proxyUrl}/realm/${encodedRealm}`;
 
+    const params: Record<string, number> = {};
+    if (deleteCustomAttributes) params["delete_custom_attributes"] = 1;
+    if (confirmCaPolicies) params["confirm_ca_policies"] = 1;
+
     return this.http.delete<PiResponse<number>>(url, {
       headers: this.authService.getHeaders(),
-      params: deleteCustomAttributes ? { delete_custom_attributes: 1 } : {}
+      params
     });
   }
 

@@ -51,6 +51,7 @@ const lockStatus = (): LockedUserEntry => ({
   permanent: false,
   lock_expires_at: "2030-01-01T10:00:00Z",
   seconds_remaining: 120,
+  user_role: "user",
   lock_cause: "POLICY",
   locked_at: "2030-01-01T09:58:00Z",
   error_message: null
@@ -285,6 +286,25 @@ describe("ConditionalAccessStateService", () => {
     expect(req.request.body).toEqual({ user: "alice", realm: "realm1", resolver: "reso1" });
     req.flush(MockPiResponse.fromValue(false));
     expect(result).toBe(false);
+  });
+
+  it("resetUserLock for a local admin sends the row key as user_id with the role", () => {
+    let result: boolean | undefined;
+    service.resetUserLock({ uid: "superadmin", userRole: "admin-internal" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user" && r.method === "DELETE");
+    // No realm or resolver: a local admin has neither, and the key alone says which row to remove.
+    expect(req.request.body).toEqual({ user_id: "superadmin", user_role: "admin-internal" });
+    req.flush(MockPiResponse.fromValue(true));
+    expect(result).toBe(true);
+  });
+
+  it("resetUserLock for a local admin named only by login sends the login with the role", () => {
+    let result: boolean | undefined;
+    service.resetUserLock({ login: "superadmin", userRole: "admin-internal" }).subscribe((v) => (result = v));
+    const req = httpMock.expectOne((r) => r.url === BASE + "lock/user" && r.method === "DELETE");
+    expect(req.request.body).toEqual({ user: "superadmin", user_role: "admin-internal" });
+    req.flush(MockPiResponse.fromValue(true));
+    expect(result).toBe(true);
   });
 
   it("resetUserLock returns false and notifies on error", () => {

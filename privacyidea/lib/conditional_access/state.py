@@ -26,15 +26,15 @@ restriction by administrator decision and clearing single entries — shared by 
 REST API (``/conditionalaccess``) and the ``pi-manage conditionalaccess`` CLI, so
 both go through one implementation.
 """
-import ipaddress
 import logging
 from datetime import datetime, timedelta
 
 from sqlalchemy import and_, delete, false, func, or_, select, ColumnElement
 
-from privacyidea.lib.conditional_access.authentication_event_types import RestrictionCause
+from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole, RestrictionCause
 from privacyidea.lib.conditional_access.authentication_log import match_condition
-from privacyidea.lib.conditional_access.engine import get_user_lock, is_ip_never_block
+from privacyidea.lib.conditional_access.engine import (LockSubject, canonical_block_identifier, get_user_lock,
+                                                       is_ip_never_block)
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
@@ -48,12 +48,15 @@ DEFAULT_PAGE_SIZE = 15
 
 # The lock state is derived from lock_expires_at vs. now: permanent means NULL, temporary means the expiry is
 # still ahead (in force, lifts on its own), and expired means it has passed (a stale record, no longer enforced).
+#: The states a user-lock record can be in, as accepted by the ``states`` query parameter.
 LOCK_STATES = ("permanent", "temporary", "expired")
 
 # Who imposed the restriction now in force; see :class:`RestrictionCause`.
+#: Who imposed the restriction now in force, as accepted by the ``causes`` query parameter.
 LOCK_CAUSES = tuple(cause.value for cause in RestrictionCause)
 
 # Columns the locked-users list may be sorted by (any other value falls back to locked_at).
+#: The columns a paginated locked-users query may sort by, keyed by the name the API accepts.
 SORTABLE_COLUMNS = {
     "username": UserLockState.username,
     "realm": UserLockState.realm,
@@ -123,6 +126,10 @@ def _locked_user_dict(row: UserLockState, now: datetime) -> dict:
         "realm": row.realm,
         # Denormalized login captured at lock time (survives resolver deletion).
         "username": row.username,
+        # Which kind of principal this row locks. A local database admin is keyed by login name alone, so their row
+        # carries an empty resolver and realm - this is what says the row means that, rather than a user whose
+        # realm has gone missing.
+        "user_role": row.user_role,
         "permanent": row.lock_expires_at is None,
         "lock_expires_at": row.lock_expires_at,
         "seconds_remaining": _seconds_remaining(row.lock_expires_at, now),
@@ -160,6 +167,16 @@ def _visibility_condition(scopes: list) -> ColumnElement[bool]:
     Realm, resolver, uid and username are all enforced (username via the
     denormalized ``UserLockState.username`` column, honoring the policy's
     ``user_case_insensitive`` option like the auth log).
+
+    A scope that names no ``user_roles`` does not reach the rows of a **local database administrator**. Realm,
+    resolver and user are userstore terms, and none of them describes such an account, whose row carries a login
+    name and nothing else, so a boundary drawn only in those terms does not contain one. Without this, a policy
+    scoped to a user name would reach a local admin of that name - by coincidence of the shared ``username``
+    column rather than by anyone's intent, and the admin policy the boundary comes from has no way to say
+    otherwise, carrying only realm, resolver and user (see
+    :func:`~privacyidea.lib.policies.helper.get_policy_visibility_scopes`). A local admin's rows are therefore
+    reachable only by a caller that is unscoped altogether, or by a scope naming the role outright - which is how
+    a scoped admin still sees their **own** entries.
     """
     scope_conditions = []
     for scope in scopes:
@@ -176,6 +193,12 @@ def _visibility_condition(scopes: list) -> ColumnElement[bool]:
                     [name.lower() for name in scope.usernames]))
             else:
                 dimensions.append(UserLockState.username.in_(scope.usernames))
+        if scope.user_roles:
+            dimensions.append(UserLockState.user_role.in_([str(role) for role in scope.user_roles]))
+        elif dimensions:
+            # Stated as "not a local admin" rather than "is a user", as the auth log states it: this column is
+            # never null, but the boundary is about the one role that must stay out of reach, not about the rest.
+            dimensions.append(UserLockState.user_role != str(AuthLogUserRole.ADMIN_INTERNAL))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
     if not scope_conditions:
@@ -402,13 +425,121 @@ def lock_user(user: User, duration_seconds: int | None = None, now: datetime | N
 
 
 @log_with(log)
+def lock_internal_admin(login: str, duration_seconds: int | None = None, now: datetime | None = None) -> dict:
+    """
+    Lock the local database admin *login* by administrator decision, and return the new lock in the shape of
+    :func:`_locked_user_dict`. The local-admin counterpart of :func:`lock_user`, with the same authoritative,
+    non-defensive write and the same permanent default; see there.
+
+    A local admin has no ``(resolver, uid, realm)`` to key a row on - only a login name - so the row is keyed as
+    :class:`~privacyidea.lib.conditional_access.engine.LockSubject` keys it, and under the spelling the ``admin``
+    table holds rather than the one that was typed: the authentication path counts and locks that name, so a lock
+    written under any other would never be met (see
+    :func:`~privacyidea.lib.auth.canonical_db_admin_login`).
+
+    Only an existing account can be locked. Locking a name that is not one would leave a row nothing ever reads,
+    which for a management call is a silent no-op rather than the refusal it should be - and unlike a userstore
+    user, whose realm may simply have gone away, there is exactly one place a local admin can be looked up.
+
+    :param login: the login name of the local database admin to lock
+    :param duration_seconds: how long the lock lasts, or ``None`` for a permanent lock
+    :param now: the reference time; defaults to :func:`utc_now`
+    :raises ParameterError: if no such local admin exists, or the duration is not a positive integer
+    """
+    # Deferred: lib.auth pulls in the token machinery, and importing it at module level would risk an
+    # import-order cycle during app startup.
+    from privacyidea.lib.auth import get_db_admin
+    # One lookup answers both questions this needs: whether the account exists, and the spelling it is stored
+    # under.
+    admin = get_db_admin(login) if login else None
+    if admin is None:
+        raise ParameterError(f"Cannot lock {login!r}: there is no local administrator of that name.")
+    subject = LockSubject.for_internal_admin(admin.username)
+    moment = now if now is not None else utc_now()
+    lock_expires_at = _restriction_expiry(duration_seconds, moment)
+    with guarded_write(f"the manual lock for {subject}", reraise=True):
+        session = get_ca_session()
+        state = session.get(UserLockState, subject.state_key)
+        if state is None:
+            state = UserLockState(resolver=subject.resolver, uid=subject.uid, realm=subject.realm,
+                                  user_role=str(AuthLogUserRole.ADMIN_INTERNAL))
+            session.add(state)
+        state.username = subject.username
+        state.lock_expires_at = lock_expires_at
+        state.lock_cause = RestrictionCause.MANUAL
+    log.info(f"Locked {subject} by administrator decision "
+             f"({'permanently' if lock_expires_at is None else f'until {lock_expires_at}'}).")
+    return _locked_user_dict(state, moment)
+
+
+@log_with(log)
+def unlock_internal_admin(login: str, visibility_scopes: list | None = None) -> bool:
+    """
+    Delete the lock of the local database admin named *login*, whichever spelling of that name it stands under.
+    Returns ``True`` if a row was removed, ``False`` if there was no lock. The by-name counterpart of
+    :func:`unlock_internal_admin_by_uid`, which removes one row by its own key; this is for a caller holding a
+    typed name rather than a listed row, such as ``pi-manage conditionalaccess unlock-user --admin``.
+
+    Both the canonical spelling and the one given are matched, and for the same reason the lock is written under
+    the canonical one: where the ``admin`` table folds case, every spelling authenticates the same account, so
+    every row standing under one of them bars that account from logging in and all of them have to go. Matching
+    only the canonical spelling would strand a row whose account was since removed and recreated under a different
+    one - and a lock outliving its admin is exactly the row an operator needs to be able to clear.
+
+    ``visibility_scopes`` restricts the delete to the caller's authorization boundary as elsewhere. A local admin's
+    row carries no realm or resolver, so a realm- or resolver-scoped administrator matches none of it and cannot
+    lift such a lock - which is the intended answer: the account is outside their boundary.
+    """
+    # Deferred for the same reason as in lock_internal_admin.
+    from privacyidea.lib.auth import canonical_db_admin_login
+    # dict.fromkeys rather than a set: order is irrelevant to the query but keeps the log line stable, and the two
+    # collapse to one whenever the name was already spelled as the account is.
+    logins = [name for name in dict.fromkeys((canonical_db_admin_login(login), login)) if name]
+    if not logins:
+        return False
+    return _delete_internal_admin_locks(logins, visibility_scopes)
+
+
+@log_with(log)
+def unlock_internal_admin_by_uid(uid: str, visibility_scopes: list | None = None) -> bool:
+    """
+    Delete the one local-admin lock row keyed on *uid*. Returns ``True`` if it was removed, ``False`` if there was
+    no such row.
+
+    The exact-key counterpart of :func:`unlock_internal_admin`, for a caller that already holds the row - the
+    locked-users table, which lists it and then acts on what it listed. Nothing is derived and nothing else is
+    touched: the name is not looked up in the ``admin`` table, so a row cannot be missed because the account it
+    belongs to is gone or now spelled differently, and a second row under a second spelling is left alone rather
+    than removed along with the one that was asked for.
+    """
+    if not uid:
+        return False
+    return _delete_internal_admin_locks([uid], visibility_scopes)
+
+
+def _delete_internal_admin_locks(uids: list[str], visibility_scopes: list | None) -> bool:
+    """
+    Delete the local-admin lock rows keyed on any of *uids*, within *visibility_scopes*. Shared by the two
+    unlock entry points, which differ only in how they arrive at the names.
+    """
+    # The empty resolver and realm a local admin's row carries are taken from the subject rather than spelled out
+    # again here, so the two stay one definition; only the uid differs between the names.
+    subject = LockSubject.for_internal_admin(uids[0])
+    conditions = [UserLockState.resolver == subject.resolver, UserLockState.realm == subject.realm,
+                  UserLockState.uid.in_(uids)]
+    if visibility_scopes is not None:
+        conditions.append(_visibility_condition(visibility_scopes))
+    return _delete_and_commit(delete(UserLockState).where(*conditions)) > 0
+
+
+@log_with(log)
 def block_ip(ip: str, duration_seconds: int | None = None, now: datetime | None = None) -> dict:
     """
     Block *ip* by administrator decision, replacing whatever block is currently on record, and return the new
     block in the shape of :func:`_blocklist_dict`. The user-lock counterpart is :func:`lock_user`, and the same
     authoritative-write reasoning applies.
 
-    A never-block address (loopback, or one covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is **refused
+    A never-block address (loopback, or one covered by ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``) is **refused
     loudly**. The engine skips such an address silently, which is right for an automatic action - it must not
     break an authentication over an allowlisted proxy - but wrong here: an administrator who asks for a block
     and gets a silent no-op has no way to tell it apart from success.
@@ -419,17 +550,17 @@ def block_ip(ip: str, duration_seconds: int | None = None, now: datetime | None 
     :raises ParameterError: if the IP is unparsable or on the never-block list, or the duration is not a
         positive integer
     """
-    try:
-        # Store the canonical form: an IPv6 address has many spellings, while the engine looks blocks up by
-        # exact string against the request's client IP, which is already canonical. Keeping the typed spelling
-        # would file a block the pre-check never matches, and let a later engine block of the same address add
-        # a second row for it.
-        ip = str(ipaddress.ip_address(ip))
-    except ValueError:
+    # Stored the way the pre-check will look it up rather than the way it was typed: an IPv6 address has many
+    # spellings and the engine looks blocks up by primary key, so the typed spelling would file a block that
+    # never matches - and let a later engine block of the same address add a second row for it. This is also
+    # the validation: an identifier that is no IP address at all cannot be canonicalized.
+    canonical = canonical_block_identifier(ip)
+    if canonical is None:
         raise ParameterError(f"{ip!r} is not a valid IP address.")
+    ip = canonical
     if is_ip_never_block(ip):
-        raise ParameterError(f"{ip} is on the never-block list (loopback, or CONDITIONAL_ACCESS_NEVER_BLOCK) "
-                             f"and cannot be blocked.")
+        raise ParameterError(f"{ip} is on the never-block list (loopback, or "
+                             f"PI_CONDITIONAL_ACCESS_NEVER_BLOCK) and cannot be blocked.")
     moment = now if now is not None else utc_now()
     block_expires_at = _restriction_expiry(duration_seconds, moment)
     with guarded_write(f"the manual IP block for {ip}", reraise=True):
@@ -527,8 +658,14 @@ def remove_blocklist_entry(entry: str) -> bool:
     """
     Remove a single blocklist entry by its identifier (a source IP today).
     Returns ``True`` if a row was removed, ``False`` if there was no entry.
+
+    Both the canonical spelling of *entry* and *entry* as it was typed are removed: canonicalizing alone
+    would leave a row some other path filed under a different spelling undeletable, and it is the same
+    address either way (see
+    :func:`~privacyidea.lib.conditional_access.engine.canonical_block_identifier`).
     """
-    return _delete_and_commit(delete(BlockList).where(BlockList.ip == entry)) > 0
+    identifiers = {entry, canonical_block_identifier(entry) or entry}
+    return _delete_and_commit(delete(BlockList).where(BlockList.ip.in_(identifiers))) > 0
 
 
 @log_with(log)

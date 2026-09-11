@@ -15,6 +15,7 @@ Start to read about authentication to the API at :ref:`rest_auth`.
    api/auth
    api/validate
    api/authentication_log
+   api/conditional_access
    api/system
    api/tokengroup
    api/serviceid

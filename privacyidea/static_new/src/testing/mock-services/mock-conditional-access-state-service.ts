@@ -63,6 +63,7 @@ export class MockConditionalAccessStateService implements ConditionalAccessState
         permanent: request.duration_seconds == null,
         lock_expires_at: null,
         seconds_remaining: request.duration_seconds ?? null,
+        user_role: "user",
         lock_cause: "MANUAL",
         locked_at: "",
         error_message: null

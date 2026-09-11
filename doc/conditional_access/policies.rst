@@ -19,9 +19,16 @@ Policy settings
 
 **priority**
 
-  A unique positive number. Policies are evaluated in ascending order and the
-  first one that denies a request decides it, so a lower number takes
-  precedence. Use *Reorder Policies* in the policy list to change the order.
+  A unique positive number up to 1000000; a lower number takes precedence. This
+  only decides an outcome for the pre-auth ``DENY`` question (see
+  :ref:`conditional_access_evaluation`): policies are consulted in ascending
+  priority order and the first one that denies a request wins, so no
+  lower-priority policy is even evaluated. Every other action - ``LOCK_USER``,
+  ``BLOCK_IP``, the email actions - runs for **every** enabled, matching
+  policy regardless of priority; there, priority only decides whose error
+  message stands when two policies write the same lock or block, see
+  :ref:`conditional_access_policies_lifting`. Use *Reorder Policies* in the
+  policy list to change the order.
 
 **enabled**
 
@@ -89,16 +96,20 @@ Policy settings
 
   * ``USER_REALM`` - the realm of the authenticating user.
   * ``USER_ROLE`` - ``user``, ``admin-internal`` or ``admin-external``.
+  * ``ENDPOINT`` - the endpoint the request authenticated against, see
+    :ref:`authentication_log_endpoints`.
 
   Each condition is either *is one of* or *is not one of* a list of values.
   Several conditions are combined with AND. Conditions also narrow what is
-  counted, not just whether the policy applies.
+  counted, not just whether the policy applies. Pre-authentication they read
+  what the request claims - see :ref:`conditional_access_policies_exceptions`.
 
   .. note:: A request that carries no value for a condition does not match
      *is one of*, but does match *is not one of*. An exception written as
      *realm is not one of [sales]* therefore also covers requests with no
-     realm at all. However, this only happens if the client does not send
-     a realm at all and no default realm is defined.
+     realm at all. For ``USER_REALM`` this happens when the client does not
+     send a realm and no default realm is defined, and always for an internal
+     administrator, who has no realm to carry regardless of that setting.
 
 .. _conditional_access_policies_counting:
 
@@ -164,12 +175,23 @@ over like any other, so *always* reaches up to the next threshold.
 
 .. warning:: A ``DENY`` at threshold 0 refuses **every** request the policy
    covers, whatever the subject has done. Scope it with conditions, and leave
-   yourself a way back in - *user role is not one of [admin-internal]* keeps the
-   internal administrators able to log in. A ``DENY`` stores no state, so none of
-   the ``pi-manage conditionalaccess`` reset commands can lift it; undoing an
-   unscoped one means disabling the policy itself, with
-   ``pi-manage conditionalaccess disable-policy <name>`` if it has locked you out
-   of the WebUI, see :ref:`conditional_access_policies_cli`.
+   yourself a way back in. Either kind can shut you out: a ``user`` policy
+   reaches a local administrator like anybody else (see
+   :ref:`conditional_access_local_admins`), and a ``source_ip`` policy applies
+   to whoever is behind the address. Exempt your own address in
+   ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK``, which is never denied either (see
+   :ref:`conditional_access_never_block`), or write *user role is not one of
+   [admin-internal]* and read what that exemption costs in
+   :ref:`conditional_access_policies_exceptions`. A ``DENY`` stores no
+   state, so none of the ``pi-manage conditionalaccess`` reset commands can
+   lift it; undoing an unscoped one means disabling the policy itself, with
+   ``pi-manage conditionalaccess disable-policy <name>`` if it has locked you
+   out of the WebUI, see :ref:`conditional_access_policies_cli`.
+
+Each stage also has an optional **error message**, the text an end user sees when
+a request is turned away by that stage. It is empty by default, which keeps a
+rejection indistinguishable from any other failed authentication, see
+:ref:`conditional_access_error_messages`.
 
 .. _conditional_access_policies_actions:
 
@@ -198,8 +220,11 @@ Actions
     An email action needs the identifier of an :ref:`smtpserver` configuration
     plus subject and body. Subject and body may contain ``{username}``,
     ``{realm}``, ``{resolver}``, ``{client_ip}``, ``{count}``, ``{threshold}``,
-    ``{stage_id}``, ``{event_type}``, ``{policy}`` and ``{time}``; ``EMAIL_USER``
-    additionally offers ``{email}``, ``{givenname}`` and ``{surname}``.
+    ``{stage_id}``, ``{event_type}``, ``{policy}``, ``{time}``, ``{email}``,
+    ``{givenname}`` and ``{surname}``. The last three come from the resolver
+    and are only filled in when a user was resolved for the request - which
+    ``EMAIL_ADMIN`` on a ``source_ip`` policy is not guaranteed to have,
+    since that target also applies where no user could be resolved at all.
 
 .. _conditional_access_policies_exceptions:
 
@@ -219,6 +244,18 @@ blocked, nor mailed about.
 An exemption for a service account or a monitoring probe therefore goes on each
 policy it needs to be out of - which is also where an administrator reading that
 policy will look for it.
+
+.. warning:: An exemption written as *user role is not one of [admin-internal]*
+   also exempts everyone who merely **claims** to be an internal administrator.
+   The role is read from the login name before any password is checked, so a
+   login naming a local administrator is exempt whoever sent it, and the
+   attempts made under that name are neither refused nor counted by the policy.
+   The most guessable account in the installation is then the one account the
+   policy does not protect. Write the exemption only on the policies that need
+   it, and where an address will do, exempt the address in
+   ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` (see
+   :ref:`conditional_access_never_block`) instead: an address is a fact of the
+   connection rather than a claim of the request.
 
 Which actions a policy may use depends on its target:
 
@@ -273,6 +310,35 @@ Filter the authentication log on *dry run* outcomes to see what a policy would
 have done, then disable dry run once the threshold fits. Dry run can also be
 switched on and off from the command line, which defuses a policy that has
 locked everybody out without losing what it records.
+
+Turning dry run off starts a fresh count by default: events that accumulated
+before are not counted towards the threshold once the policy starts enforcing,
+so a policy that would have locked someone out several times over during the
+trial does not lock them out on the very next request just because it is now
+enforced. Only events from the moment dry run was disabled count towards the
+threshold, until one full time window has passed and the policy counts its
+configured window again.
+
+Switching a policy back to dry run keeps that starting point rather than
+discarding it, so the trial keeps simulating the enforcement it interrupted -
+asked what the policy would do right now, dry run answers with the same count
+the policy would really be using.
+
+The reset can be turned off, both in the WebUI (a dialog appears when disabling
+dry run) and via the API (:http:patch:`/conditionalaccess/policy/(policy_id)`
+with ``reset_counters_on_enforce=false``). The policy then counts its full time
+window from the first enforced request on - for example when the trial was run
+specifically to see how many requests would already be caught, and enforcing on
+the very next matching request is the point.
+
+.. warning:: Counting events from before enforcement began can leave a policy
+   silent rather than strict. A stage fires as the count *reaches* its
+   threshold (unless the action sets *retrigger above threshold*), so a count
+   that already sits above a threshold never reaches it: that stage stays quiet
+   until the old events age out of the time window and the count climbs through
+   the threshold again. On a busy policy the count may not drop below the
+   threshold at all, and a real attack then raises no alarm. This is why the
+   reset is the default.
 
 .. _conditional_access_policies_cli:
 

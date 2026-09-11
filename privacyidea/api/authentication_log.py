@@ -22,12 +22,11 @@ from flask import Blueprint, request, g
 from privacyidea.api.auth import user_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result
-from privacyidea.lib.auth import ROLE
+from privacyidea.lib.auth import canonical_db_admin_login, ROLE
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
-                                                                           outcome_of)
+                                                                           AuthLogUserRole, outcome_of)
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs_paginate,
                                                                    AuthenticationLogVisibilityScope,
-                                                                   AuthLogUserRole,
                                                                    DEFAULT_PAGE_SIZE)
 from privacyidea.lib.conditional_access.authentication_log_statistics import (DEFAULT_STATISTICS_BINS,
                                                                               get_authentication_log_statistics)
@@ -97,7 +96,8 @@ def get_authentication_log_visibility_scopes() -> list[AuthenticationLogVisibili
     are matched by the admin's resolver-stable identity (:func:`~privacyidea.lib.policies.helper.own_entries_scope`),
     so the alternative is dropped rather than widened to a login name if that identity does not resolve. A local
     admin has no such identity at all -- no realm, no resolver -- so their own entries are matched by username plus
-    the internal-admin role, which is what keeps a same-named realm user's entries out.
+    the internal-admin role instead - under the name the ``admin`` table spells, which is the one their rows are
+    recorded under however they typed it at login.
     """
     visibility_scopes = get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
     if g.logged_in_user["role"] != ROLE.ADMIN or visibility_scopes is None:
@@ -106,7 +106,8 @@ def get_authentication_log_visibility_scopes() -> list[AuthenticationLogVisibili
     own_username = g.logged_in_user.get("username")
     if own_username and not own_realm:
         return visibility_scopes + [
-            AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[own_username],
+            AuthenticationLogVisibilityScope(realms=[], resolvers=[],
+                                             usernames=[canonical_db_admin_login(own_username)],
                                              user_roles=[str(AuthLogUserRole.ADMIN_INTERNAL)])]
     own_scope = own_entries_scope(own_username, own_realm)
     if own_scope:

@@ -31,6 +31,8 @@ export interface SessionTimerServiceInterface {
   resetTimer(): void;
 
   startRefreshingRemainingTime(): void;
+
+  stopTimers(): void;
 }
 
 @Injectable({ providedIn: "root" })
@@ -39,6 +41,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private timer: ReturnType<typeof setTimeout> | undefined;
+  private logoutTimer: ReturnType<typeof setTimeout> | undefined;
   private intervalId: ReturnType<typeof setInterval> | undefined;
   private startTime = signal(Date.now());
   private loginTime = signal(Date.now());
@@ -115,9 +118,24 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   }
 
   startRefreshingRemainingTime(): void {
+    this.clearRefreshInterval();
     this.intervalId = setInterval(() => {
       this.currentTime.set(Date.now());
     }, 1000);
+  }
+
+  /**
+   * Disarms everything the ended session armed -- including the delay between the expiry
+   * warning and the logout it triggers, which would otherwise still end a session that began
+   * inside that window.
+   */
+  stopTimers(): void {
+    this.resetTimer();
+    this.timer = undefined;
+    clearTimeout(this.logoutTimer);
+    this.logoutTimer = undefined;
+    this.clearRefreshInterval();
+    this.intervalId = undefined;
   }
 
   private handleSessionTimeout(): void {
@@ -125,7 +143,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
       $localize`:@@common.yourSessionHas:Your session has expired. You will be logged out and redirected to the login page.`
     );
     // Keep notification visible for 1.5s before logging out to ensure the user sees it
-    setTimeout(() => {
+    this.logoutTimer = setTimeout(() => {
       this.clearRefreshInterval();
       this.resetTimer();
       this.authService.logout();

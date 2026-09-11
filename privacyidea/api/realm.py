@@ -430,16 +430,27 @@ def delete_realm_api(realm=None):
     ``delete_custom_attributes=1`` to delete the realm and those attributes
     together.
 
+    Conditional-access policies can still reference this realm. If any such
+    policy exists and ``confirm_ca_policies`` is not set, the deletion is
+    refused with a 400 (error code 909) whose message names the affected
+    policies, so a client can ask for confirmation. Re-send with
+    ``confirm_ca_policies=1`` to delete the realm anyway; the referencing
+    policies are left unchanged.
+
     Requires admin authentication and the policy action :ref:`resolverdelete`.
 
     :param realm: path component, the name of the realm to delete.
     :query delete_custom_attributes: if true, also delete the realm's custom
         user attributes instead of refusing the deletion.
+    :query confirm_ca_policies: if true, delete the realm although
+        conditional-access policies still reference it.
     :reqheader PI-Authorization: authentication token.
     :status 200: database id of the deleted realm in ``result.value``.
     :status 400: a token or container in this realm still has a user assigned,
         or (error code 908) a user in this realm still has custom user
-        attributes and ``delete_custom_attributes`` was not set.
+        attributes and ``delete_custom_attributes`` was not set, or (error code
+        909) a conditional-access policy still references this realm and
+        ``confirm_ca_policies`` was not set.
     :status 404: no realm with the given name exists.
 
     **Example request**:
@@ -468,7 +479,9 @@ def delete_realm_api(realm=None):
        }
     """
     delete_custom_attributes = is_true(get_optional(request.all_data, "delete_custom_attributes"))
-    ret = delete_realm(realm, delete_custom_attributes=delete_custom_attributes)
+    confirm_ca_policies = is_true(get_optional(request.all_data, "confirm_ca_policies"))
+    ret = delete_realm(realm, delete_custom_attributes=delete_custom_attributes,
+                        confirm_ca_policies=confirm_ca_policies)
     g.audit_object.log({"success": ret > 0,
                         "info": realm})
 

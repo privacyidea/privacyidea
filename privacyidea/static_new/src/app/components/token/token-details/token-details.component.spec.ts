@@ -363,6 +363,25 @@ describe("TokenDetailsComponent", () => {
     expect(matDialogOpen).not.toHaveBeenCalled();
   });
 
+  it("reports the restricted token info entries of the token, and nothing without one", () => {
+    component.tokenDetails.set({
+      ...component.tokenDetails(),
+      readonly_info_keys: ["tokenkind", "hashlib"],
+      undeletable_info_keys: ["tokenkind"],
+      settable_info_keys: ["hashlib"]
+    });
+    expect(component.readonlyInfoKeys()).toEqual(["tokenkind", "hashlib"]);
+    expect(component.undeletableInfoKeys()).toEqual(["tokenkind"]);
+    expect(component.settableInfoKeys()).toEqual(["hashlib"]);
+
+    // A token detail without the fields, e.g. from an older server, restricts nothing
+    component.tokenDetails.set({ ...component.tokenDetails(), readonly_info_keys: undefined,
+      undeletable_info_keys: undefined, settable_info_keys: undefined });
+    expect(component.readonlyInfoKeys()).toEqual([]);
+    expect(component.undeletableInfoKeys()).toEqual([]);
+    expect(component.settableInfoKeys()).toEqual([]);
+  });
+
   it("rolloverTokenTypes contains the expected token types", () => {
     const types = component["rolloverTokenTypes"]() as string[];
     expect(types).toContain("totp");

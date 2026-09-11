@@ -414,10 +414,11 @@ class ConditionalAccessContext:
 
         The evaluation counts events over the authentication log, so it must run **after** :meth:`flush` - otherwise
         the count would miss the very event that triggered it. That ordering also keeps the counts from reading a stale
-        snapshot: the pre-checks opened a read transaction, and under MySQL/MariaDB's REPEATABLE READ it would hide
-        rows a concurrent request committed since - but the flush commits, and a commit ends the transaction, so the
-        counts start from a fresh view on every backend. Should a caller ever reach here *without* a preceding commit,
-        that no longer holds and the read view has to be ended explicitly first.
+        snapshot: under MySQL/MariaDB's REPEATABLE READ an open read transaction hides rows a concurrent request
+        committed since it began, and the flush commits, so the counts start from a fresh view on every backend. The
+        pre-check leaves none open either, having released its connection
+        (:func:`~privacyidea.lib.conditional_access.session.release_ca_connection`). Should a caller ever reach here
+        *without* a preceding commit, that no longer holds and the read view has to be ended explicitly first.
 
         Every error is swallowed: this only writes state that the *next* request consults and must never affect the
         response that already completed.
@@ -432,7 +433,9 @@ class ConditionalAccessContext:
         already recorded, so this stays Flask-free and - more importantly - the conditions are evaluated against
         exactly the identity the row states. ``user_role`` is taken off the event for that reason: it was determined
         when the event was staged, from the ``internal_admin`` flag the caller verified, which a local database admin
-        cannot be classified without.
+        cannot be classified without. ``username`` comes off it for the same reason, and is the other half of that
+        identity: a local admin has no user object, so the pair is all a policy can count and lock them by (see
+        :func:`~privacyidea.lib.conditional_access.engine.lock_subject`).
 
         The event types conditional access writes for its own rejections are skipped: evaluating them would let a lock
         feed itself, since a locked user's rejected requests would keep the count above the threshold forever. They are
@@ -453,7 +456,8 @@ class ConditionalAccessContext:
         # Every field the engine evaluates comes off the staged event or this context, so a field left out here is
         # not "unknown" to a condition - it reads as *absent*, which an IN condition treats as no match and a NOT_IN
         # as a match. Omitting the endpoint silently inverted every ENDPOINT condition on this path.
-        context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
+        context = CAContext(user=self.principal.user or None, username=event.username,
+                            source_ip=self.source_ip,
                             user_role=event.user_role, endpoint=event.endpoint,
                             use_default_error_message=self.use_default_error_message)
         try:

@@ -35,6 +35,7 @@ from privacyidea.cli.pimanage import cli as pi_manage
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
 from privacyidea.lib.conditional_access.policy import create_conditional_access_policy
+from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
@@ -43,6 +44,7 @@ from privacyidea.models.conditional_access_policy import (BlockList, Conditional
                                                           ConditionalAccessPolicyStage, UserLockState)
 from privacyidea.models.utils import utc_now
 from .base import CliTestCase
+from ..base import _reset_database
 from ..base import PWFILE
 
 
@@ -901,14 +903,13 @@ def app():
     """Create and configure app instance for testing"""
     app = create_app(config_name="testing", config_file="", silent=True)
     with app.app_context():
-        db.create_all()
+        _reset_database()
 
     yield app
 
     with app.app_context():
         call_finalizers()
         close_all_sessions()
-        db.drop_all()
         db.engine.dispose()
 
 
@@ -1473,6 +1474,46 @@ class PIManageConditionalAccessTestCase(CliTestCase):
                             ["conditionalaccess", "unlock-user", "user", "--realm", "nope", "--resolver", "test"])
         self.assertEqual(0, res.exit_code, res.output)
         self.assertIn("No lock found for user user@nope", res.output, res)
+
+    def test_06_lock_and_unlock_a_local_admin(self):
+        # The only way to lock a local database admin by hand, and the way back in for one a policy locked out:
+        # they have no realm to name them by and no user page to do it from.
+        create_db_admin("cliadmin", password="secret")
+        runner = self.app.test_cli_runner()
+        try:
+            res = runner.invoke(pi_manage,
+                                ["conditionalaccess", "lock-user", "cliadmin", "--admin", "--duration", "600"])
+            self.assertEqual(0, res.exit_code, res.output)
+            self.assertIn("Locked local admin cliadmin", res.output, res)
+            row = UserLockState.query.one()
+            self.assertEqual(("", "cliadmin", ""), (row.resolver, row.uid, row.realm))
+
+            res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "cliadmin", "--admin"])
+            self.assertEqual(0, res.exit_code, res.output)
+            self.assertIn("Unlocked local admin cliadmin", res.output, res)
+            self.assertEqual(0, UserLockState.query.count())
+
+            res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "cliadmin", "--admin"])
+            self.assertIn("No lock found for local admin cliadmin", res.output, res)
+        finally:
+            delete_db_admin("cliadmin")
+
+    def test_06_lock_a_local_admin_that_does_not_exist(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["conditionalaccess", "lock-user", "ghostadmin", "--admin"])
+        self.assertNotEqual(0, res.exit_code, res.output)
+        self.assertEqual(0, UserLockState.query.count())
+
+    def test_06_lock_needs_exactly_one_kind_of_target(self):
+        # --realm and --admin name the principal in two incompatible ways; neither one leaves nothing to act on.
+        runner = self.app.test_cli_runner()
+        for args in (["lock-user", "someone"],
+                     ["lock-user", "someone", "--admin", "--realm", "realm1"],
+                     ["unlock-user", "someone"],
+                     ["unlock-user", "someone", "--admin", "--realm", "realm1"]):
+            res = runner.invoke(pi_manage, ["conditionalaccess"] + args)
+            self.assertEqual(2, res.exit_code, res.output)
+            self.assertIn("--admin", res.output, res)
 
     def test_07_list_locks_empty(self):
         runner = self.app.test_cli_runner()

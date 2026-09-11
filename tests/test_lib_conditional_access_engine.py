@@ -30,8 +30,8 @@ from email import message_from_string
 import mock
 
 from privacyidea.lib.conditional_access import engine
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, CountMode, RestrictionCause
-from privacyidea.lib.conditional_access.authentication_log import AuthLogUserRole
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthLogUserRole,
+                                                                           CountMode, RestrictionCause)
 from privacyidea.lib.conditional_access.conditions import (CONDITION_TYPES, ConditionOperator, ConditionType,
                                                            ConditionTypeSpec, condition_matches,
                                                            conditions_match_row, policy_conditions_are_scopable,
@@ -41,8 +41,9 @@ from privacyidea.lib.conditional_access.engine import (
     AccessDecision,
     ConditionalAccessAction,
     ConditionalAccessTarget,
-    count_user_events,
-    count_user_attempts,
+    count_subject_events,
+    LockSubject,
+    count_subject_attempts,
     count_distinct_users_for_ip,
     count_ip_events,
     count_ip_attempts,
@@ -62,11 +63,13 @@ from privacyidea.lib.conditional_access.engine import (
     RestrictionStatus,
     _policy_count_ip,
     _safe_format,
+    _upsert_ip_block,
     _resolve_admin_recipients,
 )
+from privacyidea.lib.conditional_access.session import release_ca_connection
 from privacyidea.lib.conditional_access.state import lock_user
 from privacyidea.lib.conditional_access.policy import (StageDefinition, StageActionDefinition,
-                                                               _build_stages)
+                                                               _build_stages, update_conditional_access_policy)
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.user import User
@@ -294,84 +297,84 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertEqual([], evaluate_conditional_access_policies(CAContext(self.user, None),
                                                       AuthEventType.PASSWORD_FAIL).messages)
 
-    # --- count_user_events ----------------------------------------------------
+    # --- count_subject_events -------------------------------------------------
 
-    def test_count_user_events_window_boundary(self):
+    def test_count_subject_events_window_boundary(self):
         now = utc_now()
         self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now)
         self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now - timedelta(seconds=7200))
         # Only the two recent events fall inside the 1h window.
-        self.assertEqual(2, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              [AuthEventType.MFA_FAIL], 3600, window_end=now))
+        self.assertEqual(2, count_subject_events(LockSubject.for_user(self.user),
+                                                 [AuthEventType.MFA_FAIL], 3600, window_end=now))
         # Widening the window picks up the old one as well.
-        self.assertEqual(3, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              [AuthEventType.MFA_FAIL], 100000, window_end=now))
+        self.assertEqual(3, count_subject_events(LockSubject.for_user(self.user),
+                                                 [AuthEventType.MFA_FAIL], 100000, window_end=now))
 
-    def test_count_user_events_excludes_future_rows(self):
+    def test_count_subject_events_excludes_future_rows(self):
         now = utc_now()
         self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=60))
         # A row timestamped after `now` (clock skew, a concurrent insert, or an explicitly historical `now`) must
         # not be counted, since the window ends at `now`.
         self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now + timedelta(seconds=60))
-        self.assertEqual(2, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              [AuthEventType.MFA_FAIL], 3600, window_end=now))
+        self.assertEqual(2, count_subject_events(LockSubject.for_user(self.user),
+                                                 [AuthEventType.MFA_FAIL], 3600, window_end=now))
 
-    def test_count_user_events_filters_event_type_and_user(self):
+    def test_count_subject_events_filters_event_type_and_user(self):
         self._seed_events(AuthEventType.MFA_FAIL, 2)
         self._seed_events(AuthEventType.PIN_FAIL, 5)
-        self.assertEqual(2, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              [AuthEventType.MFA_FAIL], 3600))
+        self.assertEqual(2, count_subject_events(LockSubject.for_user(self.user),
+                                                 [AuthEventType.MFA_FAIL], 3600))
         # A different user identity is not counted.
-        self.assertEqual(0, count_user_events("other", "999", self.user.realm,
-                                              [AuthEventType.MFA_FAIL], 3600))
+        self.assertEqual(0, count_subject_events(LockSubject("other", "999", self.user.realm),
+                                                 [AuthEventType.MFA_FAIL], 3600))
 
-    def test_count_user_events_since_last_success_floors_at_login(self):
+    def test_count_subject_events_since_last_success_floors_at_login(self):
         now = utc_now()
         # Two failures, then a successful login, then one more failure.
         self._seed_events(AuthEventType.MFA_FAIL, 2, timestamp=now - timedelta(seconds=300))
         self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
         self._seed_events(AuthEventType.MFA_FAIL, 1, timestamp=now - timedelta(seconds=100))
-        args = (self.user.resolver, self.user.uid, self.user.realm, [AuthEventType.MFA_FAIL], 3600)
+        args = (LockSubject.for_user(self.user), [AuthEventType.MFA_FAIL], 3600)
         # Without the reset, all three failures are in the window.
-        self.assertEqual(3, count_user_events(*args, window_end=now))
+        self.assertEqual(3, count_subject_events(*args, window_end=now))
         # With the reset, only the failure after the successful login counts.
-        self.assertEqual(1, count_user_events(*args, window_end=now, since_last_success=True))
+        self.assertEqual(1, count_subject_events(*args, window_end=now, since_last_success=True))
 
-    def test_count_user_events_since_last_success_no_login_counts_all(self):
+    def test_count_subject_events_since_last_success_no_login_counts_all(self):
         now = utc_now()
         self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=100))
         # No LOGIN_SUCCESS in the window -> the floor does not apply, count is unchanged.
-        self.assertEqual(3, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              [AuthEventType.MFA_FAIL], 3600, window_end=now,
+        self.assertEqual(3, count_subject_events(LockSubject.for_user(self.user),
+                                                 [AuthEventType.MFA_FAIL], 3600, window_end=now,
                                               since_last_success=True))
 
-    def test_count_user_events_since_last_success_ignores_login_outside_window(self):
+    def test_count_subject_events_since_last_success_ignores_login_outside_window(self):
         now = utc_now()
         # The successful login is older than the window, so it must not floor the count.
         self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=7200))
         self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=100))
-        self.assertEqual(3, count_user_events(self.user.resolver, self.user.uid, self.user.realm,
-                                              [AuthEventType.MFA_FAIL], 3600, window_end=now,
+        self.assertEqual(3, count_subject_events(LockSubject.for_user(self.user),
+                                                 [AuthEventType.MFA_FAIL], 3600, window_end=now,
                                               since_last_success=True))
 
-    def test_count_user_events_combined_types(self):
+    def test_count_subject_events_combined_types(self):
         # A list of event types is counted together (OR-sum), not per type; an untracked type does not contribute.
         self._seed_events(AuthEventType.PASSWORD_FAIL, 2)
         self._seed_events(AuthEventType.TOKEN_ONLY_FAIL, 3)
         self._seed_events(AuthEventType.MFA_FAIL, 4)
-        args = (self.user.resolver, self.user.uid, self.user.realm)
-        self.assertEqual(5, count_user_events(
+        args = (LockSubject.for_user(self.user),)
+        self.assertEqual(5, count_subject_events(
             *args, [AuthEventType.PASSWORD_FAIL, AuthEventType.TOKEN_ONLY_FAIL], 3600))
         # A single-element list counts just that type.
-        self.assertEqual(2, count_user_events(*args, [AuthEventType.PASSWORD_FAIL], 3600))
+        self.assertEqual(2, count_subject_events(*args, [AuthEventType.PASSWORD_FAIL], 3600))
 
-    # --- count_user_attempts --------------------------------------------------
+    # --- count_subject_attempts -----------------------------------------------
 
     def _count_attempts(self, event_types: list[AuthEventType], window: int = 3600,
                         window_end: datetime | None = None, since_last_success: bool = False) -> int:
-        return count_user_attempts(self.user.resolver, self.user.uid, self.user.realm,
-                                   event_types, window, window_end=window_end,
-                                   since_last_success=since_last_success)
+        return count_subject_attempts(LockSubject.for_user(self.user),
+                                      event_types, window, window_end=window_end,
+                                      since_last_success=since_last_success)
 
     def test_count_attempts_multi_row_attempt_counts_once(self):
         # A challenge attempt spanning several rows is one attempt: its representative is the latest event.
@@ -438,18 +441,49 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertEqual(2, self._count_attempts([AuthEventType.MFA_FAIL, AuthEventType.PIN_FAIL],
                                                  window=3600, window_end=now))
         # A different user is not counted.
-        self.assertEqual(0, count_user_attempts("other", "999", self.user.realm,
+        self.assertEqual(0, count_subject_attempts(LockSubject("other", "999", self.user.realm),
                                                 [AuthEventType.MFA_FAIL], 3600, window_end=now))
 
     def test_count_attempts_since_last_success_resets(self):
         # A successful attempt floors the per-attempt count: only failed attempts after the last completed login
-        # count, so a good login clears the slate - the per-attempt counterpart of count_user_events' reset.
+        # count, so a good login clears the slate - the per-attempt counterpart of count_subject_events' reset.
         self._seed_attempt("a1", [AuthEventType.MFA_FAIL])
         self._seed_attempt("a2", [AuthEventType.LOGIN_SUCCESS])
         self._seed_attempt("a3", [AuthEventType.MFA_FAIL])
         self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL], since_last_success=True))
         # Without the reset, both failed attempts (before and after the success) count.
         self.assertEqual(2, self._count_attempts([AuthEventType.MFA_FAIL], since_last_success=False))
+
+    def _seed_rows(self, rows: list[tuple[AuthEventType, datetime]], attempt_id: str) -> None:
+        """Insert one row per (event type, timestamp) pair sharing *attempt_id*, in the given order, so the row ids
+        ascend with that order whatever the timestamps say - which is how a multi-master cluster can hand out an id
+        that contradicts the commit order."""
+        for event_type, timestamp in rows:
+            db.session.add(AuthenticationLog(
+                event_type=str(event_type), resolver=self.user.resolver, uid=self.user.uid,
+                realm=self.user.realm, timestamp=timestamp, attempt_id=attempt_id))
+        db.session.commit()
+
+    def test_count_attempts_representative_is_the_newest_timestamp_not_the_highest_id(self):
+        # An attempt's latest row is the newest one by (timestamp, id), not by id alone: ids come from a plain
+        # autoincrement and a multi-master cluster can commit a row on one node with a lower id than one committed
+        # earlier on another (see engine._row_order). Here the wrong answer holds the lower id and the later
+        # timestamp, so ordering by id would classify the attempt by the continue and drop a real failure.
+        now = utc_now()
+        self._seed_rows([(AuthEventType.MFA_FAIL, now),
+                         (AuthEventType.CHALLENGE_CONTINUED, now - timedelta(seconds=5))], "inverted")
+        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL], window_end=now))
+        self.assertEqual(0, self._count_attempts([AuthEventType.CHALLENGE_CONTINUED], window_end=now))
+
+    def test_count_attempts_since_last_success_floors_on_the_timestamp_not_the_id(self):
+        # The same inversion at the reset point: the failure was committed through another node and carries a lower
+        # id than the success, but it happened after it, so it must survive the floor. Flooring by id would drop it
+        # and let the lock fire an attempt late.
+        now = utc_now()
+        self._seed_rows([(AuthEventType.MFA_FAIL, now)], "later-fail")
+        self._seed_rows([(AuthEventType.LOGIN_SUCCESS, now - timedelta(seconds=60))], "earlier-success")
+        self.assertEqual(1, self._count_attempts([AuthEventType.MFA_FAIL], window_end=now,
+                                                 since_last_success=True))
 
     def test_count_attempts_since_last_success_no_success_counts_all(self):
         # With no successful attempt in the window the floor is inert: all failed attempts count.
@@ -546,6 +580,20 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         # A request without a resolvable source IP is never blocked.
         self.assertFalse(is_ip_blocked(None))
         self.assertFalse(is_ip_blocked(""))
+
+    def test_is_ip_blocked_finds_a_row_under_another_spelling_of_the_address(self):
+        # g.client_ip is request.remote_addr verbatim wherever no proxy override is configured, so the
+        # lookup cannot assume the spelling it is handed is the one the row was filed under.
+        db.session.add(BlockList(ip="2001:db8::1", block_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        self.assertTrue(is_ip_blocked("2001:0DB8::0:1"))
+
+    def test_the_engine_files_a_block_under_the_canonical_identifier(self):
+        # Whatever spelling reaches the engine, one address is one row - and the row an admin then reads
+        # off the blocklist is the one they can pass back to the unblock endpoint.
+        self.assertTrue(_upsert_ip_block("2001:0DB8::0:1", block_expires_at=utc_now() + timedelta(seconds=600),
+                                         error_message=None))
+        self.assertEqual("2001:db8::1", db.session.query(BlockList).one().ip)
 
     # --- get_ip_block ---------------------------------------------------------
 
@@ -999,6 +1047,72 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcome.action_type)
         self.assertIsNone(outcome.info)
 
+    def test_leaving_dry_run_does_not_count_failures_from_the_trial(self):
+        # Failures accumulated while the policy was dry-run must not count once it starts enforcing - flipping
+        # dry_run off is the transition dry-run exists to make safe.
+        policy, _stages = self._make_policy(name="was_dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertFalse(is_user_locked(self.user))  # still dry-run: no lock
+
+        # Through the lib function, not the ORM directly: that is what actually sets enforced_since on the
+        # True -> False transition (see update_conditional_access_policy).
+        update_conditional_access_policy(policy.id, dry_run=False)
+        # The engine reads policies on its own ca-session transaction (see session.get_ca_session); release it so
+        # the next evaluate() call starts a fresh one and observes the update just committed above.
+        release_ca_connection()
+
+        # The 3 failures from the trial are still within time_window_seconds, but must not count: only a new
+        # failure after enforced_since does.
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertFalse(is_user_locked(self.user))
+
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_leaving_dry_run_with_reset_counters_on_enforce_false_keeps_trial_failures(self):
+        # The opt-out: an admin who wants to enforce immediately against what the trial already
+        # accumulated skips the enforced_since floor by passing reset_counters_on_enforce=False.
+        policy, _stages = self._make_policy(name="was_dry_kept", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertFalse(is_user_locked(self.user))  # still dry-run: no lock
+
+        update_conditional_access_policy(policy.id, dry_run=False, reset_counters_on_enforce=False)
+        release_ca_connection()
+
+        # The 3 failures from the trial still count, so the very next evaluation (with no new failure)
+        # already sees the threshold met and locks.
+        evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+        self.assertTrue(is_user_locked(self.user))
+
+    def test_returning_to_dry_run_keeps_the_count_floor(self):
+        # A policy switched back to dry-run mid-enforcement is asked what it *would* do right now, and right now it
+        # would still be counting from its floor. Counting the discarded trial failures again would report a lock
+        # the enforcing policy would never have applied.
+        policy, _stages = self._make_policy(name="dry_again", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+
+        update_conditional_access_policy(policy.id, dry_run=False)
+        release_ca_connection()
+        self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user),
+                                                                      AuthEventType.MFA_FAIL).outcomes)
+
+        update_conditional_access_policy(policy.id, dry_run=True)
+        release_ca_connection()
+        self.assertListEqual([], evaluate_conditional_access_policies(CAContext(self.user),
+                                                                      AuthEventType.MFA_FAIL).outcomes)
+        self.assertFalse(is_user_locked(self.user))
+
+        # The floor still only hides what came before it: failures seeded now do reach the threshold, and the
+        # trial reports the lock it would have applied.
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        outcomes = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL).outcomes
+        self.assertEqual(1, len(outcomes))
+        self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcomes[0].action_type)
+        self.assertFalse(is_user_locked(self.user))
+
     def test_dry_run_source_ip_policy_records_a_outcome_without_blocking(self):
         ip = "10.10.0.5"
         self._make_policy(name="dry_ip", counter_type=AuthEventType.PASSWORD_FAIL, dry_run=True,
@@ -1131,6 +1245,75 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
         self.assertListEqual([], evaluation.outcomes)
         self.assertIsNone(self._block("127.0.0.1"))
+
+    def test_a_restriction_that_is_not_in_force_records_nothing(self):
+        # The write reported success, but nothing can be read back from the row it claims to have written - the
+        # shape a lock keyed differently from the pre-check's lookup produces. No later request would be refused
+        # by it, so this one is not answered as a rejection either and the history stays empty.
+        self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        with mock.patch.object(engine, "get_subject_lock", return_value=None):
+            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertListEqual([], evaluation.outcomes)
+        self.assertSetEqual(set(), evaluation.enforced_targets)
+        self.assertListEqual([], evaluation.messages)
+        # The row itself was written: it is the *read* that found nothing, which is the only fact a rejection
+        # may rest on.
+        self.assertIsNotNone(self._state())
+
+    def test_a_short_restriction_is_in_force_at_the_evaluations_own_reference_time(self):
+        # Expiry is judged against the instant the evaluation runs with, not against the wall clock at the moment
+        # the row is read back. An action that takes longer than the lock lasts - an email delivery, say - would
+        # otherwise turn a lock that was written and stands into one that counts as never having been in force.
+        self._make_policy(name="short", counter_type=AuthEventType.MFA_FAIL,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 60)]),))
+        moment = utc_now() - timedelta(hours=1)
+        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=moment)
+
+        evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL, now=moment)
+
+        self.assertSetEqual({ConditionalAccessTarget.USER}, evaluation.enforced_targets)
+        self.assertEqual([ConditionalAccessAction.LOCK_USER.value],
+                         [outcome.action_type for outcome in evaluation.outcomes])
+        state = self._state()
+        self.assertIsNotNone(state)
+        self.assertEqual(moment + timedelta(seconds=60), state.lock_expires_at)
+
+    def test_a_restriction_that_is_not_in_force_leaves_the_other_targets_alone(self):
+        # Only the target nothing stands on is dropped. The IP block written by the same request is in force and
+        # keeps both its outcome and its place in enforced_targets, so the request is still refused by it.
+        self._make_policy(name="user_live", counter_type=AuthEventType.PASSWORD_FAIL, priority=1,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
+        self._make_policy(name="ip_live", counter_type=AuthEventType.PASSWORD_FAIL, priority=2,
+                          target=ConditionalAccessTarget.SOURCE_IP,
+                          stages=(StageDefinition(2, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
+        self._seed_events(AuthEventType.PASSWORD_FAIL, 3)
+        self._seed_ip_events("203.0.113.7", AuthEventType.PASSWORD_FAIL, n_users=2, per_user=1)
+        with mock.patch.object(engine, "get_subject_lock", return_value=None):
+            evaluation = evaluate_conditional_access_policies(CAContext(self.user, "203.0.113.7"),
+                                                              AuthEventType.PASSWORD_FAIL)
+
+        self.assertListEqual([("ip_live", str(ConditionalAccessAction.BLOCK_IP))],
+                             [(outcome.policy_name, outcome.action_type) for outcome in evaluation.outcomes])
+        self.assertSetEqual({ConditionalAccessTarget.SOURCE_IP}, evaluation.enforced_targets)
+        self.assertIsNotNone(self._block("203.0.113.7"))
+
+    def test_a_dry_run_outcome_survives_a_restriction_that_is_not_in_force(self):
+        # A dry-run outcome records what a policy *would* have done and never claimed to have written anything,
+        # so the read-back has nothing to contradict: only the enforcing policy's claim is dropped.
+        self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True, priority=1,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
+        self._make_policy(name="live", counter_type=AuthEventType.MFA_FAIL, priority=2,
+                          stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER, 600)]),))
+        self._seed_events(AuthEventType.MFA_FAIL, 3)
+        with mock.patch.object(engine, "get_subject_lock", return_value=None):
+            evaluation = evaluate_conditional_access_policies(CAContext(self.user), AuthEventType.MFA_FAIL)
+
+        self.assertListEqual([("dry", True)],
+                             [(outcome.policy_name, outcome.dry_run) for outcome in evaluation.outcomes])
+        self.assertSetEqual(set(), evaluation.enforced_targets)
 
     def test_declined_downgrade_of_a_permanent_lock_records_nothing(self):
         # A timed lock must not weaken an existing permanent one; since nothing changed, nothing is recorded.
@@ -1388,6 +1571,25 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
     def test_normal_ip_is_not_never_block(self):
         self.assertFalse(is_ip_never_block("203.0.113.7"))
+
+    def test_an_ipv4_mapped_address_is_checked_as_its_ipv4_address_too(self):
+        # A dual-stack listener puts an IPv4 client in REMOTE_ADDR as ::ffff:127.0.0.1, and a network of one
+        # family never contains an address of the other - so comparing only the mapped form would leave the
+        # whole allowlist off for those deployments, the one direction this guard must not fail in.
+        self.assertTrue(is_ip_never_block("::ffff:127.0.0.1"))
+        self.assertFalse(is_ip_never_block("::ffff:203.0.113.7"))
+        with never_block_config("198.51.100.0/24"):
+            self.assertTrue(is_ip_never_block("::ffff:198.51.100.5"))
+            self.assertTrue(is_ip_never_block("198.51.100.5"))
+
+    def test_a_tunnel_encoded_address_is_not_unwrapped(self):
+        # 2002:7f00:1:: is the 6to4 encoding of 127.0.0.1, which ipaddress can decode as readily as the
+        # mapped form. It is deliberately not honored: a mapped address is how the OS renders a real IPv4
+        # peer, while a tunnel address is chosen by the client - who would otherwise be able to encode an
+        # allowlisted address and make themselves unblockable.
+        self.assertFalse(is_ip_never_block("2002:7f00:1::1"))
+        with never_block_config("198.51.100.0/24"):
+            self.assertFalse(is_ip_never_block("2002:c633:6405::1"))
 
     def test_empty_or_unparseable_ip_is_never_block(self):
         # Fail safe: never block an address the engine cannot positively identify.

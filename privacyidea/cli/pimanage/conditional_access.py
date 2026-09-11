@@ -43,6 +43,7 @@ from privacyidea.lib.conditional_access.state import (block_ip, list_blocklist,
                                                               purge_expired_blocklist,
                                                               purge_expired_user_locks,
                                                               remove_blocklist_entry,
+                                                              lock_internal_admin, unlock_internal_admin,
                                                               unlock_user_by_id, unlock_user_by_username)
 from privacyidea.lib.user import User
 from privacyidea.models import db
@@ -181,7 +182,8 @@ def disable_dry_run(name: str | None, policy_id: int | None) -> None:
         click.echo(f"Conditional-access policy {label} is not in dry run.")
         return
     update_conditional_access_policy(policy.id, dry_run=False)
-    click.echo(f"Conditional-access policy {label} is no longer in dry run: its actions are enforced again.")
+    click.echo(f"Conditional-access policy {label} is no longer in dry run: its actions are enforced again, "
+               f"counting events from now on.")
 
 
 @conditional_access_cli.command("delete-policy",
@@ -248,18 +250,42 @@ def list_locked_users_cmd():
         return
     click.echo(f"{len(users)} locked user(s):")
     for user in users:
+        # A local admin's row carries no resolver or realm, so the role is what says the empty columns are the
+        # shape of the row rather than missing data.
         click.echo(f"  resolver={user['resolver']}\tuid={user['uid']}\trealm={user['realm']}\t"
-                   f"expires={_format_expiry(user['lock_expires_at'])}\tcause={user['lock_cause']}")
+                   f"role={user['user_role']}\texpires={_format_expiry(user['lock_expires_at'])}\t"
+                   f"cause={user['lock_cause']}")
 
 
-@conditional_access_cli.command("lock-user", help="Lock a single user by hand.")
+def _require_one_target(login: str, realm: str | None, admin: bool) -> None:
+    """
+    A command names either a user in a realm or a local database admin, never both and never neither.
+
+    Click cannot express that, so it is checked here: ``--realm`` and ``--admin`` identify the principal in two
+    incompatible ways, and letting a call carry both (or neither) would silently pick one.
+    """
+    if admin and realm:
+        raise click.UsageError(f"{login!r} is either a local administrator (--admin) or a user in a realm "
+                               "(--realm), not both.")
+    if not admin and not realm:
+        raise click.UsageError("Give --realm for a user in a realm, or --admin for a local administrator.")
+
+
+@conditional_access_cli.command("lock-user", help="Lock a single user, or a local administrator, by hand.")
 @click.argument("login")
-@click.option("--realm", required=True, help="The realm of the user.")
+@click.option("--realm", help="The realm of the user. Required unless --admin is given.")
 @click.option("--resolver", help="The resolver of the user (only needed to disambiguate).")
+@click.option("--admin", is_flag=True, help="LOGIN is a local database administrator, who has no realm.")
 @click.option("--duration", type=int, help="How long the lock lasts, in seconds. Omitted, it is permanent.")
-def lock_user_cmd(login, realm, resolver, duration):
+def lock_user_cmd(login, realm, resolver, admin, duration):
     # The escape hatch for the WebUI's Lock action: the same authoritative write, recorded as a manual lock
-    # and enforced by the same pre-check as a policy lock.
+    # and enforced by the same pre-check as a policy lock. For a local administrator it is the *only* way in:
+    # the WebUI locks from a user's page, and a local admin has none.
+    _require_one_target(login, realm, admin)
+    if admin:
+        lock = lock_internal_admin(login, duration_seconds=duration)
+        click.echo(f"Locked local admin {login} (expires={_format_expiry(lock['lock_expires_at'])}).")
+        return
     user = User(login=login, realm=realm, resolver=resolver or "")
     lock = lock_user(user, duration_seconds=duration)
     click.echo(f"Locked user {login}@{realm} (expires={_format_expiry(lock['lock_expires_at'])}).")
@@ -273,11 +299,22 @@ def block_ip_cmd(ip, duration):
     click.echo(f"Blocked IP {ip} (expires={_format_expiry(entry['block_expires_at'])}).")
 
 
-@conditional_access_cli.command("unlock-user", help="Remove the lock for a single user.")
+@conditional_access_cli.command("unlock-user",
+                                help="Remove the lock for a single user, or for a local administrator.")
 @click.argument("login")
-@click.option("--realm", required=True, help="The realm of the user.")
+@click.option("--realm", help="The realm of the user. Required unless --admin is given.")
 @click.option("--resolver", help="The resolver of the user (only needed to disambiguate).")
-def unlock_user_cmd(login, realm, resolver):
+@click.option("--admin", is_flag=True, help="LOGIN is a local database administrator, who has no realm.")
+def unlock_user_cmd(login, realm, resolver, admin):
+    # The way back in for a local administrator who locked themselves out, which is why there is no allowlist of
+    # accounts a policy may not lock: this needs the server, not a login.
+    _require_one_target(login, realm, admin)
+    if admin:
+        if unlock_internal_admin(login):
+            click.echo(f"Unlocked local admin {login}.")
+        else:
+            click.echo(f"No lock found for local admin {login}.")
+        return
     target = f"{login}@{realm}" + (f" (resolver={resolver})" if resolver else "")
     if unlock_user_by_username(login, realm, resolver):
         click.echo(f"Unlocked user {target}.")

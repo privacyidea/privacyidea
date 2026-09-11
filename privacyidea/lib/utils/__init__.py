@@ -1028,8 +1028,9 @@ def parse_time_offset_from_now(s):
         "New date {now}-30m! Some {other} {tags}".
     This returns the string "New date {now}. Some {other} {tags}" and the
     timedelta of 5 days.
-    Allowed tags are {now} and {current_time}. Only one tag of {now} or {
-    current_time} is allowed.
+    Allowed tags are {now} and {current_time}. {now} is the canonical tag,
+    {current_time} is a deprecated alias for it. At most one offset expression
+    is parsed; if both are present, {current_time} takes precedence.
     Allowed offsets are "s": seconds, "m": minutes, "h": hours, "d": days.
 
     :param s: The string to be parsed.
@@ -1433,7 +1434,8 @@ def create_tag_dict(logged_in_user=None,
                     escape_html=False,
                     container_serial=None,
                     container_url_value=None,
-                    container_url_img=None):
+                    container_url_img=None,
+                    time_offset=None):
     """
     This helper function creates a dictionary with tags to be used in sending emails
     either with email tokens or within the notification handler
@@ -1459,17 +1461,35 @@ def create_tag_dict(logged_in_user=None,
     :param container_serial: The serial number of the container
     :param container_url_value: The URL for the container registration
     :param container_url_img: The URL as QR code for the container registration
+    :param time_offset: An optional offset that is added to the current time before
+        it is rendered into the ``now`` and ``current_time`` tags. This is used to
+        support offsets like ``{now}+2h`` together with
+        :func:`parse_time_offset_from_now`.
+    :type time_offset: datetime.timedelta or None
     :return: The tag dictionary, with the keys admin, realm, action, serial, url, user,
         surname, givenname, username, userrealm, tokentype, tokendescription,
         registrationcode, recipient_givenname, recipient_surname, googleurl_value,
-        googleurl_img, pushurl_value, pushurl_img, time, date, client_ip, pin, ua_browser,
-        ua_string, challenge, container_serial, container_url_value and container_url_img.
+        googleurl_img, pushurl_value, pushurl_img, time, date, now, current_time,
+        client_ip, pin, ua_browser, ua_string, challenge, container_serial,
+        container_url_value and container_url_img.
         A tag whose value is not available is set to an empty string.
+        The ``now`` and ``current_time`` tags are aliases for the same timestamp;
+        ``now`` is the canonical tag, ``current_time`` is kept as a deprecated alias.
     """
-    time = datetime.now().strftime("%H:%M:%S")
-    date = datetime.now().strftime("%Y-%m-%d")
+    base_dt = datetime.now(tzlocal())
+    time = base_dt.strftime("%H:%M:%S")
+    date = base_dt.strftime("%Y-%m-%d")
+    from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
+    now = (base_dt + (time_offset or timedelta())).strftime(AUTH_DATE_FORMAT)
     recipient = recipient or {}
-    user_info = tokenowner.get_specific_info(["givenname", "surname"]) if tokenowner else {}
+    user_info = {}
+    if tokenowner:
+        try:
+            user_info = tokenowner.get_specific_info(["givenname", "surname"])
+        except Exception as e:
+            # The user store may be unavailable. A tag that can not be determined is
+            # empty, it must not fail the request that the tags are created for.
+            log.warning(f"Could not read the user information of {tokenowner!r}: {e!r}")
     tags = dict(admin=logged_in_user.get("username") if logged_in_user else "",
                 realm=logged_in_user.get("realm") if logged_in_user else "",
                 action=request.path if request else "",
@@ -1492,6 +1512,8 @@ def create_tag_dict(logged_in_user=None,
                 pushurl_img=pushurl_img,
                 time=time,
                 date=date,
+                now=now,
+                current_time=now,
                 client_ip=client_ip,
                 pin=pin,
                 ua_browser=get_useragent_name(request),

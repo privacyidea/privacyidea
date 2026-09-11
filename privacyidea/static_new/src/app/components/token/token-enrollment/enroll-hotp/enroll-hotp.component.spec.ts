@@ -212,7 +212,7 @@ describe("EnrollHotpComponent", () => {
     component.otpLength.set(8);
     component.hashAlgorithm.set("sha256");
 
-    const basic = { realm: "r", username: "u" } as TokenEnrollmentData;
+    const basic: TokenEnrollmentData = { type: "hotp", realm: "r", username: "u" };
     const args = component.buildEnrollmentArgs(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(
@@ -235,7 +235,7 @@ describe("EnrollHotpComponent", () => {
     component.otpKey.set("  ABCDEFGHIJKLMNOP  ");
     fixture.detectChanges();
 
-    const basic = { foo: "bar" } as TokenEnrollmentData;
+    const basic: TokenEnrollmentData = { type: "hotp", foo: "bar" };
     const args = component.buildEnrollmentArgs(basic);
     expect(args).not.toBeNull();
     expect(args!.data).toEqual(

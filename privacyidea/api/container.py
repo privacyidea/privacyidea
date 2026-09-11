@@ -717,10 +717,11 @@ def set_realms(container_serial):
     :jsonparam realms: comma-separated list of realm names
         (whitespace tolerated; pass an empty string to remove all
         realms).
-    :status 200: dict mapping each attached realm to ``True`` (including
-        realms kept although not requested) and each requested realm that
-        could not be attached to ``False``, plus ``deleted`` (whether any
-        realm was removed), in ``result.value``.
+    :status 200: ``{"realms": {<realm>: <bool>, ...}, "deleted": <bool>}`` in
+        ``result.value``. In ``realms``, each attached realm maps to ``True``
+        (including realms kept although not requested) and each requested realm
+        that could not be attached maps to ``False``. ``deleted`` states whether
+        any realm was removed.
     """
     # Get parameters
     container_realms = get_required(request.all_data, "realms", allow_empty=True)
@@ -747,13 +748,13 @@ def set_realms(container_serial):
                         "success": result.success,
                         "info": info})
 
-    # Response: every attached realm maps to True (including realms that could not be removed and stayed
-    # although not requested), every requested realm that could not be attached maps to False, plus
-    # whether anything was removed. The full breakdown is in the audit info.
-    response = {realm: True for realm in result.attached}
-    response.update({realm: False for realm in result.not_added})
-    response["deleted"] = bool(result.removed)
-    return send_result(response)
+    # Response: the per-realm status lives in its own dictionary so that no realm name can collide with
+    # a status key - a realm may legitimately be called "deleted". Every attached realm maps to True
+    # (including realms that could not be removed and stayed although not requested), every requested
+    # realm that could not be attached maps to False. The full breakdown is in the audit info.
+    realm_status = {realm: True for realm in result.attached}
+    realm_status.update({realm: False for realm in result.not_added})
+    return send_result({"realms": realm_status, "deleted": bool(result.removed)})
 
 
 @container_blueprint.route('<string:container_serial>/info/<key>', methods=['POST'])

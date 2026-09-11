@@ -28,7 +28,7 @@ from sqlalchemy.sql import ColumnElement
 
 from privacyidea.models import (AuthenticationLog, AuthenticationLogReason, ConditionalAccessOutcome,
                                 authentication_log_column_length, authentication_log_reason_column_length)
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.sqlutils import delete_matching_rows
@@ -38,6 +38,7 @@ log = logging.getLogger(__name__)
 # Columns a paginated authentication-log query can sort by, keyed by the name the API accepts; every scalar column
 # is sortable, but ``other_info`` is excluded because JSON column ordering is neither meaningful nor portable, and
 # ``reasons`` because an entry has a list of them, in their own table (sorting rows by a collection is not defined).
+#: The columns a paginated authentication-log query may sort by, keyed by the name the API accepts.
 SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
     "id": AuthenticationLog.id,
     "timestamp": AuthenticationLog.timestamp,
@@ -59,32 +60,14 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
 DEFAULT_PAGE_SIZE = 15
 
 
-class AuthLogUserRole(str, Enum):
-    """
-    Role of the authenticating principal recorded in the authentication log. The two admin values are kept distinct
-    because conditional-access rules may treat them differently: ``admin-external`` admins come from an admin realm
-    (an external identity source) and are the everyday admins, while ``admin-internal`` admins are local database
-    accounts (created via the CLI, used for initial setup and as fallback/recovery) that authenticate only at the
-    ``/auth`` endpoint. Both share the ``admin-`` prefix so a single ``user_role=admin*`` filter matches either.
-
-    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python 3.10; the ``__str__`` override
-    normalizes ``str()``/f-string output to the value across versions (mirrors :class:`AuthEventType`).
-    """
-    USER = "user"
-    ADMIN_INTERNAL = "admin-internal"
-    ADMIN_EXTERNAL = "admin-external"
-
-    def __str__(self) -> str:
-        return self.value
-
-
 class ClientLabelSource(str, Enum):
     """
     Where a row's ``client_label`` came from: the ``client_id`` request parameter the client chose for itself, or
     the User-Agent header it sent. Recorded because the two are worth very different amounts - one is a name an
     integration deliberately gives itself, the other is a string any browser sends.
 
-    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthLogUserRole`.
+    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`.
     """
     CLIENT_ID = "client_id"
     USER_AGENT = "user_agent"
@@ -104,7 +87,9 @@ class AuthenticationLogVisibilityScope:
     *username_case_insensitive* mirrors the originating policy's ``user_case_insensitive`` option and forces a
     case-insensitive match on the ``usernames`` dimension only; realm and resolver always match case-sensitively.
 
-    *user_roles* restricts to entries of those :class:`AuthLogUserRole` values. It is not derived from policy scoping
+    *user_roles* restricts to entries of those
+    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`
+    values. It is not derived from policy scoping
     (policies do not scope by role); it is used to express a principal's own entries -- a local/internal admin has no
     realm, so their own entries are matched by username plus ``user_role=admin-internal`` instead of by realm.
 
@@ -161,21 +146,35 @@ def naive_utc(value: datetime) -> datetime:
 class _TruncatedValue:
     """
     Result of truncating one column value: *stored* goes into the column, *overflow* is the part that did not fit and
-    is preserved in the entry's ``other_info`` (see :func:`_store_overflow`) so no information is lost. *overflow* is
-    ``None`` when nothing was cut.
+    is recorded in the entry's ``other_info`` (see :func:`_describe_overflow`, :func:`_store_overflow`) so no cut goes
+    unrecorded. *overflow* is ``None`` when nothing was cut.
     """
     stored: str | None
     overflow: str | None
+
+
+def _split_at(value: str, max_length: int, separator: str | None = None) -> tuple[str, str]:
+    """
+    Split *value*, which is longer than *max_length*, into the part that fits and the remainder.
+
+    With a *separator*, the cut is made on the last separator that fits, so neither part holds a broken item; a value
+    whose first item alone is too long has none that fits and is cut mid-item after all.
+    """
+    if separator:
+        cut = value.rfind(separator, 0, max_length + 1)
+        if cut > 0:
+            return value[:cut], value[cut + len(separator):]
+    return value[:max_length], value[max_length:]
 
 
 def _truncate(column: str, value: Any, separator: str | None = None) -> _TruncatedValue:
     """
     Convert *value* to a string and truncate it to the length of the given column of the authentication_log table, so a
     pathological value (e.g. a very long User-Agent or login name) can never overflow the column on insert. The cut-off
-    remainder is returned alongside the stored value rather than discarded.
+    remainder is returned alongside the stored value, for the caller to record (see :func:`_row_values`).
 
     :param column: the column name, a key of
-        :data:`~privacyidea.models.authentication_log.authentication_log_column_length`
+        ``authentication_log_column_length`` in :mod:`privacyidea.models.authentication_log`
     :param value: the value to store, or None
     :param separator: if given, cut on the last separator that fits instead of mid-character, so neither the stored
         value nor the overflow holds a broken item (used for ``serial``, which may carry a separator-joined list, to
@@ -189,16 +188,33 @@ def _truncate(column: str, value: Any, separator: str | None = None) -> _Truncat
     if len(value) <= max_length:
         return _TruncatedValue(value, None)
     log.debug(f"Truncating authentication log column {column!r} to {max_length} characters.")
-    if separator:
-        cut = value.rfind(separator, 0, max_length + 1)
-        if cut > 0:
-            return _TruncatedValue(value[:cut], value[cut + len(separator):])
-    return _TruncatedValue(value[:max_length], value[max_length:])
+    return _TruncatedValue(*_split_at(value, max_length, separator))
+
+
+# How much of the cut-off remainder ``other_info["truncated"]`` keeps verbatim. Anything past this is summarized
+# (see _describe_overflow), because other_info is unbounded JSON on a write path any client can reach: a column holds
+# a fixed number of characters, but a value that overflows it - a login name, an unknown realm, a ``client_id`` label -
+# is bounded only by the request body, so keeping every remainder whole would let the request decide how large a row
+# is, and a large enough one would fail the insert the truncation exists to protect. A cut of realistic size (a long
+# resolver name, the serials that did not fit) stays well below this and is kept in full.
+_MAX_OVERFLOW_LENGTH = 256
+
+
+def _describe_overflow(overflow: str, separator: str | None = None) -> str:
+    """
+    What ``other_info["truncated"]`` records for a cut value: the remainder itself, or - once past
+    :data:`_MAX_OVERFLOW_LENGTH` - as much of it as is kept plus how many characters follow, as
+    ``"...(N more characters)"``. *separator* cuts the kept part on an item boundary, as it does for the column.
+    """
+    if len(overflow) <= _MAX_OVERFLOW_LENGTH:
+        return overflow
+    kept, rest = _split_at(overflow, _MAX_OVERFLOW_LENGTH, separator)
+    return f"{kept}...({len(rest)} more characters)"
 
 
 def _store_overflow(other_info: dict | None, overflow: dict[str, str]) -> dict | None:
     """
-    Fold any truncation overflow into a copy of *other_info* under the ``truncated`` key so it is preserved without
+    Fold any truncation overflow into a copy of *other_info* under the ``truncated`` key so it is recorded without
     clobbering caller-supplied keys, merging with overflow already recorded there. Returns *other_info* unchanged when
     nothing overflowed.
     """
@@ -303,8 +319,8 @@ _TRUNCATED_COLUMNS = {
 def _row_values(event: PendingAuthEvent) -> dict:
     """
     The column values to store for *event*: every column truncated to its length, with the cut-off remainder folded
-    into ``other_info`` so nothing is silently lost. Shared by the insert and the update path, so an amended event is
-    truncated exactly like a fresh one.
+    into ``other_info`` - up to :data:`_MAX_OVERFLOW_LENGTH` of it, the rest as a count - so no cut goes unrecorded.
+    Shared by the insert and the update path, so an amended event is truncated exactly like a fresh one.
     """
     stored: dict[str, str | None] = {}
     overflow: dict[str, str] = {}
@@ -312,7 +328,7 @@ def _row_values(event: PendingAuthEvent) -> dict:
         result = _truncate(column, getattr(event, column), separator=separator)
         stored[column] = result.stored
         if result.overflow is not None:
-            overflow[column] = result.overflow
+            overflow[column] = _describe_overflow(result.overflow, separator)
     # ip_chain is JSON rather than a truncated string, but still a column of the row, so it belongs in the
     # dict that both the insert and the update path treat as the authoritative column set.
     return {**stored, "ip_chain": event.ip_chain, "other_info": _store_overflow(event.other_info, overflow)}
@@ -658,7 +674,7 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
     The visibility scope is an authorization boundary (which entries a principal may see). Each dimension matches by
     equality via a plain ``IN`` (which keeps the column index). The boundary columns (realm, resolver, uid, username)
     are pinned to a **case-sensitive collation** at the schema level
-    (:func:`~privacyidea.models.authentication_log._case_sensitive_unicode`: ``utf8mb4_bin`` on MySQL/MariaDB; SQLite,
+    (:func:`~privacyidea.models.utils.case_sensitive_unicode`: ``utf8mb4_bin`` on MySQL/MariaDB; SQLite,
     PostgreSQL and Oracle compare case-sensitively by default), so the match is case-sensitive on every backend rather
     than depending on the server-default collation. This fails closed: an admin scoped to resolver ``res`` or user
     ``alice`` never sees a distinct ``Res`` / ``Alice``.
@@ -667,6 +683,17 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
     on the scope): it is then matched case-insensitively via ``LOWER()`` on both sides -- only this dimension, mirroring
     how that policy option is applied during policy matching. realm and resolver are always case-sensitive (realm is
     additionally always stored lower case, so its casing never varies in practice).
+
+
+    A scope that names no ``user_roles`` does not reach the rows of a **local database administrator**. Realm,
+    resolver and user are userstore terms, and none of them describes such an account, whose row carries a login
+    name and nothing else, so a boundary drawn only in those terms does not contain one. Without this, a policy
+    scoped to a user name would reach a local admin of that name - by coincidence of the shared ``username``
+    column rather than by anyone's intent, and the admin policy the boundary comes from has no way to say
+    otherwise, carrying only realm, resolver and user (see
+    :func:`~privacyidea.lib.policies.helper.get_policy_visibility_scopes`). A local admin's rows are therefore
+    reachable only by a caller that is unscoped altogether, or by a scope naming the role outright - which is how
+    a scoped admin still sees their **own** entries.
 
     An empty scope list (or scopes that set no dimension at all) restricts to *nothing*: it returns ``false()`` rather
     than an empty ``or_()``, so the visibility boundary fails closed instead of degrading to "no restriction".
@@ -688,6 +715,11 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
                 dimensions.append(AuthenticationLog.username.in_(scope.usernames))
         if scope.user_roles:
             dimensions.append(AuthenticationLog.user_role.in_([str(role) for role in scope.user_roles]))
+        elif dimensions:
+            # Stated as "not a local admin" rather than "is a user": this column is nullable, and a row that names
+            # no role is an ordinary one - only a local admin's is ever labelled explicitly.
+            dimensions.append(or_(AuthenticationLog.user_role.is_(None),
+                                  AuthenticationLog.user_role != str(AuthLogUserRole.ADMIN_INTERNAL)))
         if dimensions:
             scope_conditions.append(and_(*dimensions))
     if not scope_conditions:

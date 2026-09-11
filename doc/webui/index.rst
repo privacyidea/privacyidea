@@ -53,6 +53,66 @@ assets for their selected language; the settings above apply equally to all
 languages.
 
 
+.. _new_webui_session_persistence:
+
+Session persistence
+~~~~~~~~~~~~~~~~~~~
+
+.. index:: session persistence, sessionStorage, localStorage
+
+The new WebUI keeps the bearer token in web storage, so a page reload does not end the
+session. Where it keeps it is set by the :ref:`policy_session_persistence` policy, which
+is evaluated for the user who logs in:
+
+* ``tab`` - the token goes to ``sessionStorage``. It belongs to the tab it was created
+  in, is gone when that tab closes, and a tab opened on its own has to log in for
+  itself, so two tabs can hold different users. This is the default. Note that a tab
+  opened *from* a logged-in one -- Duplicate tab, a middle-click, ``window.open`` -- is
+  handed a copy of its ``sessionStorage`` by the browser, and therefore of the session.
+* ``browser`` - the token goes to ``localStorage``. Every tab of the browser shares the
+  session, and it survives closing the browser until the JWT expires. This is the
+  behaviour of releases before the policy existed.
+
+The value is a deployment decision, not a user preference: the WebUI has no setting for
+it. Because the policy is matched against the principal that is logging in, admin realms
+and user realms can be given different values, and the audit log records the policy like
+any other.
+
+A tab picks up the session it finds in its own ``sessionStorage`` first and the one in
+``localStorage`` second, so a session already open keeps the storage it was created in
+even after the policy changes, and a session written by an earlier release still works
+after the upgrade. The new value applies at the next login: that login also drops a
+session left in the other storage when it belongs to the same user, so narrowing the
+policy takes effect for them there rather than at the expiry of the old token. A session
+belonging to anyone else -- another tab, another user of the same browser -- is never
+touched, so the two can coexist.
+
+Logging out in one tab of a ``browser`` session takes the token away from all of them.
+The others notice at their next request to the server: it is answered with 401, on which
+the WebUI ends the session and returns them to the login page.
+
+.. _new_webui_hardening:
+
+Hardening a browser-wide session
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: session persistence, hardening
+
+``browser`` leaves a usable token on disk until it expires: whoever opens the browser
+next is logged in, and every same-origin context -- a frame, or a window opened through
+``window.open`` -- can read it. Use it only on devices that are not shared. ``tab`` keeps
+the token out of both, but not out of a tab opened from a logged-in one, which is handed
+a copy of the session as described above. Consider ``X-Frame-Options: DENY`` (or
+``Content-Security-Policy: frame-ancestors 'none'``) on the reverse proxy for either
+value.
+
+Logging out discards the stored token but does not withdraw it: privacyIDEA checks a JWT
+by signature and ``exp`` only, so a copied token stays usable until it expires. That
+expiry is set by the :ref:`policy_jwt_validity` policy, which is the only real upper
+bound for both values. ``logout_time`` is an idle timer in the browser and does not
+limit a token that has left it.
+
+
 .. _dashboard:
 
 Dashboard
@@ -265,7 +325,7 @@ policies are configured to do and what they are currently enforcing:
   non-zero count is highlighted red, a zero count green.
 * **Expired records** - locks and blocks whose time has run out. They
   restrict nobody, and are what the purge action on the *Locked Users*
-  and *Blocklist* pages removes.
+  and *IP Blocklist* pages removes.
 * **Blocks and locks over time** - a histogram of when restrictions were
   imposed, read from the conditional-access outcomes recorded on the
   authentication log. Only the request that *imposed* a restriction counts,
@@ -291,14 +351,16 @@ policies are configured to do and what they are currently enforcing:
   histogram to brush over - an administrator without the log's right, say -
   the list is not narrowed at all.
 
-Every row links to the page it summarises. The three areas are governed
+Every top-level row - *Enforcing policies*, *Users locked*, *IPs blocked* -
+links to the page it summarises; their *permanent*/*dry run only*/*disabled*
+sub-counts and *Expired records* do not. The three areas are governed
 by separate rights (``conditional_access_policy_read``, ``user_lock_read``,
 ``blocklist_read``); the panel shows only the areas an administrator may
 read and is offered as soon as any one of the three is granted. It reads
 the regular endpoints
 ``GET /conditionalaccess/policy``, ``GET /conditionalaccess/lock/users``
-(once per lock state, for the counts only) and
-``GET /conditionalaccess/blocklist``.
+(once per lock state for the counts, plus once more for the records behind
+*Restrictions in force* above) and ``GET /conditionalaccess/blocklist``.
 
 The history is the exception: it hangs off the authentication-log entries
 that caused it, so it is read under ``authentication_log_read`` rather than
@@ -315,30 +377,15 @@ Locking a user or an IP by hand
 
 A restriction does not have to come from a Conditional Access policy. The
 *User Lock State* card on a user's details page offers a **Lock** action, and
-the *Blocklist* page a **Block IP** action; both ask whether the restriction
+the *IP Blocklist* page a **Block IP** action; both ask whether the restriction
 lasts until an administrator lifts it (the default) or for a chosen duration.
 
-A manual restriction is stored in the same place a Conditional Access policy
-writes to and is enforced by the same pre-check, so it behaves exactly like a
-Conditional Access policy lock at authentication time and is cleared by the
-same *Unlock* / *Unblock* action. What is recorded alongside it is its
-**cause**: the *Locked Users* and *Blocklist* pages show a *Cause* column
-reading *Manual* or *Policy*, and the locked-users list can be filtered on it.
-The cause always describes the restriction currently in force - if a
-Conditional Access policy later strengthens a manual lock, the row becomes a
-policy lock.
-
-Unlike a Conditional Access policy action, a manual write is authoritative:
-an administrator may replace a permanent lock with a timed one, which the
-engine refuses to do to itself. A never-block IP address (loopback, or one
-covered by ``CONDITIONAL_ACCESS_NEVER_BLOCK``) is refused with an
-explanation rather than silently skipped.
-
-The two actions are governed by their own rights, ``user_lock_set`` and
-``blocklist_set``, kept separate from the ``*_reset`` rights because clearing
-a restriction is recoverable and imposing one is not. ``pi-manage
-conditionalaccess lock-user`` and ``pi-manage conditionalaccess block-ip`` do
-the same from the command line.
+The *Locked Users* and *IP Blocklist* pages show a *Cause* column reading *Manual*
+or *Policy*, and the locked-users list can be filtered on it. What a manual
+restriction does at authentication time, how its cause moves when a policy
+strengthens it, why a manual write is authoritative where a policy's is not, and
+which rights it needs are described in
+:ref:`conditional_access_manual_restrictions`.
 
 Storage and cleanup
 ~~~~~~~~~~~~~~~~~~~

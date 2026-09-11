@@ -50,9 +50,8 @@ from privacyidea.lib.config import (get_token_class, get_from_config,
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import EventConfiguration, event
 from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
-from privacyidea.lib.token import get_one_token
 from privacyidea.lib.tokens.pushtoken import PUSH_AUTH_EVENT, PUSH_AUTH_REASON, PUSH_AUTH_TRANSACTION_ID
-from privacyidea.lib.user import get_user_from_param, User
+from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import get_client_ip_info, get_plugin_info_from_useragent
 from ..lib.framework import get_app_config_value
 from ..lib.log import log_with
@@ -103,22 +102,6 @@ def before_request():
     if request.method == "POST":
         # default IP if the request carries none, matching save_client_application_type
         save_clientapplication(g.client_ip or "0.0.0.0", f"{request.user_agent!s}" or "unknown")  # nosec B104
-
-
-def _push_token_owner(serial):
-    """
-    Resolve the owner of the push token addressed by *serial* for the
-    conditional-access checks. The smartphone sends only the token serial (no
-    user parameter), so the identity the engine reasons about — the token owner —
-    must be looked up from the serial. Returns an empty :class:`User` when the
-    serial is missing or the token has no resolvable owner.
-    """
-    if not serial:
-        return User()
-    try:
-        return get_one_token(serial=serial).user or User()
-    except Exception:
-        return User()
 
 
 @ttype_blueprint.route('/<ttype>', methods=['POST', 'GET'])
@@ -189,10 +172,9 @@ def token(ttype=None):
     # Log push authentication
     push_auth_event = getattr(g, PUSH_AUTH_EVENT, None)
     if push_auth_event:
-        # The smartphone's request carries only the serial, so scope the auth-log row and the conditional-access engine
-        # to the resolved token owner (the param user is empty for a push answer) so per-user failure counts add up.
-        owner = _push_token_owner(serial)
-        log_authentication(push_auth_event, request, user=owner, serial=serial,
+        # The smartphone's request carries only the serial and no user, so the row's user is the token owner
+        # log_authentication resolves from that serial - which is what makes the per-user failure counts add up.
+        log_authentication(push_auth_event, request, serial=serial,
                            transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None),
                            reasons=getattr(g, PUSH_AUTH_REASON, None) or [])
 
