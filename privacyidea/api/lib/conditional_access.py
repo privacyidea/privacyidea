@@ -164,9 +164,8 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
     ``db.session``'s pool (see :func:`~privacyidea.lib.conditional_access.session.release_ca_connection`).
     """
     try:
-        # Resolved once per request and kept on the context, which is the single place it lives: this pre-check reads
-        # it back below, and the post-response evaluation reads the same value, so both halves of one request word a
-        # rejection the same way.
+        # Resolved once per request and kept on the context, which is the single place it lives: this pre-check is
+        # its only reader, a restriction being described only on the requests it refuses.
         context = get_ca_context()
         context.use_default_error_message = show_default_ca_error_message(user)
         source_ip = g.get("client_ip")

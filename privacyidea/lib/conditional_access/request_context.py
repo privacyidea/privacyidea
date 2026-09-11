@@ -99,8 +99,8 @@ class ConditionalAccessContext:
         # The wording conditional access claims for this response, so the masking actions show it (see claim_message).
         self.own_message: str | None = None
         # Whether a rejection with no error message of its own falls back to the default wording for what it did
-        # (see CAContext). Resolved once by the gate, where policies can be matched, and read again at
-        # post-response evaluation so both halves of one request answer the same way.
+        # (the show_default_ca_error_message policy). Resolved once by the gate, where policies can be matched, and
+        # read back there: a restriction is only ever described on the requests it refuses.
         self.use_default_error_message = False
 
     def claim_message(self, message: str) -> None:
@@ -400,8 +400,7 @@ class ConditionalAccessContext:
         # not "unknown" to a condition - it reads as *absent*, which an IN condition treats as no match and a NOT_IN
         # as a match. Omitting the endpoint silently inverted every ENDPOINT condition on this path.
         context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
-                            user_role=event.user_role, endpoint=event.endpoint,
-                            use_default_error_message=self.use_default_error_message)
+                            user_role=event.user_role, endpoint=event.endpoint)
         try:
             outcomes = evaluate_conditional_access_policies(context, event.event_type)
         except Exception as ex:
