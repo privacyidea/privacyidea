@@ -451,7 +451,7 @@ def _types_label(types: "list[str]") -> str:
     return ", ".join(types) if types else "(none)"
 
 
-def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str], window_seconds: int,
+def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str], window_seconds: float,
                   window_end: datetime | None = None, since_last_success: bool = False) -> int:
     """
     Count the ``authentication_log`` rows matching *subject* and *event_types* within the sliding window
@@ -491,7 +491,7 @@ def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str]
 
 def count_user_events(resolver: str, uid: str, realm: str,
                       event_types: list[str],
-                      window_seconds: int, window_end: datetime | None = None,
+                      window_seconds: float, window_end: datetime | None = None,
                       since_last_success: bool = False,
                       extra_filters: "Sequence | None" = None) -> int:
     """
@@ -540,7 +540,7 @@ def count_user_events(resolver: str, uid: str, realm: str,
                          event_types, window_seconds, window_end, since_last_success)
 
 
-def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_seconds: int,
+def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_seconds: float,
                                 window_end: datetime | None = None,
                                 extra_filters: "Sequence | None" = None) -> int:
     """
@@ -663,7 +663,7 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
     return matches
 
 
-def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[str], window_seconds: int,
+def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[str], window_seconds: float,
                     window_end: datetime | None = None, since_last_success: bool = False,
                     row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
@@ -700,7 +700,7 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
 
 
 def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[str],
-                        window_seconds: int, window_end: datetime | None = None,
+                        window_seconds: float, window_end: datetime | None = None,
                         since_last_success: bool = False,
                         row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
@@ -733,7 +733,7 @@ def count_user_attempts(resolver: str, uid: str, realm: str, event_types: list[s
                            row_filter=row_filter)
 
 
-def count_ip_events(source_ip: str, event_types: list[str], window_seconds: int,
+def count_ip_events(source_ip: str, event_types: list[str], window_seconds: float,
                     window_end: datetime | None = None, extra_filters: "Sequence | None" = None) -> int:
     """
     Count the ``authentication_log`` rows a single *source_ip* produced with any of *event_types* within the sliding
@@ -770,7 +770,7 @@ def count_ip_events(source_ip: str, event_types: list[str], window_seconds: int,
                          event_types, window_seconds, window_end)
 
 
-def count_ip_attempts(source_ip: str, event_types: list[str], window_seconds: int,
+def count_ip_attempts(source_ip: str, event_types: list[str], window_seconds: float,
                       window_end: datetime | None = None,
                       row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
     """
