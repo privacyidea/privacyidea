@@ -17,16 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, DestroyRef, effect, inject, OnDestroy, signal } from "@angular/core";
+import { Component, computed, DestroyRef, effect, inject, OnDestroy, signal, viewChild } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 import { MatButtonModule } from "@angular/material/button";
-import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
-import { MatInputModule } from "@angular/material/input";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
@@ -34,6 +31,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { PolicyActionSearchComponent } from "./policy-action-search/policy-action-search.component";
 import { PolicyPanelEditComponent, PolicyTab } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
 import { PolicyTemplatePickerComponent } from "./policy-template-picker/policy-template-picker.component";
 
@@ -45,9 +43,7 @@ import { PolicyTemplatePickerComponent } from "./policy-template-picker/policy-t
     PolicyTemplatePickerComponent,
     MatButtonModule,
     MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-    ClearableInputComponent,
+    PolicyActionSearchComponent,
     StickyHeaderDirective,
     ScrollToTopDirective
   ],
@@ -67,6 +63,14 @@ export class PolicyEditPageComponent implements OnDestroy {
 
   readonly activeTab = signal<PolicyTab>("actions");
   readonly actionFilter = signal<string>("");
+
+  private readonly stickyHeader = viewChild(StickyHeaderDirective);
+
+  /**
+   * The search field is only shown in the header once that header is pinned; the rest of the time
+   * the actions tab renders it above the panels it filters.
+   */
+  readonly searchInHeader = computed(() => this.activeTab() === "actions" && !!this.stickyHeader()?.isSticky());
 
   readonly policy = signal<PolicyDetail>(this.policyService.getEmptyPolicy());
   readonly policyEdits = signal<Partial<PolicyDetail>>({});

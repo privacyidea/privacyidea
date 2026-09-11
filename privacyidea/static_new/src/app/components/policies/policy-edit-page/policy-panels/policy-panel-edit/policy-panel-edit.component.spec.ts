@@ -61,6 +61,7 @@ class MockDescComp {
 class MockActionTab {
   policy = input.required<PolicyDetail>();
   actionFilter = input<string>("");
+  searchInHeader = input<boolean>(false);
   actionsUpdate = output<Record<string, string | boolean>>();
   actionFilterChange = output<string>();
   policyScopeChange = output<string | undefined>();

@@ -44,21 +44,12 @@
         <span i18n="@@common.save">Save</span>
       </button>
 
-      @if (activeTab() === "actions") {
-        <mat-form-field
+      <!-- Only while the header is pinned: unpinned, the field sits in the actions tab, where
+           it belongs above the two panels it filters. -->
+      @if (searchInHeader()) {
+        <app-policy-action-search
           class="action-search-field"
-          subscriptSizing="dynamic">
-          <mat-label i18n="@@policy.searchActionsLabel">Search actions</mat-label>
-          <app-clearable-input
-            (clearButtonClick)="actionFilter.set('')"
-            [showClearButton]="actionFilter() !== ''">
-            <input
-              matInput
-              type="text"
-              [value]="actionFilter()"
-              (input)="actionFilter.set($any($event.target).value)" />
-          </app-clearable-input>
-        </mat-form-field>
+          [(actionFilter)]="actionFilter" />
       }
     </div>
   </div>
@@ -73,5 +64,6 @@
     [policy]="editedPolicy()"
     [(activeTab)]="activeTab"
     [(actionFilter)]="actionFilter"
+    [searchInHeader]="searchInHeader()"
     (policyEdit)="addPolicyEdit($event)"></app-policy-panel-edit>
 </div>

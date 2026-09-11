@@ -29,6 +29,7 @@ import {
   Signal,
   WritableSignal
 } from "@angular/core";
+import { PolicyActionSearchComponent } from "@components/policies/policy-edit-page/policy-action-search/policy-action-search.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PolicyActionDetail, PolicyDetail } from "@services/policies/policies.service";
 import { ActionSelectorComponent } from "./action-selector/action-selector.component";
@@ -37,7 +38,7 @@ import { AddedActionsListComponent } from "./added-actions-list/added-actions-li
 @Component({
   selector: "app-edit-action-tab",
   standalone: true,
-  imports: [AddedActionsListComponent, ActionSelectorComponent],
+  imports: [AddedActionsListComponent, ActionSelectorComponent, PolicyActionSearchComponent],
   templateUrl: "./edit-action-tab.component.html",
   styleUrl: "./edit-action-tab.component.scss"
 })
@@ -49,6 +50,7 @@ export class EditActionTabComponent {
   readonly actionsUpdate = output<Record<string, string | boolean>>();
 
   readonly actionFilter = model<string>("");
+  readonly searchInHeader = input<boolean>(false);
 
   readonly selectedAction: WritableSignal<{ name: string; value: string | boolean } | null> = linkedSignal({
     source: () => ({

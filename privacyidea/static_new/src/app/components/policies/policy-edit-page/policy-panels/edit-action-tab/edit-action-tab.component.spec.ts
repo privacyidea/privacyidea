@@ -49,6 +49,16 @@ class MockActionSelectorComponent {
   actionAdd = output<{ action: { name: string; value: string | boolean }; newScope?: string | null }>();
 }
 
+@Component({
+  selector: "app-policy-action-search",
+  template: "",
+  standalone: true
+})
+class MockPolicyActionSearchComponent {
+  actionFilter = input<string>("");
+  actionFilterChange = output<string>();
+}
+
 class MockDialogService {}
 
 describe("EditActionTabComponent", () => {
@@ -71,7 +81,7 @@ describe("EditActionTabComponent", () => {
     })
       .overrideComponent(EditActionTabComponent, {
         set: {
-          imports: [MockAddedActionsListComponent, MockActionSelectorComponent]
+          imports: [MockAddedActionsListComponent, MockActionSelectorComponent, MockPolicyActionSearchComponent]
         }
       })
       .compileComponents();
@@ -139,6 +149,23 @@ describe("EditActionTabComponent", () => {
       })
     );
     expect(scopeChangeSpy).toHaveBeenCalledWith(newScope);
+  });
+
+  it("should show the search field above both action lists", () => {
+    const searchField = fixture.debugElement.query(By.directive(MockPolicyActionSearchComponent));
+    const actionLists = fixture.debugElement.query(By.directive(MockAddedActionsListComponent));
+
+    expect(searchField).not.toBeNull();
+    expect(
+      searchField.nativeElement.compareDocumentPosition(actionLists.nativeElement) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("should leave the search field out while the header shows it", () => {
+    fixture.componentRef.setInput("searchInHeader", true);
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(MockPolicyActionSearchComponent))).toBeNull();
   });
 
   it("should hand the search term to both action lists", () => {

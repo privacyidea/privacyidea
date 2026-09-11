@@ -54,6 +54,7 @@
     <app-edit-action-tab
       [policy]="editedPolicy()"
       [(actionFilter)]="actionFilter"
+      [searchInHeader]="searchInHeader()"
       (actionsUpdate)="updateActions($event)"
       (policyScopeChange)="onPolicyScopeChange($event)" />
   }
