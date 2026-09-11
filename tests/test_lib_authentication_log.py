@@ -1072,6 +1072,27 @@ class AuthenticationLogOutcomeJoinTestCase(MyTestCase):
         self.assertIsNotNone(get_authentication_log_event(kept))
         self.assertEqual(1, len(get_outcomes(kept)))
 
+    def test_a_reasons_filtered_delete_batches_when_more_rows_match_than_one_batch(self):
+        # Regression: the fix above used to freeze every matching id into a single literal IN (...) list, which
+        # breaks on Oracle beyond 1000 elements (ORA-01795) and defeats chunk_size's point of bounding each delete
+        # statement's size (the same huge list was reused unchanged on every chunk iteration). Patching the batch
+        # size down to 2 makes 5 matching rows span three batches without needing Oracle's real limit to prove it.
+        removed_ids = [self._entry_with_outcomes(username="doomed") for _ in range(5)]
+        for removed_id in removed_ids:
+            db.session.add(AuthenticationLogReason(auth_log_id=removed_id, reason="WRONG_OTP"))
+        kept = self._entry_with_outcomes(username="spared")
+        db.session.add(AuthenticationLogReason(auth_log_id=kept, reason="WRONG_OTP"))
+        db.session.commit()
+
+        with mock.patch("privacyidea.lib.conditional_access.authentication_log._REASONS_DELETE_ID_BATCH", 2):
+            self.assertEqual(5, delete_authentication_logs(reasons="WRONG_OTP", usernames="doomed"))
+
+        for removed_id in removed_ids:
+            self.assertIsNone(get_authentication_log_event(removed_id))
+            self.assertEqual([], list(get_outcomes(removed_id)))
+        self.assertIsNotNone(get_authentication_log_event(kept))
+        self.assertEqual(1, len(get_outcomes(kept)))
+
     def test_retention_takes_the_outcomes_with_it(self):
         removed = self._entry_with_outcomes(2)
         # Age the row past the cutoff; its outcomes have no timestamp of their own, so they are matched through it.

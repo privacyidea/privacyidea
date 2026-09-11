@@ -26,7 +26,7 @@ from enum import Enum
 from typing import Any, TYPE_CHECKING
 
 from netaddr import AddrFormatError, IPAddress
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnElement
 
@@ -846,34 +846,36 @@ def _count_scoping(policy: ConditionalAccessPolicy) -> "tuple[list | None, Calla
     return condition_sql_filters(policy), lambda row: conditions_match_row(policy, row)
 
 
-def _exclude_attempt(sql_filters: "list | None", row_filter: "Callable[[AuthenticationLog], bool] | None",
-                     exclude_attempt_id: str | None) -> "tuple[list | None, Callable[[AuthenticationLog], bool] | None]":
+def _exclude_own_rows(sql_filters: "list | None", row_filter: "Callable[[AuthenticationLog], bool] | None",
+                      exclude_row_ids: "tuple[int, ...] | None") -> "tuple[list | None, Callable[[AuthenticationLog], bool] | None]":
     """
-    Layer "and this row/attempt is not part of *exclude_attempt_id*" onto a count's existing scoping filters, or
-    return *sql_filters*/*row_filter* unchanged when *exclude_attempt_id* is ``None``.
+    Layer "and this row's id is not one of *exclude_row_ids*" onto a count's existing scoping filters, or return
+    *sql_filters*/*row_filter* unchanged when *exclude_row_ids* is ``None``/empty.
 
     Used to compute a count as it stood immediately before one particular request's own rows joined it (see
-    :func:`_action_fires`): every row a request stages - one for a plain login, several for a multichallenge or
-    push_wait flow - shares that request's ``attempt_id``, so excluding the id excludes the whole request's own
-    contribution in one filter, regardless of how many rows it added. A row with no ``attempt_id`` of its own can
-    never match one, and is kept.
+    :func:`_action_fires`). Deliberately keyed on the exact row ids a request wrote
+    (:attr:`~privacyidea.lib.conditional_access.context.CAContext.own_row_ids`), not its ``attempt_id``: an attempt
+    id is shared by every request of a multi-request attempt (a challenge trigger, a wrong answer, the retry that
+    succeeds), so excluding by it would also exclude an *earlier* request's rows that an earlier evaluation already
+    counted - undercounting "before" and making a fire-once action refire on a later request of the same attempt.
+    Row ids name exactly this request's own contribution, however many rows it added, and nothing else's.
 
     :return: ``(sql_filters, row_filter)`` ready to pass to a row counter (``extra_filters``) and an attempt
         counter (``row_filter``) respectively
     """
-    if exclude_attempt_id is None:
+    if not exclude_row_ids:
         return sql_filters, row_filter
-    excluded = or_(AuthenticationLog.attempt_id.is_(None), AuthenticationLog.attempt_id != exclude_attempt_id)
+    excluded = AuthenticationLog.id.notin_(exclude_row_ids)
     combined_sql = [*(sql_filters or []), excluded]
     if row_filter is None:
-        combined_row = lambda row: row.attempt_id != exclude_attempt_id
+        combined_row = lambda row: row.id not in exclude_row_ids
     else:
-        combined_row = lambda row: row.attempt_id != exclude_attempt_id and row_filter(row)
+        combined_row = lambda row: row.id not in exclude_row_ids and row_filter(row)
     return combined_sql, combined_row
 
 
 def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: datetime,
-                  since_last_success: bool = False, exclude_attempt_id: str | None = None) -> int:
+                  since_last_success: bool = False, exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count a user-target policy's events (``PER_REQUEST``) or attempts (``PER_ATTEMPT``) over its window, per the
     policy's :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.count_mode`, scoped to the
@@ -890,12 +892,12 @@ def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: dat
         ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS`` row, ``PER_ATTEMPT`` at the last successful attempt.
         (Source-IP ``DISTINCT_USERS`` deliberately never resets, which is why it is a separate mode and does not go
         through here.)
-    :param exclude_attempt_id: leave out every row of this attempt (see :func:`_exclude_attempt`) - used to compute
-        the count as it stood before the current request's own contribution, so a crossing can be detected even
-        when this request added more than one matching row to it.
+    :param exclude_row_ids: leave out these row ids (see :func:`_exclude_own_rows`) - used to compute the count as
+        it stood before the current request's own contribution, so a crossing can be detected even when this
+        request added more than one matching row to it.
     :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
     """
-    sql_filters, row_filter = _exclude_attempt(*_count_scoping(policy), exclude_attempt_id)
+    sql_filters, row_filter = _exclude_own_rows(*_count_scoping(policy), exclude_row_ids)
     if policy.count_mode == CountMode.PER_ATTEMPT:
         return count_user_attempts(user.resolver, user.uid, user.realm,
                                    policy.counter_types_to_track, policy.time_window_seconds,
@@ -908,7 +910,7 @@ def _policy_count(policy: ConditionalAccessPolicy, user: "User", window_end: dat
 
 
 def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end: datetime,
-                     exclude_attempt_id: str | None = None) -> int:
+                     exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count a source-IP-target policy's subject over its window, per the policy's
     :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.count_mode`: distinct targeted accounts
@@ -921,23 +923,23 @@ def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end
     :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
     :param source_ip: the client IP to count for
     :param window_end: the instant the window ends (reference time)
-    :param exclude_attempt_id: leave out every row of this attempt (see :func:`_exclude_attempt` and
-        :func:`_policy_count`) - has no effect on ``DISTINCT_USERS`` (see below)
+    :param exclude_row_ids: leave out these row ids (see :func:`_exclude_own_rows` and :func:`_policy_count`) - has
+        no effect on ``DISTINCT_USERS`` (see below)
     :return: the distinct-account count (``DISTINCT_USERS``), event count (``PER_REQUEST``) or attempt count
         (``PER_ATTEMPT``)
     """
     if policy.count_mode == CountMode.DISTINCT_USERS:
-        # Excluding this request's own attempt is meaningless here: the signal is the *distinct* accounts seen,
-        # so an account that already appears via an earlier, unrelated attempt is already one of them regardless
+        # Excluding this request's own rows is meaningless here: the signal is the *distinct* accounts seen,
+        # so an account that already appears via an earlier, unrelated row is already one of them regardless
         # of this one - unlike a monotonic per-row/per-attempt count, "before this request's own contribution"
         # is not simply "one row/attempt fewer". Callers that need count_before for crossing-detection
-        # (see _evaluate_policy) fall back to count - 1 for this mode instead of calling this with an id to
+        # (see _evaluate_policy) fall back to count - 1 for this mode instead of calling this with ids to
         # exclude.
         sql_filters, _ = _count_scoping(policy)
         return count_distinct_users_for_ip(source_ip, policy.counter_types_to_track,
                                            policy.time_window_seconds, window_end=window_end,
                                            extra_filters=sql_filters)
-    sql_filters, row_filter = _exclude_attempt(*_count_scoping(policy), exclude_attempt_id)
+    sql_filters, row_filter = _exclude_own_rows(*_count_scoping(policy), exclude_row_ids)
     if policy.count_mode == CountMode.PER_REQUEST:
         return count_ip_events(source_ip, policy.counter_types_to_track,
                                policy.time_window_seconds, window_end=window_end,
@@ -1481,7 +1483,7 @@ def _stage_in_range(policy: ConditionalAccessPolicy, count: int) -> ConditionalA
 def _action_fires(action: ConditionalAccessStageAction, threshold: int, count: int, count_before: int) -> bool:
     """
     Whether *action* fires given *count* and *count_before* (the same count as it stood immediately before the
-    current evaluation's own contribution - see :func:`_exclude_attempt`), given that its stage is the one
+    current evaluation's own contribution - see :func:`_exclude_own_rows`), given that its stage is the one
     :func:`_stage_in_range` returned for *count* - this does not itself check that *count* falls in the stage's
     range.
 
@@ -1495,7 +1497,7 @@ def _action_fires(action: ConditionalAccessStageAction, threshold: int, count: i
     multichallenge flow). Without it such a step would never satisfy the fire-once condition and the action would
     silently never trigger for that crossing at all. Residual case this does not cover: several such requests all
     committing before *any* of them is evaluated leaves every one of them with a count_before already at or past
-    the threshold (each excludes only its own attempt, and every other one's row is already visible), so none
+    the threshold (each excludes only its own rows, and every other one's row is already visible), so none
     detects a crossing either. Resolving that fully would mean serializing count-then-act across concurrent
     requests for the same subject, which no part of this module does - counting stays a plain read against
     whatever is committed at the time, never a lock. With ``retrigger_above_threshold`` the action fires on every
@@ -1598,19 +1600,21 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
         return ConditionalAccessEvaluation()
     # count_before is count as it stood immediately before *this request's own* rows joined it, used by
     # _action_fires to tell "this evaluation is the one that crossed the threshold" apart from "a more severe
-    # stage already owned an equal-or-higher count on a previous evaluation" - see _exclude_attempt and
-    # _action_fires. context.attempt_id identifies this request's own rows (shared by every row one request
-    # stages, however many). Falls back to count - 1, i.e. the plain count == threshold this replaces, when either
-    # the id is unavailable (a caller outside a request context) or the mode is DISTINCT_USERS, where "this
-    # request's own contribution" is not well-defined (see _policy_count_ip) - both fall back rather than
-    # regress, at the cost of not detecting a step that skipped the threshold value in those two cases.
-    attempt_id = context.attempt_id
-    if attempt_id is not None and policy.count_mode != CountMode.DISTINCT_USERS:
+    # stage already owned an equal-or-higher count on a previous evaluation" - see _exclude_own_rows and
+    # _action_fires. context.own_row_ids names exactly this request's own rows (however many one request stages) -
+    # deliberately not context's attempt_id, since that id can be shared with an *earlier* request of the same
+    # multi-request attempt whose rows an earlier evaluation already counted (see CAContext.own_row_ids). Falls
+    # back to count - 1, i.e. the plain count == threshold this replaces, when either nothing was written (a
+    # caller outside a request context) or the mode is DISTINCT_USERS, where "this request's own contribution" is
+    # not well-defined (see _policy_count_ip) - both fall back rather than regress, at the cost of not detecting a
+    # step that skipped the threshold value in those two cases.
+    own_row_ids = context.own_row_ids
+    if own_row_ids and policy.count_mode != CountMode.DISTINCT_USERS:
         if policy.target == ConditionalAccessTarget.SOURCE_IP:
-            count_before = _policy_count_ip(policy, source_ip, now, exclude_attempt_id=attempt_id)
+            count_before = _policy_count_ip(policy, source_ip, now, exclude_row_ids=own_row_ids)
         else:
             count_before = _policy_count(policy, user, now, since_last_success=policy.reset_on_success,
-                                         exclude_attempt_id=attempt_id)
+                                         exclude_row_ids=own_row_ids)
     else:
         count_before = count - 1
     pending_actions = _pending_actions(triggered_stage, count, count_before)
@@ -1689,7 +1693,10 @@ def parse_lock_duration_seconds(action_value: Any) -> int | None:
         return None
     try:
         seconds = int(action_value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
+        # OverflowError specifically covers a non-finite float (float('inf')/float('-inf')) - int() raises that
+        # rather than ValueError, and a bare Infinity token is valid input to Python's stdlib json.loads, so it
+        # can arrive here straight from a request body.
         return None
     return seconds if 0 < seconds <= MAX_LOCK_DURATION_SECONDS else None
 

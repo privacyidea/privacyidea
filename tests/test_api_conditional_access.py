@@ -662,21 +662,36 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # converts this request's own success into a rejection - so without stripping them here, a client would
         # keep offline OTPs (and the pi_remember_device cookie) that let it skip 2FA entirely afterward, even
         # though the very same response tells it the request was refused.
+        from privacyidea.lib.clients import create_client
         from privacyidea.lib.machine import attach_token, detach_token
         from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
         from privacyidea.lib.policies.actions import PolicyAction
         from privacyidea.lib.remembered_device import PERSISTENT_COOKIE_NAME
 
+        # request_persistent_cookie only takes effect for an identified API client (g.client_id, set from
+        # X-API-Key) - without one, _resolve_persistent_cookie never queues a cookie at all and this test would
+        # not exercise the cookie-stripping path it is named for.
+        _client, api_key = create_client("ca remember-device client", "privacyidea-cp")
+        headers = {"X-API-Key": api_key}
         attach_token(self.serial, "offline")
         set_policy(name="ca_remember", scope=SCOPE.AUTH, action=f"{PolicyAction.REMEMBER_DEVICE}=10h")
         self._make_lock_policy(counter_type=AuthEventType.LOGIN_SUCCESS, threshold=2, duration=600,
                                reset_on_success=False)
         try:
             # First success: below the threshold, so this one legitimately carries offline OTPs and a cookie.
-            first = self._check({"user": "cornelius", "pass": "pin755224", "request_persistent_cookie": "1"},
-                                remote_addr="192.168.0.2")
-            self.assertTrue(first["result"]["value"], first)
-            self.assertIn("auth_items", first, first)
+            with self.app.test_request_context(
+                    "/validate/check", method="POST",
+                    data={"user": "cornelius", "pass": "pin755224", "request_persistent_cookie": "1"},
+                    environ_base={"REMOTE_ADDR": "192.168.0.2"}, headers=headers):
+                first_response = self.app.full_dispatch_request()
+                first = first_response.json
+                self.assertTrue(first["result"]["value"], first)
+                self.assertIn("auth_items", first, first)
+                # The genuine cookie really was queued on this (successful) response - otherwise the second
+                # request below would prove nothing about stripping it.
+                self.assertEqual(
+                    1, len([v for v in first_response.headers.get_all("Set-Cookie")
+                            if v.startswith(PERSISTENT_COOKIE_NAME + "=")]), first_response.headers)
 
             # Generating the offline batch reserves a window of future counters, so the next *usable* OTP is not
             # simply the next value in sequence - read the token's actual counter back and compute the OTP for it.
@@ -692,10 +707,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             with self.app.test_request_context(
                     "/validate/check", method="POST",
                     data={"user": "cornelius", "pass": second_otp, "request_persistent_cookie": "1"},
-                    environ_base={"REMOTE_ADDR": "192.168.0.2"}):
+                    environ_base={"REMOTE_ADDR": "192.168.0.2"}, headers=headers):
                 response = self.app.full_dispatch_request()
                 body = response.json
-                cookie_header = response.headers.get("Set-Cookie", "")
+                cookie_headers = response.headers.get_all("Set-Cookie")
         finally:
             delete_policy("ca_remember")
             detach_token(self.serial, "offline")
@@ -703,10 +718,15 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         self.assertFalse(body["result"]["value"], body)
         self.assertTrue(is_user_locked(self.user))
         self.assertNotIn("auth_items", body, body)
-        # Cleared, not merely absent: delete_cookie still sends a Set-Cookie header for the name, but with an
-        # empty value and an expiry in the past, so the client drops whatever cookie it already held.
-        self.assertIn(PERSISTENT_COOKIE_NAME + "=;", cookie_header, cookie_header)
-        self.assertIn("1970", cookie_header, cookie_header)
+        # Exactly one Set-Cookie header for this cookie, and it is the clearing one - not the genuine cookie
+        # queued earlier in the same response's postpolicy chain (_finalize_auth_response) with a second,
+        # clearing header merely appended after it. Cleared, not merely absent: delete_cookie still sends a
+        # Set-Cookie header for the name, but with an empty value and an expiry in the past, so the client drops
+        # whatever cookie it already held.
+        own_cookie_headers = [v for v in cookie_headers if v.startswith(PERSISTENT_COOKIE_NAME + "=")]
+        self.assertEqual(1, len(own_cookie_headers), cookie_headers)
+        self.assertIn(PERSISTENT_COOKIE_NAME + "=;", own_cookie_headers[0], own_cookie_headers)
+        self.assertIn("1970", own_cookie_headers[0], own_cookie_headers)
 
     def test_hide_specific_error_message_still_masks_an_ordinary_token_failure(self):
         # The policy keeps doing its job on everything that is not conditional access's: a wrong PIN is still

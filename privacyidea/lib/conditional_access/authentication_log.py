@@ -904,6 +904,12 @@ def _delete_reasons_of(criterion: ColumnElement[bool], chunk_size: int | None = 
                                 chunk_size)
 
 
+#: Safely below Oracle's 1000-element literal ``IN (...)`` list limit (ORA-01795); the batch size
+#: :func:`delete_authentication_logs` freezes matching ids into when a ``reasons`` filter forces it to delete by id
+#: (see there) rather than the size of any actual delete statement chunking.
+_REASONS_DELETE_ID_BATCH = 500
+
+
 def _delete_entries(criterion: ColumnElement[bool], chunk_size: int | None = None) -> int:
     """
     Delete the authentication-log rows matching *criterion* **together with their classified reasons and their
@@ -980,18 +986,28 @@ def delete_authentication_logs(resolvers: str | list[str] | None = None,
     if visibility_scopes is not None:
         conditions.append(visibility_condition(visibility_scopes))
     criterion = and_(*conditions)
-    if reasons is not None:
-        # reasons matches via an EXISTS against authentication_log_reason (see filter_conditions), and
-        # _delete_entries deletes that very table before the parent row it belongs to (the FK does not cascade on
-        # SQLite). Reused unchanged for the parent delete, the EXISTS would then re-evaluate against a
-        # authentication_log_reason that no longer has those rows and match nothing - every matching entry would
-        # lose its reasons and its conditional-access outcomes while the entry itself, and the count this function
-        # returns, both stay put. Freezing the matching ids first (read while the reason rows this criterion
-        # depends on still exist) breaks that self-invalidation. Not needed for a criterion that carries no
-        # reasons filter, since none of those ever reference a table _delete_entries removes rows from.
-        ids = get_ca_session().scalars(select(AuthenticationLog.id).where(criterion)).all()
-        criterion = AuthenticationLog.id.in_(ids)
-    return _delete_entries(criterion, chunk_size)
+    if reasons is None:
+        return _delete_entries(criterion, chunk_size)
+    # reasons matches via an EXISTS against authentication_log_reason (see filter_conditions), and
+    # _delete_entries deletes that very table before the parent row it belongs to (the FK does not cascade on
+    # SQLite). Reused unchanged for the parent delete, the EXISTS would then re-evaluate against a
+    # authentication_log_reason that no longer has those rows and match nothing - every matching entry would
+    # lose its reasons and its conditional-access outcomes while the entry itself, and the count this function
+    # returns, both stay put. The fix is to capture the matching ids while the reason rows this criterion depends
+    # on still exist, and delete by id instead of by re-evaluating the filter - but never as one literal id list:
+    # Oracle (an explicitly supported backend elsewhere in this module) rejects an ``IN (...)`` list beyond 1000
+    # elements (ORA-01795), and reusing one huge list as the WHERE clause on every chunked iteration would also
+    # defeat chunk_size's purpose of bounding each statement's size. So the ids are captured and deleted in
+    # bounded batches instead - well under that limit, and each its own appropriately sized _delete_entries call -
+    # not just for a caller that requested chunking, since the limit applies regardless of chunk_size.
+    batch_size = min(chunk_size, _REASONS_DELETE_ID_BATCH) if chunk_size else _REASONS_DELETE_ID_BATCH
+    session = get_ca_session()
+    deleted = 0
+    while True:
+        ids = session.scalars(select(AuthenticationLog.id).where(criterion).limit(batch_size)).all()
+        if not ids:
+            return deleted
+        deleted += _delete_entries(AuthenticationLog.id.in_(ids), chunk_size)
 
 
 def cleanup_authentication_log(older_than: datetime, chunk_size: int | None = None) -> int:

@@ -295,9 +295,12 @@ class ConditionalAccessContextTestCase(MyTestCase):
             context.run_post_eval()
 
         # The engine is handed only the classification and the subject, as a CAContext describing the identity the row
-        # states; the outcomes it returns are recorded by the context against the row it judged.
+        # states; the outcomes it returns are recorded by the context against the row it judged. own_row_ids names
+        # the row flush() just wrote, regardless of whether this request ever minted/joined an attempt_id (it did
+        # not, here) - unlike the old attempt_id-keyed mechanism, which needed one before it could detect anything.
         evaluate.assert_called_once_with(CAContext(user=context.principal.user, source_ip="10.0.0.1",
-                                                  user_role=event.user_role, endpoint=event.endpoint),
+                                                  user_role=event.user_role, endpoint=event.endpoint,
+                                                  own_row_ids=(event.row_id,)),
                                          AuthEventType.NOT_AUTHORIZED)
 
     def test_20a_post_eval_takes_the_user_role_off_the_event(self):

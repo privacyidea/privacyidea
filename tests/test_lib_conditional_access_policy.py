@@ -444,7 +444,11 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # kind of unstorable: the former would int(True) == 1 into a real one-second lock, the latter overflows
         # the engine's now + timedelta(seconds=duration) and is silently skipped at runtime.
         for action_value in (None, 0, -5, True, "abc", {}, {"duration_seconds": True},
-                             MAX_LOCK_DURATION_SECONDS + 1):
+                             MAX_LOCK_DURATION_SECONDS + 1,
+                             # A bare Infinity token is valid input to Python's stdlib json.loads, so this must
+                             # raise the documented ParameterError (fail closed) rather than an uncaught
+                             # OverflowError from int(float('inf')) escaping as a 500.
+                             float("inf"), {"duration_seconds": float("inf")}):
             self.assertRaisesRegex(
                 ParameterError, "duration",
                 self._create_with_action, {"action_type": "LOCK_USER", "action_value": action_value},

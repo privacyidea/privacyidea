@@ -460,10 +460,15 @@ class ConditionalAccessContext:
         # Every field the engine evaluates comes off the staged event or this context, so a field left out here is
         # not "unknown" to a condition - it reads as *absent*, which an IN condition treats as no match and a NOT_IN
         # as a match. Omitting the endpoint silently inverted every ENDPOINT condition on this path.
+        # own_row_ids is every row *this* request wrote (self.pending is per app context, i.e. per request - see
+        # the module docstring), not the attempt_id: an attempt can span several requests (continue_attempt joins
+        # an earlier one's), so attempt_id alone would also name rows an earlier request already contributed and
+        # a previous evaluation already counted.
+        own_row_ids = tuple(staged.row_id for staged in self.pending if staged.row_id is not None)
         context = CAContext(user=self.principal.user or None, source_ip=self.source_ip,
                             user_role=event.user_role, endpoint=event.endpoint,
                             use_default_error_message=self.use_default_error_message,
-                            attempt_id=event.attempt_id)
+                            own_row_ids=own_row_ids or None)
         try:
             evaluation = evaluate_conditional_access_policies(context, event.event_type)
         except Exception as ex:
