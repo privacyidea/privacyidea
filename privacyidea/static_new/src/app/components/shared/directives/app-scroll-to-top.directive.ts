@@ -57,11 +57,15 @@ export class ScrollToTopDirective implements OnDestroy {
     this.button = this.renderer.createElement("button");
     this.renderer.addClass(this.button, "mat-fab");
     this.renderer.addClass(this.button, "scroll-to-top-fab");
+    this.renderer.setAttribute(this.button, "type", "button");
+    this.renderer.setAttribute(this.button, "aria-label", $localize`:@@common.scrollToTop:Scroll to top`);
 
     const icon = this.renderer.createElement("mat-icon");
     this.renderer.addClass(icon, "material-icons");
     this.renderer.addClass(icon, "scroll-to-top-fab-icon");
     this.renderer.setProperty(icon, "innerHTML", "keyboard_arrow_upward");
+    // The ligature text would otherwise be announced in place of the label.
+    this.renderer.setAttribute(icon, "aria-hidden", "true");
     this.renderer.appendChild(this.button, icon);
 
     this.renderer.setStyle(this.button, "position", "sticky");

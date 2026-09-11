@@ -19,6 +19,7 @@
 
 <div
   #scrollContainer
+  appScrollToTop
   class="edit-policy-layout">
   <h3 class="margin-8">
     {{ title() }}
@@ -42,6 +43,14 @@
         <mat-icon>save</mat-icon>
         <span i18n="@@common.save">Save</span>
       </button>
+
+      <!-- Only while the header is pinned: unpinned, the field sits in the actions tab, where
+           it belongs above the two panels it filters. -->
+      @if (searchInHeader()) {
+        <app-policy-action-search
+          class="action-search-field"
+          [(actionFilter)]="actionFilter" />
+      }
     </div>
   </div>
 
@@ -53,5 +62,8 @@
 
   <app-policy-panel-edit
     [policy]="editedPolicy()"
+    [(activeTab)]="activeTab"
+    [(actionFilter)]="actionFilter"
+    [searchInHeader]="searchInHeader()"
     (policyEdit)="addPolicyEdit($event)"></app-policy-panel-edit>
 </div>
