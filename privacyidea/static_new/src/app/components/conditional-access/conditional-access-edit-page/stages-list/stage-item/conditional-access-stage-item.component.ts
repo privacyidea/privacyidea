@@ -118,12 +118,11 @@ leave the message empty.`;
 
   readonly errorMessageLength = computed(() => (this.stage().error_message ?? "").length);
 
-  // The actions whose wording a request could ever be shown: a restriction in force, or a denial. Read off the
-  // table the server serves rather than listed here, because that table holds exactly those actions - a message
-  // is said by the pre-check refusing a restricted request, off the row in force, and a row records what is in
-  // force rather than the notifications the stage also sent.
+  // The actions whose wording a request could ever be shown: a restriction in force, or a denial. Served for
+  // this target rather than listed here or inferred from the suggested wording - which answers "has a default
+  // sentence", not "can report at all" - so the rule comes from the place that defines it.
   private readonly reportingActions = computed(
-    () => new Set(this.policyService.defaultErrorMessages().map((entry) => entry.action_type))
+    () => new Set(this.policyService.reportingActionsByTarget()[this.target()] ?? [])
   );
 
   // The suggestion for this stage as it stands: one sentence per action it carries, in the order the server
@@ -164,8 +163,8 @@ leave the message empty.`;
 
   // Flagged because such a stage's wording has nowhere to be shown: it restricts nothing and denies nothing, so
   // no request is ever refused while it applies. Advisory like the tag warnings - the admin may be one action
-  // away from giving it a voice. Silent until the suggestion table has loaded, so an empty one does not flag
-  // every stage on the page.
+  // away from giving it a voice. Silent until the target's constraints have loaded, so an empty set does not
+  // flag every stage on the page.
   readonly messageUnreachable = computed(() => {
     const reporting = this.reportingActions();
     if (!reporting.size || !(this.stage().error_message ?? "").trim()) {
