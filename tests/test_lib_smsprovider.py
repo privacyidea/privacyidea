@@ -7,6 +7,7 @@ This test file tests the modules:
  lib.smsprovider.scriptsmsprovider
 """
 
+import json
 import os
 
 import mock
@@ -14,9 +15,9 @@ import responses
 from sqlalchemy import select
 
 from privacyidea.lib.error import ConfigAdminError
-from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
+from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig, FirebaseProvider
 from privacyidea.lib.smsprovider.HttpSMSProvider import HttpSMSProvider
-from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider
 from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      get_sms_provider_class,
                                                      set_smsgateway,
@@ -27,7 +28,7 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      delete_smsgateway_key_generic,
                                                      create_sms_instance,
                                                      _is_sensitive_key)
-from privacyidea.lib.smsprovider.ScriptSMSProvider import ScriptSMSProvider, SCRIPT_WAIT
+from privacyidea.lib.smsprovider.ScriptSMSProvider import ScriptSMSProvider, SCRIPT_BACKGROUND, SCRIPT_WAIT
 from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
 from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
 from privacyidea.lib.smsprovider.SmppSMSProvider import SmppSMSProvider
@@ -496,6 +497,35 @@ class ScriptSMSTestCase(MyTestCase):
         self.assertIn("script", params.get("parameters"))
         self.assertIn("background", params.get("parameters"))
 
+    def test_04_send_push_message(self):
+        identifier = "myPushScript"
+        provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider.ScriptSMSProvider"
+        set_smsgateway(identifier, provider_module, description="test",
+                       options={"background": SCRIPT_WAIT, "script": "success.sh", "REGEXP": "/-//"})
+        provider = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
+        process = mock.MagicMock()
+        process.wait.return_value = 0
+        push_payload = {"nonce": "123", "question": "Confirm login?"}
+
+        with mock.patch("subprocess.Popen", return_value=process) as popen:
+            self.assertTrue(provider.submit_message("device-token", push_payload))
+
+        process.communicate.assert_called_once_with(json.dumps(push_payload))
+        self.assertEqual("device-token", popen.call_args.args[0][1])
+        delete_smsgateway(identifier)
+
+    def test_05_background_start_failure(self):
+        identifier = "myBackgroundScript"
+        provider_module = "privacyidea.lib.smsprovider.ScriptSMSProvider.ScriptSMSProvider"
+        set_smsgateway(identifier, provider_module, description="test",
+                       options={"background": SCRIPT_BACKGROUND, "script": "missing.sh"})
+        self.addCleanup(delete_smsgateway, identifier)
+        provider = ScriptSMSProvider(smsgateway=get_smsgateway(identifier)[0], directory=self.directory)
+
+        with mock.patch("subprocess.Popen", side_effect=OSError("not found")):
+            with self.assertRaisesRegex(SMSError, "Failed to start script"):
+                provider.submit_message("device-token", {"nonce": "123"})
+
 
 class HttpSMSTestCase(MyTestCase):
     post_url = "http://smsgateway.com/sms_send_api.cgi"
@@ -737,6 +767,52 @@ class HttpSMSTestCase(MyTestCase):
             self.assertIn('passing JSON data (content hidden for security)', call)
         delete_smsgateway(identifier)
 
+    @responses.activate
+    def test_13_send_push_message_as_json(self):
+        identifier = "myPushGateway"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        set_smsgateway(identifier, provider_module, description="test",
+                       options={"HTTP_METHOD": "POST",
+                                "URL": "http://push.example.com/send",
+                                "SEND_DATA_AS_JSON": "yes",
+                                "REGEXP": "/-//",
+                                "device_token": "{phone}",
+                                "push_payload": "{message}"})
+        provider = create_sms_instance(identifier)
+        push_payload = {"nonce": "123", "question": "Confirm login?"}
+        responses.add(responses.POST, "http://push.example.com/send", status=200)
+
+        self.assertTrue(provider.submit_message("device-token", push_payload))
+
+        request_body = json.loads(responses.calls[0].request.body)
+        self.assertEqual({"device_token": "device-token", "push_payload": push_payload}, request_body)
+        self.assertEqual('payload={"nonce": "123", "question": "Confirm login?"}',
+                         provider._render_option_value("payload={message}", "device-token", push_payload))
+        self.assertEqual(123456, provider._render_option_value("{phone}", "123456", "SMS"))
+        self.assertEqual(42, provider._render_option_value("{otp}", "123456", "42"))
+        delete_smsgateway(identifier)
+
+    def test_14_reject_push_message_without_json_post(self):
+        identifier = "invalidPushGateway"
+        provider_module = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        set_smsgateway(identifier, provider_module, description="test",
+                       options={"HTTP_METHOD": "GET",
+                                "URL": "http://push.example.com/send",
+                                "device_token": "{phone}",
+                                "push_payload": "{message}"})
+        self.addCleanup(delete_smsgateway, identifier)
+        provider = create_sms_instance(identifier)
+
+        with self.assertRaisesRegex(SMSError, "Structured messages require"):
+            provider.submit_message("device-token", {"nonce": "123"})
+
+    def test_15_reject_invalid_push_configuration(self):
+        gateway = mock.MagicMock()
+        gateway.option_dict = {ALLOW_PUSH: "yes", "HTTP_METHOD": "GET", "SEND_DATA_AS_JSON": "no"}
+
+        with self.assertRaisesRegex(ConfigAdminError, "PUSH delivery requires"):
+            HttpSMSProvider(smsgateway=gateway).check_configuration()
+
 
 class SmppSMSTestCase(MyTestCase):
     config = {'SMSC_HOST': "192.168.1.1",
@@ -841,6 +917,28 @@ class SmppSMSTestCase(MyTestCase):
 
 
 class FirebaseProviderTestCase(MyTestCase):
+
+    def test_supports_push_messages(self):
+        self.assertFalse(ISMSProvider.supports_push_messages)
+        self.assertTrue(FirebaseProvider.supports_push_messages)
+        self.assertTrue(HttpSMSProvider.supports_push_messages)
+        self.assertTrue(ScriptSMSProvider.supports_push_messages)
+
+        gateway = mock.MagicMock(option_dict={})
+        self.assertTrue(FirebaseProvider.allows_push_messages(gateway))
+        self.assertFalse(HttpSMSProvider.allows_push_messages(gateway))
+        self.assertFalse(ScriptSMSProvider.allows_push_messages(gateway))
+
+        gateway.option_dict = {ALLOW_PUSH: "yes"}
+        self.assertTrue(HttpSMSProvider.allows_push_messages(gateway))
+        self.assertTrue(ScriptSMSProvider.allows_push_messages(gateway))
+        self.assertFalse(SmtpSMSProvider.allows_push_messages(gateway))
+
+        gateway.option_dict = {ALLOW_PUSH: "no"}
+        self.assertFalse(FirebaseProvider.allows_push_messages(gateway))
+
+        for provider in [FirebaseProvider, HttpSMSProvider, ScriptSMSProvider]:
+            self.assertIn(ALLOW_PUSH, provider.parameters()["parameters"])
 
     def test_set_configuration_success(self):
         valid_file = "tests/testdata/firebase-test.json"

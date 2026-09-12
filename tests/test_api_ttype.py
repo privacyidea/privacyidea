@@ -355,7 +355,7 @@ class TtypePushAPITestCase(MyApiTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with("Failed to submit message to Firebase service for token {0!s}."
+                    mock_log.assert_called_with("Failed to submit message to push gateway for token {0!s}."
                                                 .format(serial))
 
         # first create a signature

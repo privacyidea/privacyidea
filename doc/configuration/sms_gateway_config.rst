@@ -7,6 +7,9 @@ SMS Gateway configuration
 
 You can centrally define SMS gateways that can be used to send SMS with :ref:`sms_token`
 or to use the SMS gateway for sending notifications.
+Firebase, HTTP, and Script providers can also deliver signed challenge payloads for
+:ref:`push_token`. Firebase gateways allow PUSH by default. HTTP and Script gateways
+require ``ALLOW_PUSH`` to be set to ``yes``.
 
 There are different providers (gateways) to deliver SMS.
 
@@ -20,6 +23,8 @@ Firebase Provider
 
 The Firebase provider was added in privacyIDEA 3.0. It sends notifications
 via the Google Firebase service and this is used for the :ref:`push_token`.
+PUSH delivery is enabled by default and can be disabled by setting ``ALLOW_PUSH``
+to ``no``.
 For an exemplary configuration, you may have a look on the articles on the
 privacyIDEA community website `tagged with push token <https://www.privacyidea.org/tag/push-token/>`_.
 
@@ -109,6 +114,33 @@ parse the values as JSON and either send JSON or strings to the HTTP gateway.
 .. note:: You can use the tags ``{phone}`` to specify the phone number. The tag ``{otp}``
    will be replaced simply with the OTP value or with the contents created
    by the policy :ref:`smstext`.
+
+Using the HTTP provider for PUSH
+.................................
+
+The HTTP provider can be selected as the gateway for a :ref:`push_token`. Set
+``ALLOW_PUSH`` and ``SEND_DATA_AS_JSON`` to ``yes`` for a JSON POST request,
+then add options such as:
+
+* ``device_token``: ``{phone}``
+* ``push_payload``: ``{message}``
+
+For PUSH messages, ``{phone}`` contains the device token rather than a phone number.
+If an option consists only of ``{message}``, the complete structured PUSH payload is
+preserved as a JSON object. When embedded in another value, the payload is serialized
+as JSON text. The existing ``{otp}`` placeholder remains an alias for ``{message}``
+for compatibility; prefer ``{message}`` in new PUSH gateway configurations.
+
+The gateway must forward the signed payload without modifying its fields, otherwise
+the authenticator cannot verify its signature.
+
+.. note:: With Firebase, privacyIDEA learns from the Firebase response whether a
+   notification was accepted for the device and adjusts the message shown to the
+   user when it was not. An HTTP gateway can only report that it accepted the
+   request; delivery to the push service happens afterwards and is not visible to
+   privacyIDEA. Configure ``RETURN_SUCCESS`` or ``RETURN_FAIL`` so the gateway can
+   report the final delivery result if you want this feedback. A Script gateway
+   running in ``background`` mode reports no result at all.
 
 .. todo:: Add description of additional headers
 
@@ -292,6 +324,10 @@ Script provider
 
 The *Script provider* calls a script which can take care of sending the SMS.
 The script takes the phone number as the only parameter. The message is expected at stdin.
+
+Set ``ALLOW_PUSH`` to ``yes`` before selecting a Script gateway for a PUSH token.
+The first command line argument then contains the device token and stdin contains
+the structured PUSH payload serialized as JSON.
 
 Scripts are located in the directory ``/etc/privacyidea/scripts/``. You can change this default
 location by setting the value in ``PI_SCRIPT_SMSPROVIDER_DIRECTORY`` in :ref:`cfgfile`.

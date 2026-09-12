@@ -42,8 +42,9 @@ It can handle HTTP/HTTPS POST and GET requests also with Proxy support
 The code is tested in tests/test_lib_smsprovider
 """
 
-from privacyidea.lib.smsprovider.SMSProvider import (ISMSProvider, SMSError)
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, ISMSProvider, SMSError
 from privacyidea.lib import _
+from privacyidea.lib.error import ConfigAdminError
 import requests
 import json
 from urllib.parse import urlparse
@@ -54,9 +55,31 @@ log = logging.getLogger(__name__)
 
 class HttpSMSProvider(ISMSProvider):
 
+    supports_push_messages = True
+
+    @staticmethod
+    def _render_option_value(value, phone, message):
+        if isinstance(message, dict):
+            if value == "{phone}":
+                return phone
+            if value in ["{message}", "{otp}"]:
+                return message
+
+        serialized_message = message if isinstance(message, str) else json.dumps(message)
+        value = value.replace("{message}", serialized_message)
+        value = value.replace("{otp}", serialized_message)
+        value = value.replace("{phone}", phone)
+        try:
+            return json.loads(value)
+        except json.decoder.JSONDecodeError:
+            return value
+
     def submit_message(self, phone, message):
         """
         send a message to a phone via an http sms gateway
+
+        Additional options may use ``{phone}``, ``{otp}``, or ``{message}``.
+        An option consisting only of ``{message}`` preserves structured payloads.
 
         :param phone: the phone number
         :param message: the message to submit to the phone
@@ -65,7 +88,8 @@ class HttpSMSProvider(ISMSProvider):
         parameter = {}
         headers = {}
         if self.smsgateway:
-            phone = self._mangle_phone(phone, self.smsgateway.option_dict)
+            if not isinstance(message, dict):
+                phone = self._mangle_phone(phone, self.smsgateway.option_dict)
             url = self.smsgateway.option_dict.get("URL")
             method = self.smsgateway.option_dict.get("HTTP_METHOD", "GET")
             username = self.smsgateway.option_dict.get("USERNAME")
@@ -82,16 +106,11 @@ class HttpSMSProvider(ISMSProvider):
             for k, v in self.smsgateway.option_dict.items():
                 if k not in self.parameters().get("parameters"):
                     # This is an additional option
-                    # We can not do .format() due to curly brackets in JSON
-                    v = v.replace("{otp}", message)
-                    v = v.replace("{phone}", phone)
-                    try:
-                        parameter[k] = json.loads(v)
-                    except json.decoder.JSONDecodeError:
-                        parameter[k] = v
+                    parameter[k] = self._render_option_value(v, phone, message)
             headers = self.smsgateway.header_dict
         else:
-            phone = self._mangle_phone(phone, self.config)
+            if not isinstance(message, dict):
+                phone = self._mangle_phone(phone, self.config)
             url = self.config.get('URL')
             method = self.config.get('HTTP_Method', 'GET')
             username = self.config.get('USERNAME')
@@ -104,6 +123,9 @@ class HttpSMSProvider(ISMSProvider):
             https_proxy = self.config.get('HTTPS_PROXY')
             parameter = self._get_parameters(message, phone)
             timeout = self.config.get("TIMEOUT") or 3
+
+        if isinstance(message, dict) and (method != "POST" or not json_data):
+            raise SMSError(-1, "Structured messages require HTTP_METHOD=POST and SEND_DATA_AS_JSON=yes.")
 
         log.debug(f"submitting message {message!r} to {phone!s}")
 
@@ -230,6 +252,14 @@ class HttpSMSProvider(ISMSProvider):
             ret = True
         return ret
 
+    def check_configuration(self):
+        if self.smsgateway and self.allows_push_messages(self.smsgateway):
+            options = self.smsgateway.option_dict
+            if options.get("HTTP_METHOD") != "POST" or options.get("SEND_DATA_AS_JSON") != "yes":
+                raise ConfigAdminError(
+                    "PUSH delivery requires HTTP_METHOD=POST and SEND_DATA_AS_JSON=yes."
+                )
+
     @classmethod
     def parameters(cls):
         """
@@ -280,6 +310,7 @@ class HttpSMSProvider(ISMSProvider):
                                            "as JSON."),
                           "values": ["yes", "no"]
                       },
+                      ALLOW_PUSH: cls.allow_push_parameter(),
                       "REGEXP": {
                           "description": cls.regexp_description
                       },
