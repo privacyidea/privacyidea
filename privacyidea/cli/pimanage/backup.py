@@ -31,11 +31,12 @@ from typing import IO, NoReturn
 
 import click
 from dateutil.tz import tzlocal
-from flask import current_app
-from flask.cli import AppGroup
 from flask.config import Config
 from sqlalchemy.engine.url import URL, make_url
 from sqlalchemy.exc import ArgumentError
+
+from privacyidea.app import ENV_KEY
+from privacyidea.config import DefaultConfigValues
 
 SQLITE = "sqlite"
 MYSQL = "mysql"
@@ -84,7 +85,12 @@ POSTGRESQL_ENV_PARAMS = {
     "target_session_attrs": "PGTARGETSESSIONATTRS",
 }
 
-backup_cli = AppGroup("backup", help="Create/Restore database backup of privacyIDEA installation")
+# A plain click group, not a flask.cli.AppGroup: the backup commands must not
+# initialize the Flask application. create_app() connects to the database and
+# writes the node name into it, so wrapping these commands in an app context
+# would make a reachable, writable database a hard precondition for taking a
+# backup - and for restoring one in a disaster recovery situation.
+backup_cli = click.Group("backup", help="Create/Restore database backup of privacyIDEA installation")
 
 
 @backup_cli.command("create", short_help="Create a new backup of the database and configuration")
@@ -118,13 +124,11 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
     SQLite, MySQL/MariaDB and PostgreSQL databases are supported. Dumping a
     MySQL/MariaDB or a PostgreSQL database requires the client commands of the
     respective engine (mysqldump, or pg_dump) to be installed.
+
+    This command does not initialize the Flask application: a backup only
+    needs the configuration file, so it also works when the database is
+    unreachable or only read-accessible.
     """
-    # TODO: Add requirement for the config file and remove app initialization.
-    #  Currently, when calling this function, the Flask app gets initialized
-    #  (either from /etc/privacyidea/pi.cfg or from the environment variable)
-    #  regardless of the given config directory (so they can differ).
-    #  Since all the necessary paths are given in the config file, we should
-    #  just use that for the gathering the files for backup.
     # TODO: Remove generated/copied file in case of an error. Maybe create a
     #  temporary folder where the data is collected
     cur_date = datetime.now(tz=tzlocal()).strftime("%Y%m%d-%H%M")
@@ -134,14 +138,30 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
     directory = pathlib.Path(backup_dir).absolute()
     directory.mkdir(parents=True, exist_ok=True)
 
-    enc_file = pathlib.Path(current_app.config.get("PI_ENCFILE"))
+    # The two settings this command needs are read straight from the config
+    # file create_app() would have used: PRIVACYIDEA_CONFIGFILE if set,
+    # /etc/privacyidea/pi.cfg otherwise. That is deliberately not
+    # --config_dir, which selects the directory that goes into the archive.
+    config_file = os.environ.get(ENV_KEY, DefaultConfigValues.CFG_PATH)
+    cfg = Config(pathlib.Path(config_file).parent)
+    try:
+        cfg.from_pyfile(config_file)
+    except OSError as e:
+        click.secho(f"Unable to read the configuration file {config_file}: {e}", fg="red")
+        sys.exit(2)
+
+    enc_file_name = cfg.get("PI_ENCFILE")
+    if not enc_file_name:
+        click.secho(f"No PI_ENCFILE configured in {config_file}", fg="red")
+        sys.exit(2)
+    enc_file = pathlib.Path(enc_file_name)
 
     # set correct owner, if possible
     if os.geteuid() == 0:
         enc_file_stat = enc_file.stat()
         shutil.chown(directory, user=enc_file_stat.st_uid, group=enc_file_stat.st_gid)
 
-    url = _database_url(current_app.config.get("SQLALCHEMY_DATABASE_URI"))
+    url = _database_url(cfg.get("SQLALCHEMY_DATABASE_URI"))
     family = _backend_family(url)
 
     backup_file = directory.joinpath(f"{base_name}-{cur_date}.tgz")

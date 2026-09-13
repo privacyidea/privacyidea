@@ -317,15 +317,21 @@ def _setup_node_configuration(app: Flask):
         pi_node_name = app.config.get(ConfigKey.NODE) or app.config.get(ConfigKey.AUDIT_SERVERNAME,
                                                                         DefaultConfigValues.NODE_NAME)
 
-        inspect = sa.inspect(db.engine)
-        if inspect.has_table(NodeName.__tablename__):
-            db.session.merge(NodeName(id=str(pi_uuid),
-                                      name=pi_node_name,
-                                      lastseen=datetime.datetime.now(datetime.timezone.utc)))
-            db.session.commit()
-        else:
-            log.warning(f"Could not update node names in db. "
-                        f"Check that table '{NodeName.__tablename__}' exists.")
+        # The node name is informational only: an unreachable or read-only
+        # database must not abort the application startup or a CLI command
+        # that otherwise does not need to write to the database.
+        try:
+            inspect = sa.inspect(db.engine)
+            if inspect.has_table(NodeName.__tablename__):
+                db.session.merge(NodeName(id=str(pi_uuid),
+                                          name=pi_node_name,
+                                          lastseen=datetime.datetime.now(datetime.timezone.utc)))
+                db.session.commit()
+            else:
+                log.warning(f"Could not update node names in db. "
+                            f"Check that table '{NodeName.__tablename__}' exists.")
+        except sa.exc.SQLAlchemyError as e:
+            log.warning(f"Could not update node names in db: {e}")
         log.debug("Finished setting up node names.")
 
 

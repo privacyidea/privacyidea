@@ -178,6 +178,23 @@ class PIManageBackupTestCase(CliTestCase):
                         ["backup", "restore", "--keep-db-uri", "fake.tgz"],
                     )
 
+    @staticmethod
+    def _pi_cfg_env(config_dir: pathlib.Path, enc_file: pathlib.Path, uri: str) -> dict:
+        """
+        Write a minimal pi.cfg into ``config_dir`` and return the environment
+        that selects it.
+
+        ``backup create`` does not initialize the Flask application; it reads
+        the two settings it needs from the config file ``create_app()`` would
+        use -- ``PRIVACYIDEA_CONFIGFILE`` if set, else /etc/privacyidea/pi.cfg.
+        """
+        pi_cfg = config_dir / "pi.cfg"
+        pi_cfg.write_text(
+            f"SQLALCHEMY_DATABASE_URI = {uri!r}\n"
+            f"PI_ENCFILE = {str(enc_file)!r}\n"
+        )
+        return {"PRIVACYIDEA_CONFIGFILE": str(pi_cfg)}
+
     def test_02_keep_db_uri_replaces_backup_uri_in_config(self):
         """
         Core --keep-db-uri behaviour: after a restore the pi.cfg on disk must
@@ -409,16 +426,16 @@ class PIManageBackupTestCase(CliTestCase):
                 result.returncode = 1
                 return result
 
+            env = self._pi_cfg_env(config_dir, enc_file,
+                                   "mysql+pymysql://u:p@localhost/pi_test")
+
             runner = self.app.test_cli_runner()
-            with mock.patch.dict(self.app.config, {
-                    "SQLALCHEMY_DATABASE_URI": "mysql+pymysql://u:p@localhost/pi_test",
-                    "PI_ENCFILE": str(enc_file)}):
-                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
-                                side_effect=failing_run):
-                    result = runner.invoke(pi_manage, [
-                        "backup", "create",
-                        "-d", str(backup_dir),
-                        "-c", str(config_dir)])
+            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                            side_effect=failing_run):
+                result = runner.invoke(pi_manage, [
+                    "backup", "create",
+                    "-d", str(backup_dir),
+                    "-c", str(config_dir)], env=env)
 
             self.assertNotEqual(result.exit_code, 0, result.output)
             self.assertIn("Database dump failed", result.output, result.output)
@@ -623,16 +640,16 @@ class PIManageBackupTestCase(CliTestCase):
                 result.returncode = 1
                 return result
 
+            env = self._pi_cfg_env(config_dir, enc_file,
+                                   "postgresql+psycopg2://u:p@localhost/pi_test")
+
             runner = self.app.test_cli_runner()
-            with mock.patch.dict(self.app.config, {
-                    "SQLALCHEMY_DATABASE_URI": "postgresql+psycopg2://u:p@localhost/pi_test",
-                    "PI_ENCFILE": str(enc_file)}):
-                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
-                                side_effect=failing_run):
-                    result = runner.invoke(pi_manage, [
-                        "backup", "create",
-                        "-d", str(backup_dir),
-                        "-c", str(config_dir)])
+            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                            side_effect=failing_run):
+                result = runner.invoke(pi_manage, [
+                    "backup", "create",
+                    "-d", str(backup_dir),
+                    "-c", str(config_dir)], env=env)
 
             self.assertNotEqual(result.exit_code, 0, result.output)
             self.assertIn("Database dump failed", result.output, result.output)
@@ -658,16 +675,16 @@ class PIManageBackupTestCase(CliTestCase):
             enc_file = tmp / "enckey"
             enc_file.write_bytes(b"x" * 96)
 
+            env = self._pi_cfg_env(config_dir, enc_file,
+                                   "postgresql+psycopg2://u:p@localhost/pi_test")
+
             runner = self.app.test_cli_runner()
-            with mock.patch.dict(self.app.config, {
-                    "SQLALCHEMY_DATABASE_URI": "postgresql+psycopg2://u:p@localhost/pi_test",
-                    "PI_ENCFILE": str(enc_file)}):
-                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
-                                side_effect=FileNotFoundError("pg_dump")):
-                    result = runner.invoke(pi_manage, [
-                        "backup", "create",
-                        "-d", str(tmp / "backup"),
-                        "-c", str(config_dir)])
+            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                            side_effect=FileNotFoundError("pg_dump")):
+                result = runner.invoke(pi_manage, [
+                    "backup", "create",
+                    "-d", str(tmp / "backup"),
+                    "-c", str(config_dir)], env=env)
 
             self.assertEqual(2, result.exit_code, result.output)
             self.assertIn("Could not find the 'pg_dump' command", result.output, result.output)
@@ -727,16 +744,16 @@ class PIManageBackupTestCase(CliTestCase):
                 result.returncode = 0
                 return result
 
+            env = self._pi_cfg_env(config_dir, enc_file,
+                                   "mysql+pymysql://u:s3cret@localhost/pi_test")
+
             runner = self.app.test_cli_runner()
-            with mock.patch.dict(self.app.config, {
-                    "SQLALCHEMY_DATABASE_URI": "mysql+pymysql://u:s3cret@localhost/pi_test",
-                    "PI_ENCFILE": str(enc_file)}):
-                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
-                                side_effect=record):
-                    result = runner.invoke(pi_manage, [
-                        "backup", "create",
-                        "-d", str(backup_dir),
-                        "-c", str(config_dir)])
+            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                            side_effect=record):
+                result = runner.invoke(pi_manage, [
+                    "backup", "create",
+                    "-d", str(backup_dir),
+                    "-c", str(config_dir)], env=env)
 
             self.assertEqual(0, result.exit_code, result.output)
             # Neither in the configuration directory nor in the archive ...
@@ -778,6 +795,58 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertEqual(dump_bytes, seen["stdin"])
             # A successful restore consumes the extracted dump.
             self.assertFalse(sqlfile.exists())
+
+    def test_18_backup_commands_do_not_initialize_the_app(self):
+        """
+        ``backup create`` and ``backup restore`` must not initialize the Flask
+        application: create_app() connects to the database and writes the node
+        name into it, which would make a reachable, writable database a
+        precondition for taking a backup - and for restoring one in a disaster
+        recovery situation.
+
+        ``create_app`` is rigged to explode. ``create`` must still produce a
+        real archive by reading its two settings straight from pi.cfg, and
+        ``restore`` of a missing archive must report that - not a SQLAlchemy
+        traceback.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            config_dir = tmp / "config"
+            config_dir.mkdir()
+            enc_file = config_dir / "enckey"
+            enc_file.write_bytes(b"x" * 96)
+            # The "database" is a plain file: the sqlite dump path only copies
+            # it, so this exercises the whole command without a DB server.
+            db_file = tmp / "data.sqlite"
+            db_file.write_bytes(b"sqlite placeholder")
+            env = self._pi_cfg_env(config_dir, enc_file, f"sqlite:///{db_file}")
+            backup_dir = tmp / "backup"
+
+            runner = self.app.test_cli_runner()
+            with mock.patch.object(pi_manage, "create_app",
+                                   side_effect=AssertionError("must not create the app")):
+                create_result = runner.invoke(
+                    pi_manage,
+                    ["backup", "create", "-d", str(backup_dir), "-c", str(config_dir)],
+                    env=env)
+                restore_result = runner.invoke(
+                    pi_manage, ["backup", "restore", str(tmp / "missing.tgz")],
+                    env=env)
+
+            self.assertIsNone(create_result.exception, create_result.output)
+            self.assertEqual(0, create_result.exit_code, create_result.output)
+            archives = list(backup_dir.glob("*.tgz"))
+            self.assertEqual(1, len(archives),
+                             f"expected one backup archive, got {archives}")
+            with tarfile.open(archives[0], "r:gz") as tf:
+                names = tf.getnames()
+            self.assertTrue(any(name.endswith(".sqlite") for name in names), names)
+            self.assertTrue(any(name.endswith("pi.cfg") for name in names), names)
+
+            self.assertEqual(2, restore_result.exit_code, restore_result.output)
+            self.assertIn("Unable to open backup file", restore_result.output)
 
 
 class PIManageRealmTestCase(CliTestCase):
