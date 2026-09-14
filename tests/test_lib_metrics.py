@@ -351,7 +351,9 @@ class RaceToleranceTest(MyTestCase):
             with self.assertLogs("privacyidea.lib.metrics", level="WARNING") as captured:
                 metrics._write_observations({("race_c", (), "", window): _aggregate(count=5)})
 
-        self.assertIn("Lost a metric sample for 'race_c'", "\n".join(captured.output))
+        logged = "\n".join(captured.output)
+        self.assertIn("Lost 5 sample(s) of metric 'race_c'", logged)
+        self.assertIn("(labels '', node '', window ", logged)
         # No duplicate row either, and the existing one is untouched.
         self.assertEqual({"race_c": 7}, self._counts())
 
