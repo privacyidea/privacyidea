@@ -988,6 +988,12 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                                        AuthEventType.MFA_FAIL)
         self.assertEqual(0, len(second))
 
+        # A third request of the same attempt must not fire either - not just "not twice in a row".
+        own_row_ids = tuple(self._seed_attempt("att-shared", [AuthEventType.MFA_FAIL]))
+        third = evaluate_conditional_access_policies(CAContext(self.user, own_row_ids=own_row_ids),
+                                                      AuthEventType.MFA_FAIL)
+        self.assertEqual(0, len(third))
+
     def test_dry_run_writes_no_state(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 5)
