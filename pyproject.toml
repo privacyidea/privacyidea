@@ -161,11 +161,9 @@ script-files = [
 where = ["."]
 include = ["privacyidea*"]
 
-[tool.setuptools.package-data]
-"privacyidea" = ["static/", "static_new/dist/", "migrations/", "translations/"]
-
-[tool.setuptools.exclude-package-data]
-"privacyidea" = ["static/node_modules/**", "static_new/node_modules/**"]
+# There is deliberately no package-data / exclude-package-data section. With include-package-data
+# and "graft privacyidea" in MANIFEST.in, every file below the package is already package data, and
+# neither section changes what is built: MANIFEST.in alone decides what a distribution contains.
 
 [tool.setuptools.data-files]
 # Add the requirements file to binary distribution to have it available when installed
