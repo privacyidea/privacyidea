@@ -484,7 +484,7 @@ describe("UiPreferencesService", () => {
       create("en");
       authService.authData.set({ ...authService.authData()!, admin_dashboard: true, rights: ["userlist"] });
 
-      expect(service.availableLandingPages()).toEqual(["dashboard", "tokens", "users"]);
+      expect(service.availableLandingPages()).toEqual(["dashboard", "tokens", "users", "conditional-access"]);
     });
 
     it("should persist a picked landing page", () => {

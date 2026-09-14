@@ -56,7 +56,10 @@ from urllib.parse import quote
 from flask import g, current_app, Request
 from flask_babel import _, lazy_gettext
 
-from privacyidea.api.lib.utils import get_all_params, hardening_action_active
+from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                          build_reason_detail)
+from privacyidea.lib.conditional_access.request_context import get_ca_context, claimed_ca_message
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node)
@@ -547,10 +550,23 @@ def no_detail_on_fail(request, response):
     the details will be stripped if
     the authentication request failed.
 
+    A conditional-access message is the one thing that survives, exactly as it survives
+    :func:`hide_specific_error_message`: this action strips what privacyIDEA volunteers about the attempt, whereas
+    that message is something an admin either wrote on a stage or turned on by policy. Without this a lock would
+    say nothing on the very requests it refuses.
+
+    Read from the claim (:func:`~privacyidea.lib.conditional_access.request_context.claimed_ca_message`) rather than
+    from the response body: the gate builds its rejection inside the decorator stack, so the claim is what carries
+    the configured wording across this strip.
+
     :param request:
     :param response:
     :return:
     """
+    # Guarded like hide_specific_error_message, so this is safe wherever it sits: construct_radius_response
+    # replaces the body with a non-JSON one, and Response.json is then None rather than a dict.
+    if not response or not response.json:
+        return response
     content = response.json
 
     # get the serials from a policy definition
@@ -562,7 +578,11 @@ def no_detail_on_fail(request, response):
         # TODO: this strips away possible transactions ids during a
         #  challenge-response authentication. We should consider the
         #  result->authentication entry and only strip away possible user information
-        del content["detail"]
+        ca_message = claimed_ca_message()
+        if ca_message:
+            content["detail"] = {"message": ca_message}
+        else:
+            del content["detail"]
         response.set_data(json.dumps(content))
         g.audit_object.add_policy({p.get("name") for p in detail_policy})
 
@@ -1159,6 +1179,21 @@ def multichallenge_enroll_via_validate(request, response):
             challenge.save()
         content.get("detail", {})["enroll_via_multichallenge"] = True
         content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
+
+        # Reclassifies the staged authentication-log event, or creates one if none exists yet
+        enrolled_serial = content.get("detail", {}).get("serial")
+        context = get_ca_context()
+        if context.amendable is not None:
+            # Pass only what this policy determined, so an absent serial does not clear the logged one.
+            corrections = {}
+            if enrolled_serial is not None:
+                corrections["serial"] = enrolled_serial
+            if transaction_id:
+                corrections["transaction_id"] = transaction_id
+            context.reclassify(AuthEventType.ENROLLMENT_TRIGGERED, **corrections)
+        else:
+            log_authentication(AuthEventType.ENROLLMENT_TRIGGERED, request, user=user,
+                               serial=enrolled_serial, transaction_id=transaction_id)
     response.set_data(json.dumps(content))
 
     return response
@@ -1231,6 +1266,26 @@ def is_authorized(request, response):
 
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
+            context = get_ca_context()
+            # Nothing to classify when conditional access already turned the request away before any token logic ran:
+            # its rejection row already records why, and a NOT_AUTHORIZED row here would bury that reason and hand the
+            # conditional-access counters an attempt the lock itself produced.
+            if not context.rejected_by_conditional_access:
+                # Name the policy that denied it: with several authorization policies in play, "which rule do I
+                # have to change" is the whole question the log has to answer.
+                reason_detail = build_reason_detail(policies=next(iter(authorized_pol.values()), None))
+                if context.amendable is not None:
+                    # Correcting the staged event. The detail is merged, so the per-serial reasons the token layer
+                    # recorded survive alongside the policy that overrode them.
+                    # The policy applies whatever the tokens looked like, so it *replaces* the token layer's
+                    # reasons rather than joining them: it is the one thing to act on now.
+                    context.reclassify(AuthEventType.NOT_AUTHORIZED,
+                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
+                                       reason_detail=reason_detail)
+                else:
+                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User,
+                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
+                                       reason_detail=reason_detail)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response
