@@ -1816,10 +1816,11 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
     # pre-auth DENY decision in _policy_access_decision, which asks the same owner a narrower question.
     # By default, an action fires once, on the evaluation that carries the count to at or above the threshold (a
     # threshold-8 email sends on the 8th failure, not again at 9, and also fires if a step skipped 8 outright - see
-    # count_before below); retrigger_above_threshold keeps it firing for as long as this stage owns the count. Ownership is
-    # recomputed fresh from the current count on every request, not remembered, so a milder stage's re-triggering
-    # action stops once a more severe stage takes over and fires again if the count later drops back into its own
-    # range (the window sliding old events out, or a reset_on_success floor) - there is no permanent hand-over.
+    # count_before below); retrigger_above_threshold keeps it firing for as long as this stage owns the count.
+    # Ownership is recomputed fresh from the current count on every request, not remembered, so a milder
+    # stage's re-triggering action stops once a more severe stage takes over and fires again if the count
+    # later drops back into its own range (the window sliding old events out, or a reset_on_success floor) -
+    # there is no permanent hand-over.
     triggered_stage = _stage_in_range(policy, count)
     if triggered_stage is None:
         return ConditionalAccessEvaluation()
