@@ -1885,15 +1885,17 @@ def _action_expiry(stage_action: ConditionalAccessStageAction, now: datetime) ->
     return now + timedelta(seconds=duration) if duration is not None else None
 
 
-#: The largest duration (in seconds) a LOCK_USER / BLOCK_IP action may store, deliberately the same bound
-#: policy.py's MAX_COLUMN_INT uses for its own plain-integer fields (kept as a literal here rather than an
-#: import, to avoid a cycle: policy.py already imports this module). About 68 years - far past anything an
-#: admin means by a timed restriction, but comfortably below where `now + timedelta(seconds=duration)`
-#: (engine.py's LOCK_USER/BLOCK_IP execution) starts raising OverflowError, which empirically begins somewhere
-#: around 3*10**11 seconds. Without a cap, a policy carrying such a value saves successfully and then never
-#: actually locks or blocks anyone - the blanket `except Exception` around action execution swallows the
-#: OverflowError and only logs it - silently defeating the very restriction the policy was configured for.
-MAX_LOCK_DURATION_SECONDS = 2 ** 31 - 1
+#: The largest duration (in seconds) a LOCK_USER / BLOCK_IP action may store. Chosen to sit just under where
+#: `now + timedelta(seconds=duration)` (engine.py's LOCK_USER/BLOCK_IP execution) starts raising OverflowError -
+#: computed exactly as 251_612_956_799 seconds (datetime.max - a 2026 "now"), so this is that value with a large
+#: safety margin rather than a rounder, smaller number: a smaller cap would reject a duration that used to parse
+#: and execute successfully before this bound existed, which is a behavior change this fix does not need to make
+#: to close the actual bug. Without any cap, a policy carrying a duration past the true boundary saves
+#: successfully and then never actually locks or blocks anyone - the blanket `except Exception` around action
+#: execution swallows the OverflowError and only logs it - silently defeating the very restriction the policy was
+#: configured for. Deliberately not equal to policy.py's MAX_COLUMN_INT: that bound exists for actual
+#: database-column widths, and action_value (this field's own storage) is JSON, so no column width applies here.
+MAX_LOCK_DURATION_SECONDS = 250_000_000_000
 
 
 def parse_lock_duration_seconds(action_value: Any) -> int | None:

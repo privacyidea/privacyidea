@@ -84,40 +84,21 @@ def _existing_tables() -> set[str]:
 
 def _create_table(existing_tables: set[str], table_name: str, *columns) -> None:
     """
-    Create the table unless it is already there, then add any of its declared columns and INDEXES that are
-    still missing.
+    Create the table unless it is already there, then add each of its declared INDEXES that is still missing.
 
     Presence is established by reflection rather than by swallowing an "already exists" error, which Oracle
     never says: it reports an existing object as ORA-00955 ("name is already used by an existing object").
     models.db.sequence_exists reflects for the same reason.
-
-    The column retrofit exists because this migration has been amended in place several times since it first
-    shipped: peer_ip, source_ip_source, client_label, client_label_source, ip_chain and endpoint were all folded
-    into authentication_log's own column list later. A database already stamped at this revision from an
-    earlier form of the file would otherwise keep that older, narrower shape forever - "table already exists" is
-    not "table already has every column this revision now declares". Every column declared here is nullable, so
-    adding one to a table that may already hold rows never needs a default. Not extended to constraints: none of
-    these two tables' columns gained a constraint after the fact, only new columns and (further below) indexes.
 
     The indexes are created by statements of their own and are deliberately not declared inline in the
     CREATE TABLE: every statement here autocommits (see migrations/env.py), so a run that created the table
     and then failed would leave the table behind, and a guard that keyed the indexes off the table's absence
     would skip them for good once Alembic stamped the revision. These indexes in particular are what keeps
     the conditional-access counting queries (engine._policy_count / _policy_count_ip) off a full table scan
-    on every single authentication. The same amended-in-place history applies here: ix_authlog_time and the two
-    authentication_log_reason indexes were folded in later too.
+    on every single authentication.
     """
     if table_name.lower() in existing_tables:
         print(f"Table '{table_name}' already exists.")
-        existing_columns = {col["name"].lower() for col in sa.inspect(op.get_bind()).get_columns(table_name)}
-        for column in columns:
-            if not isinstance(column, sa.Column):
-                # A constraint (PrimaryKeyConstraint/ForeignKeyConstraint) only means something at creation time.
-                continue
-            if column.name.lower() in existing_columns:
-                print(f"Column '{table_name}.{column.name}' already exists.")
-            else:
-                op.add_column(table_name, column)
         existing_indexes = {(index["name"] or "").lower()
                             for index in sa.inspect(op.get_bind()).get_indexes(table_name)}
     else:
