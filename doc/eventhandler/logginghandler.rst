@@ -76,6 +76,9 @@ with the following tags:
         The current server time (format: HH:MM:SS).
   * ``{date}``
         The current server date (format: YYYY-MM-DD).
+  * ``{now}``
+        The current server timestamp including the date, the time and the time
+        zone. ``{current_time}`` is a deprecated alias for it.
   * ``{client_ip}``
         The IP of the client who triggered the event.
   * ``{ua_browser}``

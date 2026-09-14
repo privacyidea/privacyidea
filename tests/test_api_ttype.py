@@ -188,12 +188,12 @@ class TtypePushAPITestCase(MyApiTestCase):
         tparams = {'type': 'push', 'genkey': 1}
         tparams.update(FB_CONFIG_VALS)
         tok = init_token(param=tparams)
-        tok.add_tokeninfo(PushAction.FIREBASE_CONFIG, self.firebase_config_name)
-        tok.add_tokeninfo(PUBLIC_KEY_SMARTPHONE, self.smartphone_public_key_pem_urlsafe)
-        tok.add_tokeninfo('firebase_token', 'firebaseT')
-        tok.add_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
-        tok.add_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, 'password')
-        tok.delete_tokeninfo("enrollment_credential")
+        tok.write_tokeninfo(PushAction.FIREBASE_CONFIG, self.firebase_config_name)
+        tok.write_tokeninfo(PUBLIC_KEY_SMARTPHONE, self.smartphone_public_key_pem_urlsafe)
+        tok.write_tokeninfo('firebase_token', 'firebaseT')
+        tok.write_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
+        tok.write_tokeninfo(PRIVATE_KEY_SERVER, self.server_private_key_pem, 'password')
+        tok.remove_tokeninfo("enrollment_credential")
         tok.token.rollout_state = "enrolled"
         tok.token.active = True
         return tok

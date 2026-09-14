@@ -172,8 +172,8 @@ class DayPasswordTokenClass(TotpTokenClass):
         # which is effectively set in the update
         hashlibStr = param.get("hashlib", self.hashlib)
 
-        self.add_tokeninfo("timeStep", timeStep)
-        self.add_tokeninfo("hashlib", hashlibStr)
+        self.write_tokeninfo("timeStep", timeStep)
+        self.write_tokeninfo("hashlib", hashlibStr)
 
     @property
     def timestep(self):

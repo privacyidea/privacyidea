@@ -76,6 +76,20 @@ The user is allowed to delete their own tokens from the database.
 Those tokens can not be recovered. The audit log concerning
 these tokens remains.
 
+token_rollover
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The user is allowed to roll over one of their own tokens that is already
+enrolled, which gives it a new secret.
+
+``POST /token/init`` updates a token when it is called with the serial of a
+token that already exists. While the enrollment of that token is still under
+way, that is part of the enrollment and only needs the ``enroll<TOKENTYPE>``
+action. Once the token is in use, the same request gives it a new secret and
+additionally requires this action. Enrolling a new token is unaffected.
+
 unassign
 ~~~~~~~~
 
@@ -209,6 +223,19 @@ removed from the audit table, but the user is simply not allowed to
 view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
+
+authentication_log_read
+~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The user is allowed to read their own entries from the
+:ref:`authentication_log`. The columns identifying the user are hidden, since
+every entry is the user's own. Their own entries are those recorded for their
+account - its resolver, user id and realm - rather than those carrying their
+login name, see :ref:`authentication_log`.
+
+.. versionadded:: 3.14
 
 hide_audit_columns
 ~~~~~~~~~~~~~~~~~~

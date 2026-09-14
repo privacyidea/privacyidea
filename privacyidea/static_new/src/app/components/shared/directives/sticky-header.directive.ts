@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AfterViewInit, Directive, ElementRef, inject, input, OnDestroy, Renderer2 } from "@angular/core";
+import { AfterViewInit, Directive, ElementRef, inject, input, OnDestroy, Renderer2, signal } from "@angular/core";
 
 /**
  * Toggles the `is-sticky` class on the host element once it sticks to the top of the given
@@ -28,6 +28,9 @@ import { AfterViewInit, Directive, ElementRef, inject, input, OnDestroy, Rendere
  *   </div>
  *
  * A zero-height sentinel is inserted right before the host and observed via an IntersectionObserver.
+ *
+ * The same state is readable as a signal, so a component that queries the directive can move
+ * content into the header once it is pinned.
  */
 @Directive({
   selector: "[appStickyHeader]",
@@ -35,6 +38,9 @@ import { AfterViewInit, Directive, ElementRef, inject, input, OnDestroy, Rendere
 })
 export class StickyHeaderDirective implements AfterViewInit, OnDestroy {
   readonly scrollRoot = input.required<HTMLElement>({ alias: "appStickyHeader" });
+
+  /** Whether the host is currently pinned to the top of the scroll container. */
+  readonly isSticky = signal(false);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly renderer = inject(Renderer2);
@@ -55,6 +61,7 @@ export class StickyHeaderDirective implements AfterViewInit, OnDestroy {
       ([entry]) => {
         if (!entry.rootBounds) return;
         const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
+        this.isSticky.set(isSticky);
         if (isSticky) {
           this.renderer.addClass(headerElement, "is-sticky");
         } else {

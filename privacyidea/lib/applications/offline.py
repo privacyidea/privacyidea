@@ -82,7 +82,7 @@ class MachineApplication(MachineApplicationBase):
             key = "refilltoken"
 
         new_refilltoken = geturandom(REFILLTOKEN_LENGTH, hex=True)
-        token.add_tokeninfo(key, new_refilltoken)
+        token.write_tokeninfo(key, new_refilltoken)
         return new_refilltoken
 
     @staticmethod
@@ -150,7 +150,7 @@ class MachineApplication(MachineApplicationBase):
             # Then, we need to respond with a refill of one OTP value, as the client has consumed one OTP value.
             counter_diff = matching_count - first_offline_counter + 1
             otps = MachineApplication.get_offline_otps(token, otppin, counter_diff, rounds)
-            token.add_tokeninfo(key="offline_counter",
+            token.write_tokeninfo(key="offline_counter",
                                 value=count)
         elif token.type.lower() in ["webauthn", "passkey"]:
             pass

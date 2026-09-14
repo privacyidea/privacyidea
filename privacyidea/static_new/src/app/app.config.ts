@@ -30,12 +30,13 @@ import { provideRouter } from "@angular/router";
 import { localeBaseHref, scriptRoot } from "@core/locale";
 import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
 import { routes } from "./app.routes";
-import { createPaginatorIntl } from "./paginator-intl";
 import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
+import { unauthorizedInterceptor } from "./interceptor/unauthorized/unauthorized.interceptor";
 import { userAgentInterceptor } from "./interceptor/user-agent/user-agent.interceptor";
+import { createPaginatorIntl } from "./paginator-intl";
+import { AppearanceService } from "./services/appearance/appearance.service";
 import { AuthService } from "./services/auth/auth.service";
 import { ConfigService } from "./services/config/config.service";
-import { AppearanceService } from "./services/appearance/appearance.service";
 import { ThemeService } from "./services/theme/theme.service";
 
 export function baseHrefFactory(): string {
@@ -51,8 +52,10 @@ export const appConfig: ApplicationConfig = {
       uiPreferencesService.normalizeLocaleUrl();
     }),
     provideAppInitializer(() => {
-      const configService = inject(ConfigService);
-      configService.loadConfig();
+      // Order matters: loadConfig() sends the stored bearer token as it is, so the session has
+      // to be restored -- and an expired or corrupt one cleared -- before it reads storage.
+      inject(AuthService).bootstrapSession();
+      inject(ConfigService).loadConfig();
     }),
     provideZonelessChangeDetection(),
     provideRouter(routes),
@@ -62,7 +65,7 @@ export const appConfig: ApplicationConfig = {
     },
     AuthService,
     { provide: MatPaginatorIntl, useFactory: createPaginatorIntl },
-    provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor])),
+    provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor, unauthorizedInterceptor])),
     provideAppInitializer(() => {
       const themeService = inject(ThemeService);
       themeService.initializeTheme();

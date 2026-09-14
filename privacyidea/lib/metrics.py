@@ -199,7 +199,14 @@ def _apply_aggregate(session: Session, metric_name: str, labels_key: str, node: 
         # it, so the aggregate can simply be added to the row that won.
         # Other exceptions (missing table, connection failure, ...) bubble up to the
         # caller's try/except in observe()/inc()/_flush_metric_buffer().
-        _increment_row(session, metric_name, labels_hash, node, window, aggregate)
+        if not _increment_row(session, metric_name, labels_hash, node, window, aggregate):
+            # The row that won the insert is gone again, so there is nothing left to add
+            # the aggregate to. Losing a sample is not worth failing the request over, but
+            # it must not happen silently either: a metric that is quietly short of samples
+            # is worse than one that is visibly missing them.
+            log.warning(f"Lost {aggregate['count']} sample(s) of metric {metric_name!r} "
+                        f"(labels {labels_key!r}, node {node!r}, window {window}): the row that won "
+                        f"the insert race is not there any more.")
 
 
 _BUFFER_KEY = "metric_observations"
@@ -309,6 +316,10 @@ def observe(name: str, value: float, labels: dict | None = None) -> None:
     Updates count / sum / max plus the cumulative bucket whose upper bound
     contains ``value``. During a request the update is buffered and written at
     teardown, otherwise it is written immediately.
+
+    ``labels`` must stay low-cardinality and free of user data: every distinct
+    label set is its own row per node and window, and the set is named in the
+    log when a sample is lost.
     """
     try:
         if _metrics_disabled():
@@ -321,7 +332,8 @@ def observe(name: str, value: float, labels: dict | None = None) -> None:
 def inc(name: str, labels: dict | None = None, by: int = 1) -> None:
     """Increment a counter by ``by`` (default 1).
 
-    Buffered and isolated exactly like :func:`observe`.
+    Buffered and isolated exactly like :func:`observe`, and ``labels`` is bound
+    by the same rule.
     """
     try:
         if _metrics_disabled():

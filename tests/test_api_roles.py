@@ -8,6 +8,7 @@ import datetime
 import json
 
 from privacyidea.api.lib.postpolicy import DEFAULT_POLICY_TEMPLATE_URL
+from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy,
                                     LOGINMODE, ACTIONVALUE)
@@ -957,7 +958,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         selfservice_token = init_token({"type": "spass", "pin": "somepin"},
                                        user=User("selfservice", "realm1"))
         # Last authentication was too long ago.
-        selfservice_token.add_tokeninfo(PolicyAction.LASTAUTH, "2016-10-10 10:10:10.000")
+        selfservice_token.write_tokeninfo(PolicyAction.LASTAUTH, "2016-10-10 10:10:10.000")
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice@realm1",
@@ -969,7 +970,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertFalse(result.get("status"), content)
             self.assertIn("long ago", content["detail"]["message"], content)
 
-        selfservice_token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
+        selfservice_token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.datetime.now().strftime(AUTH_DATE_FORMAT))
 
         # But now it works
         with self.app.test_request_context('/auth',
@@ -1752,7 +1753,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
-            self.assertIn("Wrong credentials", result["error"]["message"])
+            self.assertEqual(GENERIC_AUTH_FAILURE, result["error"]["message"])
 
         # manager can log in with the OTP PIN, because he is in the helpdesk group
         with self.app.test_request_context('/auth',
@@ -1771,7 +1772,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertFalse(result.get("status"))
-            self.assertIn("Wrong credentials", result["error"]["message"])
+            self.assertEqual(GENERIC_AUTH_FAILURE, result["error"]["message"])
 
         # if we now disable the condition on userstore and privacyidea, we get a conflicting policy error
         with self.app.test_request_context('/policy/privacyidea',

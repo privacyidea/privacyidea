@@ -395,7 +395,7 @@ class YubikeyTokenTestCase(MyTestCase):
     def test_97_wrong_tokenid(self):
         db_token = Token.query.filter(Token.serial == self.serial1).first()
         token = YubikeyTokenClass(db_token)
-        token.add_tokeninfo("yubikey.tokenid", "wrongid!")
+        token.write_tokeninfo("yubikey.tokenid", "wrongid!")
         token.save()
 
         # check an OTP value

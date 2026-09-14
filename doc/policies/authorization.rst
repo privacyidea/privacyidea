@@ -181,6 +181,14 @@ the authentication request failed.
 If this action is set and the user fails to authenticate
 this additional information will not be returned.
 
+.. note:: This policy does **not** mask an error message configured for
+   :ref:`conditional_access`. Such a message exists only because an
+   administrator wrote it on a stage or enabled
+   :ref:`policy_show_default_ca_error_message`, so it is the one thing left in
+   the ``detail`` object of a rejected request. A conditional access rejection
+   with no message of its own carries no detail at all once this policy strips
+   it. See :ref:`conditional_access_error_messages_masking`.
+
 .. _policy_api_key:
 
 api_key_required

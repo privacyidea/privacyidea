@@ -78,7 +78,8 @@ export class UISettingsComponent {
     dashboard: $localize`:@@nav.dashboard:Dashboard`,
     tokens: $localize`:@@common.token:Token`,
     users: $localize`:@@nav.users:Users`,
-    audit: $localize`:@@nav.audit:Audit`
+    audit: $localize`:@@nav.audit:Audit`,
+    "conditional-access": $localize`:@@nav.conditionalAccess:Conditional Access`
   };
   protected readonly depth = this.appearanceService.depth;
   protected readonly lightSource = this.appearanceService.lightSource;

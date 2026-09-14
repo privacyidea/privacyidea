@@ -18,11 +18,13 @@
 -->
 <div class="policy-action-item">
   <div class="detail-text">
-    <span class="detail-label">{{ action().name }}</span>
+    <span
+      class="detail-label"
+      [innerHTML]="action().name | highlight: highlight()"></span>
     @if (actionDetail()?.desc; as description) {
       <span
         class="detail-description"
-        [innerHTML]="description"></span>
+        [innerHTML]="description | highlight: highlight() : true"></span>
     }
   </div>
 
@@ -43,7 +45,7 @@
             </app-multi-select-only>
           } @else if (actionValues.length === 0) {
             <p i18n="@@policy.noValuesAvailable">No values available.</p>
-          } @else if (actionValues.length <= 3) {
+          } @else if (actionValues.length < 3) {
             <app-selector-buttons
               class="flex-1"
               [values]="actionValues"

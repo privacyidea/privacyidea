@@ -120,7 +120,14 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
 
   public isWidgetTypeAllowed(type: string): boolean {
     const requiredAction = this.registry.get(type)?.requiredAction;
-    return !requiredAction || this.auth.actionAllowed(requiredAction);
+    // Length rather than truthiness, so an empty list reads as "no requirement" like null does.
+    if (!requiredAction?.length) {
+      return true;
+    }
+    // A widget may name several rights (see DashboardWidget.requiredAction); any one is enough, because the widget
+    // renders only the parts the admin may read and leaves out the rest.
+    const actions = Array.isArray(requiredAction) ? requiredAction : [requiredAction];
+    return actions.some((action) => this.auth.actionAllowed(action));
   }
 
   public pruneForbiddenWidgets(): void {
@@ -256,8 +263,8 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
       { type: "tokens", x: 18, y: 0 },
       { type: "news", x: 8, y: 5, cols: 9 },
       { type: "events", x: 17, y: 5, cols: 7 },
-      { type: "authentications", x: 8, y: 8 },
-      { type: "token-types", x: 16, y: 8 },
+      { type: "token-types", x: 8, y: 8 },
+      { type: "authentication-activity", x: 14, y: 8 },
       { type: "administration", x: 0, y: 14 }
     ];
     return positions.reduce<WidgetInstance[]>((result, { type, x, y, cols }) => {

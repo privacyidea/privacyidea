@@ -19,8 +19,8 @@
 import { Component, provideZonelessChangeDetection, TemplateRef, viewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
-import { ROUTE_PATHS } from "@app/route_paths";
 import { TokensWidgetComponent } from "@components/dashboard/widgets/tokens-widget/tokens-widget.component";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
@@ -35,6 +35,12 @@ import { MockResolverService } from "@testing/mock-services/mock-resolver-servic
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
+import { AuthenticationLogService } from "@services/authentication-log/authentication-log.service";
+import { ConditionalAccessPolicyService } from "@services/conditional-access/conditional-access-policy.service";
+import { ConditionalAccessStateService } from "@services/conditional-access-state/conditional-access-state.service";
+import { MockAuthenticationLogService } from "@testing/mock-services/mock-authentication-log-service";
+import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
+import { MockConditionalAccessStateService } from "@testing/mock-services/mock-conditional-access-state-service";
 import { WidgetFrameComponent } from "./widget-frame.component";
 
 // No shipped widget is pinned, so the tests for the pinned behaviour stand one in. It
@@ -95,7 +101,11 @@ describe("WidgetFrameComponent", () => {
         { provide: SubscriptionService, useClass: MockSubscriptionService },
         { provide: InfoService, useClass: MockInfoService },
         { provide: SystemService, useClass: MockSystemService },
-        { provide: ResolverService, useClass: MockResolverService }
+        { provide: ResolverService, useClass: MockResolverService },
+        // The frame renders the real widget, so the conditional-access one needs its services for the title-link case.
+        { provide: AuthenticationLogService, useClass: MockAuthenticationLogService },
+        { provide: ConditionalAccessPolicyService, useClass: MockConditionalAccessPolicyService },
+        { provide: ConditionalAccessStateService, useClass: MockConditionalAccessStateService }
       ]
     }).compileComponents();
 
@@ -126,6 +136,30 @@ describe("WidgetFrameComponent", () => {
 
   it("should render the widget title", () => {
     expect(fixture.nativeElement.querySelector(".widget-title").textContent).toContain("Token Usage");
+  });
+
+  it("should render the title as plain text for a widget that names no page", () => {
+    expect(fixture.nativeElement.querySelector(".widget-title-link")).toBeNull();
+  });
+
+  it("should render the title as a link to the page a widget names", () => {
+    // The mock denies every right by default, and the link is gated on the right of the page it points to.
+    const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.actionAllowed.mockImplementation((action: string) => action === "conditional_access_policy_read");
+
+    fixture.componentRef.setInput("instance", {
+      id: "w2",
+      type: "conditional-access",
+      x: 0,
+      y: 0,
+      cols: 6,
+      rows: 11
+    } as WidgetInstance);
+    fixture.detectChanges();
+
+    const link: HTMLAnchorElement = fixture.nativeElement.querySelector("a.widget-title-link");
+    expect(link.textContent).toContain("Conditional Access");
+    expect(link.getAttribute("href")).toBe(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS);
   });
 
   describe("title link", () => {

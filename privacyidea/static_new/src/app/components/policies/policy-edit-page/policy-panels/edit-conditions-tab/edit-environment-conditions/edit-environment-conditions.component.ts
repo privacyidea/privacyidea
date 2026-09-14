@@ -169,18 +169,14 @@ export class EditEnvironmentConditionsComponent implements OnInit {
     }))
   );
   getUserAgentLabel = (identifier: string): string => this.integrationsService.labelForPolicyValue(identifier);
-  userAgentSearch = signal<string>("");
 
   readonly availablePinodesList = computed(() => this.systemService.nodes().map((node) => node.name));
   readonly selectedPinodes = computed<string[]>(() => this.policy().pinode || []);
   readonly selectedUserAgents = computed(() => this.policy().user_agents || []);
 
-  filteredUserAgentPresets = computed(() => {
+  readonly availableUserAgentPresets = computed(() => {
     const selected = this.selectedUserAgents();
-    const search = this.userAgentSearch().toLowerCase();
-    return this.userAgentOptions().filter(
-      (ua) => !selected.includes(ua.key) && ua.label.toLowerCase().includes(search)
-    );
+    return this.userAgentOptions().filter((ua) => !selected.includes(ua.key));
   });
 
   private clientInitialized = false;
@@ -280,16 +276,5 @@ export class EditEnvironmentConditionsComponent implements OnInit {
 
   clearClientControl() {
     this.clientSignal.set("");
-  }
-
-  handleEnterOnSearch(event: Event, select: MatSelect): void {
-    event.preventDefault();
-    event.stopPropagation();
-    const currentResults = this.filteredUserAgentPresets();
-    if (currentResults.length > 0) {
-      this.addUserAgentValue(currentResults[0].key);
-      this.userAgentSearch.set("");
-      select.close();
-    }
   }
 }

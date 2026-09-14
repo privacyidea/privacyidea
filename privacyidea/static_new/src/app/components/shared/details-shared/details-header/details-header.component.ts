@@ -34,7 +34,7 @@ export class DetailsHeaderComponent {
   serial = input.required<string>();
   entityLabel = input("Token");
   showAuditButton = input(false);
-  auditRoute = input("/audit");
+  auditRoute = input("/logs/audit");
   auditTooltip = input("Show in audit log");
 
   auditClick = output<void>();

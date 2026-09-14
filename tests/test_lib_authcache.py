@@ -9,7 +9,9 @@ from privacyidea.lib.authcache import (add_to_cache, delete_from_cache,
                                        update_cache, verify_in_cache,
                                        _hash_password,
                                        cleanup)
-from passlib.hash import argon2
+from passlib.hash import argon2, pbkdf2_sha512
+from privacyidea.lib.crypto import (DEFAULT_HASH_ALGO_LIST, DEFAULT_HASH_ALGO_PARAMS,
+                                    verify_pass_hash)
 from privacyidea.models import AuthCache
 import datetime
 
@@ -29,6 +31,16 @@ class AuthCacheTestCase(MyTestCase):
         # when Redis holds the cached authentications instead
         self.pin_to_database("auth")
 
+    def _clear_cache(self):
+        """
+        Remove every entry, so that a test verifies against its own rows only.
+
+        cleanup() deletes the entries whose last authentication is older than the given number
+        of minutes, and every entry is older than zero minutes ago.
+        """
+        cleanup(0)
+        self.assertEqual(0, AuthCache.query.count())
+
     def test_01_write_update_delete_cache(self):
         teststart = datetime.datetime.utcnow()
 
@@ -38,7 +50,7 @@ class AuthCacheTestCase(MyTestCase):
 
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         self.assertEqual(auth.username, self.username)
-        self.assertTrue(argon2.verify(self.password, auth.authentication))
+        self.assertTrue(verify_pass_hash(self.password, auth.authentication))
 
         self.assertTrue(auth.first_auth > teststart)
         self.assertEqual(auth.last_auth, auth.first_auth)
@@ -110,8 +122,7 @@ class AuthCacheTestCase(MyTestCase):
         self.assertEqual(r, None)
 
     def test_04_cleanup_authcache(self):
-        # cleanup everything!
-        r = cleanup(100000000)
+        self._clear_cache()
         # Create some entries:
         AuthCache("grandpa", self.realm, self.resolver, _hash_password(self.password),
                   first_auth=datetime.datetime.utcnow() - datetime.timedelta(
@@ -132,7 +143,7 @@ class AuthCacheTestCase(MyTestCase):
     def test_05_old_hashes(self):
         from privacyidea.lib.crypto import hash
         # Test that old hashes do not break the code
-        r = cleanup(100000000)
+        self._clear_cache()
         # Add an entry with an old password hash
         AuthCache("grandpa", self.realm, self.resolver, hash("old password", seed=""),
                   first_auth=datetime.datetime.utcnow() - datetime.timedelta(
@@ -142,6 +153,92 @@ class AuthCacheTestCase(MyTestCase):
 
         r = verify_in_cache("grandpa", self.realm, self.resolver, "old password")
         self.assertFalse(r)
+
+    def test_05a_the_configured_hash_parameters_are_used(self):
+        # The cache hashes with the algorithm and the parameters that PI_HASH_ALGO_LIST and
+        # PI_HASH_ALGO_PARAMS configure, so an installation that tunes them tunes this too.
+        # The expectation is built the way pass_hash() builds it, from the defaults of the
+        # crypto module with the configured values on top.
+        hash_algo_params = dict(DEFAULT_HASH_ALGO_PARAMS)
+        hash_algo_params.update(self.app.config.get("PI_HASH_ALGO_PARAMS", {}))
+        stored_hash = _hash_password(self.password)
+        self.assertTrue(stored_hash.startswith("$argon2"), stored_hash)
+        # The whole parameter block, so that m=8 does not match a hash carrying m=80
+        expected_parameters = (f"m={hash_algo_params.get('argon2__memory_cost', argon2.memory_cost)},"
+                               f"t={hash_algo_params.get('argon2__rounds', argon2.default_rounds)},"
+                               f"p={hash_algo_params.get('argon2__parallelism', argon2.parallelism)}")
+        self.assertIn(expected_parameters, stored_hash, stored_hash)
+
+    def _store_entry(self, authentication):
+        """
+        Store one entry inside the policy window and make sure it is the only one, so that a
+        verification can only succeed by reading this entry.
+        """
+        self._clear_cache()
+        AuthCache("grandpa", self.realm, self.resolver, authentication,
+                  first_auth=datetime.datetime.utcnow() - datetime.timedelta(minutes=10),
+                  last_auth=datetime.datetime.utcnow() - datetime.timedelta(minutes=2)).save()
+        self.assertEqual(1, AuthCache.query.count())
+
+    def _assert_entry_is_usable(self):
+        """
+        A wrong password leaves the stored entry alone and the right one verifies against it.
+
+        The wrong password comes first on purpose: a miss goes on to delete_from_cache(),
+        which reads the entry with the second of the two verifications. If that one could not
+        read the entry it would take it for an unreadable one and delete it, and the
+        verification below would then fail for a completely different reason.
+        """
+        self.assertFalse(verify_in_cache("grandpa", self.realm, self.resolver, "wrong password"))
+        self.assertEqual(1, AuthCache.query.count())
+        self.assertTrue(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
+
+    def test_05b_entries_hashed_with_other_parameters_still_verify(self):
+        # A hash carries the parameters it was made with, so entries that an installation
+        # wrote before its parameters changed are still usable.
+        other_parameters = argon2.using(rounds=2, memory_cost=16, parallelism=1)
+        self._store_entry(other_parameters.hash(self.password))
+
+        self._assert_entry_is_usable()
+
+    def test_05c_entries_of_another_configured_algorithm_still_verify(self):
+        # Every algorithm of PI_HASH_ALGO_LIST can be read, not only the first one, so
+        # reordering the list does not invalidate the entries that are already stored.
+        algo_list = self.app.config.get("PI_HASH_ALGO_LIST") or DEFAULT_HASH_ALGO_LIST
+        self.assertIn("pbkdf2_sha512", algo_list)
+        self._store_entry(pbkdf2_sha512.using(rounds=1000).hash(self.password))
+
+        self._assert_entry_is_usable()
+
+    def test_05ca_a_malformed_entry_is_discarded_rather_than_raising(self):
+        # An entry can be recognised as Argon2 and still be unreadable, for instance after
+        # the column truncated it. passlib raises a plain ValueError for that and
+        # UnknownHashError only for a value it cannot place at all, so both have to be
+        # treated as an entry that can never verify again.
+        self._store_entry(_hash_password(self.password)[:-6])
+
+        self.assertFalse(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
+        # The entry it could not read is gone, so the next authentication is not answered
+        # from a poisoned row
+        self.assertEqual(0, AuthCache.query.count())
+
+    def test_05e_an_overlong_password_is_not_cached_and_does_not_fail(self):
+        # The authentication has already succeeded when an entry is written, so a password
+        # the hash algorithm refuses to take must not turn it into an error. It is simply
+        # not cached.
+        self._clear_cache()
+
+        self.assertEqual(0, add_to_cache("grandpa", self.realm, self.resolver, "x" * 5000))
+        self.assertEqual(0, AuthCache.query.count())
+
+    def test_05d_an_overlong_password_does_not_remove_the_entries(self):
+        # A password beyond the size limit of the algorithm can not be hashed, so it can not
+        # match. It says nothing about the stored entry, which has to survive the attempt.
+        self._store_entry(_hash_password(self.password))
+
+        self.assertFalse(verify_in_cache("grandpa", self.realm, self.resolver, "x" * 5000))
+        self.assertEqual(1, AuthCache.query.count())
+        self.assertTrue(verify_in_cache("grandpa", self.realm, self.resolver, self.password))
 
     def test_06_delete_other_invalid_entries(self):
         # Test deletion of expired entries

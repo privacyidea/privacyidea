@@ -15,13 +15,12 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from dateutil.tz import tzlocal
-from passlib.hash import argon2
 from testfixtures import Replace, test_datetime
 from testfixtures import log_capture
 
 from privacyidea.lib import _
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
-from privacyidea.lib.authcache import _hash_password
+from privacyidea.lib.crypto import verify_pass_hash
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
@@ -414,7 +413,7 @@ class ValidateAPITestCase(MyApiTestCase):
         token.set_maxfail(5)
         token.set_failcount(5)
         past = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)
-        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
         # a valid authentication will fail
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -484,7 +483,7 @@ class ValidateAPITestCase(MyApiTestCase):
         self.assertEqual(0, token.get_failcount())
         # an invalid auth also resets the failcount and increase it directly to one due to the invalid auth
         token.set_failcount(5)
-        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": "pass2",
@@ -2317,12 +2316,8 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Check that there is an entry with this OTP value in the auth_cache
         cached_auths = AuthCache.query.filter(AuthCache.username == "cornelius", AuthCache.realm == self.realm1).all()
-        found = False
-        for cached_auth in cached_auths:
-            if argon2.verify(OTPs[1], cached_auth.authentication):
-                found = True
-                break
-        self.assertTrue(found)
+        self.assertTrue(any(verify_pass_hash(OTPs[1], cached_auth.authentication)
+                            for cached_auth in cached_auths))
 
         # Authenticate again with the same OTP
         with self.app.test_request_context('/validate/check',
@@ -2366,9 +2361,11 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
 
-        # Check that there is no entry with this OTP value in the auth_cache
-        r = AuthCache.query.filter(AuthCache.authentication == _hash_password(OTPs[2])).first()
-        self.assertFalse(bool(r))
+        # Check that there is no entry with this OTP value in the auth_cache. A hash carries a
+        # random salt, so a stored entry never equals a freshly computed hash and has to be
+        # verified against instead.
+        self.assertFalse(any(verify_pass_hash(OTPs[2], entry.authentication)
+                             for entry in AuthCache.query.all()))
 
         # Authenticate again with the same OTP value will fail
         with self.app.test_request_context('/validate/check',
@@ -3148,7 +3145,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # lastauth: currently 200, should be 401
         now = datetime.datetime.now(datetime.timezone.utc)
         thirty_days_ago = now - datetime.timedelta(days=30)
-        token.add_tokeninfo(PolicyAction.LASTAUTH, thirty_days_ago.strftime(AUTH_DATE_FORMAT))
+        token.write_tokeninfo(PolicyAction.LASTAUTH, thirty_days_ago.strftime(AUTH_DATE_FORMAT))
         set_policy("lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=7d")
         with self.app.test_request_context('/validate/check', method="POST",
                                            data={
