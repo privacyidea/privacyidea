@@ -34,25 +34,37 @@
       }
     </h3>
 
-    <div class="machine-resolver-details-body margin-left-16">
-      @if (canMakeChanges()) {
+    <div class="machine-resolver-details-body">
+      @if (canMakeChanges() || canDeleteMachineResolver()) {
         <div class="machine-resolver-details-controls">
-          <button
-            (click)="onCancel()"
-            class="action-button-secondary button-width-s"
-            mat-stroked-button
-            type="button">
-            <span i18n="@@common.cancel">Cancel</span>
-          </button>
-          <button
-            (click)="saveMachineResolver()"
-            [disabled]="!canSaveMachineResolver() || !isEdited()"
-            class="action-button-primary button-width-s"
-            mat-stroked-button
-            type="button">
-            <mat-icon>save</mat-icon>
-            <span i18n="@@common.save">Save</span>
-          </button>
+          @if (canDeleteMachineResolver()) {
+            <button
+              (click)="deleteMachineResolver()"
+              class="action-button-delete-secondary button-width-s"
+              mat-stroked-button
+              type="button">
+              <mat-icon>delete</mat-icon>
+              <span i18n="@@common.delete">Delete</span>
+            </button>
+          }
+          @if (canMakeChanges()) {
+            <button
+              (click)="onCancel()"
+              class="action-button-secondary button-width-s"
+              mat-stroked-button
+              type="button">
+              <span i18n="@@common.cancel">Cancel</span>
+            </button>
+            <button
+              (click)="saveMachineResolver()"
+              [disabled]="!canSaveMachineResolver() || !isEdited()"
+              class="action-button-primary button-width-s"
+              mat-stroked-button
+              type="button">
+              <mat-icon>save</mat-icon>
+              <span i18n="@@common.save">Save</span>
+            </button>
+          }
         </div>
       }
 

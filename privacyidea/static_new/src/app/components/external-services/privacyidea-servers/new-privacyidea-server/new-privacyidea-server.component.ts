@@ -179,6 +179,28 @@ export class NewPrivacyideaServerComponent implements OnDestroy {
     }
   }
 
+  async deleteServer(): Promise<void> {
+    const identifier = this.editIdentifier;
+    if (!identifier) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@piServer.deletePrivacyideaServer:Delete privacyIDEA Server`,
+      items: [identifier],
+      itemType: $localize`:@@piServer.privacyideaServer:privacyIDEA server`
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.privacyideaServerService.deletePrivacyideaServer(identifier);
+    } catch {
+      return;
+    }
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
+  }
+
   onCancel(): void {
     if (!this.hasChanges) {
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);

@@ -256,6 +256,21 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     }
   }
 
+  async deleteTask(): Promise<void> {
+    const name = this.editName;
+    const task = name ? this.findTaskByName(name) : undefined;
+    if (!task || task.id === null) {
+      return;
+    }
+    const result = await this.periodicTaskService.deleteWithConfirmDialog({ ...task, id: task.id });
+    if (!result) {
+      return;
+    }
+    this.periodicTaskService.periodicTasksResource.reload();
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
+  }
+
   onCancel(): void {
     if (!this.hasChanges()) {
       this.pendingChangesService.clearAllRegistrations();

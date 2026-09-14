@@ -34,6 +34,15 @@
 
     <div class="header-row">
       <div class="action-buttons flex-row gap-8">
+        @if (isEditMode() && authService.actionAllowed("api_client_delete")) {
+          <button
+            (click)="deleteClient()"
+            class="action-button-delete-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>delete</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        }
         <button
           (click)="onCancel()"
           class="action-button-secondary button-width-s"
