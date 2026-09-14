@@ -994,6 +994,28 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                                       AuthEventType.MFA_FAIL)
         self.assertEqual(0, len(third))
 
+    def test_count_before_does_not_exclude_own_rows_from_the_reset_on_success_floor(self):
+        # Regression: own_row_ids must exclude a request's own rows from the *count* only, never from the
+        # since_last_success floor lookup (the most recent LOGIN_SUCCESS in the window) - excluding a row from
+        # both would move the floor itself whenever the excluded row is the success the floor stands on, making
+        # count_before cover a *wider* range than count and potentially exceed it, so a genuine crossing is
+        # never detected (count_before < threshold <= count becomes unsatisfiable).
+        self._make_policy(name="lock3-reset", counter_type=AuthEventType.MFA_FAIL)
+        now = utc_now()
+        # Three old failures, all before the success that should floor the count.
+        self._seed_events(AuthEventType.MFA_FAIL, 3, timestamp=now - timedelta(seconds=500))
+        # This one request's own contribution: the success that resets the counter, plus three new failures
+        # after it (own_row_ids names all four - the whole point being that the success is among them).
+        own_row_ids = list(self._seed_attempt("own-request", [AuthEventType.LOGIN_SUCCESS], timestamp=now - timedelta(seconds=200)))
+        own_row_ids += self._seed_attempt("own-request", [AuthEventType.MFA_FAIL] * 3, timestamp=now - timedelta(seconds=10))
+
+        # count is floored at the success (unaffected by exclusion): only the 3 new failures after it count,
+        # crossing threshold 3 - a genuine, real crossing this evaluation is the one that caused.
+        evaluation = evaluate_conditional_access_policies(CAContext(self.user, own_row_ids=tuple(own_row_ids)),
+                                                           AuthEventType.MFA_FAIL, now=now)
+        self.assertEqual(1, len(evaluation))
+        self.assertTrue(is_user_locked(self.user))
+
     def test_dry_run_writes_no_state(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 5)

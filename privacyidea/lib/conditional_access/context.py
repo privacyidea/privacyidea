@@ -85,13 +85,15 @@ class CAContext:
     :ivar own_row_ids: the ids of the authentication-log rows *this request itself* wrote, however many (a
         multichallenge or push_wait flow logs several within one request). Used only post-auth, to compute a count
         as it stood *before* this request's own rows joined it (see
-        :func:`~privacyidea.lib.conditional_access.engine._exclude_own_rows`) - the pre-auth decision has nothing of
+        :func:`~privacyidea.lib.conditional_access.engine._count_events` and
+        :func:`~privacyidea.lib.conditional_access.engine._count_attempts`) - the pre-auth decision has nothing of
         its own logged yet, so it never sets this. Deliberately not the request's ``attempt_id``: that id is shared
         by every request of a multi-request attempt (a challenge trigger, a wrong answer, the retry that succeeds -
         see ``ConditionalAccessContext.attempt_id``), so excluding by it would also exclude an *earlier* request's
         rows that an earlier evaluation already counted, not just this request's own contribution. ``None``/empty
         when unavailable (outside a request context, or nothing written yet), in which case that count simply is
         not computed.
+
     Note what is deliberately *absent*: the authentication log's ``client_label``
     (the ``client_id`` parameter, falling back to the User-Agent header). It
     identifies the calling application well enough to be worth recording

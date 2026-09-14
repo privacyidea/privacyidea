@@ -171,13 +171,14 @@ can count, so the very count that would carry it past the next threshold stops
 climbing while the refusal holds.
 
 It is worth giving the **highest** stage's restricting action - its lock, block
-or ``DENY`` - re-trigger above threshold. Because a fire-once action fires only
-on the request where the count *equals* the threshold, a subject that is already
-past it stays unrestricted: failures that predate the policy, or an
-administrator who lifted a lock while the failures behind it were still inside
-the window. The highest stage owns every count from its threshold upwards, so
-re-triggering there restricts on the next request whatever put the count up
-there. The shipped templates are written this way.
+or ``DENY`` - re-trigger above threshold. Because a fire-once action only fires
+on the evaluation that carries the count from below the threshold to at or
+above it, a subject whose count is already past it *before* that evaluation
+stays unrestricted: failures that predate the policy, or an administrator who
+lifted a lock while the failures behind it were still inside the window. The
+highest stage owns every count from its threshold upwards, so re-triggering
+there restricts on the next request whatever put the count up there. The
+shipped templates are written this way.
 
 Stages are evaluated from the highest threshold down, so the order follows the
 thresholds themselves and there is nothing else to configure.
