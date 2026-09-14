@@ -316,6 +316,10 @@ def observe(name: str, value: float, labels: dict | None = None) -> None:
     Updates count / sum / max plus the cumulative bucket whose upper bound
     contains ``value``. During a request the update is buffered and written at
     teardown, otherwise it is written immediately.
+
+    ``labels`` must stay low-cardinality and free of user data: every distinct
+    label set is its own row per node and window, and the set is named in the
+    log when a sample is lost.
     """
     try:
         if _metrics_disabled():
@@ -328,7 +332,8 @@ def observe(name: str, value: float, labels: dict | None = None) -> None:
 def inc(name: str, labels: dict | None = None, by: int = 1) -> None:
     """Increment a counter by ``by`` (default 1).
 
-    Buffered and isolated exactly like :func:`observe`.
+    Buffered and isolated exactly like :func:`observe`, and ``labels`` is bound
+    by the same rule.
     """
     try:
         if _metrics_disabled():
