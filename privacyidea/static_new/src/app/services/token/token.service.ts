@@ -200,6 +200,12 @@ export interface Tokens {
 
 export type TokenCount = Pick<Tokens, "count">;
 
+/** Token owners overall and per resolver; the per-resolver numbers add up to ``count``. */
+export interface TokenOwnerCount {
+  count: number;
+  by_resolver: Record<string, number>;
+}
+
 export interface TokenCountParams {
   type?: TokenTypeKey;
   type_list?: string;
@@ -447,6 +453,8 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>>;
 
   getTokenCount(params?: TokenCountParams): Observable<PiResponse<TokenCount>>;
+
+  getTokenOwnerCount(realm?: string): Observable<PiResponse<TokenOwnerCount>>;
 
   enrollToken<T extends TokenEnrollmentData, R extends EnrollmentResponse>(args: {
     data: T;
@@ -1258,6 +1266,14 @@ export class TokenService extends FilterableTableService implements TokenService
     return this.http.get<PiResponse<TokenCount>>(this.tokenBaseUrl, {
       headers: this.authService.getHeaders(),
       params: { ...params, pagesize: 0 }
+    });
+  }
+
+  /** Number of distinct users owning at least one token, optionally limited to one realm. */
+  getTokenOwnerCount(realm?: string): Observable<PiResponse<TokenOwnerCount>> {
+    return this.http.get<PiResponse<TokenOwnerCount>>(this.tokenBaseUrl + "ownercount", {
+      headers: this.authService.getHeaders(),
+      params: realm ? { realm } : {}
     });
   }
 

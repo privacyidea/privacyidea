@@ -154,4 +154,5 @@ export class MockUserService implements UserServiceInterface {
   createUser = jest.fn();
   editUser = jest.fn();
   deleteUser = jest.fn();
+  fetchUsernames = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<UserData[]>([])));
 }

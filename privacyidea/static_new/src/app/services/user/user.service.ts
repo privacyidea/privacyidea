@@ -127,6 +127,8 @@ export interface UserServiceInterface extends FilterableTableServiceInterface {
 
   deleteUser(resolver: string, username: string): Observable<boolean>;
 
+  fetchUsernames(realm?: string): Observable<PiResponse<UserData[], UserListResponseDetail | undefined>>;
+
   displayUser(user: UserData | string): string;
 }
 
@@ -549,6 +551,18 @@ export class UserService extends FilterableTableService implements UserServiceIn
       return user;
     }
     return user ? user.username : "";
+  }
+
+  /**
+   * Users of one realm, or of every realm when none is given, reduced to login name and resolver —
+   * the pair that identifies a person across realms. Unlike {@link usersResource} this is not bound
+   * to the globally selected realm. Unreachable resolvers are named in the response detail.
+   */
+  fetchUsernames(realm?: string): Observable<PiResponse<UserData[], UserListResponseDetail | undefined>> {
+    return this.http.get<PiResponse<UserData[], UserListResponseDetail | undefined>>(this.baseUrl, {
+      headers: this.authService.getHeaders(),
+      params: { attributes: "username,resolver", ...(realm ? { realm } : {}) }
+    });
   }
 
   setUserAttribute(key: string, value: string) {

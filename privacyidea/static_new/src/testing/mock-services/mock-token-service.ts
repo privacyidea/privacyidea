@@ -26,6 +26,7 @@ import {
   LostTokenResponse,
   TokenCount,
   TokenDetails,
+  TokenOwnerCount,
   Tokens,
   TokenService,
   TokenServiceInterface,
@@ -178,6 +179,9 @@ export class MockTokenService implements TokenServiceInterface {
   readonly resyncOTPToken = jest.fn().mockReturnValue(of(null));
   readonly getTokenDetails = jest.fn().mockReturnValue(of({}));
   readonly getTokenCount = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<TokenCount>({ count: 0 })));
+  readonly getTokenOwnerCount = jest
+    .fn()
+    .mockReturnValue(of(MockPiResponse.fromValue<TokenOwnerCount>({ count: 0, by_resolver: {} })));
   enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as unknown as EnrollmentResponse));
   verifyToken = jest.fn().mockReturnValue(
     of(

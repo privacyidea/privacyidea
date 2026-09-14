@@ -25,6 +25,60 @@
   align-items: flex-start;
 }
 
+// Declared here, rendered in the frame's header, so the frame's own action sizing misses it.
+.realm-trigger {
+  flex: none;
+  height: 28px;
+  min-width: 0;
+  max-width: 140px;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 28px;
+  --mat-text-button-horizontal-padding: 4px;
+}
+
+.realm-trigger-label {
+  display: inline-block;
+  max-width: 104px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.realm-trigger-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  line-height: 18px;
+  vertical-align: middle;
+}
+
+.selected-realm {
+  font-weight: 600;
+}
+
 .tokens-table {
   @include widget.stat-table;
+}
+
+.user-counts-start td {
+  border-top: 2px solid var(--mat-sys-outline-variant);
+}
+
+.incomplete-users {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0 16px;
+  color: var(--mat-sys-error);
+  font-size: 12px;
+
+  mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
 }

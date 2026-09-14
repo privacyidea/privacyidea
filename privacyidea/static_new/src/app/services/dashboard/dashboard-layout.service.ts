@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
-import { DASHBOARD_COLUMNS, WidgetInstance, WidgetTypeId } from "@models/dashboard";
+import { DASHBOARD_COLUMNS, WidgetInstance, WidgetSettings, WidgetTypeId } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   DashboardPersistenceService,
@@ -52,6 +52,8 @@ export interface DashboardLayoutServiceInterface {
   moveWidgetTo(id: string, x: number, y: number): void;
 
   resizeWidget(id: string, cols: number, rows: number): void;
+
+  updateWidgetSettings(id: string, settings: WidgetSettings): void;
 
   persist(): void;
 
@@ -155,6 +157,13 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     this.persistIfLive();
   }
 
+  public updateWidgetSettings(id: string, settings: WidgetSettings): void {
+    this.widgets.update((widgets) =>
+      widgets.map((widget) => (widget.id === id ? { ...widget, settings: { ...settings } } : widget))
+    );
+    this.persistIfLive();
+  }
+
   public persist(): void {
     this.persistence.save(this.widgets()).subscribe();
   }
@@ -208,9 +217,15 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
         other.x === widget.x &&
         other.y === widget.y &&
         other.cols === widget.cols &&
-        other.rows === widget.rows
+        other.rows === widget.rows &&
+        this.sameSettings(other.settings, widget.settings)
       );
     });
+  }
+
+  private sameSettings(a: WidgetSettings | undefined, b: WidgetSettings | undefined): boolean {
+    const keys = new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})]);
+    return [...keys].every((key) => a?.[key] === b?.[key]);
   }
 
   private reconcilePinned(widgets: WidgetInstance[]): WidgetInstance[] {
@@ -225,7 +240,15 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
       const existing = widgets.find((widget) => widget.type === widgetType.type);
       const { x, y } = widgetType.fixedPosition ?? { x: 0, y: 0 };
       const { cols, rows } = widgetType.defaultSize;
-      result.push({ id: existing?.id ?? `pinned-${widgetType.type}`, type: widgetType.type, x, y, cols, rows });
+      result.push({
+        id: existing?.id ?? `pinned-${widgetType.type}`,
+        type: widgetType.type,
+        x,
+        y,
+        cols,
+        rows,
+        ...(existing?.settings ? { settings: existing.settings } : {})
+      });
     }
     return result;
   }

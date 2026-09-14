@@ -17,6 +17,46 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
+<!-- Handed to the widget frame, which renders it in the header next to the reload button. -->
+<ng-template #headerActions>
+  @if (realmOptions().length > 0) {
+    <button
+      mat-button
+      class="realm-trigger"
+      [matMenuTriggerFor]="realmMenu"
+      aria-label="Select realm"
+      i18n-aria-label="@@dashboard.selectRealm">
+      <span class="realm-trigger-label">{{ realmLabel() }}</span>
+      <mat-icon
+        iconPositionEnd
+        class="realm-trigger-icon"
+        >arrow_drop_down</mat-icon
+      >
+    </button>
+    <mat-menu #realmMenu="matMenu">
+      <button
+        mat-menu-item
+        role="menuitemradio"
+        [attr.aria-checked]="realm() === ''"
+        [class.selected-realm]="realm() === ''"
+        (click)="selectRealm('')"
+        i18n="@@common.allRealms"
+        >All realms</button
+      >
+      @for (realmOption of realmOptions(); track realmOption) {
+        <button
+          mat-menu-item
+          role="menuitemradio"
+          [attr.aria-checked]="realm() === realmOption"
+          [class.selected-realm]="realm() === realmOption"
+          (click)="selectRealm(realmOption)"
+          >{{ realmOption }}</button
+        >
+      }
+    </mat-menu>
+  }
+</ng-template>
+
 <app-widget-state [state]="state()">
   <table class="tokens-table">
     <tbody>
@@ -109,6 +149,22 @@
           <td>{{ unassignedTotal() }}</td>
         </tr>
       }
+      <tr class="user-counts-start">
+        <td i18n="@@dashboard.usersWithTokens">Users with tokens</td>
+        <td>{{ withTokensLabel() }}</td>
+      </tr>
+      @if (canListUsers()) {
+        <tr>
+          <td i18n="@@dashboard.usersWithoutTokens">Users without tokens</td>
+          <td>{{ withoutTokensLabel() }}</td>
+        </tr>
+      }
     </tbody>
   </table>
+  @if (userCounts().skippedResolvers.length > 0) {
+    <p class="incomplete-users">
+      <mat-icon>warning</mat-icon>
+      <span i18n="@@dashboard.userListIncomplete">Excluding {{ skippedResolverNames() }}, which did not answer.</span>
+    </p>
+  }
 </app-widget-state>
