@@ -36,6 +36,25 @@ jobs:
         run: npm ci
       - name: Build the new WebUI
         run: npm run build
+      # The server reads the application from <static folder>/dist/privacyidea-webui/browser/
+      # and the base href is baked in at build time, so a build that lands anywhere else, or
+      # addresses another URL, produces a WebUI that is never found. tests/test_ui_static_layout.py
+      # checks the same contract from the Python side, but only this job has a real build.
+      - name: Check the build output is where the server reads it
+        run: |
+          for locale in en de; do
+            index="dist/privacyidea-webui/browser/${locale}/index.html"
+            if [ ! -f "$index" ]; then
+              echo "::error::The build did not produce ${index}"
+              exit 1
+            fi
+          done
+          base_href='base href="/static/dist/privacyidea-webui/browser/en/"'
+          if ! grep -q "$base_href" "dist/privacyidea-webui/browser/en/index.html"; then
+            echo "::error::The built index.html does not carry '${base_href}'"
+            grep -o 'base href="[^"]*"' "dist/privacyidea-webui/browser/en/index.html" || true
+            exit 1
+          fi
 
   notify-failure:
     needs: build-webui
