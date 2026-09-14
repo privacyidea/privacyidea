@@ -92,6 +92,16 @@ class HotpTokenClass(TokenClass):
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
 
+    # An HOTP token is one of the token types the offline machine application supports, so it carries the
+    # counter of the OTP values handed out for offline use and the token that authorizes fetching more. The
+    # token types that derive from this one inherit both, although only an HOTP token is offline capable. That
+    # only means the two keys are not free-form on those types either, where they are never written anyway.
+    owned_tokeninfo_keys = frozenset({"2step_clientsize", "2step_difficulty", "dueDate", "otp1c",
+                                      "offline_counter", "refilltoken"})
+    # Removing the refill token only revokes the ability to refill, it does not change how the token
+    # authenticates, so an administrator may do it
+    deletable_tokeninfo_keys = frozenset({"refilltoken"})
+
     desc_hash_func = lazy_gettext('Specify the hashing function to be used. '
                                   'Can be SHA1, SHA256 or SHA512.')
     desc_otp_len = lazy_gettext('Specify the OTP length to be used. Can be 6 or 8 digits.')
@@ -353,7 +363,7 @@ class HotpTokenClass(TokenClass):
             for key, default in [
                 ("2step_difficulty", TWOSTEP_DEFAULT_DIFFICULTY),
                 ("2step_clientsize", TWOSTEP_DEFAULT_CLIENTSIZE)]:
-                self.add_tokeninfo(key, get_optional(param, key, default))
+                self.write_tokeninfo(key, get_optional(param, key, default))
 
         val = get_optional(upd_param, "hashlib")
         if val is not None:
@@ -388,11 +398,11 @@ class HotpTokenClass(TokenClass):
         # raised here.
         TokenClass.update(self, upd_param, reset_failcount)
 
-        self.add_tokeninfo("hashlib", hashlib_str)
+        self.write_tokeninfo("hashlib", hashlib_str)
 
         # check the tokenkind
         if self.token.serial.startswith("UB"):
-            self.add_tokeninfo("tokenkind", Tokenkind.HARDWARE)
+            self.write_tokeninfo("tokenkind", Tokenkind.HARDWARE)
 
     @property
     def hashlib(self):
@@ -567,12 +577,12 @@ class HotpTokenClass(TokenClass):
                     res = -1  # pragma: no cover
 
                 # now clean the resync data
-                self.delete_tokeninfo("dueDate")
-                self.delete_tokeninfo("otp1c")
+                self.remove_tokeninfo("dueDate")
+                self.remove_tokeninfo("otp1c")
 
             else:
-                self.add_tokeninfo("otp1c", res)
-                self.add_tokeninfo("dueDate", int(time.time()) +
+                self.write_tokeninfo("otp1c", res)
+                self.write_tokeninfo("dueDate", int(time.time()) +
                                    self.get_sync_timeout())
 
                 res = -1

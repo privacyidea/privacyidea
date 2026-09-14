@@ -7,12 +7,39 @@
   @include table.base-table-structure(".clients-table", ".clients-table-filter", ".table-scroll-container");
 }
 
-.col-even {
-  background-color: var(--mat-sys-light) !important;
-}
+// The clients table drops td cells for row-spanned columns, so the DOM
+// nth-child position no longer matches the logical column index. Disable the
+// generic position-based striping and stripe by the explicit colIdx class instead.
+.clients-table {
+  td:nth-child(even) {
+    background: transparent;
+  }
 
-.col-odd {
-  background-color: var(--mat-sys-surface-container-low) !important;
+  td.col-even {
+    background: var(--mat-sys-surface-variant);
+  }
+
+  td.col-odd {
+    background: transparent;
+  }
+
+  // th backgrounds need !important: the sticky header must outrank both Material's own
+  // ".mat-mdc-table .mat-mdc-header-cell { background: inherit; }" and this project's opaque
+  // fallback for it in table.scss, which are themselves !important for the same reason.
+  th.mat-mdc-header-cell:nth-child(even) {
+    background: transparent !important;
+  }
+
+  th.col-even {
+    background: var(--mat-sys-surface-variant) !important;
+  }
+
+  // Sticky header cells scroll over the rows beneath them, so they can't stay
+  // transparent like the odd body columns - fall back to the same opaque shade as every
+  // other table's header (table.scss).
+  th.col-odd {
+    background: light-dark(#f3f3f3, #1b1b1b) !important;
+  }
 }
 
 .line-height {

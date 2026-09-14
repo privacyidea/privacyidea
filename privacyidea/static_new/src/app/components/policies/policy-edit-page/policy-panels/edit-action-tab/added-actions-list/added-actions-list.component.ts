@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, output } from "@angular/core";
+import { Component, computed, inject, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { PolicyActionDetail, policyActionMatchesFilter, PolicyService } from "@services/policies/policies.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action-item-edit.component";
 
@@ -38,8 +38,17 @@ export class AddedActionsListComponent {
   readonly actionsChange = output<{ name: string; value: string | boolean }[]>();
   readonly isEditMode = input.required<boolean>();
   readonly scope = input<string | undefined>(undefined);
+  readonly actionFilter = input<string>("");
 
   private policyService = inject(PolicyService);
+
+  readonly filteredActions = computed(() => {
+    const filter = this.actionFilter().trim();
+    if (!filter) return this.actions();
+    return this.actions().filter((action) =>
+      policyActionMatchesFilter(action.name, this.getDetailsOfAction(action.name) ?? undefined, filter)
+    );
+  });
 
   parseBooleanValue = parseBooleanValue;
 

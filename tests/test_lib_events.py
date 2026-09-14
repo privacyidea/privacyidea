@@ -49,7 +49,7 @@ from privacyidea.lib.eventhandler.webhookeventhandler import (ActionType as WHEH
                                                               DB_CONTENT_TYPE_MAP)
 from privacyidea.lib.machine import list_token_machines
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
-                                   add_tokeninfo, unassign_token, get_tokens_paginate)
+                                   get_one_token, unassign_token, get_tokens_paginate)
 from privacyidea.lib.tokenclass import DATE_FORMAT, ChallengeSession
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
@@ -173,6 +173,34 @@ class EventHandlerLibTestCase(MyTestCase):
         self.assertTrue(r)
         event_config = EventConfiguration()
         self.assertEqual(len(event_config.events), 0)
+
+    def test_01b_update_keeps_options_when_omitted(self):
+        # Regression test: reordering an event handler (an update that does not
+        # supply options/conditions) must not wipe the stored options and
+        # conditions. See the "change order in the overview deletes actions" bug.
+        eid = set_event("keepme", "token_init", "UserNotification", "sendmail",
+                        conditions={"bla": "yes"},
+                        options={"emailconfig": "themis"})
+        # Update only the ordering, omit options and conditions (options=None,
+        # conditions=None means "keep the stored values")
+        set_event("keepme", "token_init", "UserNotification", "sendmail",
+                  id=eid, ordering=5)
+        event = db.session.scalars(select(EventHandler).where(EventHandler.id == eid)).one_or_none()
+        self.assertEqual(5, event.ordering)
+        # options and conditions are still there
+        self.assertEqual("emailconfig", event.options[0].Key)
+        self.assertEqual("themis", event.options[0].Value)
+        self.assertEqual("bla", event.conditions[0].Key)
+        self.assertEqual("yes", event.conditions[0].Value)
+
+        # An explicit empty dict clears the options/conditions
+        set_event("keepme", "token_init", "UserNotification", "sendmail",
+                  id=eid, options={}, conditions={})
+        event = db.session.scalars(select(EventHandler).where(EventHandler.id == eid)).one_or_none()
+        self.assertEqual(0, len(event.options.all()))
+        self.assertEqual(0, len(event.conditions.all()))
+
+        delete_event(eid)
 
     def test_02_get_handler_object(self):
         h_obj = get_handler_object("UserNotification")
@@ -324,8 +352,9 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # Set the count_auth and count_auth_success
-        add_tokeninfo(serial, "count_auth", 100)
-        add_tokeninfo(serial, "count_auth_success", 50)
+        token_object = get_one_token(serial=serial)
+        token_object.set_count_auth(100)
+        token_object.set_count_auth_success(50)
         options["handler_def"] = {"conditions": {CONDITION.COUNT_AUTH: ">99"}}
         r = uhandler.check_condition(options)
         self.assertTrue(r)
@@ -2846,6 +2875,47 @@ class ContainerEventTestCase(MyTestCase):
         token_01.delete_token()
         token_02.delete_token()
 
+    def test_11_description_and_info_tags(self):
+        # The description and the container info values support the tags of the
+        # notification handlers, including {now} with an offset
+        self.setUp_user_realms()
+        container_serial = init_container({"type": "generic",
+                                           "user": "cornelius",
+                                           "realm": self.realm1})["container_serial"]
+        options = self.setup_request(container_serial=container_serial)
+        c_handler = ContainerEventHandler()
+
+        options["handler_def"]["options"] = {
+            "description": "{username}@{userrealm} on {container_serial} at {now}+5d"}
+        self.assertTrue(c_handler.do(C_ACTION_TYPE.SET_DESCRIPTION, options=options))
+        description = find_container_by_serial(container_serial).description
+        self.assertTrue(
+            description.startswith(f"cornelius@{self.realm1} on {container_serial} at 20"),
+            description)
+
+        # The same tags are available in the value of the container info
+        options["handler_def"]["options"] = {"key": "seen_from", "value": "{client_ip}"}
+        self.assertTrue(c_handler.do(C_ACTION_TYPE.SET_CONTAINER_INFO, options=options))
+        container = find_container_by_serial(container_serial)
+        infos = {info.key: info.value for info in container.get_container_info()}
+        self.assertEqual("10.0.0.1", infos.get("seen_from"))
+
+        options["handler_def"]["options"] = {"key": "added", "value": "{now}"}
+        self.assertTrue(c_handler.do(C_ACTION_TYPE.ADD_CONTAINER_INFO, options=options))
+        container = find_container_by_serial(container_serial)
+        infos = {info.key: info.value for info in container.get_container_info()}
+        self.assertIn(str(datetime.now().year), infos.get("added", ""))
+        self.assertEqual("10.0.0.1", infos.get("seen_from"))
+
+        # A value that can not be formatted is written as it was entered
+        options["handler_def"]["options"] = {"key": "raw", "value": "{now}+2h {does_not_exist}"}
+        self.assertTrue(c_handler.do(C_ACTION_TYPE.ADD_CONTAINER_INFO, options=options))
+        container = find_container_by_serial(container_serial)
+        infos = {info.key: info.value for info in container.get_container_info()}
+        self.assertEqual("{now}+2h {does_not_exist}", infos.get("raw"))
+
+        container.delete()
+
     def test_10_unregister(self):
         # create container
         smartphone_serial = init_container({"type": "smartphone"})["container_serial"]
@@ -4104,6 +4174,116 @@ class TokenEventTestCase(MyTestCase):
         )
         remove_token(serial="SPASS01")
 
+    def test_17_set_description_and_tokeninfo_tags(self):
+        # The tags of "set description" and "set tokeninfo" are built with
+        # create_tag_dict(): {username} and {userrealm} describe the token owner,
+        # {admin} and {realm} the acting administrator.
+        self.setUp_user_realms()
+        init_token({"serial": "SPASS03", "type": "spass"},
+                   User("cornelius", self.realm1))
+        g = FakeFlaskG()
+        g.logged_in_user = {"username": "admin", "role": "admin", "realm": "super"}
+        builder = EnvironBuilder(method='POST',
+                                 headers={"User-Agent": "privacyidea-keycloak/1.2.3"})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.7"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS03"}
+        req.User = User("cornelius", self.realm1)
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        # The owner tags describe the token owner, the admin tags the administrator
+        options = {"g": g, "request": req, "response": resp,
+                   "handler_def": {"options": {
+                       "key": "who",
+                       "value": "{username}@{userrealm} by {admin}@{realm} "
+                                "ip={client_ip} serial={serial} type={tokentype}"},
+                       "conditions": {}}}
+        t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
+        self.assertTrue(t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options))
+        who = get_tokens(serial="SPASS03")[0].get_tokeninfo("who")
+        self.assertEqual(f"cornelius@{self.realm1} by admin@super "
+                         f"ip=10.0.0.7 serial=SPASS03 type=spass", who)
+
+        # The description supports the same tags, including {now} with an offset.
+        # {ua_browser} is the name of the client application, not the werkzeug
+        # user agent object, which has no browser and renders as "None".
+        options["handler_def"]["options"] = {
+            "description": "{username} {now}+5d {ua_browser}"}
+        self.assertTrue(t_handler.check_condition(options))
+        self.assertTrue(t_handler.do(ACTION_TYPE.SET_DESCRIPTION, options=options))
+        desc = get_tokens(serial="SPASS03")[0].token.description
+        self.assertTrue(desc.startswith("cornelius 20"), desc)
+        self.assertTrue(desc.endswith(" privacyidea-keycloak"), desc)
+        self.assertNotIn("{now}", desc)
+        self.assertNotIn("None", desc)
+
+        # The complete user agent stays available as {ua_string}
+        options["handler_def"]["options"] = {"key": "client", "value": "{ua_string}"}
+        self.assertTrue(t_handler.check_condition(options))
+        self.assertTrue(t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options))
+        self.assertEqual("privacyidea-keycloak/1.2.3",
+                         get_tokens(serial="SPASS03")[0].get_tokeninfo("client"))
+
+        # An unknown tag must not fail the event handling, the text is kept as the
+        # administrator entered it, including a time offset
+        options["handler_def"]["options"] = {"description": "{now}+5d {does_not_exist}"}
+        self.assertTrue(t_handler.check_condition(options))
+        self.assertTrue(t_handler.do(ACTION_TYPE.SET_DESCRIPTION, options=options))
+        self.assertEqual("{now}+5d {does_not_exist}",
+                         get_tokens(serial="SPASS03")[0].token.description)
+
+        # Without a user in the request, the owner is determined from the serial
+        req.User = User()
+        options["handler_def"]["options"] = {"key": "who2", "value": "{username}@{userrealm}"}
+        self.assertTrue(t_handler.check_condition(options))
+        self.assertTrue(t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options))
+        self.assertEqual(f"cornelius@{self.realm1}",
+                         get_tokens(serial="SPASS03")[0].get_tokeninfo("who2"))
+
+        remove_token(serial="SPASS03")
+
+    def test_18_tags_describe_the_handled_token(self):
+        # When the handler acts on several tokens, the tags of each token describe
+        # that token and its owner
+        self.setUp_user_realms()
+        init_token({"serial": "SPASS04", "type": "spass"},
+                   User("cornelius", self.realm1))
+        init_token({"serial": "SPASS05", "type": "spass"},
+                   User("shadow", self.realm1))
+        g = FakeFlaskG()
+        g.logged_in_user = {"username": "admin", "role": "admin", "realm": "super"}
+        g.audit_object = FakeAudit()
+        builder = EnvironBuilder(method='POST', headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.8"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS04,SPASS05"}
+        req.User = User()
+        resp = Response()
+        resp.data = """{"result": {"value": true}}"""
+
+        options = {"g": g, "request": req, "response": resp,
+                   "handler_def": {"options": {"key": "owner",
+                                               "value": "{username} {serial}"},
+                                   "conditions": {}}}
+        t_handler = TokenEventHandler()
+        self.assertTrue(t_handler.check_condition(options))
+        self.assertListEqual(["SPASS04", "SPASS05"], options["context"].token_serials)
+        self.assertTrue(t_handler.do(ACTION_TYPE.SET_TOKENINFO, options=options))
+
+        self.assertEqual("cornelius SPASS04",
+                         get_tokens(serial="SPASS04")[0].get_tokeninfo("owner"))
+        self.assertEqual("shadow SPASS05",
+                         get_tokens(serial="SPASS05")[0].get_tokeninfo("owner"))
+
+        remove_token(serial="SPASS04")
+        remove_token(serial="SPASS05")
+
 
 class CustomUserAttributesTestCase(MyTestCase):
 
@@ -4261,6 +4441,86 @@ class CustomUserAttributesTestCase(MyTestCase):
         a = user.attributes
         self.assertIn('test', a, user)
         self.assertEqual('new', a.get('test'), user)
+
+    def test_06_set_attribute_with_tags(self):
+        # The attribute value supports tags like {now}, {current_time} (with
+        # offsets), {client_ip} and {serial}
+        self.setUp_user_realms()
+        init_token({"serial": "SPASS02", "type": "spass"},
+                   User("cornelius", self.realm1))
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit()
+        builder = EnvironBuilder(method='POST',
+                                 data={'serial': "SPASS02"},
+                                 headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.5"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"serial": "SPASS02"}
+        req.User = User("cornelius", self.realm1)
+
+        # {now} with an offset must be replaced by a timestamp, not stored literally
+        options = {"g": g,
+                   "request": req,
+                   "handler_def": {"options": {"attrkey": "last_login",
+                                               "attrvalue": "{now}+2h from {client_ip} ({serial})",
+                                               "user": USER_TYPE.TOKENOWNER}}}
+        t_handler = CustomUserAttributesHandler()
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
+
+        value = req.User.attributes.get("last_login")
+        self.assertNotIn("{now}", value, value)
+        self.assertNotIn("{client_ip}", value, value)
+        self.assertIn("from 10.0.0.5", value, value)
+        self.assertIn("(SPASS02)", value, value)
+        # The rendered value must contain the current year of the timestamp
+        self.assertIn(str(datetime.now().year), value, value)
+
+        # An unknown tag must not fail the handler, the value is kept as the
+        # administrator entered it, including a time offset
+        options["handler_def"]["options"]["attrvalue"] = "{now}+2h {does_not_exist}"
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
+        self.assertEqual("{now}+2h {does_not_exist}", req.User.attributes.get("last_login"))
+
+        # {serial} is taken from the response if the request does not carry one
+        req.all_data = {}
+        resp = Response(mimetype="application/json",
+                        response="""{"detail": {"serial": "SPASS02"},
+                                    "result": {"status": true, "value": true}}""",
+                        content_type="application/json")
+        options["response"] = resp
+        options["handler_def"]["options"]["attrvalue"] = "token {serial}"
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
+        self.assertEqual("token SPASS02", req.User.attributes.get("last_login"))
+
+        # Without any token in the event, {serial} is empty and the tokens of the
+        # user are not enumerated
+        init_token({"serial": "SPASS02B", "type": "spass"},
+                   User("cornelius", self.realm1))
+        del options["response"]
+        options["handler_def"]["options"]["attrvalue"] = "token '{serial}'"
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
+        self.assertEqual("token ''", req.User.attributes.get("last_login"))
+        remove_token(serial="SPASS02B")
+
+        # The user tags describe the user the attribute is written for. With the
+        # logged-in user, they do not depend on a user in the request.
+        req.User = User()
+        g.logged_in_user = {"username": "cornelius", "realm": self.realm1, "role": "user"}
+        options["handler_def"]["options"] = {"attrkey": "last_login",
+                                             "attrvalue": "{username}@{userrealm}",
+                                             "user": USER_TYPE.LOGGED_IN_USER}
+        res = t_handler.do(CUAH_ACTION_TYPE.SET_CUSTOM_USER_ATTRIBUTES, options=options)
+        self.assertTrue(res)
+        user = User("cornelius", self.realm1)
+        self.assertEqual(f"cornelius@{self.realm1}", user.attributes.get("last_login"))
+
+        remove_token(serial="SPASS02")
 
 
 class WebhookTestCase(MyTestCase):

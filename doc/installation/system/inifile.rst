@@ -120,6 +120,23 @@ can be set, for example::
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
 
+Both entries apply wherever privacyIDEA hashes a password or a PIN: token PINs,
+administrator passwords, password reset codes and the entries of the authentication
+cache (see :ref:`policy_auth_cache`). Changing ``PI_HASH_ALGO_PARAMS`` keeps the
+existing hashes verifiable, because every hash carries the parameters it was created
+with - but only as long as the algorithm that created it is still listed in
+``PI_HASH_ALGO_LIST``, as the note above says.
+
+.. note:: In the **database-backed** authentication cache an entry is stored in a column
+   of 255 characters, which the hashes of the shipped algorithms fit into comfortably
+   (Argon2 needs 97 and PBKDF2-SHA512 130). A configuration that produces a longer hash,
+   for instance through an unusually large salt or digest, does not fit. PostgreSQL and
+   MySQL or MariaDB in strict mode reject it, so caching an authentication fails visibly;
+   a MySQL or MariaDB without strict mode truncates the value instead, and the entry it
+   stores can then never be verified - it is discarded and the authentication reaches the
+   user store again. The Redis cache of :ref:`redis_auth_cache` keeps the entry as an
+   encrypted JSON record rather than in that column, so it has no such limit.
+
 Security
 --------
 
@@ -185,8 +202,10 @@ captures stderr - typically the webserver's error log.
 
 privacyIDEA digitally signs the responses with the private key in
 ``PI_AUDIT_KEY_PRIVATE``. If you can be sure that the private key has
-not been tampered with, you can set the parameter ``PI_AUDIT_NO_PRIVATE_KEY_CHECK``
-to ``True`` in order to improve the performance when loading the key.
+not been tampered with, you can set the parameter
+``PI_RESPONSE_NO_PRIVATE_KEY_CHECK`` to ``True`` in order to skip the validation
+of the key. The loaded key is kept for the lifetime of the worker process, so this
+only affects the first response each worker process signs.
 
 You can disable the signing of the responses completely using the parameter
 ``PI_NO_RESPONSE_SIGN``. Set this to ``True`` to suppress the response signature.
@@ -249,7 +268,30 @@ effective if you also set ``PI_ENGINE_REGISTRY_CLASS`` to ``"shared"``.
 For signing and verifying each Audit entry, the RSA keys in ``PI_AUDIT_KEY_PRIVATE``
 and ``PI_AUDIT_KEY_PUBLIC`` are used. If you can be sure that the private key has
 not been tampered with, you can set the parameter ``PI_AUDIT_NO_PRIVATE_KEY_CHECK``
-to ``True`` in order to improve the performance when loading the key.
+to ``True`` in order to skip the validation of the key. The loaded key is kept for
+the lifetime of the worker process, so this only affects the first request each
+worker process handles.
+
+A key file that is replaced while the server is running is picked up without a
+restart, because the contents of the key files are read and compared whenever they
+are used. Kubernetes updates a mounted secret by pointing a symlink at a new
+version of the file, which is picked up in the same way.
+
+.. warning:: Rotating the audit keypair means that every entry written with the
+   previous key is verified against the new public key from then on, so the whole
+   audit log up to the rotation is displayed with the signature *FAIL* - which can
+   not be told apart from a tampered entry. privacyIDEA verifies with a single
+   public key, so entries from before the rotation can not be verified any more
+   once the new key is in place. Worker processes also pick up a new key
+   independently of each other, so entries written during the changeover are split
+   across both keys.
+
+.. note:: The audit keys are always configured as *file names* and never hold the
+   key material itself, so it can not be passed in an environment variable. A
+   container deployment mounts the keypair instead; the Docker configuration picks
+   up ``/run/secrets/audit_key_private`` and ``/run/secrets/audit_key_public`` on
+   its own. Docker secrets are immutable, so rotating one there means a new secret
+   and a new container rather than a replaced file.
 
 If you by any reason want to avoid signing audit entries entirely, you can
 set ``PI_AUDIT_NO_SIGN = True``. If ``PI_AUDIT_NO_SIGN`` is set to ``True``
@@ -701,7 +743,8 @@ Two consequences worth knowing:
   usually needs is no longer necessary.
 * The database-backed cache never bounded how many entries a user accumulated,
   and every lookup verifies the presented password against each of them with
-  Argon2 - so the cache got slower the more it was used. Per-entry expiry bounds
+  the configured key derivation function - so the cache got slower the more it
+  was used. Per-entry expiry bounds
   that set.
 
 Like the other workloads it degrades safely: if Redis cannot be reached the
@@ -793,9 +836,10 @@ What is stored differs per workload:
   ID, because Redis has to be able to look it up. Treat the key space as
   revealing who exists, and the values as unreadable without the encryption
   key.
-* Authentication cache entries are **encrypted** the same way. An entry holds an
-  Argon2 hash of the user's password, which could be attacked offline if it
-  leaked in the clear. Note that, exactly as with the database-backed cache, a
+* Authentication cache entries are **encrypted** the same way. An entry holds a
+  hash of the user's password, made with the algorithm and the parameters that
+  ``PI_HASH_ALGO_LIST`` and ``PI_HASH_ALGO_PARAMS`` configure, which could be
+  attacked offline if it leaked in the clear. Note that, exactly as with the database-backed cache, a
   password changed in the user store stays usable until its entry expires, so
   keep the :ref:`policy_auth_cache` window short enough to live with that.
 * Certificate health results are stored as plaintext. They hold no credentials,

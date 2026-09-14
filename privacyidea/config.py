@@ -196,6 +196,17 @@ class TestingConfig(Config):
     PI_ENCFILE_ENC = "tests/testdata/enckey.enc"
     PI_LOGLEVEL = logging.INFO
     PI_GNUPG_HOME = "tests/testdata/gpg"
+    # Loading an RSA private key validates it, which costs roughly 100 ms. The audit key is loaded
+    # again for every signed response and for every audit module instance, so the suite spends
+    # minutes re-validating the same key it ships itself. Signing behaviour is unchanged; only the
+    # repeated validation of a known-good test key is skipped.
+    PI_AUDIT_NO_PRIVATE_KEY_CHECK = True
+    PI_RESPONSE_NO_PRIVATE_KEY_CHECK = True
+    # argon2 is meant to be expensive. The production parameters cost about 200 ms per hash and
+    # spawn four threads each, so under pytest-xdist the workers spend more time in the key
+    # derivation function than in the code under test. Tests that are about the production
+    # parameters override this, see DefaultHashAlgoListTestCase in tests/test_lib_crypto.py.
+    PI_HASH_ALGO_PARAMS = {"argon2__rounds": 1, "argon2__memory_cost": 8, "argon2__parallelism": 1}
     # Disable the /healthz/resolversz probe cache so tests see fresh results
     PI_HEALTHZ_RESOLVER_CACHE_SECONDS = 0
     CACHE_TYPE = "None"

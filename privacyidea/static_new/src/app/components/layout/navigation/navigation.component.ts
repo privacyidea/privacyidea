@@ -44,8 +44,10 @@ import { SessionTimerService, SessionTimerServiceInterface } from "@services/ses
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
+import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
 
 import { ROUTE_PATHS } from "@app/route_paths";
+import { LANDING_PAGE_ROUTES } from "@core/landing-page";
 import { OverflowNavDirective } from "../../shared/directives/overflow-nav/overflow-nav.directive";
 
 export interface NavItem {
@@ -95,6 +97,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly uiPreferencesService: UiPreferencesServiceInterface = inject(UiPreferencesService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
@@ -150,7 +153,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     }
   ];
   visibleNavCount = signal(this.primaryNavItems.length);
-  landingPage = computed(() => (this.authService.adminDashboard() ? ROUTE_PATHS.DASHBOARD : ROUTE_PATHS.TOKENS));
+  landingPage = computed(() => LANDING_PAGE_ROUTES[this.uiPreferencesService.landingPage()]);
   customLogo = computed(() => {
     if (!this.configService.config()?.logo) {
       return null;

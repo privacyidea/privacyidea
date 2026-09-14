@@ -97,7 +97,11 @@ describe("TokenDetailsSelfServiceComponent", () => {
       { keyMap: { key: "info", label: "Info" }, value: { key1: "value1" }, isEditing: signal(false) }
     ]);
     component.tokenDetailData = signal([
-      { keyMap: { key: "container_serial", label: "Container" }, value: "container1", isEditing: signal(false) }
+      {
+        keyMap: { key: "container_serial", label: "Container", group: "assignment" },
+        value: "container1",
+        isEditing: signal(false)
+      }
     ]);
 
     fixture.detectChanges();

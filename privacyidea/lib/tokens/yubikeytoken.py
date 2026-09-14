@@ -137,6 +137,7 @@ class YubikeyTokenClass(TokenClass):
     """
     The Yubikey Token in the Yubico AES mode
     """
+    owned_tokeninfo_prefixes = frozenset({"yubikey."})
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
@@ -332,12 +333,12 @@ class YubikeyTokenClass(TokenClass):
         if not tokenid:
             log.debug(f"Got no tokenid for {serial!r}. Initializing.")
             tokenid = uid
-            self.add_tokeninfo("yubikey.tokenid", tokenid)
+            self.write_tokeninfo("yubikey.tokenid", tokenid)
 
         prefix = self.get_tokeninfo("yubikey.prefix")
         if not prefix:
             log.debug(f"Got no prefix for {serial!r}. Setting to {yubi_prefix!r}.")
-            self.add_tokeninfo("yubikey.prefix", yubi_prefix)
+            self.write_tokeninfo("yubikey.prefix", yubi_prefix)
 
         if tokenid != uid:
             # wrong token!
@@ -494,4 +495,4 @@ h={h}
         if not len(update_params["otpkey"]) == 32:
             raise EnrollmentError("The otpkey must be 32 characters long for yubikey token in AES mode")
         TokenClass.update(self, update_params, reset_failcount)
-        self.add_tokeninfo("tokenkind", Tokenkind.HARDWARE)
+        self.write_tokeninfo("tokenkind", Tokenkind.HARDWARE)

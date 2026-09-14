@@ -750,3 +750,24 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertTrue(any("Could not verify authentication signature" in message for message in log_capture.output),
                         log_capture.output)
         remove_token(serial=token.get_serial())
+
+    def test_21_authenticate_unusable_sign_count_or_public_key(self):
+        """
+        The sign count and the public key are read back from the token info. A value that is not of the
+        expected shape makes the token unusable, which has to fail the authentication instead of raising out
+        of the request.
+        """
+        for key, value in [(FIDO2TokenInfo.SIGN_COUNT, "not-a-number"),
+                           (FIDO2TokenInfo.PUBLIC_KEY, "not-base64url!")]:
+            token = self._create_token()
+            token.write_tokeninfo(key, value)
+            challenge = self._initialize_authentication()
+            authentication_response = dict(self.authentication_response_no_uv)
+            authentication_response["HTTP_ORIGIN"] = self.expected_origin
+            with self.assertLogs("privacyidea.lib.tokens.passkeytoken", level="ERROR") as log_capture:
+                verification_result = verify_fido2_challenge(challenge["transaction_id"], token,
+                                                             authentication_response)
+            self.assertEqual(-1, verification_result.success)
+            self.assertTrue(any("unusable sign count or public key" in message
+                                for message in log_capture.output), log_capture.output)
+            remove_token(serial=token.get_serial())

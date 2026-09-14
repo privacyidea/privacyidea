@@ -34,6 +34,7 @@ import { ConfigService } from "@services/config/config.service";
 import { LocalService } from "@services/local/local.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { ValidateService, WebAuthnSignRequest } from "@services/validate/validate.service";
 import {
   MockAuthDetail,
@@ -46,6 +47,7 @@ import {
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockConfigService } from "@testing/mock-services/mock-config-service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 import { of, throwError } from "rxjs";
 import { LoginComponent } from "./login.component";
 
@@ -72,7 +74,8 @@ describe("LoginComponent", () => {
         { provide: ValidateService, useClass: MockValidateService },
         { provide: SessionTimerService, useClass: MockSessionTimerService },
         { provide: Router, useClass: MockRouter },
-        { provide: ConfigService, useClass: MockConfigService }
+        { provide: ConfigService, useClass: MockConfigService },
+        { provide: UserSettingsService, useClass: MockUserSettingsService }
       ]
     }).compileComponents();
 

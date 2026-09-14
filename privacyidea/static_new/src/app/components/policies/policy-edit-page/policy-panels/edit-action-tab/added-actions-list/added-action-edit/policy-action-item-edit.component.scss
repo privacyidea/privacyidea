@@ -9,7 +9,9 @@
   padding: 8px 16px;
   margin: 4px 0;
   border-radius: var(--border-radius);
-  border: 1px solid var(--mat-sys-outline-variant);
+  // Half-strength, to match the selectable actions below: at full opacity the row borders read
+  // as a frame around the panel rather than around each action.
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant), transparent 50%);
   background-color: var(--mat-sys-surface-container-low);
   font-weight: 500;
   box-sizing: border-box;

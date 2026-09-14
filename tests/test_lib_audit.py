@@ -392,6 +392,12 @@ class AuditTestCase(MyTestCase):
         with self.assertRaises(Exception):
             getAudit(self.app.config)
         self.app.config["PI_AUDIT_KEY_PRIVATE"] = PRIVATE
+        # Without a public key the module signs entries but verifies every one of them as
+        # FAIL, which can not be told apart from a tampered log, so it has to be an error
+        self.app.config.pop("PI_AUDIT_KEY_PUBLIC")
+        with self.assertRaises(TypeError):
+            getAudit(self.app.config)
+        self.app.config["PI_AUDIT_KEY_PUBLIC"] = PUBLIC
         # Log a username as unicode with a non-ascii character
         self.Audit.log({"serial": "1234",
                         "action": "token/assign",

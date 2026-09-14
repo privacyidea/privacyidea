@@ -36,8 +36,8 @@ export class RemoteConfigComponent {
   protected readonly REMOTE_SERVER = REMOTE_SERVER;
   protected readonly REMOTE_VERIFY_SSL = REMOTE_VERIFY_SSL;
 
-  formData = input.required<Record<string, string | boolean>>();
-  formDataChange = output<Record<string, string | boolean>>();
+  formData = input.required<Record<string, string | boolean | undefined>>();
+  formDataChange = output<Record<string, string | boolean | undefined>>();
 
   verifySSL = computed(() => parseBooleanValue(this.formData()[REMOTE_VERIFY_SSL]));
 

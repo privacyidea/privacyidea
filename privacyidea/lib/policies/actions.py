@@ -153,6 +153,7 @@ class PolicyAction:
     ENROLLPIN = "enrollpin"
     MANAGESUBSCRIPTION = "managesubscription"
     SEARCH_ON_ENTER = "search_on_enter"
+    SESSION_PERSISTENCE = "session_persistence"
     TIMEOUT_ACTION = "timeout_action"
     AUTH_CACHE = "auth_cache"
     DELETION_CONFIRMATION = "deletion_confirmation"

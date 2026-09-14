@@ -22,14 +22,17 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { Sort } from "@angular/material/sort";
 import { provideRouter, Router } from "@angular/router";
-import { EventHandler, EventService } from "@services/event/event.service";
-import { MockEventService } from "@testing/mock-services/mock-event-service";
-import { EventComponent } from "./event.component";
-import { TableUtilsService } from "@services/table-utils/table-utils.service";
-import { MockTableUtilsService } from "@testing/mock-services";
 import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { EventHandler, EventService } from "@services/event/event.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockDialogService, MockNotificationService, MockTableUtilsService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
+import { of } from "rxjs";
+import { EventComponent } from "./event.component";
 
 describe("EventComponent", () => {
   let component: EventComponent;
@@ -44,7 +47,9 @@ describe("EventComponent", () => {
         provideHttpClient(),
         provideRouter([]),
         { provide: EventService, useClass: MockEventService },
-        { provide: TableUtilsService, useClass: MockTableUtilsService }
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
     }).compileComponents();
 
@@ -615,5 +620,225 @@ describe("EventComponent", () => {
     const spy = jest.spyOn(component["eventService"], "enableEvent");
     component.toggleActive(handler as unknown as EventHandler);
     expect(spy).toHaveBeenCalledWith("456");
+  });
+
+  describe("ordering in the list view", () => {
+    const makeHandler = (
+      id: number,
+      name: string,
+      ordering: number,
+      overrides: Partial<EventHandler> = {}
+    ): EventHandler => ({
+      id,
+      name,
+      active: true,
+      handlermodule: "UserNotification",
+      ordering,
+      position: "post",
+      abort_on_error: false,
+      event: ["token_init"],
+      action: "sendmail",
+      options: {},
+      conditions: {},
+      ...overrides
+    });
+    const inputWith = (value: string): HTMLInputElement => {
+      const input = document.createElement("input");
+      input.value = value;
+      return input;
+    };
+    const grantRights = (rights: string[]) => {
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights });
+      fixture.detectChanges();
+    };
+    let notificationService: MockNotificationService;
+    let dialogService: MockDialogService;
+    let first: EventHandler;
+    let second: EventHandler;
+
+    beforeEach(() => {
+      notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+      dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+      first = makeHandler(1, "first", 1);
+      second = makeHandler(2, "second", 2);
+      mockEventService.eventHandlers.set([first, second]);
+      fixture.detectChanges();
+    });
+
+    it("saves the ordering that was entered", () => {
+      component.commitOrdering(first, inputWith("5"));
+
+      expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 5);
+      expect(notificationService.success).toHaveBeenCalledWith("Updated the ordering of first.");
+    });
+
+    it("lets two handlers share an ordering, without asking", () => {
+      component.commitOrdering(first, inputWith(String(second.ordering)));
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, second.ordering);
+      expect(notificationService.warning).not.toHaveBeenCalled();
+    });
+
+    it("never touches another handler", () => {
+      component.commitOrdering(first, inputWith("5"));
+
+      expect(mockEventService.updateOrdering).toHaveBeenCalledTimes(1);
+      expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 5);
+    });
+
+    it("reloads the list after saving", () => {
+      const reload = jest.spyOn(mockEventService.allEventsResource, "reload");
+
+      component.commitOrdering(first, inputWith("5"));
+
+      expect(reload).toHaveBeenCalled();
+    });
+
+    it("restores the field and reports the failure when the backend rejects the write", () => {
+      mockEventService.updateOrdering.mockReturnValueOnce(of(undefined));
+      const input = inputWith("5");
+
+      component.commitOrdering(first, input);
+
+      expect(notificationService.success).not.toHaveBeenCalled();
+      expect(input.value).toBe("1");
+      expect(notificationService.error).toHaveBeenCalledWith(
+        "The new ordering was not saved. The event handlers are unchanged."
+      );
+    });
+
+    it.each([
+      ["a negative number", "-1"],
+      ["a fraction", "1.5"],
+      ["an empty field", "   "],
+      ["text", "abc"],
+      ["a value the ordering column cannot hold", "2147483648"],
+      ["exponent notation", "1e21"]
+    ])("rejects %s and restores the previous ordering", (_label, typed) => {
+      const input = inputWith(typed);
+
+      component.commitOrdering(first, input);
+
+      expect(mockEventService.updateOrdering).not.toHaveBeenCalled();
+      expect(input.value).toBe("1");
+      expect(notificationService.warning).toHaveBeenCalledWith(
+        "The ordering has to be a whole number between 0 and 2147483647."
+      );
+    });
+
+    it("accepts the largest ordering the column can hold", () => {
+      component.commitOrdering(first, inputWith("2147483647"));
+
+      expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 2147483647);
+    });
+
+    it("accepts zero as an ordering", () => {
+      component.commitOrdering(first, inputWith("0"));
+
+      expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 0);
+    });
+
+    it("saves nothing when the ordering did not change", () => {
+      component.commitOrdering(first, inputWith("1"));
+
+      expect(mockEventService.updateOrdering).not.toHaveBeenCalled();
+      expect(notificationService.warning).not.toHaveBeenCalled();
+    });
+
+    it("sorts the ordering by number, not as text", () => {
+      mockEventService.eventHandlers.set([
+        makeHandler(1, "ten", 10),
+        makeHandler(2, "two", 2),
+        makeHandler(3, "one", 1)
+      ]);
+      component.sort.set({ active: "ordering", direction: "asc" });
+
+      expect(component.eventHandlerDataSource().data.map((handler) => handler.ordering)).toEqual([1, 2, 10]);
+
+      component.sort.set({ active: "ordering", direction: "desc" });
+
+      expect(component.eventHandlerDataSource().data.map((handler) => handler.ordering)).toEqual([10, 2, 1]);
+    });
+
+    describe("driven through the rendered cell", () => {
+      const orderingInputs = (): HTMLInputElement[] =>
+        Array.from(fixture.nativeElement.querySelectorAll('input[aria-label="Ordering"]'));
+
+      beforeEach(() => {
+        grantRights(["eventhandling_read", "eventhandling_write"]);
+      });
+
+      it("shows the ordering of every row in a field of its own", () => {
+        expect(orderingInputs().map((input) => input.value)).toEqual(["1", "2"]);
+      });
+
+      it("saves the row that was changed once it is left", () => {
+        const input = orderingInputs()[1];
+        input.value = "0";
+
+        input.dispatchEvent(new Event("blur", { bubbles: true }));
+
+        expect(mockEventService.updateOrdering).toHaveBeenCalledWith(second, 0);
+      });
+
+      it("does not save while the spinner is being stepped", () => {
+        const input = orderingInputs()[0];
+
+        // What a browser fires for each click on a spinner arrow.
+        for (const value of ["2", "3", "4"]) {
+          input.value = value;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+
+        expect(mockEventService.updateOrdering).not.toHaveBeenCalled();
+
+        input.dispatchEvent(new Event("blur", { bubbles: true }));
+
+        expect(mockEventService.updateOrdering).toHaveBeenCalledTimes(1);
+        expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 4);
+      });
+
+      it("does not save while digits are being typed", () => {
+        const input = orderingInputs()[0];
+        input.value = "1";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.value = "12";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+
+        expect(mockEventService.updateOrdering).not.toHaveBeenCalled();
+
+        input.dispatchEvent(new Event("blur", { bubbles: true }));
+
+        expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 12);
+      });
+
+      it("saves a value committed with Enter exactly once", () => {
+        const input = orderingInputs()[0];
+        input.focus();
+        input.value = "7";
+
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+
+        expect(document.activeElement).not.toBe(input);
+        expect(mockEventService.updateOrdering).toHaveBeenCalledTimes(1);
+        expect(mockEventService.updateOrdering).toHaveBeenCalledWith(first, 7);
+      });
+
+      it("saves nothing when the field is left untouched", () => {
+        orderingInputs()[0].dispatchEvent(new Event("blur", { bubbles: true }));
+
+        expect(mockEventService.updateOrdering).not.toHaveBeenCalled();
+      });
+    });
+
+    it("renders plain numbers without a field for read-only admins", () => {
+      grantRights(["eventhandling_read"]);
+
+      expect(fixture.nativeElement.querySelector('input[aria-label="Ordering"]')).toBeNull();
+      expect(fixture.nativeElement.textContent).toContain("first");
+    });
   });
 });

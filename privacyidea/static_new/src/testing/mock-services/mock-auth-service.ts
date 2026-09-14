@@ -86,6 +86,7 @@ export class MockAuthService implements AuthServiceInterface {
   readonly isSelfServiceUser = computed(() => this.role() === "user");
 
   // Methods
+  bootstrapSession = jest.fn();
   getHeaders = jest.fn().mockReturnValue(new HttpHeaders());
   authenticate = jest
     .fn()

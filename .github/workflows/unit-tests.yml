@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      min: ${{ steps.load.outputs.min }}
+      max: ${{ steps.load.outputs.max }}
       matrix: ${{ steps.load.outputs.matrix }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -64,7 +64,7 @@ jobs:
           FULL_MATRIX_ON_SCHEDULE: ${{ inputs.full-matrix-on-schedule }}
         run: |
           set -a; source .github/python-versions.env; set +a
-          echo "min=$MIN" >> "$GITHUB_OUTPUT"
+          echo "max=$MAX" >> "$GITHUB_OUTPUT"
           if [ "$IS_SCHEDULE" = "true" ] && [ "$FULL_MATRIX_ON_SCHEDULE" = "true" ]; then
             echo -n "matrix=" >> "$GITHUB_OUTPUT"
             printf '%s\n' "$ALL" | jq -Rc 'split(" ")' >> "$GITHUB_OUTPUT"
@@ -181,7 +181,7 @@ jobs:
         TEST_DATABASE_URL: ${{ inputs.test-database-url }}
         PYTHONWARNINGS: "once::DeprecationWarning"
         PYTHON_VERSION: ${{ matrix.python-version }}
-        MIN_PYTHON_VERSION: ${{ needs.versions.outputs.min }}
+        COVERAGE_PYTHON_VERSION: ${{ needs.versions.outputs.max }}
         COVERAGE: ${{ inputs.coverage }}
       run: |
         pip freeze
@@ -189,14 +189,21 @@ jobs:
         # the intra-file ordering the unittest-style suite currently relies on.
         # Collect coverage only on the lowest Python version to avoid redundant
         # reports and reduce overhead on all other matrix jobs.
+        # Migration tests are excluded - they have their own workflow. So are
+        # the backup round-trip tests: they shell out to the dump and restore
+        # commands of the database, which only the migration workflow installs
+        # in the version matching its service container. Whatever client the
+        # runner image happens to carry would either refuse to work (pg_dump
+        # rejects a server newer than itself) or be the wrong one for the
+        # server (the preinstalled MySQL dumper against a MariaDB service).
         if [ "$COVERAGE" = "true" ] && [ "$PYTHON_VERSION" = "$MIN_PYTHON_VERSION" ]; then
-          python -b -m pytest -v -n "$WORKERS" --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration" tests/
+          python -b -m pytest -v -n "$WORKERS" --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration and not backup" tests/
         else
-          python -b -m pytest -v -n "$WORKERS" --dist=loadfile -m "not migration" tests/
+          python -b -m pytest -v -n "$WORKERS" --dist=loadfile -m "not migration and not backup" tests/
         fi
 
     - name: Codecov upload
-      if: ${{ inputs.coverage && steps.pytest_run.outcome == 'success' && matrix.python-version == needs.versions.outputs.min }}
+      if: ${{ inputs.coverage && steps.pytest_run.outcome == 'success' && matrix.python-version == needs.versions.outputs.max }}
       uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
       with:
         files: ./coverage.xml

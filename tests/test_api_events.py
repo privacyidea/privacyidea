@@ -259,6 +259,84 @@ class APIEventsTestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual(result.get("value"), [])
 
+    def test_02b_reorder_keeps_options(self):
+        # Regression test for the "change order in the overview deletes actions"
+        # bug: reordering an event handler sends the binding without any
+        # "option.*" parameters (and without a "conditions" parameter). Such an
+        # update must keep the stored options and conditions.
+        param = {
+            "name": "Reorder me",
+            "event": "token_init",
+            "action": "sendmail",
+            "handlermodule": "UserNotification",
+            "conditions": '{"blabla": "yes"}',
+            "option.emailconfig": "themis",
+            "option.2": "value2"
+        }
+        with self.app.test_request_context('/event', data=param, method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            ev_id = res.json.get("result").get("value")
+
+        # Simulate the reorder request from the overview: only id, the base
+        # fields and the new ordering, but no option.* and no conditions.
+        reorder = {
+            "id": ev_id,
+            "name": "Reorder me",
+            "event": "token_init",
+            "action": "sendmail",
+            "handlermodule": "UserNotification",
+            "ordering": 3
+        }
+        with self.app.test_request_context('/event', data=reorder, method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+
+        # The options and conditions must still be there
+        with self.app.test_request_context('/event/{0!s}'.format(ev_id),
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            event = res.json.get("result").get("value")[0]
+            self.assertEqual(event.get("ordering"), 3)
+            self.assertEqual(event.get("options").get("emailconfig"), "themis")
+            self.assertEqual(event.get("options").get("2"), "value2")
+            self.assertEqual(event.get("conditions"), {"blabla": "yes"})
+
+        # The clear_options flag clears all options even without option.* params
+        clear = {
+            "id": ev_id,
+            "name": "Reorder me",
+            "event": "token_init",
+            "action": "sendmail",
+            "handlermodule": "UserNotification",
+            "clear_options": True,
+            "conditions": "{}"
+        }
+        with self.app.test_request_context('/event', data=clear, method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+
+        with self.app.test_request_context('/event/{0!s}'.format(ev_id),
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+            event = res.json.get("result").get("value")[0]
+            self.assertEqual(event.get("options"), {})
+            self.assertEqual(event.get("conditions"), {})
+
+        # cleanup
+        with self.app.test_request_context('/event/{0!s}'.format(ev_id),
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+
     def test_03_available_events(self):
         with self.app.test_request_context('/event/available',
                                            method='GET',

@@ -39,8 +39,8 @@ export class SmsConfigComponent {
   protected readonly SMS_GATEWAY = SMS_GATEWAY;
   protected readonly SMS_PROVIDER_TIMEOUT = SMS_PROVIDER_TIMEOUT;
 
-  formData = input.required<Record<string, string | number>>();
-  formDataChange = output<Record<string, string | number>>();
+  formData = input.required<Record<string, string | number | undefined>>();
+  formDataChange = output<Record<string, string | number | undefined>>();
   smsGateways = input.required<string[]>();
   expanded = input<boolean>(false);
 

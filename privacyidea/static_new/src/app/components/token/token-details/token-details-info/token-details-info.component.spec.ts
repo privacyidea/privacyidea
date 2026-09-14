@@ -107,7 +107,7 @@ describe("TokenDetailsInfoComponent", () => {
     component.saveInfo(el);
 
     expect(el.value).toEqual({ a: "1", b: "2" });
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1", b: "2" });
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1", b: "2" }, [], []);
     expect(component.newInfo()).toEqual({ key: "", value: "" });
     expect(component.isEditingInfo()).toBe(false);
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
@@ -122,9 +122,55 @@ describe("TokenDetailsInfoComponent", () => {
     component.saveInfo(el);
 
     expect(el.value).toEqual({ a: "1" });
-    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" });
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" }, [], []);
     expect(tokenService.tokenDetailResource.reload).toHaveBeenCalledTimes(1);
     expect(component.isEditingInfo()).toBe(false);
+  });
+
+  it("marks the entries the token maintains as not editable and not deletable", () => {
+    component.readonlyInfoKeys = signal(["tokenkind", "refilltoken", "hashlib"]);
+    component.undeletableInfoKeys = signal(["tokenkind", "hashlib"]);
+    component.settableInfoKeys = signal(["hashlib"]);
+
+    // An entry the token maintains is shown, but neither editable nor deletable
+    expect(component.isInfoKeyEditable("tokenkind")).toBe(false);
+    expect(component.isInfoKeyDeletable("tokenkind")).toBe(false);
+    // A refill token cannot be changed, but deleting it revokes the offline refill and is allowed
+    expect(component.isInfoKeyEditable("refilltoken")).toBe(false);
+    expect(component.isInfoKeyDeletable("refilltoken")).toBe(true);
+    // An entry with its own endpoint stays editable through that endpoint
+    expect(component.isInfoKeyEditable("hashlib")).toBe(true);
+    // Free-form metadata is unrestricted
+    expect(component.isInfoKeyEditable("a note")).toBe(true);
+    expect(component.isInfoKeyDeletable("a note")).toBe(true);
+  });
+
+  it("saveInfo does not send the entries the token maintains", () => {
+    const el = component.infoData()[0] as EditableElement<Record<string, string>>;
+    component.readonlyInfoKeys = signal(["tokenkind"]);
+    component.isEditingInfo.set(true);
+    component.newInfo.set({ key: "", value: "" });
+    tokenService.tokenSerial.set("SER");
+
+    component.saveInfo(el);
+
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "1" }, ["tokenkind"], []);
+  });
+
+  it("saveInfo only sends the entries that were changed while editing", () => {
+    const el = component.infoData()[0] as EditableElement<Record<string, string>>;
+    el.value["b"] = "2";
+    tokenService.tokenSerial.set("SER");
+
+    // Entering the editing records the values it starts from
+    component.toggleInfoEdit();
+    expect(component.isEditingInfo()).toBe(true);
+
+    // Only one of them is edited, the way the input bound to the value map does it
+    el.value["a"] = "changed";
+    component.saveInfo(el);
+
+    expect(tokenService.setTokenInfos).toHaveBeenCalledWith("SER", { a: "changed" }, [], []);
   });
 
   it("template cast helpers pass values through and hide timestamp keys", () => {

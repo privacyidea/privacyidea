@@ -37,52 +37,76 @@
     </button>
   </div>
 
-  <div class="details-cards-grid">
-    <app-details-card
-      class="settings-card-xs"
-      i18n-title="@@uiSettings.theme"
-      title="Theme">
-      <div class="settings-row">
-        <app-theme-toggle />
-      </div>
-    </app-details-card>
+  <div class="settings-group settings-group-main margin-bottom-16 margin-left-8">
+    <div class="settings-item settings-item-s">
+      <h4
+        class="settings-item-label margin-8"
+        i18n="@@uiSettings.language"
+        >Language</h4
+      >
+      <mat-form-field
+        class="input-width-m language-field margin-left-16"
+        subscriptSizing="dynamic">
+        <mat-select
+          (selectionChange)="selectLocale($event.value)"
+          [value]="preferredLocale()"
+          aria-label="Language"
+          i18n-aria-label="@@uiSettings.language">
+          @for (locale of locales; track locale.code) {
+            <mat-option [value]="locale.code">
+              {{ locale.label }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
 
-    <app-details-card
-      class="settings-card-s"
-      i18n-title="@@uiSettings.language"
-      title="Language">
-      <div class="settings-row">
-        <mat-form-field
-          class="input-width-m language-field"
-          subscriptSizing="dynamic">
-          <mat-select
-            (selectionChange)="selectLocale($event.value)"
-            [value]="preferredLocale()"
-            aria-label="Language"
-            i18n-aria-label="@@uiSettings.language">
-            @for (locale of locales; track locale.code) {
-              <mat-option [value]="locale.code">
-                {{ locale.label }}
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
-    </app-details-card>
+    <div class="settings-item settings-item-xs settings-item-center">
+      <h4
+        class="settings-item-label margin-8"
+        i18n="@@uiSettings.theme"
+        >Theme</h4
+      >
+      <app-theme-toggle />
+    </div>
 
-    <app-details-card
-      class="settings-card-m"
-      i18n-title="@@uiSettings.pendingRequests"
-      title="Pending Requests">
-      <div class="settings-row">
-        <mat-slide-toggle
-          (change)="setShowLoadingUrls($event.checked)"
-          [checked]="showLoadingUrls()"
-          i18n="@@uiSettings.showEndpointsBeingRequested"
-          >Show endpoints being requested</mat-slide-toggle
-        >
-      </div>
-    </app-details-card>
+    <div class="settings-item settings-item-s">
+      <h4
+        class="settings-item-label margin-8"
+        i18n="@@uiSettings.landingPage"
+        >Landing Page</h4
+      >
+      <mat-form-field
+        class="input-width-m margin-left-16"
+        subscriptSizing="dynamic">
+        <mat-select
+          (selectionChange)="selectLandingPage($event.value)"
+          [value]="selectedLandingPage()"
+          aria-label="Landing page"
+          i18n-aria-label="@@uiSettings.landingPage">
+          @for (page of availableLandingPages(); track page) {
+            <mat-option [value]="page">
+              {{ landingPageLabels[page] }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="settings-item settings-item-s settings-item-vcenter">
+      <h4
+        class="settings-item-label margin-8"
+        i18n="@@uiSettings.pendingRequests"
+        >Pending Requests</h4
+      >
+      <mat-slide-toggle
+        class="margin-left-16"
+        (change)="setShowLoadingUrls($event.checked)"
+        [checked]="showLoadingUrls()"
+        i18n="@@uiSettings.showEndpointsBeingRequested"
+        >Show endpoints being requested</mat-slide-toggle
+      >
+    </div>
   </div>
 
   <mat-expansion-panel class="settings-appearance-panel">
@@ -98,12 +122,14 @@
       </mat-panel-description>
     </mat-expansion-panel-header>
 
-    <div class="details-cards-grid">
-      <app-details-card
-        class="settings-card-m"
-        i18n-title="@@uiSettings.corners"
-        title="Corners">
-        <div class="settings-row">
+    <div class="expansion-well">
+      <div class="settings-group settings-group-appearance">
+        <div class="settings-item settings-item-m settings-item-center">
+          <h4
+            class="settings-item-label margin-8"
+            i18n="@@uiSettings.corners"
+            >Corners</h4
+          >
           <mat-button-toggle-group
             (change)="selectCorners($event.value)"
             [hideSingleSelectionIndicator]="true"
@@ -115,13 +141,13 @@
             }
           </mat-button-toggle-group>
         </div>
-      </app-details-card>
 
-      <app-details-card
-        class="settings-card-m"
-        i18n-title="@@uiSettings.depth"
-        title="Depth">
-        <div class="settings-row">
+        <div class="settings-item settings-item-m settings-item-center">
+          <h4
+            class="settings-item-label margin-8"
+            i18n="@@uiSettings.depth"
+            >Depth</h4
+          >
           <mat-button-toggle-group
             (change)="selectDepth($event.value)"
             [hideSingleSelectionIndicator]="true"
@@ -133,13 +159,13 @@
             }
           </mat-button-toggle-group>
         </div>
-      </app-details-card>
 
-      <app-details-card
-        class="settings-card-m"
-        i18n-title="@@uiSettings.lightSource"
-        title="Light Source">
-        <div class="settings-row">
+        <div class="settings-item settings-item-m settings-item-center">
+          <h4
+            class="settings-item-label margin-8"
+            i18n="@@uiSettings.lightSource"
+            >Light Source</h4
+          >
           <app-light-source-dial
             [items]="lightSourceDialItems"
             [selected]="lightSource()"
@@ -148,7 +174,7 @@
             i18n-legend="@@uiSettings.lightSource2"
             (pick)="selectLightSource($event)" />
         </div>
-      </app-details-card>
+      </div>
     </div>
   </mat-expansion-panel>
 </div>

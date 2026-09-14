@@ -91,7 +91,7 @@ export class DashboardComponent implements OnDestroy {
 
   protected readonly columns = DASHBOARD_COLUMNS;
   protected readonly rowHeight = 40;
-  protected readonly gap = 4;
+  protected readonly gap = 16;
 
   private readonly field = viewChild.required<ElementRef<HTMLElement>>("field");
   private readonly fieldScroll = viewChild.required<ElementRef<HTMLElement>>("fieldScroll");

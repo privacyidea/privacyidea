@@ -22,6 +22,7 @@ import os
 import shutil
 import socket
 import tempfile
+from collections.abc import Iterator
 
 # Per-worker DB isolation for pytest-xdist. Must run before any `privacyidea`
 # import, because TestingConfig.SQLALCHEMY_DATABASE_URI is evaluated at class
@@ -226,6 +227,36 @@ def _flush_redis_between_tests():
     runs, where PI_REDIS_URL is unset."""
     yield
     _flush_worker_redis()
+
+
+_push_server_keypairs: dict = {}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _reuse_push_server_keypair() -> Iterator[None]:
+    """Generate the push token's server keypair once per worker instead of per enrollment.
+
+    Finalizing a push enrollment creates a fresh 4096-bit RSA keypair, which costs most of a
+    second. The suite enrolls push tokens roughly a hundred times and none of those tests are
+    about key generation - they check that the key the server reports is the key it stored, and
+    two of them supply a keypair of their own instead. Handing out the same keypair each time is
+    therefore invisible to them.
+
+    Only the name inside ``pushtoken`` is replaced, so ``generate_keypair`` itself stays real for
+    the tests in ``test_lib_crypto.py`` that are about generating keys.
+    """
+    from privacyidea.lib.tokens import pushtoken
+
+    original_generate_keypair = pushtoken.generate_keypair
+
+    def cached_generate_keypair(rsa_keysize: int = 2048) -> tuple[str, str]:
+        if rsa_keysize not in _push_server_keypairs:
+            _push_server_keypairs[rsa_keysize] = original_generate_keypair(rsa_keysize)
+        return _push_server_keypairs[rsa_keysize]
+
+    pushtoken.generate_keypair = cached_generate_keypair
+    yield
+    pushtoken.generate_keypair = original_generate_keypair
 
 
 @pytest.fixture(autouse=True)

@@ -84,6 +84,17 @@ class PasskeyTokenClass(TokenClass):
     mode = [AuthenticationMode.CHALLENGE]
     client_mode = ClientMode.WEBAUTHN
 
+    owned_tokeninfo_keys = frozenset({FIDO2TokenInfo.AAGUID, FIDO2TokenInfo.ATTESTATION_CERTIFICATE,
+                                      FIDO2TokenInfo.BACKED_UP, FIDO2TokenInfo.CREDENTIAL_ID_HASH,
+                                      FIDO2TokenInfo.DEVICE_TYPE, FIDO2TokenInfo.PUBLIC_KEY,
+                                      FIDO2TokenInfo.RELYING_PARTY_ID, FIDO2TokenInfo.RELYING_PARTY_NAME,
+                                      FIDO2TokenInfo.SIGN_COUNT, FIDO2TokenInfo.USER_ID})
+    # A passkey is one of the token types the offline machine application supports. It can be offline on
+    # several machines, so the token that authorizes a refill is stored per machine name. Removing one only
+    # revokes the refill for that machine, so an administrator may do it.
+    owned_tokeninfo_prefixes = frozenset({"refilltoken_"})
+    deletable_tokeninfo_prefixes = frozenset({"refilltoken_"})
+
     def __init__(self, db_token):
         super().__init__(db_token)
         self.set_type(self.get_class_type())
@@ -500,6 +511,17 @@ class PasskeyTokenClass(TokenClass):
         credential_id = self.token.get_otpkey().getKey().decode("utf-8")
         rp_id = self.get_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID)
 
+        # The sign count and the public key are read back from the token info. A value that is missing or not of
+        # the expected shape means the token is unusable, which has to fail the authentication rather than raise
+        # out of the request.
+        try:
+            current_sign_count = int(self.get_tokeninfo(FIDO2TokenInfo.SIGN_COUNT))
+            public_key = base64url_to_bytes(self.get_tokeninfo(FIDO2TokenInfo.PUBLIC_KEY))
+        except (TypeError, ValueError) as ex:
+            log.error(f"Passkey {self.token.serial} has an unusable sign count or public key in its token info: "
+                      f"{ex}")
+            return -1
+
         try:
             verified_authentication: VerifiedAuthentication = verify_authentication_response(
                 credential={
@@ -519,8 +541,8 @@ class PasskeyTokenClass(TokenClass):
                 expected_rp_id=rp_id,
                 expected_origin=expected_origin,
                 require_user_verification=user_verification == "required",
-                credential_current_sign_count=int(self.get_tokeninfo("sign_count")),
-                credential_public_key=base64url_to_bytes(self.get_tokeninfo("public_key")),
+                credential_current_sign_count=current_sign_count,
+                credential_public_key=public_key,
             )
         except InvalidAuthenticationResponse as ex:
             log.error(f"Passkey authentication failed: {ex}")
@@ -531,7 +553,7 @@ class PasskeyTokenClass(TokenClass):
         # count is persisted right away. Deferring this until after the policy checks would leave the stored sign
         # count stale, letting the very same valid response be re-verified again (e.g. after a policy change)
         # instead of being consumed on its first, legitimate use.
-        self.add_tokeninfo("sign_count", verified_authentication.new_sign_count)
+        self.write_tokeninfo(FIDO2TokenInfo.SIGN_COUNT, verified_authentication.new_sign_count)
 
         # Checking policy scope=SCOPE.AUTH, action=PasskeyAction.AllowedAuthenticatorDeviceTypes.
         # Unlike an AAGUID or attachment recorded at enrollment, the device type is derived from the signed

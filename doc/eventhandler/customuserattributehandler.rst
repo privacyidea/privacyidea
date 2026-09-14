@@ -28,6 +28,22 @@ The action takes the options **attrkey**, **attrvalue** and **user**.
 **attrkey** and **attrvalue** can take fixed values. The custom user attribute
 with the name from ``attrkey`` will then be set to the value of ``attrvalue``.
 
+The **attrvalue** may contain tags that are replaced when the event is handled.
+The tag ``{now}`` is replaced by the current timestamp and supports offsets like
+``{now}+2h`` or ``{now}-30m`` (``s``, ``m``, ``h``, ``d``). ``{current_time}`` is a
+deprecated alias for ``{now}``. In addition, the tags provided by all notification
+handlers are available, for example ``{client_ip}``, ``{ua_browser}``,
+``{ua_string}``, ``{serial}``, ``{username}``, ``{userrealm}`` and ``{tokentype}``.
+
+The tags that describe a user (``{username}``, ``{userrealm}``, ``{user}``,
+``{givenname}`` and ``{surname}``) refer to the user the attribute is written for,
+which is chosen with the **user** option below. ``{serial}`` is the token of the
+event; it is empty if the event carries no token.
+
+This allows, for instance, to store the timestamp of a successful authentication
+in a custom user attribute (``attrvalue = {now}``) and to reference it later in a
+time-based policy condition (``date_within_last``).
+
 With the **user** option, the custom user attribute can either be set for the acting,
 logged in user or for the user on whom the administrator is acting on.
 

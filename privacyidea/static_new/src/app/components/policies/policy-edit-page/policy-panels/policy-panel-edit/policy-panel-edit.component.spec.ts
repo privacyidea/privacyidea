@@ -44,6 +44,13 @@ class MockPrioComp {
   priorityChange = output<number>();
 }
 
+@Component({ selector: "app-policy-scope-edit", standalone: true, template: "" })
+class MockScopeComp {
+  scope = input<string>("");
+  disabled = input<boolean>(false);
+  scopeChange = output<string>();
+}
+
 @Component({ selector: "app-policy-description-edit", standalone: true, template: "" })
 class MockDescComp {
   description = input<string>("");
@@ -53,7 +60,10 @@ class MockDescComp {
 @Component({ selector: "app-edit-action-tab", standalone: true, template: "" })
 class MockActionTab {
   policy = input.required<PolicyDetail>();
+  actionFilter = input<string>("");
+  searchInHeader = input<boolean>(false);
   actionsUpdate = output<Record<string, string | boolean>>();
+  actionFilterChange = output<string>();
   policyScopeChange = output<string | undefined>();
 }
 
@@ -79,7 +89,7 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
     })
       .overrideComponent(PolicyPanelEditComponent, {
         set: {
-          imports: [MockNameComp, MockPrioComp, MockDescComp, MockActionTab, MockCondTab]
+          imports: [MockNameComp, MockPrioComp, MockScopeComp, MockDescComp, MockActionTab, MockCondTab]
         }
       })
       .compileComponents();
@@ -144,6 +154,14 @@ describe("PolicyPanelEditComponent - Extended Tests", () => {
 
     expect(dialogService.confirm).not.toHaveBeenCalled();
     expect(component.editedPolicy().scope).toBe("admin");
+  });
+
+  it("should report added actions so that the scope field can lock itself", () => {
+    expect(component.policyHasActions()).toBe(false);
+
+    component.updateActions({ otppin: "true" });
+
+    expect(component.policyHasActions()).toBe(true);
   });
 
   it("should emit onPolicyEdit whenever addPolicyEdit is called", () => {

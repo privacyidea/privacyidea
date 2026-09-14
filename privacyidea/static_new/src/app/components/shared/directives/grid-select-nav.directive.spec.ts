@@ -210,7 +210,7 @@ describe("GridSelectNavDirective", () => {
 
     it("cycles through every option when ArrowDown is held", () => {
       setActive(0);
-      const visited = [0];
+      const visited: (number | null)[] = [0];
       for (let i = 0; i < 6; i++) {
         pressKey(fixture, "ArrowDown");
         visited.push(activeIndex());
@@ -221,7 +221,7 @@ describe("GridSelectNavDirective", () => {
 
     it("cycles backwards through every option when ArrowUp is held", () => {
       setActive(0);
-      const visited = [0];
+      const visited: (number | null)[] = [0];
       for (let i = 0; i < 6; i++) {
         pressKey(fixture, "ArrowUp");
         visited.push(activeIndex());
@@ -234,7 +234,7 @@ describe("GridSelectNavDirective", () => {
       fixture.componentInstance.options = ["a", "b", "c", "d", "e"];
       fixture.detectChanges();
       setActive(0);
-      const visited = [0];
+      const visited: (number | null)[] = [0];
       for (let i = 0; i < 5; i++) {
         pressKey(fixture, "ArrowDown");
         visited.push(activeIndex());

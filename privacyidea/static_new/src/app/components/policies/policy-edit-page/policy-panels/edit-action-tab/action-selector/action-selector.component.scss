@@ -15,20 +15,17 @@
   --expansion-panel-header-padding: 8px 12px;
 }
 
-.search-input {
-  background-color: transparent;
-  border: none;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 0;
-  box-sizing: border-box;
-  font-size: 1rem;
-  padding: 8px 0;
-  width: 100%;
-}
+// The container above flattens every panel it holds, which is what the outer "Add Actions" panel
+// wants. The group panels inside it are the browsable structure, so they take a surface back.
+.action-group-panel {
+  --mat-expansion-container-background-color: var(--mat-sys-surface-container-low);
+  --mat-expansion-container-elevation-shadow: none;
+  --expansion-panel-body-padding: 0 16px 16px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant), transparent 50%);
 
-.search-input:focus {
-  border-bottom-color: var(--mat-sys-primary);
-  outline: none;
+  + .action-group-panel {
+    margin-top: 8px;
+  }
 }
 
 .add-action-details {
@@ -61,27 +58,4 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.selectors-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.selector-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-
-  .selector-label {
-    font-weight: 500;
-    margin: 0;
-    white-space: nowrap;
-  }
-
-  .flex-1 {
-    flex: 1;
-  }
 }

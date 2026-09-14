@@ -36,7 +36,8 @@ export type UserSettingKey =
   | "depth"
   | "light_source"
   | "corner_radius"
-  | "dashboard";
+  | "dashboard"
+  | "starting_page";
 
 export type UserSettings = Partial<Record<UserSettingKey, unknown>>;
 

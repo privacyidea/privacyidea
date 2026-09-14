@@ -89,9 +89,9 @@ describe("TokenDetailsAssignmentsComponent", () => {
     // container row
     expect(fixture.nativeElement.querySelector(".container-serial-row")).toBeTruthy();
 
-    const keys = Array.from(fixture.nativeElement.querySelectorAll<HTMLElement>(".detail-field-label")).map((el) =>
-      el.textContent?.trim()
-    );
+    const keys = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>(".detail-field-label")
+    ).map((el) => el.textContent?.trim());
     expect(keys).toEqual(["Token Realms", "Token Groups", "Container Serial"]);
   });
 

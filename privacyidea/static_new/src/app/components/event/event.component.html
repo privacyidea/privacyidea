@@ -29,7 +29,7 @@
         <mat-label i18n="@@event.filterEventHandlers">Filter Event Handlers ...</mat-label>
         <app-clearable-input
           (clearButtonClick)="onClearFilter()"
-          [showClearButton]="filterHTMLInputElement.value.length > 0">
+          [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
             (input)="onFilterInput(filterHTMLInputElement.value)"
@@ -185,7 +185,25 @@
                   </button>
                 }
                 @case ("ordering") {
-                  {{ element.ordering }}
+                  @if (!authService.actionAllowed("eventhandling_write")) {
+                    <span>{{ element.ordering }}</span>
+                  } @else {
+                    <mat-form-field
+                      class="input-width-xs"
+                      subscriptSizing="dynamic">
+                      <input
+                        #orderingInput
+                        (blur)="commitOrdering(element, orderingInput)"
+                        (keydown.enter)="orderingInput.blur()"
+                        [value]="element.ordering"
+                        aria-label="Ordering"
+                        i18n-aria-label="@@event.orderingAria"
+                        matInput
+                        min="0"
+                        step="1"
+                        type="number" />
+                    </mat-form-field>
+                  }
                 }
                 @default {
                   <span

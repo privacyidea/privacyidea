@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { computed, inject, Injectable, LOCALE_ID, Signal, signal } from "@angular/core";
-import { Observable, catchError, of, shareReplay } from "rxjs";
+import { Observable, catchError, map, of, shareReplay, timeout } from "rxjs";
 import {
   clearLocaleAttempt,
   isKnownLocale,
@@ -29,6 +29,7 @@ import {
   normalizeLocale,
   rememberLocale
 } from "@core/locale";
+import { DEFAULT_LANDING_PAGE, isLandingPage, LANDING_PAGES, LandingPage } from "@core/landing-page";
 import { AppearanceService } from "@services/appearance/appearance.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ThemeService } from "@services/theme/theme.service";
@@ -39,7 +40,17 @@ export interface UiPreferencesServiceInterface {
 
   readonly showLoadingUrls: Signal<boolean>;
 
+  readonly landingPage: Signal<LandingPage>;
+
+  readonly availableLandingPages: Signal<LandingPage[]>;
+
+  landingPage$(): Observable<LandingPage>;
+
   setShowLoadingUrls(show: boolean): Observable<unknown>;
+
+  setLandingPage(page: LandingPage): Observable<unknown>;
+
+  resetLandingPage(): Observable<unknown>;
 
   normalizeLocaleUrl(): void;
 
@@ -90,6 +101,26 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
   public readonly showLoadingUrls: Signal<boolean> = this._showLoadingUrls.asReadonly();
 
   /**
+   * The page the principal is sent to right after login. Falls back to the
+   * dashboard when the ADMIN_DASHBOARD policy allows it, otherwise the token
+   * list -- a stored choice that is no longer available (policy withdrawn,
+   * right revoked) falls back the same way rather than routing to a page the
+   * principal cannot see.
+   */
+  public readonly landingPage: Signal<LandingPage> = computed(() => {
+    const stored = this.userSettingsService.settings()?.starting_page;
+    if (isLandingPage(stored) && this.isLandingPageAvailable(stored)) {
+      return stored;
+    }
+    return this.authService.adminDashboard() ? "dashboard" : DEFAULT_LANDING_PAGE;
+  });
+
+  /** The landing pages the principal currently has the rights to see, in display order. */
+  public readonly availableLandingPages: Signal<LandingPage[]> = computed(() =>
+    LANDING_PAGES.filter((page) => this.isLandingPageAvailable(page))
+  );
+
+  /**
    * Reports once the write has settled, so a caller that also navigates away -- switching
    * locale is a full-page load, which would abort a write mid-flight -- can wait for it first.
    */
@@ -101,6 +132,56 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
     );
     write$.subscribe();
     return write$;
+  }
+
+  /**
+   * Like `landingPage`, but waits for the stored settings to have loaded (or failed) first.
+   * `landingPage` reads a signal that starts out `null` until the `/user/settings` GET
+   * resolves -- evaluated synchronously right after login, before that request has had a
+   * chance to complete, it would always fall through to the policy-driven default. Routing
+   * decisions taken at that moment (the post-login redirect, the login guard) need this
+   * variant instead so a stored choice is honored on the very first navigation.
+   */
+  public landingPage$(): Observable<LandingPage> {
+    return this.userSettingsService.getSettings().pipe(
+      // A request that never settles (dropped connection right after /auth) would otherwise
+      // leave a just-authenticated principal stuck with no feedback -- fall back to the
+      // policy-driven default the same way a request that errors outright already does.
+      timeout({ first: 5000 }),
+      map(() => this.landingPage()),
+      catchError(() => of(this.landingPage()))
+    );
+  }
+
+  /**
+   * Persists the picked landing page. Reports once the write has settled -- same convention as
+   * setShowLoadingUrls -- so a caller can reset an optimistic UI update if it failed.
+   */
+  public setLandingPage(page: LandingPage): Observable<unknown> {
+    const write$ = this.userSettingsService.setSetting("starting_page", page).pipe(
+      catchError(() => of(null)),
+      shareReplay(1)
+    );
+    write$.subscribe();
+    return write$;
+  }
+
+  /** Reverts to the policy-driven default (dashboard, or the token list). */
+  public resetLandingPage(): Observable<unknown> {
+    return this.userSettingsService.deleteSetting("starting_page").pipe(catchError(() => of(null)));
+  }
+
+  private isLandingPageAvailable(page: LandingPage): boolean {
+    switch (page) {
+      case "dashboard":
+        return this.authService.adminDashboard();
+      case "users":
+        return this.authService.actionAllowed("userlist");
+      case "audit":
+        return this.authService.actionAllowed("auditlog");
+      case "tokens":
+        return true;
+    }
   }
 
   /**

@@ -69,6 +69,64 @@ the backup or not.
 As the backup contains the etc directory and the database you only need this
 tar archive backup to perform a complete restore.
 
+Supported databases
+~~~~~~~~~~~~~~~~~~~
+
+SQLite, MySQL/MariaDB and PostgreSQL are supported. The database is dumped and
+restored with the command line tools of the respective database, which have to
+be installed on the privacyIDEA machine:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Database
+     - Commands used
+     - Debian/Ubuntu package
+   * - SQLite
+     - none, the database file is copied
+     - --
+   * - MySQL/MariaDB
+     - ``mysqldump``, ``mysql``
+     - *mariadb-client* or *mysql-client*
+   * - PostgreSQL
+     - ``pg_dump``, ``psql``
+     - *postgresql-client*
+
+For PostgreSQL the client has to be at least as new as the server it connects
+to. Dumping a PostgreSQL 17 server with the ``pg_dump`` of an older major
+version fails, so install the *postgresql-client-<version>* package that
+matches your server.
+
+Restoring
+~~~~~~~~~
+
+The restore overwrites the contents of the database the restored *pi.cfg*
+points to::
+
+   pi-manage backup restore /var/lib/privacyidea/backup/privacyidea-backup-<date>.tgz
+
+It does not create the database: the database and the database user have to
+exist already, as they do on a machine that has been set up before. Only the
+contents are replaced.
+
+.. note:: The archive also contains the *pi.cfg* of the machine the backup was
+   taken on, including its ``SQLALCHEMY_DATABASE_URI``. If you restore onto a
+   machine whose database is reached under a different URI, use
+   ``--keep-db-uri`` to keep the URI of the running installation instead of
+   the one from the backup.
+
+.. warning:: On MySQL/MariaDB the dump contains the name of the database it was
+   taken from and creates that database if it is missing, so the restore always
+   writes into a database of that name - also with ``--keep-db-uri``, which
+   only changes the server, the credentials and the port that are connected to.
+   Restore a MySQL/MariaDB backup only into an installation that uses the same
+   database name, otherwise the data ends up in a newly created copy of the
+   original database while the configured one stays untouched.
+
+A backup can only be restored into the database it was taken from: a dump
+written by one database cannot be read by another one. Restoring an archive
+onto an installation using a different database aborts with an error.
+
 
 Rotate Audit Log
 ----------------

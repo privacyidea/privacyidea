@@ -37,7 +37,7 @@ describe("EventConditionsTabComponent", () => {
     fixture = TestBed.createComponent(EventConditionsTabComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("conditions", { test_condition: "test_value" });
-    component.newConditions = { emit: jest.fn() } as unknown as OutputEmitterRef<Record<string, unknown>>;
+    component.newConditions = { emit: jest.fn() } as unknown as OutputEmitterRef<Record<string, string>>;
     fixture.detectChanges();
   });
 
@@ -122,7 +122,7 @@ describe("EventConditionsTabComponent", () => {
   it("should join array values on onConditionValueChange", () => {
     component.selectedConditions.set({});
     const emitSpy = jest.fn();
-    component.newConditions = { emit: emitSpy } as unknown as OutputEmitterRef<Record<string, unknown>>;
+    component.newConditions = { emit: emitSpy } as unknown as OutputEmitterRef<Record<string, string>>;
     component.onConditionValueChange("condY", ["a", "b"]);
     expect(component.selectedConditions()).toEqual({ condY: "a,b" });
     expect(emitSpy).toHaveBeenCalledWith({ condY: "a,b" });
@@ -131,7 +131,7 @@ describe("EventConditionsTabComponent", () => {
   it("should update selectedConditions and emit newConditions on onConditionValueChange", () => {
     component.selectedConditions.set({ condY: "oldVal" });
     const emitSpy = jest.fn();
-    component.newConditions = { emit: emitSpy } as unknown as OutputEmitterRef<Record<string, unknown>>;
+    component.newConditions = { emit: emitSpy } as unknown as OutputEmitterRef<Record<string, string>>;
     component.onConditionValueChange("condY", "newVal");
     expect(component.selectedConditions()).toEqual({ condY: "newVal" });
     expect(emitSpy).toHaveBeenCalledWith({ condY: "newVal" });
@@ -140,7 +140,7 @@ describe("EventConditionsTabComponent", () => {
   it("should set addedCondition when value is empty in onConditionValueChange", () => {
     component.selectedConditions.set({ condZ: "something" });
     component.addedCondition.set("");
-    component.newConditions = { emit: jest.fn() } as unknown as OutputEmitterRef<Record<string, unknown>>;
+    component.newConditions = { emit: jest.fn() } as unknown as OutputEmitterRef<Record<string, string>>;
     component.onConditionValueChange("condZ", "");
     expect(component.addedCondition()).toBe("condZ");
   });

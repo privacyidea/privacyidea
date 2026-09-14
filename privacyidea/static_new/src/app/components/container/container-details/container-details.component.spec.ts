@@ -429,7 +429,7 @@ describe("ContainerDetailsComponent", () => {
       jest.spyOn(containerService, "assignUser").mockReturnValue(of({}) as never);
 
       const element: EditableElement = {
-        keyMap: { key: "user_name", label: "User Name" },
+        keyMap: { key: "user_name" },
         value: "alice",
         isEditing: signal(true)
       };
@@ -447,7 +447,7 @@ describe("ContainerDetailsComponent", () => {
       const assignSpy = jest.spyOn(containerService, "assignUser");
 
       const element: EditableElement = {
-        keyMap: { key: "type", label: "Type" },
+        keyMap: { key: "type" },
         value: "generic",
         isEditing: signal(true)
       };
@@ -461,7 +461,7 @@ describe("ContainerDetailsComponent", () => {
 
     it("does not handle 'realms' case (removed)", () => {
       const element: EditableElement = {
-        keyMap: { key: "realms", label: "Realms" },
+        keyMap: { key: "realms" },
         value: ["realm1"],
         isEditing: signal(true)
       };
@@ -473,7 +473,7 @@ describe("ContainerDetailsComponent", () => {
 
     it("does not handle 'states' case (removed)", () => {
       const element: EditableElement = {
-        keyMap: { key: "states", label: "States" },
+        keyMap: { key: "states" },
         value: ["active"],
         isEditing: signal(true)
       };

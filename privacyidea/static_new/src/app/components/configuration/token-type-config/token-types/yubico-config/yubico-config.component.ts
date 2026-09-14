@@ -35,8 +35,8 @@ export class YubicoConfigComponent {
   protected readonly YUBICO_SECRET = YUBICO_SECRET;
   protected readonly YUBICO_URL = YUBICO_URL;
 
-  formData = input.required<Record<string, string>>();
-  formDataChange = output<Record<string, string>>();
+  formData = input.required<Record<string, string | undefined>>();
+  formDataChange = output<Record<string, string | undefined>>();
   expanded = input<boolean>(false);
 
   updateFormData(fieldName: string, value: string): void {

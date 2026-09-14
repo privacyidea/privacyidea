@@ -22,6 +22,7 @@ import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { RealmService } from "@services/realm/realm.service";
 import { Tokens, TokenService, TokenTypeKey } from "@services/token/token.service";
@@ -38,7 +39,6 @@ import {
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { TokenDetailsUserComponent } from "./token-details-user.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user.self-service.component";
-import { ContentService } from "@services/content/content.service";
 
 function makeTokenDetailResponse(tokentype: TokenTypeKey): MockPiResponse<Tokens> {
   return {
@@ -235,7 +235,7 @@ describe("TokenDetailsUserComponent", () => {
     isEditingUser.set(false);
     fixture.detectChanges();
 
-    const icons = Array.from(fixture.nativeElement.querySelectorAll("mat-icon")).map((e: Element) =>
+    const icons = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll("mat-icon")).map((e) =>
       e.textContent?.trim()
     );
     expect(icons).toContain("person_remove");

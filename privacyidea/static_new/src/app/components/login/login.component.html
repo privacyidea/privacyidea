@@ -166,7 +166,9 @@
         }
 
         @if (showOtpField()) {
-          <mat-form-field appearance="outline">
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic">
             <mat-label i18n="Login OTP label@@login.oneTimePassword">One-Time-Password</mat-label>
             <input
               #otpInput
@@ -178,7 +180,7 @@
           </mat-form-field>
         }
 
-        <div class="login-actions margin-top-16">
+        <div class="login-actions">
           <button
             [disabled]="isLoginButtonDisabled()"
             aria-label="Login Button"

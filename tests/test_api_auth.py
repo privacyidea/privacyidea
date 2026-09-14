@@ -849,7 +849,7 @@ class AuthApiTestCase(MyApiTestCase):
         token.set_maxfail(5)
         token.set_failcount(5)
         past = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)
-        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
         # a valid authentication will fail
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -919,7 +919,7 @@ class AuthApiTestCase(MyApiTestCase):
         self.assertEqual(0, token.get_failcount())
         # an invalid auth also resets the failcount and increase it directly to one due to the invalid auth
         token.set_failcount(5)
-        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": user.login,

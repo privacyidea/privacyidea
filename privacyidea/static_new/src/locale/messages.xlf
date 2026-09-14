@@ -1274,7 +1274,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-clients.component.html</context>
-          <context context-type="linenumber">115</context>
+          <context context-type="linenumber">116</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
@@ -1576,7 +1576,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">415</context>
+          <context context-type="linenumber">416</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/periodic-task/periodic-task.service.ts</context>
@@ -2116,35 +2116,35 @@
         <source>Please enter a Client ID.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">303</context>
+          <context context-type="linenumber">304</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.failedGenerate" datatype="html">
         <source>Failed to generate API key.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">322</context>
+          <context context-type="linenumber">323</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tokenConfiguration" datatype="html">
         <source>Token configuration saved successfully.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">370</context>
+          <context context-type="linenumber">371</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.failedSaveToken" datatype="html">
         <source>Failed to save token configuration.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">377</context>
+          <context context-type="linenumber">378</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.errorSavingToken" datatype="html">
         <source>Error saving token configuration.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">382</context>
+          <context context-type="linenumber">383</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.daypassword" datatype="html">
@@ -4031,7 +4031,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/action-selector/action-selector.component.html</context>
-          <context context-type="linenumber">93</context>
+          <context context-type="linenumber">94</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component.html</context>
@@ -4555,14 +4555,14 @@
         <source>Event handler created successfully.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/event-edit-page.component.ts</context>
-          <context context-type="linenumber">271</context>
+          <context context-type="linenumber">275</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.eventHandlerUpdated" datatype="html">
         <source>Event handler updated successfully.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/event-edit-page.component.ts</context>
-          <context context-type="linenumber">272</context>
+          <context context-type="linenumber">276</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.selectedEvents" datatype="html">
@@ -4784,7 +4784,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">412</context>
+          <context context-type="linenumber">413</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.conditions" datatype="html">
@@ -4902,7 +4902,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-clients.component.html</context>
-          <context context-type="linenumber">139</context>
+          <context context-type="linenumber">140</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-status/token-details-status.component.html</context>
@@ -6747,7 +6747,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">97</context>
+          <context context-type="linenumber">113</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.container" datatype="html">
@@ -6770,7 +6770,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">95</context>
+          <context context-type="linenumber">111</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
@@ -7356,14 +7356,14 @@
         <source>No actions match the search filter.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/action-selector/action-selector.component.html</context>
-          <context context-type="linenumber">87</context>
+          <context context-type="linenumber">88</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.noActionsAvailable" datatype="html">
         <source>No actions available for the selected scope and group.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/action-selector/action-selector.component.html</context>
-          <context context-type="linenumber">96</context>
+          <context context-type="linenumber">97</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.selectOptions" datatype="html">
@@ -7374,7 +7374,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/added-actions-list/added-action-edit/policy-action-item-edit.component.html</context>
-          <context context-type="linenumber">36</context>
+          <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.noValuesAvailable" datatype="html">
@@ -7385,14 +7385,14 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/added-actions-list/added-action-edit/policy-action-item-edit.component.html</context>
-          <context context-type="linenumber">43</context>
+          <context context-type="linenumber">45</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.removeAction" datatype="html">
         <source>Remove action</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-action-tab/added-actions-list/added-action-edit/policy-action-item-edit.component.html</context>
-          <context context-type="linenumber">94</context>
+          <context context-type="linenumber">96</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.actionsPolicy" datatype="html">
@@ -8645,7 +8645,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.html</context>
-          <context context-type="linenumber">69</context>
+          <context context-type="linenumber">70</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-user/token-details-user.component.html</context>
@@ -13358,7 +13358,7 @@
         <source>event handler</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">414</context>
+          <context context-type="linenumber">415</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.error" datatype="html">
@@ -13467,207 +13467,207 @@
         <source>HTTP Environment</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">92</context>
+          <context context-type="linenumber">108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.httpRequestHeader" datatype="html">
         <source>HTTP Request header</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">93</context>
+          <context context-type="linenumber">109</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.requestData" datatype="html">
         <source>Request Data</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">94</context>
+          <context context-type="linenumber">110</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.containerInfo" datatype="html">
         <source>Container Info</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">96</context>
+          <context context-type="linenumber">112</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.tokenInfo" datatype="html">
         <source>Token Info</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">98</context>
+          <context context-type="linenumber">114</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.userInfo" datatype="html">
         <source>User Info</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">99</context>
+          <context context-type="linenumber">115</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.contains" datatype="html">
         <source>Contains</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">126</context>
+          <context context-type="linenumber">142</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.doesNotContain" datatype="html">
         <source>Does not contain</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">127</context>
+          <context context-type="linenumber">143</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.equals" datatype="html">
         <source>Equals</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">128</context>
+          <context context-type="linenumber">144</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.doesNotEqual" datatype="html">
         <source>Does not equal</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">129</context>
+          <context context-type="linenumber">145</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.matchesRegex" datatype="html">
         <source>Matches (Regex)</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">130</context>
+          <context context-type="linenumber">146</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.doesNotMatchRegex" datatype="html">
         <source>Does not match (Regex)</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">131</context>
+          <context context-type="linenumber">147</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.in" datatype="html">
         <source>In</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">132</context>
+          <context context-type="linenumber">148</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.notIn" datatype="html">
         <source>Not in</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">133</context>
+          <context context-type="linenumber">149</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.stringContains" datatype="html">
         <source>String contains</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">134</context>
+          <context context-type="linenumber">150</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.stringDoesNot" datatype="html">
         <source>String does not contain</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">135</context>
+          <context context-type="linenumber">151</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.withinLast" datatype="html">
         <source>Within last...</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">136</context>
+          <context context-type="linenumber">152</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.notWithinLast" datatype="html">
         <source>Not within last...</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">137</context>
+          <context context-type="linenumber">153</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.dateAfter" datatype="html">
         <source>Date after</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">138</context>
+          <context context-type="linenumber">154</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.dateBefore" datatype="html">
         <source>Date before</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">139</context>
+          <context context-type="linenumber">155</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.lessThan" datatype="html">
         <source>Less than</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">140</context>
+          <context context-type="linenumber">156</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.greaterThan" datatype="html">
         <source>Greater than</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">141</context>
+          <context context-type="linenumber">157</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.raiseError" datatype="html">
         <source>Raise error</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">153</context>
+          <context context-type="linenumber">169</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.conditionFalse" datatype="html">
         <source>Condition is false</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">154</context>
+          <context context-type="linenumber">170</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.conditionTrue" datatype="html">
         <source>Condition is true</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">155</context>
+          <context context-type="linenumber">171</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policyCreated" datatype="html">
         <source>Policy created successfully.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">571</context>
+          <context context-type="linenumber">587</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.creatingPolicy" datatype="html">
         <source>Creating policy failed: <x id="DETAIL" equiv-text="error"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">575</context>
+          <context context-type="linenumber">591</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">583</context>
+          <context context-type="linenumber">599</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policyUpdated" datatype="html">
         <source>Policy updated successfully</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">686</context>
+          <context context-type="linenumber">702</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.savingPolicyFailed" datatype="html">
         <source>Saving policy failed<x id="DETAIL" equiv-text="errorMessage"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">694</context>
+          <context context-type="linenumber">710</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.errorFetching" datatype="html">
@@ -15222,56 +15222,56 @@
         <source>Can not disable event handler due to missing ID</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">370</context>
+          <context context-type="linenumber">371</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.canNotEnableEventHandler" datatype="html">
         <source>Can not enable event handler due to missing ID</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">348</context>
+          <context context-type="linenumber">349</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.failedToDeleteEventHandler" datatype="html">
         <source>Failed to delete event handler. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">399</context>
+          <context context-type="linenumber">400</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.failedToDeleteEventHandler2" datatype="html">
         <source>Failed to delete event handler: Missing ID.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">426</context>
+          <context context-type="linenumber">427</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.failedToDisableEventHandler" datatype="html">
         <source>Failed to disable event handler!</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">381</context>
+          <context context-type="linenumber">382</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.failedToEnableEventHandler" datatype="html">
         <source>Failed to enable event handler!</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">359</context>
+          <context context-type="linenumber">360</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.failedToSaveEventHandler" datatype="html">
         <source>Failed to save event handler. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">338</context>
+          <context context-type="linenumber">339</context>
         </context-group>
       </trans-unit>
       <trans-unit id="event.successfullyDeletedEventHandler" datatype="html">
         <source>Successfully deleted event handler.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
-          <context context-type="linenumber">433</context>
+          <context context-type="linenumber">434</context>
         </context-group>
       </trans-unit>
       <trans-unit id="login.hidePassword" datatype="html">

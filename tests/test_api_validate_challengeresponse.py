@@ -1191,7 +1191,7 @@ class AChallengeResponse(MyApiTestCase):
         serial = "indx001"
         tok = init_token({"type": "indexedsecret", "otpkey": index_secret, "pin": "index", "serial": serial},
                          user=User("cornelius", self.realm1))
-        tok.add_tokeninfo("multichallenge", 1)
+        tok.write_tokeninfo("multichallenge", 1)
 
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius", "pass": "index"}):
@@ -1240,7 +1240,7 @@ class AChallengeResponse(MyApiTestCase):
         tok = init_token({"type": "indexedsecret", "otpkey": index_secret,
                           "pin": "index", "serial": serial},
                          user=User("cornelius", self.realm1))
-        tok.add_tokeninfo("multichallenge", 1)
+        tok.write_tokeninfo("multichallenge", 1)
 
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius", "pass": "index"}):

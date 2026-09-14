@@ -19,9 +19,16 @@
 
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
+import { By } from "@angular/platform-browser";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { PolicyEditPageComponent } from "@components/policies/policy-edit-page/policy-edit-page.component";
+import { PolicyActionSearchComponent } from "@components/policies/policy-edit-page/policy-action-search/policy-action-search.component";
+import { PolicyTab } from "@components/policies/policy-edit-page/policy-panels/policy-panel-edit/policy-panel-edit.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
@@ -33,7 +40,12 @@ import { of } from "rxjs";
 @Component({ selector: "app-policy-panel-edit", standalone: true, template: "" })
 class MockPanel {
   policy = input.required<PolicyDetail>();
+  activeTab = input<PolicyTab>("actions");
+  actionFilter = input<string>("");
+  searchInHeader = input<boolean>(false);
   policyEdit = output<Partial<PolicyDetail>>();
+  activeTabChange = output<PolicyTab>();
+  actionFilterChange = output<string>();
 }
 
 function createTestBed(paramName: string | null) {
@@ -54,7 +66,18 @@ function createTestBed(paramName: string | null) {
       { provide: PendingChangesService, useClass: MockPendingChangesService }
     ]
   })
-    .overrideComponent(PolicyEditPageComponent, { set: { imports: [MockPanel] } })
+    .overrideComponent(PolicyEditPageComponent, {
+      set: {
+        imports: [
+          MockPanel,
+          MatButtonModule,
+          MatIconModule,
+          PolicyActionSearchComponent,
+          StickyHeaderDirective,
+          ScrollToTopDirective
+        ]
+      }
+    })
     .compileComponents();
 }
 
@@ -102,6 +125,31 @@ describe("PolicyEditPageComponent – create mode", () => {
     // TODO: Not only name, but also scope and at least one action should be required
     component.addPolicyEdit({ name: "ValidName" });
     expect(component.canSave()).toBe(true);
+  });
+
+  it("takes the action search into the header only once it is pinned", () => {
+    const searchField = () => fixture.debugElement.query(By.directive(PolicyActionSearchComponent));
+    const stickyHeader = fixture.debugElement
+      .query(By.directive(StickyHeaderDirective))
+      .injector.get(StickyHeaderDirective);
+
+    expect(searchField()).toBeNull();
+
+    stickyHeader.isSticky.set(true);
+    fixture.detectChanges();
+
+    expect(searchField()).not.toBeNull();
+  });
+
+  it("keeps the action search out of the header on the conditions tab", () => {
+    const stickyHeader = fixture.debugElement
+      .query(By.directive(StickyHeaderDirective))
+      .injector.get(StickyHeaderDirective);
+    stickyHeader.isSticky.set(true);
+    component.activeTab.set("conditions");
+    fixture.detectChanges();
+
+    expect(fixture.debugElement.query(By.directive(PolicyActionSearchComponent))).toBeNull();
   });
 
   it("onAction does not call onSave if value is not submit", () => {

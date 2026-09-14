@@ -19,7 +19,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatDialog } from "@angular/material/dialog";
 import { provideRouter } from "@angular/router";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
@@ -31,7 +30,6 @@ import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenDetails, Tokens, TokenService } from "@services/token/token.service";
 import {
-  MatDialogMock,
   MockAuditService,
   MockContainerService,
   MockContentService,
@@ -80,7 +78,6 @@ describe("TokenTableSelfServiceComponent", () => {
         { provide: AuditService, useClass: MockAuditService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
-        { provide: MatDialog, useClass: MatDialogMock },
         { provide: RealmService, useClass: MockRealmService },
         MockLocalService,
         MockNotificationService
