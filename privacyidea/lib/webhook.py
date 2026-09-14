@@ -15,12 +15,16 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import inspect
+import ipaddress
 import json
 import logging
+import socket
 import ssl
 import time
+from urllib.parse import urlsplit
 
 import requests
+from flask import current_app
 from requests.adapters import HTTPAdapter
 from sqlalchemy import select
 
@@ -627,6 +631,170 @@ def _truncate(text):
     return f"{text[:MAX_RESPONSE_LENGTH]}... [truncated]"
 
 
+# ---------------------------------------------------------------------------
+# Outbound request guard (opt-in, see issue #5751)
+# ---------------------------------------------------------------------------
+
+class GuardMode:
+    """
+    Modes of the outbound request guard, controlled by the
+    ``PI_OUTBOUND_GUARD`` app config key.
+
+    ``OFF`` (the default, and the only mode for the life of the 3.x line
+    unless an admin opts in) performs no checks at all -- byte-for-byte the
+    behaviour of privacyIDEA 3.14 and older. ``WARN`` runs every check but
+    still sends the request, logging what *would* have been rejected.
+    ``ENFORCE`` actually blocks a rejected request.
+    """
+    OFF = "off"
+    WARN = "warn"
+    ENFORCE = "enforce"
+
+    ALL = (OFF, WARN, ENFORCE)
+
+
+#: Networks the guard rejects by default when it is not in OFF mode: loopback,
+#: RFC1918 private space, link-local (this also covers the cloud metadata
+#: endpoint 169.254.169.254), unique-local IPv6, the "this network" range and
+#: CGNAT. IPv4-mapped IPv6 forms of an address (e.g. ``::ffff:127.0.0.1``) are
+#: unwrapped and checked against the IPv4 entries in :func:`_is_blocked_address`.
+BLOCKED_NETWORKS = tuple(ipaddress.ip_network(cidr) for cidr in (
+    "127.0.0.0/8", "0.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12",
+    "192.168.0.0/16", "169.254.0.0/16", "100.64.0.0/10",
+    "::1/128", "fe80::/10", "fc00::/7",
+))
+
+
+def _is_blocked_address(address):
+    """Return True if the literal IP address string falls in a blocked range."""
+    addr = ipaddress.ip_address(address)
+    candidates = [addr]
+    mapped = getattr(addr, "ipv4_mapped", None)
+    if mapped is not None:
+        candidates.append(mapped)
+    return any(candidate.version == network.version and candidate in network
+               for candidate in candidates for network in BLOCKED_NETWORKS)
+
+
+def _entry_matches(entry, host, address, port):
+    """
+    Check a single ``PI_OUTBOUND_GUARD_ALLOW`` entry against the target.
+
+    An entry containing a ``/`` is a CIDR and matches the resolved
+    ``address`` regardless of port. Otherwise it is a bare host or IP,
+    optionally followed by ``:port`` (bracket an IPv6 host, e.g.
+    ``[::1]:8443``), and matches either the hostname as configured on the
+    webhook or the resolved address.
+    """
+    entry = entry.strip()
+    if not entry:
+        return False
+    if "/" in entry:
+        if address is None:
+            return False
+        try:
+            network = ipaddress.ip_network(entry, strict=False)
+            addr = ipaddress.ip_address(address)
+        except ValueError:
+            return False
+        return addr.version == network.version and addr in network
+
+    parsed = urlsplit(f"//{entry}")
+    entry_host = parsed.hostname
+    if entry_host is None:
+        return False
+    if parsed.port is not None and parsed.port != port:
+        return False
+    entry_host = entry_host.lower()
+    return entry_host == (host.lower() if host else None) or entry_host == address
+
+
+def _resolve(host):
+    """Return the de-duplicated list of IP addresses `host` resolves to."""
+    infos = socket.getaddrinfo(host, None)
+    addresses = []
+    seen = set()
+    for _family, _type, _proto, _canonname, sockaddr in infos:
+        address = sockaddr[0].split("%", 1)[0]  # strip an IPv6 zone id
+        if address not in seen:
+            seen.add(address)
+            addresses.append(address)
+    return addresses
+
+
+def check_outbound_target(url, mode=GuardMode.OFF, allowlist=None):
+    """
+    Check whether the host or an address it resolves to is allowed to be
+    contacted, per the outbound request guard.
+
+    This function does **not** decide whether a rejection blocks the
+    request -- that is the caller's job, since the same rejection means
+    "don't send it" in ``enforce`` mode and "send it, but log and audit
+    the rejection" in ``warn`` mode.
+
+    :param url: the target URL (or, when a proxy is configured for the
+        request, the proxy's URL -- the guard must check whatever address
+        the connection actually goes to)
+    :param mode: one of :class:`GuardMode`. In ``OFF`` mode this function
+        does nothing at all and returns immediately, so an installation
+        that has not opted in sees no behaviour change and no added latency.
+    :param allowlist: iterable of CIDR and/or host[:port] entries that are
+        permitted even though they fall in a blocked range
+    :return: None if the target may be contacted, otherwise a human-readable
+        rejection reason
+    """
+    if mode == GuardMode.OFF:
+        return None
+
+    allowlist = allowlist or ()
+    parsed = urlsplit(url)
+    host = parsed.hostname
+    if not host:
+        return f"could not determine a host to check in {url!r}"
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+
+    if any(_entry_matches(entry, host, None, port) for entry in allowlist):
+        return None
+
+    try:
+        addresses = _resolve(host)
+    except socket.gaierror as ex:
+        return f"could not resolve host {host!r}: {ex}"
+
+    for address in addresses:
+        if any(_entry_matches(entry, host, address, port) for entry in allowlist):
+            continue
+        if _is_blocked_address(address):
+            return (f"the address {address} that {host!r} resolves to falls "
+                    f"in a network range blocked by the outbound request guard")
+    return None
+
+
+def _guard_config():
+    """Read the outbound guard's mode and allowlist from the app config."""
+    mode = str(current_app.config.get("PI_OUTBOUND_GUARD", GuardMode.OFF)).lower()
+    if mode not in GuardMode.ALL:
+        log.warning(f"Invalid PI_OUTBOUND_GUARD value {mode!r}, treating as "
+                    f"{GuardMode.OFF!r}.")
+        mode = GuardMode.OFF
+    allowlist = current_app.config.get("PI_OUTBOUND_GUARD_ALLOW", [])
+    return mode, allowlist
+
+
+def _guard_target(config):
+    """
+    Return the URL the guard should check for this webhook's request.
+
+    When a proxy is configured for the scheme in use, the connection goes to
+    the proxy, so the proxy is what the guard must check -- the destination
+    host is resolved by the proxy, not by us, and checking it would protect
+    against nothing.
+    """
+    scheme = urlsplit(config["url"]).scheme
+    proxies = _build_proxies(config) or {}
+    return proxies.get(scheme) or config["url"]
+
+
 def _record_webhook_call(identifier, start, success, error=False):
     """Emit duration and outcome metrics, mirroring _record_email_send()."""
     labels = {"identifier": identifier}
@@ -682,6 +850,21 @@ def fire_webhook(identifier, payload=None):
         return {"success": False, "status_code": None, "response": "",
                 "error": str(ex)}
 
+    mode, allowlist = _guard_config()
+    rejection = check_outbound_target(_guard_target(config), mode=mode,
+                                      allowlist=allowlist)
+    if rejection:
+        log.warning(f"Webhook {identifier!r}: outbound request guard "
+                    f"({mode}) rejected the target: {rejection}")
+        if mode == GuardMode.ENFORCE:
+            _record_webhook_call(identifier, start, False, error=True)
+            return {"success": False, "status_code": None, "response": "",
+                    "error": f"blocked by the outbound request guard "
+                             f"({mode}): {rejection}"}
+        # warn mode: the request still goes out. fire_webhook() has no audit
+        # object to write to, so the log line above is the only record of
+        # the rejection; it does not appear in the audit log.
+
     headers = dict(config["headers"] or {})
     body = _resolve_body(config, payload)
     if body is not None:
@@ -726,6 +909,12 @@ def fire_webhook(identifier, payload=None):
             verify=verify,
             proxies=proxies,
             timeout=config["timeout"],
+            # A redirect target was never checked by the guard above, so
+            # following one would defeat it. Only deviate from the previous
+            # default (True, the behaviour of privacyIDEA 3.14 and older)
+            # once the guard is actually active -- an installation on OFF
+            # must see byte-for-byte identical behaviour.
+            allow_redirects=(mode == GuardMode.OFF),
         )
         success = response.ok
         body_text = _truncate(response.text)
