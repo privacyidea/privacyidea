@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
   <file source-language="en" target-language="de" datatype="plaintext" original="ng2.template">
     <body>
       <trans-unit id="audit.downloadAudit" datatype="html">
@@ -155,8 +155,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="audit.exampleQueryAction" datatype="html">
-        <source>Example query: &apos;action: GET success: false&apos;</source>
-        <target>Beispielabfrage: &apos;action: GET success: false&apos;</target>
+        <source>Example query: 'action: GET success: false'</source>
+        <target>Beispielabfrage: 'action: GET success: false'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">40</context>
@@ -2899,16 +2899,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.appidNeedsStart" datatype="html">
-        <source>The AppID needs to start with &quot;https&quot;.</source>
-        <target>Die AppID muss mit &quot;https&quot; beginnen.</target>
+        <source>The AppID needs to start with "https".</source>
+        <target>Die AppID muss mit "https" beginnen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
           <context context-type="linenumber">61</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.appidMustNotEnd" datatype="html">
-        <source>The AppID must not end with a &quot;/&quot;.</source>
-        <target>Die AppID darf nicht mit einem &quot;/&quot; enden.</target>
+        <source>The AppID must not end with a "/".</source>
+        <target>Die AppID darf nicht mit einem "/" enden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
           <context context-type="linenumber">68</context>
@@ -2991,8 +2991,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.thereforeMandatory" datatype="html">
-        <source>Therefore it is mandatory to set this, if webauthn_authenticator_attestation_level is set to &quot;trusted&quot; by a policy for any user.</source>
-        <target>Daher ist es zwingend erforderlich, dies zu setzen, wenn webauthn_authenticator_attestation_level durch eine Richtlinie für einen Benutzer auf &quot;trusted&quot; gesetzt ist.</target>
+        <source>Therefore it is mandatory to set this, if webauthn_authenticator_attestation_level is set to "trusted" by a policy for any user.</source>
+        <target>Daher ist es zwingend erforderlich, dies zu setzen, wenn webauthn_authenticator_attestation_level durch eine Richtlinie für einen Benutzer auf "trusted" gesetzt ist.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component.html</context>
           <context context-type="linenumber">60</context>
@@ -3007,8 +3007,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.trustAnchorDirMustNot" datatype="html">
-        <source>The trust_anchor_dir must not end with a &quot;/&quot;.</source>
-        <target>Das trust_anchor_dir darf nicht mit einem &quot;/&quot; enden.</target>
+        <source>The trust_anchor_dir must not end with a "/".</source>
+        <target>Das trust_anchor_dir darf nicht mit einem "/" enden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component.html</context>
           <context context-type="linenumber">71</context>
@@ -3994,9 +3994,9 @@
           <context context-type="linenumber">75</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="event.leastOneEvent" datatype="html">
+      <trans-unit id="event.leastOneEvent" datatype="html" xml:space="preserve">
         <source>At least one event must be selected.</source>
-        <target state="new">Mindestens ein Status muss ausgewählt werden.</target>
+        <target state="translated">Mindestens ein Ereignis muss ausgewählt werden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/event-selection/event-selection.component.html</context>
           <context context-type="linenumber">46</context>
@@ -4079,8 +4079,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="container.pleaseScanQrCode" datatype="html">
-        <source>Please scan the QR code with the privacyIDEA Authenticator App or click this <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value ?? &apos;&apos; }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone to register your container. It will send the missing registration data to the configured endpoint.</source>
-        <target>Bitte scannen Sie den QR-Code mit der privacyIDEA Authenticator App oder klicken Sie auf Ihrem Smartphone auf diesen <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value ?? &apos;&apos; }}&quot;&gt;"/>Link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>, um Ihren Container zu registrieren. Dadurch werden die fehlenden Registrierungsdaten an den konfigurierten Endpunkt gesendet.</target>
+        <source>Please scan the QR code with the privacyIDEA Authenticator App or click this <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value ?? '' }}&quot;&gt;"/>link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone to register your container. It will send the missing registration data to the configured endpoint.</source>
+        <target>Bitte scannen Sie den QR-Code mit der privacyIDEA Authenticator App oder klicken Sie auf Ihrem Smartphone auf diesen <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data()?.response?.result?.value?.container_url?.value ?? '' }}&quot;&gt;"/>Link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>, um Ihren Container zu registrieren. Dadurch werden die fehlenden Registrierungsdaten an den konfigurierten Endpunkt gesendet.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-created-dialog/container-created-dialog.component.html</context>
           <context context-type="linenumber">47</context>
@@ -4195,8 +4195,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="container.exampleQueryType" datatype="html">
-        <source>Example query: &apos;type: generic&apos;</source>
-        <target>Beispielabfrage: &apos;type: generic&apos;</target>
+        <source>Example query: 'type: generic'</source>
+        <target>Beispielabfrage: 'type: generic'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-table/container-table.component.html</context>
           <context context-type="linenumber">44</context>
@@ -4359,8 +4359,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="container.exampleQueryName" datatype="html">
-        <source>Example query: &apos;name: example_template container_type: smartphone&apos;</source>
-        <target>Beispielabfrage: &apos;name: example_template container_type: smartphone&apos;</target>
+        <source>Example query: 'name: example_template container_type: smartphone'</source>
+        <target>Beispielabfrage: 'name: example_template container_type: smartphone'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-filter/container-templates-filter.component.html</context>
           <context context-type="linenumber">33</context>
@@ -4823,8 +4823,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.exampleQueryUsername" datatype="html">
-        <source>Example query: &apos;username: root&apos;</source>
-        <target>Beispielabfrage: &apos;username: root&apos;</target>
+        <source>Example query: 'username: root'</source>
+        <target>Beispielabfrage: 'username: root'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event.component.html</context>
           <context context-type="linenumber">41</context>
@@ -6211,7 +6211,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.donTSendSigning" datatype="html">
-        <source>Don&apos;t send on signing error</source>
+        <source>Don't send on signing error</source>
         <target>Bei Signierungsfehler nicht senden</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
@@ -7214,7 +7214,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="machine.pathCaCertificate" datatype="html">
-        <source>Path to a CA certificate file to verify the LDAP server&apos;s TLS certificate.</source>
+        <source>Path to a CA certificate file to verify the LDAP server's TLS certificate.</source>
         <target>Pfad zu einer CA-Zertifikatsdatei, um das TLS-Zertifikat des LDAP-Servers zu verifizieren.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component.html</context>
@@ -7558,8 +7558,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="policy.exampleQueryScope" datatype="html">
-        <source>Example query: &apos;scope: enrollment, active: true&apos;</source>
-        <target>Beispielabfrage: &apos;scope: enrollment, active: true&apos;</target>
+        <source>Example query: 'scope: enrollment, active: true'</source>
+        <target>Beispielabfrage: 'scope: enrollment, active: true'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policy-filter/policy-filter.component.html</context>
           <context context-type="linenumber">36</context>
@@ -8106,8 +8106,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.exampleQueryType" datatype="html">
-        <source>Example query: &apos;type: hotp serial: 123&apos;</source>
-        <target>Beispielabfrage: &apos;typ: hotp seriennummer: 123&apos;</target>
+        <source>Example query: 'type: hotp serial: 123'</source>
+        <target>Beispielabfrage: 'typ: hotp seriennummer: 123'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/container-add-token/container-add-token.component.html</context>
           <context context-type="linenumber">48</context>
@@ -8538,8 +8538,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.exampleQueryTransaction" datatype="html">
-        <source>Example query: &apos;transaction_id: 00000000000000000001&apos;</source>
-        <target>Beispielabfrage: &apos;transaction_id: 00000000000000000001&apos;</target>
+        <source>Example query: 'transaction_id: 00000000000000000001'</source>
+        <target>Beispielabfrage: 'transaction_id: 00000000000000000001'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table.component.html</context>
           <context context-type="linenumber">38</context>
@@ -8626,8 +8626,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.exampleQueryService" datatype="html">
-        <source>Example query: &apos;service_id: myService&apos;</source>
-        <target>Beispielabfrage: &apos;service_id: myService&apos;</target>
+        <source>Example query: 'service_id: myService'</source>
+        <target>Beispielabfrage: 'service_id: myService'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-ssh/token-applications-ssh.component.html</context>
           <context context-type="linenumber">56</context>
@@ -9694,8 +9694,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.example1d12h" datatype="html">
-        <source>For example &apos;1d&apos; or &apos;12h&apos;</source>
-        <target>Zum Beispiel &apos;1d&apos; oder &apos;12h&apos;</target>
+        <source>For example '1d' or '12h'</source>
+        <target>Zum Beispiel '1d' oder '12h'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">86</context>
@@ -9714,8 +9714,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.timeWhichPassword" datatype="html">
-        <source>The time in which the password can be used. For example &apos;1d&apos; or &apos;12h&apos;.</source>
-        <target>Die Zeitspanne, in der das Passwort verwendet werden kann. Zum Beispiel &apos;1d&apos; oder &apos;12h&apos;.</target>
+        <source>The time in which the password can be used. For example '1d' or '12h'.</source>
+        <target>Die Zeitspanne, in der das Passwort verwendet werden kann. Zum Beispiel '1d' oder '12h'.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">89</context>
@@ -11670,8 +11670,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.exampleQueryType" datatype="html">
-        <source>Example query: &apos;type: hotp userid: 1000&apos;</source>
-        <target>Beispielabfrage: &apos;type: hotp userid: 1000&apos;</target>
+        <source>Example query: 'type: hotp userid: 1000'</source>
+        <target>Beispielabfrage: 'type: hotp userid: 1000'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.component.html</context>
           <context context-type="linenumber">45</context>
@@ -11990,8 +11990,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="realm.realmUpdated" datatype="html">
-        <source>Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; updated.</source>
-        <target state="new">Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; aktualisiert.</target>
+        <source>Realm "<x id="REALM" equiv-text="realmName"/>" updated.</source>
+        <target state="new">Realm "<x id="REALM" equiv-text="realmName"/>" aktualisiert.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">545</context>
@@ -12014,8 +12014,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="realm.realmDeleted" datatype="html">
-        <source>Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; deleted.</source>
-        <target state="new">Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; gelöscht.</target>
+        <source>Realm "<x id="REALM" equiv-text="realmName"/>" deleted.</source>
+        <target state="new">Realm "<x id="REALM" equiv-text="realmName"/>" gelöscht.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">617</context>
@@ -12030,8 +12030,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="realm.realmSetAsDefault" datatype="html">
-        <source>Realm &quot;<x id="NAME" equiv-text="row.name"/>&quot; set as default.</source>
-        <target state="new">Realm &quot;<x id="NAME" equiv-text="row.name"/>&quot; als Standard festgelegt.</target>
+        <source>Realm "<x id="NAME" equiv-text="row.name"/>" set as default.</source>
+        <target state="new">Realm "<x id="NAME" equiv-text="row.name"/>" als Standard festgelegt.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">591</context>
@@ -12456,7 +12456,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.keyGroupSName" datatype="html">
-        <source>Key of the group&apos;s name in the user store response.</source>
+        <source>Key of the group's name in the user store response.</source>
         <target>Schlüssel des Gruppennamens in der Antwort des Benutzerspeichers.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-groups-attribute/http-groups-attribute.component.html</context>
@@ -12852,7 +12852,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.credentialType" datatype="html">
-        <source>This credential type does not support to check the user&apos;s password. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Specify the path to the private key file of the servers certificate. If you use an encrypted key, add the password here, otherwise leave the field empty. The server certificate must be uploaded in Entra&apos;s app registration as client credential.</source>
+        <source>This credential type does not support to check the user's password. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Specify the path to the private key file of the servers certificate. If you use an encrypted key, add the password here, otherwise leave the field empty. The server certificate must be uploaded in Entra's app registration as client credential.</source>
         <target>Dieser Credential-Typ unterstützt die Überprüfung des Benutzerpassworts nicht. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Geben Sie den Pfad zur privaten Schlüsseldatei des Serverzertifikats an. Wenn Sie einen verschlüsselten Schlüssel verwenden, fügen Sie hier das Passwort hinzu, andernfalls lassen Sie das Feld leer. Das Serverzertifikat muss in der App-Registrierung von Entra als Client-Credential hochgeladen werden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -13312,7 +13312,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.groupAttribute" datatype="html">
-        <source>Group attribute defining the group&apos;s name, which should be stored in the user info.</source>
+        <source>Group attribute defining the group's name, which should be stored in the user info.</source>
         <target>Gruppenattribut, das den Namen der Gruppe definiert, der in den Benutzerinformationen gespeichert werden soll.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/ldap-resolver/ldap-resolver.component.html</context>
@@ -13740,16 +13740,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverUpdated" datatype="html">
-        <source>Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; updated.</source>
-        <target state="new">Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; aktualisiert.</target>
+        <source>Resolver "<x id="NAME" equiv-text="name"/>" updated.</source>
+        <target state="new">Resolver "<x id="NAME" equiv-text="name"/>" aktualisiert.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">265</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverCreated" datatype="html">
-        <source>Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; created.</source>
-        <target state="new">Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; erstellt.</target>
+        <source>Resolver "<x id="NAME" equiv-text="name"/>" created.</source>
+        <target state="new">Resolver "<x id="NAME" equiv-text="name"/>" erstellt.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">266</context>
@@ -13864,16 +13864,16 @@
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverDeleted" datatype="html">
-        <source>Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; deleted.</source>
-        <target state="new">Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; gelöscht.</target>
+        <source>Resolver "<x id="RESOLVER" equiv-text="resolver.resolvername"/>" deleted.</source>
+        <target state="new">Resolver "<x id="RESOLVER" equiv-text="resolver.resolvername"/>" gelöscht.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
           <context context-type="linenumber">163</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverNotFound" datatype="html">
-        <source>Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; not found.</source>
-        <target state="new">Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; nicht gefunden.</target>
+        <source>Resolver "<x id="RESOLVER" equiv-text="resolver.resolvername"/>" not found.</source>
+        <target state="new">Resolver "<x id="RESOLVER" equiv-text="resolver.resolvername"/>" nicht gefunden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
           <context context-type="linenumber">168</context>
@@ -15352,7 +15352,7 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.passkeyPhishing" datatype="html">
-        <source>A passkey is a phishing-resistant credential that uses public-key cryptography to prove your identity without sharing a secret. The private key is stored securely on your authenticator (like a phone or hardware token) and is unlocked for each sign-in using your device&apos;s PIN, fingerprint, or face scan.</source>
+        <source>A passkey is a phishing-resistant credential that uses public-key cryptography to prove your identity without sharing a secret. The private key is stored securely on your authenticator (like a phone or hardware token) and is unlocked for each sign-in using your device's PIN, fingerprint, or face scan.</source>
         <target>Ein Passkey ist ein phishing-resistenter Berechtigungsnachweis, der Public-Key-Kryptografie verwendet, um Ihre Identität nachzuweisen, ohne ein Geheimnis preiszugeben. Der private Schlüssel wird sicher auf Ihrem Authenticator (z. B. einem Telefon oder Hardware-Token) gespeichert und wird für jede Anmeldung mit der PIN, dem Fingerabdruck oder der Gesichtserkennung Ihres Geräts entsperrt.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
@@ -16204,8 +16204,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="machine.machineResolverNot" datatype="html">
-        <source>Machine resolver &quot;<x id="NAME" equiv-text="name"/>&quot; not found.</source>
-        <target state="new">Machine resolver &quot;<x id="NAME" equiv-text="name"/>&quot; not found.</target>
+        <source>Machine resolver "<x id="NAME" equiv-text="name"/>" not found.</source>
+        <target state="new">Machine resolver "<x id="NAME" equiv-text="name"/>" not found.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.ts</context>
           <context context-type="linenumber">141</context>
@@ -16260,8 +16260,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="token.exampleQuerySerial" datatype="html">
-        <source>Example query: &apos;serial: OATH0001&apos;</source>
-        <target state="new">Example query: &apos;serial: OATH0001&apos;</target>
+        <source>Example query: 'serial: OATH0001'</source>
+        <target state="new">Example query: 'serial: OATH0001'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-offline/token-applications-offline.component.html</context>
           <context context-type="linenumber">50</context>
@@ -16316,8 +16316,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="realm.deleteRealmDialogTitle" datatype="html">
-        <source>Delete Realm &quot;<x id="REALM" equiv-text="this.data.realmName"/>&quot;</source>
-        <target state="new">Delete Realm &quot;<x id="REALM" equiv-text="this.data.realmName"/>&quot;</target>
+        <source>Delete Realm "<x id="REALM" equiv-text="this.data.realmName"/>"</source>
+        <target state="new">Delete Realm "<x id="REALM" equiv-text="this.data.realmName"/>"</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-delete-attributes-dialog/realm-delete-attributes-dialog.component.ts</context>
           <context context-type="linenumber">35</context>
@@ -16404,8 +16404,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="user.searchAllColumns" datatype="html">
-        <source>Search all columns, or by column e.g. &apos;root email: @acme&apos;</source>
-        <target state="new">Search all columns, or by column e.g. &apos;root email: @acme&apos;</target>
+        <source>Search all columns, or by column e.g. 'root email: @acme'</source>
+        <target state="new">Search all columns, or by column e.g. 'root email: @acme'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.html</context>
           <context context-type="linenumber">65</context>
@@ -16420,8 +16420,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="common.quoteValuesContain" datatype="html">
-        <source>Quote values that contain spaces or a colon, e.g. description: &quot;my note&quot;.</source>
-        <target state="new">Quote values that contain spaces or a colon, e.g. description: &quot;my note&quot;.</target>
+        <source>Quote values that contain spaces or a colon, e.g. description: "my note".</source>
+        <target state="new">Quote values that contain spaces or a colon, e.g. description: "my note".</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
           <context context-type="linenumber">32</context>
@@ -18132,8 +18132,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.expiredTheSubscriptionSEnd" datatype="html">
-        <source>Expired: the subscription&apos;s end date has passed.</source>
-        <target state="new">Expired: the subscription&apos;s end date has passed.</target>
+        <source>Expired: the subscription's end date has passed.</source>
+        <target state="new">Expired: the subscription's end date has passed.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/subscriptions-widget/subscriptions-widget.component.ts</context>
           <context context-type="linenumber">357</context>
@@ -18928,8 +18928,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.apiClientNamed" datatype="html">
-        <source>API Client &quot;<x id="INTERPOLATION" equiv-text="{{ apiClientModel().display_name }}"/>&quot;</source>
-        <target state="new">API Client &quot;<x id="INTERPOLATION" equiv-text="{{ apiClientModel().display_name }}"/>&quot;</target>
+        <source>API Client "<x id="INTERPOLATION" equiv-text="{{ apiClientModel().display_name }}"/>"</source>
+        <target state="new">API Client "<x id="INTERPOLATION" equiv-text="{{ apiClientModel().display_name }}"/>"</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-edit/api-client-edit.component.html</context>
           <context context-type="linenumber">25</context>
@@ -19028,8 +19028,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.apiKeyFor" datatype="html">
-        <source>API key for &quot;<x id="INTERPOLATION" equiv-text="{{ issuedKey.displayName }}"/>&quot;</source>
-        <target state="new">API key for &quot;<x id="INTERPOLATION" equiv-text="{{ issuedKey.displayName }}"/>&quot;</target>
+        <source>API key for "<x id="INTERPOLATION" equiv-text="{{ issuedKey.displayName }}"/>"</source>
+        <target state="new">API key for "<x id="INTERPOLATION" equiv-text="{{ issuedKey.displayName }}"/>"</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-issued-key-banner/api-client-issued-key-banner.component.html</context>
           <context context-type="linenumber">22</context>
@@ -19060,8 +19060,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.rememberedDevicesIntro" datatype="html">
-        <source>These are the active &quot;remember this device&quot; entries for this client. Revoking one invalidates that device&apos;s cookie immediately. The IP address and user agent are those of the API client&apos;s request, which for a centralised integration (e.g. an IdP) is the integration itself, not the end user&apos;s browser or device.</source>
-        <target state="new">These are the active &quot;remember this device&quot; entries for this client. Revoking one invalidates that device&apos;s cookie immediately. The IP address and user agent are those of the API client&apos;s request, which for a centralised integration (e.g. an IdP) is the integration itself, not the end user&apos;s browser or device.</target>
+        <source>These are the active "remember this device" entries for this client. Revoking one invalidates that device's cookie immediately. The IP address and user agent are those of the API client's request, which for a centralised integration (e.g. an IdP) is the integration itself, not the end user's browser or device.</source>
+        <target state="new">These are the active "remember this device" entries for this client. Revoking one invalidates that device's cookie immediately. The IP address and user agent are those of the API client's request, which for a centralised integration (e.g. an IdP) is the integration itself, not the end user's browser or device.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.html</context>
           <context context-type="linenumber">23</context>
@@ -19136,8 +19136,8 @@
         </context-group>
       </trans-unit>
       <trans-unit id="apiClient.revokeAllUserDevices" datatype="html">
-        <source>Revoke all of this user&apos;s remembered devices on this client</source>
-        <target state="new">Revoke all of this user&apos;s remembered devices on this client</target>
+        <source>Revoke all of this user's remembered devices on this client</source>
+        <target state="new">Revoke all of this user's remembered devices on this client</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/api-clients/api-client-remembered-devices/api-client-remembered-devices.component.ts</context>
           <context context-type="linenumber">120</context>

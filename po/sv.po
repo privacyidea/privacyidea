@@ -1,31 +1,27 @@
-# William Gutierres <william.gutierres@l8security.com.br>, 2025.
+# Daniel Nylander <yeagersthlm@gmail.com>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2025-05-16 19:01+0000\n"
-"Last-Translator: William Gutierres <william.gutierres@l8security.com.br>\n"
-"Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
-"privacyidea/privacyidea-webui/pt_BR/>\n"
-"Language: pt_BR\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: sv\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.12-dev\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
 msgctxt "subscription"
 msgid "Level"
-msgstr "Nível"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:116
 msgid "(none)"
-msgstr "nenhum"
+msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
-msgstr "45% Completo"
+msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:114
 msgid ""
@@ -36,7 +32,7 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
-msgstr "<b>Este sistema não vem com garantias!</b>"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:65
 msgid ""
@@ -6747,13 +6743,3 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.list.html:124
 msgid "— all —"
 msgstr ""
-
-#~ msgid "Certificate: Enroll an x509 Certificate Token."
-#~ msgstr "Certificado: Inscrição de um Token de Certificado x509."
-
-#~ msgid "EMail: Send a One Time Password to the users email address."
-#~ msgstr ""
-#~ "EMail: Envie uma senha única para o endereço de e-mail dos usuários."
-
-#~ msgid "SMS: Send a One Time Password to the users mobile phone."
-#~ msgstr "SMS: Envie uma senha única para o telefone celular dos usuários."
