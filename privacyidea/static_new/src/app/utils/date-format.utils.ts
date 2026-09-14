@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { formatDate } from "@angular/common";
+
 // Matches server-supplied "YYYY-MM-DD HH:mm:ss[.fraction][offset]" timestamps that use a
 // space instead of "T", a fractional-seconds part longer than the 3 digits (milliseconds)
 // the Date Time String Format allows, or an offset without a colon. All three are only
@@ -49,4 +51,15 @@ export function formatLocalDateTime(value: string | number | Date | null | undef
   const date = normalized instanceof Date ? normalized : new Date(normalized);
   if (Number.isNaN(date.getTime())) return String(value);
   return getLocalDateTimeFormatter().format(date);
+}
+
+/**
+ * Converts an ISO 8601 string to the human-readable form the authentication log's editable start_time/end_time filter
+ * chips carry, e.g. "2026-06-02T10:00:00.000Z" becomes "2026-06-02 10:00:00 +00:00".
+ *
+ * Shared rather than local to the log page because anything that pre-seeds those chips - the dashboard's activity
+ * widget, for one - has to write the exact form the page mirrors back out, or the page reads the chip as an edit.
+ */
+export function toFilterDisplay(isoString: string): string {
+  return formatDate(isoString, "yyyy-MM-dd HH:mm:ss ZZZZZ", "en-US");
 }

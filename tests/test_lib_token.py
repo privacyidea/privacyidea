@@ -1628,7 +1628,9 @@ class TokenTestCase(MyTestCase):
             self.assertEqual('X', tokens[0].get("serial"), tokens[0])
         self.assertTrue(tokens[-1].get("serial") == "A8")
 
-        # try a different sort key
+        # Try a different sort key: sorting by id returns ascending order. Do not assume the lowest id is 1 -
+        # earlier test classes sharing the DB may have already consumed lower ids, so assert the ordering, not
+        # an absolute starting value.
         tokendata = get_tokens_paginate(sortby="id", page=1, psize=100)
         tokens = tokendata.get("tokens")
 
@@ -1637,7 +1639,8 @@ class TokenTestCase(MyTestCase):
         # other tests on this worker's DB may have consumed the lower ids and
         # the lowest surviving id need not be 1.
         ids = [token.get("id") for token in tokens]
-        self.assertEqual(ids, sorted(ids), ids)
+        self.assertEqual(sorted(ids), ids, ids)
+        self.assertGreaterEqual(tokens[-1].get("id"), len(tokens), tokens[-1])
 
         # unknown sort key results in sorting by serial
         tokendata = get_tokens_paginate(sortby="unknown", page=1, psize=100)

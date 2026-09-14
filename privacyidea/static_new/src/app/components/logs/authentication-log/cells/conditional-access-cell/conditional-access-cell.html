@@ -1,0 +1,84 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<ul class="info-list">
+  @for (outcome of views(); track outcome.key) {
+    <li class="info-group">
+      <div class="outcome-summary">
+        <button
+          class="outcome-toggle"
+          type="button"
+          [attr.aria-controls]="'ca-outcome-' + outcome.key"
+          [attr.aria-expanded]="isExpanded(outcome.key)"
+          [attr.aria-label]="toggleLabel(outcome)"
+          (click)="toggle(outcome.key)">
+          <mat-icon>{{ isExpanded(outcome.key) ? "expand_less" : "expand_more" }}</mat-icon>
+        </button>
+        <span>
+          @if (outcome.dryRun) {
+            <span
+              class="info-key info-group-prefix"
+              i18n>Dry Run:</span>
+          }
+          @if (outcome.policyLink) {
+            <a [routerLink]="outcome.policyLink">{{ outcome.policy }}</a>
+          } @else {
+            {{ outcome.policy }}
+          }
+        </span>
+      </div>
+      @if (isExpanded(outcome.key)) {
+        <div
+          class="outcome-details"
+          [id]="'ca-outcome-' + outcome.key">
+          <div class="info-group-row">
+            <span
+              class="info-key"
+              i18n>Action:</span>
+            {{ outcome.action }}
+          </div>
+          @if (outcome.stage) {
+            <div class="info-group-row">
+              <span
+                class="info-key"
+                i18n>Stage:</span>
+              {{ outcome.stage }}
+            </div>
+          }
+          @if (outcome.threshold !== undefined) {
+            <div class="info-group-row">
+              <span
+                class="info-key"
+                i18n>Threshold:</span>
+              {{ outcome.threshold }}
+            </div>
+          }
+          @if (outcome.expiresAt) {
+            <div class="info-group-row">
+              <span
+                class="info-key"
+                i18n>Until:</span>
+              {{ outcome.expiresAt | date: "yyyy-MM-dd HH:mm:ss" }}
+            </div>
+          }
+        </div>
+      }
+    </li>
+  }
+</ul>

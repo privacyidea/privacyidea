@@ -2,6 +2,18 @@
 
 $input-focus-outline: theme.$focus-outline;
 
+.edit-policy-layout .mat-mdc-form-field-subscript-wrapper {
+  line-height: 16px;
+}
+
+.edit-policy-layout .ca-priority-field .mat-mdc-form-field-subscript-wrapper {
+  line-height: 16px;
+}
+
+.edit-policy-layout .ca-priority-field .mat-mdc-form-field-hint-wrapper {
+  height: 32px;
+}
+
 .input {
   height: 40px;
   width: 107px;

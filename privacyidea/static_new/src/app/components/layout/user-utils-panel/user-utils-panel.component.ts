@@ -27,6 +27,10 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ApiClientService, ApiClientServiceInterface } from "@services/api-client/api-client.service";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import {
+  AuthenticationLogService,
+  AuthenticationLogServiceInterface
+} from "@services/authentication-log/authentication-log.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { CaConnectorService, CaConnectorServiceInterface } from "@services/ca-connector/ca-connector.service";
 import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
@@ -52,6 +56,14 @@ import {
 } from "@services/pending-changes/pending-changes.service";
 import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import {
+  ConditionalAccessPolicyService,
+  ConditionalAccessPolicyServiceInterface
+} from "@services/conditional-access/conditional-access-policy.service";
+import {
+  ConditionalAccessStateService,
+  ConditionalAccessStateServiceInterface
+} from "@services/conditional-access-state/conditional-access-state.service";
 import {
   PrivacyideaServerService,
   PrivacyideaServerServiceInterface
@@ -94,8 +106,13 @@ export class UserUtilsPanelComponent {
   protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
   private readonly clientsService: ClientsServiceInterface = inject(ClientsService);
   private readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  private readonly conditionalAccessPolicyService: ConditionalAccessPolicyServiceInterface =
+    inject(ConditionalAccessPolicyService);
+  private readonly conditionalAccessStateService: ConditionalAccessStateServiceInterface =
+    inject(ConditionalAccessStateService);
   private readonly subscriptionService = inject(SubscriptionService);
   private readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   private readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
@@ -237,6 +254,11 @@ export class UserUtilsPanelComponent {
       this.tokenService.userTokenResource.reload();
       this.containerService.userContainersResource.reload();
       return;
+    } else if (this.contentService.onConditionalAccess()) {
+      // Covers the conditional-access list, edit and new pages, which all share one policies resource; its dynamic
+      // details URL is not an exact route match, so it is handled here rather than in the switch below.
+      this.conditionalAccessPolicyService.policiesResource.reload();
+      return;
     } else if (this.contentService.onApiClients()) {
       this.apiClientService.apiClientResource.reload();
       this.apiClientService.reloadRememberedDevices();
@@ -265,6 +287,15 @@ export class UserUtilsPanelComponent {
         break;
       case ROUTE_PATHS.AUDIT:
         this.auditService.auditResource.reload();
+        break;
+      case ROUTE_PATHS.AUTHENTICATION_LOG:
+        this.authenticationLogService.authenticationLogResource.reload();
+        break;
+      case ROUTE_PATHS.LOCKED_USERS:
+        this.conditionalAccessStateService.lockedUsersResource.reload();
+        break;
+      case ROUTE_PATHS.BLOCKLIST:
+        this.conditionalAccessStateService.blocklistResource.reload();
         break;
       case ROUTE_PATHS.CLIENTS:
         this.clientsService.clientsResource.reload();
