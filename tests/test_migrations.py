@@ -191,11 +191,19 @@ def flask_app():
     Schema setup is done by load_seed(), not db.create_all().
     """
     from privacyidea.app import create_app
+    from privacyidea.models import db
 
     app = create_app("testing", pathlib.Path.cwd() / "tests/testdata/test_pi.cfg", silent=True)
     ctx = app.app_context()
     ctx.push()
     yield app
+    # Every test gets its own app, and Flask-SQLAlchemy gives every app its own engine. Dropping
+    # the app does not close that engine's pooled connections, so without this each test strands
+    # its connections on the server for the rest of the session. Against a real database the
+    # whole suite then runs into "too many clients already".
+    db.session.remove()
+    for engine in db.engines.values():
+        engine.dispose()
     ctx.pop()
 
 
