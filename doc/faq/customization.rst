@@ -13,6 +13,10 @@ Templates
 
 .. index:: customize, templates, HTML views
 
+.. note:: This applies to the previous WebUI only, which is served when `pi.cfg` selects it as
+   described in :ref:`legacy_webui`. The WebUI privacyIDEA serves is a compiled application and
+   does not read HTML views from the file system.
+
 You can change the HTML templates of the web UI as follows.
 You can create a copy of the orignial templates, modify them and use rewrite rules of your webserver
 to call your new, modified templates.
@@ -21,9 +25,9 @@ This way updates will not affect your modifications.
 
 All HTML views are contained in::
 
-    static/components/<component>/views/<view>.html
+    static_old/components/<component>/views/<view>.html
 
-You can find them on `GitHub <https://github.com/privacyidea/privacyidea/tree/master/privacyidea/static>`_
+You can find them on `GitHub <https://github.com/privacyidea/privacyidea/tree/master/privacyidea/static_old>`_
 or at the according location in your installation.
 
 Follow these basic steps:
@@ -85,6 +89,9 @@ Themes
 
 .. index:: themes, CSS, customize
 
+.. note:: This applies to the previous WebUI only, which is served when `pi.cfg` selects it as
+   described in :ref:`legacy_webui`. The WebUI privacyIDEA serves does not read ``PI_CSS``.
+
 You can adapt the style and colors by changing CSS. There are at least two ways to do this.
 
 Providing your own stylesheet in the config file
@@ -94,15 +101,15 @@ You can create your own CSS file to adapt the look and feel of the Web UI.
 The default CSS is the bootstrap CSS theme. Using ``PI_CSS`` in ``pi.cfg`` you can specify
 the URL of your own CSS file.
 The default CSS file url is */static/contrib/css/bootstrap-theme.css*.
-The file in the file system is located at *privacyidea/static/contrib/css*.
-You might add a directory *privacyidea/static/custom/css/* and add your CSS
+The file in the file system is located at *privacyidea/static_old/contrib/css*.
+You might add a directory *privacyidea/static_old/custom/css/* and add your CSS
 file there.
 
 The CSS you specify here adds to the already existing styles. Thus a convenient way for
 using this setting is to help you distinguish different privacyIDEA instances like "testing", "acceptances"
 and "production" or different nodes in a redundant setup.
 
-You can create a simple CSS file *[..]/privacyidea/static/custom/css/testing.css* like::
+You can create a simple CSS file *[..]/privacyidea/static_old/custom/css/testing.css* like::
 
     body {
         background-color: green;
@@ -158,13 +165,13 @@ image. For example:
 
 Put your logo at the following location:
 
-*Old WebUI*::
+*Previous WebUI*::
 
-    privacyidea/static/css
+    privacyidea/static_old/css
 
-*New WebUI*::
+*WebUI*::
 
-    privacyidea/static_new/public
+    privacyidea/static/public
 
 .. _customize_menu:
 
@@ -178,7 +185,7 @@ Menu
 ~~~~
 
 The administrator can adapt the menu of the web UI using policies or of course web server rewrite
-rules. The original menu is located in ``static/templates/menu.html``.
+rules. The original menu is located in ``static_old/templates/menu.html``.
 
 Note that policies are also dependent on the client IP, this way different
 clients could see different menus.
@@ -189,7 +196,7 @@ Headers and Footers
 ~~~~~~~~~~~~~~~~~~~
 
 The administrator can change the header and footer of each page. We call this the baseline of the
-web UI. The original baseline is contained in ``static/templates/baseline.html``.
+web UI. The original baseline is contained in ``static_old/templates/baseline.html``.
 You can use a web UI policy to change this baseline or - of course - could use the web server
 rewrite module.
 
@@ -237,9 +244,9 @@ You can install your new Python module, wherever you want to like ``myproject.co
 If these tokens need additional enrollment data in the UI, you can specify
 two templates, that are displayed during enrollment and after the token
 is enrolled. These HTML templates need to be located at
-``privacyidea/static/components/token/views/token.enroll.<tokentype>.html``
+``privacyidea/static_old/components/token/views/token.enroll.<tokentype>.html``
 and
-``privacyidea/static/components/token/views/token.enrolled.<tokentype>.html``.
+``privacyidea/static_old/components/token/views/token.enrolled.<tokentype>.html``.
 
 .. Note:: In this example the python module ``myproject.cooltoken`` should
    contain a class ``CoolTokenClass``. The tokentype of this token, should

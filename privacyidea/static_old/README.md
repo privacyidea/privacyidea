@@ -1,4 +1,6 @@
-This is the Web Client for the privacyIDEA authentication service.
+This is the previous Web Client for the privacyIDEA authentication service. It is replaced by the
+WebUI in `privacyidea/static/` and is kept for one version, see the WebUI section of the
+documentation for how to select it.
 
 The Web Client acts as a Single Page Application that communicates with the
 privacyIDEA backend service. You could as well install and run the Web Client
