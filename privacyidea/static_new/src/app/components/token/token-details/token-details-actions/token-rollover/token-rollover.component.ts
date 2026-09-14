@@ -117,18 +117,20 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
     };
 
     const enrollmentArgs = strategy.buildEnrollmentArgs(basicOptions);
-    if (!enrollmentArgs) return;
-    const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
-
-    const enrollPromise = this._toPromise(enrollResponse);
-
-    enrollPromise.catch((error) => {
-      const message = error.error?.result?.error?.message || "";
-      this.notificationService.error(
-        $localize`:@@token.failedEnrollToken:Failed to enroll token: ${message || error.message || error}:MESSAGE:`
+    if (!enrollmentArgs) {
+      this.notificationService.warning(
+        $localize`:@@token.pleaseFillAll:Please fill in all required fields or correct invalid entries.`
       );
-    });
-    let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
+      return;
+    }
+
+    let enrollmentResponse: EnrollmentResponse | null;
+    try {
+      enrollmentResponse = await this._toPromise(this.tokenService.enrollToken(enrollmentArgs));
+    } catch {
+      // enrollToken() has already notified about the failure.
+      return;
+    }
 
     this.enrolledDialogData.set({
       response: enrollmentResponse,

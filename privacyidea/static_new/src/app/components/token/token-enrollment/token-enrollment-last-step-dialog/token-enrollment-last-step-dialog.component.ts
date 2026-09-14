@@ -17,15 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, Signal } from "@angular/core";
+import { Component, computed, inject, signal, Signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
 import { NO_QR_CODE_TOKEN_TYPES } from "@components/token/token-enrollment/token-enrollment.constants";
-import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -62,6 +62,8 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     "";
   protected readonly rollover = this.data.rollover ?? false;
 
+  protected readonly closeBlockedReason = signal("");
+
   title: Signal<string> = computed(() =>
     this.rollover
       ? $localize`:@@token.tokenSuccessfullyRolled:Token Successfully Rolled Over`
@@ -77,6 +79,10 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
 
   showQRCode(): boolean {
     return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
+  }
+
+  onCloseBlockedReasonChange(reason: string): void {
+    this.closeBlockedReason.set(reason);
   }
 
   onEnrollmentResponseChange(response: EnrollmentResponse): void {

@@ -19,6 +19,8 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialogRef } from "@angular/material/dialog";
+import { MatTooltip } from "@angular/material/tooltip";
+import { By } from "@angular/platform-browser";
 import { DialogAction } from "@models/dialog";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { DialogWrapperComponent } from "./dialog-wrapper.component";
@@ -140,14 +142,14 @@ describe("DialogWrapperComponent", () => {
   it("should style a destructive action that is not primary as outlined only", () => {
     fixture.componentRef.setInput("actions", [{ value: "d", label: "D", type: "destruct" }]);
     fixture.detectChanges();
-    const btn = nativeElement.querySelector(".pi-dialog-footer button:last-child");
+    const btn = nativeElement.querySelector(".pi-dialog-footer > button:last-child");
     expect(btn?.classList).toContain("action-button-delete-secondary");
     expect(btn?.classList).not.toContain("action-button-secondary");
   });
   it("should apply action-button-primary class when primary is true regardless of type", () => {
     fixture.componentRef.setInput("actions", [{ value: "p", label: "P", type: "cancel", primary: true }]);
     fixture.detectChanges();
-    const btn = nativeElement.querySelector(".pi-dialog-footer button:last-child");
+    const btn = nativeElement.querySelector(".pi-dialog-footer > button:last-child");
     expect(btn?.classList).toContain("action-button-primary");
   });
   it("should apply cdkFocusInitial to primary action", () => {
@@ -166,6 +168,23 @@ describe("DialogWrapperComponent", () => {
     fixture.detectChanges();
     const cancelButton = nativeElement.querySelector(".pi-dialog-footer button:first-child");
     expect(cancelButton?.hasAttribute("cdkfocusinitial")).toBe(true);
+  });
+  it("should disable the cancel button and expose the reason as its tooltip", () => {
+    fixture.componentRef.setInput("cancelButtonDisabled", true);
+    fixture.componentRef.setInput("cancelButtonTooltip", "Still open: the download");
+    fixture.detectChanges();
+    const cancelButton = nativeElement.querySelector<HTMLButtonElement>(".cancel-button-host button");
+    expect(cancelButton?.disabled).toBe(true);
+    // The tooltip sits on the host, because a disabled button dispatches no mouse events.
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.message).toBe("Still open: the download");
+    expect(tooltip.disabled).toBe(false);
+  });
+  it("should leave the cancel button enabled and its tooltip off by default", () => {
+    const cancelButton = nativeElement.querySelector<HTMLButtonElement>(".cancel-button-host button");
+    expect(cancelButton?.disabled).toBe(false);
+    const tooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+    expect(tooltip.disabled).toBe(true);
   });
   it("should emit onAction event with correct value when an action button is clicked", () => {
     jest.spyOn(component, "onActionClick");

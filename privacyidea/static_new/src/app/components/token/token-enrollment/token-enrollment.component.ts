@@ -80,7 +80,13 @@ import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { lastValueFrom, Observable } from "rxjs";
 import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
-import { CUSTOM_TOOLTIP_OPTIONS, ENROLLMENT_CANCELLED } from "./token-enrollment.constants";
+import {
+  CUSTOM_TOOLTIP_OPTIONS,
+  ENROLLMENT_CANCELLED,
+  NO_DISMISS_LAST_STEP_TOKEN_TYPES,
+  NO_REALM_ONLY_TOKEN_TYPES,
+  USER_REQUIRED_TOKEN_TYPES
+} from "./token-enrollment.constants";
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: "YYYY-MM-DD" },
@@ -198,8 +204,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     return this.authService.requireDescription().includes(selectedTokenType.key);
   });
 
-  isUserRequired = computed(() =>
-    ["tiqr", "webauthn", "passkey", "certificate"].includes(this.tokenService.selectedTokenType()?.key ?? "")
+  isUserRequired = computed(() => USER_REQUIRED_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? ""));
+  protected readonly showOnlyAddToRealm = computed(
+    () => !NO_REALM_ONLY_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? "")
   );
 
   description = signal<string>("");
@@ -372,18 +379,20 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     };
 
     const enrollmentArgs: EnrollTokenArguments | null = strategy.buildEnrollmentArgs(basicOptions);
-    if (!enrollmentArgs) return false;
-    const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
-
-    const enrollPromise = this._toPromise(enrollResponse);
-
-    enrollPromise.catch((error) => {
-      const message = error.error?.result?.error?.message || "";
-      this.notificationService.error(
-        $localize`:@@token.failedEnrollToken:Failed to enroll token: ${message || error.message || error}:MESSAGE:`
+    if (!enrollmentArgs) {
+      this.notificationService.warning(
+        $localize`:@@token.pleaseFillAll:Please fill in all required fields or correct invalid entries.`
       );
-    });
-    let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
+      return false;
+    }
+
+    let enrollmentResponse: EnrollmentResponse | null;
+    try {
+      enrollmentResponse = await this._toPromise(this.tokenService.enrollToken(enrollmentArgs));
+    } catch {
+      // enrollToken() has already notified about the failure.
+      return false;
+    }
 
     this.enrolledDialogData.set({
       response: enrollmentResponse,
@@ -495,6 +504,10 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     this.isDirty.set(true);
   }
 
+  protected lastStepDialogIsDismissable(): boolean {
+    return !NO_DISMISS_LAST_STEP_TOKEN_TYPES.includes(this.enrolledDialogData()?.tokenType ?? "");
+  }
+
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
       this.notificationService.warning($localize`:@@token.noEnrollmentResponse:No enrollment response available.`);
@@ -508,7 +521,8 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
     this.dialogService.openDialog({
       component: TokenEnrollmentLastStepDialogComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { disableClose: !this.lastStepDialogIsDismissable() }
     });
   }
 

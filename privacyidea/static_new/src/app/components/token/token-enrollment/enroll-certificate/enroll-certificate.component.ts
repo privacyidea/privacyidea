@@ -18,29 +18,28 @@
  **/
 import { Component, computed, forwardRef, inject, input, linkedSignal, OnInit, signal } from "@angular/core";
 import { disabled, form, FormField, required } from "@angular/forms/signals";
-import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { MatOption } from "@angular/material/core";
-import { MatError, MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { MatError, MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   CertificateApiPayloadMapper,
-  CertificateEnrollmentData
+  CertificateEnrollmentData,
+  CertificateIntention
 } from "@app/mappers/token-api-payload/certificate-token-api-payload.mapper";
-import { CaConnector } from "@services/ca-connector/ca-connector.service";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
-import {
-  EnrollmentArgs,
-  EnrollTokenBase
-} from "@components/token/token-enrollment/enroll-token-base";
+import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
+import { CaConnector } from "@services/ca-connector/ca-connector.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
   type: "certificate";
-  caConnector: string;
-  certTemplate: string;
+  intention: CertificateIntention;
+  caConnector?: string;
+  certTemplate?: string;
   pem?: string;
 }
 
@@ -51,20 +50,18 @@ export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
     MatFormField,
     MatInput,
     MatLabel,
-    MatButtonToggleGroup,
-    MatButtonToggle,
     MatOption,
     MatSelect,
     MatError,
+    MatHint,
     ClearButtonComponent,
+    SelectorButtonsComponent,
     MatSuffix,
     FormField
   ],
   templateUrl: "./enroll-certificate.component.html",
   styleUrl: "./enroll-certificate.component.scss",
-  providers: [
-    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollCertificateComponent) }
-  ]
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollCertificateComponent) }]
 })
 export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: CertificateApiPayloadMapper = inject(CertificateApiPayloadMapper);
@@ -74,7 +71,13 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
   enrollmentData = input<CertificateEnrollmentData>();
   disabled = input<boolean>(false);
 
-  intention = signal<"generate" | "uploadRequest" | "uploadCert">("generate");
+  intention = signal<CertificateIntention>("generate");
+  readonly intentionValues: CertificateIntention[] = ["generate", "uploadRequest", "uploadCert"];
+  protected readonly intentionLabels = computed(() => [
+    $localize`:@@token.generateRequest:Generate Request`,
+    $localize`:@@token.uploadRequest:Upload Request`,
+    $localize`:@@token.uploadCertificate:Upload Certificate`
+  ]);
   caConnector = signal<string>("");
   certTemplate = signal<string>("");
   pem = signal<string>("");
@@ -87,7 +90,9 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
   caConnectorOptions = computed(
     () =>
       (this.systemService.caConnectorResource?.hasValue()
-        ? this.systemService.caConnectorResource?.value()?.result?.value?.map((config: CaConnector) => config.connectorname)
+        ? this.systemService.caConnectorResource
+            ?.value()
+            ?.result?.value?.map((config: CaConnector) => config.connectorname)
         : []) || []
   );
 
@@ -102,7 +107,6 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
   });
 
   caConnectorTouched = signal<boolean>(false);
-  certTemplateTouched = signal<boolean>(false);
 
   ngOnInit(): void {
     if (this.enrollmentData()) {
@@ -112,30 +116,29 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
   }
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<CertificateEnrollmentData> | null {
-    const needsPem = this.intention() === "uploadRequest" || this.intention() === "uploadCert";
+    const intention = this.intention();
+    const needsPem = intention !== "generate";
 
     if (needsPem && !this.pemForm().valid()) {
       this.pemForm().markAsTouched();
       return null;
     }
 
-    if (!needsPem) {
-      if (!this.caConnector()) {
-        this.caConnectorTouched.set(true);
-        return null;
-      }
-      if (!this.certTemplate()) {
-        this.certTemplateTouched.set(true);
-        return null;
-      }
+    const needsCaConnector = intention !== "uploadCert";
+    if (needsCaConnector && !this.caConnector()) {
+      this.caConnectorTouched.set(true);
+      return null;
     }
 
     const enrollmentData: CertificateEnrollmentOptions = {
       ...basicOptions,
       type: "certificate",
-      caConnector: this.caConnector(),
-      certTemplate: this.certTemplate()
+      intention: intention
     };
+    if (needsCaConnector) {
+      enrollmentData.caConnector = this.caConnector();
+      enrollmentData.certTemplate = this.certTemplate();
+    }
     if (needsPem) {
       enrollmentData.pem = this.pem();
     }
@@ -143,6 +146,12 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
       data: enrollmentData,
       mapper: this.enrollmentMapper
     };
+  }
+
+  onIntentionSelected(value: string | undefined): void {
+    if (value === "generate" || value === "uploadRequest" || value === "uploadCert") {
+      this.intention.set(value);
+    }
   }
 
   clearTemplateSelection(): void {

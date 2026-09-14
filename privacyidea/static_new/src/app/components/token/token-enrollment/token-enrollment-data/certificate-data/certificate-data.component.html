@@ -1,0 +1,113 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="certificate-data">
+  @if (isPending()) {
+    <p
+      class="inline-hint"
+      i18n="@@token.certificatePending"
+      >The certificate request has been submitted and is waiting for approval by the certificate authority. The
+      certificate appears in the token details as soon as it has been issued.</p
+    >
+  } @else if (isDenied()) {
+    <p
+      class="inline-warning"
+      i18n="@@token.certificateDenied"
+      >The certificate authority denied this request.</p
+    >
+  } @else if (isFailed()) {
+    <p
+      class="inline-warning"
+      i18n="@@token.certificateFailed"
+      >The request to the certificate authority failed.</p
+    >
+  }
+
+  @if (certificate() || pkcs12()) {
+    <div class="certificate-actions">
+      @if (certificate()) {
+        <button
+          (click)="downloadCertificate()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <mat-icon>download</mat-icon>
+          <span i18n="@@token.downloadCertificate">Download Certificate</span>
+        </button>
+      }
+      @if (pkcs12()) {
+        <button
+          (click)="downloadPkcs12()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <mat-icon>download</mat-icon>
+          <span i18n="@@token.downloadPkcs12">Download PKCS#12 File</span>
+        </button>
+      }
+    </div>
+  }
+
+  @if (pkcs12()) {
+    <p i18n="@@token.pkcs12Contains"
+      >The PKCS#12 container holds the private key and the certificate. It stays available for download in the token
+      details.</p
+    >
+    @if (pkcs12Password()) {
+      <div class="inline-warning certificate-password">
+        <p i18n="@@token.pkcs12PasswordOnce"
+          >Save the passphrase of the PKCS#12 container now. It is shown here only once and cannot be retrieved
+          again.</p
+        >
+        <!-- Masked until asked for, so it is not exposed to anyone glancing at the screen or
+             to a screen recording of the enrollment. -->
+        <div class="certificate-password-value">
+          <code>{{ passwordVisible() ? pkcs12Password() : maskedPassword() }}</code>
+          <button
+            (click)="togglePasswordVisible()"
+            [attr.aria-label]="passwordToggleLabel()"
+            class="password-toggle"
+            type="button">
+            <mat-icon class="password-toggle-icon">{{
+              passwordVisible() ? "visibility_off" : "visibility"
+            }}</mat-icon>
+          </button>
+          <app-copy-button
+            (copyClicked)="acknowledgePassword()"
+            [copyText]="pkcs12Password()" />
+        </div>
+      </div>
+    } @else {
+      <p
+        class="inline-hint"
+        i18n="@@token.pkcs12PasswordIsPin"
+        >The passphrase of the PKCS#12 container is the token PIN.</p
+      >
+    }
+  }
+
+  @if (certificate()) {
+    <mat-accordion class="certificate-expansion">
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title i18n="@@token.certificatePem">Certificate (PEM)</mat-panel-title>
+        </mat-expansion-panel-header>
+        <pre class="certificate-pem">{{ certificate() }}</pre>
+        <app-copy-button [copyText]="certificate()" />
+      </mat-expansion-panel>
+    </mat-accordion>
+  }
+</div>
