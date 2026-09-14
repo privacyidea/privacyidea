@@ -1,0 +1,43 @@
+// The reasons and the button that explains them: the button sits beside the list rather than under it, and shares its
+// centre line, so the glyph reads as belonging to the reasons rather than hanging below them. A cell of several
+// reasons therefore offers the button at the middle of the stack, which is the whole cell's centre too.
+.reason-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// The reasons of one entry: stacked, since a request that failed for several reasons lists them all and they read as
+// separate findings rather than one wrapped value.
+.reason-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reason-entry {
+  white-space: nowrap;
+}
+
+// Stands in for the reason an entry has none of, so the cell is not an empty column beside a lone button. Muted, in
+// the column's own size and face: it is a pointer rather than a value, and reads as one by being the quiet thing in
+// the row - it needs no styling of its own on top of that.
+.reason-placeholder {
+  color: var(--mat-sys-on-surface-variant);
+  white-space: nowrap;
+}
+
+// Sized down to the line it sits beside, through Material's own size tokens: the button's box is what carries the
+// glyph, and at its default 40px it would stretch the cell past the row's other columns. The 48px touch target inside
+// the button's own view is pinned to match in styles/buttons.scss, which is the only part of this a component
+// stylesheet cannot reach.
+.reason-detail-button {
+  --mat-icon-button-state-layer-size: 24px;
+  --mat-icon-button-icon-size: 20px;
+}
+
+.reason-detail-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}

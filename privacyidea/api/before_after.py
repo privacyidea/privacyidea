@@ -35,6 +35,8 @@ from .lib.utils import (get_all_params, get_before_request_config, get_optional,
                         logged_in_user_from_token, hide_specific_error_message, construct_radius_response)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
+from .lib.conditional_access import restore_rejection_audit
+from ..lib.conditional_access.request_context import peek_ca_context, reset_ca_context
 from ..lib.framework import get_app_config_value
 from ..lib.clients import identify_client_by_key, touch_client
 from ..models import ClientStatus, db
@@ -54,6 +56,8 @@ from .realm import realm_blueprint
 from .realm import defaultrealm_blueprint
 from .user import user_blueprint
 from .audit import audit_blueprint
+from .authentication_log import authentication_log_blueprint
+from .conditional_access import conditional_access_blueprint
 from .machineresolver import machineresolver_blueprint
 from .machine import machine_blueprint
 from .application import application_blueprint
@@ -158,6 +162,7 @@ def identify_api_client():
 
 @token_blueprint.teardown_app_request
 def teardown_request(exc):
+    _finalize_conditional_access()
     try:
         if g.audit_object.has_data:
             g.audit_object.finalize_log()
@@ -170,8 +175,36 @@ def teardown_request(exc):
     log.debug(f"End handling of request {redact_url(request.full_path)!r}")
 
 
+def _finalize_conditional_access():
+    """
+    Write the authentication-log rows this request staged, then let the conditional-access engine react to them.
+
+    This runs before the audit entry is written, so a later change can record the engine's outcome on it, and before
+    ``call_finalizers`` closes the conditional-access session. Requests that logged no authentication event have no
+    buffer and skip it entirely.
+
+    The buffer is then discarded, because it describes *this* request. It lives on ``g``, and ``g`` is per app
+    context rather than per request: Flask reuses an app context that is already pushed, so several requests can share
+    one - every request dispatched by a test, for instance. Without the reset the second request would re-flush the
+    first one's events and find its policy evaluation already done. The conditional-access session is released the
+    same way, by ``call_finalizers`` below.
+    """
+    context = peek_ca_context()
+    if context is None:
+        return
+    try:
+        if context.has_data:
+            context.finalize()
+    except Exception as ex:
+        # Teardown must not raise: the response has already been sent.
+        log.warning(f"Finalizing the conditional-access work of this request failed: {ex!r}")
+    finally:
+        reset_ca_context()
+
+
 @token_blueprint.before_request
 @audit_blueprint.before_request
+@authentication_log_blueprint.before_request
 @system_blueprint.before_request
 @info_blueprint.before_request
 @user_required
@@ -258,6 +291,7 @@ def before_userendpoint_request():
 @tokengroup_blueprint.before_request
 @serviceid_blueprint.before_request
 @clients_blueprint.before_request
+@conditional_access_blueprint.before_request
 @admin_required
 def before_admin_request():
     before_request()
@@ -494,6 +528,8 @@ def before_request():
 @user_blueprint.after_request
 @token_blueprint.after_request
 @audit_blueprint.after_request
+@authentication_log_blueprint.after_request
+@conditional_access_blueprint.after_request
 @application_blueprint.after_request
 @machine_blueprint.after_request
 @machineresolver_blueprint.after_request
@@ -523,7 +559,16 @@ def after_request(response):
     This function is called after a request
     :return: The response
     """
-    response = shape_validate_error_response(request, response)
+    response = mask_authentication_error_response(request, response)
+
+    # Re-apply the audit entry of a request the pre-check refused, which the endpoint's own view may since have
+    # overwritten. Central rather than per endpoint for two reasons: this also runs for a response an *error
+    # handler* built, where every post-policy is skipped, and no gated endpoint can forget to opt in. Only the
+    # audit entry is touched, never the body, so unlike the shaping steps around it this carries no ordering
+    # constraint beyond running before teardown finalizes the entry.
+    response = restore_rejection_audit(response)
+
+    response = shape_radius_response(request, response)
 
     # Strip version information before signing if the hide_version policy
     # is active and no user is logged in.
@@ -536,41 +581,54 @@ def after_request(response):
     return response
 
 
-def shape_validate_error_response(request, response):
+def _shaped_rule(request) -> str | None:
     """
-    Single source of truth for the two response-shaping policies of the
-    authentication endpoints. They must run on *every* response - normal returns
-    and the error responses built by the error handlers in this module alike -
-    but the ``@postpolicy`` chain of the view only runs when the view *returns*.
+    The route whose response is about to be shaped, or ``None`` when there is nothing to shape.
 
-    ``after_request`` is the single choke point every response flows through
-    (this is also how ``sign_response`` manages to sign error responses), so
-    both policies are applied here once instead of being duplicated as
-    ``@postpolicy`` decorators on the views and, for the error path, inline in
-    the error handlers:
+    Flask answers OPTIONS itself, without dispatching to the view, so such a request carries no authentication
+    outcome - only the Allow header, which must survive.
+    """
+    if request.method == "OPTIONS":
+        return None
+    return getattr(getattr(request, "url_rule", None), "rule", None)
 
-    * :func:`construct_radius_response` shapes ``/validate/radiuscheck`` into the
-      RADIUS empty-body ``204``/``400`` form.
-    * :func:`hide_specific_error_message` masks the specific failure reason on
-      ``/validate/check`` and ``/auth`` when the policy is active.
 
-    Both are no-ops for a successful authentication and only act on the route
-    they belong to, so unrelated endpoints (and ``/auth/rights``, ``/validate/*``
-    other than ``check``) are left untouched.
+def mask_authentication_error_response(request, response):
+    """
+    Apply :func:`hide_specific_error_message` to the two endpoints that authenticate a credential.
+
+    It must run on *every* response - normal returns and the error responses built by the error handlers in this
+    module alike - but the ``@postpolicy`` chain of the view only runs when the view *returns*. ``after_request``
+    is the single choke point every response flows through (this is also how ``sign_response`` manages to sign
+    error responses), so it is applied here once instead of being duplicated as a ``@postpolicy`` decorator on the
+    views and, for the error path, inline in the error handlers.
+
+    A no-op for a successful authentication and only on the routes it belongs to, so unrelated endpoints (and
+    ``/auth/rights``, ``/validate/*`` other than ``check``) are left untouched.
+
+    :param request: the request object
+    :param response: the response object
+    :return: the (possibly modified) response
+    """
+    if _shaped_rule(request) in ("/validate/check", "/auth"):
+        return hide_specific_error_message(request, response)
+    return response
+
+
+def shape_radius_response(request, response):
+    """
+    Apply :func:`construct_radius_response` to ``/validate/radiuscheck``, shaping it into the RADIUS empty-body
+    ``204``/``400`` form.
+
+    Applied from ``after_request`` for the same reason as :func:`mask_authentication_error_response`: so an error
+    response built by an error handler is shaped too.
 
     :param request: the request object
     :param response: the response object
     :return: the (possibly replaced) response
     """
-    # Flask answers OPTIONS itself, without dispatching to the view, so there is
-    # no authentication outcome to shape - only the Allow header, which must survive.
-    if request.method == "OPTIONS":
-        return response
-    rule = getattr(getattr(request, "url_rule", None), "rule", None)
-    if rule == "/validate/radiuscheck":
+    if _shaped_rule(request) == "/validate/radiuscheck":
         return construct_radius_response(request, response)
-    if rule in ("/validate/check", "/auth"):
-        return hide_specific_error_message(request, response)
     return response
 
 
@@ -614,7 +672,7 @@ def auth_error(error):
 
         # The specific message is written to the audit log here; masking the
         # client-facing response (hide_specific_error_message) is applied
-        # centrally in shape_validate_error_response (see after_request).
+        # centrally in mask_authentication_error_response (see after_request).
         g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
     return send_error(error.message, error_code=error.id, details=error.details), get_auth_error_status_code(error)
