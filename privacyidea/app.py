@@ -37,7 +37,7 @@ import time
 import uuid
 from importlib import metadata
 from importlib.metadata import PackageNotFoundError
-from pathlib import Path
+from pathlib import Path, PurePath
 
 import sqlalchemy as sa
 import yaml
@@ -92,9 +92,14 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.models import db, NodeName
 from privacyidea.webui.certificate import cert_blueprint
-from privacyidea.webui.login import DEFAULT_LANGUAGE_LIST, login_blueprint, get_accepted_language
+from privacyidea.webui.login import (DEFAULT_LANGUAGE_LIST, WEBUI_DIST_PATH, login_blueprint,
+                                     get_accepted_language)
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
+
+# The directory the WebUI was previewed from while it was opt-in. Configurations naming it are
+# remapped to the current one, see _resolve_ui_folders().
+PREVIEW_STATIC_FOLDER = "static_new"
 
 CSP = {
     'default-src': [
@@ -277,6 +282,73 @@ def versioned_asset(path: str) -> str:
         return path
     modified = time.strftime("%Y%m%dT%H%M%S", time.localtime(os.path.getmtime(file_path)))
     return f"{path}?v={modified}"
+
+
+def _replace_preview_folder(folder: str) -> str | None:
+    """
+    Return the path with a "static_new" directory replaced by "static", or None if it has none.
+
+    Both relative values ("static_new/") and the absolute paths used by appliance installations
+    are handled.
+    """
+    parts = PurePath(folder).parts
+    if PREVIEW_STATIC_FOLDER not in parts:
+        return None
+    static_folder = PurePath(DefaultConfigValues.STATIC_FOLDER).name
+    return str(PurePath(*[static_folder if part == PREVIEW_STATIC_FOLDER else part for part in parts]))
+
+
+def _resolve_ui_folders(app: Flask) -> None:
+    """
+    Apply ``PI_STATIC_FOLDER`` and ``PI_TEMPLATE_FOLDER``, remapping the WebUI preview paths.
+
+    Up to version 3.13 the new WebUI was opt-in through two settings in pi.cfg::
+
+        PI_STATIC_FOLDER = "static_new/"
+        PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"
+
+    It is now the default and lives in "static/", so both values are remapped to keep those
+    installations working. The template folder is reset to the default instead of being remapped,
+    because it pointed into the compiled WebUI, which holds no templates at all.
+    """
+    static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
+    template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
+
+    remapped_static = _replace_preview_folder(static_folder)
+    remapped_template = _replace_preview_folder(template_folder)
+    if remapped_static or remapped_template:
+        static_folder = remapped_static or static_folder
+        if remapped_template:
+            template_folder = (DefaultConfigValues.TEMPLATE_FOLDER
+                               if WEBUI_DIST_PATH[0] in PurePath(remapped_template).parts
+                               else remapped_template)
+        log.warning(f"The WebUI moved from '{PREVIEW_STATIC_FOLDER}' to "
+                    f"'{DefaultConfigValues.STATIC_FOLDER}' and is served by default. Reading it "
+                    f"from '{static_folder}' and the templates from '{template_folder}' instead. "
+                    f"Remove '{ConfigKey.STATIC_FOLDER}' and '{ConfigKey.TEMPLATE_FOLDER}' from "
+                    f"pi.cfg, this fallback is only kept for one version.")
+
+    app.static_folder = static_folder
+    app.template_folder = template_folder
+
+
+def _warn_if_webui_missing(app: Flask) -> None:
+    """
+    Emit a warning if the default static folder holds no compiled WebUI.
+
+    Only the default is checked: an administrator who points ``PI_STATIC_FOLDER`` somewhere else
+    serves their own UI and knows what is in it.
+    """
+    default_folder = os.path.join(app.root_path, DefaultConfigValues.STATIC_FOLDER)
+    if os.path.realpath(app.static_folder) != os.path.realpath(default_folder):
+        return
+    if os.path.isfile(os.path.join(app.static_folder, *WEBUI_DIST_PATH, "en", "index.html")):
+        return
+    legacy_folder = DefaultConfigValues.LEGACY_STATIC_FOLDER
+    log.warning(f"No compiled WebUI in '{app.static_folder}'. Install a package that ships the "
+                f"built WebUI, or build it with 'npm run build'. To serve the previous WebUI "
+                f"instead, set '{ConfigKey.STATIC_FOLDER} = \"{legacy_folder}\"' and "
+                f"'{ConfigKey.TEMPLATE_FOLDER} = \"{legacy_folder}templates/\"' in pi.cfg.")
 
 
 def _setup_database_engine_options(app: Flask):
@@ -466,9 +538,8 @@ def create_app(config_name="development",
 
     _warn_if_base_url_missing(app)
 
-    # We allow to set different static folders
-    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
-    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
+    _resolve_ui_folders(app)
+    _warn_if_webui_missing(app)
 
     _register_blueprints(app)
 
@@ -591,9 +662,8 @@ def create_docker_app():
 
     _warn_if_base_url_missing(app)
 
-    # We allow to set different static folders
-    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
-    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
+    _resolve_ui_folders(app)
+    _warn_if_webui_missing(app)
 
     _register_blueprints(app)
 

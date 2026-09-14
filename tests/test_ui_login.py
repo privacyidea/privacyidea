@@ -46,6 +46,12 @@ class AlternativeWebUI(MyTestCase):
 
 
 class LoginUITestCase(MyTestCase):
+    """The legacy WebUI, which is served when pi.cfg points the static and template folder at it.
+
+    Its index template pulls its assets from /static/, so it can only render while the legacy
+    folder is mounted there.
+    """
+    app_config_name = "legacyUI"
 
     def test_01_normal_login(self):
         # We just test, if the login page can be called.
