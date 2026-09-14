@@ -392,7 +392,7 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     :param username: username for basic authentication
     :param password: password for basic authentication (stored encrypted)
     :param verify_tls: whether to verify the server certificate
-    :type verify_tls: bool
+    :type verify_tls: bool or None
     :param tls_ca_bundle: optional path to a CA bundle used for verification
     :param client_certificate: path to the client certificate (mTLS)
     :param client_key: path to the client key (mTLS)
@@ -402,8 +402,8 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     :param timeout: request timeout in seconds (default 3)
     :param headers: dict of static HTTP headers to send with every request.
         When given, it replaces the stored headers entirely: headers missing
-        from the dict are deleted.
-    :type headers: dict
+        from the dict are deleted. ``None`` keeps the stored headers.
+    :type headers: dict or None
     :param secret_headers: iterable of header names whose values must be
         stored encrypted
     :return: the database id of the webhook

@@ -82,6 +82,7 @@ from privacyidea.api.system import system_blueprint
 from privacyidea.api.token import token_blueprint
 from privacyidea.api.tokengroup import tokengroup_blueprint
 from privacyidea.api.ttype import ttype_blueprint
+from privacyidea.api.webhook import webhook_blueprint
 from privacyidea.api.user import user_blueprint
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
@@ -209,6 +210,7 @@ def _register_blueprints(app):
     app.register_blueprint(privacyideaserver_blueprint, url_prefix='/privacyideaserver')
     app.register_blueprint(eventhandling_blueprint, url_prefix='/event')
     app.register_blueprint(smsgateway_blueprint, url_prefix='/smsgateway')
+    app.register_blueprint(webhook_blueprint, url_prefix='/webhook')
     app.register_blueprint(client_blueprint, url_prefix='/client')
     app.register_blueprint(subscriptions_blueprint, url_prefix='/subscriptions')
     app.register_blueprint(monitoring_blueprint, url_prefix='/monitoring')

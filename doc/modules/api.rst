@@ -40,6 +40,7 @@ Start to read about authentication to the API at :ref:`rest_auth`.
    api/ttype
    api/smtpserver
    api/smsgateway
+   api/webhook
    api/radiusserver
    api/subscriptions
    api/client

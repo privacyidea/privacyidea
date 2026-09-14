@@ -764,6 +764,35 @@ type: ``bool``
 
 Allow the administrator to read the :ref:`sms_gateway_config`.
 
+.. _policy_webhook_write:
+
+webhook_write
+~~~~~~~~~~~~~
+
+type: ``bool``
+
+To be able to define new webhooks or delete existing ones, the administrator
+needs the right ``webhook_write``.
+
+.. note:: This is a sensitive right. A webhook definition contains a freely
+   choosable URL, which the privacyIDEA server will request whenever the
+   webhook fires. An administrator holding this right can therefore make the
+   privacyIDEA server issue requests to any host it can reach, including hosts
+   on internal networks that are not reachable from the outside. Grant it only
+   to administrators you would also trust with network access to those hosts.
+
+.. _policy_webhook_read:
+
+webhook_read
+~~~~~~~~~~~~
+
+type: ``bool``
+
+Allow the administrator to read the webhook definitions. Secrets such as the
+basic authentication password, the client key password and the values of
+headers marked as encrypted are never returned in clear text, they are
+replaced by ``__CENSORED__``.
+
 .. _policy_periodictask_write:
 
 periodictask_write
