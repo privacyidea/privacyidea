@@ -31,7 +31,6 @@ export interface MessageDialogData {
 @Component({
   selector: "app-simple-dialog",
   imports: [MatDialogContent, DialogWrapperComponent],
-  templateUrl: "./message-dialog.component.html",
-  styleUrl: "./message-dialog.component.scss"
+  templateUrl: "./message-dialog.component.html"
 })
 export class MessageDialogComponent extends AbstractDialogComponent<MessageDialogData> {}

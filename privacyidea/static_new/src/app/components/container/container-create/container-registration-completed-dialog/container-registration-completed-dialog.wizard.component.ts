@@ -32,7 +32,6 @@ import { ContainerRegistrationCompletedDialogComponent } from "./container-regis
 @Component({
   selector: "app-container-registration-completed-dialog-wizard",
   templateUrl: "./container-registration-completed-dialog.wizard.component.html",
-  styleUrls: ["./container-registration-completed-dialog.component.scss"],
   imports: [MatDialogContent, MatDialogActions, MatButton, MatDialogClose, AsyncPipe]
 })
 export class ContainerRegistrationCompletedDialogWizardComponent extends ContainerRegistrationCompletedDialogComponent {

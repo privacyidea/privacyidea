@@ -50,8 +50,7 @@ import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "@serv
     TiqrEnrollUrlComponent
   ],
   standalone: true,
-  templateUrl: "./token-enrollment-data.component.html",
-  styleUrl: "./token-enrollment-data.component.scss"
+  templateUrl: "./token-enrollment-data.component.html"
 })
 export class TokenEnrollmentDataComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);

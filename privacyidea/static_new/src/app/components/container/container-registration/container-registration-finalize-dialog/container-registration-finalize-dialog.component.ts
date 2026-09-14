@@ -28,7 +28,6 @@ import { ContainerService, ContainerServiceInterface } from "@services/container
 @Component({
   selector: "app-container-registration-finalize-dialog",
   templateUrl: "./container-registration-finalize-dialog.component.html",
-  styleUrls: ["./container-registration-finalize-dialog.component.scss"],
   imports: [MatDialogContent, MatIcon, DialogWrapperComponent, MatButtonModule]
 })
 export class ContainerRegistrationFinalizeDialogComponent extends AbstractDialogComponent<

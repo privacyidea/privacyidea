@@ -43,8 +43,7 @@ import { Observable, lastValueFrom } from "rxjs";
   selector: "app-token-rollover",
   imports: [DialogWrapperComponent, EnrollTokenTypeSwitchComponent],
   standalone: true,
-  templateUrl: "./token-rollover.component.html",
-  styleUrl: "./token-rollover.component.scss"
+  templateUrl: "./token-rollover.component.html"
 })
 export class TokenRolloverComponent extends AbstractDialogComponent<
   {

@@ -26,7 +26,6 @@ import { MatInput } from "@angular/material/input";
 @Component({
   selector: "app-container-registration-config",
   templateUrl: "./container-registration-config.component.html",
-  styleUrls: ["./container-registration-config.component.scss"],
   imports: [MatFormField, MatInput, MatHint, MatLabel, MatCheckbox, MatIconModule, MatButtonModule, MatSuffix]
 })
 export class ContainerRegistrationConfigComponent {

@@ -32,8 +32,7 @@ import { ContainerCreatedDialogComponent } from "./container-created-dialog.comp
 @Component({
   selector: "app-container-created-wizard-dialog",
   imports: [MatDialogContent, MatDialogActions, MatDialogClose, MatButton, AsyncPipe],
-  templateUrl: "./container-created-dialog.wizard.component.html",
-  styleUrl: "./container-created-dialog.component.scss"
+  templateUrl: "./container-created-dialog.wizard.component.html"
 })
 export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);

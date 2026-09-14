@@ -24,7 +24,6 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 @Component({
   selector: "app-resync-otp-token-dialog",
   imports: [MatDialogContent, DialogWrapperComponent],
-  templateUrl: "resync-otp-token-dialog.component.html",
-  styleUrl: "resync-otp-token-dialog.component.scss"
+  templateUrl: "resync-otp-token-dialog.component.html"
 })
 export class ResyncOTPTokenDialog extends AbstractDialogComponent<boolean> {}
