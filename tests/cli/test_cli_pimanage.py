@@ -808,8 +808,15 @@ class PIManageBackupTestCase(CliTestCase):
         real archive by reading its two settings straight from pi.cfg, and
         ``restore`` of a missing archive must report that - not a SQLAlchemy
         traceback.
+
+        Flask's ``test_cli_runner`` injects ``ScriptInfo(create_app=lambda:
+        self.app)``, so a patch on ``pi_manage.create_app`` would never fire.
+        A plain Click runner is what a real ``pi-manage`` process uses:
+        FlaskGroup would call ``create_app`` if these commands still requested
+        an app context.
         """
         import unittest.mock as mock
+        from click.testing import CliRunner
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp = pathlib.Path(tmp_dir)
@@ -824,16 +831,23 @@ class PIManageBackupTestCase(CliTestCase):
             env = self._pi_cfg_env(config_dir, enc_file, f"sqlite:///{db_file}")
             backup_dir = tmp / "backup"
 
-            runner = self.app.test_cli_runner()
-            with mock.patch.object(pi_manage, "create_app",
-                                   side_effect=AssertionError("must not create the app")):
-                create_result = runner.invoke(
-                    pi_manage,
-                    ["backup", "create", "-d", str(backup_dir), "-c", str(config_dir)],
-                    env=env)
-                restore_result = runner.invoke(
-                    pi_manage, ["backup", "restore", str(tmp / "missing.tgz")],
-                    env=env)
+            runner = CliRunner()
+            # CliTestCase pushes an app context for the whole class.
+            # with_appcontext skips load_app() when one is already active, so
+            # the create_app patch would never fire unless that context is gone.
+            self.app_context.pop()
+            try:
+                with mock.patch.object(pi_manage, "create_app",
+                                       side_effect=AssertionError("must not create the app")):
+                    create_result = runner.invoke(
+                        pi_manage,
+                        ["backup", "create", "-d", str(backup_dir), "-c", str(config_dir)],
+                        env=env)
+                    restore_result = runner.invoke(
+                        pi_manage, ["backup", "restore", str(tmp / "missing.tgz")],
+                        env=env)
+            finally:
+                self.app_context.push()
 
             self.assertIsNone(create_result.exception, create_result.output)
             self.assertEqual(0, create_result.exit_code, create_result.output)
@@ -842,8 +856,13 @@ class PIManageBackupTestCase(CliTestCase):
                              f"expected one backup archive, got {archives}")
             with tarfile.open(archives[0], "r:gz") as tf:
                 names = tf.getnames()
-            self.assertTrue(any(name.endswith(".sqlite") for name in names), names)
+                sqlite_members = [n for n in names if n.endswith(".sqlite")]
+                self.assertEqual(1, len(sqlite_members), names)
+                dumped = tf.extractfile(sqlite_members[0]).read()
             self.assertTrue(any(name.endswith("pi.cfg") for name in names), names)
+            # Content, not just the suffix: without reading pi.cfg this would
+            # dump the test app's database instead of the placeholder file.
+            self.assertEqual(b"sqlite placeholder", dumped)
 
             self.assertEqual(2, restore_result.exit_code, restore_result.output)
             self.assertIn("Unable to open backup file", restore_result.output)

@@ -11,7 +11,9 @@ import inspect
 import logging
 import mock
 from testfixtures import Comparison, compare, OutputCapture
-from privacyidea.app import create_app, _setup_database_engine_options
+from sqlalchemy.exc import SQLAlchemyError
+
+from privacyidea.app import create_app, _setup_database_engine_options, _setup_node_configuration
 from privacyidea.config import config, ConfigKey, TestingConfig
 
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
@@ -175,6 +177,15 @@ class AppTestCase(unittest.TestCase):
                            level=logging.NOTSET,
                            partial=True)
             ], logger.handlers)
+
+    def test_06_node_configuration_db_error_is_not_fatal(self):
+        # An unreachable or read-only database must not abort create_app():
+        # the node-name upsert is informational, and several CLI commands
+        # otherwise do not need to write to the database.
+        app = create_app(config_name="testing", config_file="", silent=True)
+        with mock.patch("privacyidea.app.sa.inspect",
+                        side_effect=SQLAlchemyError("unreachable")):
+            _setup_node_configuration(app)
 
 
 class DatabaseEngineOptionsTestCase(unittest.TestCase):
