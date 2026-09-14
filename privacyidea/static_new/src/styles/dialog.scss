@@ -20,3 +20,10 @@
 .dialog-prose {
   max-width: var(--dialog-prose-width);
 }
+
+// Lets a single unbreakable word (a long token serial, URL, ...) wrap instead of stretching the
+// dialog past its width cap (#5841).
+.dialog-break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
