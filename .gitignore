@@ -29,8 +29,8 @@ tests/testdata/tmp_directory*
 node_modules
 po/*.mo
 htmlcov/
-privacyidea/static/customize/views/
-privacyidea/static/customize/css/
+privacyidea/static_old/customize/views/
+privacyidea/static_old/customize/css/
 .eggs/
 privacyIDEA.egg-info/
 __pycache__/

@@ -5,7 +5,7 @@ name: Build WebUI
 on:
   pull_request:
     paths:
-      - 'privacyidea/static_new/**'
+      - 'privacyidea/static/**'
   schedule:
     # Nightly at 01:00 UTC
     - cron: '0 1 * * *'
@@ -15,7 +15,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: ./privacyidea/static_new
+    working-directory: ./privacyidea/static
 
 jobs:
   build-webui:
@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: lts/*  # Use the latest LTS-release
           cache: npm
-          cache-dependency-path: privacyidea/static_new/package-lock.json
+          cache-dependency-path: privacyidea/static/package-lock.json
       - name: Install Node.js dependencies
         run: npm ci
       - name: Build the new WebUI
