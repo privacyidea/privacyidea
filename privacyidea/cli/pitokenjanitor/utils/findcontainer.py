@@ -206,9 +206,8 @@ def set_realm(ctx, realms, add):
     for clist in ctx.obj['containers']:
         for container in clist:
             ret = container.set_realms(realms=realms_list, add=add)
-            ret.pop('deleted', None)
-            successful_realms = [key for key, value in ret.items() if value is True]
-            unsuccessful_realms = [key for key, value in ret.items() if value is False]
+            successful_realms = [realm for realm, success in ret['realms'].items() if success]
+            unsuccessful_realms = [realm for realm, success in ret['realms'].items() if not success]
             if unsuccessful_realms:
                 click.echo(f"realm: {unsuccessful_realms} could not be set for container {container.serial}")
             if successful_realms:

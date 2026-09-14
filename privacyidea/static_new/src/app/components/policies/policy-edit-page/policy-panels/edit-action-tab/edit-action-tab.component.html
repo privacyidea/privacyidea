@@ -19,16 +19,22 @@
 
 <div class="policy-flex-row">
   <div class="flex-body">
+    <!-- Left out while the pinned page header shows the field instead. -->
+    @if (!searchInHeader()) {
+      <app-policy-action-search [(actionFilter)]="actionFilter" />
+    }
+
     @if (actions().length > 0) {
       <app-added-actions-list
         [isEditMode]="true"
         [actions]="actions()"
         [scope]="policy().scope"
+        [actionFilter]="actionFilter()"
         (actionsChange)="onActionsChange($event)" />
     }
     <app-action-selector
       [policy]="policy()"
-      (actionAdd)="onActionAdd($event)"
-      (scopeChange)="onPolicyScopeChange($event)" />
+      [(actionFilter)]="actionFilter"
+      (actionAdd)="onActionAdd($event)" />
   </div>
 </div>

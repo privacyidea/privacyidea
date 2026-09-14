@@ -195,6 +195,32 @@ describe("PoliciesTableComponent", () => {
     expect(component.filter().hasKey("name")).toBeFalsy();
   });
 
+  it("filters the scope column by picking from the known scopes", () => {
+    expect(fixture.debugElement.query(By.css(".col-scope app-multi-select-filter"))).toBeTruthy();
+
+    component.setScopeFilter(["admin", "user"]);
+    fixture.detectChanges();
+
+    expect(component.filter().getFilterOfKey("scope")).toBe("admin,user");
+    expect(component.selectedScopes()).toEqual(["admin", "user"]);
+    expect(component.policiesListFiltered().map((p) => p.name)).toEqual(["Policy-C", "Policy-A"]);
+  });
+
+  it("drops the scope key when the selection is emptied", () => {
+    component.setScopeFilter(["admin"]);
+    component.setScopeFilter([]);
+
+    expect(component.filter().hasKey("scope")).toBe(false);
+  });
+
+  it("reads a hand-typed scope that is followed by another keyword", () => {
+    component.filter.set(component.filter().setByString("scope: admin, active: true"));
+    fixture.detectChanges();
+
+    expect(component.selectedScopes()).toEqual(["admin"]);
+    expect(component.policiesListFiltered().map((p) => p.name)).toEqual(["Policy-C"]);
+  });
+
   it("should return correct icon names for different filter action types", () => {
     expect(component.getFilterIconName("name")).toBe("filter_alt");
 

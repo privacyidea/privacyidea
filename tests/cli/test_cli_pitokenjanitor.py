@@ -866,6 +866,23 @@ class TestPiTokenJanitorContainer:
             container = find_container_by_serial("C3")
             assert sorted(container.get_as_dict().get("realms")) == sorted(["realm1", "realm2"])
 
+    def test_container_set_realm_named_like_a_status_key(self, app, containers, realms):
+        """
+        Tests setting a realm that is named like a status key of the set_realms result.
+        """
+        runner = app.test_cli_runner()
+        with app.app_context():
+            set_realm(realm="deleted", resolvers=[{"name": "testresolver"}])
+            db.session.commit()
+
+        result = runner.invoke(findcontainer, ["--serial", "C3", "set_realm", "deleted"])
+        assert result.exit_code == 0
+        assert "Set realm '['deleted']' for container C3" in result.output
+
+        with app.app_context():
+            container = find_container_by_serial("C3")
+            assert container.get_as_dict().get("realms") == ["deleted"]
+
     def test_findcontainer_by_realm(self, app, containers, realms):
         """
         Tests filtering containers by realm.

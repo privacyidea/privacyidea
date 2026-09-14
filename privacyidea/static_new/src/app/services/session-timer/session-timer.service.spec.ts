@@ -176,6 +176,24 @@ describe("SessionTimerService", () => {
     expect(after3s).toBeGreaterThanOrEqual(6500);
   });
 
+  it("stopTimers keeps the ended session's timeout from logging the next one out", () => {
+    authService.logoutTimeS.set(2);
+    service.initialTimerStart();
+
+    service.stopTimers();
+    jest.advanceTimersByTime(60_000);
+
+    expect(notify.warning).not.toHaveBeenCalled();
+    expect(authService.logout).not.toHaveBeenCalled();
+  });
+
+  it("startRefreshingRemainingTime keeps a single interval running", () => {
+    service.startRefreshingRemainingTime();
+    const afterFirst = jest.getTimerCount();
+    service.startRefreshingRemainingTime();
+    expect(jest.getTimerCount()).toBe(afterFirst);
+  });
+
   it("shows a 30s warning when remainingTime enters the 30–31s window", async () => {
     authService.logoutTimeS.set(31);
     service.startTimer();

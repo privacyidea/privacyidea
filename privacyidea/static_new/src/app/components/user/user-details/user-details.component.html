@@ -41,6 +41,18 @@
       i18n-matTooltip="@@user.showAuditLogUser">
       <mat-icon>receipt_long</mat-icon>
     </button>
+    @if (authService.actionAllowed("authentication_log_read")) {
+      <button
+        (click)="showUserAuthenticationLog()"
+        [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
+        aria-label="Show authentication log of user"
+        i18n-aria-label
+        mat-icon-button
+        matTooltip="Show authentication log of user"
+        i18n-matTooltip>
+        <mat-icon class="mdi--list-lock"></mat-icon>
+      </button>
+    }
   </div>
 
   <div class="flex-column">
@@ -277,6 +289,46 @@
               } @else {
                 <p i18n="@@user.noInternalAttributes">No internal attributes found.</p>
               }
+            </app-details-card>
+          }
+
+          @if (authService.actionAllowed("user_lock_read")) {
+            <app-details-card
+              class="details-card--user-info"
+              title="User Lock State"
+              i18n-title>
+              <div class="user-lock-row">
+                <span [ngClass]="lockStateClass()">
+                  {{ lockStatusText() }}
+                </span>
+                @if (isUserLocked()) {
+                  <p class="user-lock-cause">{{ lockCauseLabel() }}</p>
+                }
+                <div class="user-lock-actions">
+                  @if (authService.actionAllowed("user_lock_set")) {
+                    <button
+                      (click)="lockUser()"
+                      class="action-button-secondary button-width-m"
+                      mat-stroked-button>
+                      <mat-icon>lock</mat-icon>
+                      @if (isUserLocked()) {
+                        <span i18n>Change lock</span>
+                      } @else {
+                        <span i18n>Lock</span>
+                      }
+                    </button>
+                  }
+                  @if (authService.actionAllowed("user_lock_reset") && isUserLocked()) {
+                    <button
+                      (click)="resetUserLock()"
+                      class="action-button-secondary button-width-m"
+                      mat-stroked-button>
+                      <mat-icon>lock_open</mat-icon>
+                      <span i18n>Unlock</span>
+                    </button>
+                  }
+                </div>
+              </div>
             </app-details-card>
           }
         </div>

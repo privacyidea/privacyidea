@@ -1,0 +1,10 @@
+
+.content-width {
+  max-width: 800px;
+}
+
+.consequence {
+  // Aligned under the checkbox label, not its box, so it reads as that option's fine print.
+  margin: 4px 0 0 40px;
+  font-size: 0.875rem;
+}
