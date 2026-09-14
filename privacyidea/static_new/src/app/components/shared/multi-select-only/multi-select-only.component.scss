@@ -24,6 +24,12 @@
     width: 18px;
     height: 18px;
   }
+
+  // Same fill the key manager gives an active option, so the marker reads as one and the same.
+  &.key-focused {
+    background-color: var(--mat-sys-primary-light-active);
+    color: var(--mat-sys-on-primary);
+  }
 }
 
 .option-row-layout {
@@ -59,6 +65,13 @@
 }
 
 .mat-mdc-option:hover .only-button,
-.mat-mdc-option:focus-visible .only-button {
+.mat-mdc-option.mat-mdc-option-active .only-button {
   visibility: visible;
+}
+
+// Only the highlighted row can hold the keyboard marker, so the button always sits on the blue
+// active background that its on-primary colours are built for.
+.mat-mdc-option.mat-mdc-option-active.only-key-focused .only-button {
+  background-color: color-mix(in srgb, var(--mat-sys-on-primary) 15%, transparent);
+  border-color: var(--mat-sys-on-primary);
 }

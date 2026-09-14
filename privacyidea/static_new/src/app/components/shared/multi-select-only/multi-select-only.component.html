@@ -29,7 +29,8 @@
     [value]="selectedItems()"
     [multiple]="true"
     [disabled]="isDisabled()"
-    (selectionChange)="onSelectionChange($event)">
+    (selectionChange)="onSelectionChange($event)"
+    (closed)="leaveHeader()">
     <mat-select-trigger>
       {{ triggerValue() }}
     </mat-select-trigger>
@@ -37,7 +38,9 @@
     <div class="select-header-actions">
       <button
         mat-button
+        tabindex="-1"
         class="toggle-all-button"
+        [class.key-focused]="keyFocus() === 'selectAll'"
         (click)="$event.stopPropagation(); toggleAll()">
         <span class="button-content">
           <mat-icon class="action-icon">
@@ -49,11 +52,14 @@
     </div>
 
     @for (item of uniqueItems(); track item) {
-      <mat-option [value]="item">
+      <mat-option
+        [value]="item"
+        [class.only-key-focused]="keyFocus() === 'only'">
         <div class="option-row-layout">
           <span class="item-text">{{ itemLabel()(item) }}</span>
           <button
             mat-stroked-button
+            tabindex="-1"
             class="only-button"
             (click)="selectOnly($event, item)">
             <span i18n="@@common.only">Only</span>
