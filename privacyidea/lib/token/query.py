@@ -997,6 +997,25 @@ def get_token_owners_per_resolver(realms: list[str] | None = None) -> dict[str, 
 
 
 @log_with(log)
+def get_token_owner_keys(resolvers: list[str] | None = None) -> set[tuple[str, str]]:
+    """
+    Return the (resolver, user id) pairs that own at least one token.
+
+    This is the membership test behind :func:`get_token_owners_per_resolver`: the same pairs, as a
+    set rather than as counts, so a caller holding user records can tell which of them own a token.
+    Tokens that are not assigned do not contribute, and neither does the token being active.
+
+    :param resolvers: Only return the pairs of these resolvers. None returns the pairs of every
+        resolver, an empty list returns nothing.
+    :return: A set of (resolver name, user id) pairs
+    """
+    owners = select(TokenOwner.resolver, TokenOwner.user_id).select_from(TokenOwner).distinct()
+    if resolvers is not None:
+        owners = owners.where(TokenOwner.resolver.in_(resolvers))
+    return {(resolver or "", user_id or "") for resolver, user_id in db.session.execute(owners)}
+
+
+@log_with(log)
 def get_realms_of_token(serial: str, only_first_realm: bool = False) -> list[str] | str | None:
     """
     This function returns a list of the realms of a token

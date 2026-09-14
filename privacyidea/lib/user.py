@@ -69,6 +69,7 @@ from .resolver import (get_resolver_object,
                        get_resolver_type)
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
 from privacyidea.lib.params import get_optional, get_required
+from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
 
@@ -846,6 +847,11 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     The ``realm``, ``resolver`` and ``editable`` keys are added on the lib layer and are only included in the
     returned user dictionaries when ``requested_attributes`` is None/empty or explicitly lists them.
 
+    A ``has_tokens`` entry in ``param`` keeps only the users that own a token, or only those that do not;
+    an empty value does not filter. It is applied after the resolvers answered, because token ownership is
+    privacyIDEA's own record and no resolver knows about it. The filter needs the user id, which the
+    resolvers return whether or not it was requested, so it works independently of ``requested_attributes``.
+
     :param param: search parameters
     :param user:  a specific user object to return
     :param include_custom_attributes:  Set to True, if you want to receive custom attributes of external users.
@@ -869,7 +875,7 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     # as delete does not work
     for key in param:
         lval = param[key]
-        if key in ["realm", "resolver", "user", "username"]:
+        if key in ["realm", "resolver", "user", "username", "has_tokens"]:
             continue
         search_dict[key] = lval
         log.debug(f"Parameter key:{key!r}={lval!r}")
@@ -881,6 +887,13 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     if 'user' in param:
         search_dict['username'] = param['user']
     log.debug('Changed search key to username: %s.', search_dict['username'])
+
+    # None leaves the user list as it is, True/False keeps only the users that do respectively
+    # do not own a token. Resolved after the resolvers answered, see below. An empty value does
+    # not filter, as with realm and resolver above.
+    has_tokens = get_optional(param, "has_tokens")
+    has_tokens = is_true(has_tokens) if has_tokens not in (None, "") else None
+    owner_keys = {}
 
     # determine which scope we want to show
     param_resolver = get_optional(param, "resolver")
@@ -945,8 +958,10 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     # so the caller's list is never mutated as a side effect of this call.
     requested_attributes = list(requested_attributes) if requested_attributes is not None else None
     remove_user_id = False
-    if include_custom_attributes and requested_attributes and "userid" not in requested_attributes:
-        # user id is required to later get the custom attributes for the user
+    if (include_custom_attributes or has_tokens is not None) and requested_attributes \
+            and "userid" not in requested_attributes:
+        # The user id is required to look up the custom attributes of a user and to tell their
+        # tokens from another user's. Not every resolver returns it unasked, the passwd one does not.
         requested_attributes.append("userid")
         remove_user_id = True
     # username is always required for deduplication across resolvers
@@ -997,6 +1012,8 @@ def get_user_list(param: dict | None = None, user: User | None = None,
                 user_list = resolver.getUserList(search_dict, list(requested_user_store_attributes))
                 succeeded_resolvers.add(resolver_name)
                 for user_info in user_list:
+                    # Read before the attribute stripping below, which may drop it from the record.
+                    user_id = str(user_info.get("userid") or "")
                     if not requested_attributes or "realm" in requested_pi_user_attributes:
                         user_info["realm"] = realm
                     if not requested_attributes or "resolver" in requested_pi_user_attributes:
@@ -1024,6 +1041,7 @@ def get_user_list(param: dict | None = None, user: User | None = None,
                         user_info.pop("username", None)
                     if user_tuple not in users_dict:
                         users_dict[user_tuple] = user_info
+                        owner_keys[user_tuple] = (resolver_name, user_id)
                 log.debug(f"Found this userlist: {user_list!r}")
 
             except (ResolverError, ParameterError) as ex:
@@ -1043,6 +1061,13 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     # should only see resolvers that could not be queried anywhere.
     if failures is not None and succeeded_resolvers:
         failures[:] = [name for name in failures if name not in succeeded_resolvers]
+
+    if has_tokens is not None and users_dict:
+        # Imported here because privacyidea.lib.token imports this module.
+        from privacyidea.lib.token import get_token_owner_keys
+        owners = get_token_owner_keys(resolvers=sorted(succeeded_resolvers))
+        users_dict = {user_tuple: user_info for user_tuple, user_info in users_dict.items()
+                      if (owner_keys.get(user_tuple) in owners) == has_tokens}
 
     users = list(users_dict.values())
     return users

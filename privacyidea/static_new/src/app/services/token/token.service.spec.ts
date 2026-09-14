@@ -441,6 +441,30 @@ describe("TokenService", () => {
     });
   });
 
+  describe("getTokenOwnerCount()", () => {
+    it("requests the owner count without a realm param when none is given", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 0, by_resolver: {} })));
+
+      tokenService.getTokenOwnerCount().subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl + "ownercount", {
+        headers: authService.getHeaders(),
+        params: {}
+      });
+    });
+
+    it("scopes the request to the given realm", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 3, by_resolver: { resolver1: 3 } })));
+
+      tokenService.getTokenOwnerCount("realm1").subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl + "ownercount", {
+        headers: authService.getHeaders(),
+        params: { realm: "realm1" }
+      });
+    });
+  });
+
   describe("pollTokenRolloutState()", () => {
     it("emits error once and stops polling when request fails", async () => {
       jest.useFakeTimers();

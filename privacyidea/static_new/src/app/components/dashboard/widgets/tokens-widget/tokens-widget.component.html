@@ -150,12 +150,36 @@
         </tr>
       }
       <tr class="user-counts-start">
-        <td i18n="@@dashboard.usersWithTokens">Users with tokens</td>
+        <td>
+          @if (canLinkUsers()) {
+            <a
+              [routerLink]="routePaths.USERS"
+              [queryParams]="{ realm: realm() }"
+              (click)="showUsers(true)"
+              i18n="@@dashboard.usersWithTokens"
+              >Users with tokens</a
+            >
+          } @else {
+            <span i18n="@@dashboard.usersWithTokens">Users with tokens</span>
+          }
+        </td>
         <td>{{ withTokensLabel() }}</td>
       </tr>
       @if (canListUsers()) {
         <tr>
-          <td i18n="@@dashboard.usersWithoutTokens">Users without tokens</td>
+          <td>
+            @if (canLinkUsers()) {
+              <a
+                [routerLink]="routePaths.USERS"
+                [queryParams]="{ realm: realm() }"
+                (click)="showUsers(false)"
+                i18n="@@dashboard.usersWithoutTokens"
+                >Users without tokens</a
+              >
+            } @else {
+              <span i18n="@@dashboard.usersWithoutTokens">Users without tokens</span>
+            }
+          </td>
           <td>{{ withoutTokensLabel() }}</td>
         </tr>
       }

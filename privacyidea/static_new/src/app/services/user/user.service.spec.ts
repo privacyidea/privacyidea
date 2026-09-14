@@ -482,6 +482,57 @@ describe("UserService", () => {
     expect(params).toHaveProperty("username", "*root*");
   });
 
+  describe("has_tokens filter", () => {
+    it("normalizes has_tokens to the backend's True/False spelling, unwrapped", () => {
+      userService.activeFilter.set(new FilterValue({ value: "has_tokens: true" }));
+      expect(userService.filterParams()).toEqual({ has_tokens: "True" });
+
+      userService.activeFilter.set(new FilterValue({ value: "has_tokens: false" }));
+      expect(userService.filterParams()).toEqual({ has_tokens: "False" });
+    });
+
+    it("drops has_tokens when the value does not read as a boolean", () => {
+      userService.activeFilter.set(new FilterValue({ value: "has_tokens: maybe" }));
+      expect(userService.filterParams()).not.toHaveProperty("has_tokens");
+    });
+
+    it("offers has_tokens as an advanced keyword, not a plain column filter", () => {
+      expect(userService.apiFilterKeys).not.toContain("has_tokens");
+      expect(userService.advancedApiFilterKeys).toContain("has_tokens");
+      expect(userService.allFilterKeys()).toContain("has_tokens");
+    });
+  });
+
+  describe("presetFilter", () => {
+    it("starts out unset", () => {
+      expect(userService.presetFilter()).toBeNull();
+    });
+
+    it("holds whatever filter is handed to it until consumed", () => {
+      const filter = new FilterValue().addEntry("has_tokens", "True");
+      userService.presetFilter.set(filter);
+      expect(userService.presetFilter()).toBe(filter);
+    });
+  });
+
+  describe("fetchUsernames()", () => {
+    it("requests username and resolver, without a realm param when none is given", async () => {
+      const promise = lastValueFrom(userService.fetchUsernames());
+      const req = httpMock.expectOne((r) => r.url === environment.proxyUrl + "/user/");
+      expect(req.request.params.get("attributes")).toBe("username,resolver");
+      expect(req.request.params.has("realm")).toBe(false);
+      req.flush(MockPiResponse.fromValue([buildUser("alice")]));
+      await expect(promise).resolves.toBeTruthy();
+    });
+
+    it("scopes the request to the given realm", () => {
+      userService.fetchUsernames("realm1").subscribe();
+      const req = httpMock.expectOne((r) => r.url === environment.proxyUrl + "/user/");
+      expect(req.request.params.get("realm")).toBe("realm1");
+      req.flush(MockPiResponse.fromValue([]));
+    });
+  });
+
   describe("editableAttributesResource / attributePolicy", () => {
     it("attributePolicy falls back to default when resource empty", () => {
       expect(userService.attributePolicy()).toEqual({ delete: [], set: {} });

@@ -101,6 +101,64 @@ def test_pack_serials():
     assert _pack_serials([], 40) == ("", 0)
 
 
+class API000TokenOwnerCount(MyApiTestCase):
+
+    def setUp(self):
+        super(API000TokenOwnerCount, self).setUp()
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        # cornelius owns two tokens in realm1: counted once as a user
+        init_token({"otpkey": self.otpkey}, user=User("cornelius", self.realm1))
+        init_token({"otpkey": self.otpkey}, user=User("cornelius", self.realm1))
+        # shadow owns one token in realm1
+        init_token({"otpkey": self.otpkey}, user=User("shadow", self.realm1))
+        # cornelius (same resolver, other realm) owns one token in realm2
+        init_token({"otpkey": self.otpkey}, user=User("cornelius", self.realm2))
+        # an unassigned token in realm1 contributes no owner
+        init_token({"otpkey": self.otpkey}, tokenrealms=[self.realm1])
+
+    def test_01_counts_distinct_owners_across_realms_and_tokens(self):
+        with self.app.test_request_context('/token/ownercount', method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            # cornelius (once, despite three tokens across two realms) + shadow
+            self.assertEqual(2, value["count"], value)
+            self.assertEqual({"resolver1": 2}, value["by_resolver"], value)
+
+    def test_02_scopes_to_the_given_realm(self):
+        with self.app.test_request_context('/token/ownercount', method='GET',
+                                           query_string={"realm": self.realm2},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            self.assertEqual(1, value["count"], value)
+
+    def test_03_requires_admin_and_tokenlist(self):
+        with self.app.test_request_context('/token/ownercount', method='GET'):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+
+        set_policy(name="pol-only-init", scope=SCOPE.ADMIN, action="enrollHOTP")
+        set_policy(name="pol-realm1", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST,
+                  adminuser=self.testadmin, realm=self.realm1)
+
+        with self.app.test_request_context('/token/ownercount', method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            # A realm-admin restricted to realm1 only counts realm1's owners, even without
+            # a realm query parameter.
+            self.assertEqual(2, value["count"], value)
+
+        delete_policy("pol-realm1")
+        delete_policy("pol-only-init")
+
+
 class API000TokenAdminRealmList(MyApiTestCase):
 
     def setUp(self):

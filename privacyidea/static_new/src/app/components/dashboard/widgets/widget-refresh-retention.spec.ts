@@ -29,9 +29,13 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { TokenCount, TokenService } from "@services/token/token.service";
+import { RealmService } from "@services/realm/realm.service";
+import { UserService } from "@services/user/user.service";
 import { MockAuditService } from "@testing/mock-services/mock-audit-service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
+import { MockRealmService } from "@testing/mock-services/mock-realm-service";
+import { MockUserService } from "@testing/mock-services/mock-user-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { of, throwError } from "rxjs";
@@ -68,6 +72,8 @@ describe("widget data retention across a failed refresh", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: AuditService, useClass: MockAuditService },
         { provide: TokenService, useClass: MockTokenService },
+        { provide: UserService, useClass: MockUserService },
+        { provide: RealmService, useClass: MockRealmService },
         { provide: ContentService, useClass: MockContentService }
       ]
     }).compileComponents();

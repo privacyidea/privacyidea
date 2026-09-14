@@ -1014,3 +1014,39 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(len(result.get("value")) > 0, res.json)
             self.assertIsNone(res.json.get("detail"), res.json)
+
+    def test_16_get_users_has_tokens_filter(self):
+        self.setUp_user_realms()
+
+        def usernames(query):
+            with self.app.test_request_context('/user/',
+                                               method='GET',
+                                               query_string=urlencode(query),
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                return [user.get("username") for user in res.json["result"]["value"]]
+
+        everyone = usernames({"realm": self.realm1})
+        self.assertIn("cornelius", everyone)
+
+        serial = None
+        try:
+            token = init_token({"type": "spass"}, user=User("cornelius", self.realm1))
+            serial = token.get_serial()
+
+            self.assertEqual(["cornelius"], usernames({"realm": self.realm1, "has_tokens": "True"}))
+
+            without_tokens = usernames({"realm": self.realm1, "has_tokens": "False"})
+            self.assertNotIn("cornelius", without_tokens)
+            self.assertEqual(len(everyone) - 1, len(without_tokens))
+
+            # The filter needs the user id, which an attribute list of its own does not ask for.
+            self.assertEqual(["cornelius"],
+                             usernames({"realm": self.realm1, "has_tokens": "True",
+                                        "attributes": "username"}))
+        finally:
+            if serial:
+                remove_token(serial)
+
+        self.assertEqual([], usernames({"realm": self.realm1, "has_tokens": "True"}))

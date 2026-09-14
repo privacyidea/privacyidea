@@ -121,6 +121,12 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
 
   readonly canListUsers = computed(() => this.authService.actionAllowed("userlist"));
 
+  /**
+   * The user list is always scoped to one realm, so it can only show the same population as these
+   * counts once a realm is picked. Across every realm there is no view to link to.
+   */
+  readonly canLinkUsers = computed(() => !!this.realm() && this.canListUsers());
+
   readonly realm = computed<string>(() => {
     const stored = this.instance()?.settings?.[REALM_SETTING];
     return typeof stored === "string" ? stored : "";
@@ -218,6 +224,10 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
 
   showUnassigned(): void {
     this.tokenService.presetFilter.set(this.realmFilter().addEntry("assigned", "False"));
+  }
+
+  showUsers(hasTokens: boolean): void {
+    this.userService.presetFilter.set(new FilterValue().addEntry("has_tokens", hasTokens ? "True" : "False"));
   }
 
   /** Narrow the widget to one realm, or to every realm when the name is empty. */

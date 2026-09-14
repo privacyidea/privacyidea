@@ -20,6 +20,7 @@ import {
   afterNextRender,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   linkedSignal,
@@ -144,6 +145,7 @@ export class UserTableComponent implements OnDestroy {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialog = inject(MatDialog);
   readonly apiFilterKeys = this.userService.apiFilterKeys;
+  readonly filterKeywords = [...this.userService.apiFilterKeys, ...this.userService.advancedApiFilterKeys];
   readonly filterHint = inlineFilterHint();
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   readonly paginator = viewChild(MatPaginator);
@@ -207,6 +209,18 @@ export class UserTableComponent implements OnDestroy {
   });
 
   constructor() {
+    // A filter handed over by another view, which cannot set it directly because this table only
+    // exists once the navigation it triggered has happened.
+    effect(() => {
+      if (!this.contentService.onUsers()) {
+        return;
+      }
+      const preset = this.userService.presetFilter();
+      if (preset) {
+        this.userService.presetFilter.set(null);
+        this.userService.setFilter(preset);
+      }
+    });
     // Autofocus the filter so the user can type immediately on entering the page.
     afterNextRender(() => this.filterInput?.nativeElement.focus());
   }

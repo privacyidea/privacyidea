@@ -167,6 +167,36 @@ describe("UserTableComponent", () => {
     expect(mockUserService.detailsUser().realm).toBe("themis");
   });
 
+  it("offers every advanced keyword alongside the plain column filters", () => {
+    expect(component.filterKeywords).toEqual([
+      ...mockUserService.apiFilterKeys,
+      ...mockUserService.advancedApiFilterKeys
+    ]);
+  });
+
+  describe("a preset filter handed over by another view", () => {
+    const mockContentService = () => TestBed.inject(ContentService) as unknown as MockContentService;
+
+    it("applies it once the user table is on screen, and clears it so it is not reapplied", () => {
+      mockContentService().routeUrl.set(ROUTE_PATHS.USERS);
+      const filter = new FilterValue().addEntry("has_tokens", "True");
+      mockUserService.presetFilter.set(filter);
+      fixture.detectChanges();
+
+      expect(mockUserService.activeFilter()).toBe(filter);
+      expect(mockUserService.presetFilter()).toBeNull();
+    });
+
+    it("is left untouched while some other view is on screen", () => {
+      mockContentService().routeUrl.set(ROUTE_PATHS.TOKENS);
+      const filter = new FilterValue().addEntry("has_tokens", "True");
+      mockUserService.presetFilter.set(filter);
+      fixture.detectChanges();
+
+      expect(mockUserService.presetFilter()).toBe(filter);
+    });
+  });
+
   describe("keyword-less client-side search", () => {
     const users = [
       { username: "alice", email: "alice@acme.test", givenname: "Alice" },

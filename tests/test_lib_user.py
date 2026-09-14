@@ -13,6 +13,7 @@ from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realm_id, get_realms, get_ordered_resolvers)
 from privacyidea.lib.resolver import (save_resolver, delete_resolver, get_resolver_list)
+from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
                                                        CLIENT_SECRET, TENANT)
 from privacyidea.lib.user import (User, create_user,
@@ -198,6 +199,41 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
                                   "email": "root@testdomain.test",
                                   "resolver": self.resolvername1})
         self.assertTrue(len(userlist) == 0, userlist)
+
+    def test_get_user_list_has_tokens_filter(self):
+        all_users = get_user_list({"realm": self.realm1})
+        self.assertTrue(len(all_users) > 2, all_users)
+
+        serial = None
+        try:
+            token = init_token({"type": "spass"}, user=User("cornelius", self.realm1, self.resolvername1))
+            serial = token.get_serial()
+
+            # Reaching the resolvers at all proves has_tokens is not forwarded as a search key:
+            # the passwd resolver raises on one it does not know.
+            with_tokens = get_user_list({"realm": self.realm1, "has_tokens": "True"})
+            self.assertEqual(["cornelius"], [user["username"] for user in with_tokens], with_tokens)
+
+            without_tokens = get_user_list({"realm": self.realm1, "has_tokens": "False"})
+            usernames = [user["username"] for user in without_tokens]
+            self.assertNotIn("cornelius", usernames, usernames)
+            self.assertEqual(len(all_users) - 1, len(without_tokens), without_tokens)
+
+            # The filter needs the user id, which the resolver returns whether or not it was
+            # requested, so a narrowed attribute list does not change the outcome.
+            narrowed = get_user_list({"realm": self.realm1, "has_tokens": "True"},
+                                     requested_attributes=["username"])
+            self.assertEqual(["cornelius"], [user["username"] for user in narrowed], narrowed)
+
+            # An empty value does not filter, as with realm and resolver.
+            self.assertEqual(len(all_users), len(get_user_list({"realm": self.realm1, "has_tokens": ""})))
+        finally:
+            if serial:
+                remove_token(serial)
+
+        # With the token gone, everyone is without tokens again
+        self.assertEqual([], get_user_list({"realm": self.realm1, "has_tokens": "True"}))
+        self.assertEqual(len(all_users), len(get_user_list({"realm": self.realm1, "has_tokens": "False"})))
 
     def test_get_user_list_dedup_without_username_attribute(self):
         """

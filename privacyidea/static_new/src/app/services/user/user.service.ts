@@ -34,11 +34,18 @@ import {
   FilterableTableService,
   FilterableTableServiceInterface
 } from "@services/table-utils/filterable-table-service";
-import { buildFilterParams, filterParamsEqual } from "@utils/filter.utils";
+import { buildFilterParams, filterParamsEqual, toBooleanParam } from "@utils/filter.utils";
 import { Observable, of } from "rxjs";
 import { catchError, map } from "rxjs/operators";
 
 const apiFilterKeys = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "username"];
+
+// Not a user store attribute but privacyIDEA's own record, hence hidden behind the advanced toggle
+// and passed through unwrapped: the backend reads it as a boolean, not as a pattern.
+const advancedApiFilterKeys = ["has_tokens"];
+
+const exactMatchKeys = new Set(["has_tokens"]);
+const booleanKeys = new Set(["has_tokens"]);
 
 export interface UserData {
   description: string;
@@ -114,6 +121,7 @@ export interface UserServiceInterface extends FilterableTableServiceInterface {
   usersResource: HttpResourceRef<PiResponse<UserData[], UserListResponseDetail | undefined> | undefined>;
   users: WritableSignal<UserData[]>;
   skippedResolvers: Signal<string[]>;
+  presetFilter: WritableSignal<FilterValue | null>;
 
   detailsUser: WritableSignal<DetailsUser>;
 
@@ -274,6 +282,11 @@ export class UserService extends FilterableTableService implements UserServiceIn
   detailsUser = this.contentService.detailsUser;
 
   readonly apiFilterKeys = apiFilterKeys;
+  override readonly advancedApiFilterKeys = advancedApiFilterKeys;
+  override readonly exactMatchKeys = exactMatchKeys;
+
+  /** A filter another view handed over, applied by the user table once it is on screen. */
+  presetFilter: WritableSignal<FilterValue | null> = signal<FilterValue | null>(null);
 
   readonly activeFilter = signal(new FilterValue());
 
@@ -288,8 +301,9 @@ export class UserService extends FilterableTableService implements UserServiceIn
         // the allowed-filter list and the emitted API param key stays canonical. Only the key is
         // normalized. The value is passed through case-preserving, so case matching is the resolver's
         // decision rather than the frontend's.
-        .map((token) => [token.key.toLowerCase(), token.value] as const);
-      return buildFilterParams(entries, this.allFilterKeys());
+        .map((token) => [token.key.toLowerCase(), token.value] as const)
+        .map(([key, value]) => [key, booleanKeys.has(key) ? toBooleanParam(value ?? "") : value] as const);
+      return buildFilterParams(entries, this.allFilterKeys(), this.exactMatchKeys);
     },
     { equal: filterParamsEqual }
   );

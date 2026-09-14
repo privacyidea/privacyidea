@@ -29,11 +29,15 @@ import { InfoService } from "@services/info/info.service";
 import { ResolverService } from "@services/resolver/resolver.service";
 import { SubscriptionService } from "@services/subscription/subscription.service";
 import { SystemService } from "@services/system/system.service";
+import { RealmService } from "@services/realm/realm.service";
+import { UserService } from "@services/user/user.service";
 import { TokenService } from "@services/token/token.service";
 import { MockAuthService, MockInfoService } from "@testing/mock-services";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
+import { MockRealmService } from "@testing/mock-services/mock-realm-service";
+import { MockUserService } from "@testing/mock-services/mock-user-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { WidgetFrameComponent } from "./widget-frame.component";
 
@@ -92,6 +96,8 @@ describe("WidgetFrameComponent", () => {
         provideRouter([]),
         { provide: AuthService, useClass: MockAuthService },
         { provide: TokenService, useClass: MockTokenService },
+        { provide: UserService, useClass: MockUserService },
+        { provide: RealmService, useClass: MockRealmService },
         { provide: SubscriptionService, useClass: MockSubscriptionService },
         { provide: InfoService, useClass: MockInfoService },
         { provide: SystemService, useClass: MockSystemService },
@@ -318,6 +324,9 @@ describe("WidgetFrameComponent", () => {
 
   describe("widget contributed header actions", () => {
     const actionsInstance: WidgetInstance = { id: "a1", type: ACTIONS_TYPE, x: 0, y: 0, cols: 6, rows: 5 };
+    // A widget that contributes no header actions of its own, unlike tokens (realm switch) and
+    // subscriptions (copy button) - and unlike ACTIONS_TYPE itself, which this describe block hijacks.
+    const plainInstance: WidgetInstance = { id: "p2", type: "token-types", x: 0, y: 0, cols: 6, rows: 5 };
 
     // A frame is created per widget id and never hosts a different widget, so each case
     // gets its own frame rather than swapping the instance on the shared one.
@@ -348,7 +357,7 @@ describe("WidgetFrameComponent", () => {
     });
 
     it("should leave the header alone for a widget that contributes none", () => {
-      const frame = frameFor(tokensInstance);
+      const frame = frameFor(plainInstance);
 
       expect(frame.componentInstance["headerActions"]()).toBeNull();
       expect(frame.nativeElement.querySelector(".stub-header-action")).toBeNull();

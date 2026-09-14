@@ -155,4 +155,5 @@ export class MockUserService implements UserServiceInterface {
   editUser = jest.fn();
   deleteUser = jest.fn();
   fetchUsernames = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<UserData[]>([])));
+  presetFilter = signal<FilterValue | null>(null);
 }

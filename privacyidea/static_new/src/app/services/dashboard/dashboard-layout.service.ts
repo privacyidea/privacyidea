@@ -278,9 +278,9 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
       { type: "policies", x: 8, y: 0 },
       { type: "tokens", x: 18, y: 0 },
       { type: "news", x: 8, y: 5, cols: 9 },
-      { type: "events", x: 17, y: 5, cols: 7 },
+      { type: "events", x: 17, y: 7, cols: 7 },
       { type: "authentications", x: 8, y: 8 },
-      { type: "token-types", x: 16, y: 8 },
+      { type: "token-types", x: 16, y: 10 },
       { type: "administration", x: 0, y: 14 }
     ];
     return positions.reduce<WidgetInstance[]>((result, { type, x, y, cols }) => {
