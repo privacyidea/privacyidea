@@ -77,7 +77,7 @@
   th,
   td {
     text-align: left;
-    padding: 1px var(--quarter-global-padding);
+    padding: 1px 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -139,7 +139,7 @@
   .section-row td {
     font-weight: 600;
     color: var(--mat-sys-on-surface-variant);
-    padding-top: var(--quarter-global-padding);
+    padding-top: 4px;
   }
 
   .server-row .application-cell {

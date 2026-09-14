@@ -17,9 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
-import { delay, Observable, of, Subject } from "rxjs";
-
-import { HttpEvent } from "@angular/common/http";
 import { LoadingService } from "./loading-service";
 
 describe("LoadingService", () => {
@@ -38,25 +35,15 @@ describe("LoadingService", () => {
     loadingService.notifyListeners();
     expect(listener).toHaveBeenCalledWith(false);
 
-    const subj = new Subject<HttpEvent<unknown>>();
-    loadingService.addLoading({
-      key: "k1",
-      observable: subj.asObservable(),
-      url: "/u"
-    });
+    loadingService.addLoading("k1", "/u");
     expect(listener).toHaveBeenLastCalledWith(true);
 
-    subj.complete();
+    loadingService.removeLoading("k1");
     expect(listener).toHaveBeenLastCalledWith(false);
   });
 
   it("getLoadingGroups returns current endpoints; removeLoading prunes them", () => {
-    const subj = new Subject<HttpEvent<unknown>>();
-    loadingService.addLoading({
-      key: "abc",
-      observable: subj.asObservable(),
-      url: "/abc"
-    });
+    loadingService.addLoading("abc", "/abc");
     expect(loadingService.getLoadingGroups()).toEqual([{ endpoint: "/abc", count: 1 }]);
 
     loadingService.removeLoading("abc");
@@ -65,11 +52,8 @@ describe("LoadingService", () => {
   });
 
   it("groups requests to the same endpoint regardless of query parameters", () => {
-    const subj = new Subject<HttpEvent<unknown>>();
-    ["/token/?page=1", "/token/?page=2", "/token/"].forEach((url, index) =>
-      loadingService.addLoading({ key: `k${index}`, observable: subj.asObservable(), url })
-    );
-    loadingService.addLoading({ key: "other", observable: subj.asObservable(), url: "/realm/" });
+    ["/token/?page=1", "/token/?page=2", "/token/"].forEach((url, index) => loadingService.addLoading(`k${index}`, url));
+    loadingService.addLoading("other", "/realm/");
 
     expect(loadingService.getLoadingGroups()).toEqual([
       { endpoint: "/token/", count: 3 },
@@ -84,66 +68,14 @@ describe("LoadingService", () => {
     ]);
   });
 
-  describe("addLoading drops entry after complete / error", () => {
-    beforeEach(() => jest.useFakeTimers());
-    afterEach(() => jest.useRealTimers());
+  it("clearAllLoadings resets state", () => {
+    loadingService.addLoading("k1", "/1");
+    loadingService.addLoading("k2", "/2");
 
-    it("removes loading when observable completes", () => {
-      loadingService.addLoading({
-        key: "c1",
-        observable: of({} as HttpEvent<unknown>).pipe(delay(0)),
-        url: "/complete"
-      });
-
-      expect(loadingService.isLoading()).toBe(true);
-
-      jest.runOnlyPendingTimers();
-      expect(loadingService.isLoading()).toBe(false);
-    });
-
-    it("removes loading when observable errors", () => {
-      jest.useFakeTimers();
-
-      const error$ = new Observable((observer) => {
-        setTimeout(() => observer.error(new Error("fail")), 0);
-      });
-
-      loadingService.addLoading({
-        key: "e1",
-        observable: error$ as Observable<HttpEvent<unknown>>,
-        url: "/error"
-      });
-
-      // still loading until the timer fires
-      expect(loadingService.isLoading()).toBe(true);
-
-      jest.runOnlyPendingTimers(); // flush setTimeout
-      expect(loadingService.isLoading()).toBe(false);
-
-      jest.useRealTimers();
-    });
-  });
-
-  it("clearAllLoadings unsubscribes and resets state", () => {
-    const subj1 = new Subject<HttpEvent<unknown>>();
-    const subj2 = new Subject<HttpEvent<unknown>>();
-
-    loadingService.addLoading({
-      key: "k1",
-      observable: subj1.asObservable(),
-      url: "/1"
-    });
-    loadingService.addLoading({
-      key: "k2",
-      observable: subj2.asObservable(),
-      url: "/2"
-    });
-
-    const unsubs = loadingService["loadings"].map((l) => jest.spyOn(l.subscription, "unsubscribe"));
     loadingService.clearAllLoadings();
 
-    unsubs.forEach((spy) => expect(spy).toHaveBeenCalled());
     expect(loadingService.isLoading()).toBe(false);
+    expect(loadingService.getLoadingGroups()).toEqual([]);
   });
 
   it("removeListener deletes the listener", () => {
