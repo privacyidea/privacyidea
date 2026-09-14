@@ -162,7 +162,6 @@ export interface AuthenticationLogServiceInterface {
   reasons: () => string[];
   endpointsResource: HttpResourceRef<PiResponse<string[]> | undefined>;
   endpoints: () => string[];
-  oldestTimestamp: () => string | null;
 
   fetchOldestTimestamp(): Observable<PiResponse<AuthenticationLogPage>>;
 
@@ -310,28 +309,9 @@ export class AuthenticationLogService implements AuthenticationLogServiceInterfa
     return this.endpointsResource.value()?.result?.value ?? [];
   });
 
-  // The single oldest entry (timestamp ascending), used to size the time slider's default window down to the first
-  // recorded event. Gated like the log itself (route + read right).
-  oldestEntryResource = httpResource<PiResponse<AuthenticationLogPage>>(() => {
-    if (!this.contentService.onAuthenticationLog() || !this.canRead()) {
-      return undefined;
-    }
-    return {
-      url: this.authenticationLogBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders(),
-      params: { page: 1, page_size: 1, sort_column: "timestamp", sort_order: "asc" }
-    };
-  });
-
-  oldestTimestamp = computed<string | null>(() => {
-    if (!this.oldestEntryResource.hasValue()) return null;
-    return this.oldestEntryResource.value()?.result?.value?.auth_logs?.[0]?.timestamp ?? null;
-  });
-
-  // A one-off read of the single oldest entry, for callers outside the authentication-log route where
-  // oldestEntryResource deliberately does not fetch - the dashboard widgets' "all" range, which has to learn where
-  // the log begins before it can ask fetchStatistics for a window at all.
+  // A one-off read of the single oldest entry, for the dashboard widgets' "all" range, which has to learn where the
+  // log begins before it can ask fetchStatistics for a window at all. The authentication-log route does not need it:
+  // its time slider sizes its window from the page it already loaded (see defaultWindowStartMs).
   fetchOldestTimestamp(): Observable<PiResponse<AuthenticationLogPage>> {
     return this.http.get<PiResponse<AuthenticationLogPage>>(this.authenticationLogBaseUrl, {
       headers: this.authService.getHeaders(),
