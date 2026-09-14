@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, input, output } from "@angular/core";
+import { Component, computed, DestroyRef, ElementRef, inject, input, output, signal, viewChild } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
-import { MatSelectChange, MatSelectModule } from "@angular/material/select";
+import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/select";
 import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
@@ -49,6 +49,21 @@ export class MultiSelectOnlyComponent<T = string | number> {
 
   // Outputs
   readonly selectionChange = output<T[]>();
+
+  /** Which control the keyboard marker sits on. Real focus never leaves the select. */
+  readonly keyFocus = signal<"row" | "only" | "selectAll">("row");
+
+  private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly select = viewChild.required(MatSelect);
+
+  constructor() {
+    const host = this.hostElement.nativeElement;
+    const onKeydown = (event: KeyboardEvent) => this.handlePanelKeydown(event);
+    // Capture phase: MatSelect keeps focus on its own host and handles keys there, so a bubbling
+    // listener would only run after it has already closed the panel on Tab.
+    host.addEventListener("keydown", onKeydown, true);
+    inject(DestroyRef).onDestroy(() => host.removeEventListener("keydown", onKeydown, true));
+  }
 
   /**
    * Localized labels for the toggle action.
@@ -103,6 +118,118 @@ export class MultiSelectOnlyComponent<T = string | number> {
   public selectOnly(event: MouseEvent, item: T): void {
     event.stopPropagation();
     this.selectionChange.emit([item]);
+  }
+
+  /**
+   * Drives the controls MatSelect's key manager cannot reach: Tab steps between the highlighted
+   * row and its "Only" button, arrow up off the first row reaches the header. Real focus stays on
+   * the select, mirroring how MatSelect highlights options without ever focusing them.
+   */
+  private handlePanelKeydown(event: KeyboardEvent): void {
+    const select = this.select();
+    if (!select.panelOpen) {
+      return;
+    }
+
+    // Not queueMicrotask: the browser runs a microtask checkpoint after every listener, so that
+    // would fire before MatSelect has even moved its highlight. rAF waits for the whole event.
+    requestAnimationFrame(() => this.revealFirstOption());
+
+    if (this.keyFocus() === "selectAll") {
+      this.handleHeaderKeydown(event);
+      return;
+    }
+
+    if (event.key === "Tab") {
+      if (this.activeItem() === undefined) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      this.keyFocus.update((focus) => (focus === "only" ? "row" : "only"));
+      return;
+    }
+
+    if (event.key === "ArrowUp" && this.keyFocus() === "row" && select.options.first?.active) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.enterHeader();
+      return;
+    }
+
+    if (this.keyFocus() !== "only") {
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      const item = this.activeItem();
+      if (item === undefined) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      this.keyFocus.set("row");
+      this.selectionChange.emit([item]);
+      return;
+    }
+
+    // Anything else (arrows, Escape, typeahead) belongs to the row again.
+    this.keyFocus.set("row");
+  }
+
+  private handleHeaderKeydown(event: KeyboardEvent): void {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      this.toggleAll();
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      // The header is the top of the panel; swallow it so the list does not steal the marker back.
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      event.stopPropagation();
+      this.leaveHeader();
+      return;
+    }
+    this.leaveHeader();
+  }
+
+  /**
+   * Hands the key manager's highlight over to the header and back, so only one row ever looks
+   * active. The manager's own index is left untouched, so arrow keys resume where they left off.
+   */
+  private enterHeader(): void {
+    this.select().options.first?.setInactiveStyles();
+    this.keyFocus.set("selectAll");
+  }
+
+  public leaveHeader(): void {
+    if (this.keyFocus() === "selectAll") {
+      this.select().options.first?.setActiveStyles();
+    }
+    this.keyFocus.set("row");
+  }
+
+  /**
+   * MatSelect scrolls the highlighted option just far enough to be inside the panel, which for the
+   * first one is the sticky header's height - so the header ends up covering it. Its own
+   * `scrollTop = 0` shortcut is reserved for panels with option groups, so correct it here.
+   */
+  private revealFirstOption(): void {
+    const select = this.select();
+    if (select.panelOpen && select.options.first?.active) {
+      select.panel.nativeElement.scrollTop = 0;
+    }
+  }
+
+  /** The item behind the highlighted row. */
+  private activeItem(): T | undefined {
+    return this.select().options.find((option) => option.active)?.value as T | undefined;
   }
 
   /**
