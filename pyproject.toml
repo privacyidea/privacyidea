@@ -49,7 +49,6 @@ dependencies = [
     "Flask-Babel",
     "Flask-Migrate",
     "Flask-SQLAlchemy",
-    "Flask-Versioned",
     "Flask-Talisman",
     "feedparser",
     "google-auth",

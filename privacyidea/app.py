@@ -33,6 +33,7 @@ import os.path
 import re
 import secrets
 import sys
+import time
 import uuid
 from importlib import metadata
 from importlib.metadata import PackageNotFoundError
@@ -40,11 +41,10 @@ from pathlib import Path
 
 import sqlalchemy as sa
 import yaml
-from flask import Flask, jsonify, request, redirect
+from flask import Flask, current_app, jsonify, request, redirect
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_talisman import Talisman
-from flaskext.versioned import Versioned
 
 # we need this import to add the before/after request function to the blueprints
 # noinspection PyUnresolvedReferences
@@ -250,6 +250,33 @@ def _warn_if_base_url_missing(app: Flask):
                     "are left blank. They are never built from the untrusted HTTP "
                     "Host header. Set PI_BASE_URL in pi.cfg to the public URL of "
                     "this privacyIDEA server.")
+
+
+def versioned_asset(path: str) -> str:
+    """
+    Append a cache-busting version to an asset URL, for use as the ``versioned`` Jinja filter:
+    "static/css/menu.css" becomes "static/css/menu.css?v=20260914T085217".
+
+    The legacy WebUI serves its assets under stable names, so without this a browser keeps using
+    the files it cached before an update. The compiled WebUI does not need it, its file names
+    carry a content hash.
+
+    A "static/" URL is resolved through the configured static folder, since ``PI_STATIC_FOLDER``
+    may point anywhere. An asset that cannot be found is returned unchanged, so a stale path
+    costs the version rather than the whole page.
+    """
+    file_path = path
+    if not os.path.isabs(file_path):
+        if file_path.startswith(DefaultConfigValues.STATIC_FOLDER):
+            file_path = os.path.join(current_app.static_folder,
+                                     file_path[len(DefaultConfigValues.STATIC_FOLDER):])
+        else:
+            file_path = os.path.join(current_app.root_path, file_path)
+    if not os.path.isfile(file_path):
+        log.debug(f"Not adding a version to '{path}': '{file_path}' does not exist.")
+        return path
+    modified = time.strftime("%Y%m%dT%H%M%S", time.localtime(os.path.getmtime(file_path)))
+    return f"{path}?v={modified}"
 
 
 def _setup_database_engine_options(app: Flask):
@@ -477,7 +504,7 @@ def create_app(config_name="development",
                 "  pi-manage db downgrade -- -3"
             )
 
-    Versioned(app, format='%(path)s?v=%(version)s')
+    app.jinja_env.filters["versioned"] = versioned_asset
 
     babel.init_app(app, locale_selector=get_accepted_language)
 
@@ -575,7 +602,7 @@ def create_docker_app():
     db.init_app(app)
     init_ca_session(app)
 
-    Versioned(app, format='%(path)s?v=%(version)s')
+    app.jinja_env.filters["versioned"] = versioned_asset
 
     babel.init_app(app, locale_selector=get_accepted_language)
 
