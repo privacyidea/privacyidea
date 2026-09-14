@@ -963,6 +963,31 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                                        AuthEventType.MFA_FAIL)
         self.assertEqual(0, len(second))
 
+    def test_per_attempt_fire_once_does_not_refire_on_a_later_request_of_the_same_multi_request_attempt(self):
+        # Regression: for PER_ATTEMPT, count_before must exclude own_row_ids from the rows *before* they are
+        # reduced to one representative per attempt (count_subject_attempts' own exclude_row_ids), not via the
+        # row_filter applied only to the already-reduced representative (_count_matching_attempts). The latter
+        # would drop the *whole* attempt whenever its own new row becomes the representative - the usual case,
+        # being latest - even though the attempt also has an earlier, non-excluded row and should still count.
+        self._make_policy(name="lock3-attempts", counter_type=AuthEventType.MFA_FAIL,
+                          count_mode=CountMode.PER_ATTEMPT)
+        self._seed_attempts(AuthEventType.MFA_FAIL, 2)
+        # First request of a new attempt: count 2 -> 3 attempts, crosses the threshold, fires once.
+        own_row_ids = tuple(self._seed_attempt("att-shared", [AuthEventType.MFA_FAIL]))
+        first = evaluate_conditional_access_policies(CAContext(self.user, own_row_ids=own_row_ids),
+                                                      AuthEventType.MFA_FAIL)
+        self.assertEqual(1, len(first))
+        self.assertTrue(is_user_locked(self.user))
+
+        # Second request of the *same* attempt (a second wrong answer against the same open challenge, sharing
+        # "att-shared" with the first): still only 3 attempts total - "att-shared" was already one of them, via
+        # its first row, and stays one via that same row once its own new second row is excluded - so this must
+        # not fire again.
+        own_row_ids = tuple(self._seed_attempt("att-shared", [AuthEventType.MFA_FAIL]))
+        second = evaluate_conditional_access_policies(CAContext(self.user, own_row_ids=own_row_ids),
+                                                       AuthEventType.MFA_FAIL)
+        self.assertEqual(0, len(second))
+
     def test_dry_run_writes_no_state(self):
         self._make_policy(name="dry", counter_type=AuthEventType.MFA_FAIL, dry_run=True)
         self._seed_events(AuthEventType.MFA_FAIL, 5)
