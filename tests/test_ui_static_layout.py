@@ -7,6 +7,7 @@ privacyidea/webui/login.py, and the URL it is addressed under is baked into the 
 base href. A rename that misses one of them produces a WebUI that builds and installs but is
 never found, which no other test would notice, because the test environment has no build.
 """
+import inspect
 import json
 import os
 import pathlib
@@ -14,7 +15,8 @@ import tempfile
 
 from flask import Flask
 
-from privacyidea.app import _resolve_ui_folders, _warn_if_webui_missing
+from privacyidea.app import (_resolve_ui_folders, _warn_if_webui_missing, create_app,
+                             create_docker_app)
 from privacyidea.config import ConfigKey, DefaultConfigValues
 from privacyidea.webui.login import WEBUI_DIST_PATH
 from .base import MyTestCase
@@ -212,6 +214,35 @@ class MissingWebUIWarningTestCase(MyTestCase):
             app.static_folder = os.path.join(root_path, "mystatic")
             with self.assertNoLogs("privacyidea.app", level="WARNING"):
                 _warn_if_webui_missing(app)
+
+
+class AppFactoryParityTestCase(MyTestCase):
+    """Both application factories have to wire the WebUI up the same way.
+
+    create_app() and create_docker_app() are maintained side by side and the Docker image runs the
+    second one. The fallback that answers an unmatched path with the WebUI was registered only in
+    create_app(), so in the image every route of the WebUI answered 404 - invisible for as long as
+    that image served the previous WebUI, and a WebUI that cannot be opened at all once it did not.
+
+    Comparing the two by behaviour would mean building the Docker app, which reads
+    /etc/privacyidea/pi.cfg and would make the test depend on the machine it runs on, so the two
+    are compared by what they register instead.
+    """
+
+    SHARED_WIRING = [
+        "_register_spa_fallback",
+        "_register_blueprints",
+        "_resolve_ui_folders",
+        "_warn_if_webui_missing",
+        'app.jinja_env.filters["versioned"]',
+    ]
+
+    def test_both_factories_wire_up_the_webui(self):
+        sources = {factory.__name__: inspect.getsource(factory)
+                   for factory in (create_app, create_docker_app)}
+        for name, source in sources.items():
+            for wiring in self.SHARED_WIRING:
+                self.assertIn(wiring, source, f"{name}() does not set up '{wiring}'")
 
 
 class AlternativeUIConfigTestCase(MyTestCase):

@@ -146,6 +146,43 @@ babel = Babel()
 log = logging.getLogger(__name__)
 
 
+def _register_spa_fallback(app: Flask) -> None:
+    """
+    Answer an unmatched request with the WebUI, so that its own routes survive a reload.
+
+    The WebUI routes in the browser, so a path like /app/v2/tokens exists only there and
+    reaches Flask as a 404 whenever the page is opened or reloaded directly. Both application
+    factories need this: without it every deep link into the WebUI ends on an error page.
+    """
+    @app.errorhandler(404)
+    def fallback(_):
+        lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+        all_locales = list(lang_list) + [lang.replace("_", "-") for lang in lang_list if "_" in lang]
+        locale_pattern = "|".join(re.escape(lang) for lang in all_locales)
+        if request.path.startswith("/static/public/customize"):
+            return send_html("")
+        elif (re.match(rf'^/app/v2/(({locale_pattern})/)?', request.path)
+              and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
+            from privacyidea.webui.login import _serve_locale
+            locale_match = re.match(rf'^/app/v2/({locale_pattern})/', request.path)
+            locale = locale_match.group(1) if locale_match else "en"
+            new_ui = _serve_locale(locale) or _serve_locale("en")
+            if new_ui:
+                return new_ui
+            return redirect(f"{request.script_root}/")
+        if (request.method == "GET"
+                and not request.path.startswith("/static/")
+                and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
+            from privacyidea.webui.login import _serve_locale, get_preferred_language
+            locale_prefix_match = re.match(rf'^/({locale_pattern})(/|$)', request.path)
+            locale = locale_prefix_match.group(1) if locale_prefix_match else (get_preferred_language() or "en")
+            new_ui = _serve_locale(locale) or _serve_locale("en")
+            if new_ui:
+                return new_ui
+            return redirect(f"{request.script_root}/")
+        return jsonify(error="Not found"), 404
+
+
 def _register_blueprints(app):
     """Register the available Flask blueprints"""
     app.register_blueprint(validate_blueprint, url_prefix='/validate')
@@ -461,34 +498,7 @@ def create_app(config_name="development",
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = not silent
 
-    # Routed apps must fall back to index.html
-    @app.errorhandler(404)
-    def fallback(_):
-        lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
-        all_locales = list(lang_list) + [lang.replace("_", "-") for lang in lang_list if "_" in lang]
-        locale_pattern = "|".join(re.escape(lang) for lang in all_locales)
-        if request.path.startswith("/static/public/customize"):
-            return send_html("")
-        elif (re.match(rf'^/app/v2/(({locale_pattern})/)?', request.path)
-              and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
-            from privacyidea.webui.login import _serve_locale
-            locale_match = re.match(rf'^/app/v2/({locale_pattern})/', request.path)
-            locale = locale_match.group(1) if locale_match else "en"
-            new_ui = _serve_locale(locale) or _serve_locale("en")
-            if new_ui:
-                return new_ui
-            return redirect(f"{request.script_root}/")
-        if (request.method == "GET"
-                and not request.path.startswith("/static/")
-                and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
-            from privacyidea.webui.login import _serve_locale, get_preferred_language
-            locale_prefix_match = re.match(rf'^/({locale_pattern})(/|$)', request.path)
-            locale = locale_prefix_match.group(1) if locale_prefix_match else (get_preferred_language() or "en")
-            new_ui = _serve_locale(locale) or _serve_locale("en")
-            if new_ui:
-                return new_ui
-            return redirect(f"{request.script_root}/")
-        return jsonify(error="Not found"), 404
+    _register_spa_fallback(app)
 
 
     # Overwrite default config with environment setting
@@ -625,6 +635,8 @@ def create_docker_app():
     app = Flask(__name__)
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = bool(app.debug)
+
+    _register_spa_fallback(app)
 
     # Begin the app configuration
     # First we load a default configuration
