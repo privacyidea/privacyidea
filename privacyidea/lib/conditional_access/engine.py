@@ -1607,8 +1607,9 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     once, on the evaluation that carries the failure count to at or above its
     stage's threshold: an action at threshold 8 usually runs on the 8th failure
     and not again on the 9th, and also runs if a single step (concurrent
-    requests, or several tracked rows staged by one request) skipped 8 outright,
-    so a race can never make the action miss its crossing entirely. An action with
+    requests, or several tracked rows staged by one request) skipped 8 outright -
+    see :func:`_action_fires` for the narrower race this still does not close
+    (several such requests all committing before any of them is evaluated). An action with
     ``retrigger_above_threshold`` fires on every request while the count stays
     within the range its stage owns - at or above threshold 8, but below the next
     stage's threshold - so a single stage can email once at 8 while keeping the
