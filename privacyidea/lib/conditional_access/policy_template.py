@@ -57,6 +57,13 @@ class ConditionalAccessPolicyTemplate:
     policy: dict
 
 
+# The restricting action of every template's *highest* stage re-triggers. A fire-once action only fires on the request
+# where the count equals the threshold, so a subject already past it stays unrestricted - events that predate the
+# policy, or an administrator lifting a lock while the failures behind it are still inside the window. The highest
+# stage owns every count from its threshold upwards, so re-triggering there catches whatever put the count up there.
+# Notifications stay fire-once (one mail per request otherwise) and DENY already re-triggers by default
+# (DECISION_ACTIONS). Every timed restriction here lasts at least as long as its window, so nothing re-triggers while
+# the restriction stands.
 PASSWORD_BRUTEFORCE = ConditionalAccessPolicyTemplate(
     key="password_bruteforce",
     description=lazy_gettext("Lock a single user after repeated wrong passwords or PINs (password brute-force)."),
@@ -75,7 +82,8 @@ PASSWORD_BRUTEFORCE = ConditionalAccessPolicyTemplate(
         "stages": [
             {"failure_threshold": 10,
              "actions": [{"action_type": ConditionalAccessAction.LOCK_USER,
-                          "action_value": {"duration_seconds": 900}}]},
+                          "action_value": {"duration_seconds": 900},
+                          "retrigger_above_threshold": True}]},
         ],
     })
 
@@ -112,9 +120,13 @@ MFA_BRUTEFORCE = ConditionalAccessPolicyTemplate(
                                "{event_type} events. Time: {time}.")}},
              ]},
 
+            # A permanent lock expires only when an administrator lifts it, so re-triggering it means one thing:
+            # a failure after that unlock locks the user again while the count is still up. Reset on success is what
+            # makes the unlock stick - a completed login clears the count before the next failure can count.
             {"failure_threshold": 10,
              "actions": [
-                 {"action_type": ConditionalAccessAction.PERMANENT_LOCK_USER},
+                 {"action_type": ConditionalAccessAction.PERMANENT_LOCK_USER,
+                  "retrigger_above_threshold": True},
                  {"action_type": ConditionalAccessAction.EMAIL_ADMIN,
                   "action_value": {
                       "smtp_identifier": "",
@@ -210,7 +222,8 @@ PASSWORD_SPRAYING = ConditionalAccessPolicyTemplate(
         "stages": [
             {"failure_threshold": 20,
              "actions": [{"action_type": ConditionalAccessAction.BLOCK_IP,
-                          "action_value": {"duration_seconds": 3600}}]},
+                          "action_value": {"duration_seconds": 3600},
+                          "retrigger_above_threshold": True}]},
         ],
     })
 
@@ -232,7 +245,8 @@ USER_ENUMERATION = ConditionalAccessPolicyTemplate(
         "stages": [
             {"failure_threshold": 10,
              "actions": [{"action_type": ConditionalAccessAction.BLOCK_IP,
-                          "action_value": {"duration_seconds": 3600}}]},
+                          "action_value": {"duration_seconds": 3600},
+                          "retrigger_above_threshold": True}]},
         ],
     })
 

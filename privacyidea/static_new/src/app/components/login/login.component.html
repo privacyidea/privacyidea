@@ -168,7 +168,9 @@
         }
 
         @if (showOtpField()) {
-          <mat-form-field appearance="outline">
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic">
             <mat-label i18n="Login OTP label@@login.oneTimePassword">One-Time-Password</mat-label>
             <input
               #otpInput

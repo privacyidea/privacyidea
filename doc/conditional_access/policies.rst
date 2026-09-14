@@ -163,6 +163,15 @@ any credentials are checked and logged as ``ACCESS_DENIED``, a type no policy
 can count, so the very count that would carry it past the next threshold stops
 climbing while the refusal holds.
 
+It is worth giving the **highest** stage's restricting action - its lock, block
+or ``DENY`` - re-trigger above threshold. Because a fire-once action fires only
+on the request where the count *equals* the threshold, a subject that is already
+past it stays unrestricted: failures that predate the policy, or an
+administrator who lifted a lock while the failures behind it were still inside
+the window. The highest stage owns every count from its threshold upwards, so
+re-triggering there restricts on the next request whatever put the count up
+there. The shipped templates are written this way.
+
 Stages are evaluated from the highest threshold down, so the order follows the
 thresholds themselves and there is nothing else to configure.
 
@@ -289,7 +298,9 @@ The *New Conditional Access* page offers templates for the common cases - passwo
 brute force, MFA brute force, per-user and per-IP rate limits, password
 spraying and user enumeration. A template fills in tracked events, window,
 count mode, stages, actions and whether the count resets on a successful
-login; you pick the priority and review the thresholds. The two per-IP rate limit templates are pre-set to dry run, because
+login; you pick the priority and review the thresholds. The restricting action
+of each template's highest stage re-triggers above its threshold, as recommended
+above. The two per-IP rate limit templates are pre-set to dry run, because
 their threshold depends on how many users share an address, see
 :ref:`conditional_access_policies_dry_run`.
 
