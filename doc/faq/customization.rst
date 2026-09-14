@@ -18,7 +18,7 @@ Templates
    does not read HTML views from the file system.
 
 You can change the HTML templates of the web UI as follows.
-You can create a copy of the orignial templates, modify them and use rewrite rules of your webserver
+You can create a copy of the original templates, modify them and use rewrite rules of your webserver
 to call your new, modified templates.
 
 This way updates will not affect your modifications.

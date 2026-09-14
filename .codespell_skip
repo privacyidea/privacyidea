@@ -1,4 +1,5 @@
 ./privacyidea/static_old/contrib/*
 ./privacyidea/static_old/components/translation/translations.js
 *.po
+*package-lock.json
 ./privacyidea/static/src/locale/messages.*.xlf

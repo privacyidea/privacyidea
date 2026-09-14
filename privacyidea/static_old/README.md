@@ -4,7 +4,7 @@ documentation for how to select it.
 
 The Web Client acts as a Single Page Application that communicates with the
 privacyIDEA backend service. You could as well install and run the Web Client
-on another exposed Webserver, while shielding the orginial privacyIDEA
+on another exposed Webserver, while shielding the original privacyIDEA
 backend service in a more protected network segment.
 
 The privacyIDEA Web Client is licensed under the AGPLv3.
