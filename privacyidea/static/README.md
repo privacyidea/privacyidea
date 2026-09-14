@@ -1,24 +1,41 @@
-This is the Web Client for the privacyIDEA authentication service.
+# Webui
 
-The Web Client acts as a Single Page Application that communicates with the
-privacyIDEA backend service. You could as well install and run the Web Client
-on another exposed Webserver, while shielding the orginial privacyIDEA
-backend service in a more protected network segment.
+This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 18.2.8.
 
-The privacyIDEA Web Client is licensed under the AGPLv3.
+## Setup the development environment
 
-(c) 2015 Cornelius Kölbel <cornelius.koelbel@netknights.it>
+You need [Node.js](https://nodejs.org/en/download) which comes bundled with the node package manager (npm).
 
+In `privacyidea/static_new/` run `npm install` to install all the pinned dependencies.
+If the Angular CLI is not installed globally it can be executed with `npm run-script ng ...` from the `static_new/`
+directory.
 
-  This code is free software; you can redistribute it and/or
-  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
-  License as published by the Free Software Foundation; either
-  version 3 of the License, or any later version.
+## Development server
 
-  This code is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you
+change any of the source files.
 
-  You should have received a copy of the GNU Affero General Public
-  License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+To change the privacyIDEA server to connect to, edit the `target` entry in `static_new/src/proxy.conf.json`.
+
+## Code scaffolding
+
+Run `ng generate component component-name` to generate a new component. You can also use
+`ng generate directive|pipe|service|class|guard|interface|enum|module`.
+
+## Build
+
+Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+
+## Running unit tests
+
+Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+
+## Running end-to-end tests
+
+Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a
+package that implements end-to-end testing capabilities.
+
+## Further help
+
+To get more help on the Angular CLI use `ng help` or go check out
+the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
