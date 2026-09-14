@@ -424,7 +424,7 @@ $button-low-contrast-variant: linear-gradient(
   @include action-button(
     var(--mat-sys-surface-container-lowest),
     var(--mat-sys-primary),
-    var(--sky-blue),
+    var(--sky-bg),
     $ripple-mdc: var(--sky-bg)
   );
 }

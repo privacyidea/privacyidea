@@ -46,14 +46,19 @@
   line-height: 24px !important;
   padding: 0 8px !important;
   font-size: 11px;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--mat-sys-secondary);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
+  font-weight: 500;
+  visibility: hidden;
+  background-color: transparent;
+  color: var(--mat-sys-on-primary);
+  border-color: color-mix(in srgb, var(--mat-sys-on-primary) 50%, transparent);
 
   &:hover {
-    background-color: var(--mat-sys-secondary-container) !important;
-    color: var(--mat-sys-on-secondary-container);
+    background-color: color-mix(in srgb, var(--mat-sys-on-primary) 15%, transparent);
+    border-color: var(--mat-sys-on-primary);
   }
+}
+
+.mat-mdc-option:hover .only-button,
+.mat-mdc-option:focus-visible .only-button {
+  visibility: visible;
 }
