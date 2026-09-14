@@ -16,9 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpEvent } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable, Subscription } from "rxjs";
 
 /** The requests in flight against one endpoint, collapsed into a single counted entry. */
 export interface LoadingGroup {
@@ -33,7 +31,7 @@ export interface LoadingServiceInterface {
 
   notifyListeners(): void;
 
-  addLoading(loading: { key: string; observable: Observable<HttpEvent<unknown>>; url: string }): void;
+  addLoading(key: string, url: string): void;
 
   getLoadingGroups(): LoadingGroup[];
 
@@ -49,7 +47,9 @@ export interface LoadingServiceInterface {
 })
 export class LoadingService implements LoadingServiceInterface {
   listeners: Record<string, (isLoading: boolean) => void> = {};
-  loadings: { key: string; subscription: Subscription; url: string }[] = [];
+  // A plain record, not a subscription of our own to the request: see the note on loadingInterceptor for why an
+  // extra subscriber here would keep a cancelled request running.
+  loadings: { key: string; url: string }[] = [];
 
   addListener(id: string, listener: (isLoading: boolean) => void): void {
     this.listeners[id] = listener;
@@ -63,16 +63,8 @@ export class LoadingService implements LoadingServiceInterface {
     Object.values(this.listeners).forEach((l) => l(this.isLoading()));
   }
 
-  addLoading(loading: { key: string; observable: Observable<HttpEvent<unknown>>; url: string }): void {
-    const subscription = loading.observable.subscribe({
-      complete: () => {
-        this.removeLoading(loading.key);
-      },
-      error: () => {
-        this.removeLoading(loading.key);
-      }
-    });
-    this.loadings.push({ key: loading.key, subscription, url: loading.url });
+  addLoading(key: string, url: string): void {
+    this.loadings.push({ key, url });
     this.notifyListeners();
   }
 
@@ -92,9 +84,8 @@ export class LoadingService implements LoadingServiceInterface {
   }
 
   clearAllLoadings(): void {
-    this.loadings.forEach((l) => {
-      l.subscription.unsubscribe();
-    });
+    // Forgets what is tracked; it cannot cancel the requests themselves any more, since tracking no longer holds a
+    // subscription to one - see loadingInterceptor.
     this.loadings = [];
     this.notifyListeners();
   }

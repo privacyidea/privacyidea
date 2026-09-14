@@ -23,7 +23,7 @@
     padding: 8px 32px;
   }
 
-  .name-priority-row {
+  .name-scope-priority-row {
     align-items: flex-start;
     display: flex;
     flex-direction: row;
@@ -32,6 +32,7 @@
     gap: 16px;
 
     app-policy-name-edit,
+    app-policy-scope-edit,
     app-policy-priority-edit {
       flex: 0 1 auto;
     }

@@ -2,6 +2,18 @@
 
 $input-focus-outline: theme.$focus-outline;
 
+.edit-policy-layout .mat-mdc-form-field-subscript-wrapper {
+  line-height: 16px;
+}
+
+.edit-policy-layout .ca-priority-field .mat-mdc-form-field-subscript-wrapper {
+  line-height: 16px;
+}
+
+.edit-policy-layout .ca-priority-field .mat-mdc-form-field-hint-wrapper {
+  height: 32px;
+}
+
 .input {
   height: 40px;
   width: 107px;
@@ -82,6 +94,19 @@ $input-focus-outline: theme.$focus-outline;
     padding: 2px 8px;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+// The global option state layers paint an opaque primary fill, which only reads next to the text
+// colour override that applies inside select panels. These rows are in an autocomplete panel and
+// bring their own colours (a primary-coloured IP, chips), so the states stay a surface step.
+// Both panel classes are named so this outranks the [_ngcontent]-stamped copy of the global rule,
+// which ties on specificity and is injected later.
+.mat-mdc-autocomplete-panel.known-clients-autocomplete-panel {
+  .mat-mdc-option:hover:not(.mdc-list-item--disabled),
+  .mat-mdc-option.mat-mdc-option-active:not(.mdc-list-item--disabled),
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+    background-color: var(--mat-sys-surface-container-high);
   }
 }
 

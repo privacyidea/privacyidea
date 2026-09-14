@@ -138,23 +138,11 @@
         [value]="null"
         (selectionChange)="addUserAgentFromSelect($event, uaSelect)"
         panelClass="auto-width-dropdown">
-        <div class="select-search-header">
-          <input
-            matInput
-            i18n-placeholder="@@policy.search"
-            placeholder="Search..."
-            [value]="userAgentSearch()"
-            (input)="userAgentSearch.set($any($event.target).value)"
-            (keydown)="$event.stopPropagation()"
-            (keydown.enter)="handleEnterOnSearch($event, uaSelect)"
-            class="select-search-input" />
-        </div>
-
-        @for (ua of filteredUserAgentPresets(); track ua.key) {
+        @for (ua of availableUserAgentPresets(); track ua.key) {
           <mat-option [value]="ua.key">{{ ua.label }}</mat-option>
         }
 
-        @if (filteredUserAgentPresets().length === 0) {
+        @if (availableUserAgentPresets().length === 0) {
           <mat-option
             disabled
             i18n="@@policy.noAgentsFound"

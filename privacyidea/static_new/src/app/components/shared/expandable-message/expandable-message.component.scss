@@ -1,0 +1,59 @@
+// Material's default table row height. Cells carry horizontal padding only, so the space above and below a
+// single line is leftover row height rather than padding - which is why it disappears the moment a cell grows
+// past it and the row starts sizing to its content instead.
+$row-height: 52px;
+$line-height: 1.5;
+
+.expandable-message {
+  align-items: flex-start;
+  // A block-level flex container, so it starts at the top of
+  // the cell's content area and expanding only adds height below it.
+  display: flex;
+  gap: 4px;
+  max-width: 100%;
+  // Reserve the gap the row height was giving us, so it survives expansion. Collapsed this fits inside the
+  // row's own height and changes nothing; expanded it keeps the first line where it was and holds the same
+  // space below the last one.
+  padding-block: calc((#{$row-height} - #{$line-height}em) / 2);
+}
+
+.expandable-message__text {
+  display: inline-block;
+  // Fixed, so the first line sits at the same height collapsed or expanded and the toggle beside it stays put.
+  line-height: $line-height;
+  // Bounded in *both* states, so expanding grows the row's height and never the column's width. Without the
+  // bound on the expanded state the cell widens on every toggle and drags the whole table's layout with it.
+  max-width: 40ch;
+  overflow-wrap: anywhere;
+}
+
+// One line, ellipsised, within the width above.
+.expandable-message__text--clamped {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// The same treatment as .sort-button in table-sort-header.component.scss, so this reads as the same control
+// as the sort and filter buttons in the same tables. The state-layer tokens are the part that matters: without
+// them the hover circle keeps Material's default 40px and spills well past the 24px button.
+.expandable-message__toggle.mat-mdc-icon-button.mat-mdc-button-base {
+  --mdc-icon-button-state-layer-size: 24px;
+  --mat-icon-button-state-layer-size: 24px;
+  --mdc-icon-button-icon-size: 20px;
+  flex: none;
+  height: 24px;
+  justify-content: center;
+  min-width: 24px;
+  padding: 0;
+  width: 24px;
+
+  .mat-icon {
+    justify-content: center;
+  }
+
+  .mat-mdc-button-touch-target {
+    height: 24px;
+    width: 24px;
+  }
+}

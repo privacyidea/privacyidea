@@ -25,7 +25,9 @@ from privacyidea.lib.container import (get_container_classes, delete_container_b
                                        assign_user, unassign_user, set_container_info,
                                        unregister, add_token_to_container)
 from privacyidea.lib.containers.container_states import ContainerStates
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.eventhandler.base import BaseEventHandler
+from privacyidea.lib.utils import create_tag_dict, parse_time_offset_from_now
 from privacyidea.lib import _
 import logging
 
@@ -121,7 +123,10 @@ class ContainerEventHandler(BaseEventHandler):
                 {"description":
                      {"type": "str",
                       "required": True,
-                      "description": _("Description of the container")
+                      "description": _("Description of the container. It may contain tags "
+                                       "like {now} (with offsets such as {now}+5d), "
+                                       "{client_ip}, {ua_browser}, {username}, {userrealm} "
+                                       "and {container_serial}.")
                       }
                  },
             ACTION_TYPE.REMOVE_TOKENS: {},
@@ -133,7 +138,10 @@ class ContainerEventHandler(BaseEventHandler):
                       },
                  "value":
                      {"type": "str",
-                      "description": _("Set the value for the key above.")}
+                      "description": _("Set the value for the key above. It may contain "
+                                       "tags like {now} (with offsets such as {now}+5d), "
+                                       "{client_ip}, {ua_browser}, {username}, {userrealm} "
+                                       "and {container_serial}.")}
                  },
             ACTION_TYPE.ADD_CONTAINER_INFO:
                 {"key":
@@ -143,7 +151,10 @@ class ContainerEventHandler(BaseEventHandler):
                       },
                  "value":
                      {"type": "str",
-                      "description": _("Set the value for the key above.")}
+                      "description": _("Set the value for the key above. It may contain "
+                                       "tags like {now} (with offsets such as {now}+5d), "
+                                       "{client_ip}, {ua_browser}, {username}, {userrealm} "
+                                       "and {container_serial}.")}
                  },
             ACTION_TYPE.DELETE_CONTAINER_INFO: {},
             ACTION_TYPE.DISABLE_TOKENS: {},
@@ -151,6 +162,36 @@ class ContainerEventHandler(BaseEventHandler):
             ACTION_TYPE.UNREGISTER: {}
         }
         return actions
+
+    def _get_tags(self, g, request, container_serial, text):
+        """
+        Create the tag dictionary for a text of a container action.
+
+        A possible time offset (like ``{now}+5d``) is parsed from the text and
+        removed from it. The returned text must be formatted with the returned tags.
+
+        :param g: The flask g object
+        :param request: The request object
+        :param container_serial: The serial number of the container that is handled
+        :param text: The description or container info value, may contain tags
+        :return: tuple of the text without the offset and the tag dictionary
+        """
+        text, time_delta = parse_time_offset_from_now(text)
+        owner = None
+        if container_serial:
+            try:
+                owners = find_container_by_serial(container_serial).get_users()
+                owner = owners[0] if owners else None
+            except ResourceNotFoundError:
+                log.info(f"Could not read the container {container_serial} for the tags.")
+        logged_in_user = g.logged_in_user if hasattr(g, "logged_in_user") else None
+        tags = create_tag_dict(logged_in_user=logged_in_user,
+                               request=request,
+                               client_ip=getattr(g, "client_ip", None),
+                               container_serial=container_serial,
+                               tokenowner=owner,
+                               time_offset=time_delta)
+        return text, tags
 
     def do(self, action, options=None):
         """
@@ -238,7 +279,9 @@ class ContainerEventHandler(BaseEventHandler):
                 elif action.lower() == ACTION_TYPE.SET_DESCRIPTION:
                     new_description = handler_options.get("description")
                     if new_description:
-                        set_container_description(container_serial, new_description)
+                        text, tags = self._get_tags(g, request, container_serial, new_description)
+                        set_container_description(container_serial,
+                                                  self._format_with_tags(text, tags, new_description))
                     else:
                         ret = False
                         log.debug(f"No description found to set in container {container_serial}")
@@ -254,13 +297,16 @@ class ContainerEventHandler(BaseEventHandler):
                 elif action.lower() == ACTION_TYPE.SET_CONTAINER_INFO:
                     key = handler_options.get("key")
                     value = handler_options.get("value") or ""
-                    info = {key: value}
+                    text, tags = self._get_tags(g, request, container_serial, value)
+                    info = {key: self._format_with_tags(text, tags, value)}
                     set_container_info(container_serial, info)
 
                 elif action.lower() == ACTION_TYPE.ADD_CONTAINER_INFO:
                     key = handler_options.get("key")
                     value = handler_options.get("value") or ""
-                    add_container_info(container_serial, key, value)
+                    text, tags = self._get_tags(g, request, container_serial, value)
+                    add_container_info(container_serial, key,
+                                       self._format_with_tags(text, tags, value))
 
                 elif action.lower() == ACTION_TYPE.DELETE_CONTAINER_INFO:
                     delete_container_info(container_serial, ikey=None)

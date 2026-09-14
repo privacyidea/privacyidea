@@ -57,21 +57,3 @@
   gap: 16px;
   margin-top: 8px;
 }
-
-.select-search-header {
-  background-color: var(--mat-sys-surface-container);
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  padding: 8px 16px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.select-search-input {
-  background: transparent;
-  border: none;
-  color: var(--mat-sys-on-surface);
-  font-size: 0.9rem;
-  outline: none;
-  width: 100%;
-}
