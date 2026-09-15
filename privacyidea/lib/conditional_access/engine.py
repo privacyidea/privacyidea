@@ -1063,6 +1063,7 @@ def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end
     :return: the distinct-account count (``DISTINCT_USERS``), event count (``PER_REQUEST``) or attempt count
         (``PER_ATTEMPT``)
     """
+    sql_filters, row_filter = _count_scoping(policy)
     if policy.count_mode == CountMode.DISTINCT_USERS:
         # Excluding this request's own rows is meaningless here: the signal is the *distinct* accounts seen,
         # so an account that already appears via an earlier, unrelated row is already one of them regardless
@@ -1070,11 +1071,9 @@ def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end
         # is not simply "one row/attempt fewer". Callers that need count_before for crossing-detection
         # (see _evaluate_policy) fall back to count - 1 for this mode instead of calling this with ids to
         # exclude.
-        sql_filters, _ = _count_scoping(policy)
         return count_distinct_users_for_ip(source_ip, policy.counter_types_to_track,
                                            _effective_window_seconds(policy, window_end), window_end=window_end,
                                            extra_filters=sql_filters)
-    sql_filters, row_filter = _count_scoping(policy)
     window_seconds = _effective_window_seconds(policy, window_end)
     if policy.count_mode == CountMode.PER_REQUEST:
         return count_ip_events(source_ip, policy.counter_types_to_track,
@@ -1901,14 +1900,12 @@ def parse_lock_duration_seconds(action_value: Any) -> int | None:
     so what can be stored and what the engine can act on are the same set by
     construction rather than by two descriptions agreeing.
     """
-    if isinstance(action_value, bool):
-        # bool is an int subclass; a boolean is never a valid duration.
-        return None
     if isinstance(action_value, dict):
         action_value = action_value.get("duration_seconds", action_value.get("duration"))
     if isinstance(action_value, bool):
-        # The dict branch above can unwrap to a bool too (e.g. {"duration_seconds": true}); int(True) == 1 would
-        # otherwise silently pass as a one-second duration instead of being rejected like a top-level bool is.
+        # bool is an int subclass; a boolean is never a valid duration - whether given directly or unwrapped
+        # from a dict (e.g. {"duration_seconds": true}), since int(True) == 1 would otherwise silently pass as
+        # a one-second duration.
         return None
     try:
         seconds = int(action_value)
