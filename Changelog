@@ -162,6 +162,9 @@ Version 3.14dev1
     policy, which silently ignored failed authentications.
     Such rows count again after the upgrade, so an upgrade can lock out a user until the time window of the policy has
     passed (#5629, #5616)
+  * `GET /serviceid/` is available to self-service users, guarded by the new `serviceid_list` policy action in user
+    scope. Previously the endpoint was admin-only, so a user enrolling an application specific password token could
+    never populate the service ID choice and the enrollment form could not be submitted (#5611)
 
 Version 3.13.3
 
