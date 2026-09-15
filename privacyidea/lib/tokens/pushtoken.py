@@ -57,6 +57,7 @@ from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                            AUTH_EVENT_REASON_KEY,
+                                                                           AUTH_EVENT_TYPE_KEY,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.config import get_from_config
@@ -133,6 +134,16 @@ KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
 DECLINE_REASON_AUTH_EVENTS = {
     PushDeclineReason.UNKNOWN_TRIGGER.value: AuthEventType.CHALLENGE_DECLINED_UNKNOWN_TRIGGER,
     PushDeclineReason.CANCELLED.value: AuthEventType.CHALLENGE_CANCELLED,
+}
+
+# How a challenge the phone already refused classifies the *later* request that runs into it - the
+# /validate/check a client sends to finalize after polling. Keyed by the refusal status, because that
+# is what survives on the challenge; the decline reason itself does not, so a repudiation reads here
+# as the plain decline it also is. Its own event stays on the /ttype/push row where the phone made it,
+# which is what keeps the repudiation counted once rather than once per request that reports it.
+REFUSAL_STATUS_AUTH_EVENTS = {
+    CHALLENGE_REFUSAL_STATUS[ChallengeSession.CANCELLED]: AuthEventType.CHALLENGE_CANCELLED,
+    CHALLENGE_REFUSAL_STATUS[ChallengeSession.DECLINED]: AuthEventType.CHALLENGE_DECLINED,
 }
 
 # The optional push features this server advertises to the smartphone in every
@@ -1678,6 +1689,14 @@ class PushTokenClass(TokenClass):
         state = self._scan_challenge_response(transaction_id, passw)
         if state.refused_status:
             _log_challenge_answer(options.get("g"), transaction_id, state.refused_status)
+            # This request failed because the phone refused the challenge, not because anything was
+            # answered wrongly - nothing was answered here at all, since a refused challenge never
+            # reaches the response check. Classify it as the refusal so the log says why, and so the
+            # failed-attempt rate limits keep leaving a user's own cancellation uncounted: otherwise
+            # finalizing after a cancel would put back the CHALLENGE_ANSWERED_FAIL that excluding
+            # CHALLENGE_CANCELLED from those templates exists to avoid.
+            self.auth_details[AUTH_EVENT_TYPE_KEY] = REFUSAL_STATUS_AUTH_EVENTS[state.refused_status]
+            self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE
         return state.otp_counter
 
     @classmethod

@@ -108,14 +108,17 @@ trigger this login at all (``unknown_trigger``), or triggered it and aborted
 *cancelled*, which ``/validate/polltransaction`` reports as the
 ``challenge_status``, so that the application can react accordingly.
 
-Every answer is written to the audit log. The ``action_detail`` of the entry of
-the answer (``POST /ttype/push``) names the transaction and the resulting status
--- ``accept``, ``declined``, ``cancelled``, or ``confirmed`` for the smartphone
-step of code_to_phone -- plus the reason the app sent with a refusal. The
-authentication that fails because of a refusal names transaction and status as
-well. An app sending a reason this server version does not know declines the
-challenge like an app that sends no reason at all; the value it did send is only
-visible in the audit entry of the answer.
+Every answer the server acts on is written to the audit log. The
+``action_detail`` of the entry of the answer (``POST /ttype/push``) names the
+transaction and the resulting status -- ``accept``, ``declined``, ``cancelled``,
+or ``confirmed`` for the smartphone step of code_to_phone -- plus the reason the
+app sent with a refusal. An answer the server rejects, such as a wrong or
+missing presence answer, records no status: there is no outcome to name, and the
+challenge stays open for another try. The authentication that fails because of a
+refusal names transaction and status as well. An app sending a reason this
+server version does not know declines the challenge like an app that sends no
+reason at all; the value it did send is only visible in the audit entry of the
+answer.
 
 The two reasons are also separate events in the authentication log, so
 conditional access can act on them differently:
