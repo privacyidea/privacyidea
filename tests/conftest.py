@@ -18,6 +18,7 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import atexit
+import hashlib
 import os
 import shutil
 import socket
@@ -127,6 +128,9 @@ def _force_read_committed_on_mysql(dbapi_connection, connection_record):
         finally:
             cursor.close()
 
+
+# Enable rich assert diffs for the plain asserts in the auth-log helper module.
+pytest.register_assert_rewrite("tests.authlog_utils")
 
 from privacyidea.lib.caconnector import save_caconnector
 
@@ -323,13 +327,64 @@ def _clear_subscription_user_count():
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
 OPENSSLCNF = "openssl.cnf"
-WORKINGDIR = "tests/testdata/ca"
+WORKINGDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "testdata", "ca")
+
+
+def prepare_ca_directory(target_directory) -> str:
+    """
+    Copy the CA of ``WORKINGDIR`` to ``target_directory`` and initialize its CA database.
+
+    ``index.txt`` and ``serial`` form the openssl CA database and are not part of the
+    stored CA: openssl appends to them whenever a certificate is signed. They are
+    created here with the values a freshly created CA starts out with, so that every
+    copy begins with an empty database.
+
+    :param target_directory: The directory to copy the CA to. It may already exist.
+    :return: The path of the prepared directory
+    """
+    target_directory = str(target_directory)
+    shutil.copytree(WORKINGDIR, target_directory, dirs_exist_ok=True)
+    with open(os.path.join(target_directory, "index.txt"), "w") as index_file:
+        index_file.write("")
+    with open(os.path.join(target_directory, "serial"), "w") as serial_file:
+        serial_file.write("1000")
+    return target_directory
+
+
+def _hash_ca_directory() -> dict:
+    """Map the name of each file in ``WORKINGDIR`` to a hash of its content."""
+    file_hashes = {}
+    for entry in os.scandir(WORKINGDIR):
+        if entry.is_file():
+            with open(entry.path, "rb") as ca_file:
+                file_hashes[entry.name] = hashlib.sha256(ca_file.read()).hexdigest()
+    return file_hashes
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ca_stays_untouched() -> Iterator[None]:
+    """
+    Fail the test session if a test wrote into the CA of ``WORKINGDIR``.
+
+    That directory holds a usable openssl CA. Signing a certificate against it appends
+    to its database, increments its serial number and drops the new certificate next to
+    the configuration, so a CA connector must be pointed at a ``prepare_ca_directory()``
+    copy rather than at the CA itself.
+    """
+    before = _hash_ca_directory()
+    yield
+    after = _hash_ca_directory()
+    if before != after:
+        written = set(before) ^ set(after)
+        written.update(name for name in before.keys() & after.keys() if before[name] != after[name])
+        pytest.fail(f"The test run wrote to the CA in {WORKINGDIR}: {', '.join(sorted(written))}. "
+                    f"Point the CA connector at a prepare_ca_directory() copy instead.")
 
 
 @pytest.fixture(scope="function")
 def setup_local_ca(tmp_path):
     # TODO: we should probably yield the directory to properly clean it up
-    shutil.copytree(WORKINGDIR, tmp_path, dirs_exist_ok=True)
+    prepare_ca_directory(tmp_path)
     save_caconnector(
         {
             "cakey": CAKEY,

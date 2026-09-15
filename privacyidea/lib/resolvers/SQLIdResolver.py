@@ -359,10 +359,18 @@ class IdResolver (UserIdResolver):
             # A DB error here must propagate rather than being logged and swallowed: the caller
             # (_resolve_owner_logins) catches it to fall back to a one-by-one lookup that marks only
             # the users which keep failing as unresolvable. Swallowing it here would make a chunk's
-            # worth of users indistinguishable from ones that genuinely don't exist.
+            # worth of users indistinguishable from ones that genuinely don't exist. A lost
+            # connection leaves the transaction invalid, though, and the session is cached for the
+            # lifetime of the request (get_resolver_object), so it must be rolled back here or the
+            # caller's fallback would run on a session that raises PendingRollbackError instead of
+            # reconnecting.
             conditions = [or_(*userid_filters)]
             conditions = self._append_where_filter(conditions, self.TABLE, self.where)
-            result = self.session.execute(select(self.TABLE).filter(and_(*conditions)))
+            try:
+                result = self.session.execute(select(self.TABLE).filter(and_(*conditions)))
+            except Exception:
+                self.session.rollback()
+                raise
 
             for row in result.mappings():
                 returned_id = convert_column_to_unicode(row.get(userid_column))

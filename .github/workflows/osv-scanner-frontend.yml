@@ -3,8 +3,8 @@
 # Results are uploaded to the Security tab as SARIF and do not block merging.
 # Findings require manual triage — presence of a CVE does not imply reachability.
 #
-# Only the new Angular frontend at privacyidea/static_new/ is scanned. The legacy
-# frontend is unmaintained and intentionally excluded.
+# Only the Angular frontend at privacyidea/static/ is scanned. The legacy frontend in
+# privacyidea/static_old/ is unmaintained and intentionally excluded.
 #
 # https://github.com/google/osv-scanner
 
@@ -16,14 +16,14 @@ on:
       - "master"
       - "branch-*"
     paths:
-      - "privacyidea/static_new/package-lock.json"
+      - "privacyidea/static/package-lock.json"
       - ".github/workflows/osv-scanner-frontend.yml"
   push:
     branches:
       - "master"
       - "branch-*"
     paths:
-      - "privacyidea/static_new/package-lock.json"
+      - "privacyidea/static/package-lock.json"
       - ".github/workflows/osv-scanner-frontend.yml"
   schedule:
     # Nightly at 22:53 UTC — offset from backend scan (22:47) to avoid simultaneous load.
@@ -65,7 +65,7 @@ jobs:
         continue-on-error: true
         run: |
           osv-scanner scan \
-            --lockfile=privacyidea/static_new/package-lock.json \
+            --lockfile=privacyidea/static/package-lock.json \
             --format=sarif \
             --output-file=osv-results.sarif
 

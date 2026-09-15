@@ -3,21 +3,33 @@ This file tests the web UI for creating certificate requests
 
 implementation is contained webui/certificate.py
 """
+import shutil
+import tempfile
+
 from .base import MyTestCase
-import os
+from .conftest import prepare_ca_directory
 
 
 REQUESTKEY = """MIICQDCCASgwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDPPNQzDhLE5trNtlahHCa7JhyKSnOoWIq2HrOLmdIdB8KSiXnAadjI3yhhmB6z/q4rvXip925H3KOgFoyFAsFOkv1ybvDIAymbuABuwIOVyDQgNpyz5eTmdnOjGq1AluBTVADsdnmaxg1+tr0p7IPzy4mky2wAugzFeA//abiU9ARwQz/Ynten+13OdY7a58QHsZ3eb4hLtk2az/m8+p/NMm32OgsNI0J47JdCvw5NYFbh0wLyGcuEV5DlcKGigzWG4tqGn/mKxHmzUijay7s0ytPakUrPjXaismub+Zb9CSraESNN8MvWsrEOEmyaGWWYh8rk7iTORKyQj50bxSqdAgMBAAEWADANBgkqhkiG9w0BAQQFAAOCAQEAjqR8Cv+UZeGXP9v00/T4ClH2wCtQea9oLklllElsU+x9UNjrPITpZGwiKdCtrPSDy+QeqzecSXi23LL05s6RKATnQt31EPRLLPuHRwkpbHD+n/XJtqv5Byge/KJX+Xt8xb+cLKfGJmQibnV/vu83TL8on91pUB4BXuaSu3UXJOFnrG0E2h4rpGE8FrK3JrIruQe2FAcal/KRGzsgHp/vq90OibH0ZJQE3kNg+JkOlzBTTn73+Q39y/E6CW7fD8iFtNRF0xhZYJ/AgflLMQeQUeKRb0Qaillz/DnWQFuVqLoCdahvv6jt58nXmqHv6oMfRg0R2qF2jMFfGtI15Hixzw=="""
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
 OPENSSLCNF = "openssl.cnf"
-WORKINGDIR = "tests/testdata/ca"
 
 
 class WebUICertificateTestCase(MyTestCase):
 
     my_serial = "myToken"
     foreign_serial = "notMyToken"
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.ca_path = prepare_ca_directory(tempfile.mkdtemp())
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.ca_path)
+        super().tearDownClass()
 
     def setUp(self):
         """
@@ -66,13 +78,12 @@ class WebUICertificateTestCase(MyTestCase):
     def test_02_cert_enrolled(self):
         # Setup the CA
         self.authenticate()
-        cwd = os.getcwd()
         with self.app.test_request_context('/caconnector/localCA',
                                            data={'type': 'local',
                                                  'cakey': CAKEY,
                                                  'cacert': CACERT,
                                                  'openssl.cnf': OPENSSLCNF,
-                                                 "WorkingDir": cwd + "/" + WORKINGDIR},
+                                                 "WorkingDir": self.ca_path},
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

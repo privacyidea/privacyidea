@@ -9,14 +9,14 @@ ARG NODEJS_VERSION=22
 
 RUN apk add --no-cache nodejs-${NODEJS_VERSION} npm
 
-WORKDIR /build/privacyidea/static_new
+WORKDIR /build/privacyidea/static
 
 # Install dependencies first (better layer caching — only re-runs when
 # package.json / package-lock.json change, not on every source change).
-COPY privacyidea/static_new/package.json privacyidea/static_new/package-lock.json ./
+COPY privacyidea/static/package.json privacyidea/static/package-lock.json ./
 RUN npm ci
 
-COPY privacyidea/static_new/ ./
+COPY privacyidea/static/ ./
 RUN npm run build
 
 #  Stage 2: Build the Python virtualenv 
@@ -62,7 +62,7 @@ COPY ./tools/ ./tools
 COPY ./privacyidea/ ./privacyidea
 
 # Copy the pre-built Angular frontend from the node-builder stage
-COPY --from=node-builder /build/privacyidea/static_new/dist/ ./privacyidea/static_new/dist/
+COPY --from=node-builder /build/privacyidea/static/dist/ ./privacyidea/static/dist/
 
 RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PRIVACYIDEA=${GIT_VERSION} pip install --no-cache-dir ".[kerberos]"
 

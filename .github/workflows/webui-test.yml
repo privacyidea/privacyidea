@@ -5,14 +5,14 @@ name: Run WebUI tests
 on:
   pull_request:
     paths:
-      - 'privacyidea/static_new/**'
+      - 'privacyidea/static/**'
 
 permissions:
   contents: read
 
 defaults:
   run:
-    working-directory: ./privacyidea/static_new
+    working-directory: ./privacyidea/static
 
 jobs:
   test-webui:
@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: lts/*  # Use the latest LTS-release
           cache: npm
-          cache-dependency-path: privacyidea/static_new/package-lock.json
+          cache-dependency-path: privacyidea/static/package-lock.json
       - name: Install Node.js dependencies
         run: npm ci
       - name: Run tests for the new WebUI
@@ -41,6 +41,6 @@ jobs:
         if: ${{ steps.jest_run.outcome == 'success' }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          files: ./privacyidea/static_new/coverage/lcov.info
+          files: ./privacyidea/static/coverage/lcov.info
           flags: frontend
           token: ${{ secrets.CODECOV_TOKEN }}
