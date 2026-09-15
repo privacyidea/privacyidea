@@ -58,7 +58,7 @@ NPM_VERSION := $(shell npm --version 2>/dev/null)
 
 update-contrib:
 ifdef NPM_VERSION
-	(cd privacyidea/static && npm install && ./update_contrib.sh)
+	(cd privacyidea/static_old && npm install && ./update_contrib.sh)
 else
 	@echo "Command 'npm' not found! It is needed to install the JS contrib libraries."
 endif

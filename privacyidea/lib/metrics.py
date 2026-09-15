@@ -65,7 +65,7 @@ RETENTION_SECONDS = 86400       # Cleanup deletes rows older than 24h.
 #   - the column declarations in ``models/metric_aggregate.py``
 #   - the migration in ``migrations/versions/c2d3e4f5a6b7_metric_aggregate.py``
 #   - the ``Bucket boundaries: ...`` text in the p95 info tooltip in
-#     ``static/components/dashboard/views/dashboard.html`` (the only place
+#     ``static_old/components/dashboard/views/dashboard.html`` (the only place
 #     the user-facing list of boundaries is enumerated).
 _BUCKETS = (
     (0.05,   "bucket_le_50ms"),

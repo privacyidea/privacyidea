@@ -72,7 +72,7 @@ flag_management:
         - "privacyidea/"
     - name: frontend
       paths:
-        - "privacyidea/static_new/"
+        - "privacyidea/static/"
 
 component_management:
   individual_components:
@@ -81,11 +81,11 @@ component_management:
       paths:
         - "privacyidea/**"
         - "!privacyidea/static/**"
-        - "!privacyidea/static_new/**"
+        - "!privacyidea/static_old/**"
     - component_id: frontend
       name: frontend
       paths:
-        - "privacyidea/static_new/**"
+        - "privacyidea/static/**"
 
 comment:
   layout: "header, diff, flags, components, files"

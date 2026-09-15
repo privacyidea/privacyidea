@@ -17,11 +17,25 @@ global-exclude *.pyc .git*
 
 prune venv*
 
-# When the new WebUI is built, some .py files remain in the node_modules directory
+# When the WebUI is built, some .py files remain in the node_modules directory
 # which can not be excluded: https://github.com/pypa/setuptools/issues/511#issuecomment-570177072
 # We should move the WebUI sources out of the privacyidea module directory
 prune **/node_modules
 prune **/.angular
+
+# The WebUI is distributed built: the compiled application in static/dist and the assets it is
+# served with in static/public. Its sources and the workspace files around them are not needed to
+# run privacyIDEA, and everything below the static folder is reachable over HTTP. Build the WebUI
+# from the repository, not from a distribution.
+# These have to be pruned here rather than through exclude-package-data, which does not apply to
+# the files that "graft privacyidea" pulls in.
+prune privacyidea/static/src
+prune privacyidea/static/tools
+exclude privacyidea/static/.editorconfig privacyidea/static/.prettierrc
+exclude privacyidea/static/angular.json privacyidea/static/eslint.config.js
+exclude privacyidea/static/jest.config.ts privacyidea/static/tsconfig*.json
+exclude privacyidea/static/package.json privacyidea/static/package-lock.json
+exclude privacyidea/static/README.md
 
 prune doc
 prune .circleci
