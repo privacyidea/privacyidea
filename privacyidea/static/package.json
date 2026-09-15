@@ -1,33 +1,55 @@
 {
-  "name": "privacyidea",
-  "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
-  "dependencies": {
-    "angular": "^1.8.3",
-    "angular-gettext": "^2.4.2",
-    "angular-hotkeys": "^1.7.0",
-    "angular-inform": "0.0.19",
-    "angular-sanitize": "^1.8.3",
-    "angular-ui-bootstrap": "^2.5.6",
-    "angular-ui-router": "^1.0.30",
-    "bootstrap": "^3.4.1",
-    "isteven-angular-multiselect": "^4.0.0",
-    "jquery": "^3.7.1",
-    "ng-file-upload": "^12.2.13",
-    "ng-idle": "^1.3.2"
-  },
+  "name": "privacyidea-webui",
+  "version": "0.0.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "ng": "ng",
+    "start": "ng serve",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "start-hmr": "ng serve --hmr --port 4200",
+    "lint": "ng lint",
+    "lint:css-vars": "node tools/check-css-vars.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.spec.json",
+    "i18n:extract": "ng extract-i18n",
+    "format:check": "prettier --check \"src/**/*.{ts,html,scss,css,json}\"",
+    "format:write": "prettier --write \"src/**/*.{ts,html,scss,css,json}\""
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/privacyidea/privacyidea.git"
+  "private": true,
+  "dependencies": {
+    "@angular/cdk": "21.2.14",
+    "@angular/common": "21.2.17",
+    "@angular/compiler": "21.2.17",
+    "@angular/core": "21.2.17",
+    "@angular/forms": "21.2.17",
+    "@angular/material": "21.2.14",
+    "@angular/platform-browser": "21.2.17",
+    "@angular/platform-browser-dynamic": "21.2.17",
+    "@angular/router": "21.2.17",
+    "crypto-js": "^4.2.0",
+    "material-icons": "^1.13.14",
+    "rxjs": "^7.8.2",
+    "ts-node": "^10.9.2",
+    "tslib": "^2.8.1",
+    "uuid": "^14.0.0"
   },
-  "keywords": [],
-  "author": "Cornelius Kölbel <cornelius@privacyidea.org>",
-  "license": "AGPL-3.0-only",
   "devDependencies": {
-    "typescript": "^5.6.3"
+    "@angular-builders/jest": "^21.0.3",
+    "@angular-devkit/build-angular": "^21.2.17",
+    "@angular/cli": "21.2.17",
+    "@angular/compiler-cli": "21.2.17",
+    "@angular/localize": "21.2.17",
+    "@eslint/js": "^10.0.1",
+    "@types/crypto-js": "^4.2.2",
+    "@types/jest": "^30.0.0",
+    "angular-eslint": "21.3.1",
+    "eslint": "^10.0.3",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "ng-extract-i18n-merge": "3.4.0",
+    "prettier": "3.8.1",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "8.56.1"
   }
 }

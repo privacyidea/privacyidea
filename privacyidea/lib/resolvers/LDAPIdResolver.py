@@ -872,8 +872,11 @@ class IdResolver(UserIdResolver):
 
         for entry in search_result:
             group = entry.get("attributes", {}).get(self.group_name_attribute)
-            if group:
-                groups.append(group)
+            # ldap3 returns a list for attributes the schema declares multi-valued, and for
+            # every attribute if NOSCHEMAS is set. Either shape flattens into single names.
+            for name in group if isinstance(group, list) else [group]:
+                if name and name not in groups:
+                    groups.append(name)
 
         return groups
 

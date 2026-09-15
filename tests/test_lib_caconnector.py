@@ -27,12 +27,12 @@ from privacyidea.lib.error import CAError, CSRError, CSRPending
 from privacyidea.lib.utils import int_to_hex
 from privacyidea.models import db, CAConnectorConfig
 from .base import MyTestCase
+from .conftest import prepare_ca_directory
 from .mscamock import CAServiceMock
 
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
 OPENSSLCNF = "openssl.cnf"
-WORKINGDIR = "tests/testdata/ca"
 REQUEST = """-----BEGIN CERTIFICATE REQUEST-----
 MIICmTCCAYECAQAwVDELMAkGA1UEBhMCREUxDzANBgNVBAgMBkhlc3NlbjEUMBIG
 A1UECgwLcHJpdmFjeWlkZWExHjAcBgNVBAMMFXJlcXVlc3Rlci5sb2NhbGRvbWFp
@@ -234,9 +234,7 @@ class LocalCATestCase(MyTestCase):
     def setUpClass(cls):
         # call parent
         super().setUpClass()
-        ca_path = tempfile.mkdtemp()
-        shutil.copytree(WORKINGDIR, ca_path, dirs_exist_ok=True)
-        cls.ca_path = ca_path
+        cls.ca_path = prepare_ca_directory(tempfile.mkdtemp())
 
     @classmethod
     def tearDownClass(cls):
