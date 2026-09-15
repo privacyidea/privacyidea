@@ -142,6 +142,13 @@ class ConditionalAccessPolicyTemplateTestCase(MyTestCase):
             AuthEventType.CHALLENGE_TRIGGER_FAIL,
             # A request that named no token type the endpoint can initialize - malformed, not a credential attempt.
             AuthEventType.INVALID_TOKEN_TYPE,
+            # A stolen remember-device cookie is a security incident, not a guessed credential: it warrants an
+            # immediate, dedicated lock (threshold 1), not folding into a rate limit that tolerates several before
+            # acting.
+            AuthEventType.DEVICE_TOKEN_REUSED,
+            # About the *client* (a suspended API key still in use), not a failed credential attempt by the request
+            # itself, which succeeds or fails on its own merits independently of this.
+            AuthEventType.SUSPENDED_API_KEY_USED,
         }
         # This check covers only the trackable types: conditional access's own rejections (USER_LOCKED, IP_BLOCKED,
         # ACCESS_DENIED) are FAILURE outcomes too, but CA_ENFORCEMENT_EVENT_TYPES excludes them from the policy

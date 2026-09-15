@@ -47,6 +47,8 @@ from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.challenge import get_challenges, delete_challenges
+from privacyidea.lib.clients import create_client
+from privacyidea.lib.remembered_device import create_remembered_device, user_identity, PERSISTENT_COOKIE_NAME
 from privacyidea.lib.token import init_token, remove_token, get_tokens, revoke_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
@@ -743,6 +745,33 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         entries = assert_authentication_log([AuthEventType.MFA_FAIL] * 3 + [AuthEventType.USER_LOCKED],
                                             same_attempt=False)
         assert_authentication_log_entry(entries.all[-1], user=self.user, endpoint='/validate/check')
+
+    def test_device_token_reuse_locks_the_user(self):
+        # A stolen remember-device cookie is itself a DEVICE_TOKEN_REUSED event a LOCK_USER policy can act on - end
+        # to end over the real /validate/remember_device endpoint and the real engine, not just the log row.
+        self._make_lock_policy(counter_type=AuthEventType.DEVICE_TOKEN_REUSED, threshold=1, duration=600)
+        set_policy(name="ca_remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        self.app.config["PI_REMEMBER_DEVICE_GRACE_SECONDS"] = 0  # strict: no tolerated one-behind replay
+        try:
+            client, api_key = create_client("ca reuse client", "privacyidea-cp")
+            _device, cookie = create_remembered_device(user_identity(self.user), client.id)
+
+            def _recognise():
+                with self.app.test_request_context('/validate/remember_device', method='POST',
+                                                   data={"user": "cornelius", "realm": self.realm1},
+                                                   headers={"X-API-Key": api_key,
+                                                            "Cookie": f"{PERSISTENT_COOKIE_NAME}={cookie}"}):
+                    return self.app.full_dispatch_request()
+
+            self.assertEqual(200, _recognise().status_code)  # fresh use, rotates the cookie to counter 2
+            self.assertEqual(200, _recognise().status_code)  # stale counter 1 replayed -> theft
+
+            self.assertEqual([AuthEventType.DEVICE_TOKEN_REUSED],
+                             [entry.event_type for entry in get_authentication_logs()])
+            self.assertTrue(is_user_locked(self.user))
+        finally:
+            self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
+            delete_policy("ca_remember")
 
     def test_a_lock_that_was_never_written_does_not_refuse_its_own_request(self):
         # A restricting action that did not restrict anything must not turn its own request into a rejection: the

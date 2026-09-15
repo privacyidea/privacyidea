@@ -108,6 +108,12 @@ Failure
    ``UNKNOWN_FAIL_REASON``
      the authentication failed and nothing more specific was determined. This is only used as fallback and should
      usually not be seen.
+   ``DEVICE_TOKEN_REUSED``
+     a "remember this device" cookie was replayed with a stale counter - a sign the cookie was stolen. The whole
+     device series, and every other remembered device of this user, is revoked.
+   ``SUSPENDED_API_KEY_USED``
+     a request carried a valid API key whose client is suspended. The request is not identified by it and proceeds
+     unauthenticated by that key.
 
 Three further types are written by conditional access itself, when it refuses a
 request before any credentials are checked: ``USER_LOCKED`` (a user lock was in

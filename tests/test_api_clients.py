@@ -3,6 +3,8 @@ from unittest import mock
 from .base import MyApiTestCase
 
 from privacyidea.lib.clients import hash_api_key, create_client
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.remembered_device import create_remembered_device, user_identity
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
@@ -290,7 +292,8 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
     def test_06_suspended_key_not_blocked_but_audited(self):
         # A known key whose client is suspended does not block /validate/check,
         # but its use is recorded in the audit log (a real, issued key still in
-        # use after it was disabled).
+        # use after it was disabled) and in the authentication log, as a
+        # SUSPENDED_API_KEY_USED event conditional access can lock or notify on.
         self.setUp_user_realms()
         client = self._create_client()
         with self.app.test_request_context(f'/clients/{client["id"]}',
@@ -298,6 +301,7 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             self.assertEqual(200, self.app.full_dispatch_request().status_code)
 
+        logs_before = len(get_authentication_logs())
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius", "realm": self.realm1, "pass": "x"},
                                            headers={'X-API-Key': client["api_key"]}):
@@ -307,6 +311,14 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
 
         entry = self.find_most_recent_audit_entry(action_detail="*suspended API key presented*")
         self.assertIn("suspended API key presented", entry.get("action_detail", ""))
+
+        # The suspended-key use is its own row, ahead of the request's own classification of the auth attempt itself
+        # (cornelius has no token in this test fixture, so NO_TOKEN), both belonging to the one attempt this request
+        # made.
+        entries = get_authentication_logs()[logs_before:]
+        self.assertEqual([AuthEventType.SUSPENDED_API_KEY_USED, AuthEventType.NO_TOKEN],
+                         [entry.event_type for entry in entries])
+        self.assertEqual({"client_id": client["id"]}, entries[0].other_info)
 
     def test_07_unknown_key_is_not_audited(self):
         # An unknown/garbage key must NOT create an audit note (avoid flooding).

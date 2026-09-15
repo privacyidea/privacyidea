@@ -118,7 +118,7 @@ from privacyidea.api.lib.utils import (get_all_params, get_before_request_config
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
-                                               CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus)
+                                               CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus, revoke_devices)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -228,6 +228,8 @@ def before_request():
             {"action_detail": f"{rejected['status']} API key presented "
                               f"(client {rejected['client_id']})"},
             add_with_comma=True)
+        log_authentication(AuthEventType.SUSPENDED_API_KEY_USED, request, user=request.User,
+                           other_info={"client_id": rejected["client_id"]})
 
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
@@ -1236,14 +1238,17 @@ def check_remember_device():
             # off the shared browser just because someone else logged in.
             pass
         elif result.status == RememberStatus.THEFT:
-            # Baseline theft response: consume_remember_device_cookie has already
-            # invalidated the whole series. Record it in action_detail (which the
-            # error path does not overwrite) and drop the cookie. This is the seam
-            # for future escalations (notify the user, block the client/IP, feed a
-            # risk score).
+            # consume_remember_device_cookie has already invalidated the stolen series. Escalate to every one of this
+            # user's remembered devices, on every client: a stolen cookie means the user's browser (or its cookie
+            # jar) is compromised, not just the one series that happened to be replayed, so recognition is revoked
+            # everywhere until the user re-registers. Record it in action_detail (which the error path does not
+            # overwrite), drop the cookie, and log a DEVICE_TOKEN_REUSED authentication event so conditional access
+            # can lock the account, block the source IP or notify as configured.
             log.warning("Persistent device cookie reuse detected; series invalidated.")
+            revoke_devices(realm_id=identity.realm_id, resolver=identity.resolver, user_id=identity.user_id)
             g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
                                       add_with_comma=True)
+            log_authentication(AuthEventType.DEVICE_TOKEN_REUSED, request, user=user)
             cookie_action = CookieAction("clear")
         else:  # miss: the cookie is dead (unknown or expired) - clear it
             cookie_action = CookieAction("clear")

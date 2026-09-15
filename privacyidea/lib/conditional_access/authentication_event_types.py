@@ -160,8 +160,8 @@ class AuthEventType(str, Enum):
     UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
 
     # --- written by conditional access itself, before any credential check ---------------------------------------
-    # These three classify a request the conditional-access pre-check turned away, which is why they are the only
-    # members no token flow ever produces (see CA_ENFORCEMENT_EVENT_TYPES). Each names the condition that ended the
+    # These three classify a request the conditional-access pre-check turned away, which is why none of them is ever
+    # produced by a token flow (see CA_ENFORCEMENT_EVENT_TYPES). Each names the condition that ended the
     # request, like USER_UNKNOWN or NO_TOKEN above.
     #
     # A user lock in force turned the request away. Note the word order: USER_LOCKED is the rejection, while the
@@ -172,6 +172,19 @@ class AuthEventType(str, Enum):
     # A conditional-access policy's DENY action decided this single request. Named after the effect rather than the
     # action, because DENY is a ConditionalAccessAction value stored in the adjacent outcome table.
     ACCESS_DENIED = "ACCESS_DENIED"
+
+    # --- written by the remembered-device and API-client layers, outside any token flow ----------------------------
+    # Unlike the three above, these are trackable: they are signals about the request's *client*, not a rejection
+    # conditional access itself issued, so a policy counting them (e.g. a threshold of one, to lock or notify
+    # immediately) does not feed itself.
+    #
+    # A presented remember-device cookie carried a stale counter beyond the grace window - the rotating-token scheme's
+    # definition of a stolen cookie (see privacyidea.lib.remembered_device). The whole device series has already been
+    # deleted by the time this is logged.
+    DEVICE_TOKEN_REUSED = "DEVICE_TOKEN_REUSED"
+    # A request carried a valid API key (correct secret) whose client is suspended. The request was not identified
+    # by it (g.client_id stays None), so whatever the request does otherwise proceeds unauthenticated by that key.
+    SUSPENDED_API_KEY_USED = "SUSPENDED_API_KEY_USED"
 
     def __str__(self) -> str:
         return self.value
@@ -361,6 +374,8 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.USER_LOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.IP_BLOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.ACCESS_DENIED: AuthEventOutcome.FAILURE,
+    AuthEventType.DEVICE_TOKEN_REUSED: AuthEventOutcome.FAILURE,
+    AuthEventType.SUSPENDED_API_KEY_USED: AuthEventOutcome.FAILURE,
 }
 
 
@@ -461,9 +476,12 @@ class RestrictionCause(str, Enum):
         return self.value
 
 
-# Request-level precedence, highest signal first. Only the event types a token flow can produce appear here: the
-# CA_ENFORCEMENT_EVENT_TYPES classify a request the pre-check rejected before any token logic ran, so they never reach
-# reduce_request_events.
+# Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the
+# handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, DEVICE_TOKEN_REUSED,
+# SUSPENDED_API_KEY_USED - that never actually reach reduce_request_events, because the endpoints that emit them
+# classify a request with a single event. The CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they classify a
+# request the pre-check rejected before any token logic ran, so they never reach reduce_request_events either, and are
+# excluded from the trackable vocabulary anyway (see CA_ENFORCEMENT_EVENT_TYPES).
 #: Request-level precedence, highest signal first: which staged event classifies a request that
 #: produced several (see :func:`reduce_request_events`).
 REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
@@ -489,7 +507,12 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     # classify a request with a single event - and they are listed here because every non-enforcement type must be.
     AuthEventType.CHALLENGE_TRIGGER_FAIL,
     AuthEventType.INVALID_TOKEN_TYPE,
-    AuthEventType.UNKNOWN_FAIL_REASON
+    AuthEventType.UNKNOWN_FAIL_REASON,
+    # Neither of these is produced by a token flow at all - they come from the remembered-device and API-client
+    # layers respectively, each already classifying its request with a single event - so, like the three above,
+    # they are listed only to satisfy the invariant that every trackable type has a rank.
+    AuthEventType.DEVICE_TOKEN_REUSED,
+    AuthEventType.SUSPENDED_API_KEY_USED,
 ]
 
 # Precedence rank of each event.
