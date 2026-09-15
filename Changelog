@@ -66,7 +66,10 @@ Version 3.14dev1
     right (#5095)
   * The push token can send a decline reason, so that "it was not me" and "it was me, cancel anyway" become
     distinguishable. The server advertises the signed capabilities of a challenge, hence older apps keep working
-    unchanged (#5562, #5583)
+    unchanged. The two are separate events in the authentication log
+    (`CHALLENGE_DECLINED_UNKNOWN_TRIGGER` and `CHALLENGE_CANCELLED`), so a conditional access policy can act on a
+    login the user says they did not start without counting the ones they abandoned themselves; the ready-made
+    failure rate limits therefore no longer count a cancelled push (#5562, #5583)
   * `pi-manage db upgrade` and `downgrade` report the revisions they migrated between. The help now also explains how
     to pass a relative revision, e.g. `pi-manage db downgrade -- -1` to undo a single revision (#5284)
   * `pi-manage config import` returns a non-zero exit code on failure, continues after an object that can not be

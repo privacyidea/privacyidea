@@ -117,6 +117,16 @@ well. An app sending a reason this server version does not know declines the
 challenge like an app that sends no reason at all; the value it did send is only
 visible in the audit entry of the answer.
 
+The two reasons are also separate events in the authentication log, so
+conditional access can act on them differently:
+``CHALLENGE_DECLINED_UNKNOWN_TRIGGER`` for the login the user says they did not
+start, ``CHALLENGE_CANCELLED`` for the one they abandoned themselves, and the
+plain ``CHALLENGE_DECLINED`` where no usable reason was sent. The first is the
+user reporting somebody else's attempt and deserves a policy with a low
+threshold; the last is deliberately the fallback for an unknown reason, so a
+value a newer app invents is never read as that report. See
+:ref:`authentication_log_event_types`.
+
 Login to application
 ....................
 

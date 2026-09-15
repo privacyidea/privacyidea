@@ -122,6 +122,19 @@ DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
 # reason still declines, but is logged as app/server vocabulary drift.
 KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
 
+# How a signed decline reason classifies the answer for the authentication log, so a conditional-access
+# policy can count "I did not trigger this" apart from "I changed my mind" - the first is the user
+# reporting someone else's attempt, the second is abandonment. Keyed by the wire value, since that is
+# what the request carries.
+#
+# Anything not listed - a legacy app that sends no reason, or a reason a newer app invented - falls back
+# to the unspecified CHALLENGE_DECLINED. A future reason could be anything, so it must never be counted
+# as the repudiation, which is the same conservative mapping the challenge session takes.
+DECLINE_REASON_AUTH_EVENTS = {
+    PushDeclineReason.UNKNOWN_TRIGGER.value: AuthEventType.CHALLENGE_DECLINED_UNKNOWN_TRIGGER,
+    PushDeclineReason.CANCELLED.value: AuthEventType.CHALLENGE_CANCELLED,
+}
+
 # The optional push features this server advertises to the smartphone in every
 # challenge (see _build_smartphone_data). A newer app intersects these with its
 # own to decide which fields it may add to its signed answer; an app that does
@@ -989,7 +1002,8 @@ class PushTokenClass(TokenClass):
         details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_FAIL
         if signature_verified:
             if decline:
-                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_DECLINED
+                details[PUSH_AUTH_EVENT] = DECLINE_REASON_AUTH_EVENTS.get(decline_reason,
+                                                                          AuthEventType.CHALLENGE_DECLINED)
                 details[AUTH_EVENT_REASON_KEY] = str(AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE)
             elif "display_code" in details:
                 details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_CONTINUED

@@ -3130,3 +3130,38 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
 
         remove_token(self.serial_push)
         delete_policy("push_config")
+
+    def test_13_authentication_log_separates_the_decline_variants(self):
+        """
+        Each decline reason classifies the answer as its own authentication event, so a
+        conditional-access policy can count "I did not trigger this" without counting the
+        logins users abandoned themselves. A reason this server does not know - and a legacy
+        decline that carries none - stays the unspecified decline: a newer app could invent a
+        reason of any weight, so an unrecognized one must never pass for the repudiation.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        user = User("selfservice", self.realm1)
+
+        for reason, expected_event in [
+                (PushDeclineReason.UNKNOWN_TRIGGER, AuthEventType.CHALLENGE_DECLINED_UNKNOWN_TRIGGER),
+                (PushDeclineReason.CANCELLED, AuthEventType.CHALLENGE_CANCELLED),
+                ("from_a_newer_app", AuthEventType.CHALLENGE_DECLINED),
+                (None, AuthEventType.CHALLENGE_DECLINED)]:
+            with self.subTest(decline_reason=reason):
+                clear_log()
+                transaction_id, nonce = self._trigger_challenge()
+                result = self._post_decline(nonce, f"|{reason}" if reason else "",
+                                            {"decline_reason": reason} if reason else {})
+                self.assertTrue(result["result"]["value"], result)
+
+                auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, expected_event])
+                # The refusal came from the device whichever variant it is; the event type carries which one.
+                assert_authentication_log_entry(auth_log_entries[expected_event], user=user,
+                                                serials={self.serial_push}, transaction_id=transaction_id,
+                                                endpoint="/ttype/push",
+                                                reason=AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE)
+                delete_challenges(serial=self.serial_push)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
