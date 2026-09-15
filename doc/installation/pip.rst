@@ -68,9 +68,15 @@ are declared as pip *extras* and installed on demand::
 
 Extras can be combined, e.g. ``pip install "privacyidea[postgres,kerberos]"``.
 
-The ``kerberos`` and ``hsm`` extras build native extensions that link against
-system libraries, so the matching OS packages must be present:
+All three extras build native extensions that link against system libraries, so
+the matching OS packages must be present:
 
+* ``postgres`` (``psycopg2``): needs the PostgreSQL client library and its
+  headers (``libpq-dev`` / ``postgresql-devel``), the ``pg_config`` executable
+  they ship and a C compiler. Without them pip aborts with ``Error: pg_config
+  executable not found``. The prebuilt ``psycopg2-binary`` wheel needs no build
+  tools and is a practical choice for development and testing, but upstream
+  advises against it in production, as it bundles its own libssl and libcrypto.
 * ``kerberos`` (``gssapi``): pip usually installs a prebuilt wheel, but the host
   still needs the MIT Kerberos runtime libraries (``libkrb5`` / ``krb5-libs``) and
   a valid ``/etc/krb5.conf`` for the realm. If pip has to build from source,
@@ -82,7 +88,8 @@ system libraries, so the matching OS packages must be present:
 
     The official Docker image already includes the ``kerberos`` extra and the
     Kerberos runtime libraries, so a containerized deployment only needs a
-    mounted ``krb5.conf``.
+    mounted ``krb5.conf``. It also ships ``psycopg2-binary``, so the
+    ``postgres`` extra is not needed there either.
 
 .. _pip_configuration:
 
