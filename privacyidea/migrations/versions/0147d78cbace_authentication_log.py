@@ -1,7 +1,7 @@
 """v3.14: Add authentication log table
 
 Revision ID: 0147d78cbace
-Revises: b8c9d0e1f2a3
+Revises: e0f1a2b3c4d5
 Create Date: 2026-06-01 08:37:51.884173
 
 """
@@ -16,7 +16,12 @@ from privacyidea.models.utils import BigIntegerType
 
 # revision identifiers, used by Alembic.
 revision = '0147d78cbace'
-down_revision = 'b8c9d0e1f2a3'
+# Chained after e0f1a2b3c4d5 (master's head when this branch started) rather than spliced beneath it: editing
+# down_revision on a revision that may already be stamped in a live database silently strands that database on
+# the old chain forever, since Alembic decides "anything to do?" by comparing the stamped id to the computed
+# head id alone - it does not re-walk ancestry for a database already at that id. See e0f1a2b3c4d5's own
+# down_revision, which stays 'b8c9d0e1f2a3' for exactly this reason.
+down_revision = 'e0f1a2b3c4d5'
 branch_labels = None
 depends_on = None
 
@@ -79,7 +84,7 @@ def _existing_tables() -> set[str]:
 
 def _create_table(existing_tables: set[str], table_name: str, *columns) -> None:
     """
-    Create the table unless it is already there, then add each of its INDEXES that is absent.
+    Create the table unless it is already there, then add each of its declared INDEXES that is still missing.
 
     Presence is established by reflection rather than by swallowing an "already exists" error, which Oracle
     never says: it reports an existing object as ORA-00955 ("name is already used by an existing object").

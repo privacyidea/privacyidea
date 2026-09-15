@@ -908,6 +908,15 @@ def autoassign(request, response):
     into account ACTION.MAXTOKENUSER and ACTION.MAXTOKENREALM.
     :return:
     """
+    if get_ca_context().rejected_by_conditional_access:
+        # The pre-auth conditional-access gate already refused this request - its rejection carries the same
+        # "value": false shape as an ordinary failed authentication (see conditional_access_gate), which is
+        # exactly what this function otherwise treats as "no token yet, try the submitted OTP against the
+        # realm's unassigned ones". Verifying the OTP here would flip a locked/blocked account's rejection into a
+        # success and additionally assign it a token. rejected_by_conditional_access reads true as soon as the
+        # rejection stages its enforcement-type event (conditional_access_rejection/_reject_restricted_login), so
+        # this also covers /auth and /ttype/push, not just conditional_access_gate's own endpoints.
+        return response
     content = response.json
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("value") is False:
