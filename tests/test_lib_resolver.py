@@ -29,6 +29,7 @@ from testfixtures import LogCapture
 
 from privacyidea.lib.crypto import encryptPassword
 from privacyidea.lib.error import ParameterError, ResolverError
+from privacyidea.lib.framework import get_request_local_store
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver,
@@ -800,6 +801,35 @@ class SQLResolverTestCase(MyTestCase):
                                    side_effect=Exception("the database is not reachable")):
                 self.assertRaises(Exception, resolver.get_user_info, "1", attributes=["username"])
         mock_rollback.assert_called_once()
+
+    def test_14_teardown_releases_the_connection_to_the_user_store(self):
+        """
+        The resolver holds an open connection to the user store for as long as its engine
+        has one pooled, so an engine it owns has to be disposed when the request ends.
+        """
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+        # The testing configuration uses the null registry, which hands out a private
+        # engine to every caller, so this one is this resolver's to dispose.
+        self.assertTrue(resolver._owns_engine)
+        resolver.getUserList()
+        pool = resolver.engine.pool
+        resolver._finalize_session()
+        # dispose() installs a fresh pool, which closes the connections the old one held
+        self.assertIsNot(pool, resolver.engine.pool)
+
+        # The teardown is only reached while a request is being handled. Outside one
+        # nothing calls the finalizers, so registering there would keep the resolver -
+        # and its connection - alive for the lifetime of the process.
+        store = get_request_local_store()
+        before = len(store.get("call_on_teardown", []))
+        SQLResolver().loadConfig(self.parameters)
+        self.assertEqual(before, len(store.get("call_on_teardown", [])))
+        with self.app.test_request_context("/"):
+            request_resolver = SQLResolver()
+            request_resolver.loadConfig(self.parameters)
+            request_store = get_request_local_store()
+            self.assertIn(request_resolver._finalize_session, request_store["call_on_teardown"])
 
     def test_99_testconnection_fail(self):
         resolver = SQLResolver()

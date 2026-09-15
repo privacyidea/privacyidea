@@ -8,7 +8,9 @@ from sqlalchemy import create_engine
 
 from privacyidea.app import create_app
 from privacyidea.lib.auth import create_db_admin
-from privacyidea.lib.pooling import get_engine, get_registry, SharedEngineRegistry, NullEngineRegistry
+from privacyidea.lib.monitoringmodules.sqlstats import Monitoring
+from privacyidea.lib.pooling import (get_engine, get_registry, engines_are_shared,
+                                     SharedEngineRegistry, NullEngineRegistry)
 from privacyidea.models import db, save_config_timestamp
 from .base import MyTestCase
 
@@ -47,6 +49,18 @@ class SharedPoolingTestCase(MyTestCase):
         engine3 = get_engine('my other engine', self._create_engine)
         self.assertIsNot(engine1, engine3)
 
+    def test_03_engines_are_shared(self):
+        self.assertTrue(engines_are_shared())
+
+    def test_04_a_shared_engine_is_not_disposed_on_teardown(self):
+        # The engine keeps serving later requests, so its pool has to survive the teardown
+        # of the request that happened to create it.
+        monitoring = Monitoring(self.app.config)
+        self.assertFalse(monitoring._owns_engine)
+        pool = monitoring.engine.pool
+        monitoring._finalize_session()
+        self.assertIs(pool, monitoring.engine.pool)
+
 
 class NullPoolingTestCase(MyTestCase):
     """ Test Null pooling. This is the default in the testing configuration. """
@@ -68,3 +82,6 @@ class NullPoolingTestCase(MyTestCase):
         self.assertIsNot(engine1, engine2)
         self.assertIsNot(engine1, engine3)
         self.assertIsNot(engine2, engine3)
+
+    def test_03_engines_are_not_shared(self):
+        self.assertFalse(engines_are_shared())

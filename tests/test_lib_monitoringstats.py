@@ -1,4 +1,6 @@
 from privacyidea.models import MonitoringStats, db
+from privacyidea.lib.framework import get_request_local_store
+from privacyidea.lib.monitoringmodules.sqlstats import Monitoring
 from privacyidea.lib.monitoringstats import (write_stats, delete_stats,
                                              get_stats_keys, get_values,
                                              get_last_value)
@@ -124,3 +126,34 @@ class TokenModelTestCase(MyTestCase):
         # Get the last value of key1
         r = get_last_value("key1")
         self.assertEqual(r, 10)
+
+
+class MonitoringSessionTestCase(MyTestCase):
+    """
+    The monitoring module opens a session of its own, so it also has to hand the
+    connection back when the request that opened it ends.
+    """
+
+    def test_01_finalizer_is_registered_only_while_a_request_is_handled(self):
+        # Outside a request nothing ever calls the finalizers, so registering one there
+        # would only keep the module - and its open connection - alive for good.
+        store = get_request_local_store()
+        before = len(store.get("call_on_teardown", []))
+        Monitoring(self.app.config)
+        self.assertEqual(before, len(store.get("call_on_teardown", [])))
+
+        with self.app.test_request_context("/"):
+            monitoring = Monitoring(self.app.config)
+            request_store = get_request_local_store()
+            self.assertIn(monitoring._finalize_session, request_store["call_on_teardown"])
+
+    def test_02_teardown_disposes_an_engine_of_its_own(self):
+        monitoring = Monitoring(self.app.config)
+        # The testing configuration uses the null registry, which hands out a private
+        # engine to every caller, so this one is this object's to dispose.
+        self.assertTrue(monitoring._owns_engine)
+        write_stats("session_key", 1)
+        pool = monitoring.engine.pool
+        monitoring._finalize_session()
+        # dispose() installs a fresh pool, which closes the connections the old one held
+        self.assertIsNot(pool, monitoring.engine.pool)
