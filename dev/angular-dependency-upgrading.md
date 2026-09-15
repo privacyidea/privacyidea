@@ -2,7 +2,7 @@
 
 ## Background
 
-The Angular application is located in `privacyidea/static_new/` and uses npm as the package manager.
+The Angular application is located in `privacyidea/static/` and uses npm as the package manager.
 
 **package.json**
 
