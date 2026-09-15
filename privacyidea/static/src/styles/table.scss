@@ -15,6 +15,12 @@ $highlight-padding: 2px 6px;
 $icon-font-size: 22px;
 $fix-width: 20rem;
 
+// Height of a Material form field's input row, i.e. the field without the hint line underneath.
+$field-input-height: 56px;
+// Size of the filter trigger sitting next to that input, on every table, and of the icon in it.
+$filter-trigger-size: 40px;
+$filter-trigger-icon-size: 24px;
+
 $table-max-width: 20rem;
 $gap-small: 8px;
 $margin-left-small: 10px;
@@ -380,6 +386,42 @@ th:nth-child(even) {
   justify-content: space-between;
   margin-bottom: 16px;
   flex-wrap: wrap;
+
+  // The filter field is taller than its input: a hint line sits underneath it. Centring the row
+  // would centre on that too, so give the paginator the input's own height from the top of the row
+  // and centre it inside that - it then lines up on the middle of the input itself, whether or not
+  // a hint is showing. It also grows into the free space in the row, so its controls are kept
+  // against the right edge of that space rather than the left one flex would start them at.
+  > .mat-mdc-paginator {
+    align-self: flex-start;
+    height: $field-input-height;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  // The filter trigger is the same control on every table, whichever utility classes a given
+  // table's markup puts on it, so it is sized here rather than per table. It stays square - it is
+  // drawn as a circle, and matching the input's height instead would draw it as an ellipse - and
+  // is shifted onto the middle of the input row: a translate percentage resolves against the
+  // element's own height, so the offset holds whatever the size above is.
+  > button {
+    align-self: flex-start;
+    height: $filter-trigger-size;
+    width: $filter-trigger-size;
+    // Material centres the icon on padding rather than on alignment, so this has to keep pace with
+    // the size above or the icon sits against the left edge.
+    padding: calc((#{$filter-trigger-size} - #{$filter-trigger-icon-size}) / 2);
+    // .filter-button offsets itself for the compact copies that sit inline in a header cell.
+    top: auto;
+    right: auto;
+    transform: translateY(calc(#{$field-input-height} / 2 - 50%));
+
+    span.mat-mdc-button-touch-target {
+      height: $filter-trigger-size !important;
+      width: $filter-trigger-size !important;
+    }
+  }
 
   .selfservice-paginator-label {
     margin: 0;
