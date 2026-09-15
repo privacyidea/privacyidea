@@ -513,6 +513,39 @@ describe("UserService", () => {
       userService.presetFilter.set(filter);
       expect(userService.presetFilter()).toBe(filter);
     });
+
+    it("keeps the user list from loading unfiltered until the user table takes the preset over", () => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist"] });
+      realmService.realmOptions.set(["realm1"]);
+      userService.presetFilter.set(new FilterValue().addEntry("has_tokens", "False"));
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS);
+      TestBed.tick();
+
+      expect(httpMock.match((r) => r.url === environment.proxyUrl + "/user/")).toEqual([]);
+
+      // What the user table does once it is on screen.
+      const preset = userService.presetFilter()!;
+      userService.presetFilter.set(null);
+      userService.setFilter(preset);
+      TestBed.tick();
+
+      const requests = httpMock.match((r) => r.url === environment.proxyUrl + "/user/");
+      expect(requests.map((r) => r.request.params.get("has_tokens"))).toEqual(["False"]);
+      httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
+    });
+
+    it("does not hold back the user list on a route whose table does not take presets over", () => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist"] });
+      realmService.realmOptions.set(["realm1"]);
+      userService.presetFilter.set(new FilterValue().addEntry("has_tokens", "False"));
+      contentServiceMock.onTokenDetails = signal(true);
+      TestBed.tick();
+
+      const requests = httpMock.match((r) => r.url === environment.proxyUrl + "/user/");
+      expect(requests.length).toBe(1);
+      expect(requests[0].request.params.has("has_tokens")).toBe(false);
+      httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
+    });
   });
 
   describe("fetchUsernames()", () => {

@@ -365,9 +365,12 @@ class TokenTestCase(MyTestCase):
             self.assertEqual({}, get_token_owners_per_resolver(realms=[]))
 
             # unfiltered, every resolver's count moves by the owners that are new to it
-            new_keys = get_token_owner_keys() - keys_before
+            # the unfiltered count does not tell realms apart, so an owner already known in another realm is not new
+            def owners(keys):
+                return {(resolver, user_id) for _, resolver, user_id in keys}
+            new_owners = owners(get_token_owner_keys()) - owners(keys_before)
             after_all = get_token_owners_per_resolver()
-            self.assertEqual(sum(before_all.values()) + len(new_keys), sum(after_all.values()))
+            self.assertEqual(sum(before_all.values()) + len(new_owners), sum(after_all.values()))
         finally:
             for serial in serials:
                 remove_token(serial)
@@ -379,7 +382,8 @@ class TokenTestCase(MyTestCase):
     def test_05b_get_token_owner_keys(self):
         self.setUp_user_realms()
         set_realm(self.owner_count_realm, [{"name": self.resolvername1}])
-        cornelius_key = (self.resolvername1, User("cornelius", self.realm1, self.resolvername1).uid)
+        cornelius_uid = User("cornelius", self.realm1, self.resolvername1).uid
+        cornelius_key = (self.owner_count_realm.lower(), self.resolvername1, cornelius_uid)
 
         keys_before = get_token_owner_keys()
         serial = None
@@ -390,7 +394,9 @@ class TokenTestCase(MyTestCase):
             keys_after = get_token_owner_keys()
             self.assertIn(cornelius_key, keys_after)
             self.assertTrue(keys_before <= keys_after, (keys_before, keys_after))
-            # scoped to the resolver that owns it, the pair is still there
+            # the token is assigned in one realm only, although the resolver serves realm1 as well
+            self.assertNotIn((self.realm1.lower(), self.resolvername1, cornelius_uid), keys_after - keys_before)
+            # scoped to the resolver that owns it, the triple is still there
             self.assertIn(cornelius_key, get_token_owner_keys(resolvers=[self.resolvername1]))
             # a resolver that owns nothing, and no resolver at all, yield nothing
             self.assertEqual(set(), get_token_owner_keys(resolvers=["does-not-exist"]))
@@ -401,6 +407,33 @@ class TokenTestCase(MyTestCase):
             delete_realm(self.owner_count_realm)
 
         self.assertEqual(keys_before, get_token_owner_keys())
+
+    def test_05c_an_owner_without_a_realm_belongs_to_none(self):
+        # A token can be assigned to a user that has no realm, which leaves TokenOwner.realm_id
+        # empty. Such an owner is counted by no realm and matches the user of no realm either -
+        # the two must agree, or the widget's "without tokens" row would not add up.
+        self.setUp_user_realms()
+        set_realm(self.owner_count_realm, [{"name": self.resolvername1}])
+        cornelius_uid = User("cornelius", self.realm1, self.resolvername1).uid
+
+        serial = None
+        try:
+            tok = init_token({"otpkey": self.otpkey}, user=User("cornelius", self.owner_count_realm))
+            serial = tok.get_serial()
+            owner_row = db.session.execute(
+                select(TokenOwner).where(TokenOwner.token_id == tok.token.id)).unique().scalar_one()
+            owner_row.realm_id = None
+            db.session.commit()
+
+            keys = get_token_owner_keys()
+            self.assertIn(("", self.resolvername1, cornelius_uid), keys)
+            self.assertNotIn((self.owner_count_realm, self.resolvername1, cornelius_uid), keys)
+            # and the realm it was assigned in does not count it, although it is an assigned token
+            self.assertEqual({}, get_token_owners_per_resolver(realms=[self.owner_count_realm]))
+        finally:
+            if serial:
+                remove_token(serial)
+            delete_realm(self.owner_count_realm)
 
     def test_05_get_token_in_resolver(self):
         # Only the tokens whose owner is in the given resolver are returned

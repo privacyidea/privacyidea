@@ -23,7 +23,7 @@ import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
-import { RealmService } from "@services/realm/realm.service";
+import { RealmService, Realms } from "@services/realm/realm.service";
 import { TokenCountParams, TokenOwnerCount, TokenService } from "@services/token/token.service";
 import { UserData, UserListResponseDetail, UserService } from "@services/user/user.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -116,7 +116,9 @@ describe("TokensWidgetComponent", () => {
     userMock.fetchUsernames.mockReturnValue(of(MockPiResponse.fromValue<UserData[]>([])));
 
     realmMock = TestBed.inject(RealmService) as unknown as MockRealmService;
-    realmMock.realmOptions.set([]);
+    // The widget always counts one realm; the mock's default realm is "realm1", which every test
+    // that does not pick a realm itself therefore runs against.
+    realmMock.realmOptions.set(["realm1", "realm2"]);
 
     layoutService = TestBed.inject(DashboardLayoutService);
 
@@ -204,7 +206,11 @@ describe("TokensWidgetComponent", () => {
     fixture2.componentRef.setInput("instance", instance);
     fixture2.detectChanges();
 
-    expect(fixture2.nativeElement.querySelector("a")).toBeNull();
+    // The user rows link regardless of their count, so only the token rows are checked here.
+    const tokenRowLinks = Array.from(fixture2.nativeElement.querySelectorAll("tr:not(.user-counts-start) a"))
+      .map((link) => (link as Element).textContent?.trim())
+      .filter((label) => !label?.startsWith("Users "));
+    expect(tokenRowLinks).toEqual([]);
     fixture2.destroy();
   });
 
@@ -223,9 +229,11 @@ describe("TokensWidgetComponent", () => {
     expect(filter?.getValueOfKey("assigned")).toBe("False");
   });
 
-  it("should set an empty preset filter when the total is clicked", () => {
+  it("should set a preset filter of nothing but the realm when the total is clicked", () => {
     component.showAllTokens();
-    expect(tokenMock.presetFilter()?.isEmpty).toBe(true);
+    const filter = tokenMock.presetFilter();
+    expect(filter?.getValueOfKey("tokenrealm")).toBe("realm1");
+    expect(filter?.filterMap.size).toBe(1);
   });
 
   it("should show a single combined 'Unassigned' row when only one token kind exists", () => {
@@ -311,18 +319,69 @@ describe("TokensWidgetComponent", () => {
   describe("realm switch", () => {
     // The header actions template is only rendered once WidgetFrameComponent projects it via
     // ngTemplateOutlet (covered there); here the signal the template's @if reads is what matters.
-    it("carries no realm options to switch between until the realm service loads them", () => {
-      expect(component.realmOptions()).toEqual([]);
-    });
-
     it("exposes the realm options once the realm service has them", () => {
-      realmMock.realmOptions.set(["realm1", "realm2"]);
       expect(component.realmOptions()).toEqual(["realm1", "realm2"]);
     });
 
-    it("defaults to every realm when the instance carries no setting", () => {
-      expect(component.realm()).toBe("");
-      expect(component.realmLabel()).toBe("All realms");
+    it("falls back to the default realm when the instance carries no setting", () => {
+      expect(component.realm()).toBe("realm1");
+      expect(component.realmLabel()).toBe("realm1");
+      expect(component.noRealm()).toBe(false);
+    });
+
+    it("counts the default realm rather than every realm", () => {
+      expect(tokenMock.getTokenCount).toHaveBeenCalledWith(expect.objectContaining({ tokenrealm: "realm1" }));
+      expect(tokenMock.getTokenOwnerCount).toHaveBeenCalledWith("realm1");
+      expect(userMock.fetchUsernames).toHaveBeenCalledWith("realm1");
+    });
+
+    it("waits for the default realm instead of counting without one", () => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      realmMock.realmOptions.set([]);
+      realmMock.defaultRealmResource.isLoading.set(true);
+      realmMock.defaultRealmResource.value.set(undefined);
+      tokenMock.getTokenCount.mockClear();
+
+      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+      fixture2.componentRef.setInput("instance", instance);
+      fixture2.detectChanges();
+
+      expect(fixture2.componentInstance.state()).toBe("loading");
+      expect(fixture2.componentInstance.noRealm()).toBe(false);
+      expect(tokenMock.getTokenCount).not.toHaveBeenCalled();
+      fixture2.destroy();
+    });
+
+    it("takes the first realm there is when none is the default one", () => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
+      realmMock.realmOptions.set(["realm2", "realm3"]);
+
+      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+      fixture2.componentRef.setInput("instance", instance);
+      fixture2.detectChanges();
+
+      expect(fixture2.componentInstance.realm()).toBe("realm2");
+      expect(fixture2.componentInstance.noRealm()).toBe(false);
+      expect(tokenMock.getTokenCount).toHaveBeenCalledWith(expect.objectContaining({ tokenrealm: "realm2" }));
+      fixture2.destroy();
+    });
+
+    it("says so when there is no realm at all, instead of counting every realm", () => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
+      realmMock.realmOptions.set([]);
+      tokenMock.getTokenCount.mockClear();
+
+      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+      fixture2.componentRef.setInput("instance", instance);
+      fixture2.detectChanges();
+
+      expect(fixture2.componentInstance.noRealm()).toBe(true);
+      expect(tokenMock.getTokenCount).not.toHaveBeenCalled();
+      expect(fixture2.nativeElement.querySelector("table")).toBeNull();
+      expect(fixture2.nativeElement.textContent).toContain("no realm to count");
+      fixture2.destroy();
     });
 
     it("reads the realm from the widget instance settings", () => {
@@ -340,27 +399,52 @@ describe("TokensWidgetComponent", () => {
       const updateSpy = jest.spyOn(layoutService, "updateWidgetSettings");
       tokenMock.getTokenCount.mockClear();
 
-      component.selectRealm("realm1");
+      component.selectRealm("realm2");
 
-      expect(updateSpy).toHaveBeenCalledWith("tokens-1", { realm: "realm1" });
-      expect(tokenMock.getTokenCount).toHaveBeenCalledWith(expect.objectContaining({ tokenrealm: "realm1" }));
+      expect(updateSpy).toHaveBeenCalledWith("tokens-1", { realm: "realm2" });
+      expect(tokenMock.getTokenCount).toHaveBeenCalledWith(expect.objectContaining({ tokenrealm: "realm2" }));
     });
 
-    it("does nothing when the picked realm is already selected", () => {
+    it("drops the cache entries of the realm it leaves, so they are not refetched forever", () => {
+      const store = TestBed.inject(DashboardDataStore);
+      const invalidateSpy = jest.spyOn(store, "invalidate");
+
+      component.selectRealm("realm2");
+
+      expect(invalidateSpy).toHaveBeenCalledWith("dashboard:tokens:realm1");
+      expect(invalidateSpy).toHaveBeenCalledWith("dashboard:token-users:realm1");
+    });
+
+    it("does nothing when the picked realm is already selected, or when none is picked", () => {
       const updateSpy = jest.spyOn(layoutService, "updateWidgetSettings");
+      component.selectRealm("realm1");
       component.selectRealm("");
       expect(updateSpy).not.toHaveBeenCalled();
     });
 
     it("scopes showAllTokens/showKind/showUnassigned to the selected realm", () => {
-      const scoped: WidgetInstance = { ...instance, settings: { realm: "realm1" } };
+      const scoped: WidgetInstance = { ...instance, settings: { realm: "realm2" } };
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
       fixture2.componentRef.setInput("instance", scoped);
       fixture2.detectChanges();
 
       fixture2.componentInstance.showAllTokens();
-      expect(tokenMock.presetFilter()?.getValueOfKey("tokenrealm")).toBe("realm1");
+      expect(tokenMock.presetFilter()?.getValueOfKey("tokenrealm")).toBe("realm2");
       fixture2.destroy();
+    });
+
+    it("marks the realm of every preset exact, so the list shows what the widget counted", () => {
+      for (const setPreset of [
+        () => component.showAllTokens(),
+        () => component.showKind("hardware"),
+        () => component.showKind("software", true),
+        () => component.showUnassigned()
+      ]) {
+        setPreset();
+        const filter = tokenMock.presetFilter();
+        expect(filter?.getValueOfKey("tokenrealm")).toBe("realm1");
+        expect(filter?.isExactKey("tokenrealm")).toBe(true);
+      }
     });
   });
 
@@ -415,6 +499,21 @@ describe("TokensWidgetComponent", () => {
       fixture2.destroy();
     });
 
+    it("falls back to the total when the server reports no per-resolver breakdown", () => {
+      const store = TestBed.inject(DashboardDataStore);
+      store.invalidate();
+      tokenMock.getTokenOwnerCount.mockReturnValue(
+        of(MockPiResponse.fromValue({ count: 5 } as unknown as TokenOwnerCount))
+      );
+
+      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+      fixture2.componentRef.setInput("instance", instance);
+      fixture2.detectChanges();
+
+      expect(fixture2.componentInstance.userCounts().withTokens).toBe(5);
+      fixture2.destroy();
+    });
+
     it("shows an em dash for both rows while the owner count has not arrived", () => {
       const store = TestBed.inject(DashboardDataStore);
       store.invalidate();
@@ -463,16 +562,15 @@ describe("TokensWidgetComponent", () => {
       fixture2.destroy();
     });
 
-    it("only links the user counts once a realm is picked", () => {
-      expect(component.canLinkUsers()).toBe(false);
+    it("links both user counts to the user list of the counted realm", () => {
+      const links = Array.from(fixture.nativeElement.querySelectorAll("a")) as HTMLAnchorElement[];
+      const userLinks = links.filter((link) => link.textContent?.includes("Users "));
 
-      const scoped: WidgetInstance = { ...instance, settings: { realm: "realm1" } };
-      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
-      fixture2.componentRef.setInput("instance", scoped);
-      fixture2.detectChanges();
-
-      expect(fixture2.componentInstance.canLinkUsers()).toBe(true);
-      fixture2.destroy();
+      expect(userLinks.map((link) => link.textContent?.trim())).toEqual([
+        "Users with tokens",
+        "Users without tokens"
+      ]);
+      expect(userLinks.every((link) => link.search === "?realm=realm1")).toBe(true);
     });
 
     it("sets a has_tokens preset filter on the user service when a user count is clicked", () => {

@@ -468,6 +468,11 @@ export class UserService extends FilterableTableService implements UserServiceIn
     if (!onAllowedRoute) {
       return undefined;
     }
+    // A filter handed over by another view is applied by the user table once it exists; loading
+    // before that would fetch the whole unfiltered list just to throw it away.
+    if (this.contentService.onUsers() && this.presetFilter()) {
+      return undefined;
+    }
     // On the tokens route we require at least one selected token before loading users.
     if (this.contentService.onTokens() && !this.tokenService.tokenSelection.hasSelection()) {
       return undefined;

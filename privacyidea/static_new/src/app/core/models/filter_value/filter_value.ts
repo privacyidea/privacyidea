@@ -17,9 +17,29 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 export class FilterValue {
-  constructor(args: { value?: string; hiddenValue?: string } = {}) {
+  constructor(args: { value?: string; hiddenValue?: string; exactKeys?: ReadonlySet<string> } = {}) {
     this._value = args.value ? args.value : "";
     this._hiddenValue = args.hiddenValue ? args.hiddenValue : "";
+    this._exactKeys = args.exactKeys ?? new Set();
+  }
+
+  private readonly _exactKeys: ReadonlySet<string>;
+
+  /**
+   * Whether the value of this key was set by code rather than typed, so it is meant literally and must
+   * not be widened into a substring search. No other method carries this over: the first change to the
+   * filter yields a new instance without it, so from then on the key is searched like a typed one.
+   */
+  public isExactKey(key: string): boolean {
+    return this._exactKeys.has(key);
+  }
+
+  public withExactKey(key: string): FilterValue {
+    return new FilterValue({
+      value: this._value,
+      hiddenValue: this._hiddenValue,
+      exactKeys: new Set([...this._exactKeys, key])
+    });
   }
 
   private _value: string;

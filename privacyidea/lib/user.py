@@ -848,9 +848,14 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     returned user dictionaries when ``requested_attributes`` is None/empty or explicitly lists them.
 
     A ``has_tokens`` entry in ``param`` keeps only the users that own a token, or only those that do not;
-    an empty value does not filter. It is applied after the resolvers answered, because token ownership is
-    privacyIDEA's own record and no resolver knows about it. The filter needs the user id, which the
-    resolvers return whether or not it was requested, so it works independently of ``requested_attributes``.
+    an empty value does not filter. A token counts for the realm its owner was assigned in, not for the realms
+    the token itself belongs to, so a user of a resolver shared by several realms can own a token in one of
+    them and none in another. It is applied after the
+    resolvers answered, because token ownership is privacyIDEA's own record and no resolver knows about it.
+    The filter needs the user id; it is added to ``requested_attributes`` when missing and stripped again
+    afterwards, so it works independently of ``requested_attributes``. A resolver whose user listing reports
+    no user id - an advanced HTTP resolver whose attribute mapping does not map ``userid`` - leaves its users
+    looking like they own no token, as there is nothing to match the token owners against.
 
     :param param: search parameters
     :param user:  a specific user object to return
@@ -1041,7 +1046,7 @@ def get_user_list(param: dict | None = None, user: User | None = None,
                         user_info.pop("username", None)
                     if user_tuple not in users_dict:
                         users_dict[user_tuple] = user_info
-                        owner_keys[user_tuple] = (resolver_name, user_id)
+                        owner_keys[user_tuple] = ((realm or "").lower(), resolver_name, user_id)
                 log.debug(f"Found this userlist: {user_list!r}")
 
             except (ResolverError, ParameterError) as ex:

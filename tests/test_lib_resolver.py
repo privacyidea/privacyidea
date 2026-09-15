@@ -967,6 +967,10 @@ class SCIMResolverTestCase(MyTestCase):
         r = resolver.getUserId("bjensen")
         self.assertEqual(r, "bjensen")
 
+        # get_user_info reports the same id as getUserId, the login name in this resolver
+        r = resolver.get_user_info("bjensen")
+        self.assertEqual("bjensen", r.get("userid"))
+
     @responses.activate
     def test_05_users(self):
         responses.add(responses.GET, self.TOKEN_URL, status=200,
@@ -986,12 +990,21 @@ class SCIMResolverTestCase(MyTestCase):
         self.assertEqual(users[0].get("username"), "bjensen")
         self.assertEqual(users[1].get("username"), "jsmith")
 
+        # The listed users carry the same id getUserId returns, so a caller holding both - the
+        # has_tokens filter of get_user_list, for one - can match them against each other.
+        self.assertEqual(users[0].get("userid"), resolver.getUserId("bjensen"))
+        self.assertEqual(users[1].get("userid"), resolver.getUserId("jsmith"))
+
         # request specific attributes
         users = resolver.getUserList(attributes=["username", "unknown"])
         self.assertEqual(len(users), 2)
         self.assertSetEqual({"username"}, set(users[0].keys()))
         self.assertEqual(users[0].get("username"), "bjensen")
         self.assertEqual(users[1].get("username"), "jsmith")
+
+        users = resolver.getUserList(attributes=["username", "userid"])
+        self.assertSetEqual({"username", "userid"}, set(users[0].keys()))
+        self.assertEqual("bjensen", users[0].get("userid"))
 
     @responses.activate
     def test_06_failed_get_user(self):
@@ -1026,7 +1039,7 @@ class SCIMResolverTestCase(MyTestCase):
     def test_08_get_available_info_keys(self):
         resolver = SCIMResolver()
         keys = resolver.get_available_info_keys()
-        self.assertSetEqual({"username", "phone", "mobile", "email", "surname", "givenname"}, set(keys))
+        self.assertSetEqual({"username", "userid", "phone", "mobile", "email", "surname", "givenname"}, set(keys))
 
 
 class LDAPResolverTestCase(MyTestCase):

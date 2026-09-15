@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, OnInit, signal, TemplateRef, viewChild } from "@angular/core";
+import { Component, computed, effect, inject, signal, TemplateRef, untracked, viewChild } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatMenu, MatMenuItem, MatMenuTrigger } from "@angular/material/menu";
@@ -41,7 +41,7 @@ import {
 import { UserData, UserListResponseDetail, UserService, UserServiceInterface } from "@services/user/user.service";
 import { catchError, forkJoin, of } from "rxjs";
 
-/** Key the chosen realm is stored under in the widget instance settings. Empty value: every realm. */
+/** Key the chosen realm is stored under in the widget instance settings. Empty value: the default realm. */
 const REALM_SETTING = "realm";
 
 export interface TokenCounts {
@@ -82,7 +82,7 @@ type UserListResponse = PiResponse<UserData[], UserListResponseDetail | undefine
   templateUrl: "./tokens-widget.component.html",
   styleUrl: "./tokens-widget.component.scss"
 })
-export class TokensWidgetComponent extends DashboardWidget implements OnInit {
+export class TokensWidgetComponent extends DashboardWidget {
   static override readonly type = "tokens";
   static override readonly requiredAction = "tokenlist";
   static override readonly title = $localize`:@@dashboard.tokenUsage:Token Usage`;
@@ -122,17 +122,25 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   readonly canListUsers = computed(() => this.authService.actionAllowed("userlist"));
 
   /**
-   * The user list is always scoped to one realm, so it can only show the same population as these
-   * counts once a realm is picked. Across every realm there is no view to link to.
+   * The realm counted, which is always a single one: users can only be listed per realm, and across
+   * every realm the "without tokens" count would walk every user store. The stored choice wins, then
+   * the default realm, then the first realm there is. Empty only while none of them is known yet, or
+   * when there is no realm at all.
    */
-  readonly canLinkUsers = computed(() => !!this.realm() && this.canListUsers());
-
   readonly realm = computed<string>(() => {
     const stored = this.instance()?.settings?.[REALM_SETTING];
-    return typeof stored === "string" ? stored : "";
+    if (typeof stored === "string" && stored) {
+      return stored;
+    }
+    return this.realmService.defaultRealm() || this.realmOptions()[0] || "";
   });
 
-  readonly realmLabel = computed(() => this.realm() || $localize`:@@common.allRealms:All realms`);
+  /** There is nothing to count: no realm is configured, and none is on its way either. */
+  readonly noRealm = computed(
+    () => !this.realm() && this.realmService.defaultRealmResolved() && !this.realmService.realmResource.isLoading()
+  );
+
+  readonly realmLabel = computed(() => this.realm() || $localize`:@@dashboard.selectRealm:Select realm`);
 
   readonly realmOptions = computed(() => this.realmService.realmOptions());
 
@@ -189,8 +197,31 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
     };
   });
 
+  // The realm the current data was loaded for, so the effect below does not load a realm again
+  // that selectRealm already loaded.
+  private loadedRealm: string | null = null;
+
   constructor() {
     super();
+    // The default realm arrives after the widget is created, so the first load waits for it.
+    effect(() => {
+      const realm = this.realm();
+      const resolved = this.realmService.defaultRealmResolved();
+      untracked(() => {
+        if (realm) {
+          if (realm !== this.loadedRealm) {
+            this.load(realm);
+          }
+        } else if (this.authService.actionAllowed("tokenlist")) {
+          this.loadedRealm = null;
+          this.dataRef.set(null);
+          this.usersRef.set(null);
+          this.state.set(resolved ? "ready" : "loading");
+        } else {
+          this.state.set("denied");
+        }
+      });
+    });
     effect(() => {
       const ref = this.dataRef();
       if (!ref) {
@@ -211,29 +242,29 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   }
 
   showAllTokens(): void {
-    this.tokenService.presetFilter.set(this.realmFilter());
+    this.tokenService.presetFilter.set(this.withRealm(new FilterValue()));
   }
 
   showKind(kind: "hardware" | "software", unassignedOnly = false): void {
-    let filter = this.realmFilter().addEntry("infokey", "tokenkind").addEntry("infovalue", kind);
+    let filter = new FilterValue().addEntry("infokey", "tokenkind").addEntry("infovalue", kind);
     if (unassignedOnly) {
       filter = filter.addEntry("assigned", "False");
     }
-    this.tokenService.presetFilter.set(filter);
+    this.tokenService.presetFilter.set(this.withRealm(filter));
   }
 
   showUnassigned(): void {
-    this.tokenService.presetFilter.set(this.realmFilter().addEntry("assigned", "False"));
+    this.tokenService.presetFilter.set(this.withRealm(new FilterValue().addEntry("assigned", "False")));
   }
 
   showUsers(hasTokens: boolean): void {
     this.userService.presetFilter.set(new FilterValue().addEntry("has_tokens", hasTokens ? "True" : "False"));
   }
 
-  /** Narrow the widget to one realm, or to every realm when the name is empty. */
+  /** Count the tokens and users of this realm. */
   selectRealm(realm: string): void {
     const previous = this.realm();
-    if (realm === previous) {
+    if (!realm || realm === previous) {
       return;
     }
     const id = this.instance()?.id;
@@ -243,17 +274,18 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
     // The load is given the new realm: the instance input only carries it after the next
     // change detection run, so reading it back here would still yield the previous one.
     // Dropped, or the entries of every realm ever picked would be refetched on each refresh.
-    this.store.invalidate(this.storeKey(previous));
-    this.store.invalidate(this.usersStoreKey(previous));
+    if (previous) {
+      this.store.invalidate(this.storeKey(previous));
+      this.store.invalidate(this.usersStoreKey(previous));
+    }
     this.load(realm);
   }
 
-  ngOnInit(): void {
-    this.load();
-  }
-
   override reload(): void {
-    this.load();
+    const realm = this.realm();
+    if (realm) {
+      this.load(realm);
+    }
   }
 
   /**
@@ -275,24 +307,29 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
   }
 
   private storeKey(realm: string): string {
-    return realm ? `dashboard:tokens:${realm}` : "dashboard:tokens";
+    return `dashboard:tokens:${realm}`;
   }
 
   private usersStoreKey(realm: string): string {
-    return realm ? `dashboard:token-users:${realm}` : "dashboard:token-users";
+    return `dashboard:token-users:${realm}`;
   }
 
-  private realmFilter(): FilterValue {
-    const realm = this.realm();
-    return realm ? new FilterValue().addEntry("tokenrealm", realm) : new FilterValue();
+  /**
+   * Adds the realm as an exact token realm, so the list shows the tokens these counts counted rather
+   * than those of every realm containing the name. Applied last, because every other change to a
+   * filter drops the exact marking.
+   */
+  private withRealm(filter: FilterValue): FilterValue {
+    return filter.addEntry("tokenrealm", this.realm()).withExactKey("tokenrealm");
   }
 
-  private load(realm: string = this.realm()): void {
+  private load(realm: string): void {
     if (!this.authService.actionAllowed("tokenlist")) {
       this.state.set("denied");
       return;
     }
-    const scope: TokenCountParams = realm ? { tokenrealm: realm } : {};
+    this.loadedRealm = realm;
+    const scope: TokenCountParams = { tokenrealm: realm };
     this.dataRef.set(
       this.store.load(this.storeKey(realm), () =>
         forkJoin({
@@ -311,7 +348,7 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
             infovalue: "software",
             assigned: "False"
           }),
-          owners: this.tokenService.getTokenOwnerCount(realm || undefined).pipe(catchError(() => of(null)))
+          owners: this.tokenService.getTokenOwnerCount(realm).pipe(catchError(() => of(null)))
         })
       )
     );
@@ -322,7 +359,7 @@ export class TokensWidgetComponent extends DashboardWidget implements OnInit {
     this.usersRef.set(
       // A failure here only costs the "without tokens" row, not the whole widget.
       this.store.load(this.usersStoreKey(realm), () =>
-        this.userService.fetchUsernames(realm || undefined).pipe(catchError(() => of(null)))
+        this.userService.fetchUsernames(realm).pipe(catchError(() => of(null)))
       )
     );
   }

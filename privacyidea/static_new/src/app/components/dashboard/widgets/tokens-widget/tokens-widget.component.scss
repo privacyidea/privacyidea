@@ -66,6 +66,12 @@
   border-top: 2px solid var(--mat-sys-outline-variant);
 }
 
+.no-realm {
+  margin: 0;
+  padding: 8px 16px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
 .incomplete-users {
   display: flex;
   align-items: center;

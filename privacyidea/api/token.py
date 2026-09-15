@@ -800,9 +800,14 @@ def owner_count_api():
     ``detail.skipped_resolvers`` of :http:get:`/user/` - can add up the
     part that matches the users it was able to list.
 
-    :query realm: only count the owners in this realm. Several realms
-        may be given as a comma-separated list. Without this parameter
-        every realm the caller may see is counted.
+    :query realm: only count the owners in this realm. This is the realm
+        of the owner, not the ``tokenrealm`` of the token, so the count
+        matches :http:get:`/user/` for the same realm. A token assigned
+        to a user without a realm belongs to no realm here and is left
+        out of every realm's count, as it is by the ``has_tokens``
+        filter of :http:get:`/user/`. Several realms may be given as a
+        comma-separated list. Without this parameter every realm the
+        caller may see is counted.
     :status 200: ``result.value`` is ``{"count": <number>,
         "by_resolver": {<resolver name>: <number>}}``.
     """

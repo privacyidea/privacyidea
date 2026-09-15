@@ -1050,3 +1050,34 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
                 remove_token(serial)
 
         self.assertEqual([], usernames({"realm": self.realm1, "has_tokens": "True"}))
+
+    def test_17_get_users_has_tokens_filter_as_a_user(self):
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+        set_policy(name="pol-userlist", scope=SCOPE.USER, action=PolicyAction.USERLIST)
+
+        def own_usernames(query):
+            with self.app.test_request_context('/user/',
+                                               method='GET',
+                                               query_string=urlencode(query),
+                                               headers={'Authorization': self.at_user}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                return [user.get("username") for user in res.json["result"]["value"]]
+
+        serial = None
+        try:
+            # A user only ever sees their own record, so the filter decides whether that
+            # one record is listed - never whether someone else's is.
+            self.assertEqual([], own_usernames({"has_tokens": "True"}))
+            self.assertEqual(["selfservice"], own_usernames({"has_tokens": "False"}))
+
+            token = init_token({"type": "spass"}, user=User("selfservice", self.realm1))
+            serial = token.get_serial()
+
+            self.assertEqual(["selfservice"], own_usernames({"has_tokens": "True"}))
+            self.assertEqual([], own_usernames({"has_tokens": "False"}))
+        finally:
+            if serial:
+                remove_token(serial)
+            delete_policy("pol-userlist")

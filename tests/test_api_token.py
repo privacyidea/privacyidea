@@ -158,6 +158,55 @@ class API000TokenOwnerCount(MyApiTestCase):
         delete_policy("pol-realm1")
         delete_policy("pol-only-init")
 
+    def test_03a_a_user_is_refused(self):
+        # tokenlist lets a user through to their own tokens, so only admin_required keeps them out here.
+        self.authenticate_selfservice_user()
+        with self.app.test_request_context('/token/ownercount', method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            # 401 as for a missing login, but the error code tells the missing admin role apart.
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertEqual(4306, res.json["result"]["error"]["code"], res.json)
+
+    def test_03b_an_admin_without_a_tokenlist_policy_counts_nothing(self):
+        set_policy(name="pol-only-init", scope=SCOPE.ADMIN, action="enrollHOTP")
+
+        with self.app.test_request_context('/token/ownercount', method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            self.assertEqual(0, value["count"], value)
+            self.assertEqual({}, value["by_resolver"], value)
+
+        delete_policy("pol-only-init")
+
+    def test_04_a_realm_the_admin_may_not_see_counts_nothing(self):
+        set_policy(name="pol-realm1", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST,
+                   adminuser=self.testadmin, realm=self.realm1)
+
+        # Asking for a realm outside the policy must not report its owners, rather than
+        # falling back to the realms the admin may see.
+        with self.app.test_request_context('/token/ownercount', method='GET',
+                                           query_string={"realm": self.realm2},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            self.assertEqual(0, value["count"], value)
+            self.assertEqual({}, value["by_resolver"], value)
+
+        # The allowed realm of the same request still counts, so the filter narrows
+        # rather than switching the scope off.
+        with self.app.test_request_context('/token/ownercount', method='GET',
+                                           query_string={"realm": f"{self.realm1},{self.realm2}"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(2, res.json["result"]["value"]["count"], res.json)
+
+        delete_policy("pol-realm1")
+
 
 class API000TokenAdminRealmList(MyApiTestCase):
 
