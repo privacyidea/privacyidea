@@ -118,11 +118,16 @@ AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
 DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
-# Caps so that neither a client header nor a long policy text can overflow the 2000
-# characters the encrypted challenge data has to fit into.
+# Caps bound each field's raw character count, but json.dumps(ensure_ascii=True), the encoding
+# Challenge.set_data encrypts, blows up non-ASCII chars to \uXXXX and hexlify then roughly
+# doubles that. So these alone don't bound the stored size; _fit_notification_to_storage_budget
+# enforces the actual encoded size as a safety net.
 MAX_CLIENT_TAG_LENGTH = 256
 MAX_STORED_QUESTION_LENGTH = 512
 MAX_STORED_TITLE_LENGTH = 128
+# Budget for len(json.dumps(data)): Challenge._data holds 2000 hex chars (32-char IV + ':' +
+# 2 hex/byte), leaving ~970 plaintext bytes. kept lower for the fixed fields and AES padding.
+MAX_NOTIFICATION_JSON_LENGTH = 900
 # The decline reasons this server version understands. A signed but unrecognized
 # reason still declines, but is logged as app/server vocabulary drift.
 KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
@@ -264,6 +269,44 @@ def _get_presence_options(options) -> list:
     return available_presence_options
 
 
+def _truncate_with_log(value: str, max_length: int, label: str) -> str:
+    """
+    Truncate ``value`` to ``max_length`` characters, logging a debug message naming
+    ``label`` if it actually had to be cut.
+    """
+    if len(value) > max_length:
+        log.debug(f"Truncating {label} from {len(value)} to {max_length} characters.")
+        return value[:max_length]
+    return value
+
+
+def _fit_notification_to_storage_budget(data: dict) -> dict:
+    """
+    Make sure the JSON encoding of ``data``, the same encoding Challenge.set_data encrypts
+    and stores, stays within MAX_NOTIFICATION_JSON_LENGTH. The per-field character caps
+    applied before this point do not bound that encoded size, since json.dumps escapes every
+    non-ASCII character to a \\uXXXX sequence. This is the safety net: it truncates the
+    question, the largest variable-length field, as far as still necessary.
+
+    :param data: the challenge data, with "notification" already set
+    :return: the (possibly further truncated) data dict
+    """
+    notification = data.get("notification")
+    if not notification or not notification.get("question"):
+        return data
+    encoded_length = len(json.dumps(data))
+    if encoded_length <= MAX_NOTIFICATION_JSON_LENGTH:
+        return data
+    overshoot = encoded_length - MAX_NOTIFICATION_JSON_LENGTH
+    question = notification["question"]
+    new_length = max(0, len(question) - overshoot)
+    log.warning(f"Challenge notification still exceeds the storage budget after per-field "
+                f"truncation ({encoded_length} > {MAX_NOTIFICATION_JSON_LENGTH} encoded chars). "
+                f"Truncating the question from {len(question)} to {new_length} characters.")
+    notification["question"] = question[:new_length]
+    return data
+
+
 def _build_mobile_notification(token: TokenClass, options: dict) -> dict:
     """
     Build the notification the user sees on the smartphone: the question from the
@@ -307,7 +350,7 @@ def _build_mobile_notification(token: TokenClass, options: dict) -> dict:
                                       "surname": user.info.get("surname") if user else ""},
                            challenge=options.get("challenge"))
     for tag in ("ua_string", "ua_browser", "action"):
-        tags[tag] = tags[tag][:MAX_CLIENT_TAG_LENGTH]
+        tags[tag] = _truncate_with_log(tags[tag], MAX_CLIENT_TAG_LENGTH, f"tag {tag!r}")
     try:
         message_on_mobile = message_on_mobile.format(**tags)
     except Exception as e:
@@ -1412,8 +1455,12 @@ class PushTokenClass(TokenClass):
                 # at hand: a poll brings the request of the smartphone instead.
                 data = data or {}
                 notification = _build_mobile_notification(self, options)
-                data["notification"] = {"question": notification["question"][:MAX_STORED_QUESTION_LENGTH],
-                                        "title": notification["title"][:MAX_STORED_TITLE_LENGTH]}
+                data["notification"] = {
+                    "question": _truncate_with_log(notification["question"], MAX_STORED_QUESTION_LENGTH,
+                                                    "notification question"),
+                    "title": _truncate_with_log(notification["title"], MAX_STORED_TITLE_LENGTH,
+                                                "notification title")}
+                data = _fit_notification_to_storage_budget(data)
                 if fb_identifier != POLL_ONLY:
                     # We only push to Firebase if this token is NOT POLL_ONLY.
                     fb_gateway = create_sms_instance(fb_identifier)
