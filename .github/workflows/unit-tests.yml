@@ -173,10 +173,11 @@ jobs:
       if: ${{ inputs.db-kind == 'postgres' }}
       env:
         PGPASSWORD: privacyidea
+        POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
       run: |
         psql -h 127.0.0.1 -U privacyidea -d privacyidea_test \
           -c "ALTER SYSTEM SET max_connections = 300;"
-        docker restart "${{ job.services.postgres.id }}"
+        docker restart "$POSTGRES_CONTAINER_ID"
         for _ in $(seq 1 30); do
           if pg_isready -h 127.0.0.1 -U privacyidea -d privacyidea_test; then
             exit 0
