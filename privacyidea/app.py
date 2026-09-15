@@ -33,18 +33,18 @@ import os.path
 import re
 import secrets
 import sys
+import time
 import uuid
 from importlib import metadata
 from importlib.metadata import PackageNotFoundError
-from pathlib import Path
+from pathlib import Path, PurePath
 
 import sqlalchemy as sa
 import yaml
-from flask import Flask, jsonify, request, redirect
+from flask import Flask, current_app, jsonify, request, redirect
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_talisman import Talisman
-from flaskext.versioned import Versioned
 
 # we need this import to add the before/after request function to the blueprints
 # noinspection PyUnresolvedReferences
@@ -92,9 +92,14 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.models import db, NodeName
 from privacyidea.webui.certificate import cert_blueprint
-from privacyidea.webui.login import DEFAULT_LANGUAGE_LIST, login_blueprint, get_accepted_language
+from privacyidea.webui.login import (DEFAULT_LANGUAGE_LIST, WEBUI_DIST_PATH, login_blueprint,
+                                     get_accepted_language)
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
+
+# The directory the WebUI was previewed from while it was opt-in. Configurations naming it are
+# remapped to the current one, see _resolve_ui_folders().
+PREVIEW_STATIC_FOLDER = "static_new"
 
 CSP = {
     'default-src': [
@@ -139,6 +144,43 @@ babel = Babel()
 # But since the logging system is not configured properly, the message might not
 # end up in the place as defined in the logging configuration
 log = logging.getLogger(__name__)
+
+
+def _register_spa_fallback(app: Flask) -> None:
+    """
+    Answer an unmatched request with the WebUI, so that its own routes survive a reload.
+
+    The WebUI routes in the browser, so a path like /app/v2/tokens exists only there and
+    reaches Flask as a 404 whenever the page is opened or reloaded directly. Both application
+    factories need this: without it every deep link into the WebUI ends on an error page.
+    """
+    @app.errorhandler(404)
+    def fallback(_):
+        lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
+        all_locales = list(lang_list) + [lang.replace("_", "-") for lang in lang_list if "_" in lang]
+        locale_pattern = "|".join(re.escape(lang) for lang in all_locales)
+        if request.path.startswith("/static/public/customize"):
+            return send_html("")
+        elif (re.match(rf'^/app/v2/(({locale_pattern})/)?', request.path)
+              and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
+            from privacyidea.webui.login import _serve_locale
+            locale_match = re.match(rf'^/app/v2/({locale_pattern})/', request.path)
+            locale = locale_match.group(1) if locale_match else "en"
+            new_ui = _serve_locale(locale) or _serve_locale("en")
+            if new_ui:
+                return new_ui
+            return redirect(f"{request.script_root}/")
+        if (request.method == "GET"
+                and not request.path.startswith("/static/")
+                and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
+            from privacyidea.webui.login import _serve_locale, get_preferred_language
+            locale_prefix_match = re.match(rf'^/({locale_pattern})(/|$)', request.path)
+            locale = locale_prefix_match.group(1) if locale_prefix_match else (get_preferred_language() or "en")
+            new_ui = _serve_locale(locale) or _serve_locale("en")
+            if new_ui:
+                return new_ui
+            return redirect(f"{request.script_root}/")
+        return jsonify(error="Not found"), 404
 
 
 def _register_blueprints(app):
@@ -252,6 +294,100 @@ def _warn_if_base_url_missing(app: Flask):
                     "this privacyIDEA server.")
 
 
+def versioned_asset(path: str) -> str:
+    """
+    Append a cache-busting version to an asset URL, for use as the ``versioned`` Jinja filter:
+    "static/css/menu.css" becomes "static/css/menu.css?v=20260914T085217".
+
+    The legacy WebUI serves its assets under stable names, so without this a browser keeps using
+    the files it cached before an update. The compiled WebUI does not need it, its file names
+    carry a content hash.
+
+    A "static/" URL is resolved through the configured static folder, since ``PI_STATIC_FOLDER``
+    may point anywhere. An asset that cannot be found is returned unchanged, so a stale path
+    costs the version rather than the whole page.
+    """
+    file_path = path
+    if not os.path.isabs(file_path):
+        if file_path.startswith(DefaultConfigValues.STATIC_FOLDER):
+            file_path = os.path.join(current_app.static_folder,
+                                     file_path[len(DefaultConfigValues.STATIC_FOLDER):])
+        else:
+            file_path = os.path.join(current_app.root_path, file_path)
+    if not os.path.isfile(file_path):
+        log.debug(f"Not adding a version to '{path}': '{file_path}' does not exist.")
+        return path
+    modified = time.strftime("%Y%m%dT%H%M%S", time.localtime(os.path.getmtime(file_path)))
+    return f"{path}?v={modified}"
+
+
+def _replace_preview_folder(folder: str) -> str | None:
+    """
+    Return the path with a "static_new" directory replaced by "static", or None if it has none.
+
+    Both relative values ("static_new/") and the absolute paths used by appliance installations
+    are handled.
+    """
+    parts = PurePath(folder).parts
+    if PREVIEW_STATIC_FOLDER not in parts:
+        return None
+    static_folder = PurePath(DefaultConfigValues.STATIC_FOLDER).name
+    return str(PurePath(*[static_folder if part == PREVIEW_STATIC_FOLDER else part for part in parts]))
+
+
+def _resolve_ui_folders(app: Flask) -> None:
+    """
+    Apply ``PI_STATIC_FOLDER`` and ``PI_TEMPLATE_FOLDER``, remapping the WebUI preview paths.
+
+    Up to version 3.13 the new WebUI was opt-in through two settings in pi.cfg::
+
+        PI_STATIC_FOLDER = "static_new/"
+        PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"
+
+    It is now the default and lives in "static/", so both values are remapped to keep those
+    installations working. The template folder is reset to the default instead of being remapped,
+    because it pointed into the compiled WebUI, which holds no templates at all.
+    """
+    static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
+    template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
+
+    remapped_static = _replace_preview_folder(static_folder)
+    remapped_template = _replace_preview_folder(template_folder)
+    if remapped_static or remapped_template:
+        static_folder = remapped_static or static_folder
+        if remapped_template:
+            template_folder = (DefaultConfigValues.TEMPLATE_FOLDER
+                               if WEBUI_DIST_PATH[0] in PurePath(remapped_template).parts
+                               else remapped_template)
+        log.warning(f"The WebUI moved from '{PREVIEW_STATIC_FOLDER}' to "
+                    f"'{DefaultConfigValues.STATIC_FOLDER}' and is served by default. Reading it "
+                    f"from '{static_folder}' and the templates from '{template_folder}' instead. "
+                    f"Remove '{ConfigKey.STATIC_FOLDER}' and '{ConfigKey.TEMPLATE_FOLDER}' from "
+                    f"pi.cfg, this fallback is only kept for one version.")
+
+    app.static_folder = static_folder
+    app.template_folder = template_folder
+
+
+def _warn_if_webui_missing(app: Flask) -> None:
+    """
+    Emit a warning if the default static folder holds no compiled WebUI.
+
+    Only the default is checked: an administrator who points ``PI_STATIC_FOLDER`` somewhere else
+    serves their own UI and knows what is in it.
+    """
+    default_folder = os.path.join(app.root_path, DefaultConfigValues.STATIC_FOLDER)
+    if os.path.realpath(app.static_folder) != os.path.realpath(default_folder):
+        return
+    if os.path.isfile(os.path.join(app.static_folder, *WEBUI_DIST_PATH, "en", "index.html")):
+        return
+    legacy_folder = DefaultConfigValues.LEGACY_STATIC_FOLDER
+    log.warning(f"No compiled WebUI in '{app.static_folder}'. Install a package that ships the "
+                f"built WebUI, or build it with 'npm run build'. To serve the previous WebUI "
+                f"instead, set '{ConfigKey.STATIC_FOLDER} = \"{legacy_folder}\"' and "
+                f"'{ConfigKey.TEMPLATE_FOLDER} = \"{legacy_folder}templates/\"' in pi.cfg.")
+
+
 def _setup_database_engine_options(app: Flask):
     """
     Resolve the options for the main database engine before ``db.init_app()`` creates it.
@@ -362,34 +498,7 @@ def create_app(config_name="development",
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = not silent
 
-    # Routed apps must fall back to index.html
-    @app.errorhandler(404)
-    def fallback(_):
-        lang_list = get_app_config_value("PI_PREFERRED_LANGUAGE", default=DEFAULT_LANGUAGE_LIST)
-        all_locales = list(lang_list) + [lang.replace("_", "-") for lang in lang_list if "_" in lang]
-        locale_pattern = "|".join(re.escape(lang) for lang in all_locales)
-        if request.path.startswith("/static/public/customize"):
-            return send_html("")
-        elif (re.match(rf'^/app/v2/(({locale_pattern})/)?', request.path)
-              and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
-            from privacyidea.webui.login import _serve_locale
-            locale_match = re.match(rf'^/app/v2/({locale_pattern})/', request.path)
-            locale = locale_match.group(1) if locale_match else "en"
-            new_ui = _serve_locale(locale) or _serve_locale("en")
-            if new_ui:
-                return new_ui
-            return redirect(f"{request.script_root}/")
-        if (request.method == "GET"
-                and not request.path.startswith("/static/")
-                and request.accept_mimetypes.best_match(["text/html", "application/json"]) == "text/html"):
-            from privacyidea.webui.login import _serve_locale, get_preferred_language
-            locale_prefix_match = re.match(rf'^/({locale_pattern})(/|$)', request.path)
-            locale = locale_prefix_match.group(1) if locale_prefix_match else (get_preferred_language() or "en")
-            new_ui = _serve_locale(locale) or _serve_locale("en")
-            if new_ui:
-                return new_ui
-            return redirect(f"{request.script_root}/")
-        return jsonify(error="Not found"), 404
+    _register_spa_fallback(app)
 
 
     # Overwrite default config with environment setting
@@ -439,9 +548,8 @@ def create_app(config_name="development",
 
     _warn_if_base_url_missing(app)
 
-    # We allow to set different static folders
-    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
-    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
+    _resolve_ui_folders(app)
+    _warn_if_webui_missing(app)
 
     _register_blueprints(app)
 
@@ -477,7 +585,7 @@ def create_app(config_name="development",
                 "  pi-manage db downgrade -- -3"
             )
 
-    Versioned(app, format='%(path)s?v=%(version)s')
+    app.jinja_env.filters["versioned"] = versioned_asset
 
     babel.init_app(app, locale_selector=get_accepted_language)
 
@@ -528,6 +636,8 @@ def create_docker_app():
     app.config[ConfigKey.APP_READY] = False
     app.config[ConfigKey.VERBOSE] = bool(app.debug)
 
+    _register_spa_fallback(app)
+
     # Begin the app configuration
     # First we load a default configuration
     if app.debug:
@@ -564,9 +674,8 @@ def create_docker_app():
 
     _warn_if_base_url_missing(app)
 
-    # We allow to set different static folders
-    app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
-    app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
+    _resolve_ui_folders(app)
+    _warn_if_webui_missing(app)
 
     _register_blueprints(app)
 
@@ -575,7 +684,7 @@ def create_docker_app():
     db.init_app(app)
     init_ca_session(app)
 
-    Versioned(app, format='%(path)s?v=%(version)s')
+    app.jinja_env.filters["versioned"] = versioned_asset
 
     babel.init_app(app, locale_selector=get_accepted_language)
 

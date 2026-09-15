@@ -44,28 +44,28 @@ can configure html templates that are included on top and at the bottom of each 
 
 For the creation page, add the following files to add your custom text:
 
-**Old WebUI**::
+**Previous WebUI**::
 
-    static/customize/views/includes/token.containercreate.pre.top.html
-    static/customize/views/includes/token.containercreate.pre.bottom.html
+    static_old/customize/views/includes/token.containercreate.pre.top.html
+    static_old/customize/views/includes/token.containercreate.pre.bottom.html
 
-**New WebUI**::
+**WebUI**::
 
-    static_new/public/customize/container-create.wizard.pre.top.html
-    static_new/public/customize/container-create.wizard.pre.bottom.html
+    static/public/customize/container-create.wizard.pre.top.html
+    static/public/customize/container-create.wizard.pre.bottom.html
 
 When the container is created and the user needs to do something (e.g. scanning the QR code), you can add your own text
 by adding these two files:
 
-**Old WebUI**::
+**Previous WebUI**::
 
-    static/customize/views/includes/token.containercreate.post.top.html
-    static/customize/views/includes/token.containercreate.post.bottom.html
+    static_old/customize/views/includes/token.containercreate.post.top.html
+    static_old/customize/views/includes/token.containercreate.post.bottom.html
 
-**New WebUI**::
+**WebUI**::
 
-    static_new/public/customize/container-create.wizard.post.top.html
-    static_new/public/customize/container-create.wizard.post.bottom.html
+    static/public/customize/container-create.wizard.post.top.html
+    static/public/customize/container-create.wizard.post.bottom.html
 
 You can also include the enrollment data in the html files. The available data depends on the configuration you used
 for the container creation. However, at least the variable ``containerSerial`` is available. To use the variable, write
@@ -81,10 +81,10 @@ If the registration was enabled, the following variables are available:
 Creating the container on the basis of a template, but without the registration, for all tokens, the minimum required
 information is displayed, e.g. a QR code, the secret, or the otp list.
 
-If no customization files are available, the new WebUI will display a default title and instruction text similar to
+If no customization files are available, the WebUI will display a default title and instruction text similar to
 the usual container creation page and registration dialog.
 
-.. note:: You can change the directory static/customize to a URL that fits
+.. note:: You can change the directory static_old/customize to a URL that fits
    your needs the best by defining a variable PI_CUSTOMIZATION in the file
    pi.cfg. This way you can put all modifications in one place apart from the
    original code. See :ref:`pi_customization`.
