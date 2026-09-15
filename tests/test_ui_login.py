@@ -46,6 +46,12 @@ class AlternativeWebUI(MyTestCase):
 
 
 class LoginUITestCase(MyTestCase):
+    """The legacy WebUI, which is served when pi.cfg points the static and template folder at it.
+
+    Its index template pulls its assets from /static/, so it can only render while the legacy
+    folder is mounted there.
+    """
+    app_config_name = "legacyUI"
 
     def test_01_normal_login(self):
         # We just test, if the login page can be called.
@@ -710,22 +716,32 @@ class NewUIRoutingTestCase(MyTestCase):
 
     # --- Path traversal / injection security tests ---
 
+    def _assert_serves_no_file(self, path: str) -> None:
+        """A path must never return content read through it: either it is rejected, or it gets
+        the same WebUI shell that any unknown route gets.
+
+        Asserting on the status code alone only holds while no WebUI is built. Once there is a
+        build, the fallback answers an unknown path with the application shell, which is a 200
+        and is correct - the shell is a fixed file, nothing is read through the path. Comparing
+        against the shell makes the test say what it means in both cases."""
+        client = self.app.test_client()
+        shell = client.get("/app/v2/", headers={"Accept": "text/html"})
+        response = client.get(path, headers={"Accept": "text/html,*/*"})
+        if response.status_code == 200:
+            self.assertEqual(shell.data, response.data,
+                             f"{path!r} returned something other than the WebUI shell")
+        else:
+            self.assertIn(response.status_code, (301, 302, 404), path)
+
     def test_path_traversal_in_locale_route_no_file_served(self):
         """GET /app/v2/../../etc/ must never serve a file outside the static folder.
-        Werkzeug normalizes the path to /etc/ before routing, so we get a redirect
-        rather than a 404 — both are safe, neither reads a file."""
-        with self.app.test_request_context("/app/v2/../../etc/", method="GET",
-                                           headers={"Accept": "text/html,*/*"}):
-            res = self.app.full_dispatch_request()
-        self.assertNotEqual(res.status_code, 200)
+        Werkzeug normalizes the path to /etc/ before routing."""
+        self._assert_serves_no_file("/app/v2/../../etc/")
 
     def test_path_traversal_url_encoded_no_file_served(self):
-        """URL-encoded traversal %2e%2e%2f must not bypass the whitelist.
-        The path is normalized/rejected — no real file content is returned."""
-        with self.app.test_request_context("/app/v2/%2e%2e%2fetc/", method="GET",
-                                           headers={"Accept": "text/html,*/*"}):
-            res = self.app.full_dispatch_request()
-        self.assertNotEqual(res.status_code, 200)
+        """URL-encoded traversal %2e%2e%2f must not bypass the whitelist."""
+        self._assert_serves_no_file("/app/v2/%2e%2e%2fetc/")
+        self._assert_serves_no_file("/app/v2/%2e%2e%2f%2e%2e%2fetc%2fpasswd")
 
     def test_serve_locale_path_traversal_rejected(self):
         """_serve_locale rejects locales that contain path traversal sequences."""
@@ -746,11 +762,8 @@ class NewUIRoutingTestCase(MyTestCase):
 
     def test_home_directory_route_no_file_served(self):
         """GET /app/v2/~/ and variants must never serve home directory content."""
-        for path in ["/app/v2/~/", "/app/v2/~root/"]:
-            with self.app.test_request_context(path, method="GET",
-                                               headers={"Accept": "text/html,*/*"}):
-                res = self.app.full_dispatch_request()
-            self.assertNotEqual(res.status_code, 200, f"Path {path!r} must not return 200")
+        for path in ["/app/v2/~/", "/app/v2/~root/", "/app/v2/~/.ssh/id_rsa"]:
+            self._assert_serves_no_file(path)
 
     def test_serve_locale_only_allows_whitelisted_locales(self):
         """_serve_locale never constructs a path for any locale not in PI_PREFERRED_LANGUAGE."""

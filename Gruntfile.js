@@ -4,18 +4,18 @@ grunt.initConfig({
   nggettext_extract: {
     pot: {
       files: {
-        'po/template.pot': ['privacyidea/static/components/*/views/*.html',
-                            'privacyidea/static/templates/*.html',
-                            'privacyidea/static/components/*/controllers/*.js',
-                            'privacyidea/static/components/*/factories/*.js',
-                            'privacyidea/static/*.js']
+        'po/template.pot': ['privacyidea/static_old/components/*/views/*.html',
+                            'privacyidea/static_old/templates/*.html',
+                            'privacyidea/static_old/components/*/controllers/*.js',
+                            'privacyidea/static_old/components/*/factories/*.js',
+                            'privacyidea/static_old/*.js']
       }
     },
   },
   nggettext_compile: {
     all: {
       files: {
-        'privacyidea/static/components/translation/translations.js': ['po/*.po']
+        'privacyidea/static_old/components/translation/translations.js': ['po/*.po']
       }
     },
   },

@@ -57,7 +57,7 @@ MAX_SETTINGS_BYTES = 16384
 USER_SETTINGS_ALLOWED_KEYS_CONFIG = "PI_USER_SETTINGS_ALLOWED_KEYS"
 
 # These are the keys the WebUI writes, as declared by the ``UserSettingKey`` type in
-# static_new/src/app/services/user-settings/user-settings.service.ts. A setting that
+# static/src/app/services/user-settings/user-settings.service.ts. A setting that
 # is added there has to be added here as well.
 KNOWN_SETTING_KEYS = {
     "theme",
