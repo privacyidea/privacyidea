@@ -254,22 +254,16 @@ $description-width: 18rem;
     min-height: 0;
     overflow: auto;
 
-    // Pull the sticky header up by 1px so no content peeks above it while scrolling.
+    // Flush with the top of the region: the cover each edge needs comes from the ::before below,
+    // which overhangs without moving the cell, so neither edge is uncovered to pay for the other.
     .mat-mdc-header-cell {
-      top: -1px !important;
+      top: 0 !important;
     }
 
     // Divider shown only when content is hidden in that direction
     // (classes toggled by appScrollEdges).
     &.scrolled-from-top {
       border-top: 1px solid var(--mat-sys-outline-variant);
-
-      // Separate the pinned (sticky) header row from the content scrolling beneath it.
-      // A border-bottom is not painted on a position:sticky cell under
-      // border-collapse:collapse (Material tables), so use a box-shadow instead.
-      .mat-mdc-header-cell {
-        box-shadow: 0 1px 0 0 var(--mat-sys-outline-variant);
-      }
     }
 
     &.more-below {
@@ -319,20 +313,53 @@ a {
 }
 
 // The table itself is transparent so it blends with the ancestor card's gradient (see $table-bg
-// above), but a sticky header cell scrolls over the rows beneath it and can't stay see-through -
-// give it an opaque background so scrolled content never shows through it. --surface-raised is the
-// card's own depth-tinted gradient: opaque at every depth, and its stops track the Depth setting
-// rather than pinning the header to one swatch. Matches Material's own
+// above), but a sticky header cell scrolls over the rows beneath it and can't stay see-through.
+// The opaque fill lives on a ::before that overhangs the cell rather than on the cell itself: a
+// cell whose box rounds to a half-pixel leaves a sliver of the rows behind it uncovered, and the
+// overhang absorbs that. The cell's own background has to be cleared, matching Material's
 // ".mat-mdc-table .mat-mdc-header-cell { background: inherit; }" selector so this outranks it.
 .mat-mdc-table .mat-mdc-header-cell {
-  background: var(--surface-raised) !important;
+  background: transparent !important;
+  // MDC clips header cells, which would cut the ::before overhang back to the cell box and bring
+  // the sliver straight back. Nothing in a header cell relies on being clipped: the label wraps.
+  overflow: visible !important;
+
+  &::before {
+    content: "";
+    position: absolute;
+    // Overhang the bottom edge only. The top needs none: a sliver can only appear there once the
+    // rows have scrolled, and that is exactly when .scrolled-from-top paints the region's
+    // border-top over that pixel - a scroll container's own border is never covered by the content
+    // it clips. Overhanging the top as well would hide that border.
+    inset: 0 0 -1px;
+    // --surface-raised is the ancestor card's depth-tinted gradient, so the header tracks the Depth
+    // setting instead of being pinned to one swatch.
+    background: var(--surface-raised);
+    // Behind the cell's own content, still inside the sticky cell's stacking context (Material
+    // gives it z-index 100), so it stays above the rows scrolling underneath.
+    z-index: -1;
+  }
+
+  // The fill above overhangs onto the row border below the header, so redraw that line here, on
+  // top of it. It doubles as the divider against the rows once they scroll under the header: a
+  // border-bottom is not painted on a position:sticky cell under border-collapse:collapse
+  // (Material tables), and a box-shadow would land under the fill rather than over it.
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--mat-sys-outline-variant);
+  }
 }
 
 // One extra class-level selector than the fallback above, so this wins the tie and keeps the
 // even/odd header stripe alternating instead of the fallback flattening every header cell to one
 // color.
-.mat-mdc-table .mat-mdc-header-cell:nth-child(even) {
-  background: var(--mat-sys-surface-variant) !important;
+.mat-mdc-table .mat-mdc-header-cell:nth-child(even)::before {
+  background: var(--mat-sys-surface-variant);
 }
 
 td:nth-child(even) {
