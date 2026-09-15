@@ -124,12 +124,14 @@ export class TokensWidgetComponent extends DashboardWidget {
   /**
    * The realm counted, which is always a single one: users can only be listed per realm, and across
    * every realm the "without tokens" count would walk every user store. The stored choice wins, then
-   * the default realm, then the first realm there is. Empty only while none of them is known yet, or
-   * when there is no realm at all.
+   * the default realm, then the first realm there is. A stored realm that no longer exists is
+   * skipped once the realms are known; before that it is kept, so the label does not flicker.
+   * Empty only while none of them is known yet, or when there is no realm at all.
    */
   readonly realm = computed<string>(() => {
     const stored = this.instance()?.settings?.[REALM_SETTING];
-    if (typeof stored === "string" && stored) {
+    const realmsKnown = this.realmService.realmResource.hasValue();
+    if (typeof stored === "string" && stored && (!realmsKnown || this.realmOptions().includes(stored))) {
       return stored;
     }
     return this.realmService.defaultRealm() || this.realmOptions()[0] || "";
