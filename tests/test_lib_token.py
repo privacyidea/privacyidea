@@ -39,6 +39,7 @@ from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy)
 from privacyidea.lib.token import (create_tokenclass_object,
                                    get_tokens, get_token_type, check_serial,
                                    get_num_tokens_in_realm,
+                                   get_token_owners_per_resolver, get_token_owner_keys,
                                    get_realms_of_token,
                                    token_exist, get_token_owner, is_token_owner,
                                    get_tokenclass_info,
@@ -72,6 +73,7 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
+from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.models import (db, Token, Challenge, TokenRealm, TokenOwner)
 from .base import MyTestCase
 
@@ -86,6 +88,7 @@ class TokenTestCase(MyTestCase):
     Test the lib.token on an interface level
     """
     yubikey_token_key = '31323334353637383930313233343536'
+    owner_count_realm = "ownercountrealm"
 
     def test_00_create_realms(self):
         self.setUp_user_realms()
@@ -332,6 +335,105 @@ class TokenTestCase(MyTestCase):
                          "{0!r}".format(get_num_tokens_in_realm(self.realm1)))
         # No active tokens
         self.assertEqual(0, get_num_tokens_in_realm(self.realm1, active=False))
+
+    def test_05a_get_token_owners_per_resolver(self):
+        self.setUp_user_realms()
+        # A realm of this test's own, so its owner rows start out empty no matter which tokens
+        # the other tests of this class have already assigned in the shared realms.
+        set_realm(self.owner_count_realm, [{"name": self.resolvername1}])
+        self.assertEqual({}, get_token_owners_per_resolver(realms=[self.owner_count_realm]))
+
+        before_all = get_token_owners_per_resolver()
+        keys_before = get_token_owner_keys()
+        serials = []
+        try:
+            # cornelius owns two tokens here, which makes him one owner
+            for _ in range(2):
+                tok = init_token({"otpkey": self.otpkey}, user=User("cornelius", self.owner_count_realm))
+                serials.append(tok.get_serial())
+            # shadow owns one
+            tok = init_token({"otpkey": self.otpkey}, user=User("shadow", self.owner_count_realm))
+            serials.append(tok.get_serial())
+            # an unassigned token contributes no owner at all
+            tok = init_token({"otpkey": self.otpkey}, tokenrealms=[self.owner_count_realm])
+            serials.append(tok.get_serial())
+
+            self.assertEqual({self.resolvername1: 2},
+                             get_token_owners_per_resolver(realms=[self.owner_count_realm]))
+            # a realm that owns nothing, and no realm at all, count nothing
+            self.assertEqual({}, get_token_owners_per_resolver(realms=["does-not-exist"]))
+            self.assertEqual({}, get_token_owners_per_resolver(realms=[]))
+
+            # unfiltered, every resolver's count moves by the owners that are new to it
+            # the unfiltered count does not tell realms apart, so an owner already known in another realm is not new
+            def owners(keys):
+                return {(resolver, user_id) for _, resolver, user_id in keys}
+            new_owners = owners(get_token_owner_keys()) - owners(keys_before)
+            after_all = get_token_owners_per_resolver()
+            self.assertEqual(sum(before_all.values()) + len(new_owners), sum(after_all.values()))
+        finally:
+            for serial in serials:
+                remove_token(serial)
+            delete_realm(self.owner_count_realm)
+
+        self.assertEqual(before_all, get_token_owners_per_resolver())
+        self.assertEqual(keys_before, get_token_owner_keys())
+
+    def test_05b_get_token_owner_keys(self):
+        self.setUp_user_realms()
+        set_realm(self.owner_count_realm, [{"name": self.resolvername1}])
+        cornelius_uid = User("cornelius", self.realm1, self.resolvername1).uid
+        cornelius_key = (self.owner_count_realm.lower(), self.resolvername1, cornelius_uid)
+
+        keys_before = get_token_owner_keys()
+        serial = None
+        try:
+            tok = init_token({"otpkey": self.otpkey}, user=User("cornelius", self.owner_count_realm))
+            serial = tok.get_serial()
+
+            keys_after = get_token_owner_keys()
+            self.assertIn(cornelius_key, keys_after)
+            self.assertTrue(keys_before <= keys_after, (keys_before, keys_after))
+            # the token is assigned in one realm only, although the resolver serves realm1 as well
+            self.assertNotIn((self.realm1.lower(), self.resolvername1, cornelius_uid), keys_after - keys_before)
+            # scoped to the resolver that owns it, the triple is still there
+            self.assertIn(cornelius_key, get_token_owner_keys(resolvers=[self.resolvername1]))
+            # a resolver that owns nothing, and no resolver at all, yield nothing
+            self.assertEqual(set(), get_token_owner_keys(resolvers=["does-not-exist"]))
+            self.assertEqual(set(), get_token_owner_keys(resolvers=[]))
+        finally:
+            if serial:
+                remove_token(serial)
+            delete_realm(self.owner_count_realm)
+
+        self.assertEqual(keys_before, get_token_owner_keys())
+
+    def test_05c_an_owner_without_a_realm_belongs_to_none(self):
+        # A token can be assigned to a user that has no realm, which leaves TokenOwner.realm_id
+        # empty. Such an owner is counted by no realm and matches the user of no realm either -
+        # the two must agree, or the widget's "without tokens" row would not add up.
+        self.setUp_user_realms()
+        set_realm(self.owner_count_realm, [{"name": self.resolvername1}])
+        cornelius_uid = User("cornelius", self.realm1, self.resolvername1).uid
+
+        serial = None
+        try:
+            tok = init_token({"otpkey": self.otpkey}, user=User("cornelius", self.owner_count_realm))
+            serial = tok.get_serial()
+            owner_row = db.session.execute(
+                select(TokenOwner).where(TokenOwner.token_id == tok.token.id)).unique().scalar_one()
+            owner_row.realm_id = None
+            db.session.commit()
+
+            keys = get_token_owner_keys()
+            self.assertIn(("", self.resolvername1, cornelius_uid), keys)
+            self.assertNotIn((self.owner_count_realm, self.resolvername1, cornelius_uid), keys)
+            # and the realm it was assigned in does not count it, although it is an assigned token
+            self.assertEqual({}, get_token_owners_per_resolver(realms=[self.owner_count_realm]))
+        finally:
+            if serial:
+                remove_token(serial)
+            delete_realm(self.owner_count_realm)
 
     def test_05_get_token_in_resolver(self):
         # Only the tokens whose owner is in the given resolver are returned

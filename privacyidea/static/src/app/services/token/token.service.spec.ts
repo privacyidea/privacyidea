@@ -441,6 +441,30 @@ describe("TokenService", () => {
     });
   });
 
+  describe("getTokenOwnerCount()", () => {
+    it("requests the owner count without a realm param when none is given", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 0, by_resolver: {} })));
+
+      tokenService.getTokenOwnerCount().subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl + "ownercount", {
+        headers: authService.getHeaders(),
+        params: {}
+      });
+    });
+
+    it("scopes the request to the given realm", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 3, by_resolver: { resolver1: 3 } })));
+
+      tokenService.getTokenOwnerCount("realm1").subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl + "ownercount", {
+        headers: authService.getHeaders(),
+        params: { realm: "realm1" }
+      });
+    });
+  });
+
   describe("pollTokenRolloutState()", () => {
     it("emits error once and stops polling when request fails", async () => {
       jest.useFakeTimers();
@@ -614,6 +638,46 @@ describe("TokenService", () => {
 
       const req = mockBackend.expectOne((r) => r.url === "/token/");
       expect(req.request.params.get("tokenrealm")).toBe("*realm1*,*realm2*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends a key marked exact as it is, so a realm handed over by a widget is not widened", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1" }).withExactKey("tokenrealm"));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("realm1");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("widens the same realm again once the user edits the filter", () => {
+      contentServiceMock.onTokens = signal(true);
+      const preset = new FilterValue({ value: "tokenrealm: realm1" }).withExactKey("tokenrealm");
+      // Any edit yields a new FilterValue, which no longer carries the marking.
+      tokenService.activeFilter.set(preset.addEntry("active", "true"));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("*realm1*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("waits for the token table to take over a preset instead of loading without it", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.presetFilter.set(new FilterValue().addEntry("assigned", "False"));
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === "/token/");
+
+      // What the token table does once it is on screen.
+      const preset = tokenService.presetFilter()!;
+      tokenService.presetFilter.set(null);
+      tokenService.setFilter(preset);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("assigned")).toBe("False");
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
   });

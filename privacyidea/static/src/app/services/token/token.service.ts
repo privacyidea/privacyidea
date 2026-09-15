@@ -39,7 +39,6 @@ import {
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { formatList, pluralize } from "@utils/i18n.utils";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface, DetailsUser } from "@services/content/content.service";
@@ -53,6 +52,7 @@ import {
 import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { filterParamsEqual, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
+import { formatList, pluralize } from "@utils/i18n.utils";
 import { StringUtils } from "@utils/string.utils";
 import { tokenTypes } from "@utils/token.utils";
 import {
@@ -199,6 +199,12 @@ export interface Tokens {
 }
 
 export type TokenCount = Pick<Tokens, "count">;
+
+/** Token owners overall and per resolver; the per-resolver numbers add up to ``count``. */
+export interface TokenOwnerCount {
+  count: number;
+  by_resolver: Record<string, number>;
+}
 
 export interface TokenCountParams {
   type?: TokenTypeKey;
@@ -448,6 +454,8 @@ export interface TokenServiceInterface extends FilterableTableServiceInterface {
 
   getTokenCount(params?: TokenCountParams): Observable<PiResponse<TokenCount>>;
 
+  getTokenOwnerCount(realm?: string): Observable<PiResponse<TokenOwnerCount>>;
+
   enrollToken<T extends TokenEnrollmentData, R extends EnrollmentResponse>(args: {
     data: T;
     mapper: TokenApiPayloadMapper<T>;
@@ -562,7 +570,8 @@ export class TokenService extends FilterableTableService implements TokenService
         // Remove empty values
         .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
         // Convert to query param values
-        .map(([key, v]) => [key, toParamValue(key, v)] as const);
+        // A value handed over by another view counts exactly what that view counted.
+        .map(([key, v]) => [key, activeFilter.isExactKey(key) ? v : toParamValue(key, v)] as const);
       return { ...Object.fromEntries(entries), ...toTypeParams(activeFilter) };
     },
     { equal: filterParamsEqual }
@@ -744,6 +753,11 @@ export class TokenService extends FilterableTableService implements TokenService
       this.contentService.onUserDetails();
 
     if (!onAllowedRoute) {
+      return undefined;
+    }
+    // A filter handed over by another view is applied by the token table once it exists; loading
+    // before that would send one request without it.
+    if (this.contentService.onTokens() && this.presetFilter()) {
       return undefined;
     }
 
@@ -1258,6 +1272,14 @@ export class TokenService extends FilterableTableService implements TokenService
     return this.http.get<PiResponse<TokenCount>>(this.tokenBaseUrl, {
       headers: this.authService.getHeaders(),
       params: { ...params, pagesize: 0 }
+    });
+  }
+
+  /** Number of distinct users owning at least one token, optionally limited to one realm. */
+  getTokenOwnerCount(realm?: string): Observable<PiResponse<TokenOwnerCount>> {
+    return this.http.get<PiResponse<TokenOwnerCount>>(this.tokenBaseUrl + "ownercount", {
+      headers: this.authService.getHeaders(),
+      params: realm ? { realm } : {}
     });
   }
 

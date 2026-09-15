@@ -972,6 +972,58 @@ def get_num_tokens_in_realm(realm: str, active: bool = True) -> int:
 
 
 @log_with(log)
+def get_token_owners_per_resolver(realms: list[str] | None = None) -> dict[str, int]:
+    """
+    Return the number of distinct users that own at least one token, per resolver.
+
+    A user is identified by the pair (resolver, user id), so the same person is counted once no
+    matter how many tokens they own and no matter in how many of the queried realms those tokens
+    sit. Tokens that are not assigned do not contribute, and neither does the token being active.
+    Each such pair falls into exactly one resolver, hence the counts add up to the total and a
+    caller that can reach only some of the resolvers can add up the part that it can account for.
+
+    :param realms: Only count owners assigned in these realms - the realm of the owner, not the realms
+        of the token, so the count matches the user list of a realm. An assignment carrying no realm at
+        all - possible when a token is assigned to a user without one - is counted by no realm, the same
+        way :func:`get_token_owner_keys` matches it in none. None counts the owners in every realm,
+        an empty list counts nothing.
+    :return: A dict mapping each resolver name to its number of token owners
+    """
+    owners = select(TokenOwner.resolver, TokenOwner.user_id).select_from(TokenOwner).distinct()
+    if realms is not None:
+        owners = owners.join(Realm, Realm.id == TokenOwner.realm_id).where(
+            func.lower(Realm.name).in_([r.lower() for r in realms]))
+    per_resolver = owners.subquery()
+    rows = db.session.execute(
+        select(per_resolver.c.resolver, func.count()).select_from(per_resolver).group_by(per_resolver.c.resolver))
+    return {resolver or "": count for resolver, count in rows}
+
+
+@log_with(log)
+def get_token_owner_keys(resolvers: list[str] | None = None) -> set[tuple[str, str, str]]:
+    """
+    Return the (realm, resolver, user id) triples that own at least one token.
+
+    This is the membership test behind :func:`get_token_owners_per_resolver` with a realm given: a
+    user of a resolver shared by several realms only owns a token in the realm it was assigned in,
+    so a caller holding the user records of one realm can tell which of them own a token there.
+    Tokens that are not assigned do not contribute, and neither does the token being active. An
+    assignment without a realm - a token given to a user that has none - yields the empty realm and
+    therefore matches no user of any realm, just as the owner count of a realm leaves it out.
+
+    :param resolvers: Only return the triples of these resolvers. None returns the triples of every
+        resolver, an empty list returns nothing.
+    :return: A set of (lowercase realm name, resolver name, user id) triples
+    """
+    owners = select(Realm.name, TokenOwner.resolver, TokenOwner.user_id).select_from(TokenOwner).outerjoin(
+        Realm, Realm.id == TokenOwner.realm_id).distinct()
+    if resolvers is not None:
+        owners = owners.where(TokenOwner.resolver.in_(resolvers))
+    return {((realm or "").lower(), resolver or "", user_id or "")
+            for realm, resolver, user_id in db.session.execute(owners)}
+
+
+@log_with(log)
 def get_realms_of_token(serial: str, only_first_realm: bool = False) -> list[str] | str | None:
     """
     This function returns a list of the realms of a token

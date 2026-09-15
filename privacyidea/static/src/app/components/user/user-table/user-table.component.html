@@ -55,7 +55,7 @@
             [showClearButton]="filterHTMLInputElement.value.length > 0">
             <input
               #filterHTMLInputElement
-              [appFilterAutocomplete]="userService.apiFilterKeys"
+              [appFilterAutocomplete]="filterKeywords"
               (input)="userService.handleFilterInput($event)"
               [value]="userService.filterDraft().filterString"
               aria-label="Filter Input"
