@@ -230,6 +230,9 @@ def _reset_database() -> None:
 class MyTestCase(unittest.TestCase):
     app = None
     app_context = None
+    # The configuration create_app() is called with. Test classes that need different static or
+    # template folders override it with one of the entries in privacyidea.config.config.
+    app_config_name = "testing"
     resolvername1 = "resolver1"
     resolvername2 = "Resolver2"
     resolvername3 = "reso3"
@@ -257,7 +260,7 @@ class MyTestCase(unittest.TestCase):
     def setUpClass(cls):
         # Avoid warning when creating Flask-App without path to a config file
         # (And do not use the default config file here).
-        cls.app = create_app('testing', pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
+        cls.app = create_app(cls.app_config_name, pathlib.Path.cwd() / "tests/testdata/test_pi.cfg")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         _reset_database()

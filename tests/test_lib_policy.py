@@ -3494,8 +3494,8 @@ class PolicyTemplateTestCase(MyTestCase):
     created from a template cannot be saved."""
 
     repository_root = pathlib.Path(__file__).resolve().parent.parent
-    template_directories = [repository_root / "privacyidea/static/policy-templates",
-                            repository_root / "privacyidea/static_new/public/policy-templates"]
+    template_directories = [repository_root / "privacyidea/static/public/policy-templates",
+                            repository_root / "privacyidea/static_old/policy-templates"]
 
     def _read_templates(self, directory):
         templates = {}
