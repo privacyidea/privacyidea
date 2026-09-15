@@ -39,6 +39,11 @@ class BaseEngineRegistry:
     """
     Abstract base class for engine registries.
     """
+    #: Whether an engine handed out by this registry may be held by other callers as well.
+    #: Disposing a shared engine takes the connection pool away from everyone else using the
+    #: same key, so only the requester of a private engine may dispose it.
+    shares_engines = False
+
     def get_engine(self, key, creator):
         """
         Return the engine associated with the key ``key``.
@@ -68,6 +73,8 @@ class SharedEngineRegistry(BaseEngineRegistry):
 
     It can be activated by setting ``PI_ENGINE_REGISTRY_CLASS`` to "shared".
     """
+    shares_engines = True
+
     def __init__(self):
         BaseEngineRegistry.__init__(self)
         self._engine_lock = Lock()
@@ -124,3 +131,16 @@ def get_engine(key, creator):
     :return: an SQLAlchemy engine
     """
     return get_registry().get_engine(key, creator)
+
+
+def engines_are_shared() -> bool:
+    """
+    Whether :py:func:`get_engine` hands out engines that other callers may hold as well.
+
+    An engine from the shared registry outlives the request that asked for it, so disposing it
+    closes connections that later requests expect to find in the pool. Only an engine the
+    requester has to itself may be disposed by that requester.
+
+    :return: True if engines are shared between callers
+    """
+    return get_registry().shares_engines
