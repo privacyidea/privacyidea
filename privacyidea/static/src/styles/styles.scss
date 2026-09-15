@@ -265,7 +265,7 @@ body {
   --box-shadow-header: 4px 2px var(--blur) var(--mat-sys-shadow);
   --table-color: var(--mat-sys-surface-container-lowest);
 
-  --mat-form-field-filled-container-color: var(surface-container-low);
+  --mat-form-field-filled-container-color: var(--mat-sys-surface-container-low);
   --mat-tab-active-indicator-color: var(--mat-sys-primary);
   --mat-form-field-filled-focus-active-indicator-color: var(--mat-sys-primary-light);
   --mat-tab-active-focus-indicator-color: var(--mat-sys-primary);
