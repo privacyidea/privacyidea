@@ -102,17 +102,6 @@ $bar-gradient-end-dark: #464646;
   width: auto;
 }
 
-.beta-badge {
-  font-size: 14px;
-  font-weight: 600;
-  border: 1.5px solid var(--mat-sys-on-surface);
-  border-radius: var(--border-radius);
-  padding: 1px 5px;
-  color: var(--mat-sys-on-surface);
-  line-height: 1.4;
-  white-space: nowrap;
-}
-
 .main-nav {
   @include flex-center;
   flex: 1;
@@ -259,6 +248,7 @@ $bar-gradient-end-dark: #464646;
   font-size: 12px;
   color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
+  margin-right: 13px;
 
   a {
     color: var(--mat-sys-primary) !important;
@@ -282,6 +272,7 @@ $bar-gradient-end-dark: #464646;
   display: none;
   align-items: center;
   flex-shrink: 0;
+  margin-right: 5px;
 }
 
 .version-text {
@@ -290,6 +281,7 @@ $bar-gradient-end-dark: #464646;
   // dark mode, which would leave the two barely a step apart.
   color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
+  margin: 0 86px 0 16px;
 }
 
 .docs-button-icon {
@@ -358,7 +350,17 @@ $bar-gradient-end-dark: #464646;
     display: none;
   }
 
+  .version-text {
+    margin-right: 259px;
+  }
+
   :host.has-custom-logo .secondary-toolbar {
     padding-left: 104px;
+  }
+}
+
+@media (max-width: 1600px) {
+  .version-text {
+    margin-right: 101px;
   }
 }

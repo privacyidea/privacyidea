@@ -16,12 +16,11 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2
-  i18n="@@container.containerRegistration"
-  mat-dialog-title
-  >Container Registration Completed</h2
->
-<mat-dialog-content>
+<app-dialog-wrapper
+  cancelButtonLabel="Close"
+  i18n-cancelButtonLabel="@@common.close"
+  i18n-title="@@container.containerRegistration"
+  title="Container Registration Completed">
   <span i18n="@@container.containerWasSuccessfully"
     >The container
     <a
@@ -33,12 +32,4 @@
     </a>
     was successfully registered.</span
   >
-</mat-dialog-content>
-<mat-dialog-actions>
-  <button
-    mat-button
-    mat-dialog-close
-    i18n="@@common.close"
-    >Close</button
-  >
-</mat-dialog-actions>
+</app-dialog-wrapper>
