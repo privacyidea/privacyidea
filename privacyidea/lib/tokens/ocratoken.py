@@ -51,6 +51,7 @@ class OcraTokenClass(TokenClass):
     """
     The OCRA Token Implementation
     """
+    owned_tokeninfo_keys = frozenset({"ocrasuite"})
 
     @staticmethod
     def get_class_type():
@@ -140,7 +141,7 @@ class OcraTokenClass(TokenClass):
 
         ocrasuite = get_optional(param, "ocrasuite", default=OCRA_DEFAULT_SUITE)
         OCRASuite(ocrasuite)
-        self.add_tokeninfo("ocrasuite", ocrasuite)
+        self.write_tokeninfo("ocrasuite", ocrasuite)
         TokenClass.update(self, param)
 
         if user_object:

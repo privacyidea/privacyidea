@@ -7,7 +7,7 @@ from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContaine
 from privacyidea.lib.error import Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.realm import set_default_realm
+from privacyidea.lib.realm import delete_realm, set_default_realm, set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token
 from privacyidea.lib.user import User
@@ -412,8 +412,8 @@ class APIContainer(APIContainerTest):
         result = result["result"]
         self.assertTrue(result["value"])
         self.assertFalse(result["value"]["deleted"])
-        self.assertTrue(result["value"][self.realm1])
-        self.assertTrue(result["value"][self.realm2])
+        self.assertTrue(result["value"]["realms"][self.realm1])
+        self.assertTrue(result["value"]["realms"][self.realm2])
 
         # Set no realm shall remove all realms for the container
         payload = {"realms": ""}
@@ -424,8 +424,8 @@ class APIContainer(APIContainerTest):
         result = result["result"]
         self.assertTrue(result["value"])
         self.assertTrue(result["value"]["deleted"])
-        self.assertNotIn(self.realm1, result["value"].keys())
-        self.assertNotIn(self.realm2, result["value"].keys())
+        self.assertNotIn(self.realm1, result["value"]["realms"])
+        self.assertNotIn(self.realm2, result["value"]["realms"])
 
         delete_container_by_serial(container_serial)
 
@@ -437,11 +437,35 @@ class APIContainer(APIContainerTest):
         self.assert_audit_entry('POST /container/<string:container_serial>/realms', success=0,
                                 container_serial=container_serial, action_detail="realms=realm2",
                                 info="attached=['realm1', 'realm2']; not removed=['realm1']")
-        self.assertTrue(result["result"]["value"][self.realm2])
+        self.assertTrue(result["result"]["value"]["realms"][self.realm2])
         # the user's realm can not be removed, so it stays attached (True) although not requested
-        self.assertTrue(result["result"]["value"][self.realm1])
+        self.assertTrue(result["result"]["value"]["realms"][self.realm1])
 
         delete_container_by_serial(container_serial)
+
+    def test_08a_set_realms_realm_named_like_a_status_key(self):
+        # A realm may be named like one of the status keys of the response. Its per-realm status
+        # lives in its own dictionary, so it stays readable and independent of the status keys.
+        self.setUp_user_realms()
+        set_realm("deleted", [{"name": self.resolvername1}])
+        container_serial = init_container({"type": "generic"})["container_serial"]
+
+        # Attaching the realm succeeds, and nothing was removed
+        result = self.request_assert_success(f'/container/{container_serial}/realms', {"realms": "deleted"},
+                                             self.at, 'POST')
+        value = result["result"]["value"]
+        self.assertTrue(value["realms"]["deleted"])
+        self.assertFalse(value["deleted"])
+
+        # Removing it again is reported as a removal, and the realm is no longer attached
+        result = self.request_assert_success(f'/container/{container_serial}/realms', {"realms": ""},
+                                             self.at, 'POST')
+        value = result["result"]["value"]
+        self.assertNotIn("deleted", value["realms"])
+        self.assertTrue(value["deleted"])
+
+        delete_container_by_serial(container_serial)
+        delete_realm("deleted")
 
     def test_09_set_realms_fail(self):
         # Arrange
@@ -464,7 +488,7 @@ class APIContainer(APIContainerTest):
                                 container_serial=container_serial, action_detail="realms=nonexistingrealm",
                                 info="not added=['nonexistingrealm']")
         result = result.get("result")
-        self.assertFalse(result["value"]["nonexistingrealm"])
+        self.assertFalse(result["value"]["realms"]["nonexistingrealm"])
 
         # Missing container serial
         self.request_assert_405('/container/realms', {"realms": [self.realm1]}, self.at, 'POST')

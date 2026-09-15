@@ -1,0 +1,274 @@
+@use "@angular/material" as mat;
+
+$focus-outline: 2px solid var(--mat-sys-primary-light);
+
+html {
+  &.system {
+    --mint-bg: light-dark(#e9f5e0, #243328);
+    --rose-bg: light-dark(#faebef, #282426);
+    --rose-ripple: light-dark(#f4d7e0, #433d3e);
+    --sky-bg: light-dark(#edf3f5, #283034);
+
+    // Highlight half of every shadow pair (--elevation-* in styles.scss). Kept a close step from
+    // --mat-sys-shadow so both halves read as grey and the pair separates surfaces softly.
+    --mat-sys-light: light-dark(#e8e8e8, #303030);
+
+    // The tones the flat depth level's border is drawn in. A border is a hard line on the surface
+    // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
+    // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
+    // page is no good either: a tone light enough to show against it is then the card's own fill.
+    // So every tone sits clear of both surfaces on the same side — darker in light mode, lighter in
+    // dark. Three steps, each a --shadow / --light pair for a surface's two halves: -1 is the most
+    // contrasty, -3 the lightest. styles.scss hands the shallower depth slots (3, then 5) the
+    // lighter steps and the deepest (8) the boldest, the same relationship the blurred shadow pair
+    // has through --depth-scale.
+    --flat-border-shadow-1: light-dark(hsl(0, 0%, 70%), hsl(0, 0%, 45%));
+    --flat-border-shadow-2: light-dark(hsl(0, 0%, 77%), hsl(0, 0%, 55%));
+    --flat-border-shadow-3: light-dark(hsl(0, 0%, 84%), hsl(0, 0%, 65%));
+    --flat-border-light-1: light-dark(hsl(0, 0%, 82%), hsl(0, 0%, 32%));
+    --flat-border-light-2: light-dark(hsl(0, 0%, 86%), hsl(0, 0%, 42%));
+    --flat-border-light-3: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 52%));
+
+    --mat-sys-primary-dark: light-dark(hsl(198, 66%, 25%), hsl(198, 66%, 60%));
+    --mat-sys-primary-base: light-dark(hsl(198, 66%, 30%), hsl(198, 66%, 55%));
+    --mat-sys-primary-base-active: light-dark(hsl(198, 66%, 32.5%), hsl(198, 66%, 52.5%));
+    --mat-sys-primary-base-hover: light-dark(hsl(198, 66%, 40%), hsl(198, 66%, 47.5%));
+    --mat-sys-primary-light: light-dark(hsl(198, 66%, 35%), hsl(198, 66%, 50%));
+    --mat-sys-primary-light-active: light-dark(hsl(198, 66%, 37.5%), hsl(198, 66%, 47.5%));
+    --mat-sys-primary-light-hover: light-dark(hsl(198, 66%, 45%), hsl(198, 66%, 45%));
+
+    --green-dark: light-dark(hsl(120, 39%, 39%), hsl(120, 39%, 35%));
+    --green-base: light-dark(hsl(120, 39%, 44%), hsl(120, 39%, 40%));
+    --green-light: light-dark(hsl(120, 39%, 49%), hsl(120, 39%, 45%));
+    --green-light-active: light-dark(hsl(120, 39%, 54%), hsl(120, 39%, 50%));
+    --green-base-hover: light-dark(hsl(120, 39%, 40%), hsl(120, 39%, 30%));
+
+    --red-dark: light-dark(hsl(342, 100%, 32%), hsl(342, 100%, 44%));
+    --red-base: light-dark(hsl(342, 100%, 37%), hsl(342, 100%, 50%));
+    --red-light: light-dark(hsl(342, 100%, 42%), hsl(342, 100%, 54%));
+    --red-light-active: light-dark(hsl(342, 100%, 57%), hsl(342, 100%, 58%));
+    --red-base-hover: light-dark(hsl(342, 100%, 60%), hsl(342, 100%, 30%));
+
+    --yellow-dark: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 35%));
+    --yellow-base: light-dark(hsl(28, 85%, 50%), hsl(28, 85%, 40%));
+    --yellow-light: light-dark(hsl(28, 85%, 55%), hsl(28, 85%, 45%));
+    --yellow-light-active: light-dark(hsl(28, 85%, 60%), hsl(28, 85%, 50%));
+    --yellow-base-hover: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 32%));
+
+    --grey-dark: light-dark(hsl(0, 0%, 42%), hsl(0, 0%, 50%));
+    --grey-base: light-dark(hsl(0, 0%, 50%), hsl(0, 0%, 55%));
+    --grey-light: light-dark(hsl(0, 0%, 55%), hsl(0, 0%, 62%));
+    --grey-light-active: light-dark(hsl(0, 0%, 60%), hsl(0, 0%, 58%));
+    --grey-base-hover: light-dark(hsl(0, 0%, 45%), hsl(0, 0%, 35%));
+
+    --mat-sys-primary: var(--mat-sys-primary-base);
+    --mat-sys-on-primary: light-dark(hsl(198, 66%, 95%), hsl(198, 66%, 10%));
+    --mat-sys-primary-container: light-dark(hsl(198, 66%, 90%), hsl(198, 66%, 20%));
+    --mat-sys-surface-container-lowest: light-dark(hsl(0, 0%, 98%), hsl(0, 0%, 10%));
+    --mat-sys-surface-container-low: light-dark(hsl(0, 0%, 93%), hsl(0, 0%, 15%));
+    --mat-sys-surface-container: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 20%));
+    --mat-sys-surface-container-high: light-dark(hsl(0, 0%, 85%), hsl(0, 0%, 25%));
+    --mat-sys-surface-container-highest: light-dark(hsl(0, 0%, 80%), hsl(0, 0%, 30%));
+    --mat-sys-surface-variant: light-dark(hsl(0, 0%, 91%), hsl(0, 0%, 22.5%));
+    --mat-sys-background: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 20%));
+    --mat-sys-surface: var(--mat-sys-background);
+    --mat-sys-on-surface: light-dark(hsl(0, 0%, 10%), hsl(0, 0%, 90%));
+    --mat-sys-on-surface-variant: light-dark(hsl(0, 0%, 30%), hsl(0, 0%, 80%));
+    --mat-sys-on-primary-container: light-dark(hsl(198, 66%, 10%), hsl(198, 66%, 80%));
+    // Shadow half of every shadow pair (--elevation-* in styles.scss), held short of pure black.
+    --mat-sys-shadow: light-dark(#d1d1d1, #1c1c1c);
+
+    --mat-sys-outline: light-dark(hsl(246, 4%, 48%), hsl(0, 0%, 40%));
+    --nav-item-border: light-dark(#d0d0d0, #333333);
+
+    --inline-hint-bg: light-dark(hsl(200, 65%, 91%), hsl(200, 65%, 20%));
+    --inline-warning-bg: light-dark(hsl(0, 83%, 95%), hsl(0, 83%, 18%));
+    --mat-tooltip-container-color: light-dark(hsl(0, 0%, 95%), hsl(0, 0%, 35%));
+    --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
+  }
+
+  &.light {
+    color-scheme: light;
+    --mint-bg: #e9f5e0;
+    --rose-bg: #faebef;
+    --rose-ripple: #f4d7e0;
+    --sky-bg: #edf3f5;
+
+    --mat-sys-light: #e8e8e8;
+
+    // The tones the flat depth level's border is drawn in. A border is a hard line on the surface
+    // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
+    // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
+    // page is no good either: a tone light enough to show against it is then the card's own fill.
+    // So every tone sits clear of both surfaces on the same side — darker in light mode, lighter in
+    // dark. Three steps, each a --shadow / --light pair for a surface's two halves: -1 is the most
+    // contrasty, -3 the lightest. styles.scss hands the shallower depth slots (3, then 5) the
+    // lighter steps and the deepest (8) the boldest, the same relationship the blurred shadow pair
+    // has through --depth-scale.
+    --flat-border-shadow-1: hsl(0, 0%, 70%);
+    --flat-border-shadow-2: hsl(0, 0%, 77%);
+    --flat-border-shadow-3: hsl(0, 0%, 84%);
+    --flat-border-light-1: hsl(0, 0%, 82%);
+    --flat-border-light-2: hsl(0, 0%, 86%);
+    --flat-border-light-3: hsl(0, 0%, 90%);
+
+    --mat-sys-primary-dark: hsl(198, 66%, 25%);
+    --mat-sys-primary-base: hsl(198, 66%, 30%);
+    --mat-sys-primary-base-active: hsl(198, 66%, 32.5%);
+    --mat-sys-primary-base-hover: hsl(198, 66%, 40%);
+    --mat-sys-primary-light: hsl(198, 66%, 35%);
+    --mat-sys-primary-light-active: hsl(198, 66%, 37.5%);
+    --mat-sys-primary-light-hover: hsl(198, 66%, 45%);
+
+    --green-dark: hsl(120, 39%, 39%);
+    --green-base: hsl(120, 39%, 44%);
+    --green-light: hsl(120, 39%, 49%);
+    --green-light-active: hsl(120, 39%, 54%);
+    --green-base-hover: hsl(120, 39%, 40%);
+
+    --red-dark: hsl(342, 100%, 32%);
+    --red-base: hsl(342, 100%, 37%);
+    --red-light: hsl(342, 100%, 42%);
+    --red-light-active: hsl(342, 100%, 57%);
+    --red-base-hover: hsl(342, 100%, 60%);
+
+    --yellow-dark: hsl(28, 85%, 45%);
+    --yellow-base: hsl(28, 85%, 50%);
+    --yellow-light: hsl(28, 85%, 55%);
+    --yellow-light-active: hsl(28, 85%, 60%);
+    --yellow-base-hover: hsl(28, 85%, 45%);
+
+    --grey-dark: hsl(0, 0%, 42%);
+    --grey-base: hsl(0, 0%, 50%);
+    --grey-light: hsl(0, 0%, 55%);
+    --grey-light-active: hsl(0, 0%, 60%);
+    --grey-base-hover: hsl(0, 0%, 45%);
+
+    --mat-sys-primary: var(--mat-sys-primary-base);
+    --mat-sys-on-primary: hsl(198, 66%, 95%);
+    --mat-sys-primary-container: hsl(198, 66%, 90%);
+    --mat-sys-surface-container-lowest: hsl(0, 0%, 98%);
+    --mat-sys-surface-container-low: hsl(0, 0%, 93%);
+    --mat-sys-surface-container: hsl(0, 0%, 90%);
+    --mat-sys-surface-container-high: hsl(0, 0%, 85%);
+    --mat-sys-surface-container-highest: hsl(0, 0%, 80%);
+    --mat-sys-surface-variant: hsl(0, 0%, 91%);
+    --mat-sys-background: hsl(0, 0%, 90%);
+    --mat-sys-surface: var(--mat-sys-background);
+    --mat-sys-on-surface: hsl(0, 0%, 10%);
+    --mat-sys-on-surface-variant: hsl(0, 0%, 30%);
+    --mat-sys-on-primary-container: hsl(198, 66%, 10%);
+    --mat-sys-shadow: #d1d1d1;
+    --mat-sys-outline: hsl(246, 4%, 48%);
+    --nav-item-border: #d0d0d0;
+
+    --inline-hint-bg: hsl(200, 65%, 91%);
+    --inline-warning-bg: hsl(0, 83%, 95%);
+    --mat-tooltip-container-color: hsl(0, 0%, 95%);
+    --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
+  }
+
+  &.dark {
+    color-scheme: dark;
+    --mint-bg: #243328;
+    --rose-bg: #282426;
+    --rose-ripple: #433d3e;
+    --sky-bg: #283034;
+
+    --mat-sys-light: #303030;
+
+    // The tones the flat depth level's border is drawn in. A border is a hard line on the surface
+    // it outlines, so it needs tones that clear both --mat-sys-background and --table-color; the
+    // shadow pair above is deliberately soft and lands too near one or the other. Straddling the
+    // page is no good either: a tone light enough to show against it is then the card's own fill.
+    // So every tone sits clear of both surfaces on the same side — darker in light mode, lighter in
+    // dark. Three steps, each a --shadow / --light pair for a surface's two halves: -1 is the most
+    // contrasty, -3 the lightest. styles.scss hands the shallower depth slots (3, then 5) the
+    // lighter steps and the deepest (8) the boldest, the same relationship the blurred shadow pair
+    // has through --depth-scale.
+    --flat-border-shadow-1: hsl(0, 0%, 18%);
+    --flat-border-shadow-2: hsl(0, 0%, 26%);
+    --flat-border-shadow-3: hsl(0, 0%, 34%);
+    --flat-border-light-1: hsl(0, 0%, 12%);
+    --flat-border-light-2: hsl(0, 0%, 20%);
+    --flat-border-light-3: hsl(0, 0%, 28%);
+
+    --mat-sys-primary-dark: hsl(198, 66%, 60%);
+    --mat-sys-primary-base: hsl(198, 66%, 55%);
+    --mat-sys-primary-base-active: hsl(198, 66%, 52.5%);
+    --mat-sys-primary-base-hover: hsl(198, 66%, 47.5%);
+    --mat-sys-primary-light: hsl(198, 66%, 50%);
+    --mat-sys-primary-light-active: hsl(198, 66%, 47.5%);
+    --mat-sys-primary-light-hover: hsl(198, 66%, 45%);
+
+    --green-dark: hsl(120, 39%, 35%);
+    --green-base: hsl(120, 39%, 40%);
+    --green-light: hsl(120, 39%, 45%);
+    --green-light-active: hsl(120, 39%, 50%);
+    --green-base-hover: hsl(120, 39%, 30%);
+
+    --red-dark: hsl(342, 100%, 44%);
+    --red-base: hsl(342, 100%, 50%);
+    --red-light: hsl(342, 100%, 54%);
+    --red-light-active: hsl(342, 100%, 58%);
+    --red-base-hover: hsl(342, 100%, 30%);
+
+    --yellow-dark: hsl(28, 85%, 35%);
+    --yellow-base: hsl(28, 85%, 40%);
+    --yellow-light: hsl(28, 85%, 45%);
+    --yellow-light-active: hsl(28, 85%, 50%);
+    --yellow-base-hover: hsl(28, 85%, 32%);
+
+    --grey-dark: hsl(0, 0%, 50%);
+    --grey-base: hsl(0, 0%, 55%);
+    --grey-light: hsl(0, 0%, 62%);
+    --grey-light-active: hsl(0, 0%, 58%);
+    --grey-base-hover: hsl(0, 0%, 35%);
+
+    --mat-sys-primary: var(--mat-sys-primary-base);
+    --mat-sys-on-primary: hsl(198, 66%, 10%);
+    --mat-sys-primary-container: hsl(198, 66%, 20%);
+    --mat-sys-surface-container-lowest: hsl(0, 0%, 10%);
+    --mat-sys-surface-container-low: hsl(0, 0%, 15%);
+    --mat-sys-surface-container: hsl(0, 0%, 20%);
+    --mat-sys-surface-container-high: hsl(0, 0%, 25%);
+    --mat-sys-surface-container-highest: hsl(0, 0%, 30%);
+    --mat-sys-surface-variant: hsl(0, 0%, 22.5%);
+    --mat-sys-background: hsl(0, 0%, 20%);
+    --mat-sys-surface: var(--mat-sys-background);
+    --mat-sys-on-surface: hsl(0, 0%, 90%);
+    --mat-sys-on-surface-variant: hsl(0, 0%, 80%);
+    --mat-sys-on-primary-container: hsl(198, 66%, 80%);
+    --mat-sys-shadow: #1c1c1c;
+    --mat-sys-outline: hsl(0, 0%, 40%);
+    --nav-item-border: #363636;
+
+    --inline-hint-bg: hsl(200, 65%, 20%);
+    --inline-warning-bg: hsl(0, 83%, 18%);
+    --mat-tooltip-container-color: hsl(0, 0%, 35%);
+    --mat-tooltip-supporting-text-color: var(--mat-sys-on-surface);
+  }
+
+  @include mat.theme(
+    (
+      color: mat.$blue-palette
+    ),
+    $overrides: (
+      "corner-large": 16px,
+      "primary": var(--mat-sys-primary-base),
+      "on-primary": var(--mat-sys-on-primary),
+      "primary-container": var(--mat-sys-primary-container),
+      "surface-container-lowest": var(--mat-sys-surface-container-lowest),
+      "surface-container-low": var(--mat-sys-surface-container-low),
+      "surface-container": var(--mat-sys-surface-container),
+      "surface-container-high": var(--mat-sys-surface-container-high),
+      "surface-container-highest": var(--mat-sys-surface-container-highest),
+      "surface-variant": var(--mat-sys-surface-variant),
+      "background": var(--mat-sys-background),
+      "on-surface": var(--mat-sys-on-surface),
+      "on-surface-variant": var(--mat-sys-on-surface-variant),
+      "on-primary-container": var(--mat-sys-on-primary-container),
+      "shadow": var(--mat-sys-shadow)
+    )
+  );
+}

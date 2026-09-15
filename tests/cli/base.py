@@ -23,6 +23,7 @@ from sqlalchemy.orm.session import close_all_sessions
 from privacyidea.app import create_app
 from privacyidea.models import db
 from privacyidea.lib.lifecycle import call_finalizers
+from ..base import _reset_database
 
 
 class CliTestCase(unittest.TestCase):
@@ -34,7 +35,11 @@ class CliTestCase(unittest.TestCase):
         cls.app = create_app(config_name="testing", config_file="", silent=True)
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
-        db.create_all()
+        # Reuse the schema the way tests/base.py does: building and dropping all
+        # 57 tables per class is the single most expensive thing these tests did,
+        # and dropping them also denied the next class on this worker a schema to
+        # reuse.
+        _reset_database()
 
     def tearDown(self):
         db.session.commit()
@@ -44,6 +49,5 @@ class CliTestCase(unittest.TestCase):
     def tearDownClass(cls):
         call_finalizers()
         close_all_sessions()
-        db.drop_all()
         db.engine.dispose()
         cls.app_context.pop()

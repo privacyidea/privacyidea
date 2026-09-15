@@ -38,6 +38,11 @@ from privacyidea.models.utils import MethodsMixin
 
 log = logging.getLogger(__name__)
 
+# The value type of a token info entry is stored in the Type column, but it is read back as a separate
+# "<key>.type" entry of the token info dictionary. The suffix is therefore reserved and must not be used as a
+# token info key of its own.
+TOKENINFO_TYPE_SUFFIX = ".type"
+
 
 class TokenCredentialIdHash(MethodsMixin, db.Model):
     __tablename__ = "tokencredentialidhash"
@@ -411,7 +416,7 @@ class Token(MethodsMixin, db.Model):
         ret = {}
         for tokeninfo in self.info_list:
             if tokeninfo.Type:
-                ret[tokeninfo.Key + ".type"] = tokeninfo.Type
+                ret[tokeninfo.Key + TOKENINFO_TYPE_SUFFIX] = tokeninfo.Type
             ret[tokeninfo.Key] = tokeninfo.Value
         return ret
 

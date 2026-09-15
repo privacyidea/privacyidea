@@ -117,6 +117,8 @@ class TiqrTokenClass(OcraTokenClass):
     mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE, AuthenticationMode.OUTOFBAND]
     client_mode = ClientMode.POLL
 
+    owned_tokeninfo_keys = frozenset({"session"})
+
     @staticmethod
     def get_class_type():
         """
@@ -209,7 +211,7 @@ class TiqrTokenClass(OcraTokenClass):
 
         ocrasuite = get_from_config("tiqr.ocrasuite") or OCRA_DEFAULT_SUITE
         OCRASuite(ocrasuite)
-        self.add_tokeninfo("ocrasuite", ocrasuite)
+        self.write_tokeninfo("ocrasuite", ocrasuite)
         TokenClass.update(self, param)
 
     @log_with(log)
@@ -224,7 +226,7 @@ class TiqrTokenClass(OcraTokenClass):
         serial = self.token.serial
         session = generate_otpkey()
         # save the session in the token
-        self.add_tokeninfo("session", session)
+        self.write_tokeninfo("session", session)
         tiqrenroll = f"tiqrenroll://{enroll_url!s}?action={API_ACTIONS.METADATA!s}&session={session!s}&serial={serial!s}"
 
         response_detail["tiqrenroll"] = {"description":
@@ -314,7 +316,7 @@ class TiqrTokenClass(OcraTokenClass):
                 # save the secret
                 enroll_token.set_otpkey(secret)
                 # delete the session
-                enroll_token.delete_tokeninfo("session")
+                enroll_token.remove_tokeninfo("session")
                 res = "OK"
             else:
                 raise ParameterError("Invalid Session")

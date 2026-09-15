@@ -1,0 +1,170 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, effect, inject, Injectable, Signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { lastValueFrom, Observable } from "rxjs";
+
+export interface SmtpServer {
+  identifier: string;
+  server: string;
+  port: number;
+  timeout: number;
+  sender: string;
+  username?: string;
+  password?: string;
+  description?: string;
+  tls: boolean;
+  enqueue_job: boolean;
+  certificate?: string;
+  private_key?: string;
+  private_key_password?: string;
+  smime: boolean;
+  dont_send_on_error: boolean;
+}
+
+export type SmtpServers = Record<string, SmtpServer>;
+
+export interface SmtpServiceInterface {
+  smtpServerResource: HttpResourceRef<PiResponse<SmtpServers> | undefined>;
+  readonly smtpServers: Signal<SmtpServer[]>;
+
+  postSmtpServer(server: SmtpServer): Promise<void>;
+
+  testSmtpServer(params: SmtpServer & { recipient: string }): Promise<boolean>;
+
+  deleteSmtpServer(identifier: string): Promise<void>;
+
+  listSmtpServers(): Observable<PiResponse<SmtpServers>>;
+}
+
+@Injectable()
+export class SmtpService implements SmtpServiceInterface {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly http = inject(HttpClient);
+
+  readonly smtpServerBaseUrl = environment.proxyUrl + "/smtpserver/";
+  readonly smtpServerResource = httpResource<PiResponse<SmtpServers>>(() => {
+    // Conditional access appears in this list because its EMAIL_ADMIN / EMAIL_USER stage actions each pick the SMTP
+    // server that sends the notification from these identifiers.
+    const onPageUsingTheList =
+      this.contentService.onExternalSmtp() ||
+      this.contentService.onConfigurationTokenTypes() ||
+      this.contentService.onConfigurationSystem() ||
+      this.contentService.onConditionalAccess();
+    // /smtpserver/ itself requires smtpserver_read, so this guard skips the request rather than letting it 403; only
+    // the SMTP Servers menu entry is gated on that right, so pages that merely consume the list need this check too.
+    if (!onPageUsingTheList || !this.authService.actionAllowed("smtpserver_read")) {
+      return undefined;
+    }
+    return {
+      url: `${this.smtpServerBaseUrl}`,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  readonly smtpServers = computed<SmtpServer[]>(() => {
+    if (!this.smtpServerResource.hasValue()) return [];
+    const res = this.smtpServerResource.value();
+    const values = res?.result?.value;
+    if (values) {
+      return Object.entries(values).map(([identifier, server]) => ({
+        ...server,
+        identifier
+      }));
+    }
+    return [];
+  });
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.smtpServerResource.error(), "SMTP servers");
+    });
+  }
+
+  async postSmtpServer(server: SmtpServer): Promise<void> {
+    const url = `${this.smtpServerBaseUrl}${encodeURIComponent(server.identifier)}`;
+    const request = this.http.post<PiResponse<boolean>>(url, server, { headers: this.authService.getHeaders() });
+
+    try {
+      await lastValueFrom(request);
+      this.notificationService.success($localize`:@@smtpServer.successfullySaved:Successfully saved SMTP server.`);
+      this.smtpServerResource.reload();
+    } catch (error) {
+      const message = (error as HttpErrorResponse).error?.result?.error?.message || "";
+      this.notificationService.error(
+        $localize`:@@smtpServer.failedSaveSmtp:Failed to save SMTP server. ${message}:MESSAGE:`
+      );
+      throw new Error("post-failed", { cause: error });
+    }
+  }
+
+  async testSmtpServer(params: SmtpServer & { recipient: string }): Promise<boolean> {
+    const url = `${this.smtpServerBaseUrl}send_test_email`;
+    const request = this.http.post<PiResponse<boolean>>(url, params, { headers: this.authService.getHeaders() });
+    try {
+      const res = await lastValueFrom(request);
+      if (res?.result?.value) {
+        this.notificationService.success($localize`:@@smtpServer.testEmailSent:Test email sent successfully.`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      const message = (error as HttpErrorResponse).error?.result?.error?.message || "";
+      this.notificationService.error(
+        $localize`:@@smtpServer.failedSendTest:Failed to send test email. ${message}:MESSAGE:`
+      );
+      return false;
+    }
+  }
+
+  async deleteSmtpServer(identifier: string): Promise<void> {
+    const request = this.http.delete<PiResponse<boolean>>(
+      `${this.smtpServerBaseUrl}${encodeURIComponent(identifier)}`,
+      {
+        headers: this.authService.getHeaders()
+      }
+    );
+    try {
+      await lastValueFrom(request);
+      this.notificationService.success(
+        $localize`:@@smtpServer.successfullyDeleted:Successfully deleted SMTP server: ${identifier}:IDENTIFIER:.`
+      );
+      this.smtpServerResource.reload();
+    } catch (error) {
+      const message = (error as HttpErrorResponse).error?.result?.error?.message || "";
+      this.notificationService.error(
+        $localize`:@@smtpServer.failedDeleteSmtp:Failed to delete SMTP server. ${message}:MESSAGE:`
+      );
+      throw new Error("delete-failed", { cause: error });
+    }
+  }
+
+  listSmtpServers(): Observable<PiResponse<SmtpServers>> {
+    return this.http.get<PiResponse<SmtpServers>>(this.smtpServerBaseUrl, {
+      headers: this.authService.getHeaders()
+    });
+  }
+}

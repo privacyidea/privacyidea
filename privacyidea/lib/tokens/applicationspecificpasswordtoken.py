@@ -45,6 +45,8 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
     default_length = 23
     default_contents = 'cn'
 
+    owned_tokeninfo_keys = frozenset({TOKENINFO_KEY})
+
     def __init__(self, aToken):
         PasswordTokenClass.__init__(self, aToken)
         self.set_type("applspec")
@@ -124,7 +126,7 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
         PasswordTokenClass.update(self, param)
         # In addition to the initialization from the parent class, we also need to set the service_id
         service_id = get_required(param, TOKENINFO_KEY)
-        self.add_tokeninfo(TOKENINFO_KEY, service_id)
+        self.write_tokeninfo(TOKENINFO_KEY, service_id)
 
     @property
     def service_id(self):

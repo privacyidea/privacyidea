@@ -208,8 +208,8 @@ class WebAuthnTokenTestCase(MyTestCase):
 
     def _create_challenge(self):
         self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(CRED_ID)))
-        self.token.add_tokeninfo(FIDO2TokenInfo.PUB_KEY, PUB_KEY)
-        self.token.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, RP_ID)
+        self.token.write_tokeninfo(FIDO2TokenInfo.PUB_KEY, PUB_KEY)
+        self.token.write_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, RP_ID)
         (_, _, _, response_details) = self.token.create_challenge(options=self.challenge_options)
         return response_details
 
@@ -488,12 +488,12 @@ class WebAuthnTokenTestCase(MyTestCase):
     def test_11_uv_required(self):
         self._setup_token()
         # Adjust the token to be able to verify the data used in this test
-        self.token.add_tokeninfo(FIDO2TokenInfo.PUB_KEY, "a50102032620012158202eb296d6dfafe813d096743f8d1ba75b37af2"
+        self.token.write_tokeninfo(FIDO2TokenInfo.PUB_KEY, "a50102032620012158202eb296d6dfafe813d096743f8d1ba75b37af2"
                                                          "e1e0e6356df112a57bc29c7200c22582022f057ded7de836a23a04be4cef4a"
                                                          "5a1bd6d263a1554ea4107b74e3e12844c60")
         self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode("dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5"
                                                                       "eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA")))
-        self.token.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, "cool.nils")
+        self.token.write_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, "cool.nils")
 
         # Try to authenticate with authenticatordata where the UV bit is not set (B at the end)
         # and UV=required, should fail
@@ -540,12 +540,12 @@ class WebAuthnTokenTestCase(MyTestCase):
         from privacyidea.models import Challenge
 
         self._setup_token()
-        self.token.add_tokeninfo(FIDO2TokenInfo.PUB_KEY, "a50102032620012158202eb296d6dfafe813d096743f8d1ba75b37af2"
+        self.token.write_tokeninfo(FIDO2TokenInfo.PUB_KEY, "a50102032620012158202eb296d6dfafe813d096743f8d1ba75b37af2"
                                                          "e1e0e6356df112a57bc29c7200c22582022f057ded7de836a23a04be4cef4a"
                                                          "5a1bd6d263a1554ea4107b74e3e12844c60")
         self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode("dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5"
                                                                       "eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA")))
-        self.token.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, "cool.nils")
+        self.token.write_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, "cool.nils")
 
         # The WebAuthn token stores the challenge as the hex-encoded raw nonce bytes.
         # These values match the clientdata used by the two assertions below.

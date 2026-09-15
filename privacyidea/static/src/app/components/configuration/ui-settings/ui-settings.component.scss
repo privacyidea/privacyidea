@@ -1,0 +1,125 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+@use "styles";
+@use "table";
+
+.settings-container {
+  @include styles.main-component-style;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  // Two input-width-l items + the row gap, plus the padding on both sides (border-box): matches
+  // .settings-group-main's own width exactly, so the container hugs the 2x2 grid instead of a
+  // wrapping flex container's intrinsic (unwrapped) width, which is always wider than any row.
+  width: calc(var(--input-width-l) * 2 + 16px + 2 * 16px);
+
+  > * {
+    flex: none;
+  }
+}
+
+.settings-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+// Groups related settings by proximity and wraps to use the available width, instead of one
+// divider-separated row per setting.
+.settings-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+// A wrapping flex container's own intrinsic width is spec'd as if it never wrapped, so
+// width: fit-content can't shrink it to an actual wrapped row's width — it has to be given
+// explicitly per usage instead.
+.settings-group-main {
+  width: calc(var(--input-width-l) * 2 + 8px);
+}
+
+.settings-group-appearance {
+  width: 100%;
+  justify-content: center;
+}
+
+.settings-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-item-xs {
+  @include table.card-width(xs);
+}
+
+.settings-item-s {
+  flex: 0 0 var(--input-width-l);
+  max-width: var(--input-width-l);
+}
+
+.settings-item-m {
+  @include table.card-width(m);
+}
+
+h4.settings-item-label {
+  color: var(--mat-sys-on-surface);
+  font-weight: 500;
+  // The parent switches to align-items: center for the Appearance controls below; the label stays
+  // put at the item's start rather than being centered along with them.
+  align-self: flex-start;
+}
+
+// Appearance's button groups and the light source dial read as controls on their own, not as a
+// label-led field, so they are centered under their (still left-aligned) title.
+.settings-item-center {
+  align-items: center;
+}
+
+// Pending Requests shares a row with the taller Landing Page field; settings-group's
+// align-items: flex-start otherwise sticks it to the row's top, leaving dead space below it.
+// align-self overrides that for this one item, centering it in the row's full height instead.
+.settings-item-vcenter {
+  align-self: center;
+}
+
+.settings-appearance-hint {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+// Header and body share one inset, so the title lines up with the items below it.
+.settings-appearance-panel {
+  --expansion-panel-header-padding: 0 16px;
+  --expansion-panel-body-padding: 0 16px 16px;
+}
+
+// Set as Material tokens, not as border-radius/background: Material paints the toggles from these,
+// so plain properties would depend on stylesheet order.
+mat-button-toggle-group {
+  --mat-button-toggle-shape: var(--border-radius);
+  --mat-button-toggle-selected-state-background-color: var(--mat-sys-primary-light);
+  --mat-button-toggle-selected-state-text-color: var(--mat-sys-on-primary);
+}

@@ -1,0 +1,486 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
+import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { lastValueFrom, Observable, of, throwError } from "rxjs";
+import { catchError } from "rxjs/operators";
+
+export interface EventHandler {
+  id: number | null;
+  name: string;
+  active: boolean;
+  handlermodule: string;
+  ordering: number;
+  position: string;
+  abort_on_error: boolean;
+  event: string[];
+  action: string;
+  options: Record<string, string> | null;
+  conditions: Record<string, string>;
+}
+
+/**
+ * The largest ordering a binding can be given: the ordering is stored in a signed 32 bit integer column.
+ */
+export const MAX_ORDERING = 2147483647;
+
+export const EMPTY_EVENT: EventHandler = {
+  id: null,
+  name: "",
+  active: true,
+  handlermodule: "",
+  ordering: 0,
+  position: "post",
+  abort_on_error: false,
+  event: [],
+  action: "",
+  options: {},
+  conditions: {}
+};
+
+/**
+ * The values a new binding of a handler module starts with, for the settings that are not specific to an action.
+ */
+export interface EventHandlerModuleDefaults {
+  abort_on_error: boolean;
+}
+
+export interface EventConditionMultiValue {
+  name: string;
+}
+
+export interface EventCondition {
+  desc: string;
+  type: string;
+  group?: string;
+  value?: EventConditionMultiValue[] | string[];
+}
+
+export interface ActionOptionDetails {
+  type?: string;
+  desc?: string;
+  description?: string;
+  required?: boolean;
+  value?: string[];
+  visibleIf?: string;
+  visibleValue?: string;
+}
+
+export type ActionOptions = Record<string, ActionOptionDetails>;
+
+export type EventActions = Record<string, ActionOptions>;
+
+export interface EventHandlerSaveParams {
+  id?: string;
+  name: string;
+  active: boolean;
+  handlermodule: string | null;
+  ordering: number;
+  position: string;
+  event: string[];
+  action: string;
+  // POST /event keeps the stored value of these when they are not sent, so an ordering save can leave them out
+  abort_on_error?: boolean;
+  conditions?: Record<string, unknown>;
+  clear_options?: boolean;
+
+  [key: string]: unknown;
+}
+
+export function toEventHandlerSaveParams(handler: EventHandler): EventHandlerSaveParams {
+  const { options, ...rest } = handler;
+  const params: EventHandlerSaveParams = {
+    ...rest,
+    id: handler.id == null ? undefined : String(handler.id)
+  };
+  for (const [optionKey, optionValue] of Object.entries(options ?? {})) {
+    params["option." + optionKey] = optionValue;
+  }
+  return params;
+}
+
+export function toEventHandlerOrderingParams(handler: EventHandler, ordering: number): EventHandlerSaveParams {
+  return {
+    id: handler.id == null ? undefined : String(handler.id),
+    name: handler.name,
+    handlermodule: handler.handlermodule,
+    action: handler.action,
+    event: handler.event,
+    position: handler.position,
+    active: handler.active,
+    ordering
+  };
+}
+
+export interface EventServiceInterface {
+  selectedHandlerModule: WritableSignal<string | null>;
+  readonly allEventsResource: HttpResourceRef<PiResponse<EventHandler[]> | undefined>;
+  eventHandlers: Signal<EventHandler[] | undefined>;
+  readonly eventHandlerModulesResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  eventHandlerModules: Signal<string[]>;
+  readonly availableEventsResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  availableEvents: Signal<string[]>;
+  readonly modulePositionsResource: HttpResourceRef<PiResponse<string[]> | undefined>;
+  modulePositions: Signal<string[]>;
+  readonly moduleDefaultsResource: HttpResourceRef<PiResponse<EventHandlerModuleDefaults> | undefined>;
+  moduleDefaults: Signal<EventHandlerModuleDefaults | null>;
+  readonly moduleActionsResource: HttpResourceRef<PiResponse<EventActions> | undefined>;
+  moduleActions: Signal<EventActions>;
+  readonly moduleConditionsResource: HttpResourceRef<PiResponse<Record<string, EventCondition>> | undefined>;
+  moduleConditions: Signal<Record<string, EventCondition>>;
+  moduleConditionsByGroup: Signal<Record<string, Record<string, EventCondition>> | undefined>;
+
+  getEventHandlers(): Observable<PiResponse<EventHandler[]>>;
+
+  saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined>;
+
+  updateOrdering(handler: EventHandler, ordering: number): Observable<PiResponse<number> | undefined>;
+
+  enableEvent(eventId: number | null): Promise<object | undefined>;
+
+  disableEvent(eventId: number | null): Promise<object | undefined>;
+
+  deleteEvent(eventId: number): Observable<PiResponse<number>>;
+
+  deleteWithConfirmDialog(event: EventHandler): void;
+}
+
+@Injectable()
+export class EventService implements EventServiceInterface {
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService = inject(NotificationService);
+  private readonly http = inject(HttpClient);
+
+  readonly eventBaseUrl = environment.proxyUrl + "/event";
+  selectedHandlerModule = signal<string | null>(null);
+
+  // ----------------------------
+  // Read existing event handlers
+  // ----------------------------
+
+  readonly allEventsResource = httpResource<PiResponse<EventHandler[]>>(() => {
+    // Check right to access events
+    if (!this.authService.actionAllowed("eventhandling_read")) {
+      return undefined;
+    }
+    // Check if we are on the event route
+    if (!this.contentService.onEvents()) {
+      return undefined;
+    }
+    // Everything is valid, fetch events
+    return {
+      url: `${this.eventBaseUrl}/`,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  eventHandlers: Signal<EventHandler[] | undefined> = computed(() => {
+    if (this.allEventsResource.hasValue()) {
+      return this.allEventsResource.value()?.result?.value ?? [];
+    }
+    return [] as unknown as EventHandler[];
+  });
+
+  // -------------------------------------
+  // Edit functionality for event handlers
+  // -------------------------------------
+  readonly eventHandlerModulesResource = httpResource<PiResponse<string[]>>(() => {
+    if (!this.contentService.onEvents()) {
+      return undefined;
+    }
+    return {
+      url: this.eventBaseUrl + "/handlermodules",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  eventHandlerModules = computed(() => {
+    if (!this.eventHandlerModulesResource.hasValue()) return [];
+    const resource = this.eventHandlerModulesResource.value();
+    if (resource) {
+      return resource.result?.value || [];
+    }
+    return [];
+  });
+  readonly availableEventsResource = httpResource<PiResponse<string[]>>(() => {
+    if (!this.contentService.onEvents()) {
+      return undefined;
+    }
+    return {
+      url: this.eventBaseUrl + "/available",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  availableEvents = computed(() => {
+    if (!this.availableEventsResource.hasValue()) return [];
+    const resource = this.availableEventsResource.value();
+    if (resource) {
+      return resource.result?.value || [];
+    }
+    return [];
+  });
+  readonly modulePositionsResource = httpResource<PiResponse<string[]>>(() => {
+    if (!this.selectedHandlerModule()) {
+      return undefined;
+    }
+    return {
+      url: this.eventBaseUrl + "/positions/" + encodeURIComponent(this.selectedHandlerModule() || ""),
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  modulePositions = computed(() => {
+    if (!this.modulePositionsResource.hasValue()) return [];
+    const resource = this.modulePositionsResource.value();
+    if (resource) {
+      return resource.result?.value || [];
+    }
+    return [];
+  });
+  readonly moduleDefaultsResource = httpResource<PiResponse<EventHandlerModuleDefaults>>(() => {
+    if (!this.selectedHandlerModule()) {
+      return undefined;
+    }
+    return {
+      url: this.eventBaseUrl + "/defaults/" + encodeURIComponent(this.selectedHandlerModule() || ""),
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  moduleDefaults = computed(() => {
+    if (!this.moduleDefaultsResource.hasValue()) return null;
+    return this.moduleDefaultsResource.value()?.result?.value ?? null;
+  });
+
+  // -------------------------------------
+  // Get configuration for create and edit
+  // -------------------------------------
+  readonly moduleActionsResource = httpResource<PiResponse<EventActions>>(() => {
+    if (!this.selectedHandlerModule()) {
+      return undefined;
+    }
+    return {
+      url: this.eventBaseUrl + "/actions/" + encodeURIComponent(this.selectedHandlerModule() || ""),
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  moduleActions = computed(() => {
+    if (!this.moduleActionsResource.hasValue()) return {};
+    const resource = this.moduleActionsResource.value();
+    if (resource) {
+      return resource.result?.value || {};
+    }
+    return {};
+  });
+  readonly moduleConditionsResource = httpResource<PiResponse<Record<string, EventCondition>>>(() => {
+    if (!this.selectedHandlerModule()) {
+      return undefined;
+    }
+    return {
+      url: this.eventBaseUrl + "/conditions/" + encodeURIComponent(this.selectedHandlerModule() || ""),
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  moduleConditions = computed(() => {
+    if (!this.moduleConditionsResource.hasValue()) return {};
+    const resource = this.moduleConditionsResource.value();
+    if (resource) {
+      return resource.result?.value || {};
+    }
+    return {};
+  });
+  moduleConditionsByGroup = computed(() => {
+    const conditions: Record<string, Record<string, EventCondition>> = {};
+    for (const [conditionName, conditionDetails] of Object.entries(this.moduleConditions())) {
+      const group = conditionDetails.group || "miscellaneous";
+      if (!(group in conditions)) {
+        conditions[group] = {};
+      }
+      conditions[group][conditionName] = conditionDetails;
+    }
+    return conditions;
+  });
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.allEventsResource.error(), "event handlers");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.eventHandlerModulesResource.error(), "event handler modules");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.availableEventsResource.error(), "available events");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.modulePositionsResource.error(), "module positions");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.moduleActionsResource.error(), "module actions");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.moduleConditionsResource.error(), "module conditions");
+    });
+  }
+
+  getEventHandlers(): Observable<PiResponse<EventHandler[]>> {
+    return this.http.get<PiResponse<EventHandler[]>>(`${this.eventBaseUrl}/`, {
+      headers: this.authService.getHeaders()
+    });
+  }
+
+  updateOrdering(handler: EventHandler, ordering: number): Observable<PiResponse<number> | undefined> {
+    return this.saveEventHandler(toEventHandlerOrderingParams(this.listedHandler(handler), ordering));
+  }
+
+  private listedHandler(handler: EventHandler): EventHandler {
+    if (handler.id == null) {
+      return handler;
+    }
+    return this.eventHandlers()?.find((listed) => listed.id === handler.id) ?? handler;
+  }
+
+  saveEventHandler(event: EventHandlerSaveParams): Observable<PiResponse<number> | undefined> {
+    const headers = this.authService.getHeaders();
+    const params = { ...event };
+    if (params.id == null) {
+      delete params.id;
+    }
+    return this.http.post<PiResponse<number>>(this.eventBaseUrl, params, { headers }).pipe(
+      catchError((error) => {
+        console.error("Failed to save event handler.", error.error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.error(
+          $localize`:@@event.failedToSaveEventHandler:Failed to save event handler. ${message}:MESSAGE:`
+        );
+        return of(undefined);
+      })
+    );
+  }
+
+  enableEvent(eventId: number | null) {
+    if (eventId === null) {
+      this.notificationService.error(
+        $localize`:@@event.canNotEnableEventHandler:Can not enable event handler due to missing ID`
+      );
+      return Promise.resolve(undefined);
+    }
+    const headers = this.authService.getHeaders();
+    return lastValueFrom(
+      this.http.post(this.eventBaseUrl + "/enable/" + encodeURIComponent(eventId), {}, { headers: headers }).pipe(
+        catchError((error) => {
+          console.log("Failed to enable event handler:", error);
+          this.allEventsResource.reload();
+          this.notificationService.error(
+            $localize`:@@event.failedToEnableEventHandler:Failed to enable event handler!`
+          );
+          return of(undefined);
+        })
+      )
+    );
+  }
+
+  disableEvent(eventId: number | null) {
+    if (eventId === null) {
+      this.notificationService.warning(
+        $localize`:@@event.canNotDisableEventHandler:Can not disable event handler due to missing ID`
+      );
+      return Promise.resolve(undefined);
+    }
+    const headers = this.authService.getHeaders();
+    return lastValueFrom(
+      this.http.post(this.eventBaseUrl + "/disable/" + encodeURIComponent(eventId), {}, { headers: headers }).pipe(
+        catchError((error) => {
+          console.log("Failed to disable event handler:", error);
+          this.allEventsResource.reload();
+          this.notificationService.error(
+            $localize`:@@event.failedToDisableEventHandler:Failed to disable event handler!`
+          );
+          return of(undefined);
+        })
+      )
+    );
+  }
+
+  deleteEvent(eventId: number): Observable<PiResponse<number>> {
+    const headers = this.authService.getHeaders();
+
+    return this.http
+      .delete<PiResponse<number>>(this.eventBaseUrl + "/" + encodeURIComponent(eventId), { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to delete event handler.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error(
+            $localize`:@@event.failedToDeleteEventHandler:Failed to delete event handler. ${message}:MESSAGE:`
+          );
+          return throwError(() => error);
+        })
+      );
+  }
+
+  async deleteWithConfirmDialog(event: EventHandler): Promise<PiResponse<number> | undefined> {
+    const confirmation = await lastValueFrom(
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
+          data: {
+            title: $localize`:@@event.deleteEventHandler:Delete Event Handler`,
+            items: [event.name],
+            itemType: $localize`:@@event.eventHandler:event handler`,
+            confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
+          }
+        })
+        .afterClosed()
+    );
+    if (!confirmation) {
+      return;
+    }
+    try {
+      if (event.id == null) {
+        this.notificationService.error(
+          $localize`:@@event.failedToDeleteEventHandler2:Failed to delete event handler: Missing ID.`
+        );
+        return;
+      }
+      const result = await lastValueFrom(this.deleteEvent(event.id));
+
+      this.notificationService.success(
+        $localize`:@@event.successfullyDeletedEventHandler:Successfully deleted event handler.`
+      );
+      return result;
+    } catch {
+      // error already handled in deleteEvent
+      return;
+    }
+  }
+}

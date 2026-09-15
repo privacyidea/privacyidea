@@ -66,7 +66,7 @@ class SpassTokenTestCase(MyTestCase):
         # Set up the SPassTokenClass for testing
         spasstoken = init_token(param={'serial': "SPASS12345678", 'type': 'spass', 'otpkey': '12345'})
         spasstoken.set_description("this is a spass token export test")
-        spasstoken.add_tokeninfo("hashlib", "sha256")
+        spasstoken.write_tokeninfo("hashlib", "sha256")
 
         # Test that all expected keys are present in the exported dictionary
         exported_data = spasstoken.export_token()

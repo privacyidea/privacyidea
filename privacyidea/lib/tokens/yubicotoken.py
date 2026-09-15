@@ -73,6 +73,7 @@ log = logging.getLogger(__name__)
 
 
 class YubicoTokenClass(TokenClass):
+    owned_tokeninfo_prefixes = frozenset({"yubico."})
 
     def __init__(self, db_token):
         TokenClass.__init__(self, db_token)
@@ -141,8 +142,8 @@ class YubicoTokenClass(TokenClass):
         # overwrite the maybe wrong length given at the command line
         param['otplen'] = 44
         TokenClass.update(self, param)
-        self.add_tokeninfo("yubico.tokenid", self.tokenid)
-        self.add_tokeninfo("tokenkind", Tokenkind.HARDWARE)
+        self.write_tokeninfo("yubico.tokenid", self.tokenid)
+        self.write_tokeninfo("tokenkind", Tokenkind.HARDWARE)
 
     @log_with(log)
     @check_token_locked

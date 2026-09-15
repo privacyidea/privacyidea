@@ -1,0 +1,1554 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams, provideHttpClient } from "@angular/common/http";
+import { lastValueFrom, Observable, of, throwError } from "rxjs";
+
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { PiResponse } from "@app/app.component";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockPiResponse, MockRealmService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import {
+  BulkResult,
+  isTokenInfoKeyWritable,
+  TokenCountParams,
+  TokenGroups,
+  Tokens,
+  TokenService
+} from "./token.service";
+
+class MockNotificationService {
+  success = jest.fn();
+  error = jest.fn();
+  warning = jest.fn();
+  info = jest.fn();
+  handleResourceError = jest.fn();
+}
+
+describe("TokenService", () => {
+  let tokenService: TokenService;
+  let http: HttpClient;
+  let postSpy: jest.SpyInstance;
+  let deleteSpy: jest.SpyInstance;
+  let authService: MockAuthService;
+  let notificationService: MockNotificationService;
+  let contentServiceMock: MockContentService;
+  let dialogServiceMock: MockDialogService;
+  let getSpy: jest.SpyInstance;
+  let mockBackend: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        TokenService,
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: RealmService, useClass: MockRealmService }
+      ]
+    });
+
+    tokenService = TestBed.inject(TokenService);
+    contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    http = TestBed.inject(HttpClient);
+    mockBackend = TestBed.inject(HttpTestingController);
+    postSpy = jest.spyOn(http, "post");
+    deleteSpy = jest.spyOn(http, "delete");
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // tokenResource only issues a request when the admin may list tokens.
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["tokenlist"] });
+    notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    getSpy = jest.spyOn(http, "get");
+
+    jest.spyOn(console, "error").mockReturnValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  describe("toggleActive()", () => {
+    it("POSTs to /disable when active=true", () => {
+      const backend = MockPiResponse.fromValue(true);
+
+      postSpy.mockReturnValue(of(backend));
+
+      let result!: PiResponse<boolean>;
+      tokenService.toggleActive("HOTP1", true).subscribe((r) => (result = r));
+
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}disable`,
+        { serial: "HOTP1" },
+        { headers: authService.getHeaders() }
+      );
+      expect(result).toEqual(backend);
+    });
+
+    it("POSTs to /enable when active=false", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.toggleActive("HOTP1", false).subscribe();
+
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}enable`,
+        { serial: "HOTP1" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("notifies user and propagates error on failure", (done) => {
+      const error = new HttpErrorResponse({
+        error: { result: { error: { message: "boom" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => error));
+
+      tokenService.toggleActive("HOTP1", true).subscribe({
+        next: () => {
+          fail("expected error");
+        },
+        error: (err) => {
+          expect(err).toBe(error);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to toggle active. boom");
+          done();
+        }
+      });
+    });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const error = new HttpErrorResponse({
+        error: { result: { error: { message: "boom" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => error));
+
+      tokenService.toggleActive("HOTP1", true, false).subscribe({
+        next: () => {
+          fail("expected error");
+        },
+        error: (err) => {
+          expect(err).toBe(error);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const error = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => error));
+
+      tokenService.toggleActive("HOTP1", true).subscribe({
+        next: () => {
+          fail("expected error");
+        },
+        error: (err) => {
+          expect(err).toBe(error);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to toggle active. ");
+          done();
+        }
+      });
+    });
+  });
+
+  it("resetFailCount posts /reset with correct body", () => {
+    postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+    tokenService.resetFailCount("HOTP2").subscribe();
+
+    expect(postSpy).toHaveBeenCalledWith(
+      `${tokenService.tokenBaseUrl}reset`,
+      { serial: "HOTP2" },
+      { headers: authService.getHeaders() }
+    );
+  });
+
+  it("deleteToken delegates to HttpClient.delete", () => {
+    deleteSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+    tokenService.deleteToken("DEL/1").subscribe();
+
+    expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}${encodeURIComponent("DEL/1")}`, {
+      headers: authService.getHeaders()
+    });
+  });
+
+  describe("cancelEnrollment()", () => {
+    it("deletes the incomplete token, stops the polling and reports the cancellation", (done) => {
+      const backend = MockPiResponse.fromValue(1);
+      deleteSpy.mockReturnValue(of(backend));
+      const stopPollingSpy = jest.spyOn(tokenService, "stopPolling");
+
+      tokenService.cancelEnrollment("PIPU0001").subscribe((response) => {
+        expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}PIPU0001`, {
+          headers: authService.getHeaders()
+        });
+        expect(stopPollingSpy).toHaveBeenCalled();
+        expect(notificationService.info).toHaveBeenCalledWith("The enrollment of token PIPU0001 was cancelled.");
+        expect(response).toBe(backend);
+        done();
+      });
+    });
+
+    it("keeps the polling running and propagates the error when the deletion fails", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "denied" } } },
+        status: 403
+      });
+      deleteSpy.mockReturnValue(throwError(() => boom));
+      const stopPollingSpy = jest.spyOn(tokenService, "stopPolling");
+
+      tokenService.cancelEnrollment("PIPU0001").subscribe({
+        error: (error) => {
+          expect(error).toBe(boom);
+          expect(stopPollingSpy).not.toHaveBeenCalled();
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to cancel the enrollment. denied");
+          expect(notificationService.info).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("encodes the serial in the request url", () => {
+      deleteSpy.mockReturnValue(of(MockPiResponse.fromValue(1)));
+
+      tokenService.cancelEnrollment("PI/PU 1").subscribe();
+
+      expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}${encodeURIComponent("PI/PU 1")}`, {
+        headers: authService.getHeaders()
+      });
+    });
+  });
+
+  describe("saveTokenDetail()", () => {
+    it("maps 'maxfail' to 'max_failcount'", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.saveTokenDetail("serial", "maxfail", 3).subscribe();
+
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}set`,
+        { serial: "serial", max_failcount: 3 },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("routes 'description' to /token/description so self-service users can use it", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.saveTokenDetail("serial/1", "description", "A token").subscribe();
+
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}description/${encodeURIComponent("serial/1")}`,
+        { description: "A token" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("passes other keys through to /token/set unchanged", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.saveTokenDetail("serial", "count_window", 10).subscribe();
+
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}set`,
+        { serial: "serial", count_window: 10 },
+        { headers: authService.getHeaders() }
+      );
+    });
+  });
+
+  describe("setTokenInfos()", () => {
+    beforeEach(() => postSpy.mockClear());
+
+    it("routes special keys via /set and others via /info", () => {
+      const infos = { hashlib: "sha1", "custom/1": "foo" };
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.setTokenInfos("serial/1", infos, [], ["hashlib"]).subscribe();
+
+      expect(postSpy).toHaveBeenNthCalledWith(
+        1,
+        `${tokenService.tokenBaseUrl}set`,
+        { serial: "serial/1", hashlib: "sha1" },
+        { headers: authService.getHeaders() }
+      );
+      expect(postSpy).toHaveBeenNthCalledWith(
+        2,
+        `${tokenService.tokenBaseUrl}info/${encodeURIComponent("serial/1")}/${encodeURIComponent("custom/1")}`,
+        { value: "foo" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("treats every entry as writable when the token restricts none", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.setTokenInfos("serial/1", { custom: "foo" }).subscribe();
+
+      expect(postSpy).toHaveBeenCalledTimes(1);
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}info/${encodeURIComponent("serial/1")}/custom`,
+        { value: "foo" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("completes with an empty result when every entry is one the token maintains", (done) => {
+      // The caller reloads the token in its next handler, so an empty request list still has to emit
+      tokenService.setTokenInfos("SER", { tokenkind: "hardware" }, ["tokenkind"], []).subscribe({
+        next: (responses) => {
+          expect(responses).toEqual([]);
+          expect(postSpy).not.toHaveBeenCalled();
+          done();
+        },
+        error: () => fail("expected the observable to emit")
+      });
+    });
+  });
+
+  describe("isTokenInfoKeyWritable()", () => {
+    it("restricts nothing when no keys are passed", () => {
+      expect(isTokenInfoKeyWritable("anything")).toBe(true);
+    });
+
+    it("allows an entry the token maintains only if it has its own endpoint", () => {
+      expect(isTokenInfoKeyWritable("tokenkind", ["tokenkind"], [])).toBe(false);
+      expect(isTokenInfoKeyWritable("hashlib", ["hashlib"], ["hashlib"])).toBe(true);
+      expect(isTokenInfoKeyWritable("a note", ["tokenkind"], [])).toBe(true);
+    });
+  });
+
+  describe("assignUser()", () => {
+    it("translates empty strings to null", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService
+        .assignUser({
+          tokenSerial: "serial",
+          username: "",
+          realm: "",
+          pin: "123"
+        })
+        .subscribe();
+
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}assign`,
+        { serial: "serial", user: null, realm: null, pin: "123" },
+        { headers: authService.getHeaders() }
+      );
+    });
+  });
+
+  describe("unassignUserFromAll()", () => {
+    it("returns an empty array for empty input", (done) => {
+      tokenService.unassignUserFromAll([]).subscribe((r) => {
+        expect(r).toEqual([]);
+        done();
+      });
+    });
+  });
+
+  describe("setTokengroup()", () => {
+    it("accepts a single string", () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+      tokenService.setTokengroup("serial", "group1").subscribe();
+
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}group/serial`,
+        { groups: ["group1"] },
+        { headers: authService.getHeaders() }
+      );
+    });
+  });
+
+  describe("getTokenCount()", () => {
+    it("always sends pagesize=0 when called without filters", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 0 })));
+
+      tokenService.getTokenCount().subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: { pagesize: 0 }
+      });
+    });
+
+    it("preserves provided filters while forcing pagesize=0", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 1 })));
+
+      tokenService
+        .getTokenCount({ type: "hotp", assigned: "False", infokey: "tokenkind", infovalue: "hardware" })
+        .subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: {
+          type: "hotp",
+          assigned: "False",
+          infokey: "tokenkind",
+          infovalue: "hardware",
+          pagesize: 0
+        }
+      });
+    });
+
+    it("does not allow overriding pagesize even when passed via an unsafe cast", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ count: 2 })));
+
+      tokenService.getTokenCount({ serial: "S1", pagesize: 25 } as unknown as TokenCountParams).subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+        headers: authService.getHeaders(),
+        params: {
+          serial: "S1",
+          pagesize: 0
+        }
+      });
+    });
+  });
+
+  describe("pollTokenRolloutState()", () => {
+    it("emits error once and stops polling when request fails", async () => {
+      jest.useFakeTimers();
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "poll-error" } } },
+        status: 500
+      });
+      jest.spyOn(tokenService, "getTokenDetails").mockReturnValueOnce(throwError(() => boom));
+
+      const errors: HttpErrorResponse[] = [];
+      tokenService
+        .pollTokenRolloutState({ tokenSerial: "serial", initDelay: 0 })
+        .subscribe({ error: (e) => errors.push(e) });
+
+      jest.runOnlyPendingTimers();
+      await Promise.resolve();
+
+      expect(errors[0]).toBe(boom);
+      expect(notificationService.error).toHaveBeenCalledWith("Failed to poll token state. poll-error");
+    });
+    jest.useRealTimers();
+  });
+
+  it("polls until rollout_state !== 'clientwait'", async () => {
+    jest.useFakeTimers();
+    const first = MockPiResponse.fromValue({ tokens: [{ rollout_state: "clientwait" }] } as unknown as Tokens);
+    const second = MockPiResponse.fromValue({ tokens: [{ rollout_state: "clientwait" }] } as unknown as Tokens);
+    const done = MockPiResponse.fromValue({ tokens: [{ rollout_state: "enrolled" }] } as unknown as Tokens);
+
+    jest
+      .spyOn(tokenService, "getTokenDetails")
+      .mockReturnValueOnce(of(first))
+      .mockReturnValueOnce(of(second))
+      .mockReturnValueOnce(of(done));
+
+    const emissions: PiResponse<Tokens>[] = [];
+    tokenService.pollTokenRolloutState({ tokenSerial: "HOTP3", initDelay: 0 }).subscribe((r) => emissions.push(r));
+
+    // wait four ticks but getTokenDetails should be called three times
+    jest.runOnlyPendingTimers();
+    await Promise.resolve();
+
+    jest.advanceTimersByTime(2000);
+    await Promise.resolve();
+
+    jest.advanceTimersByTime(2000);
+    await Promise.resolve();
+
+    jest.advanceTimersByTime(2000);
+    await Promise.resolve();
+
+    expect(tokenService.getTokenDetails).toHaveBeenCalledTimes(3);
+    expect(emissions.length).toBe(3);
+    expect(emissions[2]).toEqual(done);
+
+    jest.advanceTimersByTime(4000);
+    expect(tokenService.getTokenDetails).toHaveBeenCalledTimes(3);
+    jest.useRealTimers();
+  });
+
+  describe("token filter -> tokenResource request params", () => {
+    it("wildcard-wraps non-ID filter fields in the outgoing request", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("serial")).toBe("*otp*");
+      expect(req.request.params.get("user")).toBe("alice");
+      expect(req.request.params.get("description")).toBe("*vpn*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("omits empty / wildcard-only filter values from the outgoing request", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(
+        new FilterValue({ value: "serial: '' type: hotp active: '  ' description: * rollout_state: ***" })
+      );
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.has("serial")).toBe(false);
+      expect(req.request.params.has("active")).toBe(false);
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      expect(req.request.params.has("description")).toBe(false);
+      expect(req.request.params.has("rollout_state")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("normalizes assigned/active boolean filters to backend format True/False", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "assigned: false active: true serial: OTP" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("assigned")).toBe("False");
+      expect(req.request.params.get("active")).toBe("True");
+      expect(req.request.params.get("serial")).toBe("*OTP*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends a hidden type_list entry unwrapped as a comma-separated param", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue().updateHiddenEntry("type_list", "hotp,webauthn"));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,webauthn");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("combines a hidden type_list with a typed tokentype filter", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(
+        new FilterValue({ value: "type: hotp" }).updateHiddenEntry("type_list", "hotp,webauthn")
+      );
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,webauthn");
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("omits type_list when the hidden entry is empty", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue().updateHiddenEntry("type_list", ""));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.has("type_list")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+    it("sends a single token type as a wildcarded type param", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type")).toBe("*hotp*");
+      expect(req.request.params.has("type_list")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("sends multiple token types as type_list instead of type", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp,totp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,totp");
+      expect(req.request.params.has("type")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("merges the type and type_list keywords into a single deduplicated list", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "type: hotp type_list: totp,hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("type_list")).toBe("hotp,totp");
+      expect(req.request.params.has("type")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("wildcard-wraps every token realm of a comma-separated list on its own", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1,realm2" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("*realm1*,*realm2*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+  });
+
+  describe("tokenTypeOptions() ordering", () => {
+    const flushRights = async (value: Record<string, string>) => {
+      contentServiceMock.onTokensEnrollment = signal(true);
+      TestBed.tick();
+      const req = mockBackend.expectOne((r) => r.url.endsWith("/auth/rights"));
+      req.flush(MockPiResponse.fromValue(value));
+      await Promise.resolve();
+    };
+
+    it("sorts options alphabetically by the label (text before the first colon)", async () => {
+      await flushRights({
+        hotp: "Zulu: event based",
+        totp: "Alpha: time based",
+        spass: "Mike: simple pass"
+      });
+
+      expect(tokenService.tokenTypeOptions().map((o) => o.key)).toEqual(["totp", "spass", "hotp"]);
+    });
+
+    it("uses the full info string as the label when it contains no colon", async () => {
+      await flushRights({
+        hotp: "Beta",
+        totp: "Alpha"
+      });
+
+      const options = tokenService.tokenTypeOptions();
+      expect(options.map((o) => o.key)).toEqual(["totp", "hotp"]);
+      expect(options[0].info).toBe("Alpha");
+    });
+  });
+
+  describe("showOnlyTokenInContainer -> token container filter", () => {
+    const containerRoute = ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0001";
+    const hasContainerFilter = () => tokenService.activeFilter().hiddenFilterMap.has("container_serial");
+
+    it("defaults to false on the container details route (shows only tokens not in a container)", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+
+      expect(tokenService.showOnlyTokenInContainer()).toBe(false);
+      expect(hasContainerFilter()).toBe(true);
+    });
+
+    it("drops the container_serial filter when enabled (also shows tokens already in a container)", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      // Read once so the toggle below exercises the update branch, not re-init.
+      expect(hasContainerFilter()).toBe(true);
+
+      tokenService.showOnlyTokenInContainer.set(true);
+      TestBed.tick();
+
+      expect(hasContainerFilter()).toBe(false);
+    });
+
+    it("re-adds the container_serial filter when disabled again", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(true);
+
+      tokenService.showOnlyTokenInContainer.set(true);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(false);
+
+      tokenService.showOnlyTokenInContainer.set(false);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(true);
+    });
+
+    it("resets to false (free tokens) when navigating to another container", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      tokenService.showOnlyTokenInContainer.set(true);
+      TestBed.tick();
+      expect(tokenService.showOnlyTokenInContainer()).toBe(true);
+
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS_DETAILS + "/CONT0002");
+      TestBed.tick();
+
+      expect(tokenService.showOnlyTokenInContainer()).toBe(false);
+      expect(hasContainerFilter()).toBe(true);
+    });
+
+    it("does not apply the container_serial filter away from the container details route", () => {
+      contentServiceMock.routeUrl.set(containerRoute);
+      TestBed.tick();
+      expect(hasContainerFilter()).toBe(true);
+
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS);
+      TestBed.tick();
+
+      expect(hasContainerFilter()).toBe(false);
+    });
+  });
+
+  describe("revokeToken()", () => {
+    it("posts /revoke and propagates result", (done) => {
+      const backend = MockPiResponse.fromValue(true);
+      postSpy.mockReturnValue(of(backend));
+
+      tokenService.revokeToken("serial").subscribe((r) => {
+        expect(postSpy).toHaveBeenCalledWith(
+          `${tokenService.tokenBaseUrl}revoke`,
+          { serial: "serial" },
+          { headers: authService.getHeaders() }
+        );
+        expect(r).toEqual(backend);
+        done();
+      });
+    });
+
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "rvk" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.revokeToken("serial").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to revoke token. rvk");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("PIN helpers", () => {
+    it("setPin posts /setpin", () => {
+      postSpy.mockReturnValue(of({}));
+      tokenService.setPin("serial", "9876").subscribe();
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}setpin`,
+        { serial: "serial", otppin: "9876" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("setRandomPin posts /setrandompin", () => {
+      postSpy.mockReturnValue(of({}));
+      tokenService.setRandomPin("serial").subscribe();
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}setrandompin`,
+        { serial: "serial" },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("resyncOTPToken posts /resync", async () => {
+      postSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+      await tokenService.resyncOTPToken("S", "111", "222");
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}resync`,
+        { serial: "S", otp1: "111", otp2: "222" },
+        { headers: authService.getHeaders() }
+      );
+    });
+  });
+
+  describe("realm & lost token", () => {
+    it("setTokenRealm posts correct body", () => {
+      postSpy.mockReturnValue(of({}));
+      tokenService.setTokenRealm("serial", ["r1", "r2"]).subscribe();
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}realm/serial`,
+        { realms: ["r1", "r2"] },
+        { headers: authService.getHeaders() }
+      );
+    });
+
+    it("lostToken hits /lost endpoint", () => {
+      postSpy.mockReturnValue(of({}));
+      tokenService.lostToken("serial").subscribe();
+      expect(postSpy).toHaveBeenCalledWith(
+        `${tokenService.tokenBaseUrl}lost/serial`,
+        {},
+        { headers: authService.getHeaders() }
+      );
+    });
+  });
+
+  describe("bulk user assign/unassign", () => {
+    it("assignUserToAll maps serials to assignUser calls", (done) => {
+      const stub = jest.spyOn(tokenService, "assignUser").mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService
+        .assignUserToAll({
+          tokenSerials: ["S1", "S2"],
+          username: "u",
+          realm: "r",
+          pin: "p"
+        })
+        .subscribe((arr) => {
+          expect(stub).toHaveBeenCalledTimes(2);
+          expect(arr.length).toBe(2);
+          done();
+        });
+    });
+
+    it("unassignUserFromAll maps serials to unassignUser calls", (done) => {
+      const un = jest.spyOn(tokenService, "unassignUser").mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.unassignUserFromAll(["X", "Y"]).subscribe((arr) => {
+        expect(un).toHaveBeenCalledTimes(2);
+        expect(arr.length).toBe(2);
+        done();
+      });
+    });
+  });
+
+  describe("helper methods – error branches", () => {
+    const makeErr = (msg: string) =>
+      new HttpErrorResponse({
+        error: { result: { error: { message: msg } } },
+        status: 500
+      });
+
+    afterEach(() => postSpy.mockClear());
+
+    it.each([
+      ["setPin", () => tokenService.setPin("X", "1"), "Failed to set PIN. boom"],
+      ["setRandomPin", () => tokenService.setRandomPin("X"), "Failed to set random PIN. boom"],
+      ["setTokenRealm", () => tokenService.setTokenRealm("X", ["r"]), "Failed to set token realm. boom"],
+      ["lostToken", () => tokenService.lostToken("X"), "Failed to mark token as lost. boom"]
+    ])("%s() notifies on error", async (_label, call, expected) => {
+      postSpy.mockReturnValue(throwError(() => makeErr("boom")));
+
+      await expect(lastValueFrom(call() as Observable<unknown>)).rejects.toMatchObject({
+        error: { result: { error: { message: "boom" } } }
+      });
+
+      expect(notificationService.error).toHaveBeenCalledWith(expected);
+    });
+
+    it("resyncOTPToken() notifies on error", async () => {
+      postSpy.mockReturnValue(throwError(() => makeErr("boom")));
+
+      await expect(tokenService.resyncOTPToken("X", "111", "222")).rejects.toMatchObject({
+        error: { result: { error: { message: "boom" } } }
+      });
+
+      expect(notificationService.error).toHaveBeenCalledWith("Failed to resync OTP token. boom");
+    });
+
+    it("assignUserToAll stops on first error and shows snackbar", (done) => {
+      jest
+        .spyOn(tokenService, "assignUser")
+        .mockReturnValueOnce(throwError(() => makeErr("first")))
+        .mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService
+        .assignUserToAll({
+          tokenSerials: ["S1", "S2"],
+          username: "u",
+          realm: "r"
+        })
+        .subscribe({
+          next: () => fail("should error"),
+          error: (e) => {
+            expect(e.error.result.error.message).toBe("first");
+            expect(notificationService.error).toHaveBeenCalledWith("Failed to assign user to all tokens. first");
+            done();
+          }
+        });
+    });
+
+    it("unassignUserFromAll propagates error and shows snackbar", (done) => {
+      jest
+        .spyOn(tokenService, "unassignUser")
+        .mockReturnValueOnce(throwError(() => makeErr("oops")))
+        .mockReturnValue(of(MockPiResponse.fromValue(true)));
+
+      tokenService.unassignUserFromAll(["T1", "T2"]).subscribe({
+        next: () => fail("should error"),
+        error: (e) => {
+          expect(e.error.result.error.message).toBe("oops");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign user from all tokens. oops");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("bulkDeleteTokens()", () => {
+    it("DELETEs with body of serials and propagates result", (done) => {
+      const backend = MockPiResponse.fromValue({ count_success: 2, failed: [], unauthorized: [] } as BulkResult);
+      deleteSpy.mockReturnValue(of(backend));
+
+      tokenService.bulkDeleteTokens(["S1", "S2"]).subscribe((r) => {
+        expect(deleteSpy).toHaveBeenCalledWith(tokenService.tokenBaseUrl, {
+          headers: authService.getHeaders(),
+          body: { serials: ["S1", "S2"] }
+        });
+        expect(r).toBe(backend);
+        done();
+      });
+    });
+
+    it("notifies user on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "bd" } } },
+        status: 500
+      });
+      deleteSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.bulkDeleteTokens(["S"]).subscribe({
+        next: () => fail("expected error"),
+        error: (e) => {
+          expect(e).toBe(boom);
+          // service reads error.result?.error?.message; keep assertion loose
+          expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Failed to delete tokens."));
+          done();
+        }
+      });
+    });
+  });
+
+  describe("bulkDeleteWithConfirmDialog()", () => {
+    let afterDeleteCallback: jest.Mock;
+
+    beforeEach(() => {
+      afterDeleteCallback = jest.fn();
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of(true));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    });
+
+    it("should open confirmation dialog", () => {
+      tokenService.bulkDeleteWithConfirmDialog(["S1"], afterDeleteCallback);
+      expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    });
+
+    it("should do nothing if dialog is cancelled", () => {
+      dialogServiceMock.openDialog.mockReturnValue({ afterClosed: () => of(false) });
+      const bulkDeleteSpy = jest.spyOn(tokenService, "bulkDeleteTokens").mockReturnValue(of());
+      tokenService.bulkDeleteWithConfirmDialog(["S1"], afterDeleteCallback);
+      expect(bulkDeleteSpy).not.toHaveBeenCalled();
+    });
+
+    it("should call bulkDeleteTokens and afterDelete callback on success", (done) => {
+      const response = MockPiResponse.fromValue({ count_success: 1, failed: [], unauthorized: [] } as BulkResult);
+      const bulkDeleteSpy = jest.spyOn(tokenService, "bulkDeleteTokens").mockReturnValue(of(response));
+
+      tokenService.bulkDeleteWithConfirmDialog(["S1"], afterDeleteCallback);
+
+      expect(bulkDeleteSpy).toHaveBeenCalledWith(["S1"]);
+      setTimeout(() => {
+        expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted 1 token.");
+        expect(afterDeleteCallback).toHaveBeenCalled();
+        done();
+      }, 0);
+    });
+
+    it("should show a notification if some tokens failed or were unauthorized", (done) => {
+      const response = MockPiResponse.fromValue({
+        count_success: 1,
+        failed: ["TOKEN1"],
+        unauthorized: ["TOKEN2"]
+      } as BulkResult);
+      jest.spyOn(tokenService, "bulkDeleteTokens").mockReturnValue(of(response));
+
+      tokenService.bulkDeleteWithConfirmDialog(["S1", "TOKEN1", "TOKEN2"]);
+
+      setTimeout(() => {
+        expect(notificationService.success).toHaveBeenCalledWith(
+          "Successfully deleted 1 token.\nThe following tokens failed to delete: TOKEN1\nYou are not authorized to delete the following tokens: TOKEN2"
+        );
+        done();
+      }, 0);
+    });
+
+    it("should handle API errors gracefully", (done) => {
+      const error = new HttpErrorResponse({
+        error: { error: { result: { error: { message: "API Error" } } } },
+        status: 500
+      });
+      jest.spyOn(tokenService, "bulkDeleteTokens").mockReturnValue(throwError(() => error));
+
+      tokenService.bulkDeleteWithConfirmDialog(["S1"]);
+
+      setTimeout(() => {
+        expect(notificationService.error).toHaveBeenCalledWith("An error occurred while deleting tokens.");
+        done();
+      }, 0);
+    });
+  });
+
+  describe("deleteInfo()", () => {
+    it("DELETEs the /info/:serial/:key endpoint", () => {
+      deleteSpy.mockReturnValue(of({}));
+      tokenService.deleteInfo("SER", "infokey").subscribe();
+
+      expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}info/SER/infokey`, {
+        headers: authService.getHeaders()
+      });
+    });
+
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "di" } } },
+        status: 500
+      });
+      deleteSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.deleteInfo("SER", "infokey").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to delete token info. di");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("unassignUser()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "uu" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.unassignUser("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign user. uu");
+          done();
+        }
+      });
+    });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "uu" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.unassignUser("SER", false).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const boom = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.unassignUser("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign user. ");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("assignUser()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "au" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.assignUser({ tokenSerial: "S", username: "u", realm: "r" }).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to assign user. au");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("resetFailCount()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "rf" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.resetFailCount("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. rf");
+          done();
+        }
+      });
+    });
+
+    it("does not notify when notify=false but still propagates error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "rf" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.resetFailCount("SER", false).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).not.toHaveBeenCalled();
+          done();
+        }
+      });
+    });
+
+    it("falls back to an empty message when the error has no result message", (done) => {
+      const boom = new HttpErrorResponse({ error: {}, status: 500 });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.resetFailCount("SER").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. ");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("bulkUnassignTokens()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "bu" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.bulkUnassignTokens([{ serial: "SER" } as unknown as import("./token.service").TokenDetails]).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign tokens. bu");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("enrollToken()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "et" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService
+        .enrollToken({
+          data: {} as unknown as TokenEnrollmentData,
+          mapper: { toApiPayload: () => ({}) } as unknown as TokenApiPayloadMapper<TokenEnrollmentData>
+        })
+        .subscribe({
+          error: (e) => {
+            expect(e).toBe(boom);
+            expect(notificationService.error).toHaveBeenCalledWith("Failed to enroll token. et");
+            done();
+          }
+        });
+    });
+  });
+
+  describe("verifyToken()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "vt" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.verifyToken({} as unknown as TokenEnrollmentData).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to verify token. vt");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("importTokens()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "it" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.importTokens("tokens.pskc", new FormData()).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to import tokens. it");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("setTokengroup()", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "stg" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.setTokengroup("SER", ["g"]).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to set token group. stg");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("setTokenInfos() – error branch", () => {
+    it("bubbles error from any request and shows snackbar", (done) => {
+      // first call (special key) succeeds, second (/info) fails
+      postSpy
+        .mockReturnValueOnce(of(MockPiResponse.fromValue(true)))
+        .mockReturnValueOnce(
+          throwError(() => new HttpErrorResponse({ error: { result: { error: { message: "oops" } } }, status: 500 }))
+        );
+
+      tokenService.setTokenInfos("SER", { hashlib: "sha1", custom: "x" }, [], ["hashlib"]).subscribe({
+        next: () => fail("expected error"),
+        error: () => {
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to set token info. oops");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("getSerial()", () => {
+    it("GETs correct URL with params and headers", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue(true)));
+      const params = new HttpParams().set("user", "alice");
+
+      tokenService.getSerial("123456", params).subscribe();
+
+      expect(getSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}getserial/123456`, {
+        params,
+        headers: authService.getHeaders()
+      });
+    });
+
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "cnt" } } },
+        status: 500
+      });
+      getSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.getSerial("111111", new HttpParams()).subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to get count. cnt");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("getTokenDetails()", () => {
+    it("GETs /token with serial as HttpParams", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({ tokens: [] } as unknown as Tokens)));
+      tokenService.getTokenDetails("ABC").subscribe();
+
+      const call = getSpy.mock.calls[0];
+      expect(call[0]).toBe(tokenService.tokenBaseUrl);
+      const opts = call[1] as { headers: HttpHeaders; params: HttpParams };
+      expect(opts.headers).toEqual(authService.getHeaders());
+      expect(opts.params.get("serial")).toBe("ABC");
+    });
+  });
+
+  describe("getTokengroups()", () => {
+    it("GETs /tokengroup", () => {
+      getSpy.mockReturnValue(of(MockPiResponse.fromValue({} as unknown as TokenGroups)));
+      tokenService.getTokengroups().subscribe();
+
+      // derive expected URL from known base to avoid importing environment
+      const expected = tokenService.tokenBaseUrl.replace("/token/", "/tokengroup/");
+      expect(getSpy).toHaveBeenCalledWith(expected, { headers: authService.getHeaders() });
+    });
+
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "tg" } } },
+        status: 500
+      });
+      getSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.getTokengroups().subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to get tokengroups. tg");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("saveTokenDetail() – error branch", () => {
+    it("notifies on error", (done) => {
+      const boom = new HttpErrorResponse({
+        error: { result: { error: { message: "std" } } },
+        status: 500
+      });
+      postSpy.mockReturnValue(throwError(() => boom));
+
+      tokenService.saveTokenDetail("S", "description", "d").subscribe({
+        error: (e) => {
+          expect(e).toBe(boom);
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to set token detail. std");
+          done();
+        }
+      });
+    });
+  });
+
+  describe("userTokenResource", () => {
+    it("should return undefined if route is not USER_DETAILS", async () => {
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.TOKENS);
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.tick();
+
+      // Expect and flush the HTTP request
+      mockBackend.expectNone(environment.proxyUrl + "/token/");
+      await Promise.resolve();
+
+      expect(tokenService.userTokenResource.value()).toBeUndefined();
+    });
+
+    it("should do request if route is USER_DETAILS", async () => {
+      const realm = "test-realm";
+      const user = "alice";
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/" + user);
+      contentServiceMock.detailsUser.set({ username: user, realm });
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.tick();
+
+      // Expect and flush the HTTP request
+      const req = mockBackend.expectOne(environment.proxyUrl + "/token/?user=" + user + "&realm=" + realm);
+      req.flush({ result: {} });
+      await Promise.resolve();
+
+      expect(tokenService.userTokenResource.value()).toBeDefined();
+    });
+  });
+
+  describe("tokenSerialResource / tokenOptions", () => {
+    it("tokenOptions falls back to default when resource empty", () => {
+      expect(tokenService.tokenOptions()).toEqual([]);
+    });
+
+    it("should update tokenOptions from tokenSerialResource on successful response", async () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      const tokens = [{ serial: "OATH123" }];
+      req.flush(MockPiResponse.fromValue({ count: 1, current: 1, tokens: tokens }));
+      await Promise.resolve();
+
+      expect(tokenService.tokenSerialResource.hasValue()).toBe(true);
+      expect(tokenService.tokenOptions()).toEqual(["OATH123"]);
+    });
+
+    it("should handle error state from tokenSerialResource", async () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403,
+        statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(tokenService.tokenSerialResource.hasValue()).toBe(false);
+      expect(tokenService.tokenOptions()).toEqual([]);
+    });
+
+    it("should reset to empty array when tokenSerialResource errors after successful load", async () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      let req = mockBackend.expectOne((r) => r.url === "/token/");
+      req.flush(MockPiResponse.fromValue({ count: 1, current: 1, tokens: [{ serial: "OATH123" }] }));
+      await Promise.resolve();
+      expect(tokenService.tokenOptions()).toEqual(["OATH123"]);
+
+      tokenService.tokenSerialResource.reload();
+      TestBed.tick();
+      req = mockBackend.expectOne((r) => r.url === "/token/");
+      req.flush("Error", { status: 500, statusText: "Server Error" });
+      await Promise.resolve();
+
+      expect(tokenService.tokenOptions()).toEqual([]);
+    });
+  });
+
+  describe("tokenTypesResource / tokenTypeOptions", () => {
+    it("tokenTypeOptions falls back to default when resource empty", () => {
+      expect(tokenService.tokenTypeOptions()).toEqual([]);
+    });
+
+    it("should update tokenTypeOptions from tokenTypesResource on successful response", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/auth/rights");
+      expect(req.request.method).toBe("GET");
+      const responseValue = { hotp: "text" };
+      req.flush(MockPiResponse.fromValue(responseValue));
+      await Promise.resolve();
+
+      expect(tokenService.tokenTypesResource.hasValue()).toBe(true);
+      expect(tokenService.tokenTypeOptions()).toHaveLength(1);
+      expect(tokenService.tokenTypeOptions()).toEqual([
+        {
+          key: "hotp",
+          name: "HOTP",
+          info: "text",
+          text:
+            "The HOTP token is an event based token. With a smartphone app like the privacyIDEA Authenticator" +
+            " you can turn your smartphone into an authentication device."
+        }
+      ]);
+    });
+
+    it("should handle error state from tokenTypesResource", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/auth/rights");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403,
+        statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(tokenService.tokenTypesResource.hasValue()).toBe(false);
+      expect(tokenService.tokenTypeOptions()).toEqual([]);
+    });
+  });
+
+  describe("tokenResource / tokenResourceValue", () => {
+    it("tokenResourceValue falls back to default when resource empty", () => {
+      expect(tokenService.tokenResourceValue()).toBeNull();
+    });
+
+    it("should update tokenResourceValue from tokenResource on successful response", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      const responseValue = { count: 1, current: 1, tokens: [{ serial: "OATH123" }] };
+      req.flush(MockPiResponse.fromValue(responseValue));
+      await Promise.resolve();
+
+      expect(tokenService.tokenResource.hasValue()).toBe(true);
+      expect(tokenService.tokenResourceValue()).toEqual(responseValue);
+    });
+
+    it("scopes tokenSelection to the loaded page and drops it when a new page arrives", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const firstPage = mockBackend.expectOne((r) => r.url === "/token/");
+      firstPage.flush(
+        MockPiResponse.fromValue({ count: 25, current: 1, tokens: [{ serial: "T-1" }, { serial: "T-2" }] })
+      );
+      await Promise.resolve();
+
+      tokenService.tokenSelection.selectAllRows();
+      expect(tokenService.tokenSelection.selectedRows().map((token) => token.serial)).toEqual(["T-1", "T-2"]);
+      expect(tokenService.tokenSelection.allRowsSelected()).toBe(true);
+
+      tokenService.pageIndex.set(1);
+      TestBed.tick();
+      const secondPage = mockBackend.expectOne((r) => r.url === "/token/");
+      secondPage.flush(MockPiResponse.fromValue({ count: 25, current: 2, tokens: [{ serial: "T-3" }] }));
+      await Promise.resolve();
+
+      expect(tokenService.tokenSelection.hasSelection()).toBe(false);
+    });
+
+    it("should handle error state from tokenResource", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403,
+        statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(tokenService.tokenResource.hasValue()).toBe(false);
+      expect(tokenService.tokenResourceValue()).toBeNull();
+    });
+  });
+
+  describe("filter metadata", () => {
+    it("marks the keywords whose case behaviour deviates", () => {
+      expect(tokenService.caseNotes).toEqual({
+        serial: "usually-insensitive",
+        userid: "usually-sensitive",
+        resolver: "usually-insensitive",
+        "infokey & infovalue": "usually-sensitive"
+      });
+    });
+
+    it("only notes keywords the UI can actually look up", () => {
+      const lookupKeys = [...tokenService.apiFilterKeys, ...tokenService.advancedApiFilterKeys];
+      Object.keys(tokenService.caseNotes).forEach((key) => expect(lookupKeys).toContain(key));
+    });
+  });
+});

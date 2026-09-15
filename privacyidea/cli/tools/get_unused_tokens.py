@@ -35,6 +35,7 @@ You can call the script like this:
 """
 import click
 from flask.cli import with_appcontext
+from privacyidea.lib.error import PolicyError
 from privacyidea.lib.utils import get_version_number
 from privacyidea.lib.token import get_tokens, remove_token, enable_token
 from privacyidea.lib.policies.actions import PolicyAction
@@ -111,6 +112,9 @@ def mark(age, description=None, tokeninfo=None):
     They can be marked either by setting a description or by
     setting a tokeninfo.
 
+    A mark uses a free-form tokeninfo key. An entry a token type maintains itself, e.g. the public key of a
+    passkey or the server a RADIUS token forwards to, is written by the token and is skipped here.
+
     AGE can be a value like 10h, 7d or 2y.
     """
     tlist = _get_tokenlist(age)
@@ -122,7 +126,12 @@ def mark(age, description=None, tokeninfo=None):
         if tokeninfo:
             key, value = tokeninfo.split("=")
             click.echo(f"Setting tokeninfo for token {token_obj.token.serial!s}: {key!s}={value!s}")
-            token_obj.add_tokeninfo(key, value)
+            try:
+                token_obj.add_tokeninfo(key, value)
+            except PolicyError as error:
+                # The token list spans token types, so keep marking the remaining ones
+                click.echo(f"Skipped token {token_obj.token.serial!s}: {error!s}")
+                continue
             token_obj.save()
 
 

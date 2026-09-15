@@ -1,0 +1,284 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { NavigationEnd, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { filter, map, pairwise, startWith } from "rxjs";
+
+export interface DetailsUser {
+  username: string;
+  realm: string;
+}
+
+export interface ContentServiceInterface {
+  detailsUser: WritableSignal<DetailsUser>;
+  router: Router;
+  routeUrl: Signal<string>;
+  routePath: Signal<string>;
+  previousUrl: Signal<string>;
+  queryParams: Signal<Record<string, string>>;
+  tokenSerial: WritableSignal<string>;
+  containerSerial: WritableSignal<string>;
+
+  onLogin: Signal<boolean>;
+  onDashboard: Signal<boolean>;
+  onNews: Signal<boolean>;
+  onAudit: Signal<boolean>;
+  onAuthenticationLog: Signal<boolean>;
+  onClients: Signal<boolean>;
+  onLockedUsers: Signal<boolean>;
+  onBlocklist: Signal<boolean>;
+  onTokens: Signal<boolean>;
+  onUsers: Signal<boolean>;
+  onPolicies: Signal<boolean>;
+  onConditionalAccess: Signal<boolean>;
+  onTokenDetails: Signal<boolean>;
+  onUserDetails: Signal<boolean>;
+  onUserDetailsSelfService: Signal<boolean>;
+  onUserRealms: Signal<boolean>;
+  onTokensEnrollment: Signal<boolean>;
+  onTokenEnrollmentLikely: Signal<boolean>;
+  onTokensChallenges: Signal<boolean>;
+  onTokensApplications: Signal<boolean>;
+  onTokensGetSerial: Signal<boolean>;
+  onTokensImport: Signal<boolean>;
+  onContainers: Signal<boolean>;
+  onContainersCreate: Signal<boolean>;
+  onContainersDetails: Signal<boolean>;
+  onTokensAssignToken: Signal<boolean>;
+  onTokensWizard: Signal<boolean>;
+  onContainersWizard: Signal<boolean>;
+  onAnyTokensRoute: Signal<boolean>;
+  onAnyUsersRoute: Signal<boolean>;
+  onContainersTemplates: Signal<boolean>;
+  onContainersTemplatesCreate: Signal<boolean>;
+  onContainersTemplatesDetails: Signal<boolean>;
+  onAnyContainerTemplatesRoute: Signal<boolean>;
+  onEvents: Signal<boolean>;
+  onConfigurationSystem: Signal<boolean>;
+  onConfigurationTokenTypes: Signal<boolean>;
+  onConfigurationMachines: Signal<boolean>;
+
+  onExternalSmtp: Signal<boolean>;
+  onExternalRadius: Signal<boolean>;
+  onExternalSms: Signal<boolean>;
+  onExternalCaConnectors: Signal<boolean>;
+  onExternalPrivacyIdea: Signal<boolean>;
+  onExternalTokenGroups: Signal<boolean>;
+  onExternalServiceIds: Signal<boolean>;
+  onApiClients: Signal<boolean>;
+  onUsersResolvers: Signal<boolean>;
+  onConfigurationPeriodicTasks: Signal<boolean>;
+  onSubscription: Signal<boolean>;
+  onMachineResolver: Signal<boolean>;
+
+  matchesPath: (path: string) => boolean;
+  tokenSelected: (serial: string) => void;
+  navigateContainerDetails: (containerSerial: string) => void;
+  userSelected: (username: string, realm: string) => void;
+  machineResolverSelected: (resolverName: string) => void;
+}
+
+@Injectable()
+export class ContentService implements ContentServiceInterface {
+  detailsUser = signal<DetailsUser>({ username: "", realm: "" });
+  router = inject(Router);
+  private readonly _urlPair = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => e.urlAfterRedirects),
+      startWith(this.router.url),
+      pairwise()
+    ),
+    { initialValue: [this.router.url, this.router.url] as const }
+  );
+  readonly routeUrl = computed(() => this._urlPair()[1]);
+  readonly routePath = computed(() => this.routeUrl().split(/[?#]/)[0]);
+  readonly previousUrl = computed(() => this._urlPair()[0]);
+  readonly queryParams = computed<Record<string, string>>(() => {
+    const url = this.routeUrl();
+    const queryIndex = url.indexOf("?");
+    if (queryIndex < 0) {
+      return {};
+    }
+    const params: Record<string, string> = {};
+    new URLSearchParams(url.slice(queryIndex + 1).split("#")[0]).forEach((value, key) => {
+      params[key] = value;
+    });
+    return params;
+  });
+  tokenSerial = signal("");
+  containerSerial: WritableSignal<string> = linkedSignal({
+    source: this.routeUrl,
+    computation: (url, previous) => {
+      if (url.startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
+        return previous?.value ?? "";
+      }
+      return "";
+    }
+  });
+  onLogin = computed(() => this.matchesPath(ROUTE_PATHS.LOGIN));
+  onDashboard = computed(() => this.matchesPath(ROUTE_PATHS.DASHBOARD));
+  onNews = computed(() => this.matchesPath(ROUTE_PATHS.NEWS));
+  onAudit = computed(() => this.matchesPath(ROUTE_PATHS.AUDIT));
+  onAuthenticationLog = computed(() => this.matchesPath(ROUTE_PATHS.AUTHENTICATION_LOG));
+  onClients = computed(() => this.matchesPath(ROUTE_PATHS.CLIENTS));
+  onLockedUsers = computed(() => this.matchesPath(ROUTE_PATHS.LOCKED_USERS));
+  onBlocklist = computed(() => this.matchesPath(ROUTE_PATHS.BLOCKLIST));
+  onTokens = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS));
+  onUsers = computed(() => this.matchesPath(ROUTE_PATHS.USERS));
+  onPolicies = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.POLICIES));
+  onConditionalAccess = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS));
+  onTokenDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS));
+  onUserDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/"));
+  onUserDetailsSelfService = computed(() => this.matchesPath(ROUTE_PATHS.USERS_DETAILS));
+  onUserRealms = computed(() => this.matchesPath(ROUTE_PATHS.USERS_REALMS));
+  onTokensEnrollment = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_ENROLLMENT));
+  onTokenEnrollmentLikely = computed(
+    () =>
+      // allow token details for rollover
+      this.onTokensEnrollment() || this.onTokenDetails() || this.onTokensWizard() || this.onAnyContainerTemplatesRoute()
+  );
+  onTokensChallenges = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_CHALLENGES));
+  onTokensApplications = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_APPLICATIONS));
+  onTokensGetSerial = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_GET_SERIAL));
+  onTokensImport = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_IMPORT));
+  onContainers = computed(() => this.matchesPath(ROUTE_PATHS.CONTAINERS));
+  onContainersCreate = computed(
+    () => this.matchesPath(ROUTE_PATHS.CONTAINERS_CREATE) || this.matchesPath(ROUTE_PATHS.CONTAINERS_WIZARD)
+  );
+  onContainersDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_DETAILS));
+  onTokensAssignToken = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_ASSIGN_TOKEN));
+  onTokensWizard = computed(() => this.matchesPath(ROUTE_PATHS.TOKENS_WIZARD));
+  onContainersWizard = computed(() => this.matchesPath(ROUTE_PATHS.CONTAINERS_WIZARD));
+  onAnyTokensRoute = computed(
+    () => this.matchesPath(ROUTE_PATHS.TOKENS) || this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
+  );
+  onAnyUsersRoute = computed(
+    () => this.matchesPath(ROUTE_PATHS.USERS) || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
+  );
+  onContainersTemplates = computed(() => this.matchesPath(ROUTE_PATHS.CONTAINERS_TEMPLATES));
+  onContainersTemplatesCreate = computed(() => this.matchesPath(ROUTE_PATHS.CONTAINERS_TEMPLATES_CREATE));
+  onContainersTemplatesDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.CONTAINERS_TEMPLATES_DETAILS));
+  onAnyContainerTemplatesRoute = computed(
+    () => this.onContainersTemplates() || this.onContainersTemplatesCreate() || this.onContainersTemplatesDetails()
+  );
+  onEvents = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.EVENTS) ||
+      this.matchesPath(ROUTE_PATHS.EVENTS_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EVENTS_DETAILS)
+  );
+  onConfigurationSystem = computed(() => this.matchesPath(ROUTE_PATHS.CONFIGURATION_SYSTEM));
+  onConfigurationTokenTypes = computed(() => this.matchesPath(ROUTE_PATHS.CONFIGURATION_TOKENTYPES));
+  onConfigurationMachines = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.CONFIGURATION_MACHINES) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS)
+  );
+
+  onExternalSmtp = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS)
+  );
+  onExternalRadius = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS)
+  );
+  onExternalSms = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SMS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS)
+  );
+  onExternalCaConnectors = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS)
+  );
+  onExternalPrivacyIdea = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS)
+  );
+  onExternalTokenGroups = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS)
+  );
+  onExternalServiceIds = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS) ||
+      this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS)
+  );
+  onApiClients = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.POLICIES_API_CLIENTS) ||
+      this.matchesPath(ROUTE_PATHS.POLICIES_API_CLIENTS_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.POLICIES_API_CLIENTS_DETAILS)
+  );
+  onUsersResolvers = computed(() => this.matchesPath(ROUTE_PATHS.USERS_RESOLVERS));
+  onConfigurationPeriodicTasks = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS) ||
+      this.matchesPath(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS_DETAILS)
+  );
+  onSubscription = computed(() => this.matchesPath(ROUTE_PATHS.SUBSCRIPTION));
+  onMachineResolver = computed(
+    () =>
+      this.matchesPath(ROUTE_PATHS.MACHINE_RESOLVER) ||
+      this.matchesPath(ROUTE_PATHS.MACHINE_RESOLVER_NEW) ||
+      this.routeUrl().startsWith(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS)
+  );
+
+  matchesPath(path: string): boolean {
+    return this.routePath() === path;
+  }
+
+  tokenSelected(serial: string): void {
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + encodeURIComponent(serial));
+    this.tokenSerial.set(serial);
+  }
+
+  navigateContainerDetails(containerSerial: string): void {
+    this.router.navigateByUrl(ROUTE_PATHS.CONTAINERS_DETAILS + encodeURIComponent(containerSerial));
+    this.containerSerial.set(containerSerial);
+  }
+
+  userSelected(username: string, realm: string): void {
+    this.router.navigateByUrl(
+      ROUTE_PATHS.USERS_DETAILS + "/" + encodeURIComponent(username) + `?realm=${encodeURIComponent(realm ?? "")}`
+    );
+    this.detailsUser.set({ username, realm: realm ?? "" });
+  }
+
+  machineResolverSelected(resolverName: string): void {
+    this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER_DETAILS + encodeURIComponent(resolverName));
+  }
+}
