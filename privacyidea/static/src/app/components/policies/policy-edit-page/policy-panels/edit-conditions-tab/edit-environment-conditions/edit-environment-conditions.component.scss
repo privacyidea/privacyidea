@@ -1,0 +1,59 @@
+@use "mixins";
+@use "styles";
+@use "@angular/material";
+@use "../edit-conditions-tab.component.scss";
+
+.user-agent-chip-edit {
+  @include mixins.compact-badge-base;
+  align-items: center;
+  background-color: var(--mat-sys-surface-container-high);
+  display: flex;
+}
+
+.user-agent-list-wrapper {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.user-agent-list {
+  display: flex;
+  flex-grow: 1;
+  flex-wrap: wrap;
+  gap: 4px;
+  scrollbar-width: thin;
+}
+
+.clear-user-agents-container {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.user-agent-input-container {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+}
+
+.remove-user-agent-btn {
+  align-items: center;
+  display: flex;
+  height: 18px;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 0;
+  width: 18px;
+}
+
+.remove-user-agent-icon {
+  font-size: 14px;
+  height: 14px;
+  width: 14px;
+}
+
+.flex-row-stretch {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}

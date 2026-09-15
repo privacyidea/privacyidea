@@ -22,19 +22,21 @@
 import datetime
 import logging
 
-from passlib.hash import argon2
+from passlib.exc import PasswordSizeError
 from sqlalchemy import update, select, delete
 
 from ..models import AuthCache, db
 from ..models.utils import utc_now
 from .cache import auth as redis_auth_cache
+from .crypto import pass_hash, verify_pass_hash
 
-ROUNDS = 9
 log = logging.getLogger(__name__)
 
 
 def _hash_password(password):
-    return argon2.using(rounds=ROUNDS).hash(password)
+    # The same hash algorithm and parameters the rest of privacyIDEA uses for passwords
+    # and PINs, so PI_HASH_ALGO_LIST and PI_HASH_ALGO_PARAMS apply here as well.
+    return pass_hash(password)
 
 
 def add_to_cache(username: str, realm: str, resolver: str, password: str,
@@ -50,10 +52,18 @@ def add_to_cache(username: str, realm: str, resolver: str, password: str,
     :param max_age_seconds: how long the entry may be used, from the policy.
         Only Redis can act on it - a database row has no lifetime of its own and
         is removed by the cleanup job instead.
-    :return: the id of the database row, or 0 if the entry went to Redis, which
-        has no row to identify
+    :return: the id of the database row, or 0 if the entry went to Redis (which
+        has no row to identify) or if the password was too long to hash and so
+        was not cached at all
     """
-    auth_hash = _hash_password(password)
+    try:
+        auth_hash = _hash_password(password)
+    except PasswordSizeError:
+        # The authentication has already succeeded at this point. A password that the hash
+        # algorithm refuses to take simply does not get cached, it does not fail the request.
+        log.info(f"Not caching the authentication of {username!s}@{realm!s}: the password is "
+                 "longer than the hash algorithm accepts.")
+        return 0
     log.debug(f'Adding record to auth cache: ({username!r}, {realm!r}, {resolver!r})')
     if redis_auth_cache.add_to_cache(username, realm, resolver, auth_hash, max_age_seconds):
         return 0
@@ -108,12 +118,16 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
                 delete_entry = True
             elif last_valid_cache_time and cached_auth.first_auth < last_valid_cache_time:
                 delete_entry = True
-            elif argon2.verify(password, cached_auth.authentication):
+            elif verify_pass_hash(password, cached_auth.authentication):
                 delete_entry = True
 
         except ValueError:
-            log.debug(f"Old (non-argon2) authcache entry for user {username!s}@{realm!s}.")
-            # Also delete old entries
+            # The stored value can not be read: either no configured algorithm recognises
+            # it, or one does but the value is malformed. passlib raises UnknownHashError
+            # for the first and a plain ValueError for the second, and both mean the entry
+            # can never verify again. An over-long password does not arrive here, because
+            # verify_pass_hash() answers that with False.
+            log.debug(f"Unreadable authcache entry for user {username!s}@{realm!s}.")
             delete_entry = True
         if delete_entry:
             r += 1
@@ -178,9 +192,11 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
 
     for cached_auth in cached_auths:
         try:
-            result = argon2.verify(password, cached_auth.authentication)
+            result = verify_pass_hash(password, cached_auth.authentication)
         except ValueError:
-            log.debug(f"Old (non-argon2) authcache entry for user {username!s}@{realm!s}.")
+            # Both an unrecognised and a malformed stored value land here, see
+            # delete_from_cache()
+            log.debug(f"Unreadable authcache entry for user {username!s}@{realm!s}.")
             result = False
 
         if result and max_auths > 0:

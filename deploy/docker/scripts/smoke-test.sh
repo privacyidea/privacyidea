@@ -67,6 +67,24 @@ if ! echo "${auth_response}" | grep -q '"token"'; then
 fi
 echo "[smoke] Admin authentication succeeded."
 
+# The image builds the WebUI in its own stage and the package is installed from the source tree,
+# so this is the first point where the build, the packaging and the server meet. Everything else
+# in CI runs from a checkout, where the WebUI is found whether or not it was packaged.
+echo "[smoke] Checking the WebUI ..."
+root_response="$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' "${BASE_URL}/")"
+case "${root_response}" in
+    "302 "*"/app/v2/") ;;
+    *) fail "GET / answered '${root_response}', expected a redirect to /app/v2/" ;;
+esac
+
+if ! curl -fsS "${BASE_URL}/app/v2/" | grep -q '<base href='; then
+    fail "GET /app/v2/ did not answer with the WebUI"
+fi
+
+curl -fsS -o /dev/null "${BASE_URL}/static/public/policy-templates/index.json" \
+    || fail "the WebUI assets below /static/public/ are not served"
+echo "[smoke] The WebUI is served."
+
 echo "[smoke] Checking pi-cron ..."
 if ! docker compose -f "${COMPOSE_FILE}" ps --services --filter "status=running" | grep -q "^pi-cron$"; then
     fail "pi-cron is not running"

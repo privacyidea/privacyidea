@@ -3,7 +3,7 @@
 #
 # Extracts the new WebUI's i18n strings once a day and merges them into the
 # source file and every target locale (see the `extract-i18n` target in
-# privacyidea/static_new/angular.json). Weblate translates the target files but
+# privacyidea/static/angular.json). Weblate translates the target files but
 # never adds new units to them, so without this job newly marked-up strings
 # never reach the translators.
 #
@@ -15,7 +15,7 @@
 #
 # Every run extracts the default branch, whatever ref it was started from. To
 # see what a feature branch would extract, run `npm run i18n:extract` in
-# privacyidea/static_new locally.
+# privacyidea/static locally.
 name: WebUI i18n extract
 on:
   schedule:
@@ -35,7 +35,7 @@ jobs:
       PR_BRANCH: chore/i18n-extract
       PR_LABEL: i18n
       PR_TITLE: "webui: extract i18n translation strings"
-      LOCALE_DIR: privacyidea/static_new/src/locale
+      LOCALE_DIR: privacyidea/static/src/locale
       PR_BASE: ${{ github.event.repository.default_branch }}
     steps:
       # Always the default branch, whatever ref started the run. Extracting the
@@ -56,10 +56,10 @@ jobs:
         with:
           node-version: lts/* # Use the latest LTS-release
           cache: npm
-          cache-dependency-path: privacyidea/static_new/package-lock.json
+          cache-dependency-path: privacyidea/static/package-lock.json
       - name: Install Node.js dependencies
         run: npm ci
-        working-directory: ./privacyidea/static_new
+        working-directory: ./privacyidea/static
       - name: Extract and merge translation units
         # A duplicate id means two different messages share one `@@id`. Only one
         # of them survives extraction, so the localized build renders that one
@@ -74,7 +74,7 @@ jobs:
                  "edge whitespace so every occurrence extracts the same source."
             exit 1
           fi
-        working-directory: ./privacyidea/static_new
+        working-directory: ./privacyidea/static
 
       - name: Detect translation drift
         id: drift
@@ -104,7 +104,7 @@ jobs:
         # localized production build is the check that matters here: it parses
         # every target file and fails on malformed XLIFF or broken placeholders.
         run: npm run build -- --configuration production
-        working-directory: ./privacyidea/static_new
+        working-directory: ./privacyidea/static
 
       - name: Commit and force-push the bot branch
         id: push

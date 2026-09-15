@@ -1,0 +1,605 @@
+@use "theme";
+@use "icon";
+
+$button-height: 40px;
+$button-width: 240px;
+$keyword-height: 28px;
+$keyword-padding: 2px 8px;
+$button-gap-small: 10px;
+$padding-horizontal: 16px;
+$margin-bottom-small: 0;
+$button-border-radius: var(--border-radius);
+$profile-bg: var(--background-yellow);
+$profile-hover-bg: var(--background-yellow-inset);
+$button-focus-outline: theme.$focus-outline;
+
+$grad-surface: linear-gradient(145deg, var(--mat-sys-surface-container), var(--mat-sys-surface-container-low));
+$grad-surface-hover: linear-gradient(
+  145deg,
+  var(--mat-sys-surface-container-lowest),
+  var(--mat-sys-surface-container-low)
+);
+
+$background-low-contrast: linear-gradient(
+  145deg,
+  var(--mat-sys-surface-container-highest),
+  var(--mat-sys-surface-container-low)
+);
+
+$button-low-contrast-variant: linear-gradient(
+  145deg,
+  var(--mat-sys-surface-container-low),
+  var(--mat-sys-surface-container-highest)
+);
+
+@mixin button-base($height, $width, $background-color, $border-color, $color) {
+  height: $height;
+  width: $width;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  background-color: $background-color !important;
+  border-color: $border-color !important;
+  color: $color !important;
+  justify-content: start;
+  display: flex;
+
+  &:disabled {
+    color: #909090 !important;
+  }
+}
+
+@mixin hover-or-active($bg, $shadow, $translate: false) {
+  &:hover,
+  &.active {
+    background: $bg;
+    box-shadow: $shadow;
+
+    @if $translate == true {
+      transform: translateY(2px);
+    }
+  }
+}
+
+@mixin card-button-variant($background-color, $border-color, $color) {
+  @include button-base(
+    $height: $button-height,
+    $width: $button-width,
+    $background-color: $background-color,
+    $border-color: $border-color,
+    $color: $color
+  );
+}
+
+%linkish-btn {
+  text-decoration: none;
+  padding: 10px;
+  border-radius: $button-border-radius;
+}
+
+%keyword-chip {
+  background-color: var(--mat-sys-surface-container-low);
+  border-radius: $button-border-radius;
+  height: $keyword-height;
+  margin: 3px;
+  box-shadow: none;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.login-btn {
+  @extend %linkish-btn;
+  --mdc-extended-fab-container-shape: var(--border-radius);
+  color: var(--mat-sys-on-primary);
+  background: var(--mat-sys-primary);
+  box-shadow: var(--elevation-3);
+
+  @include hover-or-active(
+    var(--background-blue-inset),
+    inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-primary-dark) #{","} inset
+      calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-primary-light-active),
+    true
+  );
+}
+
+.passkey-btn,
+.reset-btn {
+  @extend %linkish-btn;
+  --mdc-extended-fab-container-shape: var(--border-radius);
+  color: var(--mat-sys-on-surface-variant);
+  background: $grad-surface;
+  box-shadow: var(--elevation-3);
+
+  @include hover-or-active($grad-surface-hover, var(--inset-shadow-3), true);
+}
+
+.login-actions {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+
+  > .login-btn {
+    flex: 7;
+    min-width: 0;
+  }
+
+  > .reset-btn {
+    flex: 3;
+    min-width: 0;
+  }
+}
+
+.mat-mdc-outlined-button.card-button-1,
+.mat-mdc-outlined-button[class*="card-button-1"] {
+  --mat-button-outlined-state-layer-color: var(--mat-sys-surface-container-highest);
+  --mat-button-outlined-ripple-color: var(--mat-sys-surface-container-highest);
+  --mat-ripple-color: var(--mat-sys-surface-container-high);
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container-high) !important;
+  }
+}
+
+.mat-mdc-outlined-button[class*="card-button-active"] {
+  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
+}
+
+.mat-mdc-outlined-button[class*="card-button-support"] {
+  --mat-button-outlined-state-layer-color: var(--mint-bg);
+  --mat-button-outlined-ripple-color: var(--mint-bg);
+  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
+
+  &:hover {
+    background-color: var(--mint-bg) !important;
+  }
+}
+
+.card-button-1 {
+  @include card-button-variant(
+    var(--mat-sys-surface-container),
+    var(--mat-sys-surface-container-highest),
+    var(--mat-sys-on-surface-variant)
+  );
+}
+
+.card-button-active {
+  @include card-button-variant(var(--sky-bg), var(--mat-sys-primary), var(--mat-sys-primary));
+}
+
+.card-button-support {
+  @include card-button-variant(
+    var(--mat-sys-surface-container-lowest),
+    var(--green-brand-light),
+    var(--green-brand-light)
+  );
+}
+
+.card-button-docs {
+  @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary), var(--mat-sys-primary));
+}
+
+.mat-unthemed.mat-mdc-button-base[class^="card-button-1"],
+.mat-unthemed.mat-mdc-button-base[class*=" card-button"] {
+  min-width: $button-width;
+
+  mat-icon.mat-icon.notranslate.material-icons {
+    font-size: 20px;
+  }
+}
+
+.keyword-button {
+  @extend %keyword-chip;
+  padding: $keyword-padding;
+
+  &:hover .add-keyword {
+    color: var(--green-light);
+  }
+}
+
+.more-keyword-button {
+  @extend %keyword-chip;
+  padding: 0 0 0 8px;
+}
+
+.add-keyword {
+  color: var(--grey-light-active);
+}
+
+.remove-keyword {
+  color: var(--red-light);
+}
+
+.change-keyword {
+  color: var(--yellow-light);
+}
+
+.delete-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: $button-gap-small;
+  padding: 0 $padding-horizontal;
+}
+
+.delete-info-button {
+  margin: 16px 4px 0 4px;
+}
+
+.refresh-btn {
+  height: $button-height;
+  width: $button-height;
+  cursor: pointer;
+  border-radius: 50%;
+  background-color: transparent;
+  color: var(--mat-sys-on-surface);
+  box-shadow: none !important;
+  transition: background-color 0.2s ease-in-out;
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container);
+  }
+}
+
+.logout-btn {
+  color: var(--mat-sys-on-surface);
+  background-color: transparent;
+  transition: background-color 0.2s ease-in-out;
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container);
+  }
+}
+
+.enroll-button-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: left;
+  gap: 16px;
+}
+
+.enroll-button-spacer {
+  width: $button-height;
+  height: $button-height;
+}
+
+.drawer-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--mat-sys-surface-container-lowest);
+  height: 48px;
+  width: 48px;
+  color: var(--mat-sys-on-surface);
+  border-radius: var(--border-radius);
+  box-shadow: var(--elevation-5);
+}
+
+.back-button {
+  @extend .drawer-button;
+  margin: 32px 16px 0 16px;
+
+  &:hover {
+    box-shadow: var(--elevation-8);
+  }
+}
+
+.mat-mdc-outlined-button {
+  --mat-button-outlined-container-shape: var(--border-radius);
+  border-radius: var(--border-radius);
+  padding: 8px 16px;
+  border: 1px solid var(--mat-sys-outline);
+  background-color: var(--mat-sys-surface);
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+}
+
+%action-button-base {
+  border-radius: var(--border-radius);
+  border-style: solid;
+  border-width: 1px;
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+  justify-content: center;
+  overflow: hidden;
+  // Keep action-button labels on a single line. A translation that is too long
+  // for its width tier clips (overflow: hidden) instead of wrapping to two rows,
+  // which would break the fixed 40px height and the row rhythm. The fix for a
+  // clipped label is to bump that row to the next width tier, not to wrap.
+  // white-space stops the text node breaking; flex-wrap stops the icon + label
+  // flex items from wrapping onto separate rows.
+  white-space: nowrap;
+  flex-wrap: nowrap;
+
+  mat-icon.mat-icon.notranslate.material-icons {
+    font-size: 20px;
+  }
+
+  .icon-badge .mat-icon.notranslate.material-icons.icon-badge-overlay {
+    font-size: 14px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background-color: var(--mat-sys-surface-variant);
+    color: var(--mat-sys-on-surface-variant);
+    border-color: var(--mat-sys-outline);
+  }
+}
+
+@mixin action-button(
+  $bg,
+  $color,
+  $hover-bg,
+  $ripple: null,
+  $ripple-mdc: null,
+  $layer: null,
+  $border: true,
+  $primary: false
+) {
+  @extend %action-button-base;
+  background-color: $bg;
+
+  @if $layer {
+    --mat-button-outlined-state-layer-color: #{$layer};
+    --mat-stroked-button-state-layer-color: #{$layer};
+  }
+  @if $ripple {
+    --mat-button-outlined-ripple-color: #{$ripple};
+    --mat-stroked-button-ripple-color: #{$ripple};
+  }
+  @if $ripple-mdc {
+    --mat-ripple-color: #{$ripple-mdc};
+  }
+
+  @if not $border {
+    border: none !important;
+  }
+
+  &:not([disabled]) {
+    // Set the rest background here (not only at the top level) so it wins over
+    // Material's transparent outlined-button background; otherwise a stroked
+    // action button shows its container through and looks darker on a non-white
+    // surface (e.g. the recessed stage well) than on the white page.
+    //
+    // !important on background-color and color: Material's own default outlined-button rule
+    // (.mat-mdc-outlined-button:not(:disabled)) sets the label to the theme's primary color at the same
+    // selector specificity as this one, so which wins is a coin flip decided by stylesheet load order -
+    // it loses inside a dialog's CDK overlay, where the button's compiled styles can be injected after the
+    // global bundle. A secondary button's label color already matches Material's default (both are
+    // primary-colored text), so the loss is invisible there; a primary/delete-primary button's near-white
+    // label does not, and silently renders as unreadable same-color-as-background text.
+    background-color: $bg !important;
+    color: $color !important;
+    // Material reads the label color from this variable, not from the plain
+    // `color` property above, so without it the outlined-button label stays
+    // the theme's primary color regardless of $color.
+    --mat-button-outlined-label-text-color: #{$color};
+    @if $border {
+      border-color: $color;
+    }
+
+    &:hover {
+      background-color: $hover-bg;
+    }
+  }
+
+  @if $primary {
+    &[disabled] {
+      background-color: var(--mat-sys-surface-container-high) !important;
+      color: var(--mat-sys-on-surface-variant) !important;
+      @if $border {
+        border-color: var(--mat-sys-surface-container-highest) !important;
+      }
+    }
+  }
+}
+
+.action-button-primary {
+  @include action-button(
+    var(--mat-sys-primary),
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-primary-base-active),
+    $border: false,
+    $primary: true
+  );
+
+  .icon-badge-overlay {
+    background-color: var(--mat-sys-primary);
+  }
+
+  &:hover .icon-badge-overlay {
+    background-color: var(--mat-sys-primary-base-active);
+  }
+}
+
+.action-button-secondary {
+  @include action-button(
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-primary),
+    var(--sky-bg),
+    $ripple-mdc: var(--sky-bg)
+  );
+}
+
+// The Material rule for an outlined button (.mat-mdc-outlined-button:not(:disabled)) sets the label
+// and outline colour with the same specificity as the class rules here, and it is injected at
+// runtime with the button component, so which of the two wins depends on the order the stylesheets
+// happen to land in. Setting Material's own tokens takes that order out of the picture: its rule
+// then paints the destructive colour itself, wherever the button is used.
+.action-button-delete-primary {
+  @include action-button(
+    var(--red-base),
+    var(--mat-sys-surface-container-lowest),
+    var(--red-light),
+    $ripple: var(--red-light-active),
+    $ripple-mdc: var(--rose-bg),
+    $layer: var(--rose-bg),
+    $border: false,
+    $primary: true
+  );
+  --mat-button-outlined-label-text-color: var(--mat-sys-surface-container-lowest);
+}
+
+.action-button-delete-secondary {
+  @include action-button(
+    var(--mat-sys-surface-container-lowest),
+    var(--red-base),
+    var(--rose-bg),
+    $ripple: var(--rose-ripple),
+    $ripple-mdc: var(--rose-bg),
+    $layer: var(--rose-bg)
+  );
+  --mat-button-outlined-label-text-color: var(--red-base);
+  --mat-button-outlined-outline-color: var(--red-base);
+}
+
+.filter-button {
+  top: 0;
+  right: 2px;
+  height: 24px;
+  width: 24px;
+  padding: 0;
+  margin-left: 8px;
+
+  span.mat-mdc-button-touch-target {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+// Compact icon buttons that sit inline with table text (column sorting, the
+// conditional-access priority arrows, the authentication log's reason detail).
+// The touch target is pinned to the visible 24px box: Material's default 48px
+// target would overhang the neighbouring cell content and pull the ripple/hover
+// layer out of line with the icon.
+.sort-button,
+.reorder-button,
+.reason-detail-button {
+  top: 0;
+  right: 2px;
+  height: 24px;
+  width: 24px;
+  padding: 0;
+
+  span.mat-mdc-button-touch-target {
+    width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+.text-button {
+  background: none !important;
+  border: none !important;
+  color: var(--mat-sys-primary) !important;
+  padding: 0 8px;
+  cursor: pointer;
+  text-transform: none;
+  font-weight: 500;
+  transition: opacity 0.2s ease-in-out;
+
+  &:hover:not(:disabled) {
+    background-color: var(--sky-bg) !important;
+    border-radius: var(--border-radius);
+  }
+
+  &:disabled {
+    color: var(--grey-light) !important;
+    cursor: default;
+  }
+}
+
+// .add-action-button {
+//   align-self: flex-end;
+//   color: var(--mat-sys-primary);
+// }
+
+.scroll-to-top-fab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--mat-sys-surface-container-lowest);
+  height: 48px;
+  width: 48px;
+  color: var(--mat-sys-on-surface-variant);
+  border-radius: var(--border-radius);
+  border: unset;
+  box-shadow: var(--elevation-5);
+
+  &:hover {
+    box-shadow: var(--elevation-8);
+  }
+}
+
+.button-width-xs {
+  width: var(--button-width-xs);
+  min-width: var(--button-width-xs);
+}
+
+.button-width-s {
+  width: var(--button-width-s);
+  min-width: var(--button-width-s);
+}
+
+.button-width-m {
+  width: var(--button-width-m);
+  min-width: var(--button-width-m);
+}
+
+.button-width-l {
+  width: var(--button-width-l);
+  min-width: var(--button-width-l);
+}
+
+.button-width-xl {
+  width: var(--button-width-xl);
+  min-width: var(--button-width-xl);
+}
+
+// The dashboard's time-range presets sit beside a chart rather than in a form row - the authentication-activity
+// widget seats them in the narrow column it keeps for its row labels (144px, where four form-sized buttons would need
+// about 180px), and the conditional-access widget beside its slider. The label's own padding is where the difference
+// comes from, and Material hardcodes it (`padding: 0 12px`) with no token to set it by - so it is overridden here,
+// a widget's own stylesheet having no way through the component boundary.
+.chart-range-presets .mat-button-toggle-appearance-standard .mat-button-toggle-label-content {
+  padding: 0 4px;
+}
+
+// Every button in a dashboard preset group shares the group's width evenly, rather than each sizing to its own
+// label: with "1 h" beside "30 d" the toggles would otherwise line up unevenly, and the narrower ones would be the
+// harder targets to hit.
+.chart-range-presets .mat-button-toggle-group {
+  display: flex;
+}
+
+.chart-range-presets .mat-button-toggle {
+  flex: 1 1 0;
+  // Flex items default to a content-based minimum width (min-width: auto), which for this nowrap label wins over
+  // flex-basis: 0 and leaves the widest label's toggle wider than the rest. Zeroing it lets flex-grow alone decide.
+  min-width: 0;
+}
+
+// Every dashboard preset group sized up from the shared 0-floor above, each by its own class so a group only grows
+// as far as the column it sits in allows. The conditional-access widget's two groups answer to nothing above them;
+// the authentication-activity widget's does (see .auth-range-presets and $label-column in its own stylesheet), which
+// is why it gets the same floor as ca-range-presets rather than a bigger one of its own. The extra class carries
+// more specificity than the shared rule above so it wins without !important.
+.chart-range-presets.ca-range-presets .mat-button-toggle {
+  min-width: 32px;
+}
+
+.chart-range-presets.ca-kind-presets .mat-button-toggle {
+  min-width: 72px;
+}
+
+.chart-range-presets.auth-range-presets .mat-button-toggle {
+  min-width: 32px;
+}
+
+// Unselected toggle buttons in UI Settings (corners/depth): the token's transparent default lets
+// the card background show through, which reads as unstyled. Excludes the checked button, which
+// keeps the primary highlight set in ui-settings.component.scss. Scoped to the container so it
+// does not change button-toggle groups used elsewhere.
+.settings-container .mat-button-toggle-appearance-standard:not(.mat-button-toggle-checked) {
+  background-color: var(--table-color);
+}

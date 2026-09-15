@@ -1,0 +1,175 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="conditions-container">
+  <h2
+    class="conditions-title"
+    i18n="@@policy.environmentConditions"
+    >Environment Conditions</h2
+  >
+
+  <app-multi-select-only
+    class="margin-bottom-16"
+    fieldClass="input-width-xl"
+    label="privacyIDEA Nodes"
+    [items]="availablePinodesList()"
+    [selectedItems]="selectedPinodes()"
+    (selectionChange)="updateSelectedPinodes($event)">
+  </app-multi-select-only>
+
+  <div class="flex-row-stretch">
+    <mat-form-field
+      appearance="outline"
+      class="input-width-l margin-bottom-16">
+      <mat-label i18n="@@policy.validTime">Valid time</mat-label>
+      <input
+        matInput
+        [formField]="validTimeField"
+        i18n-placeholder="@@policy.monFri918Sat"
+        placeholder="Mon-Fri: 9-18, Sat: 10-15" />
+      @if (validTimeField().errors().some(e => e.kind === 'invalidValidTime')) {
+        <mat-error i18n="@@policy.pleaseEnterValidTime">Please enter a valid time format</mat-error>
+      }
+      @if (validTimeSignal() !== "") {
+        <app-clear-button
+          matSuffix
+          (clearButtonClick)="clearValidTimeControl()"></app-clear-button>
+      }
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="outline"
+      class="input-width-l margin-bottom-16">
+      <mat-label i18n="@@common.client">Client</mat-label>
+      <input
+        matInput
+        [formField]="clientField"
+        [matAutocomplete]="clientAuto"
+        placeholder="10.0.0.0/8, !10.0.0.124" />
+      <mat-autocomplete
+        #clientAuto="matAutocomplete"
+        class="known-clients-autocomplete-panel">
+        @for (client of filteredKnownClients(); track client.ip) {
+          <mat-option
+            [value]="buildClientSelection(client.ip)"
+            class="known-client-option">
+            <span class="known-client-ip">{{ client.ip }}</span>
+            <span class="known-client-details">
+              @if (client.applications.length) {
+                <span class="known-client-apps">
+                  @for (app of client.applications; track app) {
+                    <span
+                      class="known-client-app-chip"
+                      [title]="app"
+                      >{{ app }}</span
+                    >
+                  }
+                </span>
+              }
+              @if (client.hostname) {
+                <span class="known-client-hostname">{{ client.hostname }}</span>
+              }
+            </span>
+          </mat-option>
+        }
+      </mat-autocomplete>
+      @if (clientField().errors().some(e => e.kind === 'invalidClient')) {
+        <mat-error i18n="@@policy.pleaseEnterValid">Please enter a valid client format</mat-error>
+      }
+      @if (clientSignal() !== "") {
+        <app-clear-button
+          matSuffix
+          (clearButtonClick)="clearClientControl()"></app-clear-button>
+      }
+    </mat-form-field>
+  </div>
+
+  <div class="user-agent-list-wrapper">
+    <div class="user-agent-list">
+      @for (userAgent of selectedUserAgents(); track $index) {
+        <div class="user-agent-chip-edit">
+          <span>{{ getUserAgentLabel(userAgent) }}</span>
+          <button
+            mat-icon-button
+            (click)="removeUserAgent(userAgent)"
+            class="remove-user-agent-btn">
+            <mat-icon class="remove-user-agent-icon">close</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+    @if (selectedUserAgents().length > 0) {
+      <div class="clear-user-agents-container">
+        <button
+          mat-stroked-button
+          class="action-button-secondary button-width-m"
+          (click)="clearUserAgents()">
+          <mat-icon>clear_all</mat-icon>
+          <span i18n="@@policy.clearUserAgents">Clear User Agents</span>
+        </button>
+      </div>
+    }
+  </div>
+
+  <div class="user-agent-input-container">
+    <mat-form-field
+      subscriptSizing="dynamic"
+      appearance="outline"
+      class="input-width-l">
+      <mat-label i18n="@@common.userAgent">User Agent</mat-label>
+      <mat-select
+        #uaSelect
+        [value]="null"
+        (selectionChange)="addUserAgentFromSelect($event, uaSelect)"
+        panelClass="auto-width-dropdown">
+        @for (ua of availableUserAgentPresets(); track ua.key) {
+          <mat-option [value]="ua.key">{{ ua.label }}</mat-option>
+        }
+
+        @if (availableUserAgentPresets().length === 0) {
+          <mat-option
+            disabled
+            i18n="@@policy.noAgentsFound"
+            >No agents found</mat-option
+          >
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field
+      subscriptSizing="dynamic"
+      appearance="outline"
+      class="add-user-agent-input input-width-l">
+      <mat-label i18n="@@policy.addCustomUser">Add Custom User Agent</mat-label>
+      <input
+        matInput
+        [formField]="addUserAgentField"
+        (keyup.enter)="addUserAgent()" />
+      @if (addUserAgentField().errors().some(e => e.kind === 'includesComma')) {
+        <mat-error i18n="@@policy.userAgentMust">User Agent must not contain commas.</mat-error>
+      }
+    </mat-form-field>
+
+    <button
+      mat-icon-button
+      [disabled]="!addUserAgentSignal().trim() || addUserAgentField().errors().length > 0"
+      (click)="addUserAgent()">
+      <mat-icon>add</mat-icon>
+    </button>
+  </div>
+</div>
