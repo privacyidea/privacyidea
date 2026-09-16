@@ -80,9 +80,9 @@ body {
   // Table column widths, applied via the col-width-* utility classes below (or table.column-width()
   // for a component-scoped rule): xs/s fit a short code or badge, m the existing 170px convention
   // (e.g. a serial), l/xl the existing 240/300px conventions (e.g. a wrapped description).
-  --column-width-xs: 80px;
+  --column-width-xs: 32px;
   --column-width-s: 120px;
-  --column-width-m: 170px;
+  --column-width-m: 180px;
   --column-width-l: 240px;
   --column-width-xl: 300px;
 

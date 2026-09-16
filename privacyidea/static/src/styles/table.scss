@@ -230,18 +230,19 @@ $description-width: 18rem;
 }
 
 // A sortable column's header carries its label plus a sort icon-button (~40px) behind a 16px
-// margin, on top of the cell's own tier width; a table.mat-column with the xs or s tier is
-// usually too narrow for that combination alone, so the browser's auto table-layout grows the
-// column past its declared tier - measured (token-table, 1800px viewport): xs columns rendered
-// 44-65px past their 80px tier, s columns 10-30px past their 120px tier, while m/l/xl columns
-// (170px+) were already wide enough to absorb the header controls with no growth at all. These
-// reserves close most of that gap so table-width() below is not a silent undercount; the
-// underlying --column-width-* tokens are left alone; on a bare-header column (e.g. a checkbox
-// "select" column, which needs none of this) it only makes the *estimate* a little generous, not
-// the column's own actual rendered width.
-$header-chrome-reserve: (
-  "xs": 64px,
-  "s": 32px,
+// margin, on top of the cell's own tier width; a column with the xs or s tier is usually too
+// narrow for that combination alone, so the browser's auto table-layout grows the column past
+// its declared tier. These are absolute floors, not an offset added to the tier - measured
+// (token-table, 1800px viewport, --column-width-xs/s/m at 32/120/180px): the widest xs-tier
+// sortable column (a two-word label, "Fail Counter") rendered at 145px and the widest s-tier one
+// at 150px, while m/l/xl columns (180px+) already absorbed the header controls with no growth.
+// Floors instead of a fixed reserve so this stays correct if --column-width-xs/s (styles.scss) is
+// retuned later for its own reason (e.g. sized down to fit a bare checkbox column) without this
+// map being retuned to match - a bare-header column (the checkbox "select" column, which needs
+// none of this) only has its *estimate* made a little generous, never its actual rendered width.
+$header-chrome-floor: (
+  "xs": 145px,
+  "s": 150px,
   "m": 0px,
   "l": 0px,
   "xl": 0px
@@ -254,10 +255,11 @@ $header-chrome-reserve: (
 @function table-width($sizes...) {
   $expr: "0px";
   @each $size in $sizes {
-    $reserve: map.get($header-chrome-reserve, $size);
-    $expr: "#{$expr} + var(--column-width-#{$size})";
-    @if $reserve and $reserve > 0px {
-      $expr: "#{$expr} + #{$reserve}";
+    $floor: map.get($header-chrome-floor, $size);
+    @if $floor and $floor > 0px {
+      $expr: "#{$expr} + max(var(--column-width-#{$size}), #{$floor})";
+    } @else {
+      $expr: "#{$expr} + var(--column-width-#{$size})";
     }
   }
   @return unquote("calc(#{$expr})");
