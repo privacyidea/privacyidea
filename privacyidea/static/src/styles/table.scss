@@ -237,9 +237,7 @@ $description-width: 18rem;
 // sortable column (a two-word label, "Fail Counter") rendered at 145px and the widest s-tier one
 // at 150px, while m/l/xl columns (180px+) already absorbed the header controls with no growth.
 // Floors instead of a fixed reserve so this stays correct if --column-width-xs/s (styles.scss) is
-// retuned later for its own reason (e.g. sized down to fit a bare checkbox column) without this
-// map being retuned to match - a bare-header column (the checkbox "select" column, which needs
-// none of this) only has its *estimate* made a little generous, never its actual rendered width.
+// retuned later for its own reason without this map being retuned to match.
 $header-chrome-floor: (
   "xs": 145px,
   "s": 150px,
@@ -248,18 +246,29 @@ $header-chrome-floor: (
   "xl": 0px
 );
 
+// A row-select checkbox column has no header label or sort control at all - .table-checkbox (below)
+// fixes it at a flat 42px regardless of column.width. Applying the xs floor to it as if it were a
+// sortable xs column overshot by 100px+ (measured on token-table): pass "checkbox" instead of its
+// nominal "xs" tier for this one column so table-width() sizes it from its real rendered width.
+$checkbox-column-width: 42px;
+
 // Sums a table's own col-width-* tiers (see the --column-width-* tokens and .col-width-* classes in
 // styles.scss) into one width, for page-table-state-size($min-width) above: the empty/error/loading
 // panel shown in place of the table is then sized from the same tiers its columns actually use,
-// rather than the unrelated 44rem guess that mixin defaults to.
+// rather than the unrelated 44rem guess that mixin defaults to. Pass "checkbox" (see
+// $checkbox-column-width) instead of a tier for a row-select column.
 @function table-width($sizes...) {
   $expr: "0px";
   @each $size in $sizes {
-    $floor: map.get($header-chrome-floor, $size);
-    @if $floor and $floor > 0px {
-      $expr: "#{$expr} + max(var(--column-width-#{$size}), #{$floor})";
+    @if $size == checkbox {
+      $expr: "#{$expr} + #{$checkbox-column-width}";
     } @else {
-      $expr: "#{$expr} + var(--column-width-#{$size})";
+      $floor: map.get($header-chrome-floor, $size);
+      @if $floor and $floor > 0px {
+        $expr: "#{$expr} + max(var(--column-width-#{$size}), #{$floor})";
+      } @else {
+        $expr: "#{$expr} + var(--column-width-#{$size})";
+      }
     }
   }
   @return unquote("calc(#{$expr})");

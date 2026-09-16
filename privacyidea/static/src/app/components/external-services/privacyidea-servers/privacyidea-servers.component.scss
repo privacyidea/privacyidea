@@ -5,10 +5,10 @@
 .privacyidea-servers-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".privacyidea-servers-table", ".table-filter", ".table-scroll-container");
-  // Sized from the col-width-* tiers the columns below use (select xs + identifier m + tls xs),
-  // plus a flat estimate for url and description, which have no tier - both are untiered free
+  // Sized from the col-width-* tiers the columns below use (select checkbox + identifier m + tls
+  // xs), plus a flat estimate for url and description, which have no tier - both are untiered free
   // text left to the table's remaining space - so the panel is not narrower than the real table.
-  @include table.page-table-state-size(calc(#{table.table-width(xs, m, xs)} + 2 * 240px));
+  @include table.page-table-state-size(calc(#{table.table-width(checkbox, m, xs)} + 2 * 240px));
 }
 
 .actions-container {

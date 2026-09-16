@@ -7,10 +7,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  // Sized from the same col-width-* tiers the columns below use (select xs + serial m + type s +
-  // states m + description xl + user_name s + user_realm s + realms s), so the empty/error state is
-  // as wide as the table it stands in for, not the unrelated 44rem default.
-  @include table.page-table-state-size(table.table-width(xs, m, s, m, xl, s, s, s));
+  // Sized from the same col-width-* tiers the columns below use (select checkbox + serial m + type s
+  // + states m + description xl + user_name s + user_realm s + realms s), so the empty/error state
+  // is as wide as the table it stands in for, not the unrelated 44rem default.
+  @include table.page-table-state-size(table.table-width(checkbox, m, s, m, xl, s, s, s));
 
   // In the self-service layout the scroll region takes its content height, not the full container.
   :host-context(body.self-service-layout) & .table-scroll-region {
