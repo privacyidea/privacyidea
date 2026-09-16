@@ -12,7 +12,7 @@
   @include styles.main-component-style;
   display: flex;
   flex-direction: column;
-  width: 100%;
+  width: calc(4 * 16px + var(--card-width-m) + var(--card-width-l)  + var(--card-width-s));
   box-sizing: border-box;
 
   :host-context(body.self-service-layout) & {
@@ -92,6 +92,7 @@
 
 .details-card--description {
   @include table.details-description-card;
+  @include table.card-width(m);
 
   .value-edit {
     min-width: 80px;
@@ -101,13 +102,19 @@
 
 // Scoped under .details-grid so this beats the grid's `> *` flex rule.
 .details-grid > .details-info-area {
-  @include table.card-width(m);
+  @include table.card-width(s);
+}
+
+// The Status and Container cards: a pair of compact fact groups, sized like the token cards' own single-fact cards
+// (details-card--identity) rather than the wider description/table ones.
+.details-grid > .details-card--group {
+  @include table.card-width(s);
 }
 
 // Scoped under .details-grid so this beats the grid's `> *` flex rule (which,
 // after view-encapsulation attributes, is more specific than a lone class).
 .details-grid > .details-card--user {
-  @include table.card-width(m);
+  @include table.card-width(s);
 }
 
 // Add-token + token-table are a fixed-width pair kept together in one grid item,
