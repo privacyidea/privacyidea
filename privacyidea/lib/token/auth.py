@@ -653,7 +653,11 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
             for token_obj in challenge_response_token_list:
                 if not token_obj.is_outofband():
                     token_obj.inc_failcount()
-                _note_event(request_events, event_serials, AuthEventType.CHALLENGE_ANSWERED_FAIL, token_obj)
+                # A token that knows better classifies itself: a push challenge the user refused on the
+                # phone ends this request as that refusal, not as an answer that did not match - nothing
+                # was answered here, and the reason it carries says so too (see _record_reason).
+                _note_event(request_events, event_serials,
+                            _token_event(token_obj, AuthEventType.CHALLENGE_ANSWERED_FAIL), token_obj)
                 # Not fit for challenge is recorded above, where the response *did* match; anything left here is
                 # either a lapsed challenge or a response that did not match.
                 _record_reason(token_reasons, token_obj,
