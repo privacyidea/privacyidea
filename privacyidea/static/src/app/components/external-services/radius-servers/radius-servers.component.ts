@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -49,6 +50,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-radius-servers",
   standalone: true,
   imports: [
+    NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,

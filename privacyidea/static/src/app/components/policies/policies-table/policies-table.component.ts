@@ -95,9 +95,19 @@ export class PoliciesTableComponent {
     priority: { label: $localize`:@@policy.priority:Priority`, filterable: true, sortable: true, width: "xs" },
     name: { label: $localize`:@@common.name:Name`, filterable: true, sortable: true, width: "m" },
     scope: { label: $localize`:@@common.scope:Scope`, filterable: true, sortable: true, width: "s" },
-    description: { label: $localize`:@@common.description:Description`, filterable: true, sortable: true },
-    actions: { label: $localize`:@@common.actions:Actions`, filterable: true, sortable: false },
-    conditions: { label: $localize`:@@common.conditions:Conditions`, filterable: true, sortable: false },
+    description: {
+      label: $localize`:@@common.description:Description`,
+      filterable: true,
+      sortable: true,
+      width: undefined
+    },
+    actions: { label: $localize`:@@common.actions:Actions`, filterable: true, sortable: false, width: undefined },
+    conditions: {
+      label: $localize`:@@common.conditions:Conditions`,
+      filterable: true,
+      sortable: false,
+      width: undefined
+    },
     active: { label: $localize`:@@common.active:Active`, filterable: true, sortable: true, width: "xs" }
   } as const;
 

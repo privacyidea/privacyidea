@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -50,6 +51,7 @@ import { firstValueFrom, lastValueFrom } from "rxjs";
   selector: "app-periodic-task",
   standalone: true,
   imports: [
+    NgClass,
     MatTableModule,
     MatSortModule,
     MatIconModule,

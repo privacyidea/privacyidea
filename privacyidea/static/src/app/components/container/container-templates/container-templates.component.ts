@@ -134,7 +134,7 @@ export class ContainerTemplatesComponent {
       width: "xs"
     },
     default: { label: $localize`:@@common.default:Default`, filterable: true, sortable: true, width: "xs" },
-    tokens: { label: $localize`:@@common.tokens:Tokens`, filterable: true, sortable: false }
+    tokens: { label: $localize`:@@common.tokens:Tokens`, filterable: true, sortable: false, width: undefined }
   } as const;
 
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);

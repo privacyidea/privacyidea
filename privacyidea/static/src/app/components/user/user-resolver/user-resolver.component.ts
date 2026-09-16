@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { NgClass } from "@angular/common";
 import { Component, computed, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -53,6 +54,7 @@ const columnKeysMap = [
   selector: "app-user-resolver",
   standalone: true,
   imports: [
+    NgClass,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
