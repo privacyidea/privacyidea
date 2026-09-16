@@ -48,6 +48,14 @@
   }
 }
 
+// The pre-data state: the same box as the loaded page (via .details-container, shared above) so
+// the panel does not resize once the data arrives, just centering the spinner in it meanwhile.
+.details-container--loading {
+  align-items: center;
+  justify-content: center;
+  min-height: 15rem;
+}
+
 .container-actions-bar {
   position: sticky;
   top: 0;

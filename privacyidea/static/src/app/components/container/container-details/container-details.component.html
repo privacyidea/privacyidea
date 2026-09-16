@@ -16,12 +16,27 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  appScrollToTop
-  aria-label="Details"
-  class="details-container"
-  i18n-aria-label="@@common.details">
-  <div class="details-flex-layout flex-column">
+@if (showInitialLoading()) {
+  <!-- Shares the .details-container class so it renders at exactly the width the loaded page will
+    take, rather than a narrower box that jumps wider once the data arrives. -->
+  <div
+    aria-label="Details"
+    class="details-container details-container--loading"
+    i18n-aria-label="@@common.details"
+    role="status">
+    <mat-progress-spinner
+      [diameter]="40"
+      aria-label="Loading"
+      i18n-aria-label="@@common.loading"
+      mode="indeterminate" />
+  </div>
+} @else {
+  <div
+    appScrollToTop
+    aria-label="Details"
+    class="details-container"
+    i18n-aria-label="@@common.details">
+    <div class="details-flex-layout flex-column">
     <app-details-header
       [serial]="containerSerial()"
       entityLabel="Container"
@@ -156,4 +171,5 @@
       </app-details-card>
     </div>
   </div>
-</div>
+  </div>
+}
