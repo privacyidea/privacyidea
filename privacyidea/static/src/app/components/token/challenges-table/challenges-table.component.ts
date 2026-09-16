@@ -43,6 +43,7 @@ import {
 } from "@services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 
@@ -61,6 +62,7 @@ const columnKeysMap = [
   selector: "app-challenges-table",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginatorModule,
     MatFormFieldModule,

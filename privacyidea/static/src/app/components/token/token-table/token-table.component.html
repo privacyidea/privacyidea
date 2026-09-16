@@ -33,6 +33,7 @@
           [showClearButton]="tokenService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="tokenResource.isLoading()"
             [appFilterAutocomplete]="filterKeywords"
             (input)="onFilterInput($event)"
             (keyup.enter)="tokenService.applyFilterInput($event)"

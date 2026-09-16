@@ -30,6 +30,7 @@
           [showClearButton]="auditService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="auditService.auditResource.isLoading()"
             [appFilterAutocomplete]="auditService.apiFilterKeys"
             (input)="auditService.handleFilterInput($event)"
             [value]="auditService.filterDraft().value"

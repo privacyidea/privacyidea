@@ -30,6 +30,7 @@
           [showClearButton]="authenticationLogService.authenticationLogFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="authenticationLogService.authenticationLogResource.isLoading()"
             (input)="authenticationLogService.handleFilterInput($event)"
             [value]="authenticationLogService.authenticationLogFilter().value"
             aria-label="Filter Input"

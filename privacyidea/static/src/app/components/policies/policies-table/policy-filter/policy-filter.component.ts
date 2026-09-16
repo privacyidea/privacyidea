@@ -32,6 +32,7 @@ import {
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { PolicyDetail } from "@services/policies/policies.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
@@ -39,7 +40,7 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
 @Component({
   selector: "app-policy-filter",
   standalone: true,
-  imports: [FilterAutocompleteDirective, MatInputModule, ClearableInputComponent],
+  imports: [FilterAutocompleteDirective, RefocusAfterReloadDirective, MatInputModule, ClearableInputComponent],
   templateUrl: "./policy-filter.component.html",
   styleUrl: "./policy-filter.component.scss"
 })
@@ -54,6 +55,7 @@ export class PolicyFilterComponent implements AfterViewInit {
   }
 
   unfilteredPolicies = input<PolicyDetail[]>([]);
+  readonly isLoading = input<boolean>(false);
   readonly filterHint = inlineFilterHint();
 
   readonly filterChange = output<FilterValueGeneric<PolicyDetail>>();

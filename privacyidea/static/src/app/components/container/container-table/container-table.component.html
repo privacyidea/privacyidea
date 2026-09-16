@@ -32,6 +32,7 @@
           [showClearButton]="containerService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="containerResource.isLoading()"
             [appFilterAutocomplete]="filterKeywords"
             (input)="onFilterInput($event)"
             (keyup.enter)="containerService.applyFilterInput($event)"

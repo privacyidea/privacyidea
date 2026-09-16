@@ -37,6 +37,7 @@ import { AuditData, AuditService, AuditServiceInterface } from "@services/audit/
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { NgClass } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
@@ -125,6 +126,7 @@ const columnKeysMap: { key: string; label: string; width?: "xs" | "s" | "m" | "l
 @Component({
   selector: "app-audit",
   imports: [
+    RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatCardModule,
     MatCell,

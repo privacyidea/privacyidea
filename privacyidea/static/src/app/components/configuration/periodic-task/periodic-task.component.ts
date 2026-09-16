@@ -46,11 +46,13 @@ import {
 } from "@services/periodic-task/periodic-task.service";
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { firstValueFrom, lastValueFrom } from "rxjs";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 @Component({
   selector: "app-periodic-task",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatSortModule,

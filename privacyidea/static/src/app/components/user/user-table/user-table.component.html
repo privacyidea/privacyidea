@@ -55,6 +55,7 @@
             [showClearButton]="filterHTMLInputElement.value.length > 0">
             <input
               #filterHTMLInputElement
+              [appRefocusAfterReload]="userService.usersResource.isLoading()"
               [appFilterAutocomplete]="userService.apiFilterKeys"
               (input)="userService.handleFilterInput($event)"
               [value]="userService.filterDraft().filterString"

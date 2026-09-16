@@ -28,6 +28,7 @@
         #filterComponent
         (filterChange)="onFilterUpdate($event)"
         [initialFilter]="filter()"
+        [isLoading]="policyService.allPoliciesResource.isLoading()"
         [unfilteredPolicies]="policyService.allPolicies()"
         class="policies-table-filter"></app-policy-filter>
     }

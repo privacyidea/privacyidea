@@ -36,6 +36,7 @@ import {
 } from "@angular/material/table";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -83,6 +84,7 @@ interface FlattenedClientRow {
   templateUrl: "./clients.component.html",
   styleUrls: ["./clients.component.scss"],
   imports: [
+    RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTable,
     MatTableModule,

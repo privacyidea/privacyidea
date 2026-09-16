@@ -38,6 +38,7 @@ import {
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { NgClass } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
@@ -80,6 +81,7 @@ const columnsKeyMap = [
   selector: "app-container-table",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,
     MatFormFieldModule,

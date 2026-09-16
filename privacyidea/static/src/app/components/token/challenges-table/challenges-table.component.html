@@ -31,6 +31,7 @@
           [showClearButton]="challengesService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="challengesService.challengesResource.isLoading()"
             (input)="challengesService.handleFilterInput($event)"
             [value]="challengesService.filterDraft().filterString"
             i18n-placeholder="@@token.exampleQueryTransaction"

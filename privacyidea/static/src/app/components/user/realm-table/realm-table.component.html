@@ -18,6 +18,7 @@
             [showClearButton]="filterString().length > 0">
             <input
               #filterHTMLInputElement
+              [appRefocusAfterReload]="realmService.realmResource.isLoading()"
               (input)="onFilterInput(filterHTMLInputElement.value)"
               [value]="filterString()"
               aria-label="Filter Input"

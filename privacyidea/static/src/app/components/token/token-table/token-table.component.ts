@@ -40,6 +40,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { NgClass } from "@angular/common";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -83,6 +84,7 @@ const columnKeysMap = [
   selector: "app-token-table",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,
     MatFormFieldModule,

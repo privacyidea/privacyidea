@@ -62,11 +62,13 @@ import {
   ConditionalAccessDryRunOffDialogData,
   ConditionalAccessDryRunOffDialogResult
 } from "./conditional-access-dry-run-off-dialog/conditional-access-dry-run-off-dialog.component";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 @Component({
   selector: "app-conditional-access",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginator,
     MatSortModule,

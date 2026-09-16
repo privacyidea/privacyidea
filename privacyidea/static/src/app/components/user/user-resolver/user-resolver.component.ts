@@ -41,6 +41,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService } from "@services/notification/notification.service";
 import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so page-table-state-size's min-width (see table-width() in table.scss) can be sized from
@@ -54,6 +55,7 @@ const columnKeysMap = [
   selector: "app-user-resolver",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatPaginatorModule,

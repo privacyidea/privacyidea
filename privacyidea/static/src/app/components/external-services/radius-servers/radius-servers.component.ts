@@ -30,6 +30,7 @@ import {
   RadiusServerService,
   RadiusServerServiceInterface
 } from "@services/radius-server/radius-server.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -50,6 +51,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-radius-servers",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatPaginator,

@@ -39,11 +39,13 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 @Component({
   selector: "app-tokengroups",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatPaginator,

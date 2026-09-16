@@ -30,6 +30,7 @@ import {
   PrivacyideaServerService,
   PrivacyideaServerServiceInterface
 } from "@services/privacyidea-server/privacyidea-server.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -50,6 +51,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-privacyidea-servers",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
     MatPaginator,

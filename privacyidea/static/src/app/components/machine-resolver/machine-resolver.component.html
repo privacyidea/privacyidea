@@ -34,6 +34,7 @@
             [showClearButton]="filterString().length > 0">
             <input
               #filterHTMLInputElement
+              [appRefocusAfterReload]="machineResolverService.machineResolverResource.isLoading()"
               (input)="onFilterInput(filterHTMLInputElement.value)"
               [value]="filterString()"
               aria-label="Filter Input"

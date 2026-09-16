@@ -84,6 +84,7 @@ import { NodeInfo, SystemService, SystemServiceInterface } from "@services/syste
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { concat, last, lastValueFrom, take } from "rxjs";
 import { RealmDeleteAttributesDialogComponent } from "./realm-delete-attributes-dialog/realm-delete-attributes-dialog.component";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 interface ResolverWithPriority {
   name: string;
@@ -109,6 +110,7 @@ const columnKeysMap = [
   selector: "app-realm-table",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     ClearableInputComponent,
     CopyableComponent,
     MatButtonModule,

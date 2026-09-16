@@ -50,10 +50,12 @@ import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { of } from "rxjs";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 @Component({
   selector: "app-event",
   imports: [
+    RefocusAfterReloadDirective,
     CommonModule,
     MatTableModule,
     MatButtonModule,

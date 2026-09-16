@@ -46,6 +46,7 @@
             [showClearButton]="machineService.filterDraft().isNotEmpty">
             <input
               #filterInput
+              [appRefocusAfterReload]="machineService.tokenApplicationResource.isLoading()"
               (input)="machineService.handleFilterInput($event)"
               [value]="machineService.filterDraft().filterString"
               aria-label="Filter Input"

@@ -25,6 +25,7 @@
       <app-container-templates-filter
         class="container-templates-table-filter"
         [initialFilter]="filter()"
+        [isLoading]="containerTemplateService.templatesResource.isLoading()"
         (filterChange)="onFilterChange($event)">
       </app-container-templates-filter>
       <mat-paginator
