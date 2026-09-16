@@ -341,13 +341,13 @@ class SSHTokenTestCase(MyTestCase):
 
         # Removing the public key must not store a checksum over the empty key
         # data, otherwise a key-less token would pass its own integrity check.
-        token.delete_tokeninfo("ssh_key")
+        token.remove_tokeninfo("ssh_key")
         self.assertEqual(checksum, token.token.get_otpkey().getKey())
         self.assertRaises(TokenAdminError, token.get_sshkey)
 
         # An import without any SSH key data gets no checksum either
         imported = init_token({"type": "sshkey", "serial": "SSHEMPTY2", "sshkey": self.sshkey})
-        imported.delete_tokeninfo()
+        imported.remove_tokeninfo()
         imported.token.key_enc = None
         imported.token.key_iv = None
         imported.token.save()
@@ -364,7 +364,7 @@ class SSHTokenTestCase(MyTestCase):
         # Callers such as the generic settokeninfo endpoint do not pass a value
         # type. The token class enforces it, so the key stays encrypted at rest
         # and is still read back in clear text.
-        token.add_tokeninfo("ssh_key", key_part)
+        token.write_tokeninfo("ssh_key", key_part)
         info = token.get_tokeninfo()
         self.assertEqual("password", info.get("ssh_key.type"))
         self.assertNotEqual(key_part, info.get("ssh_key"))

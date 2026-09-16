@@ -29,7 +29,7 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
                                            check_client_container_disabled_action, hide_container_info)
-from privacyidea.api.lib.utils import map_error_to_code, send_error, send_result
+from privacyidea.api.lib.utils import map_error_to_code, send_error, send_result, to_list_param
 from privacyidea.lib.params import get_optional, get_optional_int, get_required, get_required_one_of
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
@@ -90,18 +90,6 @@ The endpoints fall in three audiences:
   cryptographic signature over a server-issued challenge that the
   device generated during registration.
 """
-
-
-def _split_csv_or_list(value):
-    """
-    Accept either a JSON list or a comma-separated string and return a
-    list of stripped string entries. Used by endpoints that historically
-    only accepted the comma-separated form so that JSON callers can pass
-    a native list without a 500.
-    """
-    if isinstance(value, list):
-        return [str(item).strip() for item in value]
-    return [item.strip() for item in str(value).split(",")]
 
 
 @container_blueprint.route('/', methods=['GET'])
@@ -188,7 +176,7 @@ def list_containers():
     ctype_exact = None
     ctype_list = get_optional(param, "type_list")
     if ctype_list:
-        ctype_exact = _split_csv_or_list(ctype_list)
+        ctype_exact = to_list_param(ctype_list)
     token_serial = get_optional(param, "token_serial")
     template = get_optional(param, "template")
     realm = get_optional(param, "container_realm")
@@ -665,7 +653,7 @@ def set_states(container_serial):
         set, in ``result.value``.
     """
     states_value = get_required(request.all_data, "states", allow_empty=False)
-    states = _split_csv_or_list(states_value)
+    states = to_list_param(states_value)
     res = set_container_states(container_serial, states)
 
     # Audit log
@@ -729,14 +717,15 @@ def set_realms(container_serial):
     :jsonparam realms: comma-separated list of realm names
         (whitespace tolerated; pass an empty string to remove all
         realms).
-    :status 200: dict mapping each attached realm to ``True`` (including
-        realms kept although not requested) and each requested realm that
-        could not be attached to ``False``, plus ``deleted`` (whether any
-        realm was removed), in ``result.value``.
+    :status 200: ``{"realms": {<realm>: <bool>, ...}, "deleted": <bool>}`` in
+        ``result.value``. In ``realms``, each attached realm maps to ``True``
+        (including realms kept although not requested) and each requested realm
+        that could not be attached maps to ``False``. ``deleted`` states whether
+        any realm was removed.
     """
     # Get parameters
     container_realms = get_required(request.all_data, "realms", allow_empty=True)
-    realm_list = _split_csv_or_list(container_realms)
+    realm_list = to_list_param(container_realms)
     allowed_realms = getattr(request, "pi_allowed_realms", None)
 
     # Set realms
@@ -759,13 +748,13 @@ def set_realms(container_serial):
                         "success": result.success,
                         "info": info})
 
-    # Response: every attached realm maps to True (including realms that could not be removed and stayed
-    # although not requested), every requested realm that could not be attached maps to False, plus
-    # whether anything was removed. The full breakdown is in the audit info.
-    response = {realm: True for realm in result.attached}
-    response.update({realm: False for realm in result.not_added})
-    response["deleted"] = bool(result.removed)
-    return send_result(response)
+    # Response: the per-realm status lives in its own dictionary so that no realm name can collide with
+    # a status key - a realm may legitimately be called "deleted". Every attached realm maps to True
+    # (including realms that could not be removed and stayed although not requested), every requested
+    # realm that could not be attached maps to False. The full breakdown is in the audit info.
+    realm_status = {realm: True for realm in result.attached}
+    realm_status.update({realm: False for realm in result.not_added})
+    return send_result({"realms": realm_status, "deleted": bool(result.removed)})
 
 
 @container_blueprint.route('<string:container_serial>/info/<key>', methods=['POST'])

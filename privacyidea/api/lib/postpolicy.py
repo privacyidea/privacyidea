@@ -53,19 +53,22 @@ import re
 import traceback
 from urllib.parse import quote
 
-from flask import g, current_app, make_response, Request
+from flask import g, current_app, Request
 from flask_babel import _, lazy_gettext
 
-from privacyidea.api.lib.utils import get_all_params, hardening_action_active
+from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                          build_reason_detail)
+from privacyidea.lib.conditional_access.request_context import get_ca_context, claimed_ca_message
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node)
-from privacyidea.lib.crypto import Sign
+from privacyidea.lib.crypto import get_sign_object
 from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
-                                    SCOPE, AUTOASSIGNVALUE, AUTHORIZED, Match)
+                                    SCOPE, AUTOASSIGNVALUE, AUTHORIZED, SESSION_PERSISTENCE, Match)
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            check_subscription,
@@ -93,6 +96,7 @@ DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_CONTAINER_TYPE = "generic"
 DEFAULT_TIMEOUT_ACTION = "lockscreen"
+DEFAULT_SESSION_PERSISTENCE = SESSION_PERSISTENCE.TAB
 DEFAULT_POLICY_TEMPLATE_URL = "/static/policy-templates/"
 BODY_TEMPLATE = lazy_gettext("""
 <--- Please describe your Problem in detail --->
@@ -203,17 +207,23 @@ def sign_response(request, response):
     # Disable the costly checking of private RSA keys when loading them.
     check_private_key = not current_app.config.get(ConfigKey.RESPONSE_NO_PRIVATE_KEY_CHECK, False)
     try:
-        with open(private_key_file, 'rb') as file:
-            private_key = file.read()
-        sign_object = Sign(private_key, public_key=None, check_private_key=check_private_key)
+        sign_object = get_sign_object(private_key_file, check_private_key=check_private_key)
     except (OSError, ValueError, TypeError) as e:
         log.info('Could not load private key from '
                  f'file {private_key_file!s}: {e!r}!')
         log.debug(traceback.format_exc())
         return response
 
-    # Save the request data
-    g.request_data = get_all_params(request)
+    # Save the request data. This runs in the after-request path, so it must
+    # never raise: a malformed request body (e.g. invalid JSON) makes
+    # get_all_params() raise a BadRequest, which would otherwise abort response
+    # finalization. We only need the request data to echo back the nonce, so
+    # fall back to no params (and thus no nonce) instead.
+    try:
+        g.request_data = get_all_params(request)
+    except Exception as exx:
+        log.debug(f"Could not read request params while signing the response: {exx!s}")
+        g.request_data = {}
     request.all_data = copy.deepcopy(g.request_data)
     # response can be either a Response object or a Tuple (Response, ErrorID)
     response_value = 200
@@ -540,10 +550,23 @@ def no_detail_on_fail(request, response):
     the details will be stripped if
     the authentication request failed.
 
+    A conditional-access message is the one thing that survives, exactly as it survives
+    :func:`hide_specific_error_message`: this action strips what privacyIDEA volunteers about the attempt, whereas
+    that message is something an admin either wrote on a stage or turned on by policy. Without this a lock would
+    say nothing on the very requests it refuses.
+
+    Read from the claim (:func:`~privacyidea.lib.conditional_access.request_context.claimed_ca_message`) rather than
+    from the response body: the gate builds its rejection inside the decorator stack, so the claim is what carries
+    the configured wording across this strip.
+
     :param request:
     :param response:
     :return:
     """
+    # Guarded like hide_specific_error_message, so this is safe wherever it sits: construct_radius_response
+    # replaces the body with a non-JSON one, and Response.json is then None rather than a dict.
+    if not response or not response.json:
+        return response
     content = response.json
 
     # get the serials from a policy definition
@@ -555,7 +578,11 @@ def no_detail_on_fail(request, response):
         # TODO: this strips away possible transactions ids during a
         #  challenge-response authentication. We should consider the
         #  result->authentication entry and only strip away possible user information
-        del content["detail"]
+        ca_message = claimed_ca_message()
+        if ca_message:
+            content["detail"] = {"message": ca_message}
+        else:
+            del content["detail"]
         response.set_data(json.dumps(content))
         g.audit_object.add_policy({p.get("name") for p in detail_policy})
 
@@ -604,7 +631,7 @@ def save_pin_change(request, response, serial=None):
             pin = request.all_data.get("pin")
             # The user sets a pin or enrolls a token. -> delete the pin_change
             if otppin or pin:
-                token.delete_tokeninfo("next_pin_change")
+                token.remove_tokeninfo("next_pin_change")
 
                 # If there is a change_pin_every policy, we need to set the PIN anew.
                 policy = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
@@ -667,6 +694,9 @@ def get_webui_settings(request, response):
                                         user=username, realm=realm).action_values(unique=True)
         timeout_action_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TIMEOUT_ACTION, user_object=user,
                                            user=username, realm=realm).action_values(unique=True)
+        session_persistence_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SESSION_PERSISTENCE,
+                                                user_object=user, user=username,
+                                                realm=realm).action_values(unique=True)
         audit_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.AUDITPAGESIZE, user_object=user,
                                             user=username, realm=realm).action_values(unique=True)
         token_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENPAGESIZE, user_object=user,
@@ -788,6 +818,13 @@ def get_webui_settings(request, response):
         if len(timeout_action_pol) == 1:
             timeout_action = list(timeout_action_pol)[0]
 
+        # The WebUI stores its bearer token in the browser storage this value selects, so it is
+        # the deployment's decision, not the user's: a session that outlives the tab it was
+        # opened in leaves the token on disk until the JWT expires.
+        session_persistence = DEFAULT_SESSION_PERSISTENCE
+        if len(session_persistence_pol) == 1:
+            session_persistence = list(session_persistence_pol)[0]
+
         policy_template_url_pol = Match.action_only(g, scope=SCOPE.WEBUI,
                                                     action=PolicyAction.POLICYTEMPLATEURL).action_values(unique=True)
         policy_template_url = DEFAULT_POLICY_TEMPLATE_URL
@@ -813,6 +850,7 @@ def get_webui_settings(request, response):
         content["result"]["value"]["dialog_no_token"] = dialog_no_token
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
+        content["result"]["value"]["session_persistence"] = session_persistence
         content["result"]["value"]["token_rollover"] = token_rollover
         content["result"]["value"]["hide_welcome"] = hide_welcome
         content["result"]["value"]["hide_buttons"] = hide_buttons
@@ -1024,32 +1062,6 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
     return content
 
 
-def hide_specific_error_message(request, response):
-    """
-    If `hide_specific_error_message` policy is enabled and response contains a rejected authentication,
-    overwrite the `detail` object to contain a generic message and the threadid.
-    # TODO this does not solve the problem that we do not consistently return 401 for failed authentications.
-    """
-    if not response or not response.json:
-        return response
-
-    result = response.json.get("result")
-    if not result.get("value") and result.get("authentication") == AUTH_RESPONSE.REJECT:
-        hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
-                                  user_object=request.User if hasattr(request, 'User') else None).any()
-        if hide_message:
-            content = response.json
-            threadid = content.get("detail", {}).get("threadid")
-            detail = {"message": str(_("Authentication failed."))}
-            if threadid:
-                detail["threadid"] = threadid
-            # Overwrite the whole detail object so that it always has the same content
-            content["detail"] = detail
-            response.set_data(json.dumps(content))
-
-    return response
-
-
 def multichallenge_enroll_via_validate(request, response):
     """
     This is a post decorator to allow enrolling tokens via /validate/check.
@@ -1167,36 +1179,24 @@ def multichallenge_enroll_via_validate(request, response):
             challenge.save()
         content.get("detail", {})["enroll_via_multichallenge"] = True
         content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
+
+        # Reclassifies the staged authentication-log event, or creates one if none exists yet
+        enrolled_serial = content.get("detail", {}).get("serial")
+        context = get_ca_context()
+        if context.amendable is not None:
+            # Pass only what this policy determined, so an absent serial does not clear the logged one.
+            corrections = {}
+            if enrolled_serial is not None:
+                corrections["serial"] = enrolled_serial
+            if transaction_id:
+                corrections["transaction_id"] = transaction_id
+            context.reclassify(AuthEventType.ENROLLMENT_TRIGGERED, **corrections)
+        else:
+            log_authentication(AuthEventType.ENROLLMENT_TRIGGERED, request, user=user,
+                               serial=enrolled_serial, transaction_id=transaction_id)
     response.set_data(json.dumps(content))
 
     return response
-
-
-def construct_radius_response(request, response):
-    """
-    This decorator implements the /validate/radiuscheck endpoint.
-    In case this URL was requested, a successful authentication
-    results in an empty response with a HTTP 204 status code.
-    An unsuccessful authentication results in an empty response
-    with a HTTP 400 status code.
-
-    This needs to be the last decorator, since the JSON response is then lost.
-
-    :return:
-    """
-    if request.url_rule.rule == '/validate/radiuscheck':
-        return_code = 400  # generic 400 error by default
-        if response.json['result']['status']:
-            if response.json['result']['value']:
-                # user was successfully authenticated
-                return_code = 204
-        # send empty body
-        resp = make_response('', return_code)
-        # tell other policies there is no JSON content
-        resp.mimetype = 'text/plain'
-        return resp
-    else:
-        return response
 
 
 def mangle_challenge_response(request, response):
@@ -1266,6 +1266,26 @@ def is_authorized(request, response):
 
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
+            context = get_ca_context()
+            # Nothing to classify when conditional access already turned the request away before any token logic ran:
+            # its rejection row already records why, and a NOT_AUTHORIZED row here would bury that reason and hand the
+            # conditional-access counters an attempt the lock itself produced.
+            if not context.rejected_by_conditional_access:
+                # Name the policy that denied it: with several authorization policies in play, "which rule do I
+                # have to change" is the whole question the log has to answer.
+                reason_detail = build_reason_detail(policies=next(iter(authorized_pol.values()), None))
+                if context.amendable is not None:
+                    # Correcting the staged event. The detail is merged, so the per-serial reasons the token layer
+                    # recorded survive alongside the policy that overrode them.
+                    # The policy applies whatever the tokens looked like, so it *replaces* the token layer's
+                    # reasons rather than joining them: it is the one thing to act on now.
+                    context.reclassify(AuthEventType.NOT_AUTHORIZED,
+                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
+                                       reason_detail=reason_detail)
+                else:
+                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User,
+                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
+                                       reason_detail=reason_detail)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response

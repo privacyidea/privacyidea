@@ -48,6 +48,7 @@ class TanTokenClass(PaperTokenClass):
     OTP values. In contrast to the paper token, the OTP values of the TAN token
     can be used randomly.
     """
+    owned_tokeninfo_prefixes = frozenset({"tan."})
 
     @log_with(log)
     def __init__(self, db_token):
@@ -151,7 +152,7 @@ class TanTokenClass(PaperTokenClass):
             salt = geturandom(SALT_LENGTH, hex=True)
             # Now we add all TANs to the tokeninfo of this token.
             hashed_tan = hash(tanvalue, salt)
-            self.add_tokeninfo(f"tan.tan{tankey!s}",
+            self.write_tokeninfo(f"tan.tan{tankey!s}",
                                f"{salt}:{hashed_tan}")
 
     @check_token_otp_length
@@ -176,7 +177,7 @@ class TanTokenClass(PaperTokenClass):
             if tankey.startswith("tan.tan"):
                 salt, tan = tanvalue.split(":")
                 if tan == hash(anOtpVal, salt):
-                    self.delete_tokeninfo(tankey)
+                    self.remove_tokeninfo(tankey)
                     return 1
 
         return res

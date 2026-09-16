@@ -18,10 +18,12 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import atexit
+import hashlib
 import os
 import shutil
 import socket
 import tempfile
+from collections.abc import Iterator
 
 # Per-worker DB isolation for pytest-xdist. Must run before any `privacyidea`
 # import, because TestingConfig.SQLALCHEMY_DATABASE_URI is evaluated at class
@@ -127,6 +129,9 @@ def _force_read_committed_on_mysql(dbapi_connection, connection_record):
             cursor.close()
 
 
+# Enable rich assert diffs for the plain asserts in the auth-log helper module.
+pytest.register_assert_rewrite("tests.authlog_utils")
+
 from privacyidea.lib.caconnector import save_caconnector
 
 
@@ -228,6 +233,36 @@ def _flush_redis_between_tests():
     _flush_worker_redis()
 
 
+_push_server_keypairs: dict = {}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _reuse_push_server_keypair() -> Iterator[None]:
+    """Generate the push token's server keypair once per worker instead of per enrollment.
+
+    Finalizing a push enrollment creates a fresh 4096-bit RSA keypair, which costs most of a
+    second. The suite enrolls push tokens roughly a hundred times and none of those tests are
+    about key generation - they check that the key the server reports is the key it stored, and
+    two of them supply a keypair of their own instead. Handing out the same keypair each time is
+    therefore invisible to them.
+
+    Only the name inside ``pushtoken`` is replaced, so ``generate_keypair`` itself stays real for
+    the tests in ``test_lib_crypto.py`` that are about generating keys.
+    """
+    from privacyidea.lib.tokens import pushtoken
+
+    original_generate_keypair = pushtoken.generate_keypair
+
+    def cached_generate_keypair(rsa_keysize: int = 2048) -> tuple[str, str]:
+        if rsa_keysize not in _push_server_keypairs:
+            _push_server_keypairs[rsa_keysize] = original_generate_keypair(rsa_keysize)
+        return _push_server_keypairs[rsa_keysize]
+
+    pushtoken.generate_keypair = cached_generate_keypair
+    yield
+    pushtoken.generate_keypair = original_generate_keypair
+
+
 @pytest.fixture(autouse=True)
 def _clear_ldap_resolver_cache():
     """Give every test a clean LDAP resolver cache.
@@ -292,13 +327,64 @@ def _clear_subscription_user_count():
 CAKEY = "cakey.pem"
 CACERT = "cacert.pem"
 OPENSSLCNF = "openssl.cnf"
-WORKINGDIR = "tests/testdata/ca"
+WORKINGDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "testdata", "ca")
+
+
+def prepare_ca_directory(target_directory) -> str:
+    """
+    Copy the CA of ``WORKINGDIR`` to ``target_directory`` and initialize its CA database.
+
+    ``index.txt`` and ``serial`` form the openssl CA database and are not part of the
+    stored CA: openssl appends to them whenever a certificate is signed. They are
+    created here with the values a freshly created CA starts out with, so that every
+    copy begins with an empty database.
+
+    :param target_directory: The directory to copy the CA to. It may already exist.
+    :return: The path of the prepared directory
+    """
+    target_directory = str(target_directory)
+    shutil.copytree(WORKINGDIR, target_directory, dirs_exist_ok=True)
+    with open(os.path.join(target_directory, "index.txt"), "w") as index_file:
+        index_file.write("")
+    with open(os.path.join(target_directory, "serial"), "w") as serial_file:
+        serial_file.write("1000")
+    return target_directory
+
+
+def _hash_ca_directory() -> dict:
+    """Map the name of each file in ``WORKINGDIR`` to a hash of its content."""
+    file_hashes = {}
+    for entry in os.scandir(WORKINGDIR):
+        if entry.is_file():
+            with open(entry.path, "rb") as ca_file:
+                file_hashes[entry.name] = hashlib.sha256(ca_file.read()).hexdigest()
+    return file_hashes
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ca_stays_untouched() -> Iterator[None]:
+    """
+    Fail the test session if a test wrote into the CA of ``WORKINGDIR``.
+
+    That directory holds a usable openssl CA. Signing a certificate against it appends
+    to its database, increments its serial number and drops the new certificate next to
+    the configuration, so a CA connector must be pointed at a ``prepare_ca_directory()``
+    copy rather than at the CA itself.
+    """
+    before = _hash_ca_directory()
+    yield
+    after = _hash_ca_directory()
+    if before != after:
+        written = set(before) ^ set(after)
+        written.update(name for name in before.keys() & after.keys() if before[name] != after[name])
+        pytest.fail(f"The test run wrote to the CA in {WORKINGDIR}: {', '.join(sorted(written))}. "
+                    f"Point the CA connector at a prepare_ca_directory() copy instead.")
 
 
 @pytest.fixture(scope="function")
 def setup_local_ca(tmp_path):
     # TODO: we should probably yield the directory to properly clean it up
-    shutil.copytree(WORKINGDIR, tmp_path, dirs_exist_ok=True)
+    prepare_ca_directory(tmp_path)
     save_caconnector(
         {
             "cakey": CAKEY,

@@ -162,6 +162,14 @@ class SmsTokenClass(HotpTokenClass):
     mode = [AuthenticationMode.CHALLENGE]
     DYNAMIC_PHONE_KEY = "dynamic_phone"
 
+    owned_tokeninfo_keys = frozenset({"phone", DYNAMIC_PHONE_KEY})
+    # update() takes every "sms." parameter of the enrollment into the token info, so the whole namespace
+    # belongs to the token class
+    owned_tokeninfo_prefixes = frozenset({"sms."})
+    # Where the OTP is sent and which gateway sends it are set at enrollment and change afterwards, e.g. when
+    # the user gets a new phone number
+    settable_tokeninfo_keys = frozenset({"phone", DYNAMIC_PHONE_KEY, "sms.identifier"})
+
     def __init__(self, db_token):
         HotpTokenClass.__init__(self, db_token)
         self.set_type("sms")
@@ -275,13 +283,13 @@ class SmsTokenClass(HotpTokenClass):
         verify = get_optional(param, "verify")
         if not verify:
             if get_optional(param, self.DYNAMIC_PHONE_KEY):
-                self.add_tokeninfo(self.DYNAMIC_PHONE_KEY, True)
-                self.delete_tokeninfo("phone")
+                self.write_tokeninfo(self.DYNAMIC_PHONE_KEY, True)
+                self.remove_tokeninfo("phone")
             else:
                 # specific - phone
                 phone = get_required(param, "phone")
-                self.add_tokeninfo("phone", phone)
-                self.delete_tokeninfo(self.DYNAMIC_PHONE_KEY)
+                self.write_tokeninfo("phone", phone)
+                self.remove_tokeninfo(self.DYNAMIC_PHONE_KEY)
 
             # in case of the sms token, only the server must know the otpkey
             # thus if none is provided, we let create one (in the TokenClass)
@@ -629,7 +637,7 @@ class SmsTokenClass(HotpTokenClass):
         :param options:
         :return:
         """
-        self.delete_tokeninfo(self.DYNAMIC_PHONE_KEY)
-        self.add_tokeninfo("phone", passw)
+        self.remove_tokeninfo(self.DYNAMIC_PHONE_KEY)
+        self.write_tokeninfo("phone", passw)
         # Dynamically we remember that we need to do another challenge
         self.currently_in_challenge = True

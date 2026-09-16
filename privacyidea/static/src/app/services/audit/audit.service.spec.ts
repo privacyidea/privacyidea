@@ -1,0 +1,189 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { HttpHeaders, provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import {
+  MockContentService,
+  MockDialogService,
+  MockLocalService,
+  MockNotificationService,
+  MockPiResponse
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+
+environment.proxyUrl = "/api";
+
+describe("AuditService (signals & helpers)", () => {
+  let auditService: AuditService;
+  let content: MockContentService;
+  let authService: MockAuthService;
+  let dialogService: MockDialogService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: DialogService, useClass: MockDialogService },
+        AuditService,
+        MockLocalService
+      ]
+    });
+    auditService = TestBed.inject(AuditService);
+    content = TestBed.inject(ContentService) as unknown as MockContentService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  it("filterParams ignores unknown keys and wildcard‑wraps allowed ones", () => {
+    expect(auditService.filterParams()).toEqual({});
+
+    auditService.activeFilter.set(new FilterValue({ value: "foo: bar action: LOGIN user: alice" }));
+    expect(auditService.filterParams()).toEqual({
+      action: "*LOGIN*",
+      user: "*alice*"
+    });
+  });
+
+  it("auditResource builds a request when route or tab is audit", async () => {
+    jest.clearAllMocks();
+    const getHeadersMock = jest.spyOn(authService, "getHeaders");
+
+    content.routeUrl.set("/logs/audit");
+    auditService.auditResource.reload();
+    expect(getHeadersMock).toHaveBeenCalledTimes(1);
+
+    TestBed.tick();
+    const req = httpMock.expectOne((req) => req.url.includes("/audit"));
+    const response = MockPiResponse.fromValue({
+      auditcolumns: [],
+      auditdata: [{ action: "GET /token" }, { action: "GET /audit" }],
+      count: 2,
+      current: 1,
+      next: 1,
+      prev: 1
+    });
+    req.flush(response);
+    await Promise.resolve();
+    TestBed.tick();
+  });
+
+  it("auditResource becomes active and derived params update", () => {
+    content.routeUrl.set("/logs/audit");
+    auditService.activeFilter.set(new FilterValue({ value: "serial: otp123" }));
+    auditService.auditResource.reload();
+
+    expect(auditService.auditResource.value()).toBeUndefined();
+
+    expect(auditService.filterParams()).toEqual({ serial: "*otp123*" });
+    expect(auditService.pageSize()).toBe(25);
+    expect(auditService.pageIndex()).toBe(1);
+  });
+
+  it("resets pageIndex to 1 when activeFilter change", () => {
+    auditService.pageIndex.set(3);
+    auditService.activeFilter.set(new FilterValue({ value: "user: bob success: true" }));
+
+    expect(auditService.pageIndex()).toBe(1);
+  });
+
+  it("should not include empty filter values in filterParams", () => {
+    auditService.activeFilter.set({
+      filterMap: new Map([
+        ["action", ""],
+        ["authentication", "ACCEPT"],
+        ["serial", "   "],
+        ["container_serial", "*"]
+      ])
+    } as unknown as FilterValue);
+
+    const params = auditService.filterParams();
+    expect(params).not.toHaveProperty("action");
+    expect(params).toHaveProperty("authentication", "*ACCEPT*");
+    expect(params).not.toHaveProperty("serial");
+    expect(params).not.toHaveProperty("container_serial");
+  });
+
+  it("downloadCSV triggers a GET request with correct params and headers after dialog confirmation", async () => {
+    const getHeadersMock = jest.spyOn(authService, "getHeaders").mockReturnValue(new HttpHeaders());
+    auditService.activeFilter.set(new FilterValue({ value: "action: LOGIN" }));
+
+    auditService.downloadCSV();
+
+    expect(dialogService.openDialog).toHaveBeenCalled();
+    const dialogRef = (dialogService.openDialog as jest.Mock).mock.results[0].value;
+    dialogRef.close(true);
+    await Promise.resolve();
+
+    const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
+    expect(req.request.method).toBe("GET");
+    expect(req.request.params.get("action")).toBe("*LOGIN*");
+    expect(getHeadersMock).toHaveBeenCalled();
+    req.flush("test data");
+  });
+
+  it("downloadCSV does not trigger a GET request if dialog is cancelled", () => {
+    auditService.downloadCSV();
+
+    expect(dialogService.openDialog).toHaveBeenCalled();
+    const dialogRef = (dialogService.openDialog as jest.Mock).mock.results[0].value;
+    dialogRef.close(false);
+
+    httpMock.expectNone((req) => req.url.endsWith("/audit/audit.csv"));
+    expect(auditService.isDownloading()).toBe(false);
+  });
+
+  it("should set isDownloading to true while downloading and false after completion", async () => {
+    auditService.downloadCSV();
+    const dialogRef = (dialogService.openDialog as jest.Mock).mock.results[0].value;
+    dialogRef.close(true);
+    await Promise.resolve();
+
+    expect(auditService.isDownloading()).toBe(true);
+    const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
+    req.flush("test data");
+    expect(auditService.isDownloading()).toBe(false);
+  });
+
+  it("should set isDownloading to false on error", async () => {
+    auditService.downloadCSV();
+    const dialogRef = (dialogService.openDialog as jest.Mock).mock.results[0].value;
+    dialogRef.close(true);
+    await Promise.resolve();
+
+    expect(auditService.isDownloading()).toBe(true);
+    const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
+    req.error(new ErrorEvent("error"));
+    expect(auditService.isDownloading()).toBe(false);
+  });
+});

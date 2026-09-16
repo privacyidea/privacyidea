@@ -1,0 +1,779 @@
+$td-max-width: 18rem;
+$scrollable-height: calc(var(--mat-sys-body-medium-line-height) * 3);
+$scrollable-margin-right: -16px;
+$scrollable-padding-right: 16px;
+$realm-margin-top: 17px;
+$realm-list-margin-top: 7px;
+
+// --surface-raised (the ancestor card background) is a depth-tinted gradient, not a flat color, so
+// no flat swatch can match it at every pixel once Depth is above "flat" - transparent is the only
+// value that stays seamless with the card at every depth level.
+$table-bg: transparent;
+$link-color: var(--mat-sys-primary);
+$paginator-bg: transparent;
+$highlight-padding: 2px 6px;
+$icon-font-size: 22px;
+$fix-width: 20rem;
+
+// Height of a Material form field's input row, i.e. the field without the hint line underneath.
+$field-input-height: 56px;
+// Size of the filter trigger sitting next to that input, on every table, and of the icon in it.
+$filter-trigger-size: 40px;
+$filter-trigger-icon-size: 24px;
+
+$table-max-width: 20rem;
+$gap-small: 8px;
+$margin-left-small: 10px;
+$padding-top-small: 8px;
+$description-width: 18rem;
+
+// Striped key/value Material table used inside the token and container detail
+// cards, so both render identical rows.
+@mixin details-key-value-table {
+  width: 100%;
+
+  td:nth-child(even),
+  th:nth-child(even) {
+    background: transparent;
+  }
+
+  tr.mat-mdc-row:nth-child(odd) td {
+    background: var(--mat-sys-surface-variant);
+  }
+}
+
+// Fixed 35% / 65% key/value column layout for the tables above.
+@mixin details-key-value-columns {
+  table-layout: fixed;
+
+  td:nth-child(1) {
+    width: 35%;
+  }
+
+  td:nth-child(2) {
+    width: 65%;
+  }
+}
+
+// Shared flex layout for the detail-card grids in token-details and
+// container-details: equal-ish columns ~28rem wide that wrap to fewer per row
+// as the width shrinks.
+@mixin details-cards-flex {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+
+  > * {
+    flex: 1 1 28rem;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}
+
+// Standardized description card (token-details + container-details): sized to
+// hold an input-width-xl (616px) field plus the inline edit buttons. The field
+// is a multi-line textarea, so longer text wraps to more rows instead of
+// widening the card.
+// Standardized detail-card width tiers (s/m/l), analogous to .input-width-*.
+// The card is fixed at its tier width — it neither grows nor shrinks with the
+// row/zoom.
+@mixin card-width($size) {
+  flex: 0 0 var(--card-width-#{$size});
+  min-width: 0;
+  max-width: var(--card-width-#{$size});
+}
+
+// Shared key/value layout for the token & container "Information" cards.
+@mixin details-info-grid {
+  .info-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, max-content) 1fr;
+    column-gap: 16px;
+    row-gap: 4px;
+    margin: 0 0 0 16px;
+    padding: 0;
+    // The left inset is part of the card's content box, so the grid takes the
+    // remaining width instead of the full one.
+    width: auto;
+
+    // Key uses the same font as everything else and is vertically centered.
+    .info-key {
+      align-self: center;
+      text-align: left;
+    }
+
+    .info-value {
+      margin: 0;
+      align-self: center;
+      overflow-wrap: anywhere;
+      text-align: left;
+      min-width: 0;
+
+      // Display value sits on a subtle fill, matching the description card text.
+      > span {
+        display: block;
+        padding: 8px 16px;
+        background: var(--mat-sys-surface-container);
+        border-radius: var(--border-radius);
+      }
+    }
+  }
+
+  .info-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .info-edit-field {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    // An entry the token maintains itself has no input, its value keeps the display look while editing so the
+    // row still reads as a value rather than as an empty field.
+    .info-value-readonly {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 8px 16px;
+      overflow-wrap: anywhere;
+      background: var(--mat-sys-surface-container);
+      border-radius: var(--border-radius);
+    }
+
+    button {
+      flex: 0 0 auto;
+    }
+  }
+
+  // The add row holds a key and a value field whose .input-width-* caps are
+  // wider than the card, so they shrink to the card instead of overflowing it.
+  .info-add-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+
+    mat-form-field {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+}
+
+@mixin details-description-card {
+  align-self: flex-start;
+  flex: 0 1 var(--card-width-l);
+  min-height: 160.5px;
+
+  // Long unbroken values (e.g. "WWWW…") must wrap, not overflow the card.
+  // Mirror the fill form-field's background and text padding so the displayed
+  // characters sit in the same position as when editing the input.
+  .description-text {
+    display: block;
+    overflow-wrap: anywhere;
+    padding: 20px 16px;
+    background: var(--mat-sys-surface-container);
+    border-radius: var(--border-radius);
+  }
+}
+
+// Sizes the standalone state panel (empty, denied, error) for a table that owns its
+// page: the panel claims the footprint the table would have had, so it reads as the
+// page content rather than as a small island at the top of an empty content area.
+// Tables embedded as one section of a details page deliberately do not opt in — there
+// the compact default keeps the section proportionate to its neighbours.
+// Opted into by tables that own their page: the state panel fills the footprint
+// the table would have had, and steps up one typescale/icon size with it. A
+// panel alone on a page and a panel sitting among a page's other sections are
+// the same component at two sizes, not two different components.
+@mixin page-table-state-size {
+  // The footprint is the page container's own box: main-component-style caps it at 100cq* against
+  // the content region and pads 16px per side, so the panel takes that box less the padding.
+  --table-state-min-height: calc(100cqh - 2 * 16px);
+  --table-state-min-width: min(44rem, calc(100cqw - 2 * 16px));
+  --table-state-heading-font: var(--mat-sys-title-large);
+  --table-state-icon-frame-size: 5.5rem;
+  --table-state-icon-size: 40px;
+}
+
+@mixin base-table-structure(
+  $table-class: ".table",
+  $filter-class: ".table-filter",
+  $scroll-container: ".table-scroll-container"
+) {
+  #{$table-class} {
+    border-collapse: collapse;
+    width: 100%;
+
+    td,
+    th {
+      border: 1px solid var(--mat-sys-outline-variant);
+    }
+
+    th.mat-sort-header {
+      padding-right: 5px;
+    }
+  }
+
+  #{$filter-class} {
+    max-width: var(--input-width-xxl);
+    min-width: 300px;
+    width: 100%;
+    flex: 7 1;
+
+    @media (max-width: 600px) {
+      min-width: 0;
+    }
+  }
+
+  #{$scroll-container} {
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    height: $scrollable-height;
+    margin-right: $scrollable-margin-right;
+    padding-right: $scrollable-padding-right;
+    display: flex;
+    flex-direction: column;
+
+    > * {
+      flex: 0 0 auto;
+    }
+
+    &::before,
+    &::after {
+      content: "";
+      flex: 1 0 auto;
+    }
+  }
+
+  .table-scroll-region {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+
+    // Flush with the top of the region: the cover each edge needs comes from the ::before below,
+    // which overhangs without moving the cell, so neither edge is uncovered to pay for the other.
+    .mat-mdc-header-cell {
+      top: 0 !important;
+    }
+
+    // Divider shown only when content is hidden in that direction
+    // (classes toggled by appScrollEdges).
+    &.scrolled-from-top {
+      border-top: 1px solid var(--mat-sys-outline-variant);
+    }
+
+    &.more-below {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+    }
+  }
+
+  .realm-list {
+    margin-top: $realm-list-margin-top;
+  }
+}
+
+table {
+  background-color: $table-bg;
+}
+
+.mdc-checkbox
+  .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not([aria-checked="mixed"])
+  ~ .mdc-checkbox__background {
+  border: 2px solid #999;
+}
+
+.mat-mdc-paginator-page-size.mat-mdc-paginator-page-size {
+  margin-right: 0;
+}
+
+.mat-mdc-paginator-page-size-label.mat-mdc-paginator-page-size-label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.mat-mdc-paginator-range-label.mat-mdc-paginator-range-label {
+  margin: 0 16px;
+  white-space: nowrap;
+}
+
+.mat-mdc-paginator-container.mat-mdc-paginator-container {
+  padding: 0 0 0 16px;
+  flex-wrap: nowrap !important;
+  --mat-paginator-container-size: 0px;
+}
+
+a {
+  text-decoration: none;
+  color: $link-color;
+  cursor: pointer;
+}
+
+// The table itself is transparent so it blends with the ancestor card's gradient (see $table-bg
+// above), but a sticky header cell scrolls over the rows beneath it and can't stay see-through.
+// The opaque fill lives on a ::before that overhangs the cell rather than on the cell itself: a
+// cell whose box rounds to a half-pixel leaves a sliver of the rows behind it uncovered, and the
+// overhang absorbs that. The cell's own background has to be cleared, matching Material's
+// ".mat-mdc-table .mat-mdc-header-cell { background: inherit; }" selector so this outranks it.
+.mat-mdc-table .mat-mdc-header-cell {
+  background: transparent !important;
+  // MDC clips header cells, which would cut the ::before overhang back to the cell box and bring
+  // the sliver straight back. Nothing in a header cell relies on being clipped: the label wraps.
+  overflow: visible !important;
+
+  &::before {
+    content: "";
+    position: absolute;
+    // Overhang the bottom edge only. The top needs none: a sliver can only appear there once the
+    // rows have scrolled, and that is exactly when .scrolled-from-top paints the region's
+    // border-top over that pixel - a scroll container's own border is never covered by the content
+    // it clips. Overhanging the top as well would hide that border.
+    inset: 0 0 -1px;
+    // --surface-raised is the ancestor card's depth-tinted gradient, so the header tracks the Depth
+    // setting instead of being pinned to one swatch.
+    background: var(--surface-raised);
+    // Behind the cell's own content, still inside the sticky cell's stacking context (Material
+    // gives it z-index 100), so it stays above the rows scrolling underneath.
+    z-index: -1;
+  }
+
+  // The fill above overhangs onto the row border below the header, so redraw that line here, on
+  // top of it. It doubles as the divider against the rows once they scroll under the header: a
+  // border-bottom is not painted on a position:sticky cell under border-collapse:collapse
+  // (Material tables), and a box-shadow would land under the fill rather than over it.
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--mat-sys-outline-variant);
+  }
+}
+
+// One extra class-level selector than the fallback above, so this wins the tie and keeps the
+// even/odd header stripe alternating instead of the fallback flattening every header cell to one
+// color.
+.mat-mdc-table .mat-mdc-header-cell:nth-child(even)::before {
+  background: var(--mat-sys-surface-variant);
+}
+
+td:nth-child(even) {
+  background: var(--mat-sys-surface-variant);
+}
+
+th:nth-child(even) {
+  background: var(--mat-sys-surface-variant);
+}
+
+.mat-mdc-form-field {
+  color: $link-color;
+}
+
+.filter-paginator-container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+
+  // The filter field is taller than its input: a hint line sits underneath it. Centring the row
+  // would centre on that too, so give the paginator the input's own height from the top of the row
+  // and centre it inside that - it then lines up on the middle of the input itself, whether or not
+  // a hint is showing. It also grows into the free space in the row, so its controls are kept
+  // against the right edge of that space rather than the left one flex would start them at.
+  > .mat-mdc-paginator {
+    align-self: flex-start;
+    height: $field-input-height;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  // The filter trigger is the same control on every table, whichever utility classes a given
+  // table's markup puts on it, so it is sized here rather than per table. It stays square - it is
+  // drawn as a circle, and matching the input's height instead would draw it as an ellipse - and
+  // is shifted onto the middle of the input row: a translate percentage resolves against the
+  // element's own height, so the offset holds whatever the size above is.
+  > button {
+    align-self: flex-start;
+    height: $filter-trigger-size;
+    width: $filter-trigger-size;
+    // Material centres the icon on padding rather than on alignment, so this has to keep pace with
+    // the size above or the icon sits against the left edge.
+    padding: calc((#{$filter-trigger-size} - #{$filter-trigger-icon-size}) / 2);
+    // .filter-button offsets itself for the compact copies that sit inline in a header cell.
+    top: auto;
+    right: auto;
+    transform: translateY(calc(#{$field-input-height} / 2 - 50%));
+
+    span.mat-mdc-button-touch-target {
+      height: $filter-trigger-size !important;
+      width: $filter-trigger-size !important;
+    }
+  }
+
+  .selfservice-paginator-label {
+    margin: 0;
+    flex: 1 1 200px;
+  }
+
+  .mat-mdc-paginator {
+    background-color: $paginator-bg;
+    flex: 1 1 max-content;
+    min-width: max-content;
+
+    @media (max-width: 1100px) {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+  // Ensure the container doesn't expand beyond its parent
+  display: block;
+}
+
+.highlight-true,
+.highlight-warning,
+.highlight-false,
+.highlight-true-clickable,
+.highlight-warning-clickable,
+.highlight-false-clickable,
+.highlight-disabled {
+  border-radius: var(--border-radius);
+  padding: $highlight-padding;
+  color: white;
+  display: inline-block;
+
+  &.highlight-true,
+  &.highlight-true-clickable {
+    background-color: var(--green-light);
+  }
+
+  &.highlight-warning,
+  &.highlight-warning-clickable {
+    background-color: var(--yellow-light-active);
+  }
+
+  &.highlight-false,
+  &.highlight-false-clickable {
+    background-color: var(--red-light);
+  }
+
+  &.highlight-disabled {
+    background-color: #a0a0a0;
+  }
+
+  &.highlight-true-clickable,
+  &.highlight-warning-clickable,
+  &.highlight-false-clickable {
+    cursor: pointer;
+  }
+}
+
+.table-keyword-filter-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.filter-keyword-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 76px 10px 0;
+  width: fit-content;
+  flex-wrap: wrap;
+
+  .filter-keyword-title {
+    margin-top: -4px;
+    min-width: 89px;
+  }
+}
+
+.edit-button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.edit-column-cell {
+  min-width: 86px;
+  padding: 0;
+}
+
+.mat-divider {
+  border-top-color: var(--mat-sys-color-on-surface);
+}
+
+.height-52 {
+  height: 52px;
+}
+
+.container-form-field {
+  height: 51px;
+}
+
+.height-115 {
+  height: 115px;
+}
+
+.height-136 {
+  height: 136px;
+}
+
+.height-137 {
+  height: 137px;
+}
+
+.height-77 {
+  height: 77px;
+}
+
+.height-78 {
+  height: 78px;
+}
+
+.scroll-margin-pad {
+  margin-right: -16px;
+  padding-right: 16px;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.height-auto {
+  height: auto;
+}
+
+// Lets the table shrink below its content width. Material's own .mat-mdc-table sets min-width to
+// 100% and is injected after this stylesheet, so the repeated class is what wins the tie.
+.mat-mdc-table.mat-mdc-table {
+  min-width: 0;
+}
+
+.details-key-row {
+  min-width: 9rem;
+}
+
+.table-checkbox {
+  padding: 0;
+  width: 42px;
+}
+
+.details-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-lowest);
+  padding: 8px 12px 12px;
+}
+
+.details-field-list {
+  display: flex;
+  flex-direction: column;
+  // Match the Material table cell size used by the user card (.mat-mdc-row).
+  font-size: 14px;
+
+  > * {
+    display: grid;
+    grid-template-columns: 35% 65%;
+    align-items: stretch;
+    min-height: 52px;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-top-width: 0;
+  }
+
+  > :first-child {
+    border-top-width: 1px;
+  }
+
+  > :nth-child(odd) {
+    background: var(--mat-sys-surface-variant);
+  }
+
+  .detail-field-label {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    min-width: 0;
+    border-right: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  .detail-field-value {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    min-width: 0;
+  }
+
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .value-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+}
+
+// Card titles. The margin goes on the row and the h3/h4 reset below keeps the browser's em-based
+// heading margins out of it. Scoped by app-details-card, so a page-level .details-header keeps
+// its own spacing.
+.details-card-title,
+app-details-card .details-header {
+  margin: 8px;
+}
+
+app-details-card .details-header {
+  h3,
+  h4 {
+    margin: 0;
+  }
+}
+
+.details-cards-column {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.details-cards-grid {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.details-container {
+  .details-table {
+    border-collapse: collapse;
+
+    th,
+    td {
+      border: 1px solid var(--mat-sys-outline-variant);
+    }
+  }
+
+  .details-table.border-bottom-none {
+    tr:last-child td,
+    tr:last-child th {
+      border-bottom: none !important;
+    }
+  }
+
+  .details-header {
+    display: flex;
+    align-items: center;
+  }
+
+  .details-flex-layout {
+    display: flex;
+    box-sizing: border-box;
+    background: var(--mat-sys-surface-container-lowest);
+  }
+
+  .details-description-div {
+    display: flex;
+    overflow-wrap: anywhere;
+    padding-right: 16px;
+    align-items: center;
+    overflow-y: auto;
+    white-space: normal;
+  }
+
+  .details-scrollable-container {
+    display: block;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+  }
+
+  .details-description {
+    display: flex;
+    width: $description-width;
+  }
+
+  .details-table-item {
+    margin-left: 5px;
+  }
+
+  .details-value {
+    margin-top: 7px;
+  }
+
+  .container-details-token-table-layout .mat-mdc-text-field-wrapper,
+  .add-token .mat-mdc-text-field-wrapper {
+    padding-left: 16px !important;
+  }
+
+  .details-table
+    .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
+    --mat-form-field-container-height: 52px;
+    --mat-form-field-container-vertical-padding: 8px;
+  }
+
+  .mat-mdc-row {
+    font-size: 14px;
+  }
+}
+
+.selfservice-paginator-label {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.mat-mdc-autocomplete-panel.token-option-panel {
+  max-height: 400px;
+}
+
+.token-option {
+  border: 1px solid var(--mat-sys-surface-container-highest);
+  background: var(--mat-sys-surface-container-low);
+  margin: 0 1px;
+  border-radius: var(--border-radius);
+}
+
+.token-option-span {
+  background: var(--mat-sys-surface-container-lowest);
+  padding: 6px;
+  border-radius: var(--border-radius);
+  margin-right: 8px;
+}
+
+.mat-mdc-option.mdc-list-item.token-option .mdc-list-item__primary-text {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  border-left: 2px solid var(--mat-sys-surface-container-highest);
+  padding: 10px;
+}

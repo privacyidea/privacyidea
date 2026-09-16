@@ -1,0 +1,61 @@
+// Neither this container nor the expansion panels it holds paint a surface. Material paints a panel
+// from the two tokens below, so setting them here is what flattens it.
+.action-selector-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0;
+  color: var(--mat-sys-on-surface);
+  min-width: 0;
+  overflow: auto;
+  --mat-expansion-container-background-color: transparent;
+  --mat-expansion-container-elevation-shadow: none;
+  --expansion-panel-header-padding: 8px 12px;
+}
+
+// The container above flattens every panel it holds, which is what the outer "Add Actions" panel
+// wants. The group panels inside it are the browsable structure, so they take a surface back.
+.action-group-panel {
+  --mat-expansion-container-background-color: var(--mat-sys-surface-container-low);
+  --mat-expansion-container-elevation-shadow: none;
+  --expansion-panel-body-padding: 0 16px 16px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant), transparent 50%);
+
+  + .action-group-panel {
+    margin-top: 8px;
+  }
+}
+
+.add-action-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.policy-action-items {
+  flex: 1;
+  overflow: auto;
+  overflow-x: hidden;
+}
+
+.policy-action-item-selected {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+}
+
+.flex-column {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: calc(16px / 4);
+  justify-content: center;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

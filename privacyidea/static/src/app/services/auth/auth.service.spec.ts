@@ -1,0 +1,712 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { TestBed } from "@angular/core/testing";
+
+import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { Router } from "@angular/router";
+import { AppComponent } from "@app/app.component";
+import { AUTH_DATA_STORAGE_KEY, BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
+import { LocalService } from "@services/local/local.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
+import { VersioningService } from "@services/version/version.service";
+import {
+  MockLocalService,
+  MockNotificationService,
+  MockRouter,
+  MockSessionTimerService,
+  MockUiPreferencesService,
+  MockUserSettingsService,
+  MockVersioningService
+} from "@testing/mock-services";
+import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
+
+const b64url = (obj: object) => btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+const ensureAtob = () => {
+  const g = globalThis as { atob?: (s: string) => string };
+  if (!g.atob) {
+    g.atob = (s: string) => {
+      const bin = Array.from(s, (c) => c.charCodeAt(0));
+      return String.fromCharCode(...bin);
+    };
+  }
+};
+
+describe("AuthService", () => {
+  let authService: AuthService;
+  let httpMock: HttpTestingController;
+  let mockLocal: MockLocalService;
+  let routerMock: MockRouter;
+
+  beforeEach(() => {
+    routerMock = new MockRouter();
+    routerMock.navigate.mockResolvedValue(true);
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: LocalService, useClass: MockLocalService },
+        { provide: VersioningService, useClass: MockVersioningService },
+        { provide: Router, useValue: routerMock },
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
+        { provide: SessionTimerService, useClass: MockSessionTimerService },
+        { provide: UiPreferencesService, useClass: MockUiPreferencesService }
+      ]
+    }).compileComponents();
+
+    authService = TestBed.inject(AuthService);
+    httpMock = TestBed.inject(HttpTestingController);
+    mockLocal = TestBed.inject(LocalService) as unknown as MockLocalService;
+    jest.spyOn(console, "error").mockReturnValue();
+    ensureAtob();
+  });
+
+  afterEach(() => {
+    httpMock.verify();
+    jest.restoreAllMocks();
+  });
+
+  it("should be created", () => {
+    expect(authService).toBeTruthy();
+  });
+
+  describe("rights if token is not set", () => {
+    it("actionAllowed should return false if jwt data is not available", () => {
+      expect(authService.actionAllowed("enable")).toBe(false);
+    });
+
+    it("actionsAllowed should return false if jwt data is not available", () => {
+      expect(authService.actionsAllowed(["enable", "disable"])).toBe(false);
+    });
+
+    it("oneActionAllowed should return false if jwt data is not available", () => {
+      expect(authService.oneActionAllowed(["enable", "disable"])).toBe(false);
+    });
+
+    it("anyContainerActionAllowed should return false if jwt data is not available", () => {
+      expect(authService.anyContainerActionAllowed()).toBe(false);
+    });
+
+    it("tokenEnrollmentAllowed should return false if jwt data is not available", () => {
+      expect(authService.tokenEnrollmentAllowed()).toBe(false);
+    });
+
+    it("anyTokenActionAllowed should return false if jwt data is not available", () => {
+      expect(authService.anyTokenActionAllowed()).toBe(false);
+    });
+  });
+
+  describe("check rights", () => {
+    const jwtData = {
+      username: "alice",
+      realm: "defrealm",
+      nonce: "fake_nonce",
+      role: "user",
+      authtype: "password",
+      exp: 0,
+      rights: ["delete", "enable", "disable"]
+    };
+
+    it("actionAllowed should return true if right is set and false otherwise", () => {
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.actionAllowed("enable")).toBe(true);
+      expect(authService.actionAllowed("reset")).toBe(false);
+    });
+
+    it("actionsAllowed should return true if all rights are set", () => {
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.actionsAllowed(["enable", "disable"])).toBe(true);
+    });
+
+    it("actionsAllowed should return false if at least one right is not set", () => {
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.actionsAllowed(["enable", "disable", "reset"])).toBe(false);
+    });
+
+    it("oneActionAllowed should return true if at least one right is set", () => {
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.oneActionAllowed(["reset", "disable"])).toBe(true);
+    });
+
+    it("oneActionAllowed should return false if none of the rights are set", () => {
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.oneActionAllowed(["assign", "unassign", "reset"])).toBe(false);
+    });
+
+    it("anyContainerActionAllowed should return false if no container action is set", () => {
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.anyContainerActionAllowed()).toBe(false);
+    });
+
+    it("anyContainerActionAllowed should return true if at least one container right is set", () => {
+      jwtData.rights.push("container_create");
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.anyContainerActionAllowed()).toBe(true);
+    });
+
+    it("anyTokenActionAllowed should return false if no main token action is set", () => {
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.anyTokenActionAllowed()).toBe(false);
+    });
+
+    it("anyTokenActionAllowed should return true if at least one mein token action is set", () => {
+      jwtData.rights.push("tokenlist");
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.anyTokenActionAllowed()).toBe(true);
+    });
+
+    it("tokenEnrollment should return false if no enrollment right is set", () => {
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.tokenEnrollmentAllowed()).toBe(false);
+    });
+
+    it("tokenEnrollment should return true if at least one enrollment right is set", () => {
+      jwtData.rights.push("enrollTOTP");
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.tokenEnrollmentAllowed()).toBe(true);
+    });
+  });
+
+  describe("checkForceServerGenerateOTPKey", () => {
+    const jwtData = {
+      username: "alice",
+      realm: "defrealm",
+      nonce: "fake_nonce",
+      role: "user",
+      authtype: "password",
+      exp: 0,
+      rights: ["tokenlist"]
+    };
+
+    it("checkForceServerGenerateOTPKey should return false if right is not set", () => {
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.checkForceServerGenerateOTPKey("totp")).toBe(false);
+      expect(authService.checkForceServerGenerateOTPKey("hotp")).toBe(false);
+      expect(authService.checkForceServerGenerateOTPKey("daypassword")).toBe(false);
+    });
+
+    it("checkForceServerGenerateOTPKey should return true only for the respective token type", () => {
+      jwtData.rights.push("totp_force_server_generate");
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.checkForceServerGenerateOTPKey("totp")).toBe(true);
+      expect(authService.checkForceServerGenerateOTPKey("hotp")).toBe(false);
+      expect(authService.checkForceServerGenerateOTPKey("daypassword")).toBe(false);
+    });
+  });
+
+  it("getHeaders returns PI-Authorization from LocalService", () => {
+    mockLocal.getData.mockReturnValueOnce("tk-xyz");
+    const headers = authService.getHeaders();
+    expect(headers.get("PI-Authorization")).toBe("tk-xyz");
+    expect(mockLocal.getData).toHaveBeenCalled();
+  });
+
+  it("acceptAuthentication + logout lifecycle flips isAuthenticated and clears state", async () => {
+    expect(authService.isAuthenticated()).toBe(false);
+
+    authService.acceptAuthentication();
+    expect(authService.isAuthenticated()).toBe(false);
+
+    authService.authData.set({
+      token: "t",
+      realm: "",
+      rights: [],
+      role: "",
+      username: "",
+      menus: [],
+      log_level: 0,
+      logout_time: 0,
+      audit_page_size: 10,
+      token_page_size: 10,
+      user_page_size: 10,
+      policy_template_url: "",
+      default_tokentype: "",
+      default_container_type: "",
+      user_details: false,
+      token_wizard: false,
+      token_wizard_2nd: false,
+      admin_dashboard: false,
+      dialog_no_token: false,
+      search_on_enter: false,
+      timeout_action: "",
+      token_rollover: {},
+      hide_welcome: false,
+      hide_buttons: false,
+      deletion_confirmation: false,
+      show_seed: false,
+      show_node: "",
+      subscription_status: 0,
+      qr_image_android: null,
+      qr_image_ios: null,
+      qr_image_custom: null,
+      logout_redirect_url: "",
+      require_description: [],
+      rss_age: 0,
+      container_wizard: {
+        enabled: false,
+        type: "",
+        registration: false,
+        template: null
+      }
+    });
+    expect(authService.isAuthenticated()).toBe(true);
+
+    authService.logout();
+    expect(authService.isAuthenticated()).toBe(false);
+    expect(authService.authData()).toBeNull();
+    expect(authService.jwtData()).toBeNull();
+    expect(mockLocal.clearSession).toHaveBeenCalled();
+    expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
+    await routerMock.navigate.mock.results[0].value;
+  });
+
+  it("authtype, jwtExpDate and logoutTimeSeconds compute correctly", () => {
+    jest.useFakeTimers().setSystemTime(Date.parse("2025-01-01T00:00:00Z"));
+
+    expect(authService.authtype()).toBe("none");
+    expect(authService.jwtExpDate()).toBeNull();
+
+    const jwt: JwtData = {
+      username: "bob",
+      realm: "r",
+      nonce: "n",
+      role: "admin",
+      authtype: "cookie",
+      exp: Math.floor(Date.now() / 1000) + 120,
+      rights: []
+    };
+    authService.jwtData.set(jwt);
+
+    expect(authService.authtype()).toBe("cookie");
+    expect(authService.jwtExpDate()).toEqual(new Date(jwt.exp * 1000));
+    expect(authService.jwtLogoutTimeS()).toEqual(120);
+
+    jest.useRealTimers();
+  });
+
+  it("jwtExpDate and jwtLogoutTimeS are null if expiration or no jwt data at all are defined", () => {
+    jest.useFakeTimers().setSystemTime(Date.parse("2025-01-01T00:00:00Z"));
+
+    expect(authService.jwtExpDate()).toBeNull();
+    expect(authService.jwtLogoutTimeS()).toBeNull();
+
+    const jwt = {
+      username: "bob",
+      realm: "r",
+      nonce: "n",
+      role: "admin",
+      authtype: "cookie",
+      rights: []
+    };
+    authService.jwtData.set(jwt as unknown as JwtData);
+
+    expect(authService.jwtExpDate()).toBeNull();
+    expect(authService.jwtLogoutTimeS()).toBeNull();
+
+    jest.useRealTimers();
+  });
+
+  it("decodeJwtPayload returns null and logs error for invalid token", () => {
+    const res = authService.decodeJwtPayload("nope.invalid.jwt");
+    expect(res).toBeNull();
+    expect(console.error).toHaveBeenCalled();
+  });
+
+  it("authenticate(): saves token, decodes jwt, sets isAuthenticated", () => {
+    const payload: JwtData = {
+      username: "alice",
+      realm: "def",
+      nonce: "zz",
+      role: "user",
+      authtype: "cookie",
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      rights: ["tokenlist"]
+    };
+    const jwt = ["hdr", b64url(payload), "sig"].join(".");
+
+    const sub = authService.authenticate({ username: "alice", password: "x" }).subscribe();
+
+    const req = httpMock.expectOne((r) => r.method === "POST" && r.url.includes("/auth"));
+    const body: AuthResponse = {
+      id: 0,
+      jsonrpc: "2.0",
+      signature: "",
+      time: Date.now(),
+      version: "1.0",
+      versionnumber: "3.12.4",
+      detail: {},
+      result: {
+        status: true,
+        value: {
+          log_level: 0,
+          menus: [],
+          realm: "def",
+          rights: payload.rights,
+          role: payload.role,
+          token: jwt,
+          username: payload.username,
+          logout_time: 1800,
+          audit_page_size: 10,
+          token_page_size: 10,
+          user_page_size: 10,
+          policy_template_url: "",
+          default_tokentype: "hotp",
+          default_container_type: "generic",
+          user_details: false,
+          token_wizard: false,
+          token_wizard_2nd: false,
+          admin_dashboard: false,
+          dialog_no_token: false,
+          search_on_enter: false,
+          timeout_action: "",
+          token_rollover: {},
+          hide_welcome: false,
+          hide_buttons: false,
+          deletion_confirmation: false,
+          show_seed: false,
+          show_node: "",
+          subscription_status: 0,
+          qr_image_android: null,
+          qr_image_ios: null,
+          qr_image_custom: null,
+          logout_redirect_url: "",
+          require_description: [],
+          rss_age: 0,
+          container_wizard: { enabled: false, type: "generic", registration: false, template: null }
+        }
+      }
+    };
+    req.flush(body);
+
+    expect(mockLocal.saveData).toHaveBeenCalled();
+    expect(authService.authData()).not.toBeNull();
+    expect(authService.jwtData()).toMatchObject(payload);
+    expect(authService.isAuthenticated()).toBe(true);
+
+    // The JWT is persisted on its own; the stored auth data must not duplicate the token
+    // or any JWT claim (token, rights, role, username, realm), but keeps the UI config.
+    expect(mockLocal.saveData).toHaveBeenCalledWith(BEARER_TOKEN_STORAGE_KEY, jwt);
+    const authDataCall = (mockLocal.saveData as jest.Mock).mock.calls.find((c) => c[0] === AUTH_DATA_STORAGE_KEY);
+    const persisted = JSON.parse(authDataCall![1]);
+    expect(persisted.token).toBeUndefined();
+    expect(persisted.rights).toBeUndefined();
+    expect(persisted.role).toBeUndefined();
+    expect(persisted.username).toBeUndefined();
+    expect(persisted.realm).toBeUndefined();
+    expect(persisted.menus).toEqual([]);
+    expect(persisted.default_tokentype).toBe("hotp");
+
+    sub.unsubscribe();
+  });
+
+  it("authenticate(): propagates error via catchError", (done) => {
+    const sub = authService.authenticate({ username: "" }).subscribe({
+      next: () => fail("expected error"),
+      error: (e) => {
+        expect(e.status).toBe(401);
+        done();
+      }
+    });
+    const req = httpMock.expectOne((r) => r.method === "POST" && r.url.includes("/auth"));
+    req.flush({ message: "nope" }, { status: 401, statusText: "unauthorized" });
+    sub.unsubscribe();
+  });
+
+  it("isSelfServiceUser reflects role === 'user'", () => {
+    expect(authService.isSelfServiceUser()).toBe(false);
+    authService.jwtData.set({
+      username: "u",
+      realm: "r",
+      nonce: "n",
+      role: "user",
+      authtype: "cookie",
+      exp: 0,
+      rights: []
+    } as JwtData);
+    expect(authService.isSelfServiceUser()).toBe(true);
+  });
+
+  it("should extract token types from rollover policy", () => {
+    authService.authData.set({ token_rollover: { hotp: [], totp: [] } } as unknown as AuthData);
+    expect(authService.tokenRollover()).toEqual(["hotp", "totp"]);
+
+    // token_rollover data not set
+    authService.authData.set({} as unknown as AuthData);
+    expect(authService.tokenRollover()).toEqual([]);
+  });
+
+  it("rightsWithValues should parse rights with and without values", () => {
+    const authData = {
+      username: "bob",
+      realm: "realm",
+      nonce: "n",
+      role: "admin",
+      authtype: "cookie",
+      exp: 0,
+      rights: ["foo=bar", "baz=qux=quux", "simple"]
+    };
+    authService.authData.set(authData as unknown as AuthData);
+    const result = authService.rightsWithValues();
+    expect(result).toEqual({
+      foo: "bar",
+      baz: "qux=quux",
+      simple: null
+    });
+  });
+
+  describe("check2Step", () => {
+    beforeEach(() => {
+      authService.authData.set({} as unknown as AuthData);
+    });
+
+    it("should return 'allow' if value is 'allow'", () => {
+      authService.authData.set({
+        rights: ["totp_2step=allow"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("allow");
+    });
+
+    it("should return 'force' if value is 'force'", () => {
+      authService.authData.set({
+        rights: ["totp_2step=force"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("force");
+    });
+
+    it("should return 'disabled' if value is not 'allow' or 'force'", () => {
+      authService.authData.set({
+        rights: ["totp_2step=deny"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("disabled");
+    });
+
+    it("should return 'disabled' if right is not present", () => {
+      authService.authData.set({
+        rights: []
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("disabled");
+    });
+
+    it("should keep value if right is present without value", () => {
+      authService.authData.set({
+        rights: ["totp_2step=allow", "totp_2step"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("allow");
+    });
+  });
+
+  describe("session rehydration (restoreSession)", () => {
+    const makeJwt = (expSecondsFromNow: number): string => {
+      const payload = {
+        username: "admin",
+        realm: "",
+        nonce: "",
+        role: "admin",
+        authtype: "",
+        exp: Math.floor(Date.now() / 1000) + expSecondsFromNow,
+        rights: []
+      };
+      return `h.${btoa(JSON.stringify(payload))}.s`;
+    };
+
+    const restore = () => (authService as unknown as { restoreSession: () => void }).restoreSession();
+
+    it("restores an active session from a valid stored token and auth data", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(3600));
+      mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ token: "t", role: "admin", username: "admin" }));
+      restore();
+      expect(authService.isAuthenticated()).toBe(true);
+      expect(authService.role()).toBe("admin");
+    });
+
+    it("does not restore and clears storage when the token is expired", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(-3600));
+      mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ token: "t" }));
+      restore();
+      expect(authService.isAuthenticated()).toBe(false);
+      expect(mockLocal.clearSession).toHaveBeenCalled();
+    });
+
+    it("stays unauthenticated when no token is stored", () => {
+      restore();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+
+    it("stays unauthenticated when the token is valid but auth data is missing", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt(3600));
+      restore();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+  });
+
+  describe("bootstrapSession", () => {
+    const makeJwt = (): string => {
+      const payload = {
+        username: "admin",
+        realm: "",
+        nonce: "",
+        role: "admin",
+        authtype: "",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        rights: []
+      };
+      return `h.${btoa(JSON.stringify(payload))}.s`;
+    };
+
+    it("restores the session the browser storage still holds", () => {
+      mockLocal.saveData(BEARER_TOKEN_STORAGE_KEY, makeJwt());
+      mockLocal.saveData(AUTH_DATA_STORAGE_KEY, JSON.stringify({ menus: [] }));
+
+      authService.bootstrapSession();
+
+      expect(authService.isAuthenticated()).toBe(true);
+      expect(authService.username()).toBe("admin");
+    });
+
+    it("leaves the session closed when the storage holds none", () => {
+      authService.bootstrapSession();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+  });
+
+  describe("session persistence", () => {
+    const authResponse = (persistence?: string): AuthResponse => {
+      const payload: JwtData = {
+        username: "alice",
+        realm: "def",
+        nonce: "zz",
+        role: "admin",
+        authtype: "cookie",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        rights: []
+      };
+      return {
+        id: 0,
+        jsonrpc: "2.0",
+        signature: "",
+        time: Date.now(),
+        version: "1.0",
+        detail: {},
+        result: {
+          status: true,
+          value: {
+            menus: [],
+            realm: "def",
+            rights: [],
+            role: "admin",
+            token: ["hdr", b64url(payload), "sig"].join("."),
+            username: "alice",
+            ...(persistence === undefined ? {} : { session_persistence: persistence })
+          }
+        }
+      } as unknown as AuthResponse;
+    };
+
+    const login = (persistence?: string) => {
+      const sub = authService.authenticate({ username: "alice", password: "x" }).subscribe();
+      httpMock.expectOne((r) => r.method === "POST" && r.url.includes("/auth")).flush(authResponse(persistence));
+      sub.unsubscribe();
+    };
+
+    it("keeps the session where the policy in the response says, before writing it", () => {
+      login("browser");
+
+      expect(mockLocal.usePersistence).toHaveBeenCalledWith("browser");
+      const persistenceCall = (mockLocal.usePersistence as jest.Mock).mock.invocationCallOrder[0];
+      const tokenCall = (mockLocal.saveData as jest.Mock).mock.invocationCallOrder[0];
+      expect(persistenceCall).toBeLessThan(tokenCall);
+    });
+
+    it("falls back to the tab when the server sends no policy value", () => {
+      login();
+      expect(mockLocal.usePersistence).toHaveBeenCalledWith("tab");
+    });
+
+    it("falls back to the tab for a policy value it does not know", () => {
+      const warn = jest.spyOn(console, "warn").mockReturnValue();
+
+      login("permanent");
+
+      expect(mockLocal.usePersistence).toHaveBeenCalledWith("tab");
+      expect(warn).toHaveBeenCalled();
+    });
+
+    const leftoverTokenOf = (username: string, role = "admin"): string => {
+      const payload = {
+        username,
+        realm: "def",
+        nonce: "old",
+        role,
+        authtype: "cookie",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+        rights: []
+      };
+      return ["hdr", b64url(payload), "sig"].join(".");
+    };
+
+    it("drops the leftover session of the principal that just logged in", () => {
+      mockLocal.inactiveSessionToken.mockReturnValue(leftoverTokenOf("alice"));
+
+      login("tab");
+
+      expect(mockLocal.clearInactiveSession).toHaveBeenCalled();
+    });
+
+    it("keeps a leftover session that belongs to somebody else", () => {
+      mockLocal.inactiveSessionToken.mockReturnValue(leftoverTokenOf("bob"));
+
+      login("tab");
+
+      expect(mockLocal.clearInactiveSession).not.toHaveBeenCalled();
+    });
+
+    it("keeps a leftover session of the same name in another role", () => {
+      mockLocal.inactiveSessionToken.mockReturnValue(leftoverTokenOf("alice", "user"));
+
+      login("tab");
+
+      expect(mockLocal.clearInactiveSession).not.toHaveBeenCalled();
+    });
+
+    it("clears the session from both storages on logout", () => {
+      login("browser");
+
+      authService.logout();
+
+      expect(mockLocal.clearSession).toHaveBeenCalled();
+      expect(authService.isAuthenticated()).toBe(false);
+    });
+
+    it("disarms the timers of the session it ends", () => {
+      const sessionTimer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
+      login("tab");
+
+      authService.logout();
+
+      expect(sessionTimer.stopTimers).toHaveBeenCalled();
+    });
+  });
+});

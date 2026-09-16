@@ -79,7 +79,9 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               check_container_action_allowed,
                                               UserAttributes,
                                               get_container_user_attributes)
-from privacyidea.api.lib.utils import attestation_certificate_allowed, is_fqdn, get_optional
+from privacyidea.api.lib.utils import (attestation_certificate_allowed, is_fqdn, get_optional,
+                                      log_authentication)
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -1309,12 +1311,15 @@ def check_base_action(request=None, action=None, anonymous=False):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if action is PolicyAction.AUDIT:
-        # In case of audit requests, the parameters "realm" and "user" are used for
-        # filtering the audit log. So these values must not be taken from the request parameters,
-        # but rather be NONE. The restriction for the allowed realms in the audit log is determined
-        # in the decorator "allowed_audit_realm".
+    if role == ROLE.ADMIN and action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ):
+        # For an admin, realm/user only filter the log and must not drive the policy match, since the realm restriction
+        # is enforced separately (audit: allowed_audit_realm decorator; authentication log:
+        # get_policy_visibility_scopes), so they are cleared here. For a user reading their own log, realm/username come
+        # from their own identity (determine_logged_in_userparams) and are kept so a realm/resolver-scoped user-scope
+        # policy still matches - the user only ever sees their own entries anyway.
         realm = username = resolver = None
+    elif action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ):
+        pass
     else:
         realm = params.get("realm")
         if isinstance(realm, list) and len(realm) == 1:
@@ -1762,6 +1767,13 @@ def check_token_init(request=None, action=None):
     if the requested tokentype is allowed to be enrolled in the SCOPE ADMIN
     or the SCOPE USER.
 
+    If the request carries the serial of a token that already exists, init_token() updates that token instead
+    of creating one. As long as the enrollment of that token is still under way, e.g. the second request of a
+    two-step or a FIDO2 enrollment, that is part of the enrollment. Once the token is in use, the same request
+    gives it a new secret, which is a modification of a token somebody may already authenticate with, so it
+    additionally requires the token_rollover action and is matched against the realm of that token rather than
+    against the realm passed in the request.
+
     :param request:
     :param action:
     :return: True or an Exception is raised
@@ -1770,6 +1782,8 @@ def check_token_init(request=None, action=None):
                      "enroll this token type!",
              "admin": "Admin actions are defined, but you are not allowed to "
                       "enroll this token type!"}
+    ROLLOVER_ERROR = {"user": "You are not allowed to roll over this token!",
+                      "admin": "You are not allowed to roll over this token!"}
     params = request.all_data
     resolver = request.User.resolver if request.User else None
     (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
@@ -1785,6 +1799,22 @@ def check_token_init(request=None, action=None):
                                  user_object=request.User).allowed()
     if not init_allowed:
         raise PolicyError(ERROR.get(role))
+
+    serial = get_optional(params, "serial")
+    existing_token = get_one_token(serial=serial, silent_fail=True) if serial else None
+    if existing_token and existing_token.token.rollout_state not in RolloutState.enrollment_pending_states():
+        token_owner = existing_token.user
+        rollover_allowed = Match.generic(g, action=PolicyAction.TOKENROLLOVER,
+                                         user=token_owner.login if token_owner else None,
+                                         resolver=token_owner.resolver if token_owner else None,
+                                         realm=token_owner.realm if token_owner else None,
+                                         scope=role,
+                                         adminrealm=adminrealm,
+                                         adminuser=adminuser,
+                                         user_object=token_owner or None).allowed()
+        if not rollover_allowed:
+            log.info(f"The {role} is not allowed to roll over the token {serial}, which is already enrolled.")
+            raise PolicyError(ROLLOVER_ERROR.get(role))
     return True
 
 
@@ -2929,14 +2959,20 @@ def auth_timelimit(request, action):
         # normal user
         user_search_dict = {"user": user.login, "realm": user.realm}
 
-    # Check policies
+    # Check policies. Which limit was hit is classified here rather than by the checks, which this caller can do
+    # since it knows which of the two said no: their reply_dict is handed to the client as the error details, so the
+    # two most-reused policy helpers put nothing internal in it in the first place. The rest of the classification
+    # does travel in the reply (see AUTH_EVENT_TYPE_KEY), where the response boundary is what keeps it in.
+    reason = AuthEventReason.AUTH_MAX_FAIL
     result, reply_dict = check_max_auth_fail(user, user_search_dict, check_validate_check=not local_admin)
     if result:
         if local_admin:
             user_search_dict = {"administrator": user.login}
+        reason = AuthEventReason.AUTH_MAX_SUCCESS
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
+        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, reasons=[reason])
         raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 

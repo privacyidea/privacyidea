@@ -14,18 +14,18 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.user import User
 from privacyidea.lib.usersetting import SUBJECT_LOCAL_ADMIN, SUBJECT_USER
 from privacyidea.models import UserSetting, db
+from ..base import _reset_database
 
 
 @pytest.fixture(scope="function")
 def app():
     app = create_app(config_name="testing", config_file="", silent=True)
     with app.app_context():
-        db.create_all()
+        _reset_database()
     yield app
     with app.app_context():
         call_finalizers()
         close_all_sessions()
-        db.drop_all()
         db.engine.dispose()
 
 

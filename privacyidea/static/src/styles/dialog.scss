@@ -1,0 +1,29 @@
+// A dialog sits on its own scrim, which does the separating, so the shallow step is enough to
+// lift it and its surface stays one flat card tone with no depth gradient.
+.cdk-overlay-pane.mat-mdc-dialog-panel {
+  --mat-dialog-container-max-width: calc(100vw - 2 * 32px);
+
+  --mat-dialog-container-elevation-shadow: var(--elevation-3);
+  --mat-dialog-container-shape: var(--border-radius);
+  --mat-dialog-container-color: var(--mat-sys-surface-container-lowest);
+  --mat-dialog-supporting-text-size: 16px;
+
+  max-height: calc(100vh - 2 * 32px);
+}
+
+.mat-mdc-dialog-container .mat-mdc-dialog-content {
+  max-height: 82vh;
+}
+
+// Caps a block of dialog prose at a readable measure. It lives here rather than in the wrapper
+// because view encapsulation keeps the wrapper's own styles off the content projected into it.
+.dialog-prose {
+  max-width: var(--dialog-prose-width);
+}
+
+// Lets a single unbreakable word (a long token serial, URL, ...) wrap instead of stretching the
+// dialog past its width cap (#5841).
+.dialog-break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}

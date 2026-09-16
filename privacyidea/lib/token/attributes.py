@@ -3,12 +3,13 @@
 """Mutating a single token's attributes, info, PIN, counters and state."""
 
 import logging
+from collections.abc import Iterable
 from typing import Any, TYPE_CHECKING
 
 from sqlalchemy.sql.expression import delete
 
 from privacyidea.lib import _
-from privacyidea.lib.config import (get_from_config)
+from privacyidea.lib.config import (get_from_config, get_token_class_dict)
 from privacyidea.lib.decorators import (check_user_or_serial)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError)
@@ -510,7 +511,7 @@ def add_tokeninfo(serial: str, info: str, value: Any = None, value_type: str | N
     tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
 
     for tokenobject in tokenobject_list:
-        tokenobject.add_tokeninfo(info, value)
+        tokenobject.add_tokeninfo(info, value, value_type=value_type)
         tokenobject.save()
 
     return len(tokenobject_list)
@@ -537,6 +538,73 @@ def delete_tokeninfo(serial: str, key: str, user: "User | None" = None) -> int:
         tokenobject.save()
 
     return len(tokenobject_list)
+
+
+def get_settable_tokeninfo_keys(keys: Iterable[str]) -> set[str]:
+    """
+    Of the given token info keys, those that some token type declares settable through POST /token/set, see
+    TokenClass.settable_tokeninfo_keys. Used to tell such a parameter apart from an unrelated one.
+
+    The token classes are resolved once for the whole set of keys, so checking several keys does not rebuild
+    the class registry per key. The declarations are class attributes that do not change at runtime.
+
+    :param keys: The token info keys to check
+    :return: The subset of keys that some token type allows to be set
+    """
+    token_classes = list(get_token_class_dict()[0].values())
+    return {key for key in keys
+            if any(token_class.is_settable_tokeninfo_key(key) for token_class in token_classes)}
+
+
+def is_settable_tokeninfo_key(key: str) -> bool:
+    """
+    Whether any token type declares the given token info key as settable through POST /token/set, see
+    TokenClass.settable_tokeninfo_keys. Use get_settable_tokeninfo_keys() to check several keys at once.
+
+    :param key: The token info key to check
+    :return: True if some token type allows the key to be set
+    """
+    return bool(get_settable_tokeninfo_keys([key]))
+
+
+@log_with(log)
+@check_user_or_serial
+def set_token_type_info(serial: str | None, info: dict, user: "User | None" = None) -> list[str]:
+    """
+    Write token info entries that a token class maintains but that change over the lifetime of a token, e.g.
+    "remote.user" on a remote token or "phone" on an SMS token. They cannot be written through the generic
+    token info endpoints, but an administrator who may modify the token may change them.
+
+    Only a key a token class declares as settable is written, see TokenClass.settable_tokeninfo_keys. The keys
+    that carry the secret of a token are not settable, so a parameter cannot reach them, and neither can it
+    reach a key of a different token type. A key that no token class declares settable raises a
+    ParameterError.
+
+    :param serial: The serial number of the token
+    :param info: The entries to write, as {key: value}
+    :param user: The owner of the tokens that should be modified
+    :return: The keys that were written, listed once per token they were written to, so that the length is
+        the number of entries written, the way the other setters of POST /token/set count the tokens they
+        modified. The caller can audit exactly the entries that were written.
+    """
+    settable_keys = get_settable_tokeninfo_keys(info)
+    for key in info:
+        if key not in settable_keys:
+            raise ParameterError(f"The token info key '{key}' can not be set on any token type.")
+
+    tokenobject_list = get_tokens_from_serial_or_user(serial=serial, user=user)
+    written_keys = []
+    for tokenobject in tokenobject_list:
+        # A user can own tokens of several types, only the keys this token declares settable are touched
+        own_info = {key: value for key, value in info.items()
+                    if tokenobject.is_settable_tokeninfo_key(key)}
+        if not own_info:
+            continue
+        for key, value in own_info.items():
+            tokenobject.write_tokeninfo(key, value)
+        tokenobject.save()
+        written_keys.extend(own_info)
+    return written_keys
 
 
 @log_with(log)

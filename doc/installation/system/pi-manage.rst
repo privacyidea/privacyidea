@@ -69,6 +69,64 @@ the backup or not.
 As the backup contains the etc directory and the database you only need this
 tar archive backup to perform a complete restore.
 
+Supported databases
+~~~~~~~~~~~~~~~~~~~
+
+SQLite, MySQL/MariaDB and PostgreSQL are supported. The database is dumped and
+restored with the command line tools of the respective database, which have to
+be installed on the privacyIDEA machine:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Database
+     - Commands used
+     - Debian/Ubuntu package
+   * - SQLite
+     - none, the database file is copied
+     - --
+   * - MySQL/MariaDB
+     - ``mysqldump``, ``mysql``
+     - *mariadb-client* or *mysql-client*
+   * - PostgreSQL
+     - ``pg_dump``, ``psql``
+     - *postgresql-client*
+
+For PostgreSQL the client has to be at least as new as the server it connects
+to. Dumping a PostgreSQL 17 server with the ``pg_dump`` of an older major
+version fails, so install the *postgresql-client-<version>* package that
+matches your server.
+
+Restoring
+~~~~~~~~~
+
+The restore overwrites the contents of the database the restored *pi.cfg*
+points to::
+
+   pi-manage backup restore /var/lib/privacyidea/backup/privacyidea-backup-<date>.tgz
+
+It does not create the database: the database and the database user have to
+exist already, as they do on a machine that has been set up before. Only the
+contents are replaced.
+
+.. note:: The archive also contains the *pi.cfg* of the machine the backup was
+   taken on, including its ``SQLALCHEMY_DATABASE_URI``. If you restore onto a
+   machine whose database is reached under a different URI, use
+   ``--keep-db-uri`` to keep the URI of the running installation instead of
+   the one from the backup.
+
+.. warning:: On MySQL/MariaDB the dump contains the name of the database it was
+   taken from and creates that database if it is missing, so the restore always
+   writes into a database of that name - also with ``--keep-db-uri``, which
+   only changes the server, the credentials and the port that are connected to.
+   Restore a MySQL/MariaDB backup only into an installation that uses the same
+   database name, otherwise the data ends up in a newly created copy of the
+   original database while the configured one stays untouched.
+
+A backup can only be restored into the database it was taken from: a dump
+written by one database cannot be read by another one. Restoring an archive
+onto an installation using a different database aborts with an error.
+
 
 Rotate Audit Log
 ----------------
@@ -147,6 +205,45 @@ Policies
 --------
 
 You can use ``pi-manage config policy`` to enable, disable, create and delete policies.
+
+.. _pimanage_authlog:
+
+Clean up the authentication log
+-------------------------------
+
+.. index:: retention time
+
+The :ref:`authentication_log` records every authentication request and is not
+pruned automatically, so its retention period is enforced by a cron job running::
+
+   pi-manage authlog cleanup --age 365
+
+``--age`` is required and is given in days: the command deletes every entry
+older than that, together with the classified reasons and the conditional-access
+outcomes recorded on those entries. As with the challenge cleanup, ``--chunksize``
+deletes in batches to avoid long locks on a large table, and ``--dryrun`` only
+reports how many entries would be removed.
+
+Keep the retention period comfortably longer than the longest time window used
+by a conditional access policy - deleted entries no longer count towards its
+thresholds, see :ref:`authentication_log_cleanup`.
+
+Conditional Access
+------------------
+
+``pi-manage conditionalaccess`` manages the :ref:`conditional access
+<conditional_access>` policies and the locks and IP blocks they produce. It is
+the escape hatch when a policy has locked you out of the WebUI itself: you can
+list the policies, disable one, put it into dry run or delete it, and lift the
+locks and blocks that are in force::
+
+   pi-manage conditionalaccess list-policies
+   pi-manage conditionalaccess disable-policy <name>
+   pi-manage conditionalaccess list-locked-users
+   pi-manage conditionalaccess clear-blocks
+
+See :ref:`conditional_access_policies_lifting` and
+:ref:`conditional_access_policies_cli` for the complete list.
 
 
 Exporting and Importing the Configuration

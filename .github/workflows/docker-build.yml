@@ -26,6 +26,10 @@ on:
     paths:
       - 'deploy/docker/**'
       - '.github/workflows/docker-build.yml'
+      # What a distribution contains is decided here, and the image installs the package. A file
+      # that stops being packaged breaks the image without touching anything under deploy/docker.
+      - 'MANIFEST.in'
+      - 'pyproject.toml'
   schedule:
     # Nightly at 03:00 UTC, after the nightly unit-test runs.
     - cron: '0 3 * * *'

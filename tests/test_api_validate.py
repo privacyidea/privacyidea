@@ -15,13 +15,12 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from dateutil.tz import tzlocal
-from passlib.hash import argon2
 from testfixtures import Replace, test_datetime
 from testfixtures import log_capture
 
 from privacyidea.lib import _
 from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
-from privacyidea.lib.authcache import _hash_password
+from privacyidea.lib.crypto import verify_pass_hash
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
@@ -414,7 +413,7 @@ class ValidateAPITestCase(MyApiTestCase):
         token.set_maxfail(5)
         token.set_failcount(5)
         past = datetime.datetime.now(tzlocal()) - datetime.timedelta(minutes=10)
-        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
         # a valid authentication will fail
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -484,7 +483,7 @@ class ValidateAPITestCase(MyApiTestCase):
         self.assertEqual(0, token.get_failcount())
         # an invalid auth also resets the failcount and increase it directly to one due to the invalid auth
         token.set_failcount(5)
-        token.add_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
+        token.write_tokeninfo(FAILCOUNTER_EXCEEDED, past.strftime(DATE_FORMAT))
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"serial": "pass2",
@@ -1876,15 +1875,16 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(res.data, b'')
 
         # test authentication fails with an unknown user
-        # here, we get an ordinary JSON response
+        # The view raises, but /validate/radiuscheck must still answer with an
+        # empty body and a 400 status code (construct_radius_response is
+        # re-applied on the error path).
         with self.app.test_request_context('/validate/radiuscheck',
                                            method='POST',
                                            data={"user": "unknown",
                                                  "pass": "123456"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400)
-            result = res.json.get("result")
-            self.assertFalse(result.get("status"))
+            self.assertEqual(res.data, b'')
         # Check that we have a failed attempt with the username in the audit
         ae = self.find_most_recent_audit_entry(action='* /validate/radiuscheck')
         self.assertEqual(0, ae.get("success"), ae)
@@ -2316,12 +2316,8 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Check that there is an entry with this OTP value in the auth_cache
         cached_auths = AuthCache.query.filter(AuthCache.username == "cornelius", AuthCache.realm == self.realm1).all()
-        found = False
-        for cached_auth in cached_auths:
-            if argon2.verify(OTPs[1], cached_auth.authentication):
-                found = True
-                break
-        self.assertTrue(found)
+        self.assertTrue(any(verify_pass_hash(OTPs[1], cached_auth.authentication)
+                            for cached_auth in cached_auths))
 
         # Authenticate again with the same OTP
         with self.app.test_request_context('/validate/check',
@@ -2365,9 +2361,11 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
 
-        # Check that there is no entry with this OTP value in the auth_cache
-        r = AuthCache.query.filter(AuthCache.authentication == _hash_password(OTPs[2])).first()
-        self.assertFalse(bool(r))
+        # Check that there is no entry with this OTP value in the auth_cache. A hash carries a
+        # random salt, so a stored entry never equals a freshly computed hash and has to be
+        # verified against instead.
+        self.assertFalse(any(verify_pass_hash(OTPs[2], entry.authentication)
+                             for entry in AuthCache.query.all()))
 
         # Authenticate again with the same OTP value will fail
         with self.app.test_request_context('/validate/check',
@@ -3147,7 +3145,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # lastauth: currently 200, should be 401
         now = datetime.datetime.now(datetime.timezone.utc)
         thirty_days_ago = now - datetime.timedelta(days=30)
-        token.add_tokeninfo(PolicyAction.LASTAUTH, thirty_days_ago.strftime(AUTH_DATE_FORMAT))
+        token.write_tokeninfo(PolicyAction.LASTAUTH, thirty_days_ago.strftime(AUTH_DATE_FORMAT))
         set_policy("lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=7d")
         with self.app.test_request_context('/validate/check', method="POST",
                                            data={
@@ -3312,6 +3310,157 @@ class ValidateAPITestCase(MyApiTestCase):
 
         delete_policy("hide_error_message")
         remove_token("spass_condition")
+
+    def test_47_hide_specific_error_message_on_exception_paths(self):
+        """
+        The @postpolicy chain of /validate/check does not run when the view
+        raises: the exception is turned into a response by the error handlers,
+        bypassing hide_specific_error_message. These error paths must still be
+        masked so the specific failure reason does not leak.
+
+        The following non-exotic errors are covered:
+          * unknown serial          -> ResourceNotFoundError
+          * serial/user mismatch    -> ParameterError
+          * revoked token           -> TokenAdminError
+        """
+        self.setUp_user_realms()
+        set_default_realm(self.realm1)
+        init_token({"type": "spass", "serial": "spass_err", "pin": "test47"},
+                   user=User("cornelius", self.realm1))
+
+        # request data for each exception path
+        unknown_serial = {"serial": "unknown_serial_47", "pass": "test47"}
+        # "root" exists in the realm but does not own spass_err -> ParameterError
+        serial_user_mismatch = {"serial": "spass_err", "user": "root", "pass": "test47"}
+
+        # Without the policy the specific reason is exposed
+        for data in (unknown_serial, serial_user_mismatch):
+            with self.app.test_request_context('/validate/check', method="POST", data=data):
+                res = self.app.full_dispatch_request()
+                error = res.json.get("result").get("error")
+                self.assertNotEqual("Authentication failed.", error.get("message"), res.json)
+
+        # A revoked token also raises instead of returning a normal response
+        revoke_token("spass_err")
+        revoked = {"serial": "spass_err", "pass": "test47"}
+        with self.app.test_request_context('/validate/check', method="POST", data=revoked):
+            res = self.app.full_dispatch_request()
+            error = res.json.get("result").get("error")
+            self.assertNotEqual("Authentication failed.", error.get("message"), res.json)
+
+        # With the policy enabled, every one of these error paths is masked
+        set_policy(name="hide_error_message", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
+        for data in (unknown_serial, serial_user_mismatch, revoked):
+            with self.app.test_request_context('/validate/check', method="POST", data=data):
+                res = self.app.full_dispatch_request()
+                result = res.json.get("result")
+                error = result.get("error")
+                # The generic message replaces the specific reason ...
+                self.assertEqual("Authentication failed.", error.get("message"), res.json)
+                # ... and the error code is remapped to the generic AUTHENTICATE id
+                self.assertEqual(Error.AUTHENTICATE, error.get("code"), res.json)
+                # The detail is reset so nothing leaks through it either
+                self.assertEqual("Authentication failed.",
+                                 res.json.get("detail").get("message"), res.json)
+
+        delete_policy("hide_error_message")
+        remove_token("spass_err")
+
+    def test_48_radiuscheck_error_paths_return_empty_body(self):
+        """
+        /validate/radiuscheck must always answer with an empty body (the
+        construct_radius_response post-policy). This must also hold on the
+        error path, where the view raises and the @postpolicy chain never runs.
+        An error is always the failure case for the RADIUS adapter, so the
+        status code is a generic 400.
+        """
+        self.setUp_user_realms()
+        set_default_realm(self.realm1)
+        init_token({"type": "spass", "serial": "spass_radius_err", "pin": "test48"},
+                   user=User("cornelius", self.realm1))
+
+        cases = [
+            # unknown serial -> ResourceNotFoundError
+            {"serial": "unknown_serial_48", "pass": "test48"},
+            # serial/user mismatch -> ParameterError
+            {"serial": "spass_radius_err", "user": "root", "pass": "test48"},
+            # unknown user
+            {"user": "unknown", "pass": "test48"},
+        ]
+        for data in cases:
+            with self.app.test_request_context('/validate/radiuscheck', method="POST",
+                                               data=data):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(400, res.status_code, res.data)
+                self.assertEqual(b'', res.data)
+                # The shaped replacement response must still carry the shared
+                # after_request no-cache guarantee.
+                self.assertEqual("no-cache", res.headers.get("Cache-Control"), res.headers)
+
+        # A revoked token raises TokenAdminError -> still an empty 400
+        revoke_token("spass_radius_err")
+        with self.app.test_request_context('/validate/radiuscheck', method="POST",
+                                           data={"serial": "spass_radius_err", "pass": "test48"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.data)
+            self.assertEqual(b'', res.data)
+            self.assertEqual("no-cache", res.headers.get("Cache-Control"), res.headers)
+
+        # Malformed application/json makes get_all_params() raise before the
+        # view and Flask produces a non-JSON (HTML) 400. /validate/radiuscheck
+        # must still collapse it to the documented empty 400, not leak the body.
+        with self.app.test_request_context('/validate/radiuscheck', method="POST",
+                                           data='{"serial": "spass_radius_err", ',
+                                           content_type="application/json"):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.data)
+            self.assertEqual(b'', res.data)
+
+        remove_token("spass_radius_err")
+
+    def test_49_shape_error_response_only_affects_check_and_radiuscheck(self):
+        """
+        The shared after_request error shaping must be restricted to the two
+        routes served by the check() view (/validate/check and
+        /validate/radiuscheck). Other validate endpoints such as
+        /validate/offlinerefill deliberately do their own token-scope masking
+        with their own error code and must not be rewritten to the generic
+        "Authentication failed."/AUTHENTICATE just because an AUTH-scope
+        hide_specific_error_message policy is active.
+        """
+        self.setUp_user_realms()
+        set_default_realm(self.realm1)
+        # An AUTH-scope hide policy that would mask /validate/check errors
+        set_policy(name="hide_error_message", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
+
+        # /validate/offlinerefill raises for an unknown token (ParameterError).
+        # No offline-refill token-scope policy is set, so it keeps its specific
+        # message and its own PARAMETER error code - it must not be rewritten.
+        with self.app.test_request_context('/validate/offlinerefill', method="POST",
+                                           data={"serial": "unknown_offline_49",
+                                                 "refilltoken": "x", "pass": ""}):
+            res = self.app.full_dispatch_request()
+            error = res.json.get("result").get("error")
+            self.assertNotEqual(Error.AUTHENTICATE, error.get("code"), res.json)
+            self.assertEqual(Error.PARAMETER, error.get("code"), res.json)
+            self.assertNotIn("Authentication failed.", error.get("message"), res.json)
+
+        delete_policy("hide_error_message")
+
+    def test_50_options_request_is_not_shaped(self):
+        """
+        Flask answers OPTIONS itself without dispatching to the view, but
+        after_request still runs. The shaping must not collapse that reply into
+        the empty 400 of the RADIUS adapter, or CORS preflight and method
+        discovery break for /validate/radiuscheck.
+        """
+        with self.app.test_request_context('/validate/radiuscheck', method="OPTIONS"):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
+            self.assertEqual(b'', res.data)
+            self.assertSetEqual({"GET", "HEAD", "OPTIONS", "POST"}, set(res.allow))
 
     def _assert_unspecific_message_with_401(self, response):
         self.assertEqual(401, response.status_code, response.json)

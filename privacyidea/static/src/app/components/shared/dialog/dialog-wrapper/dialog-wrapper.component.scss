@@ -1,0 +1,50 @@
+.pi-dialog {
+  --mat-dialog-content-padding: 0 16px 8px 16px;
+
+  // The panel shrink-wraps its content, so the width cap has to live in here. Without it a single
+  // long line of text stretches the dialog across the viewport (#5841).
+  max-width: min(var(--pi-dialog-width, var(--dialog-width-m)), calc(100vw - 2 * 32px));
+
+  // The panel already caps the dialog against the viewport and the surface around this scrolls,
+  // so the content area must not add a second cap and a second scrollbar inside it.
+  .mat-mdc-dialog-content {
+    max-height: none;
+  }
+
+  .pi-dialog-header {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    padding: 16px;
+  }
+
+  .pi-dialog-header h3 {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+  }
+
+  .pi-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    padding: 16px;
+    gap: 8px;
+  }
+
+  .pi-dialog-body {
+    margin-left: 16px;
+  }
+}
+
+.pi-dialog-s {
+  --pi-dialog-width: var(--dialog-width-s);
+}
+
+.pi-dialog-m {
+  --pi-dialog-width: var(--dialog-width-m);
+}
+
+.pi-dialog-l {
+  --pi-dialog-width: var(--dialog-width-l);
+}

@@ -57,9 +57,10 @@ from sqlalchemy.sql.expression import FunctionElement
 
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auditmodules.base import Audit as AuditBase, Paginate
-from privacyidea.lib.crypto import Sign
+from privacyidea.lib.crypto import get_sign_object
 from privacyidea.lib.lifecycle import register_finalizer
-from privacyidea.lib.pooling import get_engine
+from privacyidea.lib.pooling import get_engine, engines_are_shared
+from privacyidea.lib.framework import is_request_context
 from privacyidea.lib.utils import censor_connect_string
 from privacyidea.lib.utils import (is_true, convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
 from privacyidea.models import Audit as LogEntry
@@ -206,10 +207,16 @@ class Audit(AuditBase):
         # Disable the costly checking of private RSA keys when loading them.
         self.check_private_key = not self.config.get(ConfigKey.AUDIT_NO_PRIVATE_KEY_CHECK, False)
         if self.sign_data:
-            self.read_keys(self.config.get(ConfigKey.AUDIT_KEY_PUBLIC),
-                           self.config.get(ConfigKey.AUDIT_KEY_PRIVATE))
-            self.sign_object = Sign(self.private, self.public,
-                                    check_private_key=self.check_private_key)
+            public_key_file = self.config.get(ConfigKey.AUDIT_KEY_PUBLIC)
+            if not public_key_file:
+                # The module would still sign, but every entry it reads back would verify as
+                # FAIL, which is indistinguishable from a tampered log. A missing key file is
+                # a configuration error and has to be visible as one.
+                raise TypeError(f"{ConfigKey.AUDIT_KEY_PUBLIC} must name a file containing the "
+                                "public key to verify audit entries with.")
+            self.sign_object = get_sign_object(self.config.get(ConfigKey.AUDIT_KEY_PRIVATE),
+                                               public_key_file,
+                                               check_private_key=self.check_private_key)
         # Read column_length from the config file
         config_column_length = self.config.get(ConfigKey.AUDIT_SQL_COLUMN_LENGTH, {})
         # fill the missing parts with the default from the models
@@ -221,6 +228,9 @@ class Audit(AuditBase):
         # string is fixed for a running privacyIDEA instance.
         # In other words, we will not run into any problems with changing connect strings.
         self.engine = get_engine(self.name, self._create_engine)
+        # A shared engine is still in use elsewhere when this request ends, so only an engine
+        # this object has to itself may have its connections closed on teardown.
+        self._owns_engine = not engines_are_shared()
         # create a configured "Session" class. ``scoped_session`` is not
         # necessary because we do not share session objects among threads.
         # We use it anyway as a safety measure.
@@ -228,7 +238,12 @@ class Audit(AuditBase):
         self.session = Session()
         # Ensure that the connection gets returned to the pool when the request has
         # been handled. This may close an already-closed session, but this is not a problem.
-        register_finalizer(self._finalize_session)
+        # Outside a request (pi-manage, a cron job, a background thread) nothing tears the
+        # application context down, so a finalizer registered there would never run and would
+        # only keep this object - and with it an open database connection - alive for the
+        # lifetime of the process.
+        if is_request_context():
+            register_finalizer(self._finalize_session)
         self.session._model_changes = {}
         # Lazily determined by _get_id_stride(), cached per instance since a single
         # instance serves an entire request (e.g. one page of audit entries).
@@ -264,7 +279,8 @@ class Audit(AuditBase):
     def _finalize_session(self):
         """ Close current session and dispose connections of db engine"""
         self.session.close()
-        self.engine.dispose()
+        if self._owns_engine:
+            self.engine.dispose()
 
     @property
     def column_length(self) -> dict:
