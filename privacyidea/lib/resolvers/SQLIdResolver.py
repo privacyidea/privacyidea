@@ -43,7 +43,8 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
 import hashlib
-from privacyidea.lib.pooling import get_engine
+from privacyidea.lib.pooling import get_engine, engines_are_shared
+from privacyidea.lib.framework import is_request_context
 from privacyidea.lib.lifecycle import register_finalizer
 from privacyidea.lib.utils import (is_true, censor_connect_string,
                                    convert_column_to_unicode, escape_sql_like,
@@ -625,10 +626,17 @@ class IdResolver (UserIdResolver):
         # get an engine from the engine registry, using self.getResolverId() as the key,
         # which involves the connect-string and the pool settings.
         self.engine = get_engine(self.getResolverId(), self._create_engine)
+        # A shared engine is still in use elsewhere when this request ends, so only an engine
+        # this resolver has to itself may have its connections closed on teardown.
+        self._owns_engine = not engines_are_shared()
         # We use ``scoped_session``.
         self.session = scoped_session(sessionmaker(bind=self.engine))()
-        # Session should be closed on teardown
-        register_finalizer(self.session.close)
+        # Session should be closed on teardown. Outside a request (pi-manage, a cron job, a
+        # background thread) nothing tears the application context down, so a finalizer
+        # registered there would never run and would only keep this resolver - and with it an
+        # open connection to the user store - alive for the lifetime of the process.
+        if is_request_context():
+            register_finalizer(self._finalize_session)
         self.session._model_changes = {}
 
         table_parts = self.table.split(".")
@@ -637,6 +645,14 @@ class IdResolver (UserIdResolver):
         log.debug(f"Loading table {self.table!s} from schema {schema!s}")
         self.TABLE = Table(self.table, MetaData(), autoload_with=self.engine, schema=schema)
         return self
+
+    def _finalize_session(self) -> None:
+        """Close the current session and, if the engine is this resolver's alone, its
+        connections too. Without the disposal the engine of every request would keep its
+        connection to the user store open until the garbage collector reclaims it."""
+        self.session.close()
+        if self._owns_engine:
+            self.engine.dispose()
 
     def _create_engine(self):
         log.debug("using the connect string "
