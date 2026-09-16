@@ -45,6 +45,7 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY,
                                               PushPresenceOptions, strip_pem_headers,
                                               SERVER_PUSH_CAPABILITIES, _build_smartphone_data,
+                                              _fit_notification_to_storage_budget,
                                               MAX_CLIENT_TAG_LENGTH, MAX_STORED_QUESTION_LENGTH,
                                               MAX_STORED_TITLE_LENGTH, MAX_NOTIFICATION_JSON_LENGTH,
                                               DEFAULT_MOBILE_TEXT)
@@ -2415,6 +2416,30 @@ class PushTokenTestCase(MyTestCase):
                           padding.PKCS1v15(), hashes.SHA256())
 
         remove_token(token.get_serial())
+
+    def test_23a_build_smartphone_data_normalizes_an_invalid_sslverify_policy_value(self):
+        token = self._create_push_token()
+        with mock.patch("privacyidea.lib.tokens.pushtoken.get_action_values_from_options",
+                        return_value="maybe"):
+            smartphone_data = _build_smartphone_data(token, "NONCE", REGISTRATION_URL,
+                                                      self.server_private_key_pem, options={})
+        self.assertEqual(smartphone_data["sslverify"], "1")
+        remove_token(token.get_serial())
+
+    def test_23b_build_mobile_notification_survives_a_broken_user_lookup(self):
+        token = self._create_push_token()
+        with mock.patch("privacyidea.lib.tokenclass.TokenClass.user",
+                        new_callable=mock.PropertyMock, side_effect=Exception("boom")):
+            smartphone_data = _build_smartphone_data(token, "NONCE", REGISTRATION_URL,
+                                                      self.server_private_key_pem, options={})
+        self.assertIn("question", smartphone_data)
+        remove_token(token.get_serial())
+
+    def test_23c_fit_notification_to_storage_budget_truncates_an_oversized_question(self):
+        data = {"notification": {"question": "x" * 2000, "title": "y" * 200}}
+        fitted = _fit_notification_to_storage_budget(data)
+        self.assertLessEqual(len(json.dumps(fitted)), MAX_NOTIFICATION_JSON_LENGTH)
+        self.assertLess(len(fitted["notification"]["question"]), 2000)
 
     @responses.activate
     def test_24_notification_names_the_triggering_client(self):
