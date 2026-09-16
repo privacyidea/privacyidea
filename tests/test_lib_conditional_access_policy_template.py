@@ -142,6 +142,11 @@ class ConditionalAccessPolicyTemplateTestCase(MyTestCase):
             AuthEventType.CHALLENGE_TRIGGER_FAIL,
             # A request that named no token type the endpoint can initialize - malformed, not a credential attempt.
             AuthEventType.INVALID_TOKEN_TYPE,
+            # The user aborted a push challenge they triggered themselves: abandonment, not an attempt that failed.
+            # Counting it would spend part of a brute-force budget on users changing their mind. The other two
+            # declines are counted - the repudiation because the attempt was somebody else's, and the unspecified
+            # one because a decline without a usable reason could be either.
+            AuthEventType.CHALLENGE_CANCELLED,
         }
         # This check covers only the trackable types: conditional access's own rejections (USER_LOCKED, IP_BLOCKED,
         # ACCESS_DENIED) are FAILURE outcomes too, but CA_ENFORCEMENT_EVENT_TYPES excludes them from the policy

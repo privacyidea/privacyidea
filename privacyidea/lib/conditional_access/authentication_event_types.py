@@ -150,8 +150,19 @@ class AuthEventType(str, Enum):
     CHALLENGE_ANSWERED_OUT_OF_BAND = "CHALLENGE_ANSWERED_OUT_OF_BAND"
     # Challenge response is wrong, expired, or the transaction_id is unknown.
     CHALLENGE_ANSWERED_FAIL = "CHALLENGE_ANSWERED_FAIL"
-    # Push challenge explicitly rejected on the smartphone.
+    # Push challenge rejected on the smartphone without saying why: a legacy app that does not send a decline
+    # reason at all, or one that sent a reason this server version does not know. The unspecified bucket, so an
+    # unrecognized reason is never read as the repudiation below.
     CHALLENGE_DECLINED = "CHALLENGE_DECLINED"
+    # The user rejected a push challenge they say they did not trigger (decline reason "unknown_trigger"). Unlike
+    # every other failure here, this is the user attesting to an attempt rather than the server inferring one from
+    # a failed credential - and the attestation is signed by the smartphone, so it cannot be forged or suppressed
+    # by whoever triggered the challenge. Where the challenge came from /validate/check it also means the first
+    # factor was accepted, i.e. someone else is holding a working credential.
+    CHALLENGE_DECLINED_UNKNOWN_TRIGGER = "CHALLENGE_DECLINED_UNKNOWN_TRIGGER"
+    # The user aborted a push challenge they triggered themselves (decline reason "cancelled"). Abandonment, not a
+    # failed attempt, which is why the failure rate limits in policy_template do not count it.
+    CHALLENGE_CANCELLED = "CHALLENGE_CANCELLED"
     # a successful authentication triggered the enrollment of a new token type to complete the authentication
     ENROLLMENT_TRIGGERED = "ENROLLMENT_TRIGGERED"
     # cancelling the enrollment failed (unknown or already-consumed transaction_id).
@@ -256,7 +267,10 @@ class AuthEventReason(str, Enum):
     CHALLENGE_EXPIRED = "CHALLENGE_EXPIRED"
     # The response matched, but the token may not complete a challenge (its state changed since the trigger).
     TOKEN_NOT_FIT_FOR_CHALLENGE = "TOKEN_NOT_FIT_FOR_CHALLENGE"
-    # The challenge was explicitly rejected on the device.
+    # The challenge was explicitly rejected on the device. Carried by all three decline event types, and says only
+    # where the refusal came from: which refusal it was is the event type's job (CHALLENGE_DECLINED_UNKNOWN_TRIGGER,
+    # CHALLENGE_CANCELLED, or the unspecified CHALLENGE_DECLINED), so a reason per variant would repeat it - the same
+    # reasoning that leaves a wrong first factor without a reason of its own.
     CHALLENGE_DECLINED_ON_DEVICE = "CHALLENGE_DECLINED_ON_DEVICE"
 
     def __str__(self) -> str:
@@ -356,6 +370,8 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.CHALLENGE_ANSWERED_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.CHALLENGE_TRIGGER_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.CHALLENGE_DECLINED: AuthEventOutcome.FAILURE,
+    AuthEventType.CHALLENGE_DECLINED_UNKNOWN_TRIGGER: AuthEventOutcome.FAILURE,
+    AuthEventType.CHALLENGE_CANCELLED: AuthEventOutcome.FAILURE,
     AuthEventType.ENROLLMENT_CANCELED_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.UNKNOWN_FAIL_REASON: AuthEventOutcome.FAILURE,
     AuthEventType.USER_LOCKED: AuthEventOutcome.FAILURE,
@@ -473,8 +489,13 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND,
     AuthEventType.CHALLENGE_CONTINUED,
     AuthEventType.CHALLENGE_TRIGGERED,
+    # Ranked above the other challenge failures: it is the only one carrying a statement from the user rather than
+    # an inference from a credential, so wherever a request produced it as well, it is what that request was about.
+    AuthEventType.CHALLENGE_DECLINED_UNKNOWN_TRIGGER,
     AuthEventType.CHALLENGE_ANSWERED_FAIL,
     AuthEventType.CHALLENGE_DECLINED,
+    # Lowest of the three declines: the user abandoning their own attempt says least about the request.
+    AuthEventType.CHALLENGE_CANCELLED,
     AuthEventType.ENROLLMENT_CANCELED_FAIL,
     AuthEventType.MFA_FAIL,
     AuthEventType.TOKEN_ONLY_FAIL,
