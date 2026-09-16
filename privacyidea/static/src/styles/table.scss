@@ -219,8 +219,8 @@ $description-width: 18rem;
   --table-state-min-height: calc(100cqh - 2 * 16px);
   --table-state-min-width: #{$min-width};
   --table-state-heading-font: var(--mat-sys-title-large);
-  --table-state-icon-frame-size: 5.5rem;
-  --table-state-icon-size: 40px;
+  --table-state-icon-frame-size: 7rem;
+  --table-state-icon-size: 56px;
 }
 
 // Sums a table's own col-width-* tiers (see the --column-width-* tokens and .col-width-* classes in
