@@ -33,7 +33,7 @@ $font-size-default: 14px;
   // --side-glow drops the vertical offset but keeps its blur, so it would bleed above and below.
   // Clipping confines it to the sides; the bottom is cut a pixel short of the edge, so it stops
   // at the bar rather than reaching into the toolbar below.
-  clip-path: inset(0 -40px 1px);
+  clip-path: inset(0 0 1px -40px);
   border-top-right-radius: var(--border-radius);
   border-top-left-radius: var(--border-radius);
 }

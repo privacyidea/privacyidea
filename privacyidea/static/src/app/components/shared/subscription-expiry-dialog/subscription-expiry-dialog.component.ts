@@ -16,10 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component } from "@angular/core";
 
-import { MatButton } from "@angular/material/button";
-import { MAT_DIALOG_DATA, MatDialogClose } from "@angular/material/dialog";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
 export interface SubscriptionExpiryItem {
   application: string;
@@ -34,13 +34,11 @@ export interface SubscriptionExpiryDialogData {
 @Component({
   selector: "app-subscription-expiry-dialog",
   standalone: true,
-  imports: [MatDialogClose, MatButton],
+  imports: [DialogWrapperComponent],
   templateUrl: "./subscription-expiry-dialog.component.html",
   styleUrl: "./subscription-expiry-dialog.component.scss"
 })
-export class SubscriptionExpiryDialogComponent {
-  readonly data = inject<SubscriptionExpiryDialogData>(MAT_DIALOG_DATA);
-
+export class SubscriptionExpiryDialogComponent extends AbstractDialogComponent<SubscriptionExpiryDialogData> {
   remainingDays(item: SubscriptionExpiryItem): number {
     // timedelta is negative before expiry (days until expiry), positive after; clamp to zero when past expiry
     return Math.max(0, Math.ceil(-item.timedelta));

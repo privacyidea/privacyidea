@@ -20,13 +20,11 @@
 <app-dialog-wrapper
   [title]="data.title || 'Information'"
   [icon]="data.icon">
-  <mat-dialog-content>
-    <div class="text-center">
-      @for (text of data.texts; track text) {
-        <div>
-          {{ text }}
-        </div>
-      }
-    </div>
-  </mat-dialog-content>
+  <div class="text-center">
+    @for (text of data.texts; track text) {
+      <div>
+        {{ text }}
+      </div>
+    }
+  </div>
 </app-dialog-wrapper>
