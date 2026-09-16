@@ -12,7 +12,7 @@
   @include styles.main-component-style;
   display: flex;
   flex-direction: column;
-  width: calc(4 * 16px + var(--card-width-m) + var(--card-width-l)  + var(--card-width-s));
+  width: table.details-panel-width(m, l, s);
   box-sizing: border-box;
 
   :host-context(body.self-service-layout) & {

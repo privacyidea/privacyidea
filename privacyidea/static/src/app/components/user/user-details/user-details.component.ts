@@ -33,6 +33,7 @@ import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/mat
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableDataSource } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -101,7 +102,8 @@ import { formatLocalDateTime } from "@utils/date-format.utils";
     StickyHeaderDirective,
     DetailsCardComponent,
     DetailFieldComponent,
-    DetailFieldRowComponent
+    DetailFieldRowComponent,
+    MatProgressSpinner
   ],
   providers: [DetailsEditRegistry],
   templateUrl: "./user-details.component.html",
@@ -137,6 +139,9 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
 
   userData = this.userService.user;
   tokenResource = this.tokenService.tokenResource;
+  protected readonly showInitialLoading = computed(
+    () => this.userService.userResource.isLoading() && !this.userService.userResource.hasValue()
+  );
 
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: this.tokenService.tokenResourceValue,

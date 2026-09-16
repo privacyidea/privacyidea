@@ -23,6 +23,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -61,7 +62,8 @@ import { lastValueFrom } from "rxjs";
     CopyButtonComponent,
     ScrollToTopDirective,
     MachineResolverHostsTabComponent,
-    MachineResolverLdapTabComponent
+    MachineResolverLdapTabComponent,
+    MatProgressSpinner
   ]
 })
 export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
@@ -105,6 +107,14 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
     const name = this.currentMachineResolver().resolvername;
     return name.length > 0 && !/^[a-zA-Z0-9._-]*$/.test(name);
   });
+
+  // True only for the first fetch, before the resource has ever resolved: a reload keeps the
+  // previous value in place instead, so the page does not blank out under the user's own change.
+  protected readonly showInitialLoading = computed(
+    () =>
+      this.machineResolverService.machineResolverResource.isLoading() &&
+      !this.machineResolverService.machineResolverResource.hasValue()
+  );
 
   readonly canSaveMachineResolver = computed(() => {
     const current = this.currentMachineResolver();

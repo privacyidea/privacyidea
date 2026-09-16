@@ -85,6 +85,24 @@ $description-width: 18rem;
   max-width: var(--card-width-#{$size});
 }
 
+// A details page's own panel (main-component-style) has no width of its own - it is exactly as
+// wide as its widest row of cards. $sizes is that row's card-width tiers, in the order they sit
+// in the row (e.g. (m, l) for the add-token/token-table pair); this sums their --card-width-*
+// custom properties plus a 16px gap between each and the panel's own 16px left/right padding, so
+// every details page (container, token, user, machine-resolver, and each one's pre-data loading
+// placeholder) is sized from the same rule instead of a hand-picked, driftable number.
+@function details-panel-width($sizes...) {
+  $expr: "2 * 16px";
+  @each $size in $sizes {
+    $expr: "#{$expr} + var(--card-width-#{$size})";
+  }
+  $gaps: length($sizes) - 1;
+  @if $gaps > 0 {
+    $expr: "#{$expr} + #{$gaps * 16px}";
+  }
+  @return unquote("calc(#{$expr})");
+}
+
 // Shared key/value layout for the token & container "Information" cards.
 @mixin details-info-grid {
   .info-actions-row {
