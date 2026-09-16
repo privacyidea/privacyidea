@@ -1,0 +1,93 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Checks what the Python distributions contain and that an installed privacyIDEA serves the
+# WebUI. The unit tests all run from the source tree, where every file is in place whether or
+# not it is packaged, so they cannot see a file that is missing from the wheel. That gap is
+# where "works from a checkout, broken once installed" lives, and it reaches users through the
+# .deb and PyPI rather than through CI.
+#
+# MANIFEST.in alone decides what is in a distribution: with include-package-data and
+# "graft privacyidea", package-data and exclude-package-data in pyproject.toml have no effect.
+# That is easy to get wrong silently, hence the assertions below.
+
+name: Packaging
+
+on:
+  pull_request:
+    branches:
+      - 'master'
+      - 'branch-*'
+    paths:
+      - 'MANIFEST.in'
+      - 'pyproject.toml'
+      - 'privacyidea/static/**'
+      - 'privacyidea/static_old/**'
+      - '.github/workflows/packaging.yml'
+  schedule:
+    # Nightly at 02:30 UTC, between the WebUI build and the Docker build.
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  distribution-contents:
+    name: Build and inspect the distributions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # fetch-depth: 0 so setuptools-scm can derive the version from the git tags.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load Python versions
+        id: pyversions
+        run: |
+          set -a; source .github/python-versions.env; set +a
+          echo "release=$RELEASE" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python ${{ steps.pyversions.outputs.release }}
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ steps.pyversions.outputs.release }}
+
+      # A real WebUI build takes several minutes and is covered by webui-build.yml. What matters
+      # here is whether the packaging carries the build to the place the server reads it from, so
+      # a stand-in with the same layout answers the question just as well.
+      - name: Create a stand-in for the compiled WebUI
+        run: |
+          for locale in en de; do
+            dir="privacyidea/static/dist/privacyidea-webui/browser/${locale}"
+            mkdir -p "$dir"
+            printf '<html><head><base href="/static/dist/privacyidea-webui/browser/%s/">' "$locale" > "$dir/index.html"
+            printf '</head><body>%s</body></html>' "$locale" >> "$dir/index.html"
+          done
+
+      - name: Build the sdist and the wheel
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      - name: Check what the distributions contain
+        run: python .github/scripts/check_distribution.py
+
+      - name: Install the wheel into a clean environment
+        run: |
+          python -m venv /tmp/installed
+          /tmp/installed/bin/pip install dist/*.whl
+
+      # Run from a directory that is not the checkout, so nothing can be picked up from the
+      # source tree: what answers here is what the wheel installed.
+      - name: Check the installed privacyIDEA serves the WebUI
+        run: |
+          mkdir -p /tmp/run
+          cp .github/scripts/check_installed_webui.py /tmp/run/
+          cd /tmp/run && /tmp/installed/bin/python check_installed_webui.py

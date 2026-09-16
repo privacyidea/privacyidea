@@ -483,7 +483,6 @@ flask==3.1.3 \
     #   flask-babel
     #   flask-migrate
     #   flask-sqlalchemy
-    #   flask-versioned
     #   privacyIDEA (pyproject.toml)
 flask-babel==4.0.0 \
     --hash=sha256:638194cf91f8b301380f36d70e2034c77ee25b98cb5d80a1626820df9a6d4625 \
@@ -502,9 +501,6 @@ flask-sqlalchemy==3.1.1 \
 flask-talisman==1.1.0 \
     --hash=sha256:3c42b610ebe49b0e35ca150e179bf51aa1da01e4635b49a674868ea681046208 \
     --hash=sha256:c5f486f5f54420729f84b3c3850cd63f96e8b033a9629bee66c524ea363797ff
-    # via privacyIDEA (pyproject.toml)
-flask-versioned==0.9.4.post20101221 \
-    --hash=sha256:516694dc860a1bc4f22ab60b324a85083c0150522be109282a3bed681057fd34
     # via privacyIDEA (pyproject.toml)
 google-auth==2.55.1 \
     --hash=sha256:eada68dfd52b3b81191827601e2a0c3fa12540c818534b630ddc5355769c3995 \
@@ -1325,6 +1321,4 @@ werkzeug==3.1.8 \
 setuptools==82.0.1 \
     --hash=sha256:7d872682c5d01cfde07da7bccc7b65469d3dca203318515ada1de5eda35efbf9 \
     --hash=sha256:a59e362652f08dcd477c78bb6e7bd9d80a7995bc73ce773050228a348ce2e5bb
-    # via
-    #   flask-versioned
-    #   setuptools-scm
+    # via setuptools-scm

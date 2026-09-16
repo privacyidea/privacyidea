@@ -12,15 +12,40 @@ respective sections in the documentation.
 
 .. _new_webui:
 
-New WebUI
----------
+Serving the WebUI
+-----------------
 .. index:: new webui
-.. versionadded:: 3.12
+.. versionchanged:: 3.14
+   The WebUI introduced in 3.12 is the one privacyIDEA serves. It moved from ``static_new/`` into
+   ``static/``, and the WebUI it replaces moved to ``static_old/``.
 
-To enable the new WebUI, edit the configuration file `pi.cfg` and add the following lines::
+An installation needs no configuration for this: the WebUI in ``static/`` is what privacyIDEA
+serves. If `pi.cfg` still carries the two lines that enabled the preview::
 
     PI_STATIC_FOLDER = "static_new/"
     PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"
+
+they can be removed. They keep working for this version -- the paths are remapped to the new
+location and a warning is written to the log -- but they are not honoured in the next one.
+
+.. _legacy_webui:
+
+Serving the previous WebUI
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: legacy webui
+
+The WebUI of version 3.13 and earlier is still shipped, in ``static_old/``. To serve it instead,
+add both of these lines to `pi.cfg`::
+
+    PI_STATIC_FOLDER = "static_old/"
+    PI_TEMPLATE_FOLDER = "static_old/templates/"
+
+The first selects the files the WebUI is served from, the second the templates privacyIDEA renders
+itself, such as the certificate request form. Both are needed.
+
+It is kept for one version so that a problem with the current WebUI does not hold up an update,
+and **is removed in the next version**. If you need it, please report what made you switch back.
 
 
 .. _new_webui_asset_delivery:
@@ -28,7 +53,7 @@ To enable the new WebUI, edit the configuration file `pi.cfg` and add the follow
 Serving the static assets efficiently
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The new WebUI is a compiled single-page application whose static assets
+The WebUI is a compiled single-page application whose static assets
 (JavaScript and CSS) are served without compression by the application server.
 For optimal load performance, enable compression and caching for these assets
 **at your web server / reverse proxy**.
@@ -60,7 +85,7 @@ Session persistence
 
 .. index:: session persistence, sessionStorage, localStorage
 
-The new WebUI keeps the bearer token in web storage, so a page reload does not end the
+The WebUI keeps the bearer token in web storage, so a page reload does not end the
 session. Where it keeps it is set by the :ref:`policy_session_persistence` policy, which
 is evaluated for the user who logs in:
 
