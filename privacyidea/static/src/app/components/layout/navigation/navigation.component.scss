@@ -182,7 +182,7 @@ $bar-gradient-end-dark: #464646;
 
 .secondary-toolbar {
   @include flex-center;
-  gap: 8px;
+  gap: 4px;
   padding: $toolbar-padding;
   min-height: 44px;
   // Material paints a mat-toolbar from this token with a `background` shorthand, so the gradient
@@ -247,7 +247,7 @@ $bar-gradient-end-dark: #464646;
   font-size: 12px;
   color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
-  margin-right: 13px;
+  margin-right: 17px;
 
   a {
     color: var(--mat-sys-primary) !important;
@@ -271,7 +271,7 @@ $bar-gradient-end-dark: #464646;
   display: none;
   align-items: center;
   flex-shrink: 0;
-  margin-right: 5px;
+  margin-right: 9px;
 }
 
 .version-text {
@@ -280,12 +280,12 @@ $bar-gradient-end-dark: #464646;
   // dark mode, which would leave the two barely a step apart.
   color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
-  margin: 0 22px 0 16px;
+  margin: 0 34px 0 16px;
 
   // The node name in the primary toolbar's utils-group above widens that group, so this drops its
   // own left margin to keep the row balanced.
   &.node-shown {
-    margin-right: 86px;
+    margin-right: 99px;
   }
 }
 
@@ -356,10 +356,10 @@ $bar-gradient-end-dark: #464646;
   }
 
   .version-text {
-    margin-right: 196px;
+    margin-right: 208px;
 
     &.node-shown {
-      margin-right: 259px;
+      margin-right: 272px;
     }
   }
 
@@ -370,10 +370,10 @@ $bar-gradient-end-dark: #464646;
 
 @media (max-width: 1600px) {
   .version-text {
-    margin-right: 101px;
+    margin-right: 113px;
 
     &.node-shown {
-      margin-right: 101px;
+      margin-right: 113px;
     }
   }
 }
