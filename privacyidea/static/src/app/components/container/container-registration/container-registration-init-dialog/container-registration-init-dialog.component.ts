@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, ViewChild } from "@angular/core";
-import { MatDialogContent } from "@angular/material/dialog";
 import { ContainerRegistrationConfigComponent } from "@components/container/container-registration/container-registration-config/container-registration-config.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
@@ -38,7 +37,7 @@ export interface ContainerRegistrationInitDialogData {
   selector: "app-container-registration-init-dialog",
   templateUrl: "./container-registration-init-dialog.component.html",
   styleUrls: ["./container-registration-init-dialog.component.scss"],
-  imports: [MatDialogContent, ContainerRegistrationConfigComponent, DialogWrapperComponent]
+  imports: [ContainerRegistrationConfigComponent, DialogWrapperComponent]
 })
 export class ContainerRegistrationInitDialogComponent extends AbstractDialogComponent<ContainerRegistrationInitDialogData> {
   @ViewChild(ContainerRegistrationConfigComponent)

@@ -20,9 +20,9 @@
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, Signal } from "@angular/core";
-import { MatButton } from "@angular/material/button";
-import { MatDialogActions, MatDialogClose, MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "@models/dialog";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { StringUtils } from "@utils/string.utils";
@@ -33,10 +33,13 @@ import { ContainerRegistrationCompletedDialogComponent } from "./container-regis
   selector: "app-container-registration-completed-dialog-wizard",
   templateUrl: "./container-registration-completed-dialog.wizard.component.html",
   styleUrls: ["./container-registration-completed-dialog.component.scss"],
-  imports: [MatDialogContent, MatDialogActions, MatButton, MatDialogClose, AsyncPipe]
+  imports: [AsyncPipe, DialogWrapperComponent]
 })
 export class ContainerRegistrationCompletedDialogWizardComponent extends ContainerRegistrationCompletedDialogComponent {
   public readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly actions: DialogAction<"logout">[] = [
+    { type: "confirm", label: $localize`:@@common.logout:Logout`, value: "logout", primary: true }
+  ];
   private http = inject(HttpClient);
   private sanitizer = inject(DomSanitizer);
 
@@ -55,4 +58,9 @@ export class ContainerRegistrationCompletedDialogWizardComponent extends Contain
         sanitized: this.sanitizer.bypassSecurityTrustHtml(StringUtils.replaceWithTags(raw, this.tagData()))
       }))
     );
+
+  onAction(): void {
+    this.close();
+    this.authService.logout();
+  }
 }
