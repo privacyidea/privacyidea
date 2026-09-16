@@ -62,18 +62,21 @@ import { withDefaultRealm } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so the columns line up on the same scale other tables use and the table-state placeholder
+// (see table-width() in table.scss) can be sized from the same numbers.
 const columnKeysMap = [
-  { key: "select", label: "" },
-  { key: "serial", label: $localize`:@@common.serial:Serial` },
-  { key: "tokentype", label: $localize`:@@common.type:Type` },
-  { key: "active", label: $localize`:@@common.active:Active` },
-  { key: "description", label: $localize`:@@common.description:Description` },
-  { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter` },
-  { key: "rollout_state", label: $localize`:@@token.rolloutState:Rollout State` },
-  { key: "username", label: $localize`:@@common.user:User` },
-  { key: "user_realm", label: $localize`:@@common.userRealm:User Realm` },
-  { key: "realms", label: $localize`:@@token.tokenRealm:Token Realm` },
-  { key: "container_serial", label: $localize`:@@common.container:Container` }
+  { key: "select", label: "", width: "xs" },
+  { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+  { key: "tokentype", label: $localize`:@@common.type:Type`, width: "xs" },
+  { key: "active", label: $localize`:@@common.active:Active`, width: "xs" },
+  { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+  { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter`, width: "xs" },
+  { key: "rollout_state", label: $localize`:@@token.rolloutState:Rollout State`, width: "s" },
+  { key: "username", label: $localize`:@@common.user:User`, width: "s" },
+  { key: "user_realm", label: $localize`:@@common.userRealm:User Realm`, width: "s" },
+  { key: "realms", label: $localize`:@@token.tokenRealm:Token Realm`, width: "s" },
+  { key: "container_serial", label: $localize`:@@common.container:Container`, width: "m" }
 ];
 
 @Component({

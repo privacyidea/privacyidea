@@ -213,14 +213,26 @@ $description-width: 18rem;
 // the table would have had, and steps up one typescale/icon size with it. A
 // panel alone on a page and a panel sitting among a page's other sections are
 // the same component at two sizes, not two different components.
-@mixin page-table-state-size {
+@mixin page-table-state-size($min-width: min(44rem, calc(100cqw - 2 * 16px))) {
   // The footprint is the page container's own box: main-component-style caps it at 100cq* against
   // the content region and pads 16px per side, so the panel takes that box less the padding.
   --table-state-min-height: calc(100cqh - 2 * 16px);
-  --table-state-min-width: min(44rem, calc(100cqw - 2 * 16px));
+  --table-state-min-width: #{$min-width};
   --table-state-heading-font: var(--mat-sys-title-large);
   --table-state-icon-frame-size: 5.5rem;
   --table-state-icon-size: 40px;
+}
+
+// Sums a table's own col-width-* tiers (see the --column-width-* tokens and .col-width-* classes in
+// styles.scss) into one width, for page-table-state-size($min-width) above: the empty/error/loading
+// panel shown in place of the table is then sized from the same tiers its columns actually use,
+// rather than the unrelated 44rem guess that mixin defaults to.
+@function table-width($sizes...) {
+  $expr: "0px";
+  @each $size in $sizes {
+    $expr: "#{$expr} + var(--column-width-#{$size})";
+  }
+  @return unquote("calc(#{$expr})");
 }
 
 @mixin base-table-structure(

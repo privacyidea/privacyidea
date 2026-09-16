@@ -77,6 +77,15 @@ body {
   --card-width-l: 696px;
   --card-width-xl: 874px;
 
+  // Table column widths, applied via the col-width-* utility classes below (or table.column-width()
+  // for a component-scoped rule): xs/s fit a short code or badge, m the existing 170px convention
+  // (e.g. a serial), l/xl the existing 240/300px conventions (e.g. a wrapped description).
+  --column-width-xs: 80px;
+  --column-width-s: 120px;
+  --column-width-m: 170px;
+  --column-width-l: 240px;
+  --column-width-xl: 300px;
+
   // Pre-baked Material elevation shadows (0..24) as CSS variables.
   // Generated at build time so that elevation can be re-skinned at runtime
   // by reassigning --elevation-3 / --elevation-5 / --elevation-8.
@@ -857,6 +866,35 @@ $corner-radii: (
 
 .max-width-300 {
   max-width: 300px;
+}
+
+// Standardized table column width tiers (analogous to the card-width-* tiers above): a column opts
+// into one via a col-width-{size} class on its cell instead of a one-off pixel value, so every
+// table's columns - and the table-state placeholder sized from them (see table.table-width()) -
+// draw from the same scale.
+.col-width-xs {
+  width: var(--column-width-xs);
+  max-width: var(--column-width-xs);
+}
+
+.col-width-s {
+  width: var(--column-width-s);
+  max-width: var(--column-width-s);
+}
+
+.col-width-m {
+  width: var(--column-width-m);
+  max-width: var(--column-width-m);
+}
+
+.col-width-l {
+  width: var(--column-width-l);
+  max-width: var(--column-width-l);
+}
+
+.col-width-xl {
+  width: var(--column-width-xl);
+  max-width: var(--column-width-xl);
 }
 
 .copy-button {

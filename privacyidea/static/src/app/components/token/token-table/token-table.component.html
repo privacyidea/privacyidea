@@ -158,12 +158,8 @@
             }
             <td
               *matCellDef="let tokenDetails"
-              [ngClass]="{
-                'table-checkbox': column.key === 'select',
-                'width-300': column.key === 'description',
-                'container_serial-width': column.key === 'container_serial'
-              }"
-              class="max-width-300"
+              [class.table-checkbox]="column.key === 'select'"
+              [ngClass]="'col-width-' + column.width"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
