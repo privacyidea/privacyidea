@@ -395,7 +395,11 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
         }
         IGNORED_MODIFY_TYPE_PAIRS: set[tuple[str, str]] = set()
     else:
-        IGNORED_DIFF_TYPES = {"remove_index", "add_index", "modify_nullable"}
+        # MySQL/MariaDB express an Identity column as AUTO_INCREMENT and reflect it as a
+        # plain autoincrementing integer, so alembic reports the model's Identity as a
+        # default the database is missing. PostgreSQL and Oracle have identity columns of
+        # their own and show no such difference.
+        IGNORED_DIFF_TYPES = {"remove_index", "add_index", "modify_nullable", "modify_default"}
         IGNORED_MODIFY_TYPE_PAIRS = {
             ("LONGTEXT", "UnicodeText"),
             ("TIME", "Interval"),
