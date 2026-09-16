@@ -419,7 +419,7 @@ def _log_challenge_answer(g: Any, transaction_id: str, status: str, reason: str 
     detail = f"transaction_id: {transaction_id}, status: {status}"
     if reason:
         detail += f", reason: {reason}"
-    audit_object.log({"action_detail": detail})
+    audit_object.add_to_log({"action_detail": detail}, add_with_comma=True)
 
 
 @dataclass
