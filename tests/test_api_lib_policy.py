@@ -6,6 +6,7 @@ The api.lib.policy.py depends on lib.policy and on flask!
 import json
 import logging
 from datetime import datetime, timedelta
+from unittest import mock
 
 import jwt
 from dateutil.tz import tzlocal
@@ -103,7 +104,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
 from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
                                    CHARLIST_CONTENTPOLICY, check_pin_contents)
-from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
+from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE, get_version
 from .base import (MyApiTestCase)
 from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
                                        ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN,
@@ -5853,8 +5854,18 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                      ).save()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
-        self.assertIn("privacyidea@example.com", jresult.get("result").get("value").get("supportmail"))
-        self.assertIn(str(EXPIRE_MESSAGE), jresult.get("result").get("value").get("supportmail"))
+        supportmail = jresult.get("result").get("value").get("supportmail")
+        self.assertIn("privacyidea@example.com", supportmail)
+        # The subscription holds, so the mail is about the running version
+        self.assertIn(f"Problem with {get_version()!s}", supportmail)
+        self.assertNotIn(str(EXPIRE_MESSAGE), supportmail)
+
+        # A subscription that no longer holds is what the admin is offered to write about
+        with mock.patch("privacyidea.api.lib.postpolicy.subscription_status", return_value=2):
+            new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        supportmail = jresult.get("result").get("value").get("supportmail")
+        self.assertIn(str(EXPIRE_MESSAGE), supportmail)
 
     def test_12_get_webui_settings_container_wizard(self):
         self.setUp_user_realms()

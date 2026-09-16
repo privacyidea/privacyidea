@@ -8,11 +8,12 @@ import mock
 from privacyidea.lib.subscriptions import (save_subscription,
                                            delete_subscription,
                                            get_subscription,
+                                           get_users_with_active_tokens,
                                            raise_exception_probability,
                                            check_subscription,
                                            SubscriptionError,
                                            subscription_status)
-from privacyidea.lib.token import init_token
+from privacyidea.lib.token import init_token, enable_token, remove_token
 from privacyidea.lib.user import User
 from .base import MyTestCase
 
@@ -173,3 +174,51 @@ class SubscriptionApplicationTestCase(MyTestCase):
         res = subscription_status()
         # Token count < 50
         self.assertEqual(0, res)
+
+
+class UsersWithActiveTokensTestCase(MyTestCase):
+    """
+    The number a subscription is measured against counts users, not tokens.
+    """
+
+    def test_01_a_user_with_several_tokens_counts_once(self):
+        self.setUp_user_realms()
+        self.assertEqual(0, get_users_with_active_tokens())
+
+        cornelius = User("cornelius", self.realm1)
+        init_token({"serial": "count01", "type": "spass"}, user=cornelius)
+        init_token({"serial": "count02", "type": "spass"}, user=cornelius)
+        self.assertEqual(1, get_users_with_active_tokens())
+
+        init_token({"serial": "count03", "type": "spass"}, user=User("selfservice", self.realm1))
+        self.assertEqual(2, get_users_with_active_tokens())
+
+        # A token nobody owns has no user to count
+        init_token({"serial": "count04", "type": "spass"})
+        self.assertEqual(2, get_users_with_active_tokens())
+
+        # A user counts as long as any of their tokens is active
+        enable_token("count01", enable=False)
+        self.assertEqual(2, get_users_with_active_tokens())
+        enable_token("count02", enable=False)
+        self.assertEqual(1, get_users_with_active_tokens())
+
+        for serial in ["count01", "count02", "count03", "count04"]:
+            remove_token(serial)
+        self.assertEqual(0, get_users_with_active_tokens())
+
+    def test_02_the_same_user_id_in_two_resolvers_counts_twice(self):
+        # Users are counted as (resolver, user id) pairs, because an id is only unique
+        # within its resolver: "franzi" in reso3 carries the same id as "cornelius" in
+        # resolver1
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        self.assertEqual(0, get_users_with_active_tokens())
+
+        init_token({"serial": "count05", "type": "spass"}, user=User("cornelius", self.realm1))
+        init_token({"serial": "count06", "type": "spass"}, user=User("franzi", self.realm3))
+        self.assertEqual(2, get_users_with_active_tokens())
+
+        remove_token("count05")
+        remove_token("count06")
+        self.assertEqual(0, get_users_with_active_tokens())
