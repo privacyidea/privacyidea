@@ -18,7 +18,6 @@
  **/
 
 import { Component } from "@angular/core";
-import { MatDialogContent } from "@angular/material/dialog";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
@@ -30,7 +29,7 @@ export interface MessageDialogData {
 
 @Component({
   selector: "app-simple-dialog",
-  imports: [MatDialogContent, DialogWrapperComponent],
+  imports: [DialogWrapperComponent],
   templateUrl: "./message-dialog.component.html",
   styleUrl: "./message-dialog.component.scss"
 })
