@@ -16,20 +16,18 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-dialog-content>
+<app-dialog-wrapper
+  (actionTriggered)="onAction()"
+  [actions]="actions"
+  [showCloseButton]="false"
+  i18n-title="@@container.containerRegistration"
+  title="Container Registration Completed">
   @let registeredHtml = registeredHtml$ | async;
   @if (registeredHtml?.hasContent) {
     <div
       [innerHTML]="registeredHtml?.sanitized"
       class="margin-top-16"></div>
   } @else {
-    <div class="margin-bottom-16">
-      <h3
-        class="margin-8"
-        i18n="@@container.containerRegistration"
-        >Container Registration Completed</h3
-      >
-    </div>
     <span i18n="@@container.containerWasSuccessfully"
       >The container
       <a
@@ -42,14 +40,4 @@
       was successfully registered.</span
     >
   }
-</mat-dialog-content>
-<mat-dialog-actions>
-  <button
-    (click)="authService.logout()"
-    class="action-button-primary button-width-s"
-    mat-button
-    mat-dialog-close
-    i18n="@@common.logout"
-    >Logout</button
-  >
-</mat-dialog-actions>
+</app-dialog-wrapper>

@@ -199,17 +199,14 @@
     class="translate-button">
     <mat-icon>translate</mat-icon>
   </button>
-  <span class="version-text">
+  <span
+    class="version-text"
+    [class.node-shown]="authService.showNode()">
     <span class="version-prefix">
       {{ versionPrefix() }}
     </span>
     {{ this.versioningService.version() }}
   </span>
-  <span
-    class="beta-badge margin-right-16"
-    i18n="@@nav.beta"
-    >Beta</span
-  >
 </ng-template>
 
 @if (activeSection() === "dashboard") {
