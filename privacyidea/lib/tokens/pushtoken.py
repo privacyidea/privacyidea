@@ -316,18 +316,31 @@ def _fit_notification_to_storage_budget(data: dict) -> dict:
     :return: the (possibly further truncated) data dict
     """
     notification = data.get("notification")
-    if not notification or not notification.get("question"):
+    if not notification:
         return data
     encoded_length = len(json.dumps(data))
     if encoded_length <= MAX_NOTIFICATION_JSON_LENGTH:
         return data
     overshoot = encoded_length - MAX_NOTIFICATION_JSON_LENGTH
-    question = notification["question"]
-    new_length = max(0, len(question) - overshoot)
-    log.warning(f"Challenge notification still exceeds the storage budget after per-field "
-                f"truncation ({encoded_length} > {MAX_NOTIFICATION_JSON_LENGTH} encoded chars). "
-                f"Truncating the question from {len(question)} to {new_length} characters.")
-    notification["question"] = question[:new_length]
+
+    question = notification.get("question", "")
+    question_cut = min(overshoot, len(question))
+    if question_cut:
+        new_length = len(question) - question_cut
+        log.warning(f"Challenge notification still exceeds the storage budget after per-field "
+                    f"truncation ({encoded_length} > {MAX_NOTIFICATION_JSON_LENGTH} encoded chars). "
+                    f"Truncating the question from {len(question)} to {new_length} characters.")
+        notification["question"] = question[:new_length]
+    overshoot -= question_cut
+
+    if overshoot:
+        title = notification.get("title", "")
+        new_length = max(0, len(title) - overshoot)
+        log.warning(f"Challenge notification still exceeds the storage budget after truncating "
+                    f"the question ({encoded_length} > {MAX_NOTIFICATION_JSON_LENGTH} encoded chars). "
+                    f"Truncating the title from {len(title)} to {new_length} characters.")
+        notification["title"] = title[:new_length]
+
     return data
 
 
