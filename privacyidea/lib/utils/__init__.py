@@ -53,6 +53,25 @@ from privacyidea.lib.framework import get_app_config_value, get_base_url
 
 log = logging.getLogger(__name__)
 
+#: Matches the character SQLAlchemy uses for ``autoescape`` and is portable across
+#: SQLite, MySQL, PostgreSQL and Oracle.
+SQL_LIKE_ESCAPE = "/"
+
+
+def escape_sql_like(value: str) -> str:
+    """
+    Escape the SQL ``LIKE`` metacharacters ``%`` and ``_`` (and the escape character
+    itself) so that ``value`` matches literally. The result must be used with
+    ``escape=SQL_LIKE_ESCAPE``, e.g.
+    ``column.like(escape_sql_like(v), escape=SQL_LIKE_ESCAPE)``.
+
+    :param value: the value to escape
+    :return: the escaped value
+    """
+    return (value.replace(SQL_LIKE_ESCAPE, SQL_LIKE_ESCAPE * 2)
+            .replace("%", f"{SQL_LIKE_ESCAPE}%")
+            .replace("_", f"{SQL_LIKE_ESCAPE}_"))
+
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 ALLOWED_SERIAL = r"^[0-9a-zA-Z\-_]+$"
