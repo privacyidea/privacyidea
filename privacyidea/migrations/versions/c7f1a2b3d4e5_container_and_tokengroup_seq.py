@@ -14,7 +14,7 @@ Create Date: 2026-09-16 12:00:00.000000
 
 """
 from alembic import op
-from sqlalchemy import text, inspect, Sequence
+from sqlalchemy import column, func, inspect, select, table, Sequence
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.schema import CreateSequence, DropSequence
 from privacyidea.models.db import build_restart_sequence_sql
@@ -54,13 +54,17 @@ def upgrade():
         # Oracle do. There the column is AUTO_INCREMENT and fills itself.
         return
     existing = _existing_sequences(bind)
-    for table, sequence_name in {**NEW_SEQUENCES, **INHERITED_SEQUENCES}.items():
+    for table_name, sequence_name in {**NEW_SEQUENCES, **INHERITED_SEQUENCES}.items():
         try:
-            max_id = bind.execute(text(f"SELECT COALESCE(MAX(id), 0) FROM {table}")).scalar() or 0
+            # Built from SQLAlchemy constructs rather than an interpolated string, so the
+            # table name never reaches the statement as raw SQL.
+            max_id_stmt = select(func.coalesce(func.max(column("id")), 0)).select_from(table(table_name))
+            max_id = bind.execute(max_id_stmt).scalar() or 0
             start = max_id + 1
-            # Oracle (19c+) supports neither "CREATE SEQUENCE IF NOT EXISTS" nor
-            # "ALTER SEQUENCE ... RESTART WITH", so branch on what is already there
-            # and let build_restart_sequence_sql emit its RESTART START WITH.
+            # Before 23c, Oracle supports neither "CREATE SEQUENCE IF NOT EXISTS" nor
+            # "ALTER SEQUENCE ... RESTART WITH" - and 19c is the supported baseline, so
+            # neither can be used here. Branch on what is already there instead and let
+            # build_restart_sequence_sql emit the RESTART START WITH that Oracle accepts.
             if bind.dialect.name == "oracle":
                 if sequence_name.lower() not in existing:
                     op.execute(CreateSequence(Sequence(sequence_name, start=start)))
@@ -86,7 +90,7 @@ def downgrade():
     existing = _existing_sequences(bind)
     for sequence_name in NEW_SEQUENCES.values():
         try:
-            # Oracle (19c+) has no "DROP SEQUENCE IF EXISTS", so drop only what is there.
+            # Oracle has no "DROP SEQUENCE IF EXISTS" before 23c, so drop only what is there.
             if bind.dialect.name == "oracle":
                 if sequence_name.lower() in existing:
                     op.execute(DropSequence(Sequence(sequence_name)))
