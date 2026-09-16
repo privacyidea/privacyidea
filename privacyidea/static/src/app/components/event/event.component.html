@@ -71,7 +71,7 @@
 
     <table
       [dataSource]="eventHandlerDataSource()"
-      class="event-handler-table"
+      class="event-handler-table row-striped"
       mat-table>
       @for (column of Object.keys(columnKeysMap); track column) {
         @if (column !== "delete" || authService.actionAllowed("eventhandling_write")) {

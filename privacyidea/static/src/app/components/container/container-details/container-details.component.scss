@@ -23,11 +23,6 @@
     font-size: 14px;
   }
 
-  .details-grid .details-table {
-    @include table.details-key-value-table;
-    @include table.details-key-value-columns;
-  }
-
   .value-row {
     display: flex;
     flex-direction: row;

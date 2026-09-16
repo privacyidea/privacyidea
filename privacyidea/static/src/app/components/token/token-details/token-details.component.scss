@@ -24,16 +24,6 @@
   .mat-mdc-select-value-text {
     font-size: 14px;
   }
-
-  .details-table,
-  .user-details-table,
-  .info-table {
-    @include table.details-key-value-table;
-  }
-
-  .details-table {
-    @include table.details-key-value-columns;
-  }
 }
 
 // The pre-data state: the same fallback width as .details-container above, just

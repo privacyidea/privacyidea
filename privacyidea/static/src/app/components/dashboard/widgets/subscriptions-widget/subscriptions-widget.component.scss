@@ -62,6 +62,8 @@
   width: 100%;
 }
 
+// Carries "unstriped": here the columns are an overview of states, and a fill on every
+// other one only groups them by accident.
 .subscription-table {
   width: 100%;
   border-collapse: collapse;
@@ -84,9 +86,6 @@
     // The same line height the scrollable versions cell needs, so a row is exactly as
     // tall in the detailed view as in the compact one.
     line-height: 1.5;
-    // Opt out of the app-wide column striping (styles/table.scss): here the columns are
-    // an overview of states, and a fill on every other one only groups them by accident.
-    background: transparent;
   }
 
   th {
