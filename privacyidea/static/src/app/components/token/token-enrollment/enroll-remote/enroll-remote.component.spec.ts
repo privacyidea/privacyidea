@@ -57,7 +57,7 @@ describe("EnrollRemoteComponent", () => {
     }).compileComponents();
 
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["privacyideaserver_read"] });
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["privacyideaserver_read", "enrollREMOTE"] });
     fixture = TestBed.createComponent(EnrollRemoteComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -67,10 +67,18 @@ describe("EnrollRemoteComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should offer the configured servers in a select with privacyideaserver_read", () => {
+  it("should offer the configured servers in a select with privacyideaserver_read and enrollREMOTE", () => {
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector("mat-select")).not.toBeNull();
     expect(element.textContent).not.toContain("privacyideaserver_read");
+  });
+
+  it("should fall back to a text input with privacyideaserver_read but without enrollREMOTE", () => {
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["privacyideaserver_read"] });
+    fixture.detectChanges();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector("mat-select")).toBeNull();
+    expect(element.querySelector("mat-hint")?.textContent).toContain("enrollREMOTE");
   });
 
   describe("without privacyideaserver_read", () => {

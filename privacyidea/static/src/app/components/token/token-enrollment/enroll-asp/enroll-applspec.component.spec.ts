@@ -45,7 +45,7 @@ describe("EnrollAspComponent", () => {
     }).compileComponents();
 
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["serviceid_list"] });
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["serviceid_list", "enrollAPPLSPEC"] });
     fixture = TestBed.createComponent(EnrollApplspecComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -55,10 +55,18 @@ describe("EnrollAspComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should offer the configured service IDs in a select with serviceid_list", () => {
+  it("should offer the configured service IDs in a select with serviceid_list and enrollAPPLSPEC", () => {
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector("mat-select")).not.toBeNull();
     expect(element.textContent).not.toContain("serviceid_list");
+  });
+
+  it("should fall back to a text input with serviceid_list but without enrollAPPLSPEC", () => {
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["serviceid_list"] });
+    fixture.detectChanges();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector("mat-select")).toBeNull();
+    expect(element.querySelector("mat-hint")?.textContent).toContain("enrollAPPLSPEC");
   });
 
   describe("without serviceid_list", () => {
