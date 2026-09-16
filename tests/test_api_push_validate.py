@@ -999,6 +999,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertTrue(res.json.get("result").get("status"), res.json)
             # This fails since the wrong presence_answer was given
             self.assertFalse(res.json.get("result").get("value"), res.json)
+        # A rejected answer records no outcome, so the audit entry stays empty
+        self.assertEqual("", self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id, endpoint='/ttype/push')
@@ -1040,6 +1042,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             self.assertTrue(res.json.get("result").get("status"), res.json)
             self.assertTrue(res.json.get("result").get("value"), res.json)
+        # A correct presence answer is an accept, not a code_to_phone confirmation
+        self.assertEqual(f"transaction_id: {transaction_id}, status: accept",
+                         self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_OUT_OF_BAND])
         # The out-of-band answer is recorded against the endpoint the smartphone called, not the one the user waits on.
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
@@ -1272,6 +1277,10 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_CONTINUED])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id, endpoint='/ttype/push')
+
+        # The confirmation is audited as such: the challenge is not answered yet
+        self.assertEqual(f"transaction_id: {transaction_id}, status: confirmed",
+                         self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
 
         # Verify challenge data was updated
         challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
@@ -1650,7 +1659,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         challenge_data = challenge.get_data()
         self.assertFalse(challenge_data.get("smartphone_confirmed"))
 
-        # Trying to authenticate with any code should fail -> CHALLENGE_ANSWERED_FAIL
+        # Trying to authenticate with any code fails. The refused challenge is terminal and never reaches
+        # the display-code check, so the request is logged as the decline that ended it rather than as a
+        # response that did not match - nothing was compared against anything.
         clear_log()
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -1661,11 +1672,11 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertFalse(res.json.get("result").get("value"), res.json)
             self.assertEqual(AUTH_RESPONSE.REJECT,
                              res.json.get("result").get("authentication"), res.json)
-        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_ANSWERED_FAIL])
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_DECLINED])
         assert_authentication_log_entry(auth_log_entries.all[0], user=user, serials={self.serial_push},
                                         transaction_id=transaction_id, endpoint='/validate/check',
-                                        reason=AuthEventReason.CHALLENGE_WRONG_RESPONSE,
-                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_WRONG_RESPONSE})
+                                        reason=AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE,
+                                        reasons={self.serial_push: AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE})
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -2513,6 +2524,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         self.assertTrue(smartphone.response["result"]["value"], smartphone.response)
         # The declined push_wait challenge is cleaned up
         self.assertEqual([], get_challenges(serial=self.serial_push))
+        self.assertIn("status: declined",
+                      self.find_most_recent_audit_entry(action="POST /validate/check")["action_detail"])
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -2548,6 +2561,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
 
         self.assertTrue(smartphone.response["result"]["value"], smartphone.response)
         self.assertEqual([], get_challenges(serial=self.serial_push))
+        self.assertIn("status: cancelled",
+                      self.find_most_recent_audit_entry(action="POST /validate/check")["action_detail"])
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -2725,6 +2740,8 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 self.assertEqual(200, res.status_code, res)
                 self.assertFalse(res.json["result"]["value"], res.json)
 
+        # The answer was rolled back, so the audit log must not claim an outcome
+        self.assertEqual("", self.find_most_recent_audit_entry(action="POST /ttype/<ttype>")["action_detail"])
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
                                                       AuthEventType.CHALLENGE_ANSWERED_FAIL])
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED], user=user,
@@ -2835,6 +2852,10 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             return res.json
+
+    def _audit_action_detail(self, action: str) -> str:
+        """Return the action_detail of the most recent audit entry for ``action``."""
+        return self.find_most_recent_audit_entry(action=action)["action_detail"]
 
     def _poll_status(self, transaction_id: str) -> str:
         """Return the challenge_status reported by /validate/polltransaction."""
@@ -3084,6 +3105,158 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
         self.assertEqual(ChallengeSession.DECLINED, challenge.get_session(), challenge)
         self.assertEqual("declined", self._poll_status(transaction_id))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_10_audit_logs_the_refusal_and_its_reason(self):
+        """
+        The audit entry of the smartphone's answer names the transaction, the resulting status
+        and the raw reason the app sent - an unknown reason included, which is what makes the
+        app/server drift visible. A legacy decline without a reason logs the status only.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+
+        for reason, expected in [
+                (PushDeclineReason.UNKNOWN_TRIGGER, f"status: declined, reason: {PushDeclineReason.UNKNOWN_TRIGGER}"),
+                (PushDeclineReason.CANCELLED, f"status: cancelled, reason: {PushDeclineReason.CANCELLED}"),
+                ("from_a_newer_app", "status: declined, reason: from_a_newer_app"),
+                (None, "status: declined")]:
+            with self.subTest(decline_reason=reason):
+                transaction_id, nonce = self._trigger_challenge()
+                result = self._post_decline(nonce, f"|{reason}" if reason else "",
+                                            {"decline_reason": reason} if reason else {})
+                self.assertTrue(result["result"]["value"], result)
+                self.assertEqual(f"transaction_id: {transaction_id}, {expected}",
+                                 self._audit_action_detail("POST /ttype/<ttype>"))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_11_audit_logs_the_accepted_answer(self):
+        """
+        An accepted answer is logged as well, so the entry tells an approval from a refusal
+        instead of leaving the reader to infer it from an empty column.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+
+        with self.app.test_request_context('/ttype/push', method='POST',
+                                           data={"serial": self.serial_push,
+                                                 "signature": self._sign(f"{nonce}|{self.serial_push}")}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json["result"]["value"], res.json)
+
+        self.assertEqual(f"transaction_id: {transaction_id}, status: accept",
+                         self._audit_action_detail("POST /ttype/<ttype>"))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_12_audit_logs_the_refusal_on_validate_check(self):
+        """
+        The /validate/check that fails because of the refusal names transaction and status,
+        instead of only reporting a response that did not match the challenge.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        transaction_id, nonce = self._trigger_challenge()
+        self._post_decline(nonce, f"|{PushDeclineReason.UNKNOWN_TRIGGER}",
+                           {"decline_reason": PushDeclineReason.UNKNOWN_TRIGGER})
+
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "selfservice", "pass": "x",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertFalse(res.json["result"]["value"], res.json)
+
+        self.assertEqual(f"transaction_id: {transaction_id}, status: declined",
+                         self._audit_action_detail("POST /validate/check"))
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_13_authentication_log_separates_the_decline_variants(self):
+        """
+        Each decline reason classifies the answer as its own authentication event, so a
+        conditional-access policy can count "I did not trigger this" without counting the
+        logins users abandoned themselves. A reason this server does not know - and a legacy
+        decline that carries none - stays the unspecified decline: a newer app could invent a
+        reason of any weight, so an unrecognized one must never pass for the repudiation.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        user = User("selfservice", self.realm1)
+
+        for reason, expected_event in [
+                (PushDeclineReason.UNKNOWN_TRIGGER, AuthEventType.CHALLENGE_DECLINED_UNKNOWN_TRIGGER),
+                (PushDeclineReason.CANCELLED, AuthEventType.CHALLENGE_CANCELLED),
+                ("from_a_newer_app", AuthEventType.CHALLENGE_DECLINED),
+                (None, AuthEventType.CHALLENGE_DECLINED)]:
+            with self.subTest(decline_reason=reason):
+                clear_log()
+                transaction_id, nonce = self._trigger_challenge()
+                result = self._post_decline(nonce, f"|{reason}" if reason else "",
+                                            {"decline_reason": reason} if reason else {})
+                self.assertTrue(result["result"]["value"], result)
+
+                auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, expected_event])
+                # The refusal came from the device whichever variant it is; the event type carries which one.
+                assert_authentication_log_entry(auth_log_entries[expected_event], user=user,
+                                                serials={self.serial_push}, transaction_id=transaction_id,
+                                                endpoint="/ttype/push",
+                                                reason=AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE)
+                delete_challenges(serial=self.serial_push)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+
+    def test_14_finalizing_after_a_refusal_is_logged_as_the_refusal(self):
+        """
+        A client that polls and then finalizes runs into the challenge the phone already refused.
+        That request is classified as the refusal rather than as an answer that did not match:
+        nothing was answered at it, since a refused challenge never reaches the response check.
+        Without it, finalizing after a cancel would record the CHALLENGE_ANSWERED_FAIL that keeping
+        CHALLENGE_CANCELLED out of the failure rate limits exists to avoid.
+
+        The challenge keeps only "declined" or "cancelled", not the reason behind it, so a
+        repudiation reads here as the plain decline - its own event stays on the /ttype/push row,
+        which is what keeps it counted once instead of once per request that reports it.
+        """
+        self.setUp_user_realms()
+        self._setup_standard_push()
+        user = User("selfservice", self.realm1)
+
+        for reason, answer_event, finalize_event in [
+                (PushDeclineReason.CANCELLED,
+                 AuthEventType.CHALLENGE_CANCELLED, AuthEventType.CHALLENGE_CANCELLED),
+                (PushDeclineReason.UNKNOWN_TRIGGER,
+                 AuthEventType.CHALLENGE_DECLINED_UNKNOWN_TRIGGER, AuthEventType.CHALLENGE_DECLINED)]:
+            with self.subTest(decline_reason=reason):
+                clear_log()
+                transaction_id, nonce = self._trigger_challenge()
+                self._post_decline(nonce, f"|{reason}", {"decline_reason": reason})
+
+                with self.app.test_request_context('/validate/check', method='POST',
+                                                   data={"user": "selfservice", "pass": "",
+                                                         "transaction_id": transaction_id}):
+                    res = self.app.full_dispatch_request()
+                    self.assertFalse(res.json["result"]["value"], res.json)
+
+                auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
+                                                              answer_event, finalize_event])
+                self.assertEqual("/ttype/push", auth_log_entries.all[1].endpoint)
+                finalize_entry = auth_log_entries.all[2]
+                self.assertEqual("/validate/check", finalize_entry.endpoint)
+                assert_authentication_log_entry(finalize_entry, user=user, serials={self.serial_push},
+                                                transaction_id=transaction_id, endpoint="/validate/check",
+                                                reason=AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE,
+                                                reasons={self.serial_push:
+                                                         AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE})
+                delete_challenges(serial=self.serial_push)
 
         remove_token(self.serial_push)
         delete_policy("push_config")
