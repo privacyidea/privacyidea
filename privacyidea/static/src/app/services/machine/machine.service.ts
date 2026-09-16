@@ -245,8 +245,7 @@ export class MachineService extends FilterableTableService implements MachineSer
   });
 
   tokenApplicationResource = httpResource<PiResponse<TokenApplications>>(() => {
-    // Do not load applications if the action is not allowed.
-    if (!this.authService.actionAllowed("tokenlist")) {
+    if (!this.authService.actionAllowed("manage_machine_tokens")) {
       return undefined;
     }
     // Only load token applications on the token applications or token details routes.

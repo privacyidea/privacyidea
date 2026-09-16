@@ -17,21 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, forwardRef, inject, input, OnInit, signal } from "@angular/core";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
-import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
   ApplspecApiPayloadMapper,
   ApplspecEnrollmentData
 } from "@app/mappers/token-api-payload/applspec-token-api-payload.mapper";
-import {
-  EnrollmentArgs,
-  EnrollTokenBase
-} from "@components/token/token-enrollment/enroll-token-base";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -46,21 +43,10 @@ export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-applspec",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
-    MatOption,
-    MatSelect,
-    MatError,
-    FormField
-  ],
+  imports: [MatFormField, MatInput, MatLabel, MatCheckbox, MatOption, MatSelect, MatError, MatHint, FormField],
   templateUrl: "./enroll-applspec.component.html",
   styleUrl: "./enroll-applspec.component.scss",
-  providers: [
-    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollApplspecComponent) }
-  ]
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollApplspecComponent) }]
 })
 export class EnrollApplspecComponent extends EnrollTokenBase<ApplspecEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: ApplspecApiPayloadMapper = inject(ApplspecApiPayloadMapper);
@@ -82,9 +68,16 @@ export class EnrollApplspecComponent extends EnrollTokenBase<ApplspecEnrollmentD
   });
   otpKeyForm = form(this.otpKey, (f) => {
     required(f);
-    disabled(f, () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("applspec"));
+    disabled(
+      f,
+      () => this.disabled() || this.generateOnServer() || this.authService.checkForceServerGenerateOTPKey("applspec")
+    );
   });
 
+  // Mirrors the fetch condition of serviceIdResource: without it the field becomes a free-text input.
+  readonly serviceIdsListable = computed<boolean>(
+    () => this.authService.actionAllowed("serviceid_list") && this.authService.actionAllowed("enrollAPPLSPEC")
+  );
   serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.servicename) || []);
 
   ngOnInit(): void {

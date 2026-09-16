@@ -514,6 +514,11 @@ describe("PolicyService", () => {
   });
 
   describe("policyActions", () => {
+    // The definitions are only requested by an admin who may read policies; the policy list then loads too.
+    beforeEach(() => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["policyread"] });
+    });
+
     it("Default should be an empty dict", () => {
       expect(service.policyActions()).toEqual({});
     });
@@ -529,6 +534,8 @@ describe("PolicyService", () => {
       await Promise.resolve();
 
       expect(service.policyActions()).toEqual(policyActions);
+
+      httpTestingController.expectOne((r) => r.url === "/policy/");
     });
 
     it("Should handle http error from policyActionResource", async () => {
@@ -547,6 +554,17 @@ describe("PolicyService", () => {
       expect(service.allPolicyActionsFlat()).toEqual({});
       expect(service.allPolicyScopes()).toEqual([]);
       expect(service.policyActionsByGroup()).toEqual({});
+
+      httpTestingController.expectOne((r) => r.url === "/policy/");
+    });
+
+    it("Should not request policy actions without policyread", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      contentService.onPolicies = signal(true);
+      TestBed.tick();
+
+      httpTestingController.expectNone((r) => r.url === "/policy/defs");
+      expect(service.policyActions()).toEqual({});
     });
   });
 
@@ -555,10 +573,12 @@ describe("PolicyService", () => {
     const userDetail: PolicyActionDetail = { type: "str", desc: "User is allowed." };
 
     async function loadPolicyActions(actions: object) {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["policyread"] });
       contentService.onPolicies = signal(true);
       TestBed.tick();
       const req = httpTestingController.expectOne((r) => r.url === "/policy/defs");
       req.flush(MockPiResponse.fromValue(actions));
+      httpTestingController.expectOne((r) => r.url === "/policy/");
       await Promise.resolve();
     }
 

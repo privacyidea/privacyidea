@@ -58,7 +58,11 @@ export class ServiceIdService implements ServiceIdServiceInterface {
 
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => {
     if (this.authService.isSelfServiceUser()) return undefined;
-    if (!this.contentService.onExternalServiceIds() && !this.contentService.onTokenEnrollmentLikely()) {
+    // On the enrollment pages only the application specific password token uses the list.
+    const onPageUsingTheList =
+      this.contentService.onExternalServiceIds() ||
+      (this.contentService.onTokenEnrollmentLikely() && this.authService.actionAllowed("enrollAPPLSPEC"));
+    if (!onPageUsingTheList || !this.authService.actionAllowed("serviceid_list")) {
       return undefined;
     }
     return {

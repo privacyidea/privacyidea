@@ -27,15 +27,30 @@
   <div class="flex-row gap-16">
     <mat-form-field class="input-width-l margin-bottom-16">
       <mat-label i18n="@@token.remoteServer">Remote Server</mat-label>
-      <mat-select
-        [value]="remoteServer()"
-        (selectionChange)="remoteServer.set($event.value)"
-        required>
-        @for (option of remoteServerOptions(); track option) {
-          <mat-option [value]="option">{{ option.name }}</mat-option
-          ><!-- Assuming option is the RemoteServer object -->
-        }
-      </mat-select>
+      @if (remoteServersListable()) {
+        <mat-select
+          [value]="remoteServer()"
+          (selectionChange)="remoteServer.set($event.value)"
+          required>
+          @for (option of remoteServerOptions(); track option) {
+            <mat-option [value]="option">{{ option.name }}</mat-option
+            ><!-- Assuming option is the RemoteServer object -->
+          }
+        </mat-select>
+      } @else {
+        <input
+          matInput
+          required
+          [value]="remoteServer()?.id ?? ''"
+          (input)="onRemoteServerInput($event.target.value)" />
+      }
+      @if (!remoteServersListable()) {
+        <mat-hint
+          class="red"
+          i18n="@@token.remoteServerNeedsReadRight"
+          >Type the name: listing the servers needs the privacyideaserver_read and enrollREMOTE rights.</mat-hint
+        >
+      }
       <mat-error
         class="red"
         i18n="@@token.remoteServerRequired"

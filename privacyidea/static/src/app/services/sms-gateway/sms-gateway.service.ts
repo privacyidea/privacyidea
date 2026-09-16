@@ -83,7 +83,8 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   private readonly baseUrl = environment.proxyUrl + "/smsgateway";
 
   readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => {
-    if (!this.contentService.onExternalSms() && !this.contentService.onConfigurationTokenTypes()) {
+    const onPageUsingTheList = this.contentService.onExternalSms() || this.contentService.onConfigurationTokenTypes();
+    if (!onPageUsingTheList || !this.authService.actionAllowed("smsgateway_read")) {
       return undefined;
     }
     return {
@@ -94,7 +95,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   });
 
   readonly smsProvidersResource = httpResource<PiResponse<SmsProviders>>(() => {
-    if (!this.contentService.onExternalSms()) {
+    if (!this.contentService.onExternalSms() || !this.authService.actionAllowed("smsgateway_read")) {
       return undefined;
     }
     return {

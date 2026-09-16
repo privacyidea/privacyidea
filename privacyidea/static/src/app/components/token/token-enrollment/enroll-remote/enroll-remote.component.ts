@@ -16,13 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, forwardRef, inject, input, OnInit, signal } from "@angular/core";
+import { Component, computed, forwardRef, inject, input, OnInit, signal } from "@angular/core";
+import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
-import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { disabled, form, FormField, required } from "@angular/forms/signals";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   PrivacyideaServerService,
   PrivacyideaServerServiceInterface,
@@ -35,33 +36,20 @@ import {
   RemoteApiPayloadMapper,
   RemoteEnrollmentData
 } from "@app/mappers/token-api-payload/remote-token-api-payload.mapper";
-import {
-  EnrollmentArgs,
-  EnrollTokenBase
-} from "@components/token/token-enrollment/enroll-token-base";
+import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
 
 @Component({
   selector: "app-enroll-remote",
   standalone: true,
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatOption,
-    MatSelect,
-    MatCheckbox,
-    MatError,
-    FormField
-  ],
+  imports: [MatFormField, MatInput, MatLabel, MatOption, MatSelect, MatCheckbox, MatError, MatHint, FormField],
   templateUrl: "./enroll-remote.component.html",
-  providers: [
-    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollRemoteComponent) }
-  ]
+  providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollRemoteComponent) }]
 })
 export class EnrollRemoteComponent extends EnrollTokenBase<RemoteEnrollmentData> implements OnInit {
   protected readonly enrollmentMapper: RemoteApiPayloadMapper = inject(RemoteApiPayloadMapper);
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
   enrollmentData = input<RemoteEnrollmentData>();
   disabled = input<boolean>(false);
 
@@ -89,6 +77,14 @@ export class EnrollRemoteComponent extends EnrollTokenBase<RemoteEnrollmentData>
   });
 
   remoteServerOptions = this.privacyideaServerService.remoteServerOptions;
+  // Mirrors the fetch condition of remoteServerResource: without it the identifier becomes a free-text input.
+  readonly remoteServersListable = computed<boolean>(
+    () => this.authService.actionAllowed("privacyideaserver_read") && this.authService.actionAllowed("enrollREMOTE")
+  );
+
+  onRemoteServerInput(identifier: string): void {
+    this.remoteServer.set(identifier ? ({ id: identifier } as RemoteServer) : null);
+  }
 
   ngOnInit(): void {
     if (this.enrollmentData()) {
@@ -105,11 +101,7 @@ export class EnrollRemoteComponent extends EnrollTokenBase<RemoteEnrollmentData>
     if (!this.remoteServer()) {
       return null;
     }
-    if (
-      !this.remoteSerialForm().valid() ||
-      !this.remoteUserForm().valid() ||
-      !this.remoteResolverForm().valid()
-    ) {
+    if (!this.remoteSerialForm().valid() || !this.remoteUserForm().valid() || !this.remoteResolverForm().valid()) {
       this.remoteSerialForm().markAsTouched();
       this.remoteUserForm().markAsTouched();
       this.remoteResolverForm().markAsTouched();

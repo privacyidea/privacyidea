@@ -24,10 +24,13 @@ import { EnrollApplspecComponent } from "./enroll-applspec.component";
 import { ServiceIdService } from "@services/service-id/service-id.service";
 import { MockServiceIdService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 describe("EnrollAspComponent", () => {
   let component: EnrollApplspecComponent;
   let fixture: ComponentFixture<EnrollApplspecComponent>;
+  let authService: MockAuthService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -36,10 +39,13 @@ describe("EnrollAspComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: ServiceIdService, useClass: MockServiceIdService },
-        { provide: TokenService, useClass: MockTokenService }
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
 
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["serviceid_list"] });
     fixture = TestBed.createComponent(EnrollApplspecComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -47,6 +53,33 @@ describe("EnrollAspComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should offer the configured service IDs in a select with serviceid_list", () => {
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector("mat-select")).not.toBeNull();
+    expect(element.textContent).not.toContain("serviceid_list");
+  });
+
+  describe("without serviceid_list", () => {
+    beforeEach(() => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      fixture.detectChanges();
+    });
+
+    it("should replace the select by a text input naming the missing right", () => {
+      const element: HTMLElement = fixture.nativeElement;
+      expect(element.querySelector("mat-select")).toBeNull();
+      expect(element.querySelector("mat-hint")?.textContent).toContain("serviceid_list");
+    });
+
+    it("should use the typed name as the service ID", () => {
+      const hint: HTMLElement = fixture.nativeElement.querySelector("mat-hint");
+      const input = hint.closest("mat-form-field")!.querySelector("input") as HTMLInputElement;
+      input.value = "mail";
+      input.dispatchEvent(new Event("input"));
+      expect(component.serviceId()).toBe("mail");
+    });
   });
 
   it("should initialize signals with default values", () => {
