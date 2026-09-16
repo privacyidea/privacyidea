@@ -82,6 +82,11 @@ services:
     # DB URI: postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test
     image: postgres:17
     container_name: privacyidea-postgres
+    # The suite opens a fresh connection for every request, and under pytest-xdist every
+    # worker does so against this one server. The image default of 100 is not enough for
+    # that - it surfaces as "FATAL: sorry, too many clients already" in whichever worker
+    # asks last, far away from whatever actually filled the server up.
+    command: ["postgres", "-c", "max_connections=300"]
     environment:
       POSTGRES_DB: privacyidea_test
       POSTGRES_USER: privacyidea

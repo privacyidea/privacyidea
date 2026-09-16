@@ -1,0 +1,193 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  aria-label="User Layout"
+  class="user-layout"
+  i18n-aria-label="@@user.userLayout">
+  <div
+    appScrollToTop
+    class="user-table-container">
+    @if (userService.skippedResolvers().length) {
+      <div
+        class="inline-warning resolver-warning"
+        role="status">
+        <mat-icon aria-hidden="true">warning_amber</mat-icon>
+        <span>
+          <span i18n>These resolvers could not be queried, so the list may be incomplete:</span>
+          <!-- The gap to the first name is whitespace between elements, which the compiler drops unless it is
+               spelled out. -->
+          &ngsp;
+          @for (resolverName of userService.skippedResolvers(); track resolverName) {
+            @if (resolverLinkAllowed()) {
+              <a [routerLink]="resolverLink(resolverName)">{{ resolverName }}</a
+              >{{ $last ? "" : ", " }}
+            } @else {
+              {{ resolverName }}{{ $last ? "" : ", " }}
+            }
+          }
+        </span>
+      </div>
+    }
+    @if (tableState.showTable()) {
+      <div class="filter-paginator-container">
+        <mat-form-field
+          class="token-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@user.filterUsers">Filter Users...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="userService.clearFilter()"
+            [showClearButton]="filterHTMLInputElement.value.length > 0">
+            <input
+              #filterHTMLInputElement
+              [appFilterAutocomplete]="userService.apiFilterKeys"
+              (input)="userService.handleFilterInput($event)"
+              [value]="userService.filterDraft().filterString"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@user.searchAllColumns"
+              matInput
+              placeholder="Search all columns, or by column e.g. 'root email: @acme'" />
+          </app-clearable-input>
+          <mat-hint>{{ filterHint }}</mat-hint>
+        </mat-form-field>
+        <mat-paginator
+          [length]="totalLength()"
+          [pageSizeOptions]="pageSizeOptions()"
+          [pageSize]="userService.pageSize()"
+          showFirstLastButtons></mat-paginator>
+      </div>
+      <app-user-table-actions />
+      <div
+        appScrollEdges
+        class="table-scroll-region">
+        <table
+          [dataSource]="usersDataSource()"
+          i18n-aria-label="@@user.tableLabel"
+          aria-label="User Data Table"
+          class="token-table"
+          mat-table>
+          @for (column of columnKeysMap; track column) {
+            <ng-container [matColumnDef]="column.key">
+              <th
+                *matHeaderCellDef
+                mat-header-cell>
+                <div class="flex ali-center">
+                  {{ column.label }}
+                  <div class="margin-left-16 flex">
+                    @if (apiFilterKeys.includes(column.key)) {
+                      <button
+                        (click)="onFilterClick(column.key)"
+                        aria-label="Filter by {{ column.label }}"
+                        i18n-aria-label="@@common.filterBy"
+                        class="filter-button"
+                        mat-icon-button
+                        type="button">
+                        <mat-icon class="keyword-button-icon margin-left-0">
+                          {{ getFilterIconName(column.key) }}
+                        </mat-icon>
+                      </button>
+                    }
+                    <button
+                      (click)="tableUtilsService.onSortButtonClick(column.key, userService.sort)"
+                      aria-label="Sort by {{ column.label }}"
+                      i18n-aria-label="@@common.sortBy"
+                      class="sort-button"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, userService.sort()) }}</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </th>
+              <td
+                *matCellDef="let element; let row"
+                [ngClass]="{
+                  'table-checkbox': column.key === 'select'
+                }"
+                mat-cell>
+                <div>
+                  @switch (column.key) {
+                    @case ("username") {
+                      <app-copyable [copyText]="element[column.key]">
+                        <a
+                          (click)="onClickUsername(element)"
+                          [attr.aria-label]="linkLabel(column.label)"
+                          routerLink="/users/details/{{ element.username }}">
+                          {{ element[column.key] }}
+                        </a>
+                      </app-copyable>
+                    }
+                    @case ("resolver") {
+                      <app-copyable [copyText]="element[column.key]">
+                        @if (resolverLinkAllowed()) {
+                          <a
+                            [attr.aria-label]="linkLabel(column.label)"
+                            [routerLink]="resolverLink(element[column.key])">
+                            {{ element[column.key] }}
+                          </a>
+                        } @else {
+                          {{ element[column.key] }}
+                        }
+                      </app-copyable>
+                    }
+                    @default {
+                      <span>
+                        {{ element[column.key] }}
+                      </span>
+                    }
+                  }
+                </div>
+              </td>
+            </ng-container>
+          }
+          <tr
+            *matHeaderRowDef="columnKeys; sticky: true"
+            mat-header-row></tr>
+          <tr
+            *matRowDef="let row; columns: columnKeys"
+            mat-row></tr>
+          <tr *matNoDataRow>
+            <td [attr.colspan]="columnKeys.length">
+              <app-table-state
+                [status]="tableState.rowStatus()"
+                [table]="tableState"
+                heading="No users in this realm"
+                hint="Users are read from the resolvers of the selected realm."
+                i18n-heading="@@user.noUsersRealm"
+                i18n-hint="@@user.usersReadResolvers"
+                icon="group" />
+            </td>
+          </tr>
+        </table>
+      </div>
+    } @else {
+      <app-table-state
+        [table]="tableState"
+        heading="No users in this realm"
+        hint="Users are read from the resolvers of the selected realm."
+        i18n-heading="@@user.noUsersRealm"
+        i18n-hint="@@user.usersReadResolvers"
+        icon="group">
+        <!-- Holds the realm selector, the only way to get out of an empty realm. Nothing else: the panel is
+             too narrow to lay the actions out, so anything more folds away into an overflow menu. -->
+        <app-user-table-actions [showCreateUser]="false" />
+      </app-table-state>
+    }
+  </div>
+</div>

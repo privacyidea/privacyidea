@@ -118,8 +118,12 @@ class DefaultConfigValues:
     UUID_FILE = "/etc/privacyidea/uuid.txt"
     NODE_NAME = "localnode"
 
+    # "static/" holds the compiled Angular WebUI, which needs no Jinja templates. The server-side
+    # rendered pages (certificate request form, deactivated page, API documentation export) still
+    # live with the legacy WebUI in "static_old/".
     STATIC_FOLDER = "static/"
-    TEMPLATE_FOLDER = "static/templates/"
+    LEGACY_STATIC_FOLDER = "static_old/"
+    TEMPLATE_FOLDER = f"{LEGACY_STATIC_FOLDER}templates/"
 
     CFG_PATH = "/etc/privacyidea/pi.cfg"
     LOGFILE_PATH = "/etc/privacyidea/privacyidea.log"
@@ -248,6 +252,12 @@ class AltUIConfig(TestingConfig):
     PI_TEMPLATE_FOLDER = "../tests/testdata/altstatic/templates"
 
 
+class LegacyUIConfig(TestingConfig):
+    """The two settings an administrator adds to pi.cfg to keep the legacy WebUI."""
+    PI_STATIC_FOLDER = DefaultConfigValues.LEGACY_STATIC_FOLDER
+    PI_TEMPLATE_FOLDER = f"{DefaultConfigValues.LEGACY_STATIC_FOLDER}templates/"
+
+
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
                               'sqlite:///' + os.path.join(basedir, 'data.sqlite')
@@ -346,5 +356,6 @@ config = {
     'testing': TestingConfig,
     'production': ProductionConfig,
     'default': DevelopmentConfig,
-    'altUI': AltUIConfig
+    'altUI': AltUIConfig,
+    'legacyUI': LegacyUIConfig
 }

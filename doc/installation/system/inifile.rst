@@ -561,10 +561,6 @@ You do not need to add this in the `pi.cfg` file, this is available by default.
 Custom Web UI
 -------------
 
-The Web UI is a single page application, that is initiated from the file
-``static/templates/index.html``. This file pulls all CSS, the javascript framework
-and all the javascript business logic.
-
 You can configure privacyIDEA to use your own WebUI, which is completely different and stored at another location.
 
 You can do this using the following config values::
@@ -574,7 +570,12 @@ You can do this using the following config values::
     PI_TEMPLATE_FOLDER = "mystatic/templates"
 
 In this example the file ``mystatic/templates/myindex.html`` would be loaded
-as the initial single page application.
+as the initial single page application, and its assets would be served from
+``mystatic`` under the unchanged URL ``/static/``.
+
+Both paths are relative to the ``privacyidea`` package directory. They are also how the
+WebUI privacyIDEA ships is selected, see :ref:`new_webui`: the folder that is served is
+``static/`` and the one privacyIDEA renders its own pages from is ``static_old/templates/``.
 
 
 .. _redis_cache:
@@ -960,5 +961,63 @@ paying the timeout for it is pointless. Switch it off with::
 The overview still lists every component with its usage and subscription state,
 only the latest-release column stays empty. This is the only outbound request the
 subscription overview makes.
+
+.. versionadded:: 3.14
+
+.. _ini_conditional_access_never_block:
+
+Conditional access never-block list
+-----------------------------------
+
+.. index:: conditional access, lock, never-block
+
+The conditional access policies can block a source IP (the ``BLOCK_IP``
+action). ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` lists the addresses and networks
+that must never be blocked by that machinery::
+
+    PI_CONDITIONAL_ACCESS_NEVER_BLOCK = ["10.0.0.0/8", "192.0.2.15"]
+
+The value is either a list of entries or a single string of entries separated by
+commas or whitespace. Each entry is a CIDR network or a bare IP address; an entry
+that cannot be parsed is written to the log and ignored. Loopback (``127.0.0.0/8``
+and ``::1/128``) is always on the list and cannot be removed. Blocking it would
+lock out a reverse proxy running on the same host, and when ``OverrideAuthorizationClient``
+is unset every client is seen as that proxy.
+
+An IPv4 entry also covers the IPv4-mapped form of the same address
+(``::ffff:10.0.0.1`` for ``10.0.0.1``), which is what a dual-stack listener
+reports for an IPv4 client, so an IPv4 network does not have to be listed twice.
+Tunnel encodings that merely carry an IPv4 address (6to4, Teredo) are not
+covered: unlike the mapped form, those are chosen by the client rather than by
+the operating system.
+
+Put the addresses of your reverse proxies, load balancers, NAT gateways and
+management networks here. Blocking shared infrastructure locks out everyone
+behind it.
+
+The list wins over an existing block: if an IP is already blocked and is added to
+this list afterwards, the block is no longer enforced, and the block entry itself
+is removed the next time that IP authenticates. Removing the IP from the list
+again does not bring the old block back.
+
+This setting can **only** be configured on the server, either in ``pi.cfg`` or
+through the ``PRIVACYIDEA_PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` environment
+variable, which is the usual path in a container::
+
+    PRIVACYIDEA_PI_CONDITIONAL_ACCESS_NEVER_BLOCK='["10.0.0.0/8", "192.0.2.15"]'
+
+The environment variable is read as JSON where possible and otherwise taken as a
+plain string, so both a JSON list and ``10.0.0.0/8,192.0.2.15`` work.
+
+Set the list in one place only. The two sources do not merge, and which one wins
+depends on the entry point: the standard server reads ``pi.cfg`` after the
+environment, so the file wins, while the container entry point reads the
+environment last, so there the variable wins.
+
+It is deliberately not a system setting, and there is no WebUI or API for it. It
+is the safety net that keeps an administrator from being locked out, so it must
+not be reachable through the same API that an attacker, or a mistaken
+conditional access policy, could be acting on. Changes take effect after a restart of the web
+server.
 
 .. versionadded:: 3.14

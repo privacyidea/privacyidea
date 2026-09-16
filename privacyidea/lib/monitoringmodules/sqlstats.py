@@ -21,7 +21,8 @@ __doc__ = """This module writes statistics data to the SQL database table "monit
 """
 import logging
 from privacyidea.lib.monitoringmodules.base import Monitoring as MonitoringBase
-from privacyidea.lib.pooling import get_engine
+from privacyidea.lib.pooling import get_engine, engines_are_shared
+from privacyidea.lib.framework import is_request_context
 from privacyidea.lib.utils import censor_connect_string, convert_timestamp_to_utc
 from privacyidea.lib.lifecycle import register_finalizer
 from sqlalchemy import MetaData, delete, select, distinct
@@ -43,6 +44,9 @@ class Monitoring(MonitoringBase):
         self.name = "sqlstats"
         self.config = config or {}
         self.engine = get_engine(self.name, self._create_engine)
+        # A shared engine is still in use elsewhere when this request ends, so only an engine
+        # this object has to itself may have its connections closed on teardown.
+        self._owns_engine = not engines_are_shared()
         # create a configured "Session" class. ``scoped_session`` is not
         # necessary because we do not share session objects among threads.
         # We use it anyway as a safety measure.
@@ -50,8 +54,20 @@ class Monitoring(MonitoringBase):
         self.session = Session()
         # Ensure that the connection gets returned to the pool when the request has
         # been handled. This may close an already-closed session, but this is not a problem.
-        register_finalizer(self.session.close)
+        # Outside a request (pi-manage, a cron job, a background thread) nothing tears the
+        # application context down, so a finalizer registered there would never run and would
+        # only keep this object - and with it an open database connection - alive for the
+        # lifetime of the process.
+        if is_request_context():
+            register_finalizer(self._finalize_session)
         self.session._model_changes = {}
+
+    def _finalize_session(self) -> None:
+        """Close the current session and, if the engine is this object's alone, its
+        connections too."""
+        self.session.close()
+        if self._owns_engine:
+            self.engine.dispose()
 
     def _create_engine(self):
         """
