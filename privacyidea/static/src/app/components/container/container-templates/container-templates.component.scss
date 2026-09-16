@@ -8,7 +8,9 @@
     ".container-templates-table-filter",
     ".container-templates-scroll-container"
   );
-  @include table.page-table-state-size(table.table-width(xs, m, xs, xs));
+  // Plus a flat estimate for "tokens" (see columns in the .ts), a list of tokens that has no tier
+  // and can badly overflow, so the panel is not narrower than the real table.
+  @include table.page-table-state-size(calc(#{table.table-width(xs, m, xs, xs)} + 240px));
 
   & {
     display: flex;

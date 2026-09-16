@@ -10,7 +10,10 @@
 .events-table-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
-  @include table.page-table-state-size(table.table-width(xs, m, s, xs, xs, xs));
+  // Plus a flat estimate for event/action/conditions, which have no tier (see columnWidths in
+  // event.component.ts) - all three hold lists or free text left to the table's remaining space -
+  // so the panel is not narrower than the real table.
+  @include table.page-table-state-size(calc(#{table.table-width(xs, m, s, xs, xs, xs)} + 3 * 240px));
 }
 
 .event-handler-table {

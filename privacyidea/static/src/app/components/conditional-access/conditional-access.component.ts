@@ -42,6 +42,8 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   ConditionalAccessPolicyService,
@@ -78,7 +80,8 @@ import {
     MatLabel,
     ClearableInputComponent,
     MatInput,
-    InfoHintComponent
+    InfoHintComponent,
+    TableStateComponent
   ],
   templateUrl: "./conditional-access.component.html",
   styleUrl: "./conditional-access.component.scss"
@@ -97,6 +100,12 @@ export class ConditionalAccessComponent implements OnDestroy {
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   totalLength = computed(() => this.policyService.policies().length);
+  readonly tableState = new TableState({
+    resource: this.policyService.policiesResource,
+    count: () => this.totalLength(),
+    filterActive: () => this.filterString().length > 0,
+    resetFilter: () => this.resetFilter()
+  });
 
   // Rows selected via the checkbox column; the "Delete Selected" table action acts on these.
   policySelection = signal<ConditionalAccessPolicy[]>([]);
