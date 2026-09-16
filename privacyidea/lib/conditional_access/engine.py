@@ -26,7 +26,7 @@ from enum import Enum
 from typing import Any, TYPE_CHECKING
 
 from netaddr import AddrFormatError, IPAddress
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnElement
 
@@ -1383,7 +1383,8 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     policies = get_ca_session().scalars(
         select(ConditionalAccessPolicy)
         .options(selectinload(ConditionalAccessPolicy.conditions))
-        .where(ConditionalAccessPolicy.enabled.is_(True))
+        # ``== true()`` rather than ``.is_(True)``: Oracle has no boolean type and "IS 1" is not valid SQL there
+        .where(ConditionalAccessPolicy.enabled == true())
         .order_by(ConditionalAccessPolicy.priority.asc())
     ).all()
     outcomes: list[ConditionalAccessOutcome] = []
@@ -1587,7 +1588,8 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
         select(ConditionalAccessPolicy)
         .options(selectinload(ConditionalAccessPolicy.conditions))
         .join(ConditionalAccessPolicy.counter_types)
-        .where(ConditionalAccessPolicy.enabled.is_(True),
+        # ``== true()`` rather than ``.is_(True)``: Oracle has no boolean type and "IS 1" is not valid SQL there
+        .where(ConditionalAccessPolicy.enabled == true(),
                ConditionalAccessPolicyCounterType.counter_type == event_type)
         .order_by(ConditionalAccessPolicy.priority.asc())
     ).all()
