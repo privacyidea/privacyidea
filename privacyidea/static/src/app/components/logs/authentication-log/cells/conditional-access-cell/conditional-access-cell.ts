@@ -23,7 +23,6 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthenticationLogEntry } from "@services/authentication-log/authentication-log.service";
-import { MatIconButton } from "@angular/material/button";
 
 // One conditional-access outcome as its column shows it. The fields are an **allow-list**: the table carries more (the
 // count behind the decision, the rest of the action-specific `info`) and the API still returns all of it, but a log
@@ -66,7 +65,7 @@ export interface OutcomeView {
 @Component({
   selector: "app-conditional-access-cell",
   standalone: true,
-  imports: [DatePipe, MatIcon, MatTooltipModule, RouterLink, MatIconButton],
+  imports: [DatePipe, MatIcon, MatTooltipModule, RouterLink],
   templateUrl: "./conditional-access-cell.html",
   styleUrl: "./conditional-access-cell.scss"
 })
