@@ -17,6 +17,8 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import event, types as sqltypes
+from sqlalchemy.engine import Engine
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.schema import CreateSequence
 
@@ -26,6 +28,33 @@ db = SQLAlchemy()
 @compiles(db.DateTime, "mysql")
 def compile_datetime_mysql(type_, compiler, **kw):  # pragma: no cover
     return "DATETIME(6)"
+
+
+# Oracle maps DateTime to DATE, which only resolves to whole seconds and silently
+# drops the fraction. TIMESTAMP keeps it, like DATETIME(6) does on MySQL.
+@compiles(db.DateTime, "oracle")
+def compile_datetime_oracle(type_, compiler, **kw):  # pragma: no cover
+    return "TIMESTAMP"
+
+
+@event.listens_for(Engine, "do_setinputsizes")
+def bind_datetime_as_timestamp_on_oracle(inputsizes, cursor, statement, parameters, context):  # pragma: no cover
+    """
+    The column type alone does not keep the fraction: the driver binds a Python
+    datetime as DB_TYPE_DATE, which rounds to whole seconds before the value ever
+    reaches a TIMESTAMP column. Bind those parameters as DB_TYPE_TIMESTAMP instead.
+
+    Only Oracle sets input sizes this way, and only datetime binds are touched.
+    """
+    if context is None or context.dialect.name != "oracle":
+        return
+    timestamp_type = getattr(context.dialect.dbapi, "DB_TYPE_TIMESTAMP", None)
+    if timestamp_type is None:
+        return
+    for bind_parameter in inputsizes:
+        bind_type = bind_parameter.type
+        if isinstance(bind_type, sqltypes.DateTime) and not isinstance(bind_type, sqltypes.Date):
+            inputsizes[bind_parameter] = timestamp_type
 
 # Fix creation of sequences on MariaDB (and MySQL, which does not support
 # sequences anyway) with galera by adding INCREMENT BY 0 to CREATE SEQUENCE
