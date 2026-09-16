@@ -291,7 +291,7 @@ $checkbox-column-width: 42px;
       }
     }
   }
-  @return unquote("calc(#{$expr})");
+  @return unquote("calc(-32px + #{$expr})");
 }
 
 @mixin base-table-structure(
