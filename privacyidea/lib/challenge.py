@@ -37,9 +37,9 @@ from sqlalchemy.sql import Select
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
+from .utils import escape_sql_like, SQL_LIKE_ESCAPE
 from ..models import Challenge, db
 from ..models.utils import utc_now
-from privacyidea.models.utils import clob_to_varchar
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +60,10 @@ def get_challenges(serial: str = None, transaction_id: str = None, challenge=Non
     if transaction_id is not None:
         stmt = stmt.where(Challenge.transaction_id == transaction_id)
     if challenge is not None:
-        stmt = stmt.where(clob_to_varchar(Challenge.challenge) == challenge)
+        # Challenge.challenge is a CLOB on Oracle, which cannot be compared with "="
+        # (ORA-00932). LIKE works there and everywhere else; escaping the value keeps the
+        # comparison exact.
+        stmt = stmt.where(Challenge.challenge.like(escape_sql_like(challenge), escape=SQL_LIKE_ESCAPE))
 
     challenges = db.session.execute(stmt).scalars().all()
     return challenges

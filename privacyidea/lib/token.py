@@ -110,11 +110,10 @@ from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.tokenclass import DATE_FORMAT, Tokenkind, TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict,
-                                   redacted_phone_number, redacted_email)
+                                   redacted_phone_number, redacted_email, escape_sql_like, SQL_LIKE_ESCAPE)
 from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
                                 TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
                                 TokenContainerToken)
-from privacyidea.models.utils import clob_to_varchar
 
 log = logging.getLogger(__name__)
 
@@ -352,7 +351,11 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         key, value = list(tokeninfo.items())[0]
         sql_query = sql_query.join(TokenInfo, TokenInfo.token_id == Token.id)
         sql_query = sql_query.where(TokenInfo.Key == key)
-        sql_query = sql_query.where(clob_to_varchar(TokenInfo.Value) == value)
+        # TokenInfo.Value is a CLOB on Oracle, where it can be neither compared with "="
+        # (ORA-00932) nor converted to a string beyond 4000 bytes (ORA-22835, and token info
+        # holds certificates). LIKE has neither limit and matches exactly once the value's
+        # own metacharacters are escaped.
+        sql_query = sql_query.where(TokenInfo.Value.like(escape_sql_like(value), escape=SQL_LIKE_ESCAPE))
 
     # Filtering by container_serial
     if container_serial is not None:

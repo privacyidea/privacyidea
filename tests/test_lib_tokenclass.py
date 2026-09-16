@@ -316,7 +316,8 @@ class TokenBaseTestCase(MyTestCase):
         token_token_group = db.session.scalar(
             select(TokenTokengroup).where(TokenTokengroup.tokengroup_id == token_group.id))
         self.assertIsNone(token_token_group, "TokenTokengroup relationship was not deleted.")
-        token_info = db.session.scalar(select(TokenInfo).where(TokenInfo.Key == "key", TokenInfo.Value == "value"))
+        token_info = db.session.scalar(select(TokenInfo).where(TokenInfo.Key == "key",
+                                                              TokenInfo.Value.like("value")))
         self.assertIsNone(token_info, "TokenInfo was not deleted.")
         container = db.session.scalar(select(TokenContainer).where(TokenContainer.serial == container_serial))
         self.assertIsNotNone(container, "TokenContainer was deleted.")
@@ -909,7 +910,7 @@ class TokenBaseTestCase(MyTestCase):
         self.assertEqual("2025-03-21 16:03:08.000000+0000", token.get_tokeninfo(PolicyAction.LASTAUTH))
 
         tdelta = timedelta(days=1)
-        token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now(tzlocal()) - tdelta)
+        token.add_tokeninfo(PolicyAction.LASTAUTH, str(datetime.now(tzlocal()) - tdelta))
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")
@@ -917,7 +918,7 @@ class TokenBaseTestCase(MyTestCase):
 
         # Old time format
         # lastauth_alt = datetime.utcnow().isoformat()
-        token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc) - tdelta)
+        token.add_tokeninfo(PolicyAction.LASTAUTH, str(datetime.now(timezone.utc) - tdelta))
         r = token.check_last_auth_newer("10h")
         self.assertFalse(r)
         r = token.check_last_auth_newer("2d")
