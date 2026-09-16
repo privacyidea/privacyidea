@@ -95,9 +95,12 @@ type NodeResolversMap = Record<string, ResolverWithPriority[]>;
 const ALL_NODES_VALUE = "__all_nodes__";
 const NO_NODE_ID = "";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to. "resolvers" and "actions" have no tier: resolvers holds a per-node list that can badly
+// overflow, and actions is a multi-button cell, so both stay flexible instead of forcing a fit.
 const columnKeysMap = [
-  { key: "name", label: $localize`:@@common.realm:Realm` },
-  { key: "isDefault", label: $localize`:@@common.default:Default` },
+  { key: "name", label: $localize`:@@common.realm:Realm`, width: "m" },
+  { key: "isDefault", label: $localize`:@@common.default:Default`, width: "xs" },
   { key: "resolvers", label: $localize`:@@common.resolvers:Resolvers` },
   { key: "actions", label: $localize`:@@common.actions:Actions` }
 ];

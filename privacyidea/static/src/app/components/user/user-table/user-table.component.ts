@@ -67,16 +67,19 @@ import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_
 import { TableState } from "@core/models/table_state/table-state";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so a table.page-table-state-size(table.table-width(...)) call in the .scss listing the same tiers
+// (see table-width() in table.scss) can be sized from the same numbers.
 const columnKeysMap = [
-  { key: "username", label: $localize`:@@common.username:Username` },
-  { key: "userid", label: $localize`:@@common.userId:User ID` },
-  { key: "givenname", label: $localize`:@@user.givenName:Given Name` },
-  { key: "surname", label: $localize`:@@user.surname:Surname` },
-  { key: "email", label: $localize`:@@common.email:Email` },
-  { key: "phone", label: $localize`:@@user.phone:Phone` },
-  { key: "mobile", label: $localize`:@@user.mobile:Mobile` },
-  { key: "description", label: $localize`:@@common.description:Description` },
-  { key: "resolver", label: $localize`:@@common.resolver:Resolver` }
+  { key: "username", label: $localize`:@@common.username:Username`, width: "s" },
+  { key: "userid", label: $localize`:@@common.userId:User ID`, width: "l" },
+  { key: "givenname", label: $localize`:@@user.givenName:Given Name`, width: "m" },
+  { key: "surname", label: $localize`:@@user.surname:Surname`, width: "m" },
+  { key: "email", label: $localize`:@@common.email:Email`, width: "l" },
+  { key: "phone", label: $localize`:@@user.phone:Phone`, width: "m" },
+  { key: "mobile", label: $localize`:@@user.mobile:Mobile`, width: "m" },
+  { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+  { key: "resolver", label: $localize`:@@common.resolver:Resolver`, width: "s" }
 ];
 
 // Per-column predicates for the free-text search: a term matches if it is a substring of any column.

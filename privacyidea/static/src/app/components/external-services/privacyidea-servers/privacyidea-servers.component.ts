@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -49,6 +50,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-privacyidea-servers",
   standalone: true,
   imports: [
+    NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,
@@ -90,7 +92,18 @@ export class PrivacyideaServersComponent {
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
-  displayedColumns: string[] = ["select", "identifier", "url", "tls", "description"];
+  // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+  // to. url and description are left untiered: both are free text (a URL or an admin-entered
+  // description) that can run arbitrarily long, so they keep flowing into the table's remaining
+  // space instead of being clipped to a fixed tier.
+  columnKeysMap: { key: string; width?: string }[] = [
+    { key: "select", width: "xs" },
+    { key: "identifier", width: "m" },
+    { key: "url" },
+    { key: "tls", width: "xs" },
+    { key: "description" }
+  ];
+  displayedColumns: string[] = this.columnKeysMap.map((column) => column.key);
 
   privacyideaDataSource = computed(() => {
     const servers = this.privacyideaServerService.remoteServerOptions();

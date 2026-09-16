@@ -81,10 +81,11 @@
 
               <td
                 *matCellDef="let element"
-                [ngClass]="{
-                  'width-100': column.key === 'resolvers',
-                  'actions-cell': column.key === 'actions'
-                }"
+                [ngClass]="[
+                  column.width ? 'col-width-' + column.width : '',
+                  column.key === 'resolvers' ? 'width-100' : '',
+                  column.key === 'actions' ? 'actions-cell' : ''
+                ]"
                 mat-cell>
                 @switch (column.key) {
                   @case ("name") {

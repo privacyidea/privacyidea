@@ -87,6 +87,16 @@ export class TokengroupsComponent {
 
   displayedColumns: string[] = ["select", "id", "groupname", "description"];
 
+  // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+  // to; the sum of these tiers (see table-width() in table.scss) also sizes the table-state panel
+  // shown in place of the table, so it matches the table's own footprint instead of a fixed guess.
+  columnWidths: Record<string, string> = {
+    select: "xs",
+    id: "xs",
+    groupname: "m",
+    description: "xl"
+  };
+
   tokengroupDataSource = computed(() => {
     const groups = this.tokengroupService.tokengroups();
     const dataSource = new MatTableDataSource(groups);

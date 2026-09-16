@@ -5,7 +5,10 @@
 .privacyidea-servers-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".privacyidea-servers-table", ".table-filter", ".table-scroll-container");
-  @include table.page-table-state-size;
+  // Sized from the col-width-* tiers the columns below use (select xs + identifier m + tls xs).
+  // url and description have no tier - both are untiered free text left to the table's remaining
+  // space - so they aren't part of this sum.
+  @include table.page-table-state-size(table.table-width(xs, m, xs));
 }
 
 .actions-container {

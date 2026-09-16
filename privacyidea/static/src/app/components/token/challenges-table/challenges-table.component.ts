@@ -46,12 +46,15 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so the columns line up on the same scale other tables use and the table-state placeholder
+// (see table-width() in table.scss) can be sized from the same numbers.
 const columnKeysMap = [
-  { key: "timestamp", label: $localize`:@@token.timestamp:Timestamp` },
-  { key: "serial", label: $localize`:@@common.serial:Serial` },
-  { key: "transaction_id", label: $localize`:@@token.transactionId:Transaction ID` },
-  { key: "expiration", label: $localize`:@@token.expiration:Expiration` },
-  { key: "otp_received", label: $localize`:@@token.received:Received` }
+  { key: "timestamp", label: $localize`:@@token.timestamp:Timestamp`, width: "l" },
+  { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+  { key: "transaction_id", label: $localize`:@@token.transactionId:Transaction ID`, width: "l" },
+  { key: "expiration", label: $localize`:@@token.expiration:Expiration`, width: "l" },
+  { key: "otp_received", label: $localize`:@@token.received:Received`, width: "xs" }
 ];
 
 @Component({

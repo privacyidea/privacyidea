@@ -84,7 +84,7 @@
         </th>
         <td
           *matCellDef="let row"
-          class="table-checkbox"
+          class="table-checkbox col-width-xs"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(row, $event.checked)"
@@ -103,6 +103,7 @@
         >
         <td
           *matCellDef="let connector"
+          class="col-width-l"
           mat-cell>
           <app-copyable [copyText]="connector.connectorname">
             <a
@@ -127,6 +128,7 @@
         >
         <td
           *matCellDef="let connector"
+          class="col-width-xs"
           mat-cell>
           {{ connector.type }}
         </td>

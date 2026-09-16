@@ -65,7 +65,7 @@
             @if (!useApplicationRowSpan(column.key) || client.isFirst) {
               <td
                 [attr.rowspan]="useApplicationRowSpan(column.key) ? client.rowspan : 1"
-                [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'"
+                [ngClass]="[colIdx % 2 === 0 ? 'col-even' : 'col-odd', 'col-width-' + column.width]"
                 mat-cell>
                 <div class="data-table-cell">
                   @if (column.key === "lastseen") {

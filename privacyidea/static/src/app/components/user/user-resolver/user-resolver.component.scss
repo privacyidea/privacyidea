@@ -9,8 +9,7 @@
 .user-sources-table-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".user-sources-table", ".table-filter", ".table-scroll-container");
-  min-width: calc(616px + 2 * 16px);
-  @include table.page-table-state-size;
+  @include table.page-table-state-size(table.table-width(xl, xs));
 }
 
 .new-resolver-footer-row {

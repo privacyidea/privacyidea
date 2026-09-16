@@ -5,7 +5,9 @@
 .radius-servers-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".radius-servers-table", ".table-filter", ".table-scroll-container");
-  @include table.page-table-state-size;
+  // Sized from the same col-width-* tiers the columns below use (select xs + identifier m +
+  // server l + dictionary l + description xl).
+  @include table.page-table-state-size(table.table-width(xs, m, l, l, xl));
 }
 
 .actions-container {

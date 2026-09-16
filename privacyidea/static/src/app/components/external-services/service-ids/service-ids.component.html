@@ -92,6 +92,7 @@
         </th>
         <td
           *matCellDef="let row"
+          [ngClass]="'col-width-xs'"
           class="table-checkbox"
           mat-cell>
           <mat-checkbox
@@ -111,6 +112,7 @@
         >
         <td
           *matCellDef="let service"
+          [ngClass]="'col-width-xs'"
           mat-cell>
           {{ service.id }}
         </td>
@@ -126,6 +128,7 @@
         >
         <td
           *matCellDef="let service"
+          [ngClass]="'col-width-m'"
           mat-cell>
           <app-copyable [copyText]="service.servicename">
             <a
@@ -150,6 +153,7 @@
         >
         <td
           *matCellDef="let service"
+          [ngClass]="'col-width-xl'"
           mat-cell>
           {{ service.description }}
         </td>

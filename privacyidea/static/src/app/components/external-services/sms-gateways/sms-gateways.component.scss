@@ -5,7 +5,7 @@
 .sms-gateways-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".sms-gateways-table", ".table-filter", ".table-scroll-container");
-  @include table.page-table-state-size;
+  @include table.page-table-state-size(table.table-width(xs, m, xl, s));
 }
 
 .actions-container {

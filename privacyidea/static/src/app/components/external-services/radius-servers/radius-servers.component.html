@@ -84,6 +84,7 @@
         </th>
         <td
           *matCellDef="let row"
+          [ngClass]="'col-width-' + columnWidths['select']"
           class="table-checkbox"
           mat-cell>
           <mat-checkbox
@@ -103,6 +104,7 @@
         >
         <td
           *matCellDef="let server"
+          [ngClass]="'col-width-' + columnWidths['identifier']"
           mat-cell>
           <app-copyable [copyText]="server.identifier">
             <a
@@ -127,6 +129,7 @@
         >
         <td
           *matCellDef="let server"
+          [ngClass]="'col-width-' + columnWidths['server']"
           mat-cell>
           {{ server.server }}:{{ server.port }}
         </td>
@@ -142,6 +145,7 @@
         >
         <td
           *matCellDef="let server"
+          [ngClass]="'col-width-' + columnWidths['dictionary']"
           mat-cell>
           {{ server.dictionary }}
         </td>
@@ -157,6 +161,7 @@
         >
         <td
           *matCellDef="let server"
+          [ngClass]="'col-width-' + columnWidths['description']"
           mat-cell>
           {{ server.description }}
         </td>

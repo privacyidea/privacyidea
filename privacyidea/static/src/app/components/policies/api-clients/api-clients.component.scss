@@ -4,7 +4,10 @@
 .api-clients-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".api-clients-table", ".table-filter", ".table-scroll-container");
-  @include table.page-table-state-size;
+  // Sized from the same col-width-* tiers the columns below use (display_name l + client_type m +
+  // status xs + key_id s + created_at m + last_used_at m; select and actions keep their own sizing),
+  // so the empty/error state is as wide as the table it stands in for, not the unrelated 44rem default.
+  @include table.page-table-state-size(table.table-width(l, m, xs, s, m, m));
 }
 
 .actions-container {

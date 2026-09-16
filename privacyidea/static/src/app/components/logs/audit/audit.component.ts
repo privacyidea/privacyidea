@@ -89,33 +89,37 @@ const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
   resolver: "copy-text"
 };
 
-const columnKeysMap = [
-  { key: "number", label: $localize`:@@audit.number:Number` },
-  { key: "action", label: $localize`:@@common.action:Action` },
-  { key: "success", label: $localize`:@@common.successLabel:Success` },
-  { key: "authentication", label: $localize`:@@audit.authentication:Authentication` },
-  { key: "serial", label: $localize`:@@common.serial:Serial` },
-  { key: "container_serial", label: $localize`:@@common.containerSerial:Container Serial` },
-  { key: "startdate", label: $localize`:@@audit.startDate:Start Date` },
-  { key: "duration", label: $localize`:@@audit.duration:Duration` },
-  { key: "token_type", label: $localize`:@@common.tokenType:Token Type` },
-  { key: "user", label: $localize`:@@common.user:User` },
-  { key: "realm", label: $localize`:@@common.realm:Realm` },
-  { key: "administrator", label: $localize`:@@common.administrator:Administrator` },
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to. Columns left without a "width" stay flexible (long free text or a list that can overflow);
+// the ones that do have a tier and their combined sizes (see table-width() in table.scss) drive
+// the table's min-width in audit.component.scss.
+const columnKeysMap: { key: string; label: string; width?: "xs" | "s" | "m" | "l" | "xl" }[] = [
+  { key: "number", label: $localize`:@@audit.number:Number`, width: "xs" },
+  { key: "action", label: $localize`:@@common.action:Action`, width: "l" },
+  { key: "success", label: $localize`:@@common.successLabel:Success`, width: "xs" },
+  { key: "authentication", label: $localize`:@@audit.authentication:Authentication`, width: "s" },
+  { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+  { key: "container_serial", label: $localize`:@@common.containerSerial:Container Serial`, width: "m" },
+  { key: "startdate", label: $localize`:@@audit.startDate:Start Date`, width: "l" },
+  { key: "duration", label: $localize`:@@audit.duration:Duration`, width: "xs" },
+  { key: "token_type", label: $localize`:@@common.tokenType:Token Type`, width: "xs" },
+  { key: "user", label: $localize`:@@common.user:User`, width: "s" },
+  { key: "realm", label: $localize`:@@common.realm:Realm`, width: "s" },
+  { key: "administrator", label: $localize`:@@common.administrator:Administrator`, width: "s" },
   { key: "action_detail", label: $localize`:@@audit.actionDetail:Action Detail` },
   { key: "info", label: $localize`:@@audit.info:Info` },
   { key: "policies", label: $localize`:@@common.policies:Policies` },
-  { key: "client", label: $localize`:@@common.client:Client` },
-  { key: "user_agent", label: $localize`:@@common.userAgent:User Agent` },
-  { key: "user_agent_version", label: $localize`:@@audit.userAgentVersion:User Agent Version` },
-  { key: "privacyidea_server", label: $localize`:@@audit.privacyideaServer:PrivacyIDEA Server` },
-  { key: "log_level", label: $localize`:@@audit.logLevel:Log Level` },
-  { key: "clearance_level", label: $localize`:@@audit.clearanceLevel:Clearance Level` },
-  { key: "sig_check", label: $localize`:@@audit.signatureCheck:Signature Check` },
-  { key: "missing_line", label: $localize`:@@audit.missingLine:Missing Line` },
-  { key: "resolver", label: $localize`:@@common.resolver:Resolver` },
-  { key: "thread_id", label: $localize`:@@audit.threadId:Thread ID` },
-  { key: "container_type", label: $localize`:@@common.containerType:Container Type` }
+  { key: "client", label: $localize`:@@common.client:Client`, width: "s" },
+  { key: "user_agent", label: $localize`:@@common.userAgent:User Agent`, width: "l" },
+  { key: "user_agent_version", label: $localize`:@@audit.userAgentVersion:User Agent Version`, width: "s" },
+  { key: "privacyidea_server", label: $localize`:@@audit.privacyideaServer:PrivacyIDEA Server`, width: "m" },
+  { key: "log_level", label: $localize`:@@audit.logLevel:Log Level`, width: "xs" },
+  { key: "clearance_level", label: $localize`:@@audit.clearanceLevel:Clearance Level`, width: "xs" },
+  { key: "sig_check", label: $localize`:@@audit.signatureCheck:Signature Check`, width: "xs" },
+  { key: "missing_line", label: $localize`:@@audit.missingLine:Missing Line`, width: "xs" },
+  { key: "resolver", label: $localize`:@@common.resolver:Resolver`, width: "s" },
+  { key: "thread_id", label: $localize`:@@audit.threadId:Thread ID`, width: "xs" },
+  { key: "container_type", label: $localize`:@@common.containerType:Container Type`, width: "xs" }
 ];
 
 @Component({

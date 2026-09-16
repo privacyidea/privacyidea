@@ -116,6 +116,7 @@
         >
         <td
           *matCellDef="let client"
+          class="col-width-l"
           mat-cell>
           <app-copyable [copyText]="client.display_name">
             <a
@@ -140,6 +141,7 @@
         >
         <td
           *matCellDef="let client"
+          class="col-width-m"
           mat-cell>
           {{ clientTypeLabel(client.client_type) }}
         </td>
@@ -155,6 +157,7 @@
         >
         <td
           *matCellDef="let client"
+          class="col-width-xs"
           mat-cell>
           <span
             [class.status-active]="client.status === 'active'"
@@ -175,6 +178,7 @@
         </th>
         <td
           *matCellDef="let client"
+          class="col-width-s"
           mat-cell>
           <code>pi_{{ client.key_id }}</code>
         </td>
@@ -190,6 +194,7 @@
         >
         <td
           *matCellDef="let client"
+          class="col-width-m"
           mat-cell>
           {{ client.created_at | date: "yyyy-MM-dd HH:mm" }}
         </td>
@@ -205,6 +210,7 @@
         </th>
         <td
           *matCellDef="let client"
+          class="col-width-m"
           mat-cell>
           {{ (client.last_used_at | date: "yyyy-MM-dd HH:mm") || "-" }}
         </td>

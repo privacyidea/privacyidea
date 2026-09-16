@@ -53,11 +53,14 @@ import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe
 import { StringUtils } from "@utils/string.utils";
 import { filter } from "rxjs";
 
-const columnKeysMap: { key: keyof ClientData; label: string }[] = [
-  { key: "application", label: $localize`:@@common.application:Application` },
-  { key: "hostname", label: $localize`:@@common.hostname:Hostname` },
-  { key: "ip", label: $localize`:@@common.ipAddress:IP Address` },
-  { key: "lastseen", label: $localize`:@@audit.lastAuthentication:Last Authentication Attempt` }
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// or clamped to, kept alongside the column definition so the table's overall min-width
+// (see table-width() in table.scss) can be sized from the same numbers.
+const columnKeysMap: { key: keyof ClientData; label: string; width: "xs" | "s" | "m" | "l" | "xl" }[] = [
+  { key: "application", label: $localize`:@@common.application:Application`, width: "xl" },
+  { key: "hostname", label: $localize`:@@common.hostname:Hostname`, width: "l" },
+  { key: "ip", label: $localize`:@@common.ipAddress:IP Address`, width: "l" },
+  { key: "lastseen", label: $localize`:@@audit.lastAuthentication:Last Authentication Attempt`, width: "m" }
 ];
 
 export interface ClientTableRow {

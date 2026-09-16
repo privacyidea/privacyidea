@@ -10,7 +10,7 @@
 .events-table-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
-  @include table.page-table-state-size;
+  @include table.page-table-state-size(table.table-width(xs, m, s, xs, xs, xs));
 }
 
 .event-handler-table {
@@ -78,11 +78,6 @@
 }
 
 .event-handler-table {
-  th.mat-mdc-header-cell.mat-column-ordering,
-  td.mat-mdc-cell.mat-column-ordering {
-    width: calc(var(--input-width-xs) + 16px);
-  }
-
   // A form field at its default height fills the row from border to border, so the
   // ordering input is shortened and inset to sit inside the cell instead of filling it.
   // Its filled background is dropped as well, leaving the underline and the hover tint

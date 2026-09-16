@@ -122,10 +122,18 @@ export class ContainerTemplatesComponent {
   readonly router = inject(Router);
   readonly filterComponent = viewChild(ContainerTemplatesFilterComponent);
 
+  // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+  // to; "tokens" has no tier because its list of tokens can badly overflow and must stay flexible
+  // (see table-width() in table.scss, which sums the other columns' tiers).
   readonly columns = {
-    name: { label: $localize`:@@common.name:Name`, filterable: true, sortable: true },
-    container_type: { label: $localize`:@@common.containerType:Container Type`, filterable: true, sortable: true },
-    default: { label: $localize`:@@common.default:Default`, filterable: true, sortable: true },
+    name: { label: $localize`:@@common.name:Name`, filterable: true, sortable: true, width: "m" },
+    container_type: {
+      label: $localize`:@@common.containerType:Container Type`,
+      filterable: true,
+      sortable: true,
+      width: "xs"
+    },
+    default: { label: $localize`:@@common.default:Default`, filterable: true, sortable: true, width: "xs" },
     tokens: { label: $localize`:@@common.tokens:Tokens`, filterable: true, sortable: false }
   } as const;
 

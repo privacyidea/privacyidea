@@ -92,6 +92,17 @@ export class RadiusServersComponent {
 
   displayedColumns: string[] = ["select", "identifier", "server", "dictionary", "description"];
 
+  // The col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed to;
+  // the .scss include's table.table-width() call sums the same tiers in the same order so the
+  // panel (see table-width() in table.scss) can be sized from the same numbers.
+  readonly columnWidths: Record<string, string> = {
+    select: "xs",
+    identifier: "m",
+    server: "l",
+    dictionary: "l",
+    description: "xl"
+  };
+
   radiusDataSource = computed(() => {
     const servers = this.radiusService.radiusServers();
     const dataSource = new MatTableDataSource(servers);

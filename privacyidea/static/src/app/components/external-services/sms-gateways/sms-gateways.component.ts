@@ -89,6 +89,16 @@ export class SmsGatewaysComponent {
 
   displayedColumns: string[] = ["select", "name", "description", "providermodule"];
 
+  // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+  // to; the sum of these tiers (see table-width() in table.scss) also sizes the table-state panel
+  // shown in place of the table, so it matches the table's own footprint instead of a fixed guess.
+  columnWidths: Record<string, string> = {
+    select: "xs",
+    name: "m",
+    description: "xl",
+    providermodule: "s"
+  };
+
   smsDataSource = computed(() => {
     const gateways = this.smsGatewayService.smsGateways();
     const dataSource = new MatTableDataSource(gateways);

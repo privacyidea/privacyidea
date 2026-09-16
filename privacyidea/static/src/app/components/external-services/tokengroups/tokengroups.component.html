@@ -85,6 +85,7 @@
         <td
           *matCellDef="let row"
           class="table-checkbox"
+          [ngClass]="'col-width-' + columnWidths['select']"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(row, $event.checked)"
@@ -103,6 +104,7 @@
         >
         <td
           *matCellDef="let group"
+          [ngClass]="'col-width-' + columnWidths['id']"
           mat-cell>
           {{ group.id }}
         </td>
@@ -118,6 +120,7 @@
         >
         <td
           *matCellDef="let group"
+          [ngClass]="'col-width-' + columnWidths['groupname']"
           mat-cell>
           <app-copyable [copyText]="group.groupname">
             <a
@@ -142,6 +145,7 @@
         >
         <td
           *matCellDef="let group"
+          [ngClass]="'col-width-' + columnWidths['description']"
           mat-cell>
           {{ group.description }}
         </td>

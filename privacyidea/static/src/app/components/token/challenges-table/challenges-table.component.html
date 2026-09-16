@@ -94,6 +94,7 @@
             </th>
             <td
               *matCellDef="let element"
+              [ngClass]="'col-width-' + column.width"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {

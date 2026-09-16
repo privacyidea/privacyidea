@@ -76,6 +76,7 @@
           </th>
           <td
             *matCellDef="let element"
+            class="col-width-l"
             mat-cell>
             <div class="name-actions-container">
               <a [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER_DETAILS, element.resolvername]">
@@ -109,6 +110,7 @@
           </th>
           <td
             *matCellDef="let element"
+            class="col-width-xs"
             mat-cell>
             {{ element.type }}
           </td>

@@ -84,7 +84,7 @@
         </th>
         <td
           *matCellDef="let row"
-          class="table-checkbox"
+          class="table-checkbox col-width-xs"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(row, $event.checked)"
@@ -103,6 +103,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-m"
           mat-cell>
           <app-copyable [copyText]="server.identifier">
             <a
@@ -127,6 +128,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-l"
           mat-cell>
           {{ server.server }}:{{ server.port }}
         </td>
@@ -142,6 +144,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-l"
           mat-cell>
           {{ server.sender }}
         </td>
@@ -157,6 +160,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-xs"
           mat-cell>
           <div class="flex just-center">
             @if (server.tls) {
@@ -176,6 +180,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-xl"
           mat-cell>
           {{ server.description }}
         </td>

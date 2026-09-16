@@ -61,6 +61,7 @@
           </th>
           <td
             *matCellDef="let element"
+            [ngClass]="'col-width-' + columnKeysMap[0].width"
             mat-cell>
             <div class="name-actions-container">
               <a
@@ -110,6 +111,7 @@
           </th>
           <td
             *matCellDef="let element"
+            [ngClass]="'col-width-' + columnKeysMap[1].width"
             mat-cell>
             {{ element.type }}
           </td>

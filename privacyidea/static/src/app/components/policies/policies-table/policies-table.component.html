@@ -56,6 +56,7 @@
         </th>
         <td
           *matCellDef="let policy"
+          class="col-width-xs"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(policy, $event.checked)"
@@ -106,6 +107,7 @@
           <td
             *matCellDef="let policy"
             [class]="'col-' + column.key"
+            [ngClass]="column.value.width ? 'col-width-' + column.value.width : null"
             mat-cell>
             <div class="column-max-height">
               @if (policy.name) {

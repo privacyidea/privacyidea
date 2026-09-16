@@ -84,6 +84,18 @@ export class PeriodicTaskComponent implements OnInit {
 
   displayedColumns: string[] = ["select", "name", "taskmodule", "interval", "nodes", "options", "active"];
 
+  // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+  // to, keyed by column name. "options" is intentionally omitted - it holds a variable-length
+  // list of task options (more so in detailed view) that stays flexible instead of a fixed tier.
+  readonly columnWidths: Record<string, string> = {
+    select: "xs",
+    name: "m",
+    taskmodule: "s",
+    interval: "s",
+    nodes: "m",
+    active: "xs"
+  };
+
   protected readonly Object = Object;
   detailedView = signal<boolean>(false);
 

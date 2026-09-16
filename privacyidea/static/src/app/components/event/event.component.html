@@ -96,7 +96,7 @@
             </th>
             <td
               *matCellDef="let element; let row"
-              class="column-max-width"
+              [ngClass]="columnWidths[column] ? 'col-width-' + columnWidths[column] : 'column-max-width'"
               mat-cell>
               @switch (column) {
                 @case ("name") {

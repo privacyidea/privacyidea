@@ -41,9 +41,12 @@ import { NotificationService } from "@services/notification/notification.service
 import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so page-table-state-size's min-width (see table-width() in table.scss) can be sized from
+// the same numbers.
 const columnKeysMap = [
-  { key: "resolvername", label: $localize`:@@common.name:Name` },
-  { key: "type", label: $localize`:@@common.type:Type` }
+  { key: "resolvername", label: $localize`:@@common.name:Name`, width: "xl" },
+  { key: "type", label: $localize`:@@common.type:Type`, width: "xs" }
 ];
 
 @Component({

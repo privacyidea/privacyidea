@@ -64,6 +64,7 @@
         >
         <td
           *matCellDef="let machine"
+          class="col-width-l"
           mat-cell>
           <app-copyable [copyText]="machine.hostname.join(', ')">
             <a
@@ -89,6 +90,7 @@
         >
         <td
           *matCellDef="let machine"
+          class="col-width-m"
           mat-cell>
           <app-copyable [copyText]="machine.ip">
             <span>{{ machine.ip }}</span>
@@ -106,6 +108,7 @@
         >
         <td
           *matCellDef="let machine"
+          class="col-width-xs"
           mat-cell>
           {{ machine.id }}
         </td>
@@ -121,6 +124,7 @@
         >
         <td
           *matCellDef="let machine"
+          class="col-width-m"
           mat-cell>
           <app-copyable [copyText]="machine.resolver_name">
             <span>{{ machine.resolver_name }}</span>

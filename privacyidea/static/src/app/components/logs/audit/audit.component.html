@@ -100,9 +100,7 @@
             </th>
             <td
               *matCellDef="let element; let row"
-              [ngClass]="{
-                'table-checkbox': column.key === 'select'
-              }"
+              [ngClass]="column.width ? 'col-width-' + column.width : ''"
               mat-cell>
               <div>
                 @switch (getCellRenderType(column.key)) {

@@ -5,7 +5,7 @@
 .smtp-servers-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".smtp-servers-table", ".smtp-table-filter", ".table-scroll-container");
-  @include table.page-table-state-size;
+  @include table.page-table-state-size(table.table-width(xs, m, l, l, xs, xl));
 }
 
 .actions-container {

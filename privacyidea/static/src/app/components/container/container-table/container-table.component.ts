@@ -61,6 +61,21 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so the columns line up on the same scale other tables use and the table-state placeholder
+// (see table-width() in table.scss) can be sized from the same numbers.
+const columnsKeyMap = [
+  { key: "select", label: "", width: "xs" },
+  { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+  { key: "type", label: $localize`:@@common.type:Type`, width: "s" },
+  { key: "states", label: $localize`:@@common.status:Status`, width: "m" },
+  { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+  { key: "user_name", label: $localize`:@@common.user:User`, width: "s" },
+  { key: "user_realm", label: $localize`:@@common.realm:Realm`, width: "s" },
+  { key: "realms", label: $localize`:@@common.containerRealms:Container Realms`, width: "s" }
+];
+
 @Component({
   selector: "app-container-table",
   standalone: true,
@@ -103,17 +118,8 @@ export class ContainerTableComponent implements OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
-  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
-    "select",
-    "serial",
-    "type",
-    "states",
-    "description",
-    "user_name",
-    "user_realm",
-    "realms"
-  );
-  readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
+  readonly columnsKeyMap = columnsKeyMap;
+  readonly columnKeys = columnsKeyMap.map((column) => column.key);
   readonly apiFilterKeys = this.containerService.apiFilterKeys;
   readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
   readonly filterKeywords = [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys];

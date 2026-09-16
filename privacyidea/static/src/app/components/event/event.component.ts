@@ -94,6 +94,17 @@ export class EventComponent {
     active: $localize`:@@common.active:Active`,
     delete: $localize`:@@common.delete:Delete`
   };
+  // The col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed to, so the
+  // columns line up on the same scale other tables use. "event", "action" and "conditions" hold lists
+  // or free text that can badly overflow, so they are left out and keep their previous flexible width.
+  columnWidths: Record<string, string> = {
+    ordering: "xs",
+    name: "m",
+    handlermodule: "s",
+    position: "xs",
+    active: "xs",
+    delete: "xs"
+  };
   columnKeys = computed(() => {
     let keys = Object.keys(this.columnKeysMap);
     if (!this.authService.actionAllowed("eventhandling_write")) {

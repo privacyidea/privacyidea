@@ -43,9 +43,12 @@ import {
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { lastValueFrom } from "rxjs";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so table.page-table-state-size(table.table-width(...)) in the .scss (see table-width()
+// in table.scss) can be sized from the same numbers.
 const columnKeysMap = [
-  { key: "resolvername", label: $localize`:@@common.name:Name` },
-  { key: "type", label: $localize`:@@common.type:Type` }
+  { key: "resolvername", label: $localize`:@@common.name:Name`, width: "l" },
+  { key: "type", label: $localize`:@@common.type:Type`, width: "xs" }
 ];
 
 @Component({

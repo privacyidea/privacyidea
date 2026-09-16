@@ -117,9 +117,8 @@
               </th>
               <td
                 *matCellDef="let element; let row"
-                [ngClass]="{
-                  'table-checkbox': column.key === 'select'
-                }"
+                [class.table-checkbox]="column.key === 'select'"
+                [ngClass]="'col-width-' + column.width"
                 mat-cell>
                 <div>
                   @switch (column.key) {

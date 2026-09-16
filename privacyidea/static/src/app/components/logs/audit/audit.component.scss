@@ -3,7 +3,11 @@
 
 .audit-table-container {
   @include styles.main-component-style;
-  @include table.page-table-state-size;
+  // Sized from the col-width-* tiers on the columns below (action_detail, info and policies are
+  // left flexible and excluded from the sum, since they hold long free text or a list that can overflow).
+  @include table.page-table-state-size(
+    table.table-width(xs, l, xs, s, m, m, l, xs, xs, s, s, s, s, l, s, m, xs, xs, xs, xs, s, xs, xs)
+  );
   @include table.base-table-structure(".audit-table", ".audit-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;

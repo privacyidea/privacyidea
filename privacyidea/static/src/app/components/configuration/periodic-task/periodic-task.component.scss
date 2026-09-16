@@ -4,7 +4,10 @@
 .periodic-task-layout {
   @include styles.main-component-style;
   @include table.base-table-structure(".periodic-task-table", ".periodic-task-table-filter", ".table-scroll-container");
-  @include table.page-table-state-size;
+  // Sized from the col-width-* tiers the columns below use (select xs + name m + taskmodule s +
+  // interval s + nodes m + active xs), plus the "options" column's own existing max-width (it
+  // stays flexible instead of taking a fixed tier - see columnWidths in the .ts).
+  @include table.page-table-state-size(calc(#{table.table-width(xs, m, s, s, m, xs)} + 280px));
 }
 
 .actions-container {

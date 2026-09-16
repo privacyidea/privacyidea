@@ -60,7 +60,8 @@
         </th>
         <td
           mat-cell
-          *matCellDef="let row">
+          *matCellDef="let row"
+          class="col-width-xs">
           <mat-checkbox
             (click)="$event.stopPropagation()"
             (change)="selector.setRowSelected(row, $event.checked)"
@@ -102,7 +103,8 @@
           <td
             mat-cell
             *matCellDef="let template"
-            [class]="'col-' + column.key">
+            [class]="'col-' + column.key"
+            [ngClass]="column.value.width ? 'col-width-' + column.value.width : null">
             @if (template.name) {
               @switch (column.key) {
                 @case ("name") {

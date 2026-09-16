@@ -8,7 +8,9 @@
 
 .realm-table-container {
   @include styles.main-component-style;
-  @include table.page-table-state-size;
+  // Sized from the col-width-* tiers of "name" and "isDefault"; "resolvers" and "actions" have no
+  // tier (see columnKeysMap in the .ts) so they're left out of the sum.
+  @include table.page-table-state-size(table.table-width(m, xs));
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;

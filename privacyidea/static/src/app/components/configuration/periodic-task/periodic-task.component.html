@@ -92,6 +92,7 @@
         </th>
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['select']"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(task, $event.checked)"
@@ -113,6 +114,7 @@
         >
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['name']"
           mat-cell>
           <app-copyable [copyText]="task.name">
             <a
@@ -138,6 +140,7 @@
         >
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['taskmodule']"
           mat-cell>
           {{ getModuleLabel(task.taskmodule) }}
         </td>
@@ -153,6 +156,7 @@
         >
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['interval']"
           mat-cell>
           {{ task.interval }}
         </td>
@@ -168,6 +172,7 @@
         >
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['nodes']"
           mat-cell>
           {{ Array.isArray(task.nodes) ? task.nodes.join(", ") : task.nodes }}
         </td>
@@ -210,6 +215,7 @@
         >
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['active']"
           mat-cell>
           <mat-slide-toggle
             i18n-matTooltip="@@common.toggleActiveStatus"
