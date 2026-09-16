@@ -199,7 +199,9 @@
     class="translate-button">
     <mat-icon>translate</mat-icon>
   </button>
-  <span class="version-text">
+  <span
+    class="version-text"
+    [class.node-shown]="authService.showNode()">
     <span class="version-prefix">
       {{ versionPrefix() }}
     </span>

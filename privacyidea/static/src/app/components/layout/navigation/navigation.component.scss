@@ -44,9 +44,8 @@ $bar-gradient-end-dark: #464646;
   height: 40px;
   white-space: nowrap;
   border-radius: var(--border-radius);
-  transition:
-    background 200ms ease,
-    color 200ms ease;
+  transition: background 200ms ease,
+  color 200ms ease;
   flex-shrink: 0;
   border: none;
   background: transparent;
@@ -281,7 +280,13 @@ $bar-gradient-end-dark: #464646;
   // dark mode, which would leave the two barely a step apart.
   color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
-  margin: 0 86px 0 16px;
+  margin: 0 22px 0 16px;
+
+  // The node name in the primary toolbar's utils-group above widens that group, so this drops its
+  // own left margin to keep the row balanced.
+  &.node-shown {
+    margin-right: 86px;
+  }
 }
 
 .docs-button-icon {
@@ -351,7 +356,11 @@ $bar-gradient-end-dark: #464646;
   }
 
   .version-text {
-    margin-right: 259px;
+    margin-right: 196px;
+
+    &.node-shown {
+      margin-right: 259px;
+    }
   }
 
   :host.has-custom-logo .secondary-toolbar {
@@ -362,5 +371,9 @@ $bar-gradient-end-dark: #464646;
 @media (max-width: 1600px) {
   .version-text {
     margin-right: 101px;
+
+    &.node-shown {
+      margin-right: 101px;
+    }
   }
 }
