@@ -46,7 +46,8 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               PushPresenceOptions, strip_pem_headers,
                                               SERVER_PUSH_CAPABILITIES, _build_smartphone_data,
                                               MAX_CLIENT_TAG_LENGTH, MAX_STORED_QUESTION_LENGTH,
-                                              MAX_STORED_TITLE_LENGTH, DEFAULT_MOBILE_TEXT)
+                                              MAX_STORED_TITLE_LENGTH, MAX_NOTIFICATION_JSON_LENGTH,
+                                              DEFAULT_MOBILE_TEXT)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
@@ -2160,6 +2161,42 @@ class PushTokenTestCase(MyTestCase):
 
         delete_policy("push_16k_text")
         delete_policy("push_16k_enroll")
+        remove_token(serial)
+
+    def test_16l_non_ascii_text_is_capped_by_encoded_size(self):
+        # The per-field character cap alone does not bound the stored size: json.dumps
+        # escapes every non-ASCII character to a \uXXXX sequence, so a question that is
+        # within MAX_STORED_QUESTION_LENGTH characters can still blow up the encoded
+        # JSON well past MAX_NOTIFICATION_JSON_LENGTH. The safety net has to catch that.
+        self.setUp_user_realms()
+        set_policy("push_16l_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_16l_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}={'ü' * 500}")
+        token = self._create_push_token()
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        serial = token.get_serial()
+
+        with LogCapture(level=logging.WARNING) as lc:
+            self._trigger_challenge()
+            lc.check_present(("privacyidea.lib.tokens.pushtoken", "WARNING", mock.ANY))
+
+        challenge_data = get_challenges(serial=serial)[0].get_data()
+        stored = challenge_data["notification"]
+        # The character cap alone would have left 500 characters standing
+        self.assertLess(len(stored["question"]), 500)
+        self.assertLessEqual(len(json.dumps(challenge_data)), MAX_NOTIFICATION_JSON_LENGTH)
+        self.assertLessEqual(len(encryptPassword(json.dumps(challenge_data))), 2000)
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        self.assertEqual(stored["question"], res[1]["result"]["value"][0]["question"])
+
+        delete_policy("push_16l_text")
+        delete_policy("push_16l_enroll")
         remove_token(serial)
 
     @responses.activate
