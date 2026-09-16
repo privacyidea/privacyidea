@@ -1,3 +1,9 @@
+Version 3.13.4
+
+  Fixes:
+  * Sped up /auth for administrators by counting the users with active tokens in the database
+    and only once per request. (#5959)
+
 Version 3.13.3
 
   Fixes:
