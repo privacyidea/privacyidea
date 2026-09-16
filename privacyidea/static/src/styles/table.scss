@@ -1,3 +1,5 @@
+@use "sass:map";
+
 $td-max-width: 18rem;
 $scrollable-height: calc(var(--mat-sys-body-medium-line-height) * 3);
 $scrollable-margin-right: -16px;
@@ -213,15 +215,37 @@ $description-width: 18rem;
 // the table would have had, and steps up one typescale/icon size with it. A
 // panel alone on a page and a panel sitting among a page's other sections are
 // the same component at two sizes, not two different components.
-@mixin page-table-state-size($min-width: min(44rem, calc(100cqw - 2 * 16px))) {
+@mixin page-table-state-size($min-width: 44rem) {
   // The footprint is the page container's own box: main-component-style caps it at 100cq* against
   // the content region and pads 16px per side, so the panel takes that box less the padding.
+  // $min-width is itself capped at that same box: a table with enough columns to need its own
+  // horizontal scroll (see .table-scroll-region) only scrolls *inside* the loaded page, never
+  // widening the page itself - the empty/error/loading panel must not either, or it forces the
+  // whole page into a horizontal scroll a spinner never needed.
   --table-state-min-height: calc(100cqh - 2 * 16px);
-  --table-state-min-width: #{$min-width};
+  --table-state-min-width: min(#{$min-width}, calc(100cqw - 2 * 16px));
   --table-state-heading-font: var(--mat-sys-title-large);
   --table-state-icon-frame-size: 7rem;
   --table-state-icon-size: 56px;
 }
+
+// A sortable column's header carries its label plus a sort icon-button (~40px) behind a 16px
+// margin, on top of the cell's own tier width; a table.mat-column with the xs or s tier is
+// usually too narrow for that combination alone, so the browser's auto table-layout grows the
+// column past its declared tier - measured (token-table, 1800px viewport): xs columns rendered
+// 44-65px past their 80px tier, s columns 10-30px past their 120px tier, while m/l/xl columns
+// (170px+) were already wide enough to absorb the header controls with no growth at all. These
+// reserves close most of that gap so table-width() below is not a silent undercount; the
+// underlying --column-width-* tokens are left alone; on a bare-header column (e.g. a checkbox
+// "select" column, which needs none of this) it only makes the *estimate* a little generous, not
+// the column's own actual rendered width.
+$header-chrome-reserve: (
+  "xs": 64px,
+  "s": 32px,
+  "m": 0px,
+  "l": 0px,
+  "xl": 0px
+);
 
 // Sums a table's own col-width-* tiers (see the --column-width-* tokens and .col-width-* classes in
 // styles.scss) into one width, for page-table-state-size($min-width) above: the empty/error/loading
@@ -230,7 +254,11 @@ $description-width: 18rem;
 @function table-width($sizes...) {
   $expr: "0px";
   @each $size in $sizes {
+    $reserve: map.get($header-chrome-reserve, $size);
     $expr: "#{$expr} + var(--column-width-#{$size})";
+    @if $reserve and $reserve > 0px {
+      $expr: "#{$expr} + #{$reserve}";
+    }
   }
   @return unquote("calc(#{$expr})");
 }
