@@ -61,6 +61,7 @@
             <ng-container [matColumnDef]="column.key">
               <th
                 *matHeaderCellDef
+                [ngClass]="column.width ? 'col-width-' + column.width : ''"
                 mat-header-cell>
                 <div
                   [ngClass]="{ 'just-center': column.key === 'actions' }"

@@ -74,7 +74,7 @@ const columnsKeyMap = [
   { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
   { key: "user_name", label: $localize`:@@common.user:User`, width: "s" },
   { key: "user_realm", label: $localize`:@@common.realm:Realm`, width: "s" },
-  { key: "realms", label: $localize`:@@common.containerRealms:Container Realms`, width: "s" }
+  { key: "realms", label: $localize`:@@common.containerRealms:Container Realms`, width: "m" }
 ];
 
 @Component({
