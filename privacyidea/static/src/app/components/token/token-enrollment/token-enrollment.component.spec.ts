@@ -302,18 +302,38 @@ describe("TokenEnrollmentComponent", () => {
       expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expected_parameters);
     });
 
-    // The certificate token is enrolled without a PIN, so the form hides the fields and a PIN
-    // left over from another type must not travel with the request.
+    // A token type that is enrolled without a PIN hides the fields, so a PIN left over from
+    // another type neither travels with the request nor blocks it through the repeat mismatch
+    // it can no longer show.
     it("Does not submit a PIN for a token type that is enrolled without one", () => {
       const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
       installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });
       component.setPin.set("1234");
-      tokenService.selectedTokenType.set({ key: "certificate", name: "Certificate", info: "", text: "" });
+      component.repeatPin.set("");
+      tokenService.selectedTokenType.set({ key: "sshkey", name: "SSH Key", info: "", text: "" });
 
       component.enrollToken();
 
       expect(component["showPinFields"]()).toBe(false);
+      expect(component.isFormInvalid()).toBe(false);
       expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expect.objectContaining({ pin: "" }));
+    });
+
+    it("Submits the PIN and enforces the repeat for a type that uses one", () => {
+      const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
+      installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });
+      component.setPin.set("1234");
+      component.repeatPin.set("");
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+
+      expect(component["showPinFields"]()).toBe(true);
+      expect(component.isFormInvalid()).toBe(true);
+
+      component.repeatPin.set("1234");
+
+      expect(component.isFormInvalid()).toBe(false);
+      component.enrollToken();
+      expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expect.objectContaining({ pin: "1234" }));
     });
 
     it("Setting validity dates works", () => {

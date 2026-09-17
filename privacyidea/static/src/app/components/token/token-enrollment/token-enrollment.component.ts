@@ -239,7 +239,11 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
     validate(f, (ctx) => (ctx.value() !== this.setPin() ? [{ kind: "pinMismatch" }] : []));
   });
 
-  isFormInvalid = computed(() => !this.descriptionForm().valid() || !this.repeatPinForm().valid());
+  // A PIN left over from another token type must not block a type whose PIN fields are hidden:
+  // the mismatch error has nowhere to show, so the enrollment would fail without a reason.
+  isFormInvalid = computed(
+    () => !this.descriptionForm().valid() || (this.showPinFields() && !this.repeatPinForm().valid())
+  );
 
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
