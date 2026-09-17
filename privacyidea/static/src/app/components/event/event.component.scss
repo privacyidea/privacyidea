@@ -69,6 +69,12 @@
   white-space: nowrap;
 }
 
+.event-inline {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
 .event-handler-table {
   // A form field at its default height fills the row from border to border, so the
   // ordering input is shortened and inset to sit inside the cell instead of filling it.

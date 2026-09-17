@@ -87,15 +87,20 @@ export class TableState {
     });
     this.rowStatus = computed(() => (this.status() === "ready" ? "filtered" : this.status()));
     this.isFiltered = computed(() => this.options.filterActive?.() ?? false);
-    this.showTable = computed(() => {
-      const status = this.status();
-      if (status === "empty" || status === "denied" || status === "error" || status === "cancelled") {
-        return false;
+    this.showTable = linkedSignal<TableStatus, boolean>({
+      source: this.status,
+      computation: (status, previous) => {
+        if (status === "empty" || status === "denied" || status === "error" || status === "cancelled") {
+          return false;
+        }
+        if (status === "loading") {
+          // A reload of a table already on screen - typically a filter keystroke - keeps it there: removing it would
+          // destroy the filter input the user is typing into. Only the first load shows the panel instead, since
+          // a table of placeholder rows ending on the empty panel reads as rows arriving and being taken away.
+          return previous?.value ?? false;
+        }
+        return true;
       }
-      // A table of placeholder rows is shaped like data, so ending the load on the empty panel
-      // reads as rows arriving and then being taken away. The panel speaks for the load as well,
-      // which makes every outcome a change of its contents rather than a change of what is on screen.
-      return status !== "loading";
     });
   }
 

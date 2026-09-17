@@ -268,4 +268,18 @@ describe("UserTableComponent", () => {
     mockUserService.pageSize.set(10);
     expect(component.pageSizeOptions()).toEqual(customOptions);
   });
+
+  describe("inline cell filter", () => {
+    it("replaces the column's filter with the clicked value", () => {
+      mockUserService.activeFilter.set(new FilterValue({ value: "resolver: old" }));
+
+      component.addFilterValue("resolver", "ldap1");
+
+      expect(mockUserService.activeFilter().getValueOfKey("resolver")).toBe("ldap1");
+    });
+
+    it("names the column in the filter button tooltip", () => {
+      expect(component.filterTooltip("resolver")).toBe("Filter by this resolver");
+    });
+  });
 });

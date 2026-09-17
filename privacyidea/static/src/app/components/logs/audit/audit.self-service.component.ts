@@ -41,6 +41,7 @@ import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -70,6 +71,7 @@ import { AuditComponent } from "./audit.component";
     MatColumnDef,
     MatLabel,
     CopyableComponent,
+    FilterValueButtonComponent,
     RouterLink,
     MatButtonModule,
     MatIcon,

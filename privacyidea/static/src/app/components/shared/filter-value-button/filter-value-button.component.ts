@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input, output } from "@angular/core";
+import { Component, computed, input, output } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
 
 /**
@@ -37,6 +37,8 @@ export class FilterValueButtonComponent {
   // supplied as independently-translatable $localize messages without breaking grammar in other languages.
   readonly label = input<string>($localize`:@@common.filterByValue:Filter by this value`);
   readonly filterValue = output<string>();
+  // Cell values reach this through untyped row objects, so null/undefined arrive despite the declared type.
+  readonly hasValue = computed(() => String(this.value() ?? "").trim() !== "");
 
   emit(event: Event): void {
     // Stop the click from also triggering the surrounding row/link.

@@ -39,6 +39,7 @@ import { Observable, of } from "rxjs";
 import { catchError, map } from "rxjs/operators";
 
 const apiFilterKeys = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "username"];
+const exactMatchKeys = new Set(["resolver"]);
 
 export interface UserData {
   description: string;
@@ -272,6 +273,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
   detailsUser = this.contentService.detailsUser;
 
   readonly apiFilterKeys = apiFilterKeys;
+  override readonly exactMatchKeys = exactMatchKeys;
 
   readonly activeFilter = signal(new FilterValue());
 
@@ -287,7 +289,7 @@ export class UserService extends FilterableTableService implements UserServiceIn
         // normalized. The value is passed through case-preserving, so case matching is the resolver's
         // decision rather than the frontend's.
         .map((token) => [token.key.toLowerCase(), token.value] as const);
-      return buildFilterParams(entries, this.allFilterKeys());
+      return buildFilterParams(entries, this.allFilterKeys(), this.exactMatchKeys);
     },
     { equal: filterParamsEqual }
   );

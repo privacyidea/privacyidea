@@ -508,4 +508,15 @@ describe("PoliciesTableComponent", () => {
       expect(terms.conditions).toEqual(["hotp"]);
     });
   });
+
+  it("filterByAction replaces the action filter and passes it on to the filter input", () => {
+    component.filter.set(component.filter().setValueOfKey("actions", "old_action"));
+    const filterComponent = fixture.debugElement.query(By.directive(MockPolicyFilterComponent))
+      .componentInstance as MockPolicyFilterComponent;
+
+    component.filterByAction("rss_age");
+
+    expect(component.filter().getFilterOfKey("actions")).toBe("rss_age");
+    expect(filterComponent.updateFilterManually).toHaveBeenCalledWith(component.filter());
+  });
 });

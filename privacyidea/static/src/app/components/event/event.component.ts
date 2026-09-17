@@ -44,11 +44,13 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService } from "@services/auth/auth.service";
 import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 import { of } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
@@ -63,6 +65,7 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     MatIcon,
     MatSlideToggle,
     ClearableInputComponent,
+    FilterValueButtonComponent,
     MatFormField,
     MatInput,
     MatLabel,
@@ -172,6 +175,10 @@ export class EventComponent {
     return Object.entries(conditions as Record<string, unknown>)
       .map(([key, value]) => `${key}: ${String(value)}`)
       .join(", ");
+  }
+
+  filterTooltip(columnKey: string): string {
+    return filterValueTooltip(columnKey);
   }
 
   onFilterInput(value: string): void {

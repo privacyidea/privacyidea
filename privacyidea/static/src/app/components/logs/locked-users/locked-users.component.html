@@ -153,9 +153,8 @@
             }
             @if (row.username) {
               <app-filter-value-button
+                [label]="filterTooltip('username')"
                 [value]="row.username"
-                i18n-label
-                label="Filter by this user"
                 (filterValue)="addFilterValue('usernames', $event)" />
             }
             @if (authService.actionAllowed("authentication_log_read")) {
@@ -359,7 +358,16 @@
         <td
           *matCellDef="let row"
           mat-cell>
-          <app-expandable-message [text]="row.error_message" />
+          <span class="flex ali-center">
+            <app-expandable-message [text]="row.error_message" />
+            @if (row.error_message) {
+              <app-filter-value-button
+                class="margin-left-8"
+                [label]="filterTooltip('error_message')"
+                [value]="row.error_message"
+                (filterValue)="addFilterValue('error_messages', $event)" />
+            }
+          </span>
         </td>
       </ng-container>
 

@@ -385,4 +385,8 @@ describe("LockedUsersComponent", () => {
     component.clearFilter();
     expect(casService.lockedUsersFilter().getValueOfKey("usernames")).toBeFalsy();
   });
+
+  it("names the column in the filter button tooltip", () => {
+    expect(component.filterTooltip("username")).toBe("Filter by this user");
+  });
 });

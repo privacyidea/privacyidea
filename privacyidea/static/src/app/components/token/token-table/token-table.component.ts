@@ -50,6 +50,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -59,8 +60,10 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterColumnHint, inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 import { withDefaultRealm } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
+import { ROLLOUT_STATE_VALUES, valueDisplayLabel } from "@utils/value-label.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
@@ -97,6 +100,7 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     CopyableComponent,
+    FilterValueButtonComponent,
     MultiSelectFilterComponent,
     TokenTableActionsComponent,
     MatButton,
@@ -136,6 +140,10 @@ export class TokenTableComponent implements OnDestroy {
   );
   readonly filterHint = inlineFilterHint();
   readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
+  readonly rolloutStateFilterOptions = ROLLOUT_STATE_VALUES.map((value) => ({
+    value,
+    label: valueDisplayLabel(value, ROLLOUT_STATE_VALUES, { vocabulary: true })
+  }));
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
@@ -322,6 +330,23 @@ export class TokenTableComponent implements OnDestroy {
       const isSelected = this.isFilterSelected(keyword, this.tokenService.activeFilter());
       return isSelected ? "filter_alt_off" : "filter_alt";
     }
+  }
+
+  filterTooltip(columnKey: string): string {
+    return filterValueTooltip(columnKey);
+  }
+
+  addFilterValue(columnKey: string, value: string): void {
+    const keyword = this.apiFilterKeyMap[columnKey] ?? columnKey;
+    this.tokenService.updateFilter((current) => current.addEntry(keyword, value));
+  }
+
+  // The backend resolves a user only within a realm, so the row's own realm goes along with the name.
+  filterByUser(username: string, realm: string): void {
+    this.tokenService.updateFilter((current) => {
+      const filter = current.addEntry("user", username);
+      return realm ? filter.addEntry("realm", realm) : filter;
+    });
   }
 
   onKeywordClick(filterKeyword: string): void {
