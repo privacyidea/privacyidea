@@ -302,6 +302,40 @@ describe("TokenEnrollmentComponent", () => {
       expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expected_parameters);
     });
 
+    // A token type that is enrolled without a PIN hides the fields, so a PIN left over from
+    // another type neither travels with the request nor blocks it through the repeat mismatch
+    // it can no longer show.
+    it("Does not submit a PIN for a token type that is enrolled without one", () => {
+      const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
+      installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });
+      component.setPin.set("1234");
+      component.repeatPin.set("");
+      tokenService.selectedTokenType.set({ key: "sshkey", name: "SSH Key", info: "", text: "" });
+
+      component.enrollToken();
+
+      expect(component["showPinFields"]()).toBe(false);
+      expect(component.isFormInvalid()).toBe(false);
+      expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expect.objectContaining({ pin: "" }));
+    });
+
+    it("Submits the PIN and enforces the repeat for a type that uses one", () => {
+      const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
+      installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });
+      component.setPin.set("1234");
+      component.repeatPin.set("");
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+
+      expect(component["showPinFields"]()).toBe(true);
+      expect(component.isFormInvalid()).toBe(true);
+
+      component.repeatPin.set("1234");
+
+      expect(component.isFormInvalid()).toBe(false);
+      component.enrollToken();
+      expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expect.objectContaining({ pin: "1234" }));
+    });
+
     it("Setting validity dates works", () => {
       const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
       installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });
@@ -509,7 +543,10 @@ describe("TokenEnrollmentComponent", () => {
         );
       });
 
-      it("handles clickEnroll rejection by showing error snack", async () => {
+      // enrollToken() of the token service reports the failure itself. The component used to
+      // notify a second time and then re-await the rejected promise, which aborted the rest
+      // of the method with an unhandled rejection.
+      it("returns false on a rejected enrollment without notifying twice", async () => {
         tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
         component.setPin.set("1111");
         component.repeatPin.set("1111");
@@ -519,9 +556,21 @@ describe("TokenEnrollmentComponent", () => {
         installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterFn });
         tokenService.enrollToken.mockReturnValue(Promise.reject(error));
 
-        await component.enrollToken().catch(() => undefined);
+        await expect(component.enrollToken()).resolves.toBe(false);
 
-        expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to enroll token: nope");
+        expect(notificationServiceMock.error).not.toHaveBeenCalled();
+      });
+
+      it("warns when the strategy cannot build the enrollment arguments", async () => {
+        tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+        installStrategy(component, { buildEnrollmentArgs: jest.fn().mockReturnValue(null) });
+
+        await expect(component.enrollToken()).resolves.toBe(false);
+
+        expect(notificationServiceMock.warning).toHaveBeenCalledWith(
+          "Please fill in all required fields or correct invalid entries."
+        );
+        expect(tokenService.enrollToken).not.toHaveBeenCalled();
       });
 
       it("Two step enrollment: complete dialog -> last step dialog", async () => {

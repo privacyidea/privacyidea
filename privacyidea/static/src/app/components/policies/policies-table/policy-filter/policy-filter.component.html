@@ -26,6 +26,7 @@
       [showClearButton]="!isEmpty()">
       <input
         #filterHTMLInputElement
+        [appRefocusAfterReload]="isLoading()"
         [appFilterAutocomplete]="filterKeywords()"
         (input)="onFilterChange($event)"
         [value]="filter().rawValue"

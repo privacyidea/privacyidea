@@ -21,6 +21,7 @@
   aria-label="Conditional Access Policies"
   class="conditional-access-container"
   i18n-aria-label>
+  @if (tableState.showTable()) {
   <div class="filter-paginator-container">
     <mat-form-field
       appearance="fill"
@@ -32,6 +33,7 @@
         [showClearButton]="filterString().length > 0">
         <input
           #filterHTMLInputElement
+          [appRefocusAfterReload]="policyService.policiesResource.isLoading()"
           (input)="onFilterInput(filterHTMLInputElement.value)"
           [value]="filterString()"
           aria-label="Filter Input"
@@ -367,10 +369,33 @@
       class="mat-row">
       <td
         class="mat-cell"
-        colspan="10"
-        i18n>
-        No conditional-access policies found.
+        colspan="10">
+        <app-table-state
+          [status]="tableState.rowStatus()"
+          [table]="tableState" />
       </td>
     </tr>
   </table>
+  } @else {
+    <app-table-state
+      [table]="tableState"
+      heading="No conditional-access policies yet"
+      hint="Create a conditional-access policy to see it here."
+      i18n-heading
+      i18n-hint
+      icon="security">
+      @if (authService.actionAllowed("conditional_access_policy_write")) {
+        <button
+          (click)="onCreatePolicy()"
+          class="action-button-primary button-width-l"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">security</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n>New Conditional Access</span>
+        </button>
+      }
+    </app-table-state>
+  }
 </div>

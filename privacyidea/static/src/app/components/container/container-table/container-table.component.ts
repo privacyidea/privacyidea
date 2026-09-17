@@ -38,6 +38,7 @@ import {
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { NgClass } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
@@ -61,10 +62,26 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so the columns line up on the same scale other tables use and the table-state placeholder
+// (see table-width() in table.scss) can be sized from the same numbers.
+const columnsKeyMap = [
+  { key: "select", label: "", width: "s" },
+  { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+  { key: "type", label: $localize`:@@common.type:Type`, width: "s" },
+  { key: "states", label: $localize`:@@common.status:Status`, width: "m" },
+  { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+  { key: "user_name", label: $localize`:@@common.user:User`, width: "s" },
+  { key: "user_realm", label: $localize`:@@common.realm:Realm`, width: "s" },
+  { key: "realms", label: $localize`:@@common.containerRealms:Container Realms`, width: "m" }
+];
+
 @Component({
   selector: "app-container-table",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,
     MatFormFieldModule,
@@ -103,17 +120,8 @@ export class ContainerTableComponent implements OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
-  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
-    "select",
-    "serial",
-    "type",
-    "states",
-    "description",
-    "user_name",
-    "user_realm",
-    "realms"
-  );
-  readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
+  readonly columnsKeyMap = columnsKeyMap;
+  readonly columnKeys = columnsKeyMap.map((column) => column.key);
   readonly apiFilterKeys = this.containerService.apiFilterKeys;
   readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
   readonly filterKeywords = [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys];
@@ -144,7 +152,7 @@ export class ContainerTableComponent implements OnDestroy {
 
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
     source: this.containerResource.value,
-    computation: (containerResource) => {
+    computation: (containerResource, previous) => {
       if (containerResource && containerResource.result?.value) {
         const processedData =
           containerResource.result?.value?.containers.map((item) => ({
@@ -154,7 +162,10 @@ export class ContainerTableComponent implements OnDestroy {
           })) ?? [];
         return new MatTableDataSource<ContainerDetailData>(processedData);
       }
-      return new MatTableDataSource<ContainerDetailData>([]);
+      // A reload in flight (filter/page/sort change) clears containerResource.value before the
+      // new response arrives - keep showing the previous rows instead of flashing empty, now that
+      // the table itself stays mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<ContainerDetailData>([]);
     }
   });
 

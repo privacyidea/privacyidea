@@ -63,6 +63,7 @@ import { SourceIpCell } from "./cells/source-ip-cell/source-ip-cell";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
@@ -101,33 +102,40 @@ const USER_SCOPED_COLUMN_KEYS = ["username", "realm"];
 // `sortable` mirrors SORTABLE_COLUMNS in privacyidea/lib/conditional_access/authentication_log.py; every column is
 // sortable except `other_info`, a JSON column the backend cannot order on meaningfully, and `reason`, of which an
 // entry has a list, in a table of its own.
-const columnKeysMap: { key: string; label: string; filterable: boolean; sortable: boolean }[] = [
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed to, so a
+// table.page-table-state-size(table.table-width(...)) call in the .scss listing the same tiers can be sized from the
+// same numbers. other_info renders free-form JSON and only claims real width once the current page has something to
+// show (see isInfoColumn/hasColumnContent), so it carries no static tier here - its width class is computed in
+// columnWidthClass instead. conditional_access_outcomes renders a bounded list of badges, so unlike other_info it
+// gets a fixed tier like every other column.
+const columnKeysMap: { key: string; label: string; filterable: boolean; sortable: boolean; width?: string }[] = [
   // The timestamp filter lives in the table-action row (preset menu + custom-range slider), not the column header, so
   // the header only offers sorting.
-  { key: "timestamp", label: $localize`Timestamp`, filterable: false, sortable: true },
+  { key: "timestamp", label: $localize`Timestamp`, filterable: false, sortable: true, width: "m" },
   // Directly after the timestamp: the attempt id groups the rows of one logical attempt, so it reads as part of
   // locating a row rather than a detail of it.
-  { key: "attempt_id", label: $localize`Attempt ID`, filterable: true, sortable: true },
-  { key: "event_type", label: $localize`Event Type`, filterable: true, sortable: true },
+  { key: "attempt_id", label: $localize`Attempt ID`, filterable: true, sortable: true, width: "s" },
+  { key: "event_type", label: $localize`Event Type`, filterable: true, sortable: true, width: "l" },
   // Why that event: several causes share one event type, and the cause is what an admin acts on. An entry lists every
   // reason it produced and matches the filter if any of them does, which is also why it cannot be sorted by.
-  { key: "reason", label: $localize`Reasons`, filterable: true, sortable: false },
-  { key: "username", label: $localize`User`, filterable: true, sortable: true },
-  { key: "realm", label: $localize`Realm`, filterable: true, sortable: true },
-  { key: "source_ip", label: $localize`Source IP`, filterable: true, sortable: true },
-  { key: "client_label", label: $localize`Client`, filterable: true, sortable: true },
+  { key: "reason", label: $localize`Reasons`, filterable: true, sortable: false, width: "l" },
+  { key: "username", label: $localize`User`, filterable: true, sortable: true, width: "m" },
+  { key: "realm", label: $localize`Realm`, filterable: true, sortable: true, width: "s" },
+  { key: "source_ip", label: $localize`Source IP`, filterable: true, sortable: true, width: "m" },
+  { key: "client_label", label: $localize`Client`, filterable: true, sortable: true, width: "l" },
   // Which endpoint the request authenticated against ("/auth", "/validate/check", ...). Next to the client: both
   // describe the caller rather than the outcome.
-  { key: "endpoint", label: $localize`Endpoint`, filterable: true, sortable: true },
-  { key: "serial", label: $localize`Serial`, filterable: true, sortable: true },
-  { key: "transaction_id", label: $localize`Transaction ID`, filterable: true, sortable: true },
+  { key: "endpoint", label: $localize`Endpoint`, filterable: true, sortable: true, width: "m" },
+  { key: "serial", label: $localize`Serial`, filterable: true, sortable: true, width: "m" },
+  { key: "transaction_id", label: $localize`Transaction ID`, filterable: true, sortable: true, width: "m" },
   // Neither is sortable: other_info is JSON, and conditional-access outcomes live in their own table, read alongside
   // each entry (its filter menu is documented at OUTCOME_FILTER_KEYS below).
   {
     key: "conditional_access_outcomes",
     label: $localize`Conditional Access Outcome`,
     filterable: true,
-    sortable: false
+    sortable: false,
+    width: "xl"
   },
   { key: "other_info", label: $localize`Info`, filterable: false, sortable: false }
 ];
@@ -254,6 +262,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
 @Component({
   selector: "app-authentication-log",
   imports: [
+    RefocusAfterReloadDirective,
     MatCell,
     MatFormField,
     MatHint,
@@ -849,14 +858,25 @@ export class AuthenticationLog {
     return [...this.splitSerials(entry.serial), ...this.splitSerials(truncatedSerial(entry.other_info))];
   }
 
-  // Whether *column* renders a list (Info / Conditional access) rather than a scalar, and whether the current page has
-  // anything to put in it - together they decide the width treatment.
+  // Whether *column* renders a list (Info / Conditional access) rather than a scalar - both get the scrollable
+  // cell treatment (cell-scroll-info), but only other_info also varies its width by whether the current page has
+  // anything to put in it (see columnWidthClass): conditional_access_outcomes is a bounded set of badges, so it
+  // keeps a fixed tier like every other column.
   isInfoColumn(column: string): boolean {
     return INFO_COLUMN_KEYS.includes(column);
   }
 
   hasColumnContent(column: string): boolean {
     return column === "conditional_access_outcomes" ? this.hasOutcomeValues() : this.hasInfoValues();
+  }
+
+  // The col-width-* class (or the dedicated 300px info sizing) a column's th/td carries, so both stay in
+  // lockstep: a table column is only as wide as its widest constrained cell.
+  columnWidthClass(column: { key: string; width?: string }): string {
+    if (column.key === "other_info") {
+      return this.hasColumnContent(column.key) ? "cell-info-sized" : "col-width-s";
+    }
+    return `col-width-${column.width}`;
   }
 
   // Badge for an admin principal, or null for a regular user / unknown value so the template renders nothing.

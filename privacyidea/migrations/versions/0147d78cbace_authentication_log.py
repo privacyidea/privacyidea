@@ -1,7 +1,7 @@
 """v3.14: Add authentication log table
 
 Revision ID: 0147d78cbace
-Revises: b8c9d0e1f2a3
+Revises: e0f1a2b3c4d5
 Create Date: 2026-06-01 08:37:51.884173
 
 """
@@ -16,7 +16,15 @@ from privacyidea.models.utils import BigIntegerType
 
 # revision identifiers, used by Alembic.
 revision = '0147d78cbace'
-down_revision = 'b8c9d0e1f2a3'
+# Chained after e0f1a2b3c4d5 rather than spliced beneath it. Neither revision has shipped, so no released
+# database is stamped at either and both orders are equivalent for a fresh install - this only decides which
+# development database ends up stranded. Alembic asks "anything to do?" by comparing the stamped id to the
+# computed head id alone, so a database already at the head never re-walks ancestry. Putting e0f1a2b3c4d5 last
+# makes it the head, and a database stamped there would silently acquire none of the conditional-access tables;
+# this order leaves at worst a database stamped at the head d3e8b1c47f92 without the audit serial widening,
+# which is a column width rather than five missing tables. Either way a stranded development database is
+# corrected with "pi-manage db stamp".
+down_revision = 'e0f1a2b3c4d5'
 branch_labels = None
 depends_on = None
 
@@ -79,7 +87,7 @@ def _existing_tables() -> set[str]:
 
 def _create_table(existing_tables: set[str], table_name: str, *columns) -> None:
     """
-    Create the table unless it is already there, then add each of its INDEXES that is absent.
+    Create the table unless it is already there, then add each of its declared INDEXES that is still missing.
 
     Presence is established by reflection rather than by swallowing an "already exists" error, which Oracle
     never says: it reports an existing object as ORA-00955 ("name is already used by an existing object").
