@@ -35,6 +35,16 @@ if _worker:
         os.environ["TEST_DATABASE_URL"] = f"sqlite:////tmp/pi-test-{_worker}.sqlite"
     elif _base.startswith("sqlite"):
         os.environ["TEST_DATABASE_URL"] = _base.replace(".sqlite", f"-{_worker}.sqlite")
+    elif _base.startswith("oracle"):
+        # Oracle has no per-URL "database": the schema IS the user, and the service name
+        # identifies the PDB, not a namespace a worker can own. Suffixing the tail of the URL
+        # would point every worker at a service that does not exist, so suffix the user
+        # instead - the caller pre-creates them, exactly as it pre-creates the per-worker
+        # databases for MySQL and PostgreSQL.
+        from sqlalchemy.engine.url import make_url
+        _url = make_url(_base)
+        os.environ["TEST_DATABASE_URL"] = _url.set(
+            username=f"{_url.username}_{_worker}").render_as_string(hide_password=False)
     else:  # mysql / postgres - suffix the DB name
         os.environ["TEST_DATABASE_URL"] = f"{_base}_{_worker}"
 
