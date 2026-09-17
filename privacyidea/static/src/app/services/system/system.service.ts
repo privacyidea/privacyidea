@@ -159,8 +159,11 @@ export class SystemService implements SystemServiceInterface {
   });
 
   systemConfigResource = httpResource<SystemConfigResponse>(() => {
-    // Only load system config on enrollment or wizard routes.
     if (!this.onAllowedRoutes()) {
+      return undefined;
+    }
+    // /system/ requires configread from admins only; users always pass.
+    if (!this.authService.isSelfServiceUser() && !this.authService.actionAllowed("configread")) {
       return undefined;
     }
 

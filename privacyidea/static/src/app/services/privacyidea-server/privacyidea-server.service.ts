@@ -62,7 +62,12 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   readonly privacyideaServerBaseUrl = environment.proxyUrl + "/privacyideaserver/";
   remoteServerResource = httpResource<PiResponse<PrivacyideaServers>>(() => {
     if (this.authService.isSelfServiceUser()) return undefined;
-    if (!this.contentService.onExternalPrivacyIdea() && !this.contentService.onTokenEnrollmentLikely()) {
+    // On the enrollment pages only the remote token type uses the list, and /privacyideaserver/ answers 403
+    // without privacyideaserver_read.
+    const onPageUsingTheList =
+      this.contentService.onExternalPrivacyIdea() ||
+      (this.contentService.onTokenEnrollmentLikely() && this.authService.actionAllowed("enrollREMOTE"));
+    if (!onPageUsingTheList || !this.authService.actionAllowed("privacyideaserver_read")) {
       return undefined;
     }
     return {

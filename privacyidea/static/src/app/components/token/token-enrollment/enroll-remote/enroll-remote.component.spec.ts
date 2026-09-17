@@ -26,10 +26,13 @@ import { EnrollRemoteComponent } from "./enroll-remote.component";
 import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { MockPrivacyideaServerService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 describe("EnrollRemoteComponent", () => {
   let component: EnrollRemoteComponent;
   let fixture: ComponentFixture<EnrollRemoteComponent>;
+  let authService: MockAuthService;
 
   const basicOptions: TokenEnrollmentData = {
     type: "remote"
@@ -48,10 +51,13 @@ describe("EnrollRemoteComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
-        { provide: TokenService, useClass: MockTokenService }
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).compileComponents();
 
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["privacyideaserver_read", "enrollREMOTE"] });
     fixture = TestBed.createComponent(EnrollRemoteComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -59,6 +65,44 @@ describe("EnrollRemoteComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should offer the configured servers in a select with privacyideaserver_read and enrollREMOTE", () => {
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector("mat-select")).not.toBeNull();
+    expect(element.textContent).not.toContain("privacyideaserver_read");
+  });
+
+  it("should fall back to a text input with privacyideaserver_read but without enrollREMOTE", () => {
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["privacyideaserver_read"] });
+    fixture.detectChanges();
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector("mat-select")).toBeNull();
+    expect(element.querySelector("mat-hint")?.textContent).toContain("enrollREMOTE");
+  });
+
+  describe("without privacyideaserver_read", () => {
+    beforeEach(() => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      fixture.detectChanges();
+    });
+
+    it("should replace the select by a text input naming the missing right", () => {
+      const element: HTMLElement = fixture.nativeElement;
+      expect(element.querySelector("mat-select")).toBeNull();
+      expect(element.querySelector("mat-hint")?.textContent).toContain("privacyideaserver_read");
+    });
+
+    it("should use the typed name as the server identifier", () => {
+      const input: HTMLInputElement = fixture.nativeElement.querySelector("input[required]");
+      input.value = "pi-remote";
+      input.dispatchEvent(new Event("input"));
+      expect(component.remoteServer()?.id).toBe("pi-remote");
+
+      input.value = "";
+      input.dispatchEvent(new Event("input"));
+      expect(component.remoteServer()).toBeNull();
+    });
   });
 
   describe("ngOnInit with enrollmentData input", () => {

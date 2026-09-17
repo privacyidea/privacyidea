@@ -20,18 +20,23 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { SmsConfigComponent } from "@components/configuration/token-type-config/token-types/sms-config/sms-config.component";
 import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 const mockSmsGateways = ["gateway1", "gateway2", "gateway3"];
 
 describe("SmsConfigComponent", () => {
   let fixture: ComponentFixture<SmsConfigComponent>;
   let component: SmsConfigComponent;
+  let authService: MockAuthService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SmsConfigComponent],
-      providers: [provideRouter([])]
+      providers: [provideRouter([]), { provide: AuthService, useClass: MockAuthService }]
     }).compileComponents();
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["smsgateway_read"] });
     fixture = TestBed.createComponent(SmsConfigComponent);
     fixture.componentRef.setInput("formData", {});
     fixture.componentRef.setInput("smsGateways", mockSmsGateways);
@@ -41,6 +46,37 @@ describe("SmsConfigComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should offer the configured gateways in a select with smsgateway_read", () => {
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector("mat-select")).not.toBeNull();
+    expect(element.textContent).not.toContain("smsgateway_read");
+  });
+
+  describe("without smsgateway_read", () => {
+    beforeEach(() => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      fixture.componentRef.setInput("formData", { [SMS_GATEWAY]: "gateway1" });
+      fixture.detectChanges();
+    });
+
+    it("should replace the select by a text input naming the missing right", () => {
+      const element: HTMLElement = fixture.nativeElement;
+      expect(element.querySelector("mat-select")).toBeNull();
+      expect(element.querySelector("mat-hint")?.textContent).toContain("smsgateway_read");
+    });
+
+    it("should show the configured gateway and emit the typed one", () => {
+      const hint: HTMLElement = fixture.nativeElement.querySelector("mat-hint");
+      const input = hint.closest("mat-form-field")!.querySelector("input") as HTMLInputElement;
+      expect(input.value).toBe("gateway1");
+
+      jest.spyOn(component.formDataChange, "emit");
+      input.value = "gateway9";
+      input.dispatchEvent(new Event("input"));
+      expect(component.formDataChange.emit).toHaveBeenCalledWith({ [SMS_GATEWAY]: "gateway9" });
+    });
   });
 
   it("should emit formDataChange when updateFormData is called", () => {

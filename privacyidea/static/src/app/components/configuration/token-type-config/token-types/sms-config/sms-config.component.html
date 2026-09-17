@@ -37,22 +37,37 @@
         appearance="fill"
         class="input-width-l">
         <mat-label i18n="@@tokenTypeConfig.smsGatewayConfiguration">SMS Gateway Configuration</mat-label>
-        <mat-select
-          [value]="formData()[SMS_GATEWAY]"
-          (valueChange)="updateFormData(SMS_GATEWAY, $event)">
-          @for (gateway of smsGateways(); track gateway) {
-            <mat-option [value]="gateway">{{ gateway }}</mat-option>
-          }
-        </mat-select>
+        @if (smsGatewaysListable()) {
+          <mat-select
+            [value]="formData()[SMS_GATEWAY]"
+            (valueChange)="updateFormData(SMS_GATEWAY, $event)">
+            @for (gateway of smsGateways(); track gateway) {
+              <mat-option [value]="gateway">{{ gateway }}</mat-option>
+            }
+          </mat-select>
+        } @else {
+          <input
+            matInput
+            [value]="formData()[SMS_GATEWAY] ?? ''"
+            (input)="updateFormData(SMS_GATEWAY, $event.target.value)" />
+        }
         <app-clear-button
           matSuffix
           (clearButtonClick)="clearField(SMS_GATEWAY); $event.stopPropagation()"></app-clear-button>
-        <mat-hint i18n="@@tokenTypeConfig.selectPredefinedSms"
-          >Select a predefined
-          <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]"
-            ><strong>SMS Gateway configuration</strong>.
-          </a></mat-hint
-        >
+        @if (smsGatewaysListable()) {
+          <mat-hint i18n="@@tokenTypeConfig.selectPredefinedSms"
+            >Select a predefined
+            <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]"
+              ><strong>SMS Gateway configuration</strong>.
+            </a></mat-hint
+          >
+        } @else {
+          <mat-hint
+            class="red"
+            i18n="@@tokenTypeConfig.smsGatewayNeedsReadRight"
+            >Type the name: listing the SMS gateways needs the smsgateway_read right.</mat-hint
+          >
+        }
       </mat-form-field>
 
       <mat-form-field
