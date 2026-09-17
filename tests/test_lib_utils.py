@@ -2,7 +2,10 @@
 This tests the package lib.utils
 """
 import binascii
+import os
+import subprocess
 from datetime import timedelta, datetime
+from unittest import mock
 
 import segno
 from dateutil.tz import tzlocal, tzoffset, gettz
@@ -34,7 +37,8 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    get_plugin_info_from_useragent, get_computer_name_from_user_agent,
                                    get_useragent_name,
                                    redacted_email, redacted_phone_number,
-                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
+                                   convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE,
+                                   get_version_number, _get_version_from_git)
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from .base import MyTestCase, OverrideConfigTestCase
 
@@ -1188,6 +1192,47 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual("****-******89", redacted_phone_number("01234567890123456789"))
         self.assertEqual("****-******01", redacted_phone_number("01"))
         self.assertEqual("****-********", redacted_phone_number(""))
+
+    def test_40_version_number(self):
+        # The environment variable takes precedence over every other source
+        get_version_number.cache_clear()
+        try:
+            with mock.patch.dict(os.environ, {"PRIVACYIDEA_DEV_VERSION": "9.9.9"}):
+                self.assertEqual("9.9.9", get_version_number())
+        finally:
+            get_version_number.cache_clear()
+
+        # Without a repository next to the package the version comes from the package metadata
+        with mock.patch("privacyidea.lib.utils.Path") as path_mock:
+            repository = path_mock.return_value.resolve.return_value.parents.__getitem__.return_value
+            repository.__truediv__.return_value.exists.return_value = False
+            self.assertIsNone(_get_version_from_git())
+
+        # A repository that git can not read leaves the version to the package metadata as well
+        for error in [FileNotFoundError("git"), subprocess.CalledProcessError(128, "git"),
+                      subprocess.TimeoutExpired("git", 5)]:
+            with mock.patch("privacyidea.lib.utils.subprocess.run", side_effect=error):
+                self.assertIsNone(_get_version_from_git())
+
+        # Output of "git describe" is turned into a version with the tag and a local segment
+        described = {"v3.14dev2-1568-g939ce0af5": "3.14dev2+1568.g939ce0af5",
+                     "v3.14dev2-1568-g939ce0af5-dirty": "3.14dev2+1568.g939ce0af5.dirty",
+                     "v3.14dev2": "3.14dev2",
+                     "v3.14dev2-dirty": "3.14dev2+dirty",
+                     "v3.13.4-2-gabcdef123": "3.13.4+2.gabcdef123"}
+        for output, expected_version in described.items():
+            with mock.patch("privacyidea.lib.utils.subprocess.run") as run_mock:
+                run_mock.return_value.stdout = f"{output}\n"
+                self.assertEqual(expected_version, _get_version_from_git(), output)
+
+        # A version that can not be parsed is ignored instead of being reported
+        with mock.patch("privacyidea.lib.utils.subprocess.run") as run_mock:
+            run_mock.return_value.stdout = "\n"
+            self.assertIsNone(_get_version_from_git())
+
+        # The version is always readable, no matter which of the sources answers
+        get_version_number.cache_clear()
+        self.assertTrue(get_version_number())
 
 
 class UtilsTestCaseOverrideConfig(OverrideConfigTestCase):
