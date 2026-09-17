@@ -120,12 +120,6 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     },
     { icon: "shield", label: $localize`:@@common.token:Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
     {
-      icon: "folder",
-      label: $localize`:@@common.container:Container`,
-      route: ROUTE_PATHS.CONTAINERS,
-      section: "container"
-    },
-    {
       icon: "supervised_user_circle",
       label: $localize`:@@nav.users:Users`,
       route: ROUTE_PATHS.USERS,
@@ -139,10 +133,10 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
       section: "subscription"
     },
     // The "logs" umbrella section still carries several sub-pages (see the "logs" secondary toolbar in the
-    // template: Log, Known Clients, Authentication Log, Locked Users, IP Blocklist) that master's own "audit"
+    // template: Audit, Known Clients, Authentication Log, Locked Users, IP Blocklist) that master's own "audit"
     // rename does not know about, so this keeps routing to ROUTE_PATHS.LOGS/section "logs" rather than master's
     // flattened single-page ROUTE_PATHS.AUDIT/"audit".
-    { icon: "receipt_long", label: $localize`Logs`, route: ROUTE_PATHS.LOGS, section: "logs" },
+    { icon: "receipt_long", label: $localize`Audit`, route: ROUTE_PATHS.LOGS, section: "logs" },
     {
       icon: "hub",
       label: $localize`:@@nav.externalServices:External Services`,
@@ -173,14 +167,13 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   activeSection = computed(() => {
     const url = this.contentService.routeUrl();
     if (url.startsWith(ROUTE_PATHS.DASHBOARD) || url.startsWith(ROUTE_PATHS.NEWS)) return "dashboard";
-    if (url.startsWith(ROUTE_PATHS.CONTAINERS)) return "container";
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
-    if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
+    if (url.startsWith(ROUTE_PATHS.POLICIES) || url.startsWith(ROUTE_PATHS.EVENTS)) return "policies";
     if (url.startsWith(ROUTE_PATHS.SUBSCRIPTION)) return "subscription";
     if (url.startsWith(ROUTE_PATHS.LOGS)) return "logs";
     if (url.startsWith(ROUTE_PATHS.EXTERNAL_SERVICES)) return "external_services";
-    if (url.startsWith(ROUTE_PATHS.CONFIGURATION) || url.startsWith(ROUTE_PATHS.EVENTS)) return "config";
-    if (url.startsWith(ROUTE_PATHS.TOKENS)) return "token";
+    if (url.startsWith(ROUTE_PATHS.CONFIGURATION)) return "config";
+    if (url.startsWith(ROUTE_PATHS.TOKENS) || url.startsWith(ROUTE_PATHS.CONTAINERS)) return "token";
     return "token";
   });
   isOverflowSectionActive = computed(() => {
@@ -265,13 +258,13 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
         case "dashboard":
           return this.authService.adminDashboard();
         case "token":
-          return this.authService.anyTokenActionAllowed();
-        case "container":
-          return this.authService.anyContainerActionAllowed();
+          return this.authService.anyTokenActionAllowed() || this.authService.anyContainerActionAllowed();
         case "users":
           return this.authService.actionAllowed("userlist");
         case "policies":
-          return this.authService.actionAllowed("policyread");
+          return (
+            this.authService.actionAllowed("policyread") || this.authService.actionAllowed("eventhandling_read")
+          );
         case "subscription":
           return this.authService.actionAllowed("managesubscription");
         case "logs":
@@ -295,8 +288,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
             "resolverread",
             "mresolverread",
             "caconnectorread",
-            "periodictask_read",
-            "eventhandling_read"
+            "periodictask_read"
           ]);
         default:
           return true;
