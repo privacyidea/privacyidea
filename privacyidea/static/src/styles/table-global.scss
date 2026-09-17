@@ -26,6 +26,13 @@ mat-paginator .mat-mdc-paginator-page-size-label {
   white-space: nowrap;
 }
 
+// The label is redundant with the tooltip PaginatorPageSizeTooltipDirective puts on the size
+// picker itself - kept as a class rather than the default so a paginator without the directive
+// still shows its own label text.
+mat-paginator.hide-page-size-label .mat-mdc-paginator-page-size-label {
+  display: none;
+}
+
 mat-paginator .mat-mdc-paginator-range-label {
   margin: 0 16px;
   white-space: nowrap;
