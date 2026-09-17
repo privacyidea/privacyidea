@@ -1,0 +1,215 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  appScrollToTop
+  class="privacyidea-servers-container">
+  @if (tableState.showTable()) {
+    <div class="filter-paginator-container">
+      <mat-form-field
+        appearance="fill"
+        class="table-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n="@@piServer.filterPrivacyidea">Filter privacyIDEA Servers...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="resetFilter()"
+          [showClearButton]="filterString().length > 0">
+          <input
+            #filterHTMLInputElement
+            [appRefocusAfterReload]="privacyideaServerService.remoteServerResource.isLoading()"
+            (input)="onFilterInput(filterHTMLInputElement.value)"
+            [value]="filterString()"
+            aria-label="Filter Input"
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@piServer.filterByIdentifier"
+            matInput
+            placeholder="Filter by identifier or URL" />
+        </app-clearable-input>
+      </mat-form-field>
+      <mat-paginator
+        [length]="totalLength()"
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSizeOptions()[1]"
+        showFirstLastButtons />
+    </div>
+    <div class="actions-container">
+      <button
+        (click)="openEditDialog()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="mdi--pi-logo padding-right-3"></mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n="@@common.createPrivacyidea">Create PrivacyIDEA Server</span>
+      </button>
+      <button
+        (click)="deleteSelected()"
+        [disabled]="!selector.hasSelection()"
+        class="action-button-delete-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>delete_sweep</mat-icon>
+        <span i18n="@@common.delete">Delete</span>
+      </button>
+    </div>
+    <table
+      [dataSource]="privacyideaDataSource()"
+      class="privacyidea-servers-table"
+      mat-table
+      matSort>
+      <ng-container matColumnDef="select">
+        <th
+          *matHeaderCellDef
+          class="table-checkbox"
+          mat-header-cell>
+          <mat-checkbox
+            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+            [checked]="selector.allRowsSelected()"
+            [disabled]="!selector.hasVisibleRows()"
+            [indeterminate]="selector.someRowsSelected()" />
+        </th>
+        <td
+          *matCellDef="let row"
+          class="table-checkbox"
+          mat-cell>
+          <mat-checkbox
+            (change)="selector.setRowSelected(row, $event.checked)"
+            (click)="$event.stopPropagation()"
+            [checked]="selector.isRowSelected(row)" />
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="identifier">
+        <th
+          *matHeaderCellDef
+          [ngClass]="'col-width-m'"
+          i18n="@@common.identifier"
+          mat-header-cell
+          mat-sort-header
+          >Identifier</th
+        >
+        <td
+          *matCellDef="let server"
+          [ngClass]="'col-width-m'"
+          mat-cell>
+          <app-copyable [copyText]="server.identifier">
+            <a
+              role="button"
+              tabindex="0"
+              (click)="openEditDialog(server)"
+              (keydown.enter)="openEditDialog(server)"
+              class="flex ali-center">
+              {{ server.identifier }}
+            </a>
+          </app-copyable>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="url">
+        <th
+          *matHeaderCellDef
+          class="col-width-flex"
+          i18n="@@piServer.url"
+          mat-header-cell
+          mat-sort-header
+          >URL</th
+        >
+        <td
+          *matCellDef="let server"
+          class="col-width-flex"
+          mat-cell>
+          {{ server.url }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="tls">
+        <th
+          *matHeaderCellDef
+          [ngClass]="'col-width-s'"
+          i18n="@@piServer.verifyTls"
+          mat-header-cell
+          mat-sort-header
+          >Verify TLS</th
+        >
+        <td
+          *matCellDef="let server"
+          [ngClass]="'col-width-s'"
+          mat-cell>
+          <div class="flex just-center">
+            @if (server.tls) {
+              <mat-icon>check</mat-icon>
+            } @else {
+              <mat-icon>close</mat-icon>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th
+          *matHeaderCellDef
+          class="col-width-flex"
+          i18n="@@common.description"
+          mat-header-cell
+          mat-sort-header
+          >Description</th
+        >
+        <td
+          *matCellDef="let server"
+          class="col-width-flex"
+          mat-cell>
+          {{ server.description }}
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns"
+        mat-row></tr>
+
+      <tr *matNoDataRow>
+        <td colspan="5">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState" />
+        </td>
+      </tr>
+    </table>
+  } @else {
+    <app-table-state
+      [table]="tableState"
+      heading="No privacyIDEA servers yet"
+      hint="Create a privacyIDEA server to forward authentication requests to another instance."
+      i18n-heading="@@piServer.noPrivacyIDEAServers"
+      i18n-hint="@@piServer.createPrivacyIDEAServer"
+      icon="dns">
+      <button
+        (click)="openEditDialog()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="mdi--pi-logo padding-right-3"></mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n="@@common.createPrivacyidea">Create PrivacyIDEA Server</span>
+      </button>
+    </app-table-state>
+  }
+</div>

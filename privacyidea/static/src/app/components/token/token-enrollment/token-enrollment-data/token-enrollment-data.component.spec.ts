@@ -1,0 +1,389 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { NO_ERRORS_SCHEMA } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+
+import { ContentService } from "@services/content/content.service";
+import { TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
+import { Subject, of } from "rxjs";
+import { TokenEnrollmentDataComponent } from "./token-enrollment-data.component";
+
+describe("TokenEnrollmentDataComponent", () => {
+  let component: TokenEnrollmentDataComponent;
+  let fixture: ComponentFixture<TokenEnrollmentDataComponent>;
+  let mockTokenService: MockTokenService;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [TokenEnrollmentDataComponent],
+      providers: [
+        { provide: TokenService, useClass: MockTokenService },
+        { provide: ContentService, useClass: MockContentService }
+      ],
+      schemas: [NO_ERRORS_SCHEMA]
+    }).compileComponents();
+    fixture = TestBed.createComponent(TokenEnrollmentDataComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput("enrolledInputData", { type: "hotp", serial: "" });
+    fixture.componentRef.setInput("enrollmentParameters", { data: { type: "hotp" }, mapper: { map: jest.fn() } });
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.detectChanges();
+    mockTokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
+  });
+
+  it("should create", () => {
+    expect(component).toBeTruthy();
+  });
+
+  it("should render inputs if provided", () => {
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "SERIAL123",
+      container_serial: "CONT123",
+      googleurl: { img: "img", value: "123" }
+    });
+    fixture.detectChanges();
+    expect(component["serial"]()).toBe("SERIAL123");
+    expect(component["containerSerial"]()).toBe("CONT123");
+    expect(component.enrolledData()).toEqual({
+      serial: "SERIAL123",
+      container_serial: "CONT123",
+      googleurl: { img: "img", value: "123" }
+    });
+    expect(component["qrCode"]()).toEqual("img");
+    expect(component["url"]()).toEqual("123");
+  });
+
+  it("should show QR code if tokenType allows", () => {
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.detectChanges();
+    expect(component.showQRCode()).toBe(true);
+    expect(component.showRegenerateButton()).toBe(true);
+  });
+
+  it("should not show QR code for types in NO_QR_CODE_TOKEN_TYPES", () => {
+    fixture.componentRef.setInput("tokenType", "email");
+    fixture.detectChanges();
+    expect(component.showQRCode()).toBe(false);
+  });
+
+  it("should show regenerate button if tokenType allows", () => {
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.detectChanges();
+    expect(component.showRegenerateButton()).toBe(true);
+  });
+
+  it("should not show regenerate button if tokenType not allows", () => {
+    fixture.componentRef.setInput("tokenType", "spass");
+    fixture.detectChanges();
+    expect(component.showRegenerateButton()).toBe(false);
+  });
+
+  it("should hide the regenerate button while the token awaits enrollment verification", () => {
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      rollout_state: "verify",
+      googleurl: { img: "img", value: "url" }
+    });
+    fixture.detectChanges();
+    expect(component.showRegenerateButton()).toBe(false);
+  });
+
+  it("should show the regenerate button once the token has left the verify state", () => {
+    fixture.componentRef.setInput("tokenType", "hotp");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      rollout_state: "enrolled",
+      googleurl: { img: "img", value: "url" }
+    });
+    fixture.detectChanges();
+    expect(component.showRegenerateButton()).toBe(true);
+  });
+
+  it("should adopt regenerate button text to token type", () => {
+    fixture.componentRef.setInput("tokenType", "spass");
+    fixture.detectChanges();
+    expect(component.regenerateButtonText()).toEqual("Regenerate QR Code");
+
+    fixture.componentRef.setInput("tokenType", "tan");
+    fixture.detectChanges();
+    expect(component.regenerateButtonText()).toEqual("Regenerate Values");
+  });
+
+  it("should call enrollToken and update enrolledData on regenerateQRCode", () => {
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        detail: {
+          serial: "SERIAL123",
+          googleurl: { img: "new_img", value: "456" }
+        }
+      })
+    );
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { serial: "SERIAL123" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", { serial: "SERIAL123", container_serial: "CONT123" });
+    fixture.detectChanges();
+    component.regenerateQRCode();
+    expect(mockTokenService.enrollToken).toHaveBeenCalled();
+    expect(component.enrolledData()).toEqual({ serial: "SERIAL123", googleurl: { img: "new_img", value: "456" } });
+    expect(component["qrCode"]()).toEqual("new_img");
+    expect(component["url"]()).toEqual("456");
+  });
+
+  it("should regenerate the enrolled token even if the enrollment parameters carry no serial", () => {
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        type: "hotp",
+        result: { status: true },
+        detail: { type: "hotp", serial: "OATH0001", googleurl: { img: "new_img", value: "new_url" } }
+      })
+    );
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: null },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      googleurl: { img: "old_img", value: "old_url" }
+    });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    expect(mockTokenService.enrollToken).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ type: "hotp", serial: "OATH0001" }) })
+    );
+  });
+
+  it("should not start a second regeneration while one is still in flight", () => {
+    const pending = new Subject<EnrollmentResponse>();
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(pending);
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", { serial: "OATH0001" });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+    component.regenerateQRCode();
+
+    expect(mockTokenService.enrollToken).toHaveBeenCalledTimes(1);
+    expect(component.regenerating()).toBe(true);
+
+    pending.next({
+      type: "hotp",
+      result: { status: true },
+      detail: { type: "hotp", serial: "OATH0001" }
+    } as unknown as EnrollmentResponse);
+
+    expect(component.regenerating()).toBe(false);
+  });
+
+  it("should not overwrite the displayed token when a response for another one arrives late", () => {
+    const pending = new Subject<EnrollmentResponse>();
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(pending);
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      googleurl: { img: "first-img", value: "first-url" }
+    });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    // the surrounding dialog pages to another token before the response arrives
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0002",
+      googleurl: { img: "second-img", value: "second-url" }
+    });
+    fixture.detectChanges();
+
+    const emitted: EnrollmentResponse[] = [];
+    component.enrollmentResponseChange.subscribe((response) => emitted.push(response));
+
+    const late = {
+      type: "hotp",
+      result: { status: true },
+      detail: { type: "hotp", serial: "OATH0001", googleurl: { img: "late-img", value: "late-url" } }
+    } as unknown as EnrollmentResponse;
+    pending.next(late);
+    fixture.detectChanges();
+
+    expect(component.enrolledData().googleurl?.img).toBe("second-img");
+    expect(emitted).toEqual([late]);
+  });
+
+  it("should request a rollover so the existing token is re-initialized", () => {
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        type: "hotp",
+        result: { status: true },
+        detail: { type: "hotp", serial: "OATH0001", googleurl: { img: "new_img", value: "new_url" } }
+      })
+    );
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", { serial: "OATH0001" });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    expect(mockTokenService.enrollToken).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ rollover: true }) })
+    );
+  });
+
+  it("should not resend the PIN when regenerating", () => {
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        type: "hotp",
+        result: { status: true },
+        detail: { type: "hotp", serial: "OATH0001" }
+      })
+    );
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001", pin: "1234" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", { serial: "OATH0001" });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    const sent = (mockTokenService.enrollToken as jest.Mock).mock.calls[0][0].data;
+    expect(sent.pin).toBeUndefined();
+    expect(sent.rollover).toBe(true);
+    expect(sent.serial).toBe("OATH0001");
+  });
+
+  it("should keep 2stepinit alongside the rollover so the two-step handshake is preserved", () => {
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        type: "hotp",
+        result: { status: true },
+        detail: { type: "hotp", serial: "OATH0001", rollout_state: "clientwait" }
+      })
+    );
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001", "2stepinit": true },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      rollout_state: "clientwait"
+    });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    expect(mockTokenService.enrollToken).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ rollover: true, "2stepinit": true, serial: "OATH0001" })
+      })
+    );
+  });
+
+  it("should emit the regenerated enrollment response on regenerateQRCode", () => {
+    const regenerated = {
+      type: "hotp",
+      result: { status: true },
+      detail: { type: "hotp", serial: "OATH0001", googleurl: { img: "new_img", value: "new_url" } }
+    } as EnrollmentResponse;
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(of(regenerated));
+    const emitted: EnrollmentResponse[] = [];
+    component.enrollmentResponseChange.subscribe((response) => emitted.push(response));
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: "hotp", serial: "OATH0001" },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "OATH0001",
+      googleurl: { img: "old_img", value: "old_url" }
+    });
+    fixture.detectChanges();
+
+    component.regenerateQRCode();
+
+    expect(emitted).toEqual([regenerated]);
+  });
+
+  it.each(["paper", "tan"])("should regenerate the OTP values of a %s token", (tokenType) => {
+    const regenerated = {
+      type: tokenType,
+      result: { status: true },
+      detail: {
+        type: tokenType,
+        serial: "PPR0001",
+        otpkey: { img: "", value: "new-hex", value_b32: "" },
+        otps: { "0": "111111", "1": "222222" }
+      }
+    } as unknown as EnrollmentResponse;
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(of(regenerated));
+    const emitted: EnrollmentResponse[] = [];
+    component.enrollmentResponseChange.subscribe((response) => emitted.push(response));
+    fixture.componentRef.setInput("tokenType", tokenType);
+    fixture.componentRef.setInput("enrollmentParameters", {
+      data: { type: tokenType, serial: null },
+      mapper: { map: jest.fn() }
+    });
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "PPR0001",
+      otpkey: { img: "", value: "old-hex", value_b32: "" },
+      otps: { "0": "999999" }
+    });
+    fixture.detectChanges();
+
+    const regenerateButton = Array.from(fixture.nativeElement.querySelectorAll("button")).find((button) =>
+      (button as HTMLButtonElement).textContent?.includes("Regenerate Values")
+    ) as HTMLButtonElement;
+    expect(component.showQRCode()).toBe(false);
+    expect(regenerateButton).toBeTruthy();
+
+    regenerateButton.click();
+
+    expect(mockTokenService.enrollToken).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ type: tokenType, serial: "PPR0001" }) })
+    );
+    expect(component.enrolledData()?.["otps"]).toEqual({ "0": "111111", "1": "222222" });
+    expect(emitted).toEqual([regenerated]);
+  });
+
+  it("uses pushurl for QR code and URL when googleurl is absent (push token)", () => {
+    fixture.componentRef.setInput("tokenType", "push");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "PUSH001",
+      pushurl: { img: "push-qr-img", value: "push://enroll-url", description: "" }
+    });
+    fixture.detectChanges();
+    expect(component["qrCode"]()).toBe("push-qr-img");
+    expect(component["url"]()).toBe("push://enroll-url");
+  });
+});

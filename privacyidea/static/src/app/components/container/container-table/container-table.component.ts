@@ -1,0 +1,276 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  ViewChild,
+  WritableSignal,
+  computed,
+  inject,
+  linkedSignal
+} from "@angular/core";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { Sort } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import {
+  CONTAINER_STATE_OPTIONS,
+  ContainerDetailData,
+  ContainerService,
+  ContainerServiceInterface
+} from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+
+import { NgClass } from "@angular/common";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatDividerModule } from "@angular/material/divider";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatMenuModule } from "@angular/material/menu";
+import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerTableActionsComponent } from "@components/container/container-table/container-table-actions/container-table-actions.component";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { TableState } from "@core/models/table_state/table-state";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { inlineFilterHint } from "@utils/filter-hint.utils";
+
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so the columns line up on the same scale other tables use and the table-state placeholder
+// (see table-width() in table.scss) can be sized from the same numbers.
+const columnsKeyMap = [
+  { key: "select", label: "", width: "s" },
+  { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+  { key: "type", label: $localize`:@@common.type:Type`, width: "s" },
+  { key: "states", label: $localize`:@@common.status:Status`, width: "m" },
+  { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+  { key: "user_name", label: $localize`:@@common.user:User`, width: "s" },
+  { key: "user_realm", label: $localize`:@@common.realm:Realm`, width: "s" },
+  { key: "realms", label: $localize`:@@common.containerRealms:Container Realms`, width: "m" }
+];
+
+@Component({
+  selector: "app-container-table",
+  standalone: true,
+  imports: [
+    RefocusAfterReloadDirective,
+    FilterAutocompleteDirective,
+    MatTableModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatPaginatorModule,
+    NgClass,
+    CopyButtonComponent,
+    CopyableComponent,
+    MatCheckboxModule,
+    ScrollToTopDirective,
+    ClearableInputComponent,
+    ContainerTableActionsComponent,
+    MatIconModule,
+    MatButtonModule,
+    MatMenuModule,
+    MatDividerModule,
+    ScrollEdgesDirective,
+    TableStateComponent,
+    RouterLink
+  ],
+  templateUrl: "./container-table.component.html",
+  styleUrl: "./container-table.component.scss"
+})
+export class ContainerTableComponent implements OnDestroy {
+  protected selectRowLabel(serial: string): string {
+    return $localize`:@@container.selectContainerNamed:Select container ${serial}:SERIAL:`;
+  }
+
+  protected linkLabel(label: string): string {
+    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
+  }
+
+  protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+
+  readonly columnsKeyMap = columnsKeyMap;
+  readonly columnKeys = columnsKeyMap.map((column) => column.key);
+  readonly apiFilterKeys = this.containerService.apiFilterKeys;
+  readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
+  readonly filterKeywords = [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys];
+  readonly filterHint = inlineFilterHint();
+  // The `user` and `realm` filters are exact values that the backend resolves against the user store, so
+  // they are only applied when the input is confirmed with enter. All other filters are applied while typing.
+  protected readonly filterInputValue = linkedSignal({
+    source: () => this.containerService.activeFilter().filterString,
+    computation: (filterString) => filterString
+  });
+  readonly showFilterHint = computed(() => {
+    const current = this.filterInputValue().trim().toLowerCase();
+    const applied = this.containerService.activeFilter().filterString.trim().toLowerCase();
+
+    if (current !== applied) {
+      return /(^|\s)user:/.test(current) || /(^|\s)realm:/.test(current);
+    }
+    return false;
+  });
+  containerSelection = this.containerService.containerSelection;
+
+  pageSize = this.containerService.pageSize;
+  pageIndex = this.containerService.pageIndex;
+  sort = this.containerService.sort;
+  containerResource = this.containerService.containerResource;
+
+  readonly containerStateOptions = CONTAINER_STATE_OPTIONS;
+
+  containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
+    source: this.containerResource.value,
+    computation: (containerResource, previous) => {
+      if (containerResource && containerResource.result?.value) {
+        const processedData =
+          containerResource.result?.value?.containers.map((item) => ({
+            ...item,
+            user_name: item.users && item.users.length > 0 ? item.users[0].user_name : "",
+            user_realm: item.users && item.users.length > 0 ? item.users[0].user_realm : ""
+          })) ?? [];
+        return new MatTableDataSource<ContainerDetailData>(processedData);
+      }
+      // A reload in flight (filter/page/sort change) clears containerResource.value before the
+      // new response arrives - keep showing the previous rows instead of flashing empty, now that
+      // the table itself stays mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<ContainerDetailData>([]);
+    }
+  });
+
+  total: WritableSignal<number> = linkedSignal({
+    source: this.containerResource.value,
+    computation: (containerResource, previous) => {
+      if (containerResource) {
+        return containerResource.result?.value?.count ?? 0;
+      }
+      return previous?.value ?? 0;
+    }
+  });
+
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
+
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly tableState = new TableState({
+    resource: this.containerResource,
+    count: () => this.total(),
+    filterActive: () => !this.containerService.activeFilter().isEmpty,
+    allowed: () => this.authService.actionAllowed("container_list"),
+    resetFilter: () => this.containerService.clearFilter()
+  });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("container_create")
+      ? $localize`:@@container.createYourFirstContainerTo2:Create your first container to assign tokens to a user or a device.`
+      : ""
+  );
+
+  @ViewChild("filterHTMLInputElement", { static: false })
+  filterInput!: ElementRef<HTMLInputElement>;
+  expandedElement: ContainerDetailData | null = null;
+
+  readonly apiFilterKeyMap: Record<string, string> = {
+    serial: "container_serial",
+    type: "type",
+    states: "state",
+    description: "description",
+    user_name: "user",
+    user_realm: "realm",
+    realms: "container_realm"
+  } as const;
+
+  ngOnDestroy(): void {
+    this.containerSelection.deselectAllRows();
+  }
+
+  handleStateClick(element: ContainerDetailData) {
+    this.containerService.toggleActive(element.serial, element.states).subscribe({
+      next: () => {
+        this.containerResource.reload();
+      },
+      error: (error) => {
+        console.error("Failed to toggle active.", error);
+      }
+    });
+  }
+
+  onPageEvent(event: PageEvent) {
+    this.pageSize.set(event.pageSize);
+    this.containerService.eventPageSize.set(event.pageSize);
+    this.pageIndex.set(event.pageIndex);
+  }
+
+  onSortEvent($event: Sort) {
+    this.sort.set($event);
+  }
+
+  onFilterInput($event: Event) {
+    const input = $event.target as HTMLInputElement;
+    this.filterInputValue.set(input.value);
+    const value = input.value.toLowerCase();
+    const hasUser = /(^|\s)user:/.test(value);
+    const hasRealm = /(^|\s)realm:/.test(value);
+    if (!hasUser && !hasRealm) {
+      this.containerService.handleFilterInput($event);
+    }
+  }
+
+  toggleFilter(filterKeyword: string): void {
+    this.containerService.updateFilter((current) =>
+      this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: current
+      })
+    );
+  }
+
+  isFilterSelected(filter: string, inputValue: FilterValue): boolean {
+    return inputValue.hasKey(filter);
+  }
+
+  getFilterIconName(keyword: string): string {
+    const isSelected = this.isFilterSelected(keyword, this.containerService.activeFilter());
+    return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  onKeywordClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+    this.filterInput?.nativeElement.focus();
+  }
+
+  onItemSelected(keyword: string, value: string | undefined): void {
+    this.containerService.updateFilter((current) =>
+      value ? current.addEntry(keyword, value) : current.removeKey(keyword)
+    );
+  }
+}

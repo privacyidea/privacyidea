@@ -2,6 +2,35 @@
 
 ## Update from 3.13 to 3.14
 
+* **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
+  `static_old/`. Nothing has to be configured to get the new WebUI, it is what a fresh installation serves.
+
+  **If you enabled the preview**, remove these two lines from your `pi.cfg`:
+
+  ```
+  PI_STATIC_FOLDER = "static_new/"
+  PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"
+  ```
+
+  A configuration that still names `static_new` keeps working: the paths are remapped to the new location and a warning
+  is written to the log. **This fallback is only kept for this version**, so remove the lines during the update.
+
+  **To keep the previous WebUI** for this version, put both of these in your `pi.cfg`:
+
+  ```
+  PI_STATIC_FOLDER = "static_old/"
+  PI_TEMPLATE_FOLDER = "static_old/templates/"
+  ```
+
+  Both lines are needed: the first selects the files the WebUI is served from, the second the templates the server
+  renders itself. The previous WebUI will be **removed in the next version**, so treat this as a way to buy time for a
+  problem report, not as a permanent setting.
+
+* **The WebUI sources are no longer part of a release.** The Python packages ship the compiled WebUI
+  (`static/dist/`) and the assets it is served with (`static/public/`), but not the Angular sources it is built from.
+  Build the WebUI from the repository if you need to modify it. This also means the sources are no longer reachable
+  over HTTP under `/static/`.
+
 * **SSH key integrity checksum** — SSH key tokens now store an integrity checksum of the SSH key data (serial, key type,
   public key and comment) in the encrypted OTP key field of the token. The checksum is verified whenever the public SSH
   key is fetched (e.g. by `privacyidea-authorizedkeys`), so manipulations of the database entries are detected and the
@@ -388,6 +417,25 @@
 
   Installations that do not use the User Agent condition are unaffected.
 
+* **HTTP API change** - `POST /container/<serial>/realms` now returns the status of each realm in a `realms`
+  sub-dictionary instead of putting the realm names next to the `deleted` flag. The response was
+  `{"realm1": true, "realm2": false, "deleted": true}` and is now
+  `{"realms": {"realm1": true, "realm2": false}, "deleted": true}`. The `deleted` entry keeps its place and its
+  meaning. The old shape reserved the key `deleted` in the same dictionary that carries the realm names, so a realm
+  that is actually named `deleted` had its status overwritten by the flag: attaching it was reported as a failure, and
+  detaching it was reported as the realm still being attached. Scripts and integrations that read
+  `result.value.<realm>` have to read `result.value.realms.<realm>` instead; the WebUI does not read the response and
+  is unaffected. `pi-token-janitor find ... set_realm` no longer omits a realm named `deleted` from what it reports.
+
+* **`/auth` failure message change** — A failed login at `POST /auth` now reports
+  `"Authentication failed."` instead of `"Authentication failure. Wrong credentials"`. The old wording was returned for
+  *every* kind of failed login, not only for wrong credentials: a missing `password` parameter, a user who exists in no
+  resolver, a user with no tokens assigned, a disabled or revoked token, and failures nothing classified at all.
+  The error id is **unchanged** (`4031`), as is the HTTP status (`401`), so integrations that branch on the error
+  code or status are unaffected. Only clients that match on the literal message string need updating — and the specific
+  reason is still available where it always was: in `detail.message` (unless the `hide_specific_error_message` policy
+  masks it) and, for an admin, in the authentication log's event type.
+
 ## Update from 3.12 to 3.13
 
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the the
@@ -407,6 +455,9 @@
   `PI_STATIC_FOLDER = "static_new/"`
 
   `PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"`
+
+  If you are updating to 3.14 or later, skip this: the new WebUI is served by default there and these two lines are
+  not needed any more. See "Update from 3.13 to 3.14".
 
 * The behaviour of the Certificate Token changes when the certificate key-pair is created by privacyIDEA. The secret key
   will not be saved to the tokeninfo anymore. Instead, only the PKCS12 container will contain the secret key. The PKCS12

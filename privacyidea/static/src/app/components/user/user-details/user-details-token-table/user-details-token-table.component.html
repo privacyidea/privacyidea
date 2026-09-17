@@ -1,0 +1,227 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  aria-label="User Details Token Table"
+  class="user-details-token-table-layout"
+  i18n-aria-label="@@user.userDetailsToken">
+  <div class="flex-column">
+    <div class="details-header">
+      <h4 i18n="@@user.tokensUser">Tokens of User</h4>
+      <h4 class="username-header">&nbsp;{{ userService.detailsUser().username }}</h4>
+      <h4>:</h4>
+    </div>
+    <!-- With rows present the enroll action heads the bulk actions, which need a selection; with none
+         it moves into the state panel instead, so the way out of the empty state sits with the message. -->
+    @if (tableState.showTable()) {
+      <div class="flex-row gap-8 margin-bottom-16">
+        <ng-container *ngTemplateOutlet="enrollAction() ?? null"></ng-container>
+        @if (authService.actionAllowed("delete")) {
+          <button
+            (click)="deleteSelected()"
+            [disabled]="!selector.hasSelection()"
+            class="action-button-delete-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>delete_sweep</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        }
+        @if (authService.actionAllowed("unassign")) {
+          <button
+            (click)="unassignSelected()"
+            [disabled]="!selector.hasSelection()"
+            class="action-button-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>person_remove</mat-icon>
+            <span i18n="@@common.unassign">Unassign</span>
+          </button>
+        }
+        @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
+          <button
+            (click)="toggleActiveSelected()"
+            [disabled]="!selector.hasSelection()"
+            class="action-button-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>toggle_on</mat-icon>
+            <span i18n="@@common.deActivate">(De)activate</span>
+          </button>
+        }
+        @if (authService.actionAllowed("reset")) {
+          <button
+            (click)="resetFailcountSelected()"
+            [disabled]="!selector.hasSelection()"
+            class="action-button-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>restart_alt</mat-icon>
+            <span i18n="@@common.resetFailcounters">Reset Failcounters</span>
+          </button>
+        }
+      </div>
+    }
+    @if (tableState.showTable()) {
+      <div class="responsive-flex-row-1580">
+        <table
+          [dataSource]="dataSource"
+          aria-label="Token Table of the User"
+          class="user-details-token-table"
+          i18n-aria-label="@@user.tokenTableUser"
+          mat-table>
+          <ng-container matColumnDef="select">
+            <th
+              *matHeaderCellDef
+              class="table-checkbox"
+              mat-header-cell>
+              <mat-checkbox
+                (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+                [checked]="selector.allRowsSelected()"
+                [disabled]="!selector.hasVisibleRows()"
+                [indeterminate]="selector.someRowsSelected()" />
+            </th>
+            <td
+              *matCellDef="let row"
+              class="table-checkbox"
+              mat-cell>
+              <mat-checkbox
+                (change)="selector.setRowSelected(row, $event.checked)"
+                (click)="$event.stopPropagation()"
+                [checked]="selector.isRowSelected(row)"
+                [disabled]="!selector.hasVisibleRows()" />
+            </td>
+          </ng-container>
+          @for (column of columnsKeyMap; track column) {
+            <ng-container [matColumnDef]="column.key">
+              <th
+                *matHeaderCellDef
+                mat-header-cell>
+                <div class="flex ali-center">
+                  {{ column.label }}
+                  <div class="flex">
+                    <button
+                      (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                      class="sort-button"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              </th>
+              <td
+                *matCellDef="let element"
+                [ngClass]="{ 'input-width-l': column.key === 'description' }"
+                mat-cell>
+                <ng-container>
+                  <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+                    @switch (column.key) {
+                      @case ("serial") {
+                        <app-copyable [copyText]="element.serial">
+                          <a
+                            (click)="contentService.tokenSelected(element.serial)"
+                            (keydown.enter)="contentService.tokenSelected(element.serial)"
+                            [attr.aria-label]="linkLabel(column.label)"
+                            role="button"
+                            tabindex="0">
+                            {{ element[column.key] }}
+                          </a>
+                        </app-copyable>
+                      }
+                      @case ("active") {
+                        @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
+                          <span
+                            (click)="toggleActive(element)"
+                            (keydown.enter)="toggleActive(element)"
+                            (keydown.space)="$event.preventDefault(); toggleActive(element)"
+                            [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
+                            [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                            role="button"
+                            tabindex="0">
+                            {{ tableUtilsService.getDisplayText(column.key, element) }}
+                          </span>
+                        }
+                      }
+                      @case ("failcount") {
+                        @if (authService.actionAllowed("reset")) {
+                          <span
+                            (click)="resetFailCount(element)"
+                            (keydown.enter)="resetFailCount(element)"
+                            (keydown.space)="$event.preventDefault(); resetFailCount(element)"
+                            [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                            role="button"
+                            tabindex="0">
+                            {{ tableUtilsService.getDisplayText(column.key, element) }}
+                          </span>
+                        }
+                      }
+                      @case ("container_serial") {
+                        @if (authService.actionAllowed("container_list")) {
+                          <app-copyable [copyText]="element[column.key]">
+                            <a
+                              (click)="contentService.navigateContainerDetails(element[column.key])"
+                              (keydown.enter)="contentService.navigateContainerDetails(element[column.key])"
+                              [attr.aria-label]="linkLabel(column.label)"
+                              role="button"
+                              tabindex="0">
+                              {{ element[column.key] }}
+                            </a>
+                          </app-copyable>
+                        }
+                      }
+                      @default {
+                        <span>{{ element[column.key] }}</span>
+                      }
+                    }
+                  </div>
+                </ng-container>
+              </td>
+            </ng-container>
+          }
+          <tr
+            *matHeaderRowDef="displayedColumns"
+            mat-header-row></tr>
+          <tr
+            *matRowDef="let row; columns: displayedColumns"
+            mat-row></tr>
+          <tr *matNoDataRow>
+            <td [attr.colspan]="displayedColumns.length">
+              <app-table-state
+                [status]="tableState.rowStatus()"
+                [table]="tableState"
+                heading="No tokens assigned to this user"
+                hint="Assign a token to this user to see it here."
+                i18n-heading="@@user.noTokensAssigned"
+                i18n-hint="@@user.assignTokenUserHint" />
+            </td>
+          </tr>
+        </table>
+      </div>
+      <ng-container *ngTemplateOutlet="assignAction() ?? null"></ng-container>
+    } @else {
+      <app-table-state
+        [hint]="emptyHint()"
+        [table]="tableState"
+        heading="No tokens assigned to this user"
+        i18n-heading="@@user.noTokensAssigned"
+        icon="shield">
+        <div class="table-state-actions">
+          <ng-container *ngTemplateOutlet="enrollAction() ?? null"></ng-container>
+          <ng-container *ngTemplateOutlet="assignAction() ?? null"></ng-container>
+        </div>
+      </app-table-state>
+    }
+  </div>
+</div>

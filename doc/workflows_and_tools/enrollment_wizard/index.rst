@@ -36,36 +36,36 @@ wizard in your html templates defined in these files:
 
 Before the token is enrolled you can add your custom text in these two files:
 
-*Old WebUI*::
+*Previous WebUI*::
 
-   static/customize/views/includes/token.enroll.pre.top.html
-   static/customize/views/includes/token.enroll.pre.bottom.html
+   static_old/customize/views/includes/token.enroll.pre.top.html
+   static_old/customize/views/includes/token.enroll.pre.bottom.html
 
-*New WebUI*::
+*WebUI*::
 
-    static_new/public/customize/token-enrollment.wizard.pre.top.html
-    static_new/public/customize/token-enrollment.wizard.pre.bottom.html
+    static/public/customize/token-enrollment.wizard.pre.top.html
+    static/public/customize/token-enrollment.wizard.pre.bottom.html
 
 When it is enrolled and the user needs to do something (e.g. scanning the qr-code),
 you can modify the text here:
 
-*Old WebUI*::
+*Previous WebUI*::
 
-   static/customize/views/includes/token.enroll.post.top.html
-   static/customize/views/includes/token.enroll.post.bottom.html
+   static_old/customize/views/includes/token.enroll.post.top.html
+   static_old/customize/views/includes/token.enroll.post.bottom.html
 
-*New WebUI*::
+*WebUI*::
 
-    static_new/public/customize/token-enrollment.wizard.post.top.html
-    static_new/public/customize/token-enrollment.wizard.post.bottom.html
+    static/public/customize/token-enrollment.wizard.post.top.html
+    static/public/customize/token-enrollment.wizard.post.bottom.html
 
-.. note:: You can change the directory static/customize to a URL that fits
+.. note:: You can change the directory static_old/customize to a URL that fits
    your needs the best by defining a variable PI_CUSTOMIZATION in the file
    pi.cfg. This way you can put all modifications in one place apart from the
    original code.
 
-   This is only possible in the old WebUI.
-   The new WebUI always looks for the files in the path ``static_new/public/customize/``.
+   This is only possible in the previous WebUI.
+   The WebUI always looks for the files in the path ``static/public/customize/``.
 
 .. _pi_customization:
 

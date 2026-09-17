@@ -1,0 +1,69 @@
+@use "styles";
+@use "table";
+
+.container-templates-layout {
+  @include styles.main-component-style;
+  @include table.base-table-structure(
+    ".container-templates-table",
+    ".container-templates-table-filter",
+    ".container-templates-scroll-container"
+  );
+  // Sized from the col-width-* tiers the columns below use (select checkbox + name m +
+  // container_type s + default s), plus a flat 600px for "tokens" (see columns in the .ts), sized
+  // to fit its content instead of a tier, so the panel is not narrower than the real table.
+  @include table.page-table-state-size(calc(#{table.table-width(checkbox, m, s, s)} + 600px));
+
+  & {
+    display: flex;
+    flex-direction: column;
+  }
+
+  th,
+  td {
+    padding: 0 8px;
+    text-align: left;
+    max-width: unset !important;
+  }
+
+  // table-layout: auto would resize a col-width-* tier based on each render's actual cell content
+  // instead of holding it steady; fixed makes the header row's declared widths authoritative. Tokens
+  // has no tier (see the .ts) so it needs its own explicit width now or it collapses to 0 under a
+  // fixed layout - 400px to comfortably fit its token list instead of a standard tier, matching the
+  // flat estimate already assumed above.
+  .container-templates-table {
+    table-layout: fixed;
+    width: auto;
+
+    .col-width-flex {
+      width: 600px;
+    }
+  }
+
+  .table-header-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+
+    > div {
+      flex-shrink: 0;
+    }
+  }
+
+  .options-cell {
+    padding: 0;
+  }
+
+  .no-data-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px;
+    min-height: 64px;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+}

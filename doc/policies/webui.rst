@@ -593,3 +593,28 @@ The default validity is 1 hour.
 You can specify different validity times in seconds.
 
 .. versionadded:: 3.10
+
+
+.. _policy_session_persistence:
+
+session_persistence
+~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+Where the WebUI keeps the session of the logged-in user. Allowed values are ``tab`` and
+``browser``, the default is ``tab``.
+
+With ``tab`` the session belongs to the browser tab it was opened in: it is kept in
+``sessionStorage``, ends when that tab is closed, and another tab has to log in for
+itself. With ``browser`` the session is kept in ``localStorage``, is shared by all tabs
+of the browser and survives closing it, until the JWT expires -- the behaviour of
+releases before this policy existed.
+
+The policy is evaluated for the principal that logs in, so admins and users can be given
+different values. Note that ``browser`` leaves a token that is usable until its expiry on
+the disk of the client, where the next person to open the browser is logged in with it,
+and where every same-origin context can read it. The only upper bound on that token is
+:ref:`policy_jwt_validity`; see :ref:`new_webui_hardening`.
+
+.. versionadded:: 3.14

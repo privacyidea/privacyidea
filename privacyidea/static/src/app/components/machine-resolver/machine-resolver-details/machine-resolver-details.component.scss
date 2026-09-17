@@ -1,0 +1,42 @@
+@use "styles";
+
+.machine-resolver-details-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.machine-resolver-details-container {
+  @include styles.main-component-style;
+
+  & {
+    display: flex;
+    flex-direction: column;
+    width: calc(var(--input-width-xl) + 16px * 2);
+    gap: 16px;
+  }
+}
+
+// The pre-data state: the same box as the loaded page (via .machine-resolver-details-container,
+// shared above) so the panel does not resize once the data arrives, just centering the spinner in
+// it meanwhile.
+.machine-resolver-details-container--loading {
+  align-items: center;
+  justify-content: center;
+  min-height: 15rem;
+}
+
+.machine-resolver-details-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.machine-resolver-type-select {
+  margin-left: 16px;
+}
+
+.machine-resolver-details-controls {
+  display: flex;
+  justify-content: flex-start;
+  gap: 16px;
+}

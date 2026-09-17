@@ -1,0 +1,443 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (showInitialLoading()) {
+  <!-- Shares the .details-container class so it renders at exactly the width the loaded page will
+    take, rather than a narrower box that jumps wider once the data arrives. -->
+  <div
+    aria-label="Details"
+    class="details-container details-container--loading"
+    i18n-aria-label="@@common.details"
+    role="status">
+    <mat-progress-spinner
+      [diameter]="40"
+      aria-label="Loading"
+      i18n-aria-label="@@common.loading"
+      mode="indeterminate" />
+  </div>
+} @else {
+<div
+  #scrollContainer
+  appScrollToTop
+  aria-label="Details"
+  class="details-container"
+  i18n-aria-label="@@common.details">
+  <div class="details-header">
+    <ng-container>
+      <h3 i18n="@@user.detailsUser">Details for User:</h3>
+      <app-copyable [copyText]="userService.detailsUser().username">
+        <h3 class="h3-color">&nbsp;{{ userService.detailsUser().username }}</h3>
+      </app-copyable>
+      <h3 i18n="@@user.inRealm">&nbsp;in Realm</h3>
+      <app-copyable [copyText]="userService.selectedUserRealm()">
+        <h3 class="margin-0">&nbsp;{{ userService.selectedUserRealm() }}</h3>
+      </app-copyable>
+    </ng-container>
+    <button
+      (click)="showUserAuditLog()"
+      [routerLink]="[ROUTE_PATHS.AUDIT]"
+      mat-icon-button
+      matTooltip="Show audit log of user"
+      i18n-matTooltip="@@user.showAuditLogUser">
+      <mat-icon>receipt_long</mat-icon>
+    </button>
+    @if (authService.actionAllowed("authentication_log_read")) {
+      <button
+        (click)="showUserAuthenticationLog()"
+        [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
+        aria-label="Show authentication log of user"
+        i18n-aria-label
+        mat-icon-button
+        matTooltip="Show authentication log of user"
+        i18n-matTooltip>
+        <mat-icon class="mdi--list-lock"></mat-icon>
+      </button>
+    }
+  </div>
+
+  <div class="flex-column">
+    @if (userData().editable) {
+      <div
+        class="flex gap-8 sticky-header"
+        [appStickyHeader]="scrollContainer">
+        @if (authService.actionsAllowed(["updateuser", "resolverread"])) {
+          @if (!editMode()) {
+            <button
+              (click)="editUser()"
+              class="action-button-primary button-width-s"
+              mat-stroked-button>
+              <mat-icon>edit</mat-icon>
+              <span i18n="@@user.edit">Edit</span>
+            </button>
+          } @else {
+            <button
+              (click)="cancelEdit()"
+              class="action-button-secondary button-width-s"
+              mat-stroked-button>
+              <span i18n="@@common.cancel">Cancel</span>
+            </button>
+            <button
+              (click)="saveEdit()"
+              class="action-button-primary button-width-s"
+              mat-stroked-button>
+              <mat-icon>save</mat-icon>
+              <span i18n="@@common.save">Save</span>
+            </button>
+          }
+        }
+        @if (authService.actionAllowed("deleteuser") && !editMode()) {
+          <button
+            (click)="deleteUser()"
+            class="action-button-delete-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>delete</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        }
+      </div>
+    }
+
+    <div class="details-panels-row">
+      @if (editMode()) {
+        <app-details-card
+          class="details-card--user-info"
+          title="Attributes"
+          i18n-title="@@user.attributes">
+          <app-user-details-edit
+            [resolver]="userData().resolver"
+            [initialUserData]="userData()"
+            (updateData)="onUpdateEditedUser($event)"></app-user-details-edit>
+        </app-details-card>
+      } @else {
+        <app-details-card
+          class="details-card--user-info"
+          [class.details-card--wide]="!showsAttributeExtrasColumn()"
+          title="Attributes"
+          i18n-title="@@user.attributes">
+          @if (showsAttributeExtrasColumn()) {
+            <div class="details-field-list">
+              @for (item of detailsEntries(); track item.key) {
+                <ng-container *ngTemplateOutlet="attributeRow; context: { $implicit: item }"></ng-container>
+              }
+            </div>
+          } @else {
+            <div class="details-field-list-columns">
+              @for (column of detailsEntryColumns(); track $index) {
+                <div class="details-field-list">
+                  @for (item of column; track item.key) {
+                    <ng-container *ngTemplateOutlet="attributeRow; context: { $implicit: item }"></ng-container>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </app-details-card>
+      }
+
+      <ng-template
+        #attributeRow
+        let-item>
+        @if (Array.isArray(item.value) && item.value.length > 1) {
+          <app-detail-field-row [label]="item.label">
+            <ng-container fieldValue>
+              <ul class="value-list padding-top-8">
+                @if (isExpanded(item.key)) {
+                  @for (val of item.value; track val) {
+                    <li>{{ val }}</li>
+                  }
+                } @else {
+                  <li>{{ item.value[0] }}</li>
+                }
+              </ul>
+              <button
+                (click)="toggleExpanded(item.key)"
+                [attr.aria-expanded]="isExpanded(item.key)"
+                class="value-toggle"
+                type="button">
+                @if (isExpanded(item.key)) {
+                  <mat-icon>expand_less</mat-icon>
+                  <span i18n="@@user.showLess">Show less</span>
+                } @else {
+                  <mat-icon>expand_more</mat-icon>
+                  <span i18n="@@user.showMore">Show {{ item.value.length - 1 }} more</span>
+                }
+              </button>
+            </ng-container>
+          </app-detail-field-row>
+        } @else {
+          <app-detail-field
+            [label]="item.label"
+            [displayText]="str(item.value)" />
+        }
+      </ng-template>
+
+      @if (showsAttributeExtrasColumn()) {
+        <div class="details-panels-column">
+          @if (canSetCustomAttribute() || userService.userAttributesList().length > 0) {
+            <app-details-card
+              class="details-card--user-info"
+              title="Custom Attributes"
+              i18n-title="@@user.customAttributes">
+              @if (canSetCustomAttribute()) {
+                <div class="add-attr-row">
+                  <mat-form-field class="input-width-l">
+                    <mat-label i18n="@@user.attributeKey">Attribute Key</mat-label>
+                    @if (keyMode() === "select") {
+                      <mat-select
+                        [value]="selectedKey()"
+                        (selectionChange)="selectedKey.set($event.value)">
+                        @for (k of keyOptions(); track k) {
+                          <mat-option [value]="k">{{ k }}</mat-option>
+                        }
+                        @if (hasWildcardKey()) {
+                          <mat-option
+                            (onSelectionChange)="switchToCustomKey()"
+                            [value]="'__CUSTOM__'">
+                            <i i18n="@@common.custom">Custom…</i>
+                          </mat-option>
+                        }
+                      </mat-select>
+                    } @else {
+                      <input
+                        [value]="addKeyInput()"
+                        (input)="addKeyInput.set($event.target['value'])"
+                        i18n-placeholder="@@user.enterKey"
+                        matInput
+                        placeholder="Enter key" />
+                    }
+                  </mat-form-field>
+                  @if (keyMode() === "input" && keyOptions().length > 0) {
+                    <button
+                      (click)="switchToSelectKey()"
+                      aria-label="Back to key select"
+                      class="margin-bottom-16 return-button"
+                      i18n-aria-label="Back to key select@@user.backKeySelect"
+                      mat-icon-button
+                      type="button">
+                      <mat-icon>arrow_left</mat-icon>
+                    </button>
+                  }
+
+                  <mat-form-field class="input-width-l">
+                    <mat-label i18n="@@user.attributeValue">Attribute Value</mat-label>
+
+                    @if (isValueInput()) {
+                      <input
+                        [value]="addValueInput()"
+                        (input)="addValueInput.set($event.target['value'])"
+                        i18n-placeholder="@@user.enterValue"
+                        matInput
+                        placeholder="Enter value" />
+                    } @else {
+                      <mat-select
+                        [value]="selectedValue()"
+                        (selectionChange)="selectedValue.set($event.value)">
+                        @for (v of valueOptions(); track v) {
+                          <mat-option [value]="v">{{ v }}</mat-option>
+                        }
+                      </mat-select>
+                    }
+                  </mat-form-field>
+
+                  <button
+                    (click)="addCustomAttribute()"
+                    [disabled]="!canAddAttribute()"
+                    class="ml-8 margin-bottom-16"
+                    color="primary"
+                    mat-icon-button>
+                    <mat-icon>save</mat-icon>
+                  </button>
+                </div>
+              }
+
+              @if (userService.userAttributesList().length > 0) {
+                <div class="details-field-list margin-top-8">
+                  @for (attr of userService.userAttributesList(); track attr.key) {
+                    <app-detail-field-row [label]="attr.key">
+                      <span fieldValue>{{ attr.value || "-" }}</span>
+                      <ng-container fieldEdit>
+                        @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
+                          <button
+                            (click)="deleteCustomAttribute(attr.key)"
+                            aria-label="Delete custom attribute"
+                            i18n-aria-label="Delete custom attribute@@user.deleteCustomAttribute"
+                            mat-icon-button>
+                            <mat-icon>delete</mat-icon>
+                          </button>
+                        }
+                      </ng-container>
+                    </app-detail-field-row>
+                  }
+                </div>
+              }
+            </app-details-card>
+          }
+
+          @if (authService.actionAllowed("get_user_internal_attributes")) {
+            <app-details-card
+              class="details-card--user-info"
+              title="Internal Attributes"
+              i18n-title="@@user.internalAttributes">
+              @if (userService.internalAttributesList().length > 0) {
+                <div class="details-field-list">
+                  @for (attr of userService.internalAttributesList(); track attr.key) {
+                    <app-detail-field-row [label]="attr.key">
+                      <span fieldValue>{{ attr.value || "-" }}</span>
+                    </app-detail-field-row>
+                  }
+                </div>
+              } @else {
+                <p i18n="@@user.noInternalAttributes">No internal attributes found.</p>
+              }
+            </app-details-card>
+          }
+
+          @if (authService.actionAllowed("user_lock_read")) {
+            <app-details-card
+              class="details-card--user-info"
+              title="User Lock State"
+              i18n-title>
+              <div class="user-lock-row">
+                <span [ngClass]="lockStateClass()">
+                  {{ lockStatusText() }}
+                </span>
+                @if (isUserLocked()) {
+                  <p class="user-lock-cause">{{ lockCauseLabel() }}</p>
+                }
+                <div class="user-lock-actions">
+                  @if (authService.actionAllowed("user_lock_set")) {
+                    <button
+                      (click)="lockUser()"
+                      class="action-button-secondary button-width-m"
+                      mat-stroked-button>
+                      <mat-icon>lock</mat-icon>
+                      @if (isUserLocked()) {
+                        <span i18n>Change lock</span>
+                      } @else {
+                        <span i18n>Lock</span>
+                      }
+                    </button>
+                  }
+                  @if (authService.actionAllowed("user_lock_reset") && isUserLocked()) {
+                    <button
+                      (click)="resetUserLock()"
+                      class="action-button-secondary button-width-m"
+                      mat-stroked-button>
+                      <mat-icon>lock_open</mat-icon>
+                      <span i18n>Unlock</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            </app-details-card>
+          }
+        </div>
+      }
+    </div>
+
+    <app-details-card class="details-card--tokens">
+      <!-- Handed over as templates: the table places them by its own state, next to the rows or
+           inside the empty-state panel. -->
+      <app-user-details-token-table
+        [assignAction]="assignTokenAction"
+        [enrollAction]="enrollTokenAction" />
+
+      <ng-template #enrollTokenAction>
+        @if (authService.tokenEnrollmentAllowed()) {
+          <button
+            (click)="enrollNewToken()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <mat-icon>add_moderator</mat-icon>
+            <span i18n="@@user.enrollNewToken">Enroll New Token</span>
+          </button>
+        }
+      </ng-template>
+
+      <ng-template #assignTokenAction>
+        @if (authService.actionAllowed("assign")) {
+          <div class="flex-row margin-top-16">
+            <mat-form-field
+              class="input-width-xl"
+              subscriptSizing="dynamic">
+              <mat-label i18n="@@user.assignTokenUser">Assign Token to User</mat-label>
+              <app-clearable-input
+                (clearButtonClick)="tokenService.clearFilter()"
+                [showClearButton]="tokenService.filterDraft().isNotEmpty">
+                <input
+                  #filterHTMLInputElement
+                  #tokenAutoTrigger="matAutocompleteTrigger"
+                  (input)="tokenService.handleFilterInput($event)"
+                  [matAutocomplete]="tokenAuto"
+                  [value]="tokenService.filterDraft().filterString"
+                  i18n-placeholder="@@common.exampleQueryType"
+                  matInput
+                  placeholder="Example query: 'type: hotp serial: 123'" />
+              </app-clearable-input>
+              <mat-autocomplete #tokenAuto="matAutocomplete">
+                @for (option of tokenDataSource().data; track option) {
+                  <mat-option
+                    (click)="assignUserToToken(option)"
+                    class="token-option">
+                    <span class="token-option-span">{{ option["serial"] }}</span>
+                    <span class="token-option-span">
+                      {{ option["tokentype"] }}
+                    </span>
+                    <span
+                      [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
+                      class="token-option-span">
+                      @if (option["active"]) {
+                        <ng-container i18n="@@common.activeState">active</ng-container>
+                      } @else {
+                        <ng-container i18n="@@common.deactivated">deactivated</ng-container>
+                      }
+                    </span>
+                    <span class="token-option-span">
+                      {{ option["username"] }}
+                    </span>
+                    <mat-icon>add</mat-icon>
+                  </mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+          </div>
+        }
+      </ng-template>
+    </app-details-card>
+
+    <app-details-card class="details-card--containers">
+      <app-user-details-container-table [createAction]="createContainerAction" />
+
+      <ng-template #createContainerAction>
+        @if (authService.actionAllowed("container_create")) {
+          <button
+            (click)="createNewContainer()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="padding-right-3">folder</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n="@@user.createNewContainer">Create New Container</span>
+          </button>
+        }
+      </ng-template>
+    </app-details-card>
+  </div>
+</div>
+}

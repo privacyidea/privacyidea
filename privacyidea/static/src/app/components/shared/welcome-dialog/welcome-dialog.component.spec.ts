@@ -1,0 +1,152 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { AuthService } from "@services/auth/auth.service";
+import { MockAuthService } from "@testing/mock-services";
+import { WelcomeDialogServiceMock } from "@testing/mock-services/mock-welcome-dialog-service";
+import { WelcomeDialogComponent } from "./welcome-dialog.component";
+
+describe("WelcomeDialogComponent", () => {
+  let fixture: ComponentFixture<WelcomeDialogComponent>;
+  let component: WelcomeDialogComponent;
+  let dialogRefMock: { close: jest.Mock };
+  let welcomeDialogServiceMock: WelcomeDialogServiceMock;
+  let authMock: MockAuthService;
+
+  const heading = (): string => fixture.nativeElement.querySelector(".pi-dialog-header").textContent.trim();
+  const buttons = (): HTMLElement[] => Array.from(fixture.nativeElement.querySelectorAll(".pi-dialog-footer button"));
+  const buttonLabels = (): string[] => buttons().map((button) => button.textContent!.trim());
+  const clickButton = (label: string): void => {
+    const button = buttons().find((candidate) => candidate.textContent!.includes(label));
+    expect(button).toBeDefined();
+    button!.click();
+    fixture.detectChanges();
+  };
+
+  beforeEach(() => {
+    dialogRefMock = { close: jest.fn() };
+    welcomeDialogServiceMock = new WelcomeDialogServiceMock();
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: MatDialogRef, useValue: dialogRefMock },
+        { provide: MAT_DIALOG_DATA, useValue: null },
+        { provide: AuthService, useClass: MockAuthService }
+      ]
+    });
+
+    authMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    fixture = TestBed.createComponent(WelcomeDialogComponent);
+    component = fixture.componentInstance;
+  });
+
+  it("should start at step 0 by default", () => {
+    expect(component.step()).toBe(0);
+  });
+
+  it("should not open the dialog when hideWelcome is true", () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, hide_welcome: true });
+    expect(welcomeDialogServiceMock.opened()).toBe(false);
+  });
+
+  it("nextWelcome should increment step and close at >=5", () => {
+    component.nextWelcome();
+    expect(component.step()).toBe(1);
+    component.nextWelcome();
+    expect(component.step()).toBe(2);
+    component.nextWelcome();
+    expect(component.step()).toBe(3);
+
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, subscription_status: 0 });
+    component.nextWelcome();
+    expect(dialogRefMock.close).toHaveBeenCalled();
+  });
+
+  it("should allow step 4 when subscriptionStatus is 1, then close on next", () => {
+    authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, subscription_status: 1 });
+    component.nextWelcome(); // 1
+    component.nextWelcome(); // 2
+    component.nextWelcome(); // 3
+
+    component.nextWelcome();
+    expect(component.step()).toBe(4);
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
+
+    component.nextWelcome();
+    expect(dialogRefMock.close).toHaveBeenCalled();
+  });
+
+  it("renders the step heading and its buttons in the shared dialog wrapper", () => {
+    fixture.detectChanges();
+
+    expect(heading()).toBe("Welcome");
+    expect(buttonLabels()).toHaveLength(1);
+    expect(buttonLabels()[0]).toContain("Next");
+
+    component.step.set(3);
+    fixture.detectChanges();
+
+    expect(heading()).toBe("Thank you for improving your security!");
+    expect(buttonLabels()).toHaveLength(2);
+    expect(buttonLabels()[0]).toContain("Read again");
+    expect(buttonLabels()[1]).toContain("Dive In!");
+  });
+
+  it("gives the open source and enterprise steps their own headings", () => {
+    component.step.set(1);
+    fixture.detectChanges();
+    expect(heading()).toBe("The value of open source");
+
+    component.step.set(2);
+    fixture.detectChanges();
+    expect(heading()).toBe("The added value of privacyIDEA Enterprise Edition");
+    expect(buttonLabels()).toHaveLength(1);
+    expect(buttonLabels()[0]).toContain("Next");
+  });
+
+  it("closes the subscription step with a single confirm button under the enterprise heading", () => {
+    component.step.set(4);
+    fixture.detectChanges();
+
+    expect(heading()).toBe("The added value of privacyIDEA Enterprise Edition");
+    expect(buttonLabels()).toHaveLength(1);
+    expect(buttonLabels()[0]).toContain("Okay");
+
+    clickButton("Okay");
+    expect(dialogRefMock.close).toHaveBeenCalled();
+  });
+
+  it("restarts on the read again action and advances on every other action", () => {
+    component.step.set(3);
+    fixture.detectChanges();
+
+    clickButton("Read again");
+    expect(component.step()).toBe(0);
+
+    clickButton("Next");
+    expect(component.step()).toBe(1);
+  });
+
+  it("resetWelcome should set step back to 0", () => {
+    component.step.set(3);
+    component.resetWelcome();
+    expect(component.step()).toBe(0);
+  });
+});

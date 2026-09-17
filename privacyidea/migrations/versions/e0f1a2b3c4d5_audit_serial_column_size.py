@@ -47,9 +47,15 @@ def upgrade():
                                   type_=sa.Unicode(length=200),
                                   existing_nullable=True)
     except DatabaseError as exx:
+        # Re-raised, not swallowed: returning here would let this function complete "successfully" even though
+        # the column was never actually altered, and Alembic stamps a revision as applied the moment upgrade()
+        # returns without raising - regardless of whether it did what it says. A caller stuck on a lock timeout,
+        # denied by grants that don't cover ALTER TABLE, or out of disk space during the table rebuild would end
+        # up permanently behind this revision while the database claims to be at it, with no further "pi-manage
+        # db upgrade" ever revisiting it (current == head, nothing left to run).
         print("Could not increase 'serial' column size in 'pidea_audit' table.")
         print(exx)
-        return
+        raise
     if counts_entries:
         print(f"Updated the 'serial' column of {entry_count} audit entries in "
               f"{time.monotonic() - started:.0f} seconds.")

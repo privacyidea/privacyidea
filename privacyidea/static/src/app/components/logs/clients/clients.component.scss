@@ -1,0 +1,19 @@
+@use "styles";
+@use "table";
+
+.clients-layout {
+  @include styles.main-component-style;
+  @include table.page-table-state-size(table.table-width(xl, l, l, m));
+  @include table.base-table-structure(".clients-table", ".clients-table-filter", ".table-scroll-container");
+}
+
+.line-height {
+  line-height: 1em;
+}
+
+.data-table-cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+}
