@@ -104,7 +104,7 @@ describe("TableState", () => {
     // Some callers do not retain the previous count themselves - TableState must not depend on
     // that discipline: it tracks the last known count on its own.
     const resource = fakeResource();
-    let liveCount = 5;
+    const liveCount = 5;
     const state = new TableState({ resource, count: () => (resource.hasValue() ? liveCount : 0) });
     resource.resolve();
     expect(state.status()).toBe("ready");
