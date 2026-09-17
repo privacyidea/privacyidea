@@ -29,6 +29,7 @@ import {
   CaConnectorService,
   CaConnectorServiceInterface
 } from "@services/ca-connector/ca-connector.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -49,6 +50,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-ca-connectors",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginator,
     MatSortModule,

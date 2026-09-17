@@ -50,10 +50,12 @@ import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { of } from "rxjs";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 @Component({
   selector: "app-event",
   imports: [
+    RefocusAfterReloadDirective,
     CommonModule,
     MatTableModule,
     MatButtonModule,
@@ -93,6 +95,17 @@ export class EventComponent {
     conditions: $localize`:@@common.conditions:Conditions`,
     active: $localize`:@@common.active:Active`,
     delete: $localize`:@@common.delete:Delete`
+  };
+  // The col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed to, so the
+  // columns line up on the same scale other tables use. "event", "action" and "conditions" hold lists
+  // or free text that can badly overflow, so they are left out and keep their previous flexible width.
+  columnWidths: Record<string, string> = {
+    ordering: "s",
+    name: "m",
+    handlermodule: "s",
+    position: "s",
+    active: "s",
+    delete: "s"
   };
   columnKeys = computed(() => {
     let keys = Object.keys(this.columnKeysMap);

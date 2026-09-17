@@ -115,6 +115,22 @@ describe("ConditionalAccessComponent", () => {
     expect(component.policyDataSource().filter).toBe("");
   });
 
+  it("should filter rows by a tracked counter type even when the name does not match", () => {
+    expect(
+      component.policyDataSource().filterPredicate(samplePolicy, "pin_fail")
+    ).toBe(true);
+    expect(
+      component.policyDataSource().filterPredicate(samplePolicy, "no_such_thing")
+    ).toBe(false);
+  });
+
+  it("reports and clears its own filter through the shared table state", () => {
+    component.onFilterInput("brute");
+    expect(component.tableState.isFiltered()).toBe(true);
+    component.tableState.resetFilter();
+    expect(component.filterString()).toBe("");
+  });
+
   it("should navigate to the create page", () => {
     component.onCreatePolicy();
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS_NEW);
@@ -327,6 +343,16 @@ describe("ConditionalAccessComponent", () => {
       component.toggleDryRunSelected();
       emitAction("toggle");
       await Promise.resolve();
+      await Promise.resolve();
+      expect(policyServiceMock.setDryRun).not.toHaveBeenCalled();
+      expect(component.policySelection().length).toBe(1);
+    });
+
+    it("should leave the batch untouched when the (de)activate dialog is cancelled", async () => {
+      const dryRunOff: ConditionalAccessPolicy = { ...samplePolicy, id: 1, dry_run: false };
+      component.policySelection.set([dryRunOff]);
+      component.toggleDryRunSelected();
+      emitAction(undefined);
       await Promise.resolve();
       expect(policyServiceMock.setDryRun).not.toHaveBeenCalled();
       expect(component.policySelection().length).toBe(1);

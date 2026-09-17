@@ -17,12 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SmsGateway, SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -45,6 +47,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-sms-gateways",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
+    NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,
@@ -88,6 +92,15 @@ export class SmsGatewaysComponent {
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   displayedColumns: string[] = ["select", "name", "description", "providermodule"];
+
+  // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+  // to; the sum of these tiers (see table-width() in table.scss) also sizes the table-state panel
+  // shown in place of the table, so it matches the table's own footprint instead of a fixed guess.
+  columnWidths: Record<string, string> = {
+    name: "m",
+    description: "xl",
+    providermodule: "l"
+  };
 
   smsDataSource = computed(() => {
     const gateways = this.smsGatewayService.smsGateways();

@@ -43,21 +43,26 @@ import {
 } from "@services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so the columns line up on the same scale other tables use and the table-state placeholder
+// (see table-width() in table.scss) can be sized from the same numbers.
 const columnKeysMap = [
-  { key: "timestamp", label: $localize`:@@token.timestamp:Timestamp` },
-  { key: "serial", label: $localize`:@@common.serial:Serial` },
-  { key: "transaction_id", label: $localize`:@@token.transactionId:Transaction ID` },
-  { key: "expiration", label: $localize`:@@token.expiration:Expiration` },
-  { key: "otp_received", label: $localize`:@@token.received:Received` }
+  { key: "timestamp", label: $localize`:@@token.timestamp:Timestamp`, width: "l" },
+  { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+  { key: "transaction_id", label: $localize`:@@token.transactionId:Transaction ID`, width: "l" },
+  { key: "expiration", label: $localize`:@@token.expiration:Expiration`, width: "l" },
+  { key: "otp_received", label: $localize`:@@token.received:Received`, width: "s" }
 ];
 
 @Component({
   selector: "app-challenges-table",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginatorModule,
     MatFormFieldModule,
@@ -107,11 +112,14 @@ export class ChallengesTableComponent {
       this.challengesService.challengesResource.hasValue()
         ? this.challengesService.challengesResource.value()
         : undefined,
-    computation: (challengesResource) => {
+    computation: (challengesResource, previous) => {
       if (challengesResource) {
         return new MatTableDataSource(challengesResource.result?.value?.challenges);
       }
-      return new MatTableDataSource<Challenge>([]);
+      // A reload in flight clears the resource value before the new response arrives - keep
+      // showing the previous rows instead of flashing empty, now that the table itself stays
+      // mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<Challenge>([]);
     }
   });
   readonly tableState = new TableState({

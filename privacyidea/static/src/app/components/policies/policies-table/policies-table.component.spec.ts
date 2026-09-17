@@ -113,17 +113,30 @@ describe("PoliciesTableComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("stands the state panel in for the table while the policies are still loading", () => {
-    // A table of placeholder rows is shaped like data, so ending the load on the empty panel reads
-    // as rows arriving and then being taken away. The panel speaks for the load instead.
+  it("stands the state panel in for the table while the policies are still loading for the first time", () => {
+    // A fresh fixture: the resource has never resolved yet, unlike the shared one above (which
+    // beforeEach already resolves once) - this is what a genuine first load looks like.
     mockPolicyService.allPolicies.set([]);
+    mockPolicyService.allPoliciesResource.value.set(undefined);
+    const freshFixture = TestBed.createComponent(PoliciesTableComponent);
+    freshFixture.detectChanges();
+
+    expect(freshFixture.componentInstance.tableState.status()).toBe("loading");
+    expect(freshFixture.componentInstance.tableState.showTable()).toBe(false);
+    expect(freshFixture.debugElement.queryAll(By.css("tr[mat-row]")).length).toBe(0);
+    expect(freshFixture.debugElement.query(By.css("mat-progress-spinner"))).toBeTruthy();
+  });
+
+  it("keeps showing the already-loaded rows while a reload is in flight, instead of blanking to the loading panel", () => {
+    // Angular's httpResource clears hasValue() the instant a reload starts (a filter/page/sort
+    // change), well before the new response arrives - this must not be mistaken for "never loaded"
+    // and tear the table (and the currently-focused filter input) down from under the user.
     mockPolicyService.allPoliciesResource.value.set(undefined);
     fixture.detectChanges();
 
-    expect(component.tableState.status()).toBe("loading");
-    expect(component.tableState.showTable()).toBe(false);
-    expect(fixture.debugElement.queryAll(By.css("tr[mat-row]")).length).toBe(0);
-    expect(fixture.debugElement.query(By.css("mat-progress-spinner"))).toBeTruthy();
+    expect(component.tableState.status()).toBe("ready");
+    expect(component.tableState.showTable()).toBe(true);
+    expect(fixture.debugElement.queryAll(By.css("tr[mat-row]")).length).toBe(mockPolicies.length);
   });
 
   it("should display all rows when policies are present", () => {

@@ -15,13 +15,23 @@
   flex-direction: column;
   // Width is fixed to the rendered top-row width by the component (see
   // fitWidthToTopRow) so the panel hugs the cards with no trailing whitespace.
-  // Falls back to the full available width until that measurement runs.
-  width: 100%;
+  // Falls back to a representative width (the default status+counters+user top
+  // row) until that measurement runs, so the loading placeholder below is not
+  // narrower than the loaded page.
+  width: table.details-panel-width(s, m, m);
   height: 100%;
 
   .mat-mdc-select-value-text {
     font-size: 14px;
   }
+}
+
+// The pre-data state: the same fallback width as .details-container above, just
+// centering the spinner in it meanwhile.
+.details-container--loading {
+  align-items: center;
+  justify-content: center;
+  min-height: 15rem;
 }
 
 .details-header h3 {

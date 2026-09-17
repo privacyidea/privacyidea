@@ -25,6 +25,7 @@
     [showClearButton]="!isEmpty()">
     <input
       #filterHTMLInputElement
+      [appRefocusAfterReload]="isLoading()"
       (input)="onFilterChange($event)"
       [value]="filter().rawValue"
       aria-label="Filter Input"

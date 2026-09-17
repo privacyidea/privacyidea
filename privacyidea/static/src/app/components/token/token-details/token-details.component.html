@@ -16,6 +16,22 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
+@if (showInitialLoading()) {
+  <!-- Shares the .details-container class so it renders at close to the width the loaded page will
+    take (via details-panel-width fallback below), rather than a narrower box that jumps wider once
+    the top-row measurement (fitWidthToTopRow) runs. -->
+  <div
+    aria-label="Details"
+    class="details-container details-container--loading"
+    i18n-aria-label="@@common.details"
+    role="status">
+    <mat-progress-spinner
+      [diameter]="40"
+      aria-label="Loading"
+      i18n-aria-label="@@common.loading"
+      mode="indeterminate" />
+  </div>
+} @else {
 <div
   #scrollContainer
   appScrollToTop
@@ -224,3 +240,4 @@
       [undeletableInfoKeys]="undeletableInfoKeys"></app-token-details-info>
   </div>
 </div>
+}
