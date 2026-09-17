@@ -33,6 +33,7 @@
           [showClearButton]="tokenService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="tokenResource.isLoading()"
             [appFilterAutocomplete]="filterKeywords"
             (input)="onFilterInput($event)"
             (keyup.enter)="tokenService.applyFilterInput($event)"
@@ -56,7 +57,7 @@
       <button
         [matMenuTriggerFor]="advancedFilterMenu"
         aria-label="More Filter"
-        class="filter-button"
+        class="margin-left-8"
         i18n-aria-label="@@common.moreFilter"
         i18n-matTooltip="@@common.moreFilter"
         mat-icon-button
@@ -101,10 +102,11 @@
             } @else {
               <th
                 *matHeaderCellDef
+                [ngClass]="'col-width-' + column.width"
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
-                  <div class="margin-left-16 flex">
+                  <div class="flex">
                     @if (
                       apiFilterKeyMap[column.key] && tokenService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
                     ) {
@@ -158,12 +160,8 @@
             }
             <td
               *matCellDef="let tokenDetails"
-              [ngClass]="{
-                'table-checkbox': column.key === 'select',
-                'width-300': column.key === 'description',
-                'container_serial-width': column.key === 'container_serial'
-              }"
-              class="max-width-300"
+              [class.table-checkbox]="column.key === 'select'"
+              [ngClass]="column.key === 'select' ? null : 'col-width-' + column.width"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {

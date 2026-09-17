@@ -16,13 +16,28 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  #scrollContainer
-  appScrollToTop
-  aria-label="Conditional-Access Policy Editor"
-  class="edit-policy-layout"
-  i18n-aria-label>
-  <div class="edit-policy-container">
+@if (showInitialLoading()) {
+  <!-- Shares the .edit-policy-layout class so it renders at exactly the width the loaded form
+    will take, rather than a narrower box that jumps wider once the policy arrives. -->
+  <div
+    aria-label="Conditional-Access Policy Editor"
+    class="edit-policy-layout edit-policy-layout--loading"
+    i18n-aria-label
+    role="status">
+    <mat-progress-spinner
+      [diameter]="40"
+      aria-label="Loading"
+      i18n-aria-label="@@common.loading"
+      mode="indeterminate" />
+  </div>
+} @else {
+  <div
+    #scrollContainer
+    appScrollToTop
+    aria-label="Conditional-Access Policy Editor"
+    class="edit-policy-layout"
+    i18n-aria-label>
+    <div class="edit-policy-container">
     <h3 class="margin-8 flex-row flex-nowrap ali-center">
       <span class="ca-policy-title-text">{{ title() }}</span>
       @if (!isNewPolicy()) {
@@ -363,5 +378,6 @@
       [stages]="editPolicy().stages"
       [target]="editPolicy().target"
       (stagesChange)="onStagesChange($event)" />
+    </div>
   </div>
-</div>
+}

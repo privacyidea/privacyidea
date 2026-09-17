@@ -32,6 +32,7 @@ import {
   WritableSignal
 } from "@angular/core";
 import { MatButton } from "@angular/material/button";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { Router, RouterLink } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
@@ -104,6 +105,7 @@ import {
     TokenDetailsMachineComponent,
     DetailsHeaderComponent,
     OverflowNavDirective,
+    MatProgressSpinner,
     CertificateDataComponent
   ],
   providers: [DetailsEditRegistry],
@@ -151,6 +153,9 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
     return true;
   });
   tokenDetailResource = this.tokenService.tokenDetailResource;
+  protected readonly showInitialLoading = computed(
+    () => this.tokenDetailResource.isLoading() && !this.tokenDetailResource.hasValue()
+  );
   tokenDetails: WritableSignal<TokenDetails> = linkedSignal({
     source: () => (this.tokenDetailResource.hasValue() ? this.tokenDetailResource.value() : undefined),
     computation: (tokenDetailResource) => {

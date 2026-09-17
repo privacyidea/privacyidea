@@ -31,6 +31,7 @@
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="tokengroupService.tokengroupResource.isLoading()"
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
@@ -96,6 +97,7 @@
       <ng-container matColumnDef="id">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['id']"
           i18n="@@common.idColumn"
           mat-header-cell
           mat-sort-header
@@ -103,6 +105,7 @@
         >
         <td
           *matCellDef="let group"
+          [ngClass]="'col-width-' + columnWidths['id']"
           mat-cell>
           {{ group.id }}
         </td>
@@ -111,6 +114,7 @@
       <ng-container matColumnDef="groupname">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['groupname']"
           i18n="@@common.name"
           mat-header-cell
           mat-sort-header
@@ -118,6 +122,7 @@
         >
         <td
           *matCellDef="let group"
+          [ngClass]="'col-width-' + columnWidths['groupname']"
           mat-cell>
           <app-copyable [copyText]="group.groupname">
             <a
@@ -135,6 +140,7 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['description']"
           i18n="@@common.description"
           mat-header-cell
           mat-sort-header
@@ -142,6 +148,7 @@
         >
         <td
           *matCellDef="let group"
+          [ngClass]="'col-width-' + columnWidths['description']"
           mat-cell>
           {{ group.description }}
         </td>

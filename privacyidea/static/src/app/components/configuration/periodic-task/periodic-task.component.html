@@ -35,6 +35,7 @@
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="periodicTaskService.periodicTasksResource.isLoading()"
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
@@ -81,6 +82,7 @@
       <ng-container matColumnDef="select">
         <th
           *matHeaderCellDef
+          class="table-checkbox"
           mat-header-cell>
           <mat-checkbox
             (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
@@ -92,6 +94,7 @@
         </th>
         <td
           *matCellDef="let task"
+          class="table-checkbox"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(task, $event.checked)"
@@ -106,6 +109,7 @@
       <ng-container matColumnDef="name">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['name']"
           i18n="@@common.name"
           mat-header-cell
           mat-sort-header
@@ -113,6 +117,7 @@
         >
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['name']"
           mat-cell>
           <app-copyable [copyText]="task.name">
             <a
@@ -131,6 +136,7 @@
       <ng-container matColumnDef="taskmodule">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['taskmodule']"
           i18n="@@periodicTask.taskModule"
           mat-header-cell
           mat-sort-header
@@ -138,6 +144,7 @@
         >
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['taskmodule']"
           mat-cell>
           {{ getModuleLabel(task.taskmodule) }}
         </td>
@@ -146,6 +153,7 @@
       <ng-container matColumnDef="interval">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['interval']"
           i18n="@@periodicTask.interval"
           mat-header-cell
           mat-sort-header
@@ -153,6 +161,7 @@
         >
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['interval']"
           mat-cell>
           {{ task.interval }}
         </td>
@@ -161,6 +170,7 @@
       <ng-container matColumnDef="nodes">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['nodes']"
           i18n="@@periodicTask.nodes"
           mat-header-cell
           mat-sort-header
@@ -168,6 +178,7 @@
         >
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['nodes']"
           mat-cell>
           {{ Array.isArray(task.nodes) ? task.nodes.join(", ") : task.nodes }}
         </td>
@@ -176,6 +187,7 @@
       <ng-container matColumnDef="options">
         <th
           *matHeaderCellDef
+          class="column-max-width"
           i18n="@@common.options"
           mat-header-cell
           >Options</th
@@ -203,6 +215,7 @@
       <ng-container matColumnDef="active">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['active']"
           i18n="@@common.active"
           mat-header-cell
           mat-sort-header
@@ -210,6 +223,7 @@
         >
         <td
           *matCellDef="let task"
+          [ngClass]="'col-width-' + columnWidths['active']"
           mat-cell>
           <mat-slide-toggle
             i18n-matTooltip="@@common.toggleActiveStatus"
