@@ -8,6 +8,16 @@
     ".conditional-access-table-filter",
     ".table-scroll-container"
   );
+  // Approximates the table's real row width for the empty/error/loading state: select (48px),
+  // priority (140px), time-window (146px) and stages (72px, a single digit column narrower than
+  // any col-width-* tier) are fixed pixel columns; the rest are generous col-width-* tiers, since
+  // none of them carry a fixed width of their own today.
+  @include table.page-table-state-size(
+    calc(
+      48px + var(--column-width-l) + 140px + 146px + var(--column-width-l) + 72px + var(--column-width-s) +
+        var(--column-width-l) + 91px + 91px
+    )
+  );
 }
 
 .actions-container {

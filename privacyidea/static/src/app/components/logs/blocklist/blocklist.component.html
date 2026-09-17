@@ -28,6 +28,7 @@
         (clearButtonClick)="clearFilter()"
         [showClearButton]="filterText().length > 0">
         <input
+          [appRefocusAfterReload]="casService.blocklistResource.isLoading()"
           (input)="handleFilterInput($event)"
           [value]="filterText()"
           aria-label="Filter Input"

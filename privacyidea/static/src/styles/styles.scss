@@ -4,12 +4,13 @@
 @use "@angular/material/core/style/elevation" as mat-elevation;
 @use "theme";
 @use "material-icons/iconfont/material-icons.scss";
-@forward "table" show base-table-structure;
 @forward "cards";
 
 @include meta.load-css("mixins.scss");
 @include meta.load-css("badges.scss");
-@include meta.load-css("buttons.scss");
+:root {
+  @include meta.load-css("buttons.scss");
+}
 @include meta.load-css("dialog.scss");
 @include meta.load-css("enroll.scss");
 @include meta.load-css("info.scss");
@@ -76,6 +77,15 @@ body {
   --card-width-m: 518px;
   --card-width-l: 696px;
   --card-width-xl: 874px;
+
+  // Table column widths, applied via the col-width-* utility classes below (or table.column-width()
+  // for a component-scoped rule): s fits a short code or badge (the checkbox column has its own
+  // fixed 42px via .table-checkbox instead of a tier), m the existing 170px convention (e.g. a
+  // serial), l/xl the existing 240/300px conventions (e.g. a wrapped description).
+  --column-width-s: 140px;
+  --column-width-m: 190px;
+  --column-width-l: 240px;
+  --column-width-xl: 290px;
 
   // Pre-baked Material elevation shadows (0..24) as CSS variables.
   // Generated at build time so that elevation can be re-skinned at runtime
@@ -859,6 +869,30 @@ $corner-radii: (
   max-width: 300px;
 }
 
+// Standardized table column width tiers (analogous to the card-width-* tiers above): a column opts
+// into one via a col-width-{size} class on its cell instead of a one-off pixel value, so every
+// table's columns - and the table-state placeholder sized from them (see table.table-width()) -
+// draw from the same scale.
+.col-width-s {
+  width: var(--column-width-s);
+  max-width: var(--column-width-s);
+}
+
+.col-width-m {
+  width: var(--column-width-m);
+  max-width: var(--column-width-m);
+}
+
+.col-width-l {
+  width: var(--column-width-l);
+  max-width: var(--column-width-l);
+}
+
+.col-width-xl {
+  width: var(--column-width-xl);
+  max-width: var(--column-width-xl);
+}
+
 .copy-button {
   background: unset;
   border: unset;
@@ -1046,6 +1080,11 @@ tr.mat-mdc-row {
     --copy-button-opacity: 1;
     --filter-button-opacity: 1;
   }
+}
+
+.multiline-tooltip {
+  white-space: pre-line;
+  text-align: left;
 }
 
 // Panel class set by the shared app-multi-select-filter component. Its options can be long, so let the menu grow to

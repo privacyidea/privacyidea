@@ -30,6 +30,7 @@
           [showClearButton]="auditService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="auditService.auditResource.isLoading()"
             [appFilterAutocomplete]="auditService.apiFilterKeys"
             (input)="auditService.handleFilterInput($event)"
             [value]="auditService.filterDraft().value"
@@ -75,6 +76,7 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              [ngClass]="column.width ? 'col-width-' + column.width : 'col-width-flex'"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
@@ -83,7 +85,7 @@
                     column.key
                   )
                 ) {
-                  <div class="margin-left-16">
+                  <div class="flex">
                     <button
                       (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                       aria-label="Filter by {{ column.label }}"
@@ -100,9 +102,7 @@
             </th>
             <td
               *matCellDef="let element; let row"
-              [ngClass]="{
-                'table-checkbox': column.key === 'select'
-              }"
+              [ngClass]="column.width ? 'col-width-' + column.width : 'col-width-flex'"
               mat-cell>
               <div>
                 @switch (getCellRenderType(column.key)) {

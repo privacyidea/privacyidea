@@ -31,6 +31,7 @@
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="smtpService.smtpServerResource.isLoading()"
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
@@ -96,6 +97,7 @@
       <ng-container matColumnDef="identifier">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@common.identifier"
           mat-header-cell
           mat-sort-header
@@ -103,6 +105,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-m"
           mat-cell>
           <app-copyable [copyText]="server.identifier">
             <a
@@ -120,6 +123,7 @@
       <ng-container matColumnDef="server">
         <th
           *matHeaderCellDef
+          class="col-width-l"
           i18n="@@common.ipFqdnColumn"
           mat-header-cell
           mat-sort-header
@@ -127,6 +131,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-l"
           mat-cell>
           {{ server.server }}:{{ server.port }}
         </td>
@@ -135,6 +140,7 @@
       <ng-container matColumnDef="sender">
         <th
           *matHeaderCellDef
+          class="col-width-l"
           i18n="@@smtpServer.sender"
           mat-header-cell
           mat-sort-header
@@ -142,6 +148,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-l"
           mat-cell>
           {{ server.sender }}
         </td>
@@ -150,6 +157,7 @@
       <ng-container matColumnDef="tls">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           i18n="@@smtpServer.starttls"
           mat-header-cell
           mat-sort-header
@@ -157,6 +165,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-s"
           mat-cell>
           <div class="flex just-center">
             @if (server.tls) {
@@ -169,6 +178,7 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
+          class="col-width-xl"
           i18n="@@common.description"
           mat-header-cell
           mat-sort-header
@@ -176,6 +186,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-xl"
           mat-cell>
           {{ server.description }}
         </td>

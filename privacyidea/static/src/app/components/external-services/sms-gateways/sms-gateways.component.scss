@@ -5,7 +5,16 @@
 .sms-gateways-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".sms-gateways-table", ".table-filter", ".table-scroll-container");
-  @include table.page-table-state-size;
+  // Sized from the same col-width-* tiers the columns below use (select checkbox + name m +
+  // description xl + providermodule s).
+  @include table.page-table-state-size(table.table-width(checkbox, m, xl, l));
+
+  // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead
+  // of holding it steady; fixed makes the header row's declared widths authoritative.
+  .sms-gateways-table {
+    table-layout: fixed;
+    width: auto;
+  }
 }
 
 .actions-container {

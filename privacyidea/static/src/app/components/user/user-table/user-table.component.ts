@@ -47,6 +47,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { NgClass } from "@angular/common";
 import { MatIconButton } from "@angular/material/button";
@@ -69,16 +70,19 @@ import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_
 import { TableState } from "@core/models/table_state/table-state";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so a table.page-table-state-size(table.table-width(...)) call in the .scss listing the same tiers
+// (see table-width() in table.scss) can be sized from the same numbers.
 const columnKeysMap = [
-  { key: "username", label: $localize`:@@common.username:Username` },
-  { key: "userid", label: $localize`:@@common.userId:User ID` },
-  { key: "givenname", label: $localize`:@@user.givenName:Given Name` },
-  { key: "surname", label: $localize`:@@user.surname:Surname` },
-  { key: "email", label: $localize`:@@common.email:Email` },
-  { key: "phone", label: $localize`:@@user.phone:Phone` },
-  { key: "mobile", label: $localize`:@@user.mobile:Mobile` },
-  { key: "description", label: $localize`:@@common.description:Description` },
-  { key: "resolver", label: $localize`:@@common.resolver:Resolver` }
+  { key: "username", label: $localize`:@@common.username:Username`, width: "m" },
+  { key: "userid", label: $localize`:@@common.userId:User ID`, width: "s" },
+  { key: "givenname", label: $localize`:@@user.givenName:Given Name`, width: "s" },
+  { key: "surname", label: $localize`:@@user.surname:Surname`, width: "s" },
+  { key: "email", label: $localize`:@@common.email:Email`, width: "l" },
+  { key: "phone", label: $localize`:@@user.phone:Phone`, width: "m" },
+  { key: "mobile", label: $localize`:@@user.mobile:Mobile`, width: "m" },
+  { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+  { key: "resolver", label: $localize`:@@common.resolver:Resolver`, width: "m" }
 ];
 
 // Per-column predicates for the free-text search: a term matches if it is a substring of any column.
@@ -98,6 +102,7 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
 @Component({
   selector: "app-user-table",
   imports: [
+    RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatCell,
     MatCellDef,

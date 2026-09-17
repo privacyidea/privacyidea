@@ -14,8 +14,12 @@
 
 .policies-table-layout {
   @include styles.main-component-style;
-  @include table.page-table-state-size;
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
+  // Sized from the col-width-* tiers the columns below use (select checkbox + priority s + name m +
+  // scope s + description xl + active s), plus the actions/conditions columns' own current widths
+  // (no fixed width for actions + 400 for conditions), since those two are a list that can badly
+  // overflow and are deliberately left without a tier.
+  @include table.page-table-state-size(calc(#{table.table-width(checkbox, s, l, s, xl, s)} + 400px));
 
   & {
     display: flex;
@@ -32,17 +36,6 @@
     border-collapse: collapse;
     table-layout: auto;
     width: 100%;
-
-    // Reset global column striping
-    td:nth-child(even),
-    th:nth-child(even) {
-      background: transparent;
-    }
-
-    // Apply row striping (zebra)
-    tr:nth-child(even) {
-      background-color: var(--mat-sys-surface-variant);
-    }
 
     th,
     td {
@@ -111,8 +104,6 @@
     }
 
     td.col-description {
-      max-width: 400px;
-      min-width: 200px;
       padding-bottom: 8px;
       padding-top: 8px;
       white-space: normal;

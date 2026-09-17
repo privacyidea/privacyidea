@@ -129,7 +129,13 @@ export class ContentService implements ContentServiceInterface {
     source: this.routeUrl,
     computation: (url, previous) => {
       if (url.startsWith(ROUTE_PATHS.CONTAINERS_DETAILS)) {
-        return previous?.value ?? "";
+        // Read the serial from the URL itself rather than carrying the previous value forward: a
+        // browser back/forward navigation changes routeUrl without ever going through
+        // navigateContainerDetails, whose explicit .set() is the only place that used to update this.
+        // Falling back to "previous" left the signal stuck at "" once a back-then-forward passed
+        // through a route this branch does not match, forever short-circuiting the details resource.
+        const encoded = url.slice(ROUTE_PATHS.CONTAINERS_DETAILS.length).split(/[?#]/)[0];
+        return encoded ? decodeURIComponent(encoded) : (previous?.value ?? "");
       }
       return "";
     }

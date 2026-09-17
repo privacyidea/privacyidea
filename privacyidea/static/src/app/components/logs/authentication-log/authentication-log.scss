@@ -8,6 +8,14 @@
     ".authentication-log-table-filter",
     ".table-scroll-container"
   );
+  // Sized from the col-width-* tiers the columns below use (timestamp m + attempt_id s + event_type l +
+  // reason l + username m + realm s + source_ip m + client_label l + endpoint m + serial m +
+  // transaction_id m + conditional_access_outcomes xl), plus a flat 300px for other_info, which claims
+  // that width only once the current page has something to show (see columnWidthClass) and is
+  // deliberately left without a static tier.
+  @include table.page-table-state-size(
+    calc(#{table.table-width(m, s, l, l, m, s, m, l, m, m, m, xl)} + 300px)
+  );
   // Flex column so the filter row + paginator stay pinned and only the
   // .table-scroll-region (flex: 1 1 auto, overflow: auto) scrolls — both
   // vertically (with a sticky header row) and horizontally, as one unit.
@@ -16,13 +24,11 @@
   flex-direction: column;
   overflow: hidden;
 
-  // Keep columns on a single line so the table grows past the region width
-  // (rather than wrapping to fit) and the region scrolls horizontally.
+  // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead
+  // of holding it steady (see the audit table's own fix for the same issue); fixed makes the header row's
+  // declared widths authoritative.
   .authentication-log-table {
-    th,
-    td {
-      white-space: nowrap;
-    }
+    table-layout: fixed;
   }
 }
 
@@ -38,11 +44,13 @@
 
 // Long values clipped so they cannot widen the table, paired with one of the width classes below (see
 // TRUNCATED_COLUMN_CLASSES). A flex item of the copyable row, hence the explicit min-width: 0 to let it shrink below
-// its content.
+// its content. white-space: nowrap is needed on the element itself now that the table no longer forces it table-wide
+// (see table-layout: fixed above) - without it the ellipsis never triggers, the text just wraps instead.
 .cell-truncate {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 // The opaque ids (32 hex chars for an attempt, 20 digits for a transaction): their leading characters already tell rows

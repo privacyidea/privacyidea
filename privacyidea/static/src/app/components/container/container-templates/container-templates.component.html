@@ -25,6 +25,7 @@
       <app-container-templates-filter
         class="container-templates-table-filter"
         [initialFilter]="filter()"
+        [isLoading]="containerTemplateService.templatesResource.isLoading()"
         (filterChange)="onFilterChange($event)">
       </app-container-templates-filter>
       <mat-paginator
@@ -48,7 +49,8 @@
       <ng-container matColumnDef="select">
         <th
           mat-header-cell
-          *matHeaderCellDef>
+          *matHeaderCellDef
+          class="table-checkbox">
           <mat-checkbox
             (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
             [checked]="selector.allRowsSelected()"
@@ -60,7 +62,8 @@
         </th>
         <td
           mat-cell
-          *matCellDef="let row">
+          *matCellDef="let row"
+          class="table-checkbox">
           <mat-checkbox
             (click)="$event.stopPropagation()"
             (change)="selector.setRowSelected(row, $event.checked)"
@@ -78,7 +81,8 @@
             *matHeaderCellDef
             mat-sort-header
             [disabled]="!column.value.sortable || containerTemplateService.templates().length === 0"
-            [class]="'col-' + column.key">
+            [class]="'col-' + column.key"
+            [ngClass]="column.value.width ? 'col-width-' + column.value.width : 'col-width-flex'">
             <div class="table-header-container">
               @if (column.value.label) {
                 <div>{{ column.value.label }}</div>
@@ -116,7 +120,8 @@
           <td
             mat-cell
             *matCellDef="let template"
-            [class]="'col-' + column.key">
+            [class]="'col-' + column.key"
+            [ngClass]="column.value.width ? 'col-width-' + column.value.width : 'col-width-flex'">
             @if (template.name) {
               @switch (column.key) {
                 @case ("name") {

@@ -1,6 +1,3 @@
-@use "styles";
-@use "table";
-
 .copy-button {
   // Visibility hook: a parent can hide/reveal the copy button by setting --copy-button-opacity on an ancestor
   // (custom properties cross the component boundary). Defaults to fully visible.

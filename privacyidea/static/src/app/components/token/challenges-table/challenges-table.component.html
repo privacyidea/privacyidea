@@ -31,6 +31,7 @@
           [showClearButton]="challengesService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="challengesService.challengesResource.isLoading()"
             (input)="challengesService.handleFilterInput($event)"
             [value]="challengesService.filterDraft().filterString"
             i18n-placeholder="@@token.exampleQueryTransaction"
@@ -63,10 +64,11 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              [ngClass]="'col-width-' + column.width"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
-                <div class="margin-left-16 flex">
+                <div class="flex">
                   @if (apiFilterKeys.includes(column.key)) {
                     <button
                       (click)="onKeywordClick(column.key)"
@@ -94,6 +96,7 @@
             </th>
             <td
               *matCellDef="let element"
+              [ngClass]="'col-width-' + column.width"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {

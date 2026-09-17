@@ -40,6 +40,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { NgClass } from "@angular/common";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -65,24 +66,28 @@ import { StringUtils } from "@utils/string.utils";
 import { ROLLOUT_STATE_VALUES, valueDisplayLabel } from "@utils/value-label.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so the columns line up on the same scale other tables use and the table-state placeholder
+// (see table-width() in table.scss) can be sized from the same numbers.
 const columnKeysMap = [
-  { key: "select", label: "" },
-  { key: "serial", label: $localize`:@@common.serial:Serial` },
-  { key: "tokentype", label: $localize`:@@common.type:Type` },
-  { key: "active", label: $localize`:@@common.active:Active` },
-  { key: "description", label: $localize`:@@common.description:Description` },
-  { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter` },
-  { key: "rollout_state", label: $localize`:@@token.rolloutState:Rollout State` },
-  { key: "username", label: $localize`:@@common.user:User` },
-  { key: "user_realm", label: $localize`:@@common.userRealm:User Realm` },
-  { key: "realms", label: $localize`:@@token.tokenRealm:Token Realm` },
-  { key: "container_serial", label: $localize`:@@common.container:Container` }
+  { key: "select", label: "", width: "s" },
+  { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+  { key: "tokentype", label: $localize`:@@common.type:Type`, width: "s" },
+  { key: "active", label: $localize`:@@common.active:Active`, width: "s" },
+  { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+  { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter`, width: "s" },
+  { key: "rollout_state", label: $localize`:@@token.rolloutState:Rollout State`, width: "s" },
+  { key: "username", label: $localize`:@@common.user:User`, width: "s" },
+  { key: "user_realm", label: $localize`:@@common.userRealm:User Realm`, width: "s" },
+  { key: "realms", label: $localize`:@@token.tokenRealm:Token Realm`, width: "s" },
+  { key: "container_serial", label: $localize`:@@common.container:Container`, width: "m" }
 ];
 
 @Component({
   selector: "app-token-table",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,
     MatFormFieldModule,
@@ -184,7 +189,7 @@ export class TokenTableComponent implements OnDestroy {
   });
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () => ({ value: this.tokenService.tokenResourceValue(), error: this.tokenResource.error() }),
-    computation: (src) => {
+    computation: (src, previous) => {
       // tokenlist only exists in the admin scope, so a self-service user must not be gated on it -
       // the same guard the token service applies before loading.
       const deniedForAdmin = this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist");
@@ -194,7 +199,10 @@ export class TokenTableComponent implements OnDestroy {
       if (src.value) {
         return new MatTableDataSource(src.value.tokens);
       }
-      return new MatTableDataSource<TokenDetails>([]);
+      // A reload in flight (filter/page/sort change) clears the resource value before the new
+      // response arrives - keep showing the previous rows instead of flashing empty, now that the
+      // table itself stays mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<TokenDetails>([]);
     }
   });
   totalLength: WritableSignal<number> = linkedSignal({

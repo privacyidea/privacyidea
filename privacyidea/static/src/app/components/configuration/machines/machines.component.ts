@@ -26,6 +26,7 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -45,6 +46,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-machines",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
