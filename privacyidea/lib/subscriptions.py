@@ -36,7 +36,7 @@ import time
 import traceback
 
 import requests
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, true, update
 
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.config import get_from_config, set_privacyidea_config
@@ -320,16 +320,18 @@ def get_users_with_active_tokens():
     :rtype: int
     """
     from privacyidea.models import Token, TokenOwner
+    # The distinct pairs are counted by the database. Fetching them and taking len() ships
+    # one row per user to the application on a query that runs on the authentication path.
+    # ``Token.active == true()`` rather than ``Token.active.is_(True)``: Oracle has no
+    # boolean type, and "IS 1" is not valid SQL there (ORA-00908).
     stmt = (
         select(TokenOwner.resolver, TokenOwner.user_id)
         .select_from(TokenOwner)
         .join(Token, Token.id == TokenOwner.token_id)
-        .where(Token.active.is_(True))
+        .where(Token.active == true())
         .distinct()
     )
-    result = db.session.execute(stmt)
-    rows = result.all()
-    return len(rows)
+    return db.session.execute(select(func.count()).select_from(stmt.subquery())).scalar_one()
 
 
 class SubscriptionState(str, enum.Enum):
