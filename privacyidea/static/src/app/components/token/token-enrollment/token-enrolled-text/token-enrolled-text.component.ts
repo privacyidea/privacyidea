@@ -38,10 +38,15 @@ export class TokenEnrolledTextComponent {
   userRealm = input<string>();
   onlyAddToRealm = input<boolean>();
   rollover = input<boolean>(false);
+  /**
+   * Set while the surrounding dialog refuses to close, because it shows data that cannot be
+   * retrieved again. Following a link would close it, so the links are inert until then.
+   */
+  navigationBlocked = input<boolean>(false);
   switchRoute = output();
 
   tokenSelected() {
-    if (!this.serial()) {
+    if (this.navigationBlocked() || !this.serial()) {
       return;
     }
     this.switchRoute.emit();
@@ -49,7 +54,7 @@ export class TokenEnrolledTextComponent {
   }
 
   natigateContainerDetails() {
-    if (!this.containerSerial()) {
+    if (this.navigationBlocked() || !this.containerSerial()) {
       return;
     }
     this.switchRoute.emit();
@@ -57,7 +62,7 @@ export class TokenEnrolledTextComponent {
   }
 
   navigateUserDetails() {
-    if (!this.username() || !this.userRealm()) {
+    if (this.navigationBlocked() || !this.username() || !this.userRealm()) {
       return;
     }
     this.switchRoute.emit();
@@ -65,6 +70,9 @@ export class TokenEnrolledTextComponent {
   }
 
   navigateRealms() {
+    if (this.navigationBlocked()) {
+      return;
+    }
     this.switchRoute.emit();
     this.contentService.router.navigateByUrl(ROUTE_PATHS.USERS_REALMS);
   }

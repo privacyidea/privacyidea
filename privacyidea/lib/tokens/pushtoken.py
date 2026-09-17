@@ -119,6 +119,16 @@ AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
 DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
+# Caps bound each field's raw character count, but json.dumps(ensure_ascii=True), the encoding
+# Challenge.set_data encrypts, blows up non-ASCII chars to \uXXXX and hexlify then roughly
+# doubles that. So these alone don't bound the stored size; _fit_notification_to_storage_budget
+# enforces the actual encoded size as a safety net.
+MAX_CLIENT_TAG_LENGTH = 256
+MAX_STORED_QUESTION_LENGTH = 512
+MAX_STORED_TITLE_LENGTH = 128
+# Budget for len(json.dumps(data)): Challenge._data holds 2000 hex chars (32-char IV + ':' +
+# 2 hex/byte), leaving ~970 plaintext bytes. kept lower for the fixed fields and AES padding.
+MAX_NOTIFICATION_JSON_LENGTH = 900
 # The decline reasons this server version understands. A signed but unrecognized
 # reason still declines, but is logged as app/server vocabulary drift.
 KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
@@ -283,28 +293,68 @@ def _get_presence_options(options) -> list:
     return available_presence_options
 
 
-def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: str, private_key_pem: str,
-                           options: dict, presence_options: list = None) -> dict:
+def _truncate_with_log(value: str, max_length: int, label: str) -> str:
     """
-    Create the dictionary to be sent to the smartphone as challenge
+    Truncate ``value`` to ``max_length`` characters, logging a debug message naming
+    ``label`` if it actually had to be cut.
+    """
+    if len(value) > max_length:
+        log.debug(f"Truncating {label} from {len(value)} to {max_length} characters.")
+        return value[:max_length]
+    return value
 
-    :param token: The token object for which to create the smartphone data
-    :type token: A tokenclass object
-    :param challenge: base32 encoded random data string
-    :type challenge: str
-    :param registration_url: The privacyIDEA URL, to which the Push token communicates
-    :type registration_url: str
-    :param options: the options dictionary
-    :type options: dict
-    :param presence_options: Require the user to confirm with the correct button from the list of options.
-    :type presence_options: list
-    :return: the created smartphone_data dictionary
-    :rtype: dict
+
+def _fit_notification_to_storage_budget(data: dict) -> dict:
     """
-    sslverify = get_action_values_from_options(SCOPE.AUTH, PushAction.SSL_VERIFY,
-                                               options) or "1"
-    if sslverify not in ["0", "1"]:
-        sslverify = "1"
+    Make sure the JSON encoding of ``data``, the same encoding Challenge.set_data encrypts
+    and stores, stays within MAX_NOTIFICATION_JSON_LENGTH. The per-field character caps
+    applied before this point do not bound that encoded size, since json.dumps escapes every
+    non-ASCII character to a \\uXXXX sequence. This is the safety net: it truncates the
+    question, the largest variable-length field, as far as still necessary.
+
+    :param data: the challenge data, with "notification" already set
+    :return: the (possibly further truncated) data dict
+    """
+    notification = data.get("notification")
+    if not notification:
+        return data
+    encoded_length = len(json.dumps(data))
+    if encoded_length <= MAX_NOTIFICATION_JSON_LENGTH:
+        return data
+    overshoot = encoded_length - MAX_NOTIFICATION_JSON_LENGTH
+
+    question = notification.get("question", "")
+    question_cut = min(overshoot, len(question))
+    if question_cut:
+        new_length = len(question) - question_cut
+        log.warning(f"Challenge notification still exceeds the storage budget after per-field "
+                    f"truncation ({encoded_length} > {MAX_NOTIFICATION_JSON_LENGTH} encoded chars). "
+                    f"Truncating the question from {len(question)} to {new_length} characters.")
+        notification["question"] = question[:new_length]
+    overshoot -= question_cut
+
+    if overshoot:
+        title = notification.get("title", "")
+        new_length = max(0, len(title) - overshoot)
+        log.warning(f"Challenge notification still exceeds the storage budget after truncating "
+                    f"the question ({encoded_length} > {MAX_NOTIFICATION_JSON_LENGTH} encoded chars). "
+                    f"Truncating the title from {len(title)} to {new_length} characters.")
+        notification["title"] = title[:new_length]
+
+    return data
+
+
+def _build_mobile_notification(token: TokenClass, options: dict) -> dict:
+    """
+    Build the notification the user sees on the smartphone: the question from the
+    push_text_on_mobile policy with its tags filled in, and the title. Needs the request
+    of the authenticating client, so it only yields the client's tags while that request
+    is being handled.
+
+    :param token: The token object for which to build the notification
+    :param options: the options dictionary
+    :return: a dict with the keys "question" and "title"
+    """
     default_message = str(DEFAULT_MOBILE_TEXT)
 
     message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
@@ -336,6 +386,8 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
                            recipient={"givenname": user.info.get("givenname") if user else "",
                                       "surname": user.info.get("surname") if user else ""},
                            challenge=options.get("challenge"))
+    for tag in ("ua_string", "ua_browser", "action"):
+        tags[tag] = _truncate_with_log(tags[tag], MAX_CLIENT_TAG_LENGTH, f"tag {tag!r}")
     try:
         message_on_mobile = message_on_mobile.format(**tags)
     except Exception as e:
@@ -347,11 +399,41 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
     log.debug(f"Sending to mobile: {message_on_mobile}")
 
     title = get_action_values_from_options(SCOPE.AUTH, PushAction.MOBILE_TITLE, options) or "privacyIDEA"
+    return {"question": message_on_mobile, "title": title}
+
+
+def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: str, private_key_pem: str,
+                           options: dict, presence_options: list = None,
+                           notification: dict = None) -> dict:
+    """
+    Create the dictionary to be sent to the smartphone as challenge
+
+    :param token: The token object for which to create the smartphone data
+    :type token: A tokenclass object
+    :param challenge: base32 encoded random data string
+    :type challenge: str
+    :param registration_url: The privacyIDEA URL, to which the Push token communicates
+    :type registration_url: str
+    :param options: the options dictionary
+    :type options: dict
+    :param presence_options: Require the user to confirm with the correct button from the list of options.
+    :type presence_options: list
+    :param notification: The question and title stored with the challenge. Without it they
+        are built from the current request.
+    :type notification: dict
+    :return: the created smartphone_data dictionary
+    :rtype: dict
+    """
+    sslverify = get_action_values_from_options(SCOPE.AUTH, PushAction.SSL_VERIFY,
+                                               options) or "1"
+    if sslverify not in ["0", "1"]:
+        sslverify = "1"
+    notification = notification or _build_mobile_notification(token, options)
     smartphone_data = {
         "nonce": challenge,
-        "question": message_on_mobile,
+        "question": notification["question"],
         "serial": token.token.serial,
-        "title": title,
+        "title": notification["title"],
         "sslverify": sslverify,
         "url": registration_url
     }
@@ -1231,7 +1313,8 @@ class PushTokenClass(TokenClass):
                     presence_options = challenge_data.get("options")
                 # then return the necessary smartphone data to answer the challenge
                 smartphone_data = _build_smartphone_data(token, challenge.challenge, registration_url, private_key,
-                                                         options, presence_options)
+                                                         options, presence_options,
+                                                         notification=challenge_data.get("notification"))
                 open_challenges.append(smartphone_data)
             # return the challenges as a list in the result value
             result = open_challenges
@@ -1436,6 +1519,16 @@ class PushTokenClass(TokenClass):
         if fb_identifier:
             challenge = b32encode_and_unicode(geturandom())
             if options.get("session") != ChallengeSession.ENROLLMENT:
+                # Render and store it while the request of the authenticating client is still
+                # at hand: a poll brings the request of the smartphone instead.
+                data = data or {}
+                notification = _build_mobile_notification(self, options)
+                data["notification"] = {
+                    "question": _truncate_with_log(notification["question"], MAX_STORED_QUESTION_LENGTH,
+                                                    "notification question"),
+                    "title": _truncate_with_log(notification["title"], MAX_STORED_TITLE_LENGTH,
+                                                "notification title")}
+                data = _fit_notification_to_storage_budget(data)
                 if fb_identifier != POLL_ONLY:
                     # We only push to Firebase if this token is NOT POLL_ONLY.
                     fb_gateway = create_sms_instance(fb_identifier)
@@ -1444,7 +1537,8 @@ class PushTokenClass(TokenClass):
                     private_key_pem = self.get_tokeninfo(PRIVATE_KEY_SERVER)
                     smartphone_data = _build_smartphone_data(self,
                                                              challenge, registration_url,
-                                                             private_key_pem, options, current_presence_options)
+                                                             private_key_pem, options, current_presence_options,
+                                                             notification=data["notification"])
                     log.debug(f"Sending to firebase the smartphone_data: {smartphone_data}")
                     res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 

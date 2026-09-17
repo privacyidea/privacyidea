@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { NgClass } from "@angular/common";
 import { Component, computed, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -40,16 +41,22 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService } from "@services/notification/notification.service";
 import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so page-table-state-size's min-width (see table-width() in table.scss) can be sized from
+// the same numbers.
 const columnKeysMap = [
-  { key: "resolvername", label: $localize`:@@common.name:Name` },
-  { key: "type", label: $localize`:@@common.type:Type` }
+  { key: "resolvername", label: $localize`:@@common.name:Name`, width: "xl" },
+  { key: "type", label: $localize`:@@common.type:Type`, width: "s" }
 ];
 
 @Component({
   selector: "app-user-resolver",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
+    NgClass,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
