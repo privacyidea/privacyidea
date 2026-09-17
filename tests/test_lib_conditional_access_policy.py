@@ -28,7 +28,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import AuthEv
 from privacyidea.lib.conditional_access.conditions import (AUTHENTICATING_ENDPOINTS, ConditionOperator, ConditionType,
                                                            get_condition_types)
 from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction, ConditionalAccessTarget,
-                                                       RESTRICTION_ACTIONS)
+                                                       MAX_LOCK_DURATION_SECONDS, RESTRICTION_ACTIONS)
 from privacyidea.lib.conditional_access.policy import (
     DEFAULT_ERROR_MESSAGES,
     _ACTION_VALUE_VALIDATORS,
@@ -437,8 +437,16 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
 
     def test_02k_lock_user_requires_a_positive_duration(self):
         # A LOCK_USER the engine could not act on must not be storable: without a duration it is skipped at
-        # runtime with only a log line, so the admin sees a saved policy that never locks anyone.
-        for action_value in (None, 0, -5, True, "abc", {}):
+        # runtime with only a log line, so the admin sees a saved policy that never locks anyone. A bool nested
+        # inside the object (not just at the top level) and a duration past MAX_LOCK_DURATION_SECONDS are the same
+        # kind of unstorable: the former would int(True) == 1 into a real one-second lock, the latter overflows
+        # the engine's now + timedelta(seconds=duration) and is silently skipped at runtime.
+        for action_value in (None, 0, -5, True, "abc", {}, {"duration_seconds": True},
+                             MAX_LOCK_DURATION_SECONDS + 1,
+                             # A bare Infinity token is valid input to Python's stdlib json.loads, so this must
+                             # raise the documented ParameterError (fail closed) rather than an uncaught
+                             # OverflowError from int(float('inf')) escaping as a 500.
+                             float("inf"), {"duration_seconds": float("inf")}):
             self.assertRaisesRegex(
                 ParameterError, "duration",
                 self._create_with_action, {"action_type": "LOCK_USER", "action_value": action_value},
