@@ -59,7 +59,7 @@
       </mat-form-field>
 
       <div class="flex-row gap-16">
-        @if (authService.actionAllowed("enrollpin")) {
+        @if (authService.actionAllowed("enrollpin") && showPinFields()) {
           <app-enrollment-pin
             [setPinControl]="setPinForm"
             [repeatPinControl]="repeatPinForm" />

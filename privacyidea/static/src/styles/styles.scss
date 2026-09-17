@@ -4,7 +4,6 @@
 @use "@angular/material/core/style/elevation" as mat-elevation;
 @use "theme";
 @use "material-icons/iconfont/material-icons.scss";
-@forward "table" show base-table-structure;
 @forward "cards";
 
 @include meta.load-css("mixins.scss");
@@ -1030,6 +1029,11 @@ $corner-radii: (
   .mdc-tooltip__surface {
     max-width: 340px;
   }
+}
+
+.multiline-tooltip {
+  white-space: pre-line;
+  text-align: left;
 }
 
 // Panel class set by the shared app-multi-select-filter component. Its options can be long, so let the menu grow to
