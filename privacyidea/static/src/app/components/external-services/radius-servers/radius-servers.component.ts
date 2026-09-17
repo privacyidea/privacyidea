@@ -100,7 +100,6 @@ export class RadiusServersComponent {
   // the .scss include's table.table-width() call sums the same tiers in the same order so the
   // panel (see table-width() in table.scss) can be sized from the same numbers.
   readonly columnWidths: Record<string, string> = {
-    select: "xs",
     identifier: "m",
     server: "l",
     dictionary: "l",

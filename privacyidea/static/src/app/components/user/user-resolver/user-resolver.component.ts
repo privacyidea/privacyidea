@@ -48,7 +48,7 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 // the same numbers.
 const columnKeysMap = [
   { key: "resolvername", label: $localize`:@@common.name:Name`, width: "xl" },
-  { key: "type", label: $localize`:@@common.type:Type`, width: "xs" }
+  { key: "type", label: $localize`:@@common.type:Type`, width: "s" }
 ];
 
 @Component({

@@ -4,9 +4,9 @@
 .challenges-table-container {
   @include styles.main-component-style;
   // Sized from the same col-width-* tiers the columns below use (timestamp l + serial m +
-  // transaction_id l + expiration l + otp_received xs), so the empty/error state is as wide as
+  // transaction_id l + expiration l + otp_received s), so the empty/error state is as wide as
   // the table it stands in for, not the unrelated 44rem default.
-  @include table.page-table-state-size(table.table-width(l, m, l, l, xs));
+  @include table.page-table-state-size(table.table-width(l, m, l, l, s));
   @include table.base-table-structure(".challenges-table", ".challenges-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;

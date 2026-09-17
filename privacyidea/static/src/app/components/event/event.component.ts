@@ -100,12 +100,12 @@ export class EventComponent {
   // columns line up on the same scale other tables use. "event", "action" and "conditions" hold lists
   // or free text that can badly overflow, so they are left out and keep their previous flexible width.
   columnWidths: Record<string, string> = {
-    ordering: "xs",
+    ordering: "s",
     name: "m",
     handlermodule: "s",
-    position: "xs",
-    active: "xs",
-    delete: "xs"
+    position: "s",
+    active: "s",
+    delete: "s"
   };
   columnKeys = computed(() => {
     let keys = Object.keys(this.columnKeysMap);

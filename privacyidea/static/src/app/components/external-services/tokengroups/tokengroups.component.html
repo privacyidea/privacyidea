@@ -86,7 +86,6 @@
         <td
           *matCellDef="let row"
           class="table-checkbox"
-          [ngClass]="'col-width-' + columnWidths['select']"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(row, $event.checked)"
@@ -98,6 +97,7 @@
       <ng-container matColumnDef="id">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['id']"
           i18n="@@common.idColumn"
           mat-header-cell
           mat-sort-header
@@ -114,6 +114,7 @@
       <ng-container matColumnDef="groupname">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['groupname']"
           i18n="@@common.name"
           mat-header-cell
           mat-sort-header
@@ -139,6 +140,7 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['description']"
           i18n="@@common.description"
           mat-header-cell
           mat-sort-header

@@ -57,7 +57,7 @@ import { filter } from "rxjs";
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // or clamped to, kept alongside the column definition so the table's overall min-width
 // (see table-width() in table.scss) can be sized from the same numbers.
-const columnKeysMap: { key: keyof ClientData; label: string; width: "xs" | "s" | "m" | "l" | "xl" }[] = [
+const columnKeysMap: { key: keyof ClientData; label: string; width: "s" | "m" | "l" | "xl" }[] = [
   { key: "application", label: $localize`:@@common.application:Application`, width: "xl" },
   { key: "hostname", label: $localize`:@@common.hostname:Hostname`, width: "l" },
   { key: "ip", label: $localize`:@@common.ipAddress:IP Address`, width: "l" },

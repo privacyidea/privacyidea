@@ -6,9 +6,22 @@
   @include styles.main-component-style;
   @include table.base-table-structure(".privacyidea-servers-table", ".table-filter", ".table-scroll-container");
   // Sized from the col-width-* tiers the columns below use (select checkbox + identifier m + tls
-  // xs), plus a flat estimate for url and description, which have no tier - both are untiered free
+  // s), plus a flat estimate for url and description, which have no tier - both are untiered free
   // text left to the table's remaining space - so the panel is not narrower than the real table.
-  @include table.page-table-state-size(calc(#{table.table-width(checkbox, m, xs)} + 2 * 240px));
+  @include table.page-table-state-size(calc(#{table.table-width(checkbox, m, s)} + 2 * 240px));
+
+  // table-layout: auto would resize a col-width-* tier based on each render's actual cell content
+  // instead of holding it steady; fixed makes the header row's declared widths authoritative. url and
+  // description have no tier (untiered free text) so they need an explicit width now or they collapse
+  // to 0 under a fixed layout - the same flat 240px already assumed above.
+  .privacyidea-servers-table {
+    table-layout: fixed;
+    width: auto;
+
+    .col-width-flex {
+      width: 240px;
+    }
+  }
 }
 
 .actions-container {

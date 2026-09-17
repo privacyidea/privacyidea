@@ -85,7 +85,7 @@
         </th>
         <td
           *matCellDef="let row"
-          class="table-checkbox col-width-xs"
+          class="table-checkbox"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(row, $event.checked)"
@@ -97,6 +97,7 @@
       <ng-container matColumnDef="connectorname">
         <th
           *matHeaderCellDef
+          class="col-width-l"
           i18n="@@caConnector.caConnectorName"
           mat-header-cell
           mat-sort-header
@@ -122,6 +123,7 @@
       <ng-container matColumnDef="type">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           i18n="@@common.type"
           mat-header-cell
           mat-sort-header
@@ -129,7 +131,7 @@
         >
         <td
           *matCellDef="let connector"
-          class="col-width-xs"
+          class="col-width-s"
           mat-cell>
           {{ connector.type }}
         </td>

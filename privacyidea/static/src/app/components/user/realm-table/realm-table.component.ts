@@ -101,7 +101,7 @@ const NO_NODE_ID = "";
 // overflow, and actions is a multi-button cell, so both stay flexible instead of forcing a fit.
 const columnKeysMap = [
   { key: "name", label: $localize`:@@common.realm:Realm`, width: "m" },
-  { key: "isDefault", label: $localize`:@@common.default:Default`, width: "xs" },
+  { key: "isDefault", label: $localize`:@@common.default:Default`, width: "s" },
   { key: "resolvers", label: $localize`:@@common.resolvers:Resolvers` },
   { key: "actions", label: $localize`:@@common.actions:Actions` }
 ];

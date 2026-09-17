@@ -99,10 +99,10 @@ export class PrivacyideaServersComponent {
   // description) that can run arbitrarily long, so they keep flowing into the table's remaining
   // space instead of being clipped to a fixed tier.
   columnKeysMap: { key: string; width?: string }[] = [
-    { key: "select", width: "xs" },
+    { key: "select" },
     { key: "identifier", width: "m" },
     { key: "url" },
-    { key: "tls", width: "xs" },
+    { key: "tls", width: "s" },
     { key: "description" }
   ];
   displayedColumns: string[] = this.columnKeysMap.map((column) => column.key);

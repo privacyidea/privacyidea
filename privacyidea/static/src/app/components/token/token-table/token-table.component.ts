@@ -67,7 +67,7 @@ import { TokenTableActionsComponent } from "./token-table-actions/token-table-ac
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
 // (see table-width() in table.scss) can be sized from the same numbers.
 const columnKeysMap = [
-  { key: "select", label: "", width: "xs" },
+  { key: "select", label: "", width: "s" },
   { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
   { key: "tokentype", label: $localize`:@@common.type:Type`, width: "s" },
   { key: "active", label: $localize`:@@common.active:Active`, width: "s" },

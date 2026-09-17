@@ -94,7 +94,7 @@ const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
 // to. Columns left without a "width" stay flexible (long free text or a list that can overflow);
 // the ones that do have a tier and their combined sizes (see table-width() in table.scss) drive
 // the table's min-width in audit.component.scss.
-const columnKeysMap: { key: string; label: string; width?: "xs" | "s" | "m" | "l" | "xl" }[] = [
+const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl" }[] = [
   { key: "number", label: $localize`:@@audit.number:Number`, width: "s" },
   { key: "action", label: $localize`:@@common.action:Action`, width: "l" },
   { key: "success", label: $localize`:@@common.successLabel:Success`, width: "s" },

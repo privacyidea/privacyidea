@@ -85,7 +85,6 @@
         </th>
         <td
           *matCellDef="let row"
-          [ngClass]="'col-width-' + columnWidths['select']"
           class="table-checkbox"
           mat-cell>
           <mat-checkbox
@@ -98,6 +97,7 @@
       <ng-container matColumnDef="identifier">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['identifier']"
           i18n="@@common.identifier"
           mat-header-cell
           mat-sort-header
@@ -123,6 +123,7 @@
       <ng-container matColumnDef="server">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['server']"
           i18n="@@common.ipFqdnColumn"
           mat-header-cell
           mat-sort-header
@@ -139,6 +140,7 @@
       <ng-container matColumnDef="dictionary">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['dictionary']"
           i18n="@@radiusServer.dictionary"
           mat-header-cell
           mat-sort-header
@@ -155,6 +157,7 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['description']"
           i18n="@@common.description"
           mat-header-cell
           mat-sort-header

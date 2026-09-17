@@ -8,9 +8,10 @@
     ".container-templates-table-filter",
     ".container-templates-scroll-container"
   );
-  // Plus a flat estimate for "tokens" (see columns in the .ts), a list of tokens that has no tier
-  // and can badly overflow, so the panel is not narrower than the real table.
-  @include table.page-table-state-size(calc(#{table.table-width(xs, m, xs, xs)} + 240px));
+  // Sized from the col-width-* tiers the columns below use (select checkbox + name m +
+  // container_type s + default s), plus a flat 600px for "tokens" (see columns in the .ts), sized
+  // to fit its content instead of a tier, so the panel is not narrower than the real table.
+  @include table.page-table-state-size(calc(#{table.table-width(checkbox, m, s, s)} + 600px));
 
   & {
     display: flex;
@@ -22,6 +23,20 @@
     padding: 0 8px;
     text-align: left;
     max-width: unset !important;
+  }
+
+  // table-layout: auto would resize a col-width-* tier based on each render's actual cell content
+  // instead of holding it steady; fixed makes the header row's declared widths authoritative. Tokens
+  // has no tier (see the .ts) so it needs its own explicit width now or it collapses to 0 under a
+  // fixed layout - 400px to comfortably fit its token list instead of a standard tier, matching the
+  // flat estimate already assumed above.
+  .container-templates-table {
+    table-layout: fixed;
+    width: auto;
+
+    .col-width-flex {
+      width: 600px;
+    }
   }
 
   .table-header-container {

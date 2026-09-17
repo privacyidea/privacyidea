@@ -131,9 +131,9 @@ export class ContainerTemplatesComponent {
       label: $localize`:@@common.containerType:Container Type`,
       filterable: true,
       sortable: true,
-      width: "xs"
+      width: "s"
     },
-    default: { label: $localize`:@@common.default:Default`, filterable: true, sortable: true, width: "xs" },
+    default: { label: $localize`:@@common.default:Default`, filterable: true, sortable: true, width: "s" },
     tokens: { label: $localize`:@@common.tokens:Tokens`, filterable: true, sortable: false, width: undefined }
   } as const;
 

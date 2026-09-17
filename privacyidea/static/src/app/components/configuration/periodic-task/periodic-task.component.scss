@@ -4,10 +4,19 @@
 .periodic-task-layout {
   @include styles.main-component-style;
   @include table.base-table-structure(".periodic-task-table", ".periodic-task-table-filter", ".table-scroll-container");
-  // Sized from the col-width-* tiers the columns below use (select xs + name m + taskmodule s +
-  // interval s + nodes m + active xs), plus the "options" column's own existing max-width (it
+  // Sized from the col-width-* tiers the columns below use (select checkbox + name m + taskmodule s
+  // + interval s + nodes m + active s), plus the "options" column's own existing max-width (it
   // stays flexible instead of taking a fixed tier - see columnWidths in the .ts).
-  @include table.page-table-state-size(calc(#{table.table-width(xs, m, s, s, m, xs)} + 280px));
+  @include table.page-table-state-size(calc(#{table.table-width(checkbox, m, s, s, m, s)} + 280px));
+
+  // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead
+  // of holding it steady; fixed makes the header row's declared widths authoritative. "options" has no
+  // tier (see columnWidths in the .ts) so it needs its own explicit width now or it collapses to 0 under
+  // a fixed layout - the existing 280px column-max-width class, now also given a matching width.
+  .periodic-task-table {
+    table-layout: fixed;
+    width: auto;
+  }
 }
 
 .actions-container {
@@ -24,6 +33,7 @@
 }
 
 .column-max-width {
+  width: 280px;
   max-width: 280px;
 }
 

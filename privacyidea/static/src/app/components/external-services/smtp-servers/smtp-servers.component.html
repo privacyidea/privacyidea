@@ -85,7 +85,7 @@
         </th>
         <td
           *matCellDef="let row"
-          class="table-checkbox col-width-xs"
+          class="table-checkbox"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(row, $event.checked)"
@@ -97,6 +97,7 @@
       <ng-container matColumnDef="identifier">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@common.identifier"
           mat-header-cell
           mat-sort-header
@@ -122,6 +123,7 @@
       <ng-container matColumnDef="server">
         <th
           *matHeaderCellDef
+          class="col-width-l"
           i18n="@@common.ipFqdnColumn"
           mat-header-cell
           mat-sort-header
@@ -138,6 +140,7 @@
       <ng-container matColumnDef="sender">
         <th
           *matHeaderCellDef
+          class="col-width-l"
           i18n="@@smtpServer.sender"
           mat-header-cell
           mat-sort-header
@@ -154,6 +157,7 @@
       <ng-container matColumnDef="tls">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           i18n="@@smtpServer.starttls"
           mat-header-cell
           mat-sort-header
@@ -161,7 +165,7 @@
         >
         <td
           *matCellDef="let server"
-          class="col-width-xs"
+          class="col-width-s"
           mat-cell>
           <div class="flex just-center">
             @if (server.tls) {
@@ -174,6 +178,7 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
+          class="col-width-xl"
           i18n="@@common.description"
           mat-header-cell
           mat-sort-header

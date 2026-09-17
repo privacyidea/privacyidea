@@ -86,7 +86,6 @@
         <td
           *matCellDef="let row"
           class="table-checkbox"
-          [ngClass]="'col-width-xs'"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(row, $event.checked)"
@@ -98,6 +97,7 @@
       <ng-container matColumnDef="identifier">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-m'"
           i18n="@@common.identifier"
           mat-header-cell
           mat-sort-header
@@ -123,6 +123,7 @@
       <ng-container matColumnDef="url">
         <th
           *matHeaderCellDef
+          class="col-width-flex"
           i18n="@@piServer.url"
           mat-header-cell
           mat-sort-header
@@ -130,6 +131,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-flex"
           mat-cell>
           {{ server.url }}
         </td>
@@ -138,6 +140,7 @@
       <ng-container matColumnDef="tls">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-s'"
           i18n="@@piServer.verifyTls"
           mat-header-cell
           mat-sort-header
@@ -145,7 +148,7 @@
         >
         <td
           *matCellDef="let server"
-          [ngClass]="'col-width-xs'"
+          [ngClass]="'col-width-s'"
           mat-cell>
           <div class="flex just-center">
             @if (server.tls) {
@@ -160,6 +163,7 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
+          class="col-width-flex"
           i18n="@@common.description"
           mat-header-cell
           mat-sort-header
@@ -167,6 +171,7 @@
         >
         <td
           *matCellDef="let server"
+          class="col-width-flex"
           mat-cell>
           {{ server.description }}
         </td>

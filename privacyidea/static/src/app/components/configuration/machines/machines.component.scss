@@ -5,7 +5,14 @@
 .machines-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".machines-table", ".table-filter", ".table-scroll-container");
-  @include table.page-table-state-size(table.table-width(l, m, xs, m));
+  @include table.page-table-state-size(table.table-width(l, m, s, m));
+
+  // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead
+  // of holding it steady; fixed makes the header row's declared widths authoritative.
+  .machines-table {
+    table-layout: fixed;
+    width: auto;
+  }
 }
 
 .header-row {

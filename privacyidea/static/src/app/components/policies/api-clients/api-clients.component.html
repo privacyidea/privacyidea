@@ -110,6 +110,7 @@
       <ng-container matColumnDef="display_name">
         <th
           *matHeaderCellDef
+          class="col-width-l"
           i18n="@@common.name"
           mat-header-cell
           mat-sort-header
@@ -135,6 +136,7 @@
       <ng-container matColumnDef="client_type">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@common.type"
           mat-header-cell
           mat-sort-header
@@ -151,6 +153,7 @@
       <ng-container matColumnDef="status">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           i18n="@@common.status"
           mat-header-cell
           mat-sort-header
@@ -158,7 +161,7 @@
         >
         <td
           *matCellDef="let client"
-          class="col-width-xs"
+          class="col-width-s"
           mat-cell>
           <span
             [class.status-active]="client.status === 'active'"
@@ -172,6 +175,7 @@
       <ng-container matColumnDef="key_id">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           i18n="@@apiClient.keyId"
           mat-header-cell
           mat-sort-header>
@@ -188,6 +192,7 @@
       <ng-container matColumnDef="created_at">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@token.created"
           mat-header-cell
           mat-sort-header
@@ -204,6 +209,7 @@
       <ng-container matColumnDef="last_used_at">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@apiClient.lastUsed"
           mat-header-cell
           mat-sort-header>
@@ -220,9 +226,11 @@
       <ng-container matColumnDef="actions">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           mat-header-cell></th>
         <td
           *matCellDef="let client"
+          class="col-width-s"
           mat-cell>
           <div class="flex-row gap-0">
             @if (authService.actionAllowed("api_client_rotate")) {

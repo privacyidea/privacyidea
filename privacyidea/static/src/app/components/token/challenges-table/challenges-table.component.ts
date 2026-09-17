@@ -55,7 +55,7 @@ const columnKeysMap = [
   { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
   { key: "transaction_id", label: $localize`:@@token.transactionId:Transaction ID`, width: "l" },
   { key: "expiration", label: $localize`:@@token.expiration:Expiration`, width: "l" },
-  { key: "otp_received", label: $localize`:@@token.received:Received`, width: "xs" }
+  { key: "otp_received", label: $localize`:@@token.received:Received`, width: "s" }
 ];
 
 @Component({

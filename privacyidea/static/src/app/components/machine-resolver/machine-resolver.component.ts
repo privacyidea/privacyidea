@@ -49,7 +49,7 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 // in table.scss) can be sized from the same numbers.
 const columnKeysMap = [
   { key: "resolvername", label: $localize`:@@common.name:Name`, width: "l" },
-  { key: "type", label: $localize`:@@common.type:Type`, width: "xs" }
+  { key: "type", label: $localize`:@@common.type:Type`, width: "s" }
 ];
 
 @Component({

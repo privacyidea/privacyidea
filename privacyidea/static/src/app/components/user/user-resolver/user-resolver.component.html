@@ -56,6 +56,7 @@
         <ng-container matColumnDef="resolvername">
           <th
             *matHeaderCellDef
+            [ngClass]="'col-width-' + columnKeysMap[0].width"
             mat-header-cell
             mat-sort-header>
             <span i18n="@@common.name">Name</span>
@@ -106,6 +107,7 @@
         <ng-container matColumnDef="type">
           <th
             *matHeaderCellDef
+            [ngClass]="'col-width-' + columnKeysMap[1].width"
             mat-header-cell
             mat-sort-header>
             <span i18n="@@common.type">Type</span>

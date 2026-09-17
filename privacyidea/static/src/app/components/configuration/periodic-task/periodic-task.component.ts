@@ -92,12 +92,11 @@ export class PeriodicTaskComponent implements OnInit {
   // to, keyed by column name. "options" is intentionally omitted - it holds a variable-length
   // list of task options (more so in detailed view) that stays flexible instead of a fixed tier.
   readonly columnWidths: Record<string, string> = {
-    select: "xs",
     name: "m",
     taskmodule: "s",
     interval: "s",
     nodes: "m",
-    active: "xs"
+    active: "s"
   };
 
   protected readonly Object = Object;

@@ -93,7 +93,6 @@
         </th>
         <td
           *matCellDef="let row"
-          [ngClass]="'col-width-xs'"
           class="table-checkbox"
           mat-cell>
           <mat-checkbox
@@ -106,6 +105,7 @@
       <ng-container matColumnDef="id">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-s'"
           i18n="@@common.idColumn"
           mat-header-cell
           mat-sort-header
@@ -113,7 +113,7 @@
         >
         <td
           *matCellDef="let service"
-          [ngClass]="'col-width-xs'"
+          [ngClass]="'col-width-s'"
           mat-cell>
           {{ service.id }}
         </td>
@@ -122,6 +122,7 @@
       <ng-container matColumnDef="servicename">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-m'"
           i18n="@@common.name"
           mat-header-cell
           mat-sort-header
@@ -147,6 +148,7 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-xl'"
           i18n="@@common.description"
           mat-header-cell
           mat-sort-header

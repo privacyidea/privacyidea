@@ -58,6 +58,7 @@
       <ng-container matColumnDef="hostname">
         <th
           *matHeaderCellDef
+          class="col-width-l"
           i18n="@@common.hostname"
           mat-header-cell
           mat-sort-header
@@ -84,6 +85,7 @@
       <ng-container matColumnDef="ip">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@common.ipAddress"
           mat-header-cell
           mat-sort-header
@@ -102,6 +104,7 @@
       <ng-container matColumnDef="id">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           i18n="@@common.id"
           mat-header-cell
           mat-sort-header
@@ -109,7 +112,7 @@
         >
         <td
           *matCellDef="let machine"
-          class="col-width-xs"
+          class="col-width-s"
           mat-cell>
           {{ machine.id }}
         </td>
@@ -118,6 +121,7 @@
       <ng-container matColumnDef="resolver_name">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@common.machineResolver"
           mat-header-cell
           mat-sort-header

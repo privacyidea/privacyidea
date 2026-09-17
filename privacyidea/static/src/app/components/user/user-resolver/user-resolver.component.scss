@@ -9,7 +9,14 @@
 .user-sources-table-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".user-sources-table", ".table-filter", ".table-scroll-container");
-  @include table.page-table-state-size(table.table-width(xl, xs));
+  @include table.page-table-state-size(table.table-width(xl, s));
+
+  // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead
+  // of holding it steady; fixed makes the header row's declared widths authoritative.
+  .user-sources-table {
+    table-layout: fixed;
+    width: auto;
+  }
 }
 
 .new-resolver-footer-row {

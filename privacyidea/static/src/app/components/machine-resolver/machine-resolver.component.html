@@ -71,6 +71,7 @@
         <ng-container matColumnDef="resolvername">
           <th
             *matHeaderCellDef
+            class="col-width-l"
             mat-header-cell
             mat-sort-header>
             <span i18n="@@common.name">Name</span>
@@ -105,13 +106,14 @@
         <ng-container matColumnDef="type">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             mat-header-cell
             mat-sort-header>
             <span i18n="@@common.type">Type</span>
           </th>
           <td
             *matCellDef="let element"
-            class="col-width-xs"
+            class="col-width-s"
             mat-cell>
             {{ element.type }}
           </td>

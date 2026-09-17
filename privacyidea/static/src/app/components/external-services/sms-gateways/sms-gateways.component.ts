@@ -97,10 +97,9 @@ export class SmsGatewaysComponent {
   // to; the sum of these tiers (see table-width() in table.scss) also sizes the table-state panel
   // shown in place of the table, so it matches the table's own footprint instead of a fixed guess.
   columnWidths: Record<string, string> = {
-    select: "xs",
     name: "m",
     description: "xl",
-    providermodule: "s"
+    providermodule: "l"
   };
 
   smsDataSource = computed(() => {

@@ -67,7 +67,7 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
 // (see table-width() in table.scss) can be sized from the same numbers.
 const columnsKeyMap = [
-  { key: "select", label: "", width: "xs" },
+  { key: "select", label: "", width: "s" },
   { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
   { key: "type", label: $localize`:@@common.type:Type`, width: "s" },
   { key: "states", label: $localize`:@@common.status:Status`, width: "m" },
