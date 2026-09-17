@@ -561,38 +561,71 @@ Pulled forward: 4.1 is unreachable and untestable without it.
 > Goal: The webhook event handler uses the new webhook objects instead of
 > (or in addition to) inline options.
 
-### 5.1 — Add `webhook` dropdown option to WebHookHandler
+### 5.1 — Add `webhook` dropdown option to WebHookHandler ✅
 
-- [ ] **File:** `privacyidea/lib/eventhandler/webhookeventhandler.py`
-- [ ] Add `webhook` to the handler's `actions` dict options (dropdown of `get_webhooks()` identifiers, like `smtpconfig`
-  in
-  `usernotification.py`)
-- [ ] In `do()`: if `webhook` option is set, load webhook by identifier and call `fire_webhook()` with the handler's
-  `data`/`replace` as payload
-- [ ] **Permanently tolerant legacy reader**: if `webhook` option is *not* set, fall back to reading inline `URL`/
-  `content_type` options and fire directly (this path is ~10 lines and stays forever — see issue for rationale)
-- [ ] Replace current hardcoded tag replacement with `create_tag_dict()` helper (`privacyidea/lib/utils/__init__.py`) —
-  the shared helper the notification and logging handlers already use
+- [x] **File:** `privacyidea/lib/eventhandler/webhookeventhandler.py`
+- [x] Added `webhook` to the handler's `actions` options — a dropdown built from `get_webhook_identifiers()`, mirroring
+  how `usernotification.py` builds `emailconfig` from `get_smtpservers()`
+- [x] `URL` and `content_type` are no longer `required`, since a selected webhook supplies the endpoint instead.
+  (`required` is a UI hint only — `lib/event.py` does not enforce it — so this cannot break a stored definition.)
+- [x] `do()` dispatches: `webhook` option set → `_post_to_webhook_object()`, otherwise → `_post_inline()`
+- [x] **Permanently tolerant legacy reader** (`_post_inline()`): byte-for-byte the pre-3.15 path, kept forever rather
+  than for a deprecation window
+- [x] Tag replacement already used `create_tag_dict()` (done ahead of this phase in `284fda61e`); it was extracted into
+  `_replace_tags()` so both paths share exactly one implementation
 
-### 5.2 — Fix `replace_recursive()` bug (#5748)
+**Deviations from the original sketch, and why:**
 
-- [ ] The current `replace_recursive()` returns inside its loop, so only the first key in a JSON body survives
-  replacement
-- [ ] This is tracked separately as #5748 — can be fixed independently but should be done here if not already merged
+- **The webhook's content type drives the substitution, not the handler's.** `_replace_tags()` needs to know whether to
+  substitute into parsed JSON or into plain text. In the new path that fact belongs to the webhook object, so
+  `_post_to_webhook_object()` reads `content_type` from `get_webhook()` rather than from the handler option — otherwise
+  a JSON webhook driven by a handler whose stale `content_type` says `urlencoded` would get a broken body.
+- **An empty `data` option is passed as `None`, not `""`.** `fire_webhook()` treats `""` as "send no body" but `None` as
+  "use the webhook's `default_payload`". Empty means the call site contributes no payload, which is exactly when the
+  object's default should apply.
+- **A dangling `webhook` reference returns False without sending anything.** It is a configuration error, not a
+  transport error; firing the inline URL instead would silently post to a different endpoint than the one configured.
+- **The identifier is logged, never the URL** — pulled forward from 8.1, since the URL now lives on an object that may
+  embed a token.
+- **The unknown-action check moved to the top of `do()`.** It used to run *after* tag substitution, so an unusable
+  definition still paid for rendering and could log a confusing placeholder warning.
 
-### 5.3 — Config import tolerance
+### 5.2 — Fix `replace_recursive()` bug (#5748) ✅
 
-- [ ] **File:** `privacyidea/lib/event.py` (in `import_event`)
-- [ ] When importing a pre-3.15 config export that contains inline webhook options, route them through the same
-  conversion the data migration uses, so the import lands in the new shape
-- [ ] This is a nicety — the tolerant reader makes it safe either way
+- [x] Already fixed on this branch by `284fda61e` ("Fix replaceholder handling in WebhookHandler") —
+  `replace_recursive()`
+  is a proper recursion over dicts, lists and scalars with no early return
+- [x] Covered by `tests/test_lib_events.py::WebhookTestCase::test_13_replace_recursive_edge_cases`, whose first case is
+  exactly the #5748 symptom (a multi-key dict where only the first key used to survive)
 
-**Tests:**
+### 5.3 — Config import tolerance — evaluated and rejected
 
-- [ ] Handler with `webhook` option fires via `fire_webhook()`
-- [ ] Handler without `webhook` option falls back to inline (legacy path)
-- [ ] Tag replacement uses full `create_tag_dict()` output
-- [ ] Import of pre-3.15 export with inline webhook options works
+The idea was: when `import_event()` reads a pre-3.15 export containing inline webhook options, convert them into a
+webhook object so the import lands in the new shape instead of the tolerated legacy one. Two findings killed it:
+
+| Finding                                                                          | Consequence                                                                                                                                                                                                                                                                     |
+|----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| "Route them through the same conversion the data migration uses" is not possible | An Alembic revision is deliberately self-contained — own table definitions, own copy of the content-type map — so that it stays valid against any future model. An import-time converter could not reuse it, only duplicate the `from_<name>_<id>` naming scheme a second time. |
+| `pi-manage config import --types event` imports exactly one configuration type   | Creating webhook rows from the event importer crosses that boundary: an admin importing only `event` would silently gain objects in the `webhook` type, which a later `config export --types webhook` would then hand back as if they had configured them.                      |
+
+The permanently tolerant reader in 5.1 already makes such an import **work** — this was only ever about converging on
+one shape, which the plan itself labelled a nicety. An admin who wants the new shape can create the webhook once and
+select it in the handler; the migration covers the upgrade path, which is where skipped releases actually bite.
+
+**Tests:** ✅ `tests/test_lib_events.py::WebhookObjectHandlerTestCase` — 10 tests; the 15 pre-existing
+`WebhookTestCase` tests still pass unchanged, which is what proves the legacy path was not disturbed
+
+- [x] A selected webhook supplies URL and content type; the handler supplies the body
+- [x] A migrated definition carrying *both* shapes posts to the webhook object, not the inline URL
+- [x] A dangling `webhook` reference logs and sends nothing
+- [x] A webhook answering 500 makes the handler return False
+- [x] Tags are substituted as JSON or as plain text according to the *webhook's* content type
+- [x] An empty `data` falls back to the webhook's `default_payload`
+- [x] The webhook's URL never reaches the log; the identifier does
+- [x] A definition without a `webhook` option still fires inline (legacy reader)
+- [x] The dropdown lists the configured identifiers, and `URL`/`content_type` are no longer required
+- [x] Import of a pre-3.15 export with inline webhook options works — by way of the legacy reader, which the
+  "definition without a `webhook` option still fires inline" test covers; see 5.3 for why no conversion happens
 
 ---
 

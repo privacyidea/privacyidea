@@ -54,6 +54,8 @@ from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token
 from privacyidea.lib.tokenclass import DATE_FORMAT, ChallengeSession
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
+from privacyidea.lib.webhook import set_webhook
+from privacyidea.models.webhook import Webhook
 from privacyidea.models import Challenge
 from privacyidea.models import EventCounter, TokenOwner
 from privacyidea.models import db, EventHandler
@@ -4881,3 +4883,180 @@ class WebhookTestCase(MyTestCase):
         # The unformatted data is still sent — the webhook call itself is not aborted
         posted = mock_post.call_args.kwargs["data"]
         self.assertEqual(posted, data)
+
+
+class WebhookObjectHandlerTestCase(MyTestCase):
+    """
+    The WebHookHandler posting to a configured webhook object instead of to
+    an inline URL. See https://github.com/privacyidea/privacyidea/issues/5751
+    """
+
+    WEBHOOK_URL = "https://hook.example.com/endpoint"
+    INLINE_URL = "https://inline.example.com/endpoint"
+
+    def setUp(self):
+        super(WebhookObjectHandlerTestCase, self).setUp()
+        self.setUp_user_realms()
+        self._cleanup()
+
+    def tearDown(self):
+        self._cleanup()
+        super(WebhookObjectHandlerTestCase, self).tearDown()
+
+    @staticmethod
+    def _cleanup():
+        for wh in Webhook.query.all():
+            wh.delete()
+
+    def _make_g(self, username='hans', realm=None):
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': username, 'realm': realm or self.realm1}
+        return g
+
+    def _make_options(self, g, handler_opts, request=None):
+        opts = {"g": g, "handler_def": {"options": handler_opts}}
+        if request is not None:
+            opts["request"] = request
+        return opts
+
+    def _do_webhook(self, options, action=WHEH_ACTION_TYPE.POST_WEBHOOK):
+        return WebHookHandler().do(action, options=options)
+
+    @responses.activate
+    def test_01_webhook_object_is_used(self):
+        """A selected webhook supplies the endpoint; the handler supplies the body."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem", "data": '{"a": 1}'})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(len(responses.calls), 1)
+        request = responses.calls[0].request
+        self.assertEqual(request.url, self.WEBHOOK_URL)
+        self.assertEqual(request.body, '{"a": 1}')
+        self.assertEqual(request.headers["Content-Type"], "application/json")
+
+    @responses.activate
+    def test_02_webhook_wins_over_the_inline_url(self):
+        """A migrated definition carries both shapes; the webhook object wins."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem",
+                                   "URL": self.INLINE_URL,
+                                   "content_type": ContentType.JSON,
+                                   "data": '{"a": 1}'})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, self.WEBHOOK_URL)
+
+    @responses.activate
+    def test_03_unknown_webhook_sends_nothing(self):
+        """A dangling reference is a configuration error, not a request."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "does-not-exist", "data": "x"})
+        with mock.patch("logging.Logger.warning") as mock_log:
+            self.assertFalse(self._do_webhook(opts))
+            mock_log.assert_any_call(
+                "The webhook 'does-not-exist' configured in this event handler does not exist.")
+        self.assertEqual(len(responses.calls), 0)
+
+    @responses.activate
+    def test_04_failing_webhook_is_reported_not_raised(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"no": True}, status=500)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem", "data": '{"a": 1}'})
+        self.assertFalse(self._do_webhook(opts))
+
+    @responses.activate
+    def test_05_tags_are_replaced_as_json(self):
+        """The webhook's content type decides how the payload is substituted."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type="application/json")
+
+        builder = EnvironBuilder(method='POST', data={'serial': "SPASS01"}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": "SPASS01"}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True,
+             "data": '{"user": "{logged_in_user}", "serial": "{token_serial}"}'},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        posted = json.loads(responses.calls[0].request.body)
+        self.assertEqual(posted["user"], "hans")
+        self.assertEqual(posted["serial"], "SPASS01")
+
+    @responses.activate
+    def test_06_tags_are_replaced_as_plain_text(self):
+        """A non-JSON webhook substitutes the payload as plain text."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL,
+                    content_type="application/x-www-form-urlencoded")
+
+        opts = self._make_options(self._make_g(),
+                                  {"webhook": "siem", "replace": True,
+                                   "data": "user={logged_in_user}"})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(responses.calls[0].request.body, "user=hans")
+
+    @responses.activate
+    def test_07_empty_data_falls_back_to_the_default_payload(self):
+        """An empty payload lets the webhook's own default_payload apply."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, default_payload='{"from": "webhook"}')
+
+        opts = self._make_options(self._make_g(), {"webhook": "siem", "data": ""})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(responses.calls[0].request.body, '{"from": "webhook"}')
+
+    @responses.activate
+    def test_08_the_url_is_never_logged(self):
+        """The webhook object may embed a token in its URL; log the name instead."""
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        opts = self._make_options(self._make_g(), {"webhook": "siem", "data": "x"})
+        with self.assertLogs("privacyidea.lib.eventhandler.webhookeventhandler",
+                             level="INFO") as logs:
+            self.assertTrue(self._do_webhook(opts))
+        self.assertTrue(any("siem" in line for line in logs.output))
+        self.assertFalse(any(self.WEBHOOK_URL in line for line in logs.output))
+
+    @responses.activate
+    def test_09_inline_definition_still_fires(self):
+        """The legacy reader stays: a definition without a webhook keeps working."""
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+        opts = self._make_options(self._make_g(),
+                                  {"URL": self.INLINE_URL,
+                                   "content_type": ContentType.JSON,
+                                   "data": '{"a": 1}'})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual(len(responses.calls), 1)
+        self.assertEqual(responses.calls[0].request.url, self.INLINE_URL)
+
+    def test_10_the_dropdown_offers_the_configured_webhooks(self):
+        set_webhook("siem", url=self.WEBHOOK_URL)
+        set_webhook("ticket", url=self.WEBHOOK_URL)
+
+        options = WebHookHandler().actions[WHEH_ACTION_TYPE.POST_WEBHOOK]
+        self.assertEqual(options["webhook"]["value"], ["siem", "ticket"])
+        # The inline fields are no longer mandatory, since a webhook may
+        # supply the endpoint instead.
+        self.assertFalse(options["URL"]["required"])
+        self.assertFalse(options["content_type"]["required"])
