@@ -303,6 +303,11 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
       expect(component.activeSection()).toBe("policies");
     });
 
+    it("should detect 'policies' for events route", () => {
+      contentService.routeUrl.set(ROUTE_PATHS.EVENTS);
+      expect(component.activeSection()).toBe("policies");
+    });
+
     it("should detect 'subscription' for subscription route", () => {
       contentService.routeUrl.set(ROUTE_PATHS.SUBSCRIPTION);
       expect(component.activeSection()).toBe("subscription");
@@ -336,6 +341,42 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     it("should keep 'dashboard' active for the news route", () => {
       contentService.routeUrl.set(ROUTE_PATHS.NEWS);
       expect(component.activeSection()).toBe("dashboard");
+    });
+  });
+
+  describe("getFilteredNavItems", () => {
+    let authService: MockAuthService;
+    let componentPrivate: NavigationComponentPrivate;
+
+    beforeEach(() => {
+      authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      componentPrivate = component as unknown as NavigationComponentPrivate;
+    });
+
+    it("should keep the 'token' section when only container actions are allowed", () => {
+      (authService.anyTokenActionAllowed as jest.Mock).mockReturnValue(false);
+      (authService.anyContainerActionAllowed as jest.Mock).mockReturnValue(true);
+
+      expect(componentPrivate.getFilteredNavItems().some((item) => item.section === "token")).toBe(true);
+    });
+
+    it("should drop the 'token' section when neither token nor container actions are allowed", () => {
+      (authService.anyTokenActionAllowed as jest.Mock).mockReturnValue(false);
+      (authService.anyContainerActionAllowed as jest.Mock).mockReturnValue(false);
+
+      expect(componentPrivate.getFilteredNavItems().some((item) => item.section === "token")).toBe(false);
+    });
+
+    it("should keep the 'policies' section when only eventhandling_read is allowed", () => {
+      (authService.actionAllowed as jest.Mock).mockImplementation((action: string) => action === "eventhandling_read");
+
+      expect(componentPrivate.getFilteredNavItems().some((item) => item.section === "policies")).toBe(true);
+    });
+
+    it("should drop the 'policies' section when neither policyread nor eventhandling_read is allowed", () => {
+      (authService.actionAllowed as jest.Mock).mockReturnValue(false);
+
+      expect(componentPrivate.getFilteredNavItems().some((item) => item.section === "policies")).toBe(false);
     });
   });
 
