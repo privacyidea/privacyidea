@@ -45,6 +45,7 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY,
                                               PushPresenceOptions, strip_pem_headers,
                                               SERVER_PUSH_CAPABILITIES, _build_smartphone_data,
+                                              _log_challenge_answer,
                                               _fit_notification_to_storage_budget,
                                               _get_push_gateways,
                                               MAX_CLIENT_TAG_LENGTH, MAX_STORED_QUESTION_LENGTH,
@@ -2636,3 +2637,36 @@ class PushCapabilitiesTestCase(MyTestCase):
         # reproduce. Guards against an accidental format/shape change.
         signed = rfc8785.dumps({"capabilities": SERVER_PUSH_CAPABILITIES, "nonce": "ABC123"})
         self.assertEqual(b'{"capabilities":{"decline_reason":true},"nonce":"ABC123"}', signed)
+
+
+class PushChallengeAnswerAuditTestCase(MyTestCase):
+    """The audit detail a smartphone's answer to a push challenge is recorded as."""
+
+    @staticmethod
+    def _g_with_audit():
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit()
+        return g
+
+    def test_01_answer_is_recorded(self):
+        g = self._g_with_audit()
+        _log_challenge_answer(g, "12345", "declined")
+        self.assertEqual("transaction_id: 12345, status: declined",
+                         g.audit_object.audit_data["action_detail"])
+
+    def test_02_reason_is_recorded_alongside_the_status(self):
+        g = self._g_with_audit()
+        _log_challenge_answer(g, "12345", "declined", reason="unknown_trigger")
+        self.assertEqual("transaction_id: 12345, status: declined, reason: unknown_trigger",
+                         g.audit_object.audit_data["action_detail"])
+
+    def test_03_a_second_answer_keeps_the_first(self):
+        # Several push tokens of one user share a transaction_id and the finalizing
+        # request evaluates every one of them, so this runs more than once per request
+        # - and a request has a single audit entry to write all of them to.
+        g = self._g_with_audit()
+        _log_challenge_answer(g, "12345", "cancelled")
+        _log_challenge_answer(g, "12345", "declined", reason="unknown_trigger")
+        self.assertEqual("transaction_id: 12345, status: cancelled,"
+                         "transaction_id: 12345, status: declined, reason: unknown_trigger",
+                         g.audit_object.audit_data["action_detail"])
