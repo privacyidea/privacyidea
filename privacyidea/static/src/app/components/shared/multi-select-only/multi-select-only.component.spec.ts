@@ -18,6 +18,8 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSelect } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
 import { MultiSelectOnlyComponent } from "./multi-select-only.component";
 
 describe("MultiSelectOnlyComponent", () => {
@@ -141,6 +143,214 @@ describe("MultiSelectOnlyComponent", () => {
       component.toggleAll();
 
       expect(emitSpy).toHaveBeenCalledWith([]);
+    });
+  });
+
+  describe("Panel Keyboard Navigation", () => {
+    let select: MatSelect;
+    let emitSpy: jest.SpyInstance;
+    let frames: FrameRequestCallback[];
+
+    const press = (key: string): KeyboardEvent => {
+      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      fixture.nativeElement.dispatchEvent(event);
+      frames.splice(0).forEach((callback) => callback(0));
+      fixture.detectChanges();
+      return event;
+    };
+
+    const highlight = (index: number) => {
+      select.options.forEach((option, i) => (i === index ? option.setActiveStyles() : option.setInactiveStyles()));
+    };
+
+    beforeEach(() => {
+      frames = [];
+      jest.spyOn(window, "requestAnimationFrame").mockImplementation((callback: FrameRequestCallback) => {
+        frames.push(callback);
+        return frames.length;
+      });
+      fixture.componentRef.setInput("items", ["A", "B", "C"]);
+      fixture.componentRef.setInput("selectedItems", ["A"]);
+      fixture.detectChanges();
+      select = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+      emitSpy = jest.spyOn(component.selectionChange, "emit");
+    });
+
+    afterEach(() => {
+      if (select.panelOpen) {
+        select.close();
+      }
+      jest.restoreAllMocks();
+    });
+
+    describe("with closed panel", () => {
+      it("should ignore keys", () => {
+        const event = press("Tab");
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(component.keyFocus()).toBe("row");
+      });
+    });
+
+    describe("with open panel", () => {
+      beforeEach(() => {
+        select.open();
+        fixture.detectChanges();
+      });
+
+      it("should not take over Tab when no row is highlighted", () => {
+        highlight(-1);
+
+        const event = press("Tab");
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(component.keyFocus()).toBe("row");
+      });
+
+      it("should move the marker between row and Only button on Tab", () => {
+        highlight(1);
+
+        const event = press("Tab");
+        expect(event.defaultPrevented).toBe(true);
+        expect(component.keyFocus()).toBe("only");
+
+        press("Tab");
+        expect(component.keyFocus()).toBe("row");
+      });
+
+      it("should select only the highlighted item on Enter while on the Only button", () => {
+        highlight(1);
+        press("Tab");
+
+        const event = press("Enter");
+
+        expect(event.defaultPrevented).toBe(true);
+        expect(emitSpy).toHaveBeenCalledWith(["B"]);
+        expect(component.keyFocus()).toBe("row");
+      });
+
+      it("should select only the highlighted item on Space while on the Only button", () => {
+        highlight(2);
+        press("Tab");
+
+        press(" ");
+
+        expect(emitSpy).toHaveBeenCalledWith(["C"]);
+      });
+
+      it("should do nothing on Enter on the Only button once the highlight is gone", () => {
+        highlight(1);
+        press("Tab");
+        highlight(-1);
+
+        const event = press("Enter");
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(emitSpy).not.toHaveBeenCalled();
+        expect(component.keyFocus()).toBe("only");
+      });
+
+      it("should hand the marker back to the row on any other key", () => {
+        highlight(1);
+        press("Tab");
+
+        const event = press("ArrowDown");
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(component.keyFocus()).toBe("row");
+      });
+
+      it("should leave Enter to MatSelect while on the row", () => {
+        highlight(1);
+
+        const event = press("Enter");
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(emitSpy).not.toHaveBeenCalled();
+      });
+
+      it("should not enter the header on ArrowUp from a row other than the first", () => {
+        highlight(1);
+
+        const event = press("ArrowUp");
+
+        expect(event.defaultPrevented).toBe(false);
+        expect(component.keyFocus()).toBe("row");
+      });
+
+      it("should scroll the panel to the top when the first row is highlighted", () => {
+        highlight(0);
+        select.panel.nativeElement.scrollTop = 40;
+
+        press("ArrowDown");
+
+        expect(select.panel.nativeElement.scrollTop).toBe(0);
+      });
+
+      describe("header", () => {
+        beforeEach(() => {
+          highlight(0);
+          press("ArrowUp");
+        });
+
+        it("should move the marker to the header on ArrowUp from the first row", () => {
+          expect(component.keyFocus()).toBe("selectAll");
+          expect(select.options.first.active).toBe(false);
+        });
+
+        it("should toggle all items on Enter", () => {
+          const event = press("Enter");
+
+          expect(event.defaultPrevented).toBe(true);
+          expect(emitSpy).toHaveBeenCalledWith(["A", "B", "C"]);
+          expect(component.keyFocus()).toBe("selectAll");
+        });
+
+        it("should toggle all items on Space", () => {
+          press(" ");
+
+          expect(emitSpy).toHaveBeenCalledWith(["A", "B", "C"]);
+        });
+
+        it("should stay on the header on ArrowUp", () => {
+          const event = press("ArrowUp");
+
+          expect(event.defaultPrevented).toBe(true);
+          expect(component.keyFocus()).toBe("selectAll");
+        });
+
+        it("should return to the first row on ArrowDown", () => {
+          const event = press("ArrowDown");
+
+          expect(event.defaultPrevented).toBe(true);
+          expect(component.keyFocus()).toBe("row");
+          expect(select.options.first.active).toBe(true);
+        });
+
+        it("should return to the first row on any other key without swallowing it", () => {
+          const event = press("Escape");
+
+          expect(event.defaultPrevented).toBe(false);
+          expect(component.keyFocus()).toBe("row");
+          expect(select.options.first.active).toBe(true);
+        });
+
+        it("should reset the marker when the panel closes", async () => {
+          select.close();
+          await fixture.whenStable();
+
+          expect(component.keyFocus()).toBe("row");
+        });
+      });
+    });
+
+    it("should stop listening once destroyed", () => {
+      const host: HTMLElement = fixture.nativeElement;
+      const removeSpy = jest.spyOn(host, "removeEventListener");
+
+      fixture.destroy();
+
+      expect(removeSpy).toHaveBeenCalledWith("keydown", expect.any(Function), true);
     });
   });
 });
