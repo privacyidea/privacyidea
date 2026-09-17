@@ -657,7 +657,9 @@ def _outcome_condition(ca_action_types: str | list[str] | None = None,
                                              (ConditionalAccessOutcome.policy_name, ca_policy_names))
              if (condition := match_condition(column, value, case_insensitive)) is not None]
     if ca_dry_run is not None:
-        terms.append(ConditionalAccessOutcome.dry_run.is_(ca_dry_run))
+        # ``== ca_dry_run`` rather than ``.is_(...)``: Oracle has no boolean type and
+        # "IS 1" is not valid SQL there (ORA-00908). The value is never None here.
+        terms.append(ConditionalAccessOutcome.dry_run == ca_dry_run)
     if not terms:
         return None
     return (select(1)
