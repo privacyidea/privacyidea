@@ -268,7 +268,7 @@ $header-chrome-floor: (
 // fixes it at a flat 42px regardless of column.width. Sizing it from an s-tier floor as if it were
 // a sortable column would overshoot: pass "checkbox" instead of a tier for this one column so
 // table-width() sizes it from its real rendered width.
-$checkbox-column-width: 42px;
+$checkbox-column-width: 72px;
 
 // Sums a table's own col-width-* tiers (see the --column-width-* tokens and .col-width-* classes in
 // styles.scss) into one width, for page-table-state-size($min-width) above: the empty/error/loading
