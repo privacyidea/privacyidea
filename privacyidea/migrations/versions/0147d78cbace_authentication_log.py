@@ -16,11 +16,14 @@ from privacyidea.models.utils import BigIntegerType
 
 # revision identifiers, used by Alembic.
 revision = '0147d78cbace'
-# Chained after e0f1a2b3c4d5 (master's head when this branch started) rather than spliced beneath it: editing
-# down_revision on a revision that may already be stamped in a live database silently strands that database on
-# the old chain forever, since Alembic decides "anything to do?" by comparing the stamped id to the computed
-# head id alone - it does not re-walk ancestry for a database already at that id. See e0f1a2b3c4d5's own
-# down_revision, which stays 'b8c9d0e1f2a3' for exactly this reason.
+# Chained after e0f1a2b3c4d5 rather than spliced beneath it. Neither revision has shipped, so no released
+# database is stamped at either and both orders are equivalent for a fresh install - this only decides which
+# development database ends up stranded. Alembic asks "anything to do?" by comparing the stamped id to the
+# computed head id alone, so a database already at the head never re-walks ancestry. Putting e0f1a2b3c4d5 last
+# makes it the head, and a database stamped there would silently acquire none of the conditional-access tables;
+# this order leaves at worst a database stamped at the head d3e8b1c47f92 without the audit serial widening,
+# which is a column width rather than five missing tables. Either way a stranded development database is
+# corrected with "pi-manage db stamp".
 down_revision = 'e0f1a2b3c4d5'
 branch_labels = None
 depends_on = None
