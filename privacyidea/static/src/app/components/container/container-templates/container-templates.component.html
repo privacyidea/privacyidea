@@ -85,15 +85,29 @@
               }
               @if (column.value.filterable) {
                 <div class="flex">
-                  <button
-                    mat-icon-button
-                    class="filter-button"
-                    [disabled]="containerTemplateService.templates().length === 0"
-                    (click)="$event.stopPropagation(); onClickFilter(column.key)">
-                    <mat-icon class="keyword-button-icon margin-left-0">
-                      {{ getFilterIconName(column.key) }}
-                    </mat-icon>
-                  </button>
+                  @if (column.key === "container_type") {
+                    <button
+                      mat-icon-button
+                      class="filter-button"
+                      [disabled]="containerTemplateService.templates().length === 0"
+                      [matMenuTriggerFor]="containerTypeMenu"
+                      aria-label="Filter by {{ column.value.label }}"
+                      i18n-aria-label="@@common.filterBy"
+                      type="button"
+                      (click)="$event.stopPropagation()">
+                      <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
+                    </button>
+                  } @else {
+                    <button
+                      mat-icon-button
+                      class="filter-button"
+                      [disabled]="containerTemplateService.templates().length === 0"
+                      (click)="$event.stopPropagation(); onClickFilter(column.key)">
+                      <mat-icon class="keyword-button-icon margin-left-0">
+                        {{ getFilterIconName(column.key) }}
+                      </mat-icon>
+                    </button>
+                  }
                 </div>
               }
             </div>
@@ -179,3 +193,20 @@
     </app-table-state>
   }
 </div>
+
+<mat-menu #containerTypeMenu="matMenu">
+  <button
+    (click)="onContainerTypeSelected(undefined)"
+    mat-menu-item>
+    <mat-icon>filter_alt_off</mat-icon>
+    <span i18n="@@common.clearFilter">Clear Filter</span>
+  </button>
+  <mat-divider />
+  @for (type of containerTemplateService.availableContainerTypes(); track type) {
+    <button
+      (click)="onContainerTypeSelected(type)"
+      mat-menu-item>
+      {{ type }}
+    </button>
+  }
+</mat-menu>

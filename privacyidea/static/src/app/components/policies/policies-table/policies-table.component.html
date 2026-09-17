@@ -140,6 +140,7 @@
                   @case ("actions") {
                     @if (policy.action) {
                       <app-view-action-column
+                        (filterAction)="filterByAction($event)"
                         [actions]="policy.action"
                         [highlightTerms]="highlightTerms().actions"
                         [scope]="policy.scope" />

@@ -232,7 +232,7 @@ describe("AuditComponent (template rendering)", () => {
     jest.clearAllMocks();
   });
 
-  it("renders the startdate column as local date/time, not the raw server string", () => {
+  it("renders the startdate column as a local date above its local time, not the raw server string", () => {
     const rows: AuditData[] = [{ startdate: "2026-01-15T10:00:00.123456" } as AuditData];
     mockAuditService.auditResource.value.set({
       detail: undefined,
@@ -258,7 +258,14 @@ describe("AuditComponent (template rendering)", () => {
     const cells = fixture.nativeElement.querySelectorAll("tbody td");
     const cellText = cells[startdateColumnIndex].textContent.trim();
 
-    expect(cellText).toBe(expectedLocalDateTimeFromInput("2026-01-15T10:00:00.123456"));
+    // The cell splits the timestamp over two lines, so date and time are asserted separately -
+    // the filter button's icon ligature sits between them in textContent.
+    const [month, year, time] = expectedLocalDateTimeFromInput("2026-01-15T10:00:00.123456").split(", ");
+    const date = `${month}, ${year}`;
+
+    expect(cellText).toContain(date);
+    expect(cellText).toContain(time);
+    expect(cellText.indexOf(date)).toBeLessThan(cellText.indexOf(time));
     expect(cellText).not.toContain("2026-01-15T10:00:00");
   });
 });

@@ -203,6 +203,12 @@ export class PoliciesTableComponent {
     this.filterComponent()?.updateFilterManually(nextFilter);
   }
 
+  filterByAction(actionName: string): void {
+    const nextFilter = this.filter().setValueOfKey("actions", actionName);
+    this.onFilterUpdate(nextFilter);
+    this.filterComponent()?.updateFilterManually(nextFilter);
+  }
+
   getFilterIconName(columnKey: string): string {
     const actionType = this.filterOptions.find((o) => o.key === columnKey)?.getActionType?.(this.filter()) ?? "add";
     switch (actionType) {

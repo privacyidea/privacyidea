@@ -77,6 +77,12 @@
   white-space: nowrap;
 }
 
+.event-inline {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
 .event-handler-table {
   th.mat-mdc-header-cell.mat-column-ordering,
   td.mat-mdc-cell.mat-column-ordering {

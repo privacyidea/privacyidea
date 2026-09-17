@@ -27,6 +27,7 @@ import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/p
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
@@ -43,6 +44,7 @@ import {
 } from "@services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 
@@ -66,6 +68,7 @@ const columnKeysMap = [
     MatButtonModule,
     NgClass,
     CopyableComponent,
+    FilterValueButtonComponent,
     ScrollToTopDirective,
     ClearableInputComponent,
     ChallengesTableActionsComponent,
@@ -148,6 +151,14 @@ export class ChallengesTableComponent {
   getFilterIconName(keyword: string): string {
     const isSelected = this.isFilterSelected(keyword, this.challengesService.activeFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  filterTooltip(columnKey: string): string {
+    return filterValueTooltip(columnKey);
+  }
+
+  addFilterValue(keyword: string, value: string): void {
+    this.challengesService.updateFilter((current) => current.addEntry(keyword, value));
   }
 
   onKeywordClick(filterKeyword: string): void {

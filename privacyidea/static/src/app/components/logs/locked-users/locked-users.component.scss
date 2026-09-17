@@ -61,18 +61,6 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
-// Reveal the inline row actions (filter button + auth-log shortcut) only while the row is
-// hovered or holds focus, to keep dense rows calm. Both read the inherited
-// --filter-button-opacity custom property; :focus-within keeps them reachable for keyboard/AT users.
-.locked-users-table tr.mat-mdc-row {
-  --filter-button-opacity: 0;
-
-  &:hover,
-  &:focus-within {
-    --filter-button-opacity: 1;
-  }
-}
-
 // Placeholder shown in the Lock Expiry column for permanent locks (no expiry).
 .lock-date {
   color: var(--mat-sys-on-surface-variant);
@@ -88,4 +76,3 @@
 a[role="button"] {
   cursor: pointer;
 }
-

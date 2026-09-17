@@ -84,6 +84,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { toFilterDisplay } from "@utils/date-format.utils";
+import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 import { USER_ROLE_CONFIG, UserRoleBadge, userRoleBadge as roleBadgeFor } from "../user-roles";
 
 // CSS highlight class per event outcome; outcome values come from the backend's AuthEventOutcome (GET
@@ -232,14 +233,6 @@ const CLIENT_LABEL_SOURCE_META: Record<string, { label: string; tooltip: string 
 // Full, independently-translatable tooltip per column with an inline filter button, kept as complete sentences (not
 // noun-interpolated) so each language can phrase its grammar correctly; a column with no entry falls back to the
 // button's generic default.
-const FILTER_TOOLTIPS: Record<string, string> = {
-  username: $localize`Filter by this user`,
-  source_ip: $localize`Filter by this source IP`,
-  serial: $localize`Filter by this serial`,
-  transaction_id: $localize`Filter by this transaction ID`,
-  attempt_id: $localize`Filter by this attempt ID`
-};
-
 // Columns whose value is clipped instead of widening the table: the full value stays reachable via the truncation
 // tooltip, the copy button and the inline filter. Width classes (see .cell-truncate-* rules) differ per column - ids
 // read by their leading characters, a client label read as a name - but never narrow a column past its header's own
@@ -803,7 +796,7 @@ export class AuthenticationLog {
 
   // Localized tooltip for a cell's inline filter button, falling back to the generic phrasing.
   filterTooltip(columnKey: string): string {
-    return FILTER_TOOLTIPS[columnKey] ?? $localize`Filter by this value`;
+    return filterValueTooltip(columnKey);
   }
 
   // The width class a clipped column's value carries, or null for a column shown in full.

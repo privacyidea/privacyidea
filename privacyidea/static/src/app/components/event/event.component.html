@@ -121,13 +121,32 @@
                     <div class="detailed-cell-container">
                       <ul class="no-indention margin-0">
                         @for (event of getEventArray(element.event); track event) {
-                          <li [innerHTML]="event | highlight: filterString()"></li>
+                          <li class="flex ali-center">
+                            <span [innerHTML]="event | highlight: filterString()"></span>
+                            <app-filter-value-button
+                              class="margin-left-8"
+                              [label]="filterTooltip('event')"
+                              [value]="event"
+                              (filterValue)="onFilterInput($event)" />
+                          </li>
                         }
                       </ul>
                     </div>
                   } @else {
                     <div class="event-table-cell">
-                      <span [innerHTML]="element.event?.join(', ') | highlight: filterString()"></span>
+                      @for (event of getEventArray(element.event); track event; let last = $last) {
+                        <span class="event-inline">
+                          <span [innerHTML]="event | highlight: filterString()"></span>
+                          <app-filter-value-button
+                            class="margin-left-8"
+                            [label]="filterTooltip('event')"
+                            [value]="event"
+                            (filterValue)="onFilterInput($event)" />
+                          @if (!last) {
+                            ,
+                          }
+                        </span>
+                      }
                     </div>
                   }
                 }

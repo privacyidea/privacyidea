@@ -130,6 +130,15 @@
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
                         </button>
+                      } @else if (apiFilterKeyMap[column.key] === "rollout_state") {
+                        <button
+                          [matMenuTriggerFor]="rolloutStateMenu"
+                          aria-label="Filter by {{ column.label }}"
+                          i18n-aria-label="@@common.filterBy"
+                          class="filter-button"
+                          mat-icon-button>
+                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
+                        </button>
                       } @else {
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
@@ -240,6 +249,13 @@
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
                       </a>
+                      @if (tokenDetails.container_serial) {
+                        <app-filter-value-button
+                          class="margin-left-8"
+                          [label]="filterTooltip('container_serial')"
+                          [value]="tokenDetails.container_serial"
+                          (filterValue)="addFilterValue('container_serial', $event)" />
+                      }
                     </app-copyable>
                   }
                   @case ("username") {
@@ -258,6 +274,13 @@
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
                       </a>
+                      @if (tokenDetails[column.key]) {
+                        <app-filter-value-button
+                          class="margin-left-8"
+                          [label]="filterTooltip('username')"
+                          [value]="tokenDetails[column.key]"
+                          (filterValue)="filterByUser($event, tokenDetails.user_realm)" />
+                      }
                     </app-copyable>
                   }
                   @default {
@@ -337,6 +360,23 @@
       </button>
     }
   </ng-template>
+</mat-menu>
+
+<mat-menu #rolloutStateMenu="matMenu">
+  <button
+    (click)="onItemSelected('rollout_state', '')"
+    mat-menu-item>
+    <mat-icon>filter_alt_off</mat-icon>
+    <span i18n="@@common.clearFilter">Clear Filter</span>
+  </button>
+  <mat-divider />
+  @for (state of rolloutStateFilterOptions; track state.value) {
+    <button
+      (click)="onItemSelected('rollout_state', state.value)"
+      mat-menu-item>
+      {{ state.label }}
+    </button>
+  }
 </mat-menu>
 
 <mat-menu #advancedFilterMenu="matMenu">

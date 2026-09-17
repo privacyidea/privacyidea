@@ -36,6 +36,7 @@ import {
   ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -53,6 +54,7 @@ import { ContainerTableActionsComponent } from "@components/container/container-
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -61,6 +63,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 @Component({
   selector: "app-container-table",
   standalone: true,
@@ -73,6 +76,7 @@ import { inlineFilterHint } from "@utils/filter-hint.utils";
     NgClass,
     CopyButtonComponent,
     CopyableComponent,
+    FilterValueButtonComponent,
     MatCheckboxModule,
     ScrollToTopDirective,
     ClearableInputComponent,
@@ -102,6 +106,7 @@ export class ContainerTableComponent implements OnDestroy {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
 
   readonly columnsKeyMap = this.tableUtilsService.pickColumns(
     "select",
@@ -250,6 +255,18 @@ export class ContainerTableComponent implements OnDestroy {
   getFilterIconName(keyword: string): string {
     const isSelected = this.isFilterSelected(keyword, this.containerService.activeFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  filterTooltip(columnKey: string): string {
+    return filterValueTooltip(columnKey);
+  }
+
+  // The backend resolves a user only within a realm, so the row's own realm goes along with the name.
+  filterByUser(username: string, realm: string): void {
+    this.containerService.updateFilter((current) => {
+      const filter = current.addEntry("user", username);
+      return realm ? filter.addEntry("realm", realm) : filter;
+    });
   }
 
   onKeywordClick(filterKeyword: string): void {
