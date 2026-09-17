@@ -49,7 +49,6 @@ import { firstValueFrom, lastValueFrom } from "rxjs";
   standalone: true,
   imports: [],
   templateUrl: "./enroll-webauthn.component.html",
-  styleUrl: "./enroll-webauthn.component.scss",
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollWebauthnComponent) }]
 })
 export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentData> {

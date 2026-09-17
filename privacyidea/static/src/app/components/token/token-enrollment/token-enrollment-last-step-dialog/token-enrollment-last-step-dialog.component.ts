@@ -32,7 +32,6 @@ import { TokenEnrollmentDialogData, TokenService, TokenServiceInterface } from "
 @Component({
   selector: "app-token-enrollment-last-step-dialog",
   templateUrl: "./token-enrollment-last-step-dialog.component.html",
-  styleUrl: "./token-enrollment-last-step-dialog.component.scss",
   standalone: true,
   imports: [
     DialogWrapperComponent,
