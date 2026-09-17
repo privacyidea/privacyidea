@@ -20,4 +20,46 @@
   .sticky-header {
     z-index: 120;
   }
+
+  // Once the table is scrolled, the filter hint below the input is just noise above the sticky
+  // header - the same content the hint describes is already scrolled out of view above it.
+  &:has(.table-scroll-region.scrolled-from-top) .token-table-filter mat-hint {
+    display: none;
+  }
+
+  // The full action-button row only fits above the table; once scrolled it would sit under the
+  // sticky header and cover rows, so it is swapped for a single menu trigger next to "More Filter"
+  // instead of also being made sticky.
+  .table-actions-trigger {
+    display: none;
+  }
+
+  // Collapses via a grid track rather than max-height: a track animates smoothly between 1fr and
+  // 0fr regardless of the row's actual content height, where max-height needs that height guessed
+  // up front and then spends most of the transition shrinking past empty space above the content.
+  // The row's own margin is folded into the same transition so it closes with the track instead of
+  // leaving a gap the instant the track hits zero.
+  .token-actions-row {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition:
+      grid-template-rows 200ms ease,
+      margin-bottom 200ms ease;
+
+    .token-actions-row-inner {
+      min-height: 0;
+      overflow: hidden;
+    }
+  }
+
+  &:has(.table-scroll-region.scrolled-from-top) {
+    .token-actions-row {
+      grid-template-rows: 0fr;
+      margin-bottom: 0;
+    }
+
+    .table-actions-trigger {
+      display: inline-flex;
+    }
+  }
 }

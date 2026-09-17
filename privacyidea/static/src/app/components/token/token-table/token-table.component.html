@@ -64,6 +64,16 @@
         matTooltip="More Filter">
         <mat-icon>filter_list</mat-icon>
       </button>
+      <button
+        [matMenuTriggerFor]="tokenTableActions.actionsMenu"
+        aria-label="Actions"
+        class="table-actions-trigger margin-left-8"
+        i18n-aria-label="@@common.actions"
+        i18n-matTooltip="@@common.actions"
+        mat-icon-button
+        matTooltip="Actions">
+        <mat-icon>menu</mat-icon>
+      </button>
       <mat-paginator
         (page)="onPageEvent($event)"
         [length]="totalLength()"
@@ -72,8 +82,10 @@
         [pageSize]="pageSize()"
         showFirstLastButtons />
     </div>
-    <div class="margin-bottom-16">
-      <app-token-table-actions />
+    <div class="token-actions-row margin-bottom-16">
+      <div class="token-actions-row-inner">
+        <app-token-table-actions #tokenTableActions />
+      </div>
     </div>
     <div
       appScrollEdges

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, DOCUMENT, inject, LOCALE_ID } from "@angular/core";
+import { Component, DOCUMENT, inject, LOCALE_ID, ViewChild } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -36,7 +36,7 @@ import { tap } from "rxjs/operators";
 import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog/selected-user-attach-dialog.component";
 import { ToggleActiveAction, ToggleActiveDialogComponent } from "./toggle-active-dialog/toggle-active-dialog.component";
 
-import { MatMenuModule } from "@angular/material/menu";
+import { MatMenu, MatMenuModule } from "@angular/material/menu";
 import { Router, RouterLink } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
@@ -51,6 +51,7 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
   styleUrl: "./token-table-actions.component.scss"
 })
 export class TokenTableActionsComponent {
+  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
   private readonly localeId: string = inject(LOCALE_ID);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
