@@ -142,10 +142,10 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     expect(visible[2].section).toBe("logs");
 
     // Overflow should contain items that were displaced or were already there
-    // Indices: 2, 3, 5, 7, 8 (users, policies, subscription, external, config)
-    expect(overflow.length).toBe(5);
+    // (policies, subscription, external, config)
+    expect(overflow.length).toBe(4);
     expect(overflow.some((item) => item.section === "logs")).toBe(false);
-    expect(overflow[0].section).toBe("users");
+    expect(overflow[0].section).toBe("policies");
   });
 
   it("should return false for isOverflowSectionActive when the active item is moved to visible list", () => {
@@ -288,9 +288,9 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
       expect(component.activeSection()).toBe("token");
     });
 
-    it("should detect 'container' for containers route", () => {
+    it("should detect 'token' for containers route", () => {
       contentService.routeUrl.set(ROUTE_PATHS.CONTAINERS);
-      expect(component.activeSection()).toBe("container");
+      expect(component.activeSection()).toBe("token");
     });
 
     it("should detect 'users' for users route", () => {

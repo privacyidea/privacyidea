@@ -277,6 +277,23 @@
       <mat-icon class="ms--shield-list"></mat-icon>
       <span i18n="@@nav.overview">Overview</span>
     </a>
+    @if (authService.anyContainerActionAllowed()) {
+      <a
+        [ngClass]="contentService.onContainers() ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.CONTAINERS]">
+        <mat-icon class="mdi--folder-list"></mat-icon>
+        <span i18n="@@common.container">Container</span>
+      </a>
+    }
+    @if (contentService.onContainersDetails()) {
+      <a class="sub-nav-active">
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">folder</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
+        <span i18n="@@nav.containerDetails">Container Details</span>
+      </a>
+    }
     @if (contentService.onTokenDetails()) {
       <a class="sub-nav-active">
         <span class="icon-badge">
@@ -325,30 +342,6 @@
       <mat-icon>policy</mat-icon>
       <span i18n="@@nav.findToken">Find Token</span>
     </a>
-    <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
-  </mat-toolbar>
-}
-
-@if (activeSection() === "container") {
-  <mat-toolbar
-    class="secondary-toolbar"
-    appOverflowNav>
-    <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <a
-      [ngClass]="contentService.onContainers() ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.CONTAINERS]">
-      <mat-icon class="mdi--folder-list"></mat-icon>
-      <span i18n="@@nav.overview">Overview</span>
-    </a>
-    @if (contentService.onContainersDetails()) {
-      <a class="sub-nav-active">
-        <span class="icon-badge">
-          <mat-icon class="padding-right-4">folder</mat-icon>
-          <mat-icon class="icon-badge-overlay">settings</mat-icon>
-        </span>
-        <span i18n="@@common.details">Details</span>
-      </a>
-    }
     @if (contentService.routePath() === ROUTE_PATHS.CONTAINERS_CREATE) {
       <a class="sub-nav-active">
         <span class="icon-badge">
@@ -463,7 +456,7 @@
       [ngClass]="contentService.routePath() === ROUTE_PATHS.POLICIES ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.POLICIES]">
       <mat-icon>gavel</mat-icon>
-      <span i18n="@@nav.overview">Overview</span>
+      <span i18n="@@nav.policyOverview">Policy Overview</span>
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_DETAILS)) {
       <a class="sub-nav-active">
@@ -533,6 +526,36 @@
         <span i18n="@@apiClient.createApiClient">Create API Client</span>
       </a>
     }
+    @if (authService.actionAllowed("eventhandling_read")) {
+      <a
+        [ngClass]="contentService.routePath() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.EVENTS]">
+        <mat-icon>flag</mat-icon>
+        <span i18n="@@nav.eventHandler">Event Handler</span>
+      </a>
+    }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EVENTS_DETAILS)) {
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-4">flag</mat-icon>
+          <mat-icon class="icon-badge-overlay">settings</mat-icon>
+        </span>
+        <span i18n="@@nav.eventDetails">Event Details</span>
+      </a>
+    }
+    @if (contentService.routePath() === ROUTE_PATHS.EVENTS_NEW) {
+      <a
+        class="sub-nav-active"
+        data-overflow-child>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-6">flag</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n="@@nav.createEvent">Create Event</span>
+      </a>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
@@ -562,7 +585,7 @@
         [ngClass]="contentService.onAudit() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.AUDIT]">
         <mat-icon>list_alt</mat-icon>
-        <span i18n="@@nav.audit">Audit</span>
+        <span i18n="@@nav.auditLog">Audit Log</span>
       </a>
     }
     @if (authService.actionAllowed("authentication_log_read")) {
@@ -672,36 +695,6 @@
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n="@@common.createMachine">Create Machine Resolver</span>
-      </a>
-    }
-    @if (authService.actionAllowed("eventhandling_read")) {
-      <a
-        [ngClass]="contentService.routePath() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.EVENTS]">
-        <mat-icon>flag</mat-icon>
-        <span i18n="@@common.events">Events</span>
-      </a>
-    }
-    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EVENTS_DETAILS)) {
-      <a
-        class="sub-nav-active"
-        data-overflow-child>
-        <span class="icon-badge">
-          <mat-icon class="padding-right-4">flag</mat-icon>
-          <mat-icon class="icon-badge-overlay">settings</mat-icon>
-        </span>
-        <span i18n="@@nav.eventDetails">Event Details</span>
-      </a>
-    }
-    @if (contentService.routePath() === ROUTE_PATHS.EVENTS_NEW) {
-      <a
-        class="sub-nav-active"
-        data-overflow-child>
-        <span class="icon-badge">
-          <mat-icon class="padding-right-6">flag</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@nav.createEvent">Create Event</span>
       </a>
     }
     @if (authService.actionAllowed("periodictask_read")) {
