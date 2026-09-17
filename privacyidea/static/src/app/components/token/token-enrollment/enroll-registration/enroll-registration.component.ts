@@ -38,7 +38,6 @@ export interface RegistrationEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [],
   templateUrl: "./enroll-registration.component.html",
-  styleUrl: "./enroll-registration.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollRegistrationComponent) }
   ]

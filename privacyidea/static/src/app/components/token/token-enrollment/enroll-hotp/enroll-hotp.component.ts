@@ -44,7 +44,6 @@ export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   selector: "app-enroll-hotp",
   imports: [MatCheckbox, MatSelect, MatOption, MatLabel, MatFormField, MatInput, MatHint, MatError, FormField],
   templateUrl: "./enroll-hotp.component.html",
-  styleUrl: "./enroll-hotp.component.scss",
   standalone: true,
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollHotpComponent) }]
 })
