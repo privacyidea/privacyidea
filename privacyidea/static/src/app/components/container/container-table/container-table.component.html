@@ -98,6 +98,7 @@
             } @else {
               <th
                 *matHeaderCellDef
+                [ngClass]="'col-width-' + column.width"
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}

@@ -69,10 +69,10 @@ import { TokenTableActionsComponent } from "./token-table-actions/token-table-ac
 const columnKeysMap = [
   { key: "select", label: "", width: "xs" },
   { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
-  { key: "tokentype", label: $localize`:@@common.type:Type`, width: "xs" },
-  { key: "active", label: $localize`:@@common.active:Active`, width: "xs" },
+  { key: "tokentype", label: $localize`:@@common.type:Type`, width: "s" },
+  { key: "active", label: $localize`:@@common.active:Active`, width: "s" },
   { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
-  { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter`, width: "xs" },
+  { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter`, width: "s" },
   { key: "rollout_state", label: $localize`:@@token.rolloutState:Rollout State`, width: "s" },
   { key: "username", label: $localize`:@@common.user:User`, width: "s" },
   { key: "user_realm", label: $localize`:@@common.userRealm:User Realm`, width: "s" },

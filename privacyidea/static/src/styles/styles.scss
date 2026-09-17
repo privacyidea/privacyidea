@@ -80,10 +80,10 @@ body {
   // for a component-scoped rule): xs/s fit a short code or badge, m the existing 170px convention
   // (e.g. a serial), l/xl the existing 240/300px conventions (e.g. a wrapped description).
   --column-width-xs: 32px;
-  --column-width-s: 120px;
-  --column-width-m: 180px;
+  --column-width-s: 140px;
+  --column-width-m: 190px;
   --column-width-l: 240px;
-  --column-width-xl: 300px;
+  --column-width-xl: 290px;
 
   // Pre-baked Material elevation shadows (0..24) as CSS variables.
   // Generated at build time so that elevation can be re-skinned at runtime

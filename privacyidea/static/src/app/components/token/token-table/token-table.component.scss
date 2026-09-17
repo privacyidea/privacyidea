@@ -8,10 +8,10 @@
   flex-direction: column;
   overflow: hidden;
   // Sized from the same col-width-* tiers the columns below use (select checkbox + serial m +
-  // tokentype xs + active xs + description xl + failcount xs + rollout_state s + username s +
+  // tokentype s + active s + description xl + failcount s + rollout_state s + username s +
   // user_realm s + realms s + container_serial m), so the empty/error state is as wide as the table
   // it stands in for, not the unrelated 44rem default.
-  @include table.page-table-state-size(table.table-width(checkbox, m, xs, xs, xl, xs, s, s, s, s, m));
+  @include table.page-table-state-size(table.table-width(checkbox, m, s, s, xl, s, s, s, s, s, m));
 
   .realm-break {
     margin-top: 3px;
