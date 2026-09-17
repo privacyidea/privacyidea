@@ -629,42 +629,62 @@ select it in the handler; the migration covers the upgrade path, which is where 
 
 ---
 
-## Phase 6 — Conditional Access Integration
+## Phase 6 — Conditional Access Integration ✅
 
 > Goal: A webhook can be fired as a Conditional Access stage action.
 
-### 6.1 — `WEBHOOK` lockout stage action
+### 6.1 — `WEBHOOK` stage action ✅
 
-- [ ] **File:** `privacyidea/lib/conditional_access/` (appropriate module)
-- [ ] Add `LockoutAction.WEBHOOK` enum value
-- [ ] `action_value = {"webhook": "<identifier>", "payload": "<optional template>"}`
-- [ ] Add to `_ACTIONS_BY_TARGET` for both `USER` and `SOURCE_IP` policies
-- [ ] In `_execute_stage_actions`: dispatch `WEBHOOK` next to existing
-  `EMAIL_ADMIN` branch
-- [ ] Call `fire_webhook()` with Conditional Access tag dict (event type, count, threshold, policy name, source IP, lock
-  duration, …)
-- [ ] **Dry-run must NOT fire the webhook**
-- [ ] Failures logged and never propagated — a dead webhook must not fail the authentication or skip remaining stage
-  actions
+The plan called the enum `LockoutAction`; the class is
+`ConditionalAccessAction` in `privacyidea/lib/conditional_access/engine.py`, and the action is a stage action rather
+than a "lockout" one — it notifies and restricts nothing.
 
-**Tests:**
+- [x] **Files:** `privacyidea/lib/conditional_access/engine.py` (enum + execution),
+  `privacyidea/lib/conditional_access/policy.py` (CRUD validation)
+- [x] `ConditionalAccessAction.WEBHOOK` enum value, ranked last in `ACTION_SEVERITY` (it reports nothing to the user,
+  like the `EMAIL_*` pair, so it carries no entry in
+  `DEFAULT_ERROR_MESSAGES`)
+- [x] `action_value = {"webhook": "<identifier>", "payload": "<optional template>"}`, validated by
+  `_validate_webhook_action_value`. The identifier is **required** (unlike the
+  `EMAIL_*` `smtp_identifier`: without it the action names no endpoint at all), but is deliberately not checked against
+  the existing webhooks — a webhook deleted later must not make an unrelated edit to the policy unsaveable.
+- [x] Added to `_ACTIONS_BY_TARGET` for both `USER` and `SOURCE_IP`
+- [x] Added to `REPEATABLE_ACTIONS` — each copy names its own webhook definition, so a stage that has to tell both a
+  SIEM and a chat channel needs two (the same reason `EMAIL_ADMIN`
+  repeats). Served per target through `get_target_constraints()`.
+- [x] `_execute_stage_actions`: `WEBHOOK` dispatches to `_fire_action_webhook()` next to the
+  `EMAIL_*` branch; an outcome is recorded only for a delivery that actually succeeded
+- [x] `fire_webhook()` is called with the payload rendered from the existing
+  `_base_action_tags()` dict (`username`, `realm`, `resolver`, `client_ip`, `count`,
+  `threshold`, `event_type`, `stage_id`, `policy`, `time`). A JSON payload is substituted value by value
+  (`_render_webhook_payload`), so a tag carrying a quote cannot break the document — the treatment the `WebHookHandler`
+  gives a JSON body; anything else is plain text. Without a payload the webhook's own `default_payload` is sent.
+- [x] **Dry-run does not fire**: the dry-run branch returns before `_execute_stage_actions`
+  is reached, so no new suppression was needed — only a test pinning it
+- [x] Failures logged and never propagated — `fire_webhook()` never raises, and the per-action `try` in
+  `_execute_stage_actions` guards the rest
 
-- [ ] Webhook fires when stage action triggers
-- [ ] Correct Conditional Access tags in payload
-- [ ] Dry-run does not fire
-- [ ] Webhook failure doesn't break authentication
-- [ ] Webhook failure doesn't skip remaining actions
-- [ ] Works for both USER and SOURCE_IP target types
+**Tests** (`tests/test_lib_conditional_access_engine.py`, `tests/test_lib_conditional_access_policy.py`):
+
+- [x] Webhook fires when the stage action triggers
+- [x] Correct Conditional Access tags in the payload (JSON and plain text)
+- [x] Dry-run does not fire
+- [x] Webhook failure (500) doesn't break authentication and records no outcome
+- [x] An unreachable webhook doesn't skip the remaining actions
+- [x] Works for both USER and SOURCE_IP target types
+- [x] Unknown identifier / missing identifier are skipped, not raised
+- [x] Two WEBHOOK actions on one stage reach two systems
+- [x] CRUD: identifier required, vocabulary checked, both targets accepted
 
 ---
 
-## Phase 7 — WebUI (static_new)
+## Phase 7 — WebUI (static)
 
 > Goal: Admins can manage webhooks in the new UI and select them from dropdowns.
 
 ### 7.1 — Webhook configuration section
 
-- [ ] **Location:** `privacyidea/static_new/` (appropriate directory)
+- [ ] **Location:** `privacyidea/static/` (appropriate directory)
 - [ ] List view: show all configured webhooks (identifier, URL, auth type)
 - [ ] Add/Edit form:
     - Identifier, description, URL, HTTP method

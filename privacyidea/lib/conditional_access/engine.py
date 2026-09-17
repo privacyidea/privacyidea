@@ -17,6 +17,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 import ipaddress
+import json
 import logging
 import re
 from collections.abc import Callable, Sequence
@@ -93,8 +94,9 @@ class ConditionalAccessAction(StrEnum):
     can execute when its failure threshold is met.
 
     :attr:`LOCK_USER`, :attr:`PERMANENT_LOCK_USER`, :attr:`EMAIL_ADMIN`,
-    :attr:`EMAIL_USER`, :attr:`BLOCK_IP` and :attr:`PERMANENT_BLOCK_IP` are
-    post-response side effects executed by :func:`evaluate_conditional_access_policies`.
+    :attr:`EMAIL_USER`, :attr:`BLOCK_IP`, :attr:`PERMANENT_BLOCK_IP` and
+    :attr:`WEBHOOK` are post-response side effects executed by
+    :func:`evaluate_conditional_access_policies`.
     :attr:`DENY` decides the *current* request and is therefore handled by the
     pre-auth decision step (:func:`evaluate_access_decision`) instead. The action
     table stores the string value, so the enum can grow without a schema change.
@@ -117,6 +119,7 @@ class ConditionalAccessAction(StrEnum):
     BLOCK_IP = "BLOCK_IP"
     PERMANENT_BLOCK_IP = "PERMANENT_BLOCK_IP"
     DENY = "DENY"
+    WEBHOOK = "WEBHOOK"
 
 
 #: Every action, most severe first - the one severity ordering there is, so an action reads the same wherever it
@@ -133,6 +136,7 @@ ACTION_SEVERITY: tuple[ConditionalAccessAction, ...] = (
     ConditionalAccessAction.DENY,
     ConditionalAccessAction.EMAIL_USER,
     ConditionalAccessAction.EMAIL_ADMIN,
+    ConditionalAccessAction.WEBHOOK,
 )
 
 #: Severity rank of each action, mirroring
@@ -2090,6 +2094,90 @@ def _send_action_email(action_type: "ConditionalAccessAction", stage_action: Con
     return False
 
 
+def _render_webhook_payload(payload: str, tags: dict) -> str:
+    """
+    Render the ``{tag}`` placeholders of a WEBHOOK action's payload template.
+
+    A payload that parses as a JSON object or array is substituted key by key and
+    value by value and dumped again, so a tag carrying a quote cannot break the
+    document — the same treatment the WebHookHandler gives a JSON payload
+    (:meth:`~privacyidea.lib.eventhandler.webhookeventhandler.WebHookHandler._replace_tags`).
+    Anything else is substituted as plain text. The distinction is made on the
+    payload itself rather than on the webhook's ``content_type``, so no second
+    read of the webhook definition is needed to render what is about to be sent.
+
+    Substitution is :func:`_safe_format` throughout: an unknown placeholder is
+    left as written rather than dropping the notification, which matters more
+    here than elsewhere, because the payload is what the receiving system reads.
+    """
+    try:
+        document = json.loads(payload)
+    except (ValueError, TypeError):
+        return _safe_format(payload, tags)
+    if not isinstance(document, (dict, list)):
+        # A bare JSON scalar ("5", "true", a quoted string) is a plain payload
+        # that happens to parse; substituting it as text keeps it verbatim.
+        return _safe_format(payload, tags)
+
+    def substitute(value):
+        if isinstance(value, dict):
+            return {_safe_format(key, tags): substitute(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [substitute(item) for item in value]
+        if isinstance(value, str):
+            return _safe_format(value, tags)
+        # Numbers, booleans and None carry no placeholders and pass through.
+        return value
+
+    return json.dumps(substitute(document))
+
+
+def _fire_action_webhook(stage_action: ConditionalAccessStageAction, tags: dict) -> bool:
+    """
+    Fire the WEBHOOK notification for a triggered stage action.
+
+    The stage action's ``action_value`` is a JSON object carrying ``webhook``
+    (the identifier of the webhook definition that owns the endpoint, the HTTP
+    method, the headers and the credentials) and an optional ``payload``
+    template rendered with ``{tag}`` substitution. Without a payload the
+    webhook's own ``default_payload`` applies, which is what lets one webhook
+    serve several policies with one body.
+
+    Nothing about the endpoint is configured here: which URL is called, whether
+    it is reachable at all and whether the outbound request guard permits it are
+    all properties of the webhook definition
+    (:func:`~privacyidea.lib.webhook.fire_webhook`), which never raises — a dead
+    webhook can neither fail the authentication nor skip the stage's remaining
+    actions.
+
+    :return: whether the endpoint answered with a 2xx status; ``False`` for a
+        misconfiguration or a delivery failure.
+    """
+    webhook_config = stage_action.action_value if isinstance(stage_action.action_value, dict) else {}
+    identifier = webhook_config.get("webhook")
+    if not identifier:
+        log.warning(f"WEBHOOK action {stage_action.id}: needs a 'webhook' identifier in action_value; skipping.")
+        return False
+
+    payload = webhook_config.get("payload")
+    if payload:
+        payload = _render_webhook_payload(str(payload), tags)
+
+    # Imported lazily, mirroring the SMTP import in _send_action_email: the engine's hot path is evaluated on
+    # every request and must not carry the webhook module's requests/TLS imports for the sake of an action that
+    # fires rarely.
+    from privacyidea.lib.webhook import fire_webhook
+    # The identifier is logged, never the URL: it is a property of the webhook definition and may embed a token.
+    result = fire_webhook(identifier, payload=payload or None)
+    if result["success"]:
+        log.info(f"WEBHOOK action {stage_action.id} fired webhook {identifier!r} "
+                 f"(status {result['status_code']}).")
+        return True
+    log.warning(f"WEBHOOK action {stage_action.id}: webhook {identifier!r} failed "
+                f"(status {result['status_code']}): {result['error']}")
+    return False
+
+
 def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAccessPolicyStage,
                            actions: Sequence[ConditionalAccessStageAction], context: CAContext,
                            subject: "LockSubject | None", now: datetime, count: int,
@@ -2171,6 +2259,9 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
                     record(action_type, expires_at=lock_expires_at)
             elif action_type in (ConditionalAccessAction.EMAIL_ADMIN, ConditionalAccessAction.EMAIL_USER):
                 if _send_action_email(action_type, action, user, tags):
+                    record(action_type)
+            elif action_type == ConditionalAccessAction.WEBHOOK:
+                if _fire_action_webhook(action, tags):
                     record(action_type)
             elif action_type in (ConditionalAccessAction.BLOCK_IP, ConditionalAccessAction.PERMANENT_BLOCK_IP):
                 # BLOCK_IP on a per-user policy blocks only the source IP of the request that tripped it; it is not
