@@ -95,18 +95,18 @@ const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
 // the ones that do have a tier and their combined sizes (see table-width() in table.scss) drive
 // the table's min-width in audit.component.scss.
 const columnKeysMap: { key: string; label: string; width?: "xs" | "s" | "m" | "l" | "xl" }[] = [
-  { key: "number", label: $localize`:@@audit.number:Number`, width: "xs" },
+  { key: "number", label: $localize`:@@audit.number:Number`, width: "s" },
   { key: "action", label: $localize`:@@common.action:Action`, width: "l" },
-  { key: "success", label: $localize`:@@common.successLabel:Success`, width: "xs" },
-  { key: "authentication", label: $localize`:@@audit.authentication:Authentication`, width: "s" },
+  { key: "success", label: $localize`:@@common.successLabel:Success`, width: "s" },
+  { key: "authentication", label: $localize`:@@audit.authentication:Authentication`, width: "m" },
   { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
   { key: "container_serial", label: $localize`:@@common.containerSerial:Container Serial`, width: "m" },
   { key: "startdate", label: $localize`:@@audit.startDate:Start Date`, width: "l" },
-  { key: "duration", label: $localize`:@@audit.duration:Duration`, width: "xs" },
-  { key: "token_type", label: $localize`:@@common.tokenType:Token Type`, width: "xs" },
+  { key: "duration", label: $localize`:@@audit.duration:Duration`, width: "s" },
+  { key: "token_type", label: $localize`:@@common.tokenType:Token Type`, width: "s" },
   { key: "user", label: $localize`:@@common.user:User`, width: "s" },
   { key: "realm", label: $localize`:@@common.realm:Realm`, width: "s" },
-  { key: "administrator", label: $localize`:@@common.administrator:Administrator`, width: "s" },
+  { key: "administrator", label: $localize`:@@common.administrator:Administrator`, width: "m" },
   { key: "action_detail", label: $localize`:@@audit.actionDetail:Action Detail` },
   { key: "info", label: $localize`:@@audit.info:Info` },
   { key: "policies", label: $localize`:@@common.policies:Policies` },
@@ -114,13 +114,13 @@ const columnKeysMap: { key: string; label: string; width?: "xs" | "s" | "m" | "l
   { key: "user_agent", label: $localize`:@@common.userAgent:User Agent`, width: "l" },
   { key: "user_agent_version", label: $localize`:@@audit.userAgentVersion:User Agent Version`, width: "s" },
   { key: "privacyidea_server", label: $localize`:@@audit.privacyideaServer:PrivacyIDEA Server`, width: "m" },
-  { key: "log_level", label: $localize`:@@audit.logLevel:Log Level`, width: "xs" },
-  { key: "clearance_level", label: $localize`:@@audit.clearanceLevel:Clearance Level`, width: "xs" },
-  { key: "sig_check", label: $localize`:@@audit.signatureCheck:Signature Check`, width: "xs" },
-  { key: "missing_line", label: $localize`:@@audit.missingLine:Missing Line`, width: "xs" },
+  { key: "log_level", label: $localize`:@@audit.logLevel:Log Level`, width: "s" },
+  { key: "clearance_level", label: $localize`:@@audit.clearanceLevel:Clearance Level`, width: "s" },
+  { key: "sig_check", label: $localize`:@@audit.signatureCheck:Signature Check`, width: "s" },
+  { key: "missing_line", label: $localize`:@@audit.missingLine:Missing Line`, width: "s" },
   { key: "resolver", label: $localize`:@@common.resolver:Resolver`, width: "s" },
-  { key: "thread_id", label: $localize`:@@audit.threadId:Thread ID`, width: "xs" },
-  { key: "container_type", label: $localize`:@@common.containerType:Container Type`, width: "xs" }
+  { key: "thread_id", label: $localize`:@@audit.threadId:Thread ID`, width: "m" },
+  { key: "container_type", label: $localize`:@@common.containerType:Container Type`, width: "s" }
 ];
 
 @Component({

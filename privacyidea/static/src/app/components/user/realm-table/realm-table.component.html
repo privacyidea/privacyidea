@@ -67,7 +67,7 @@
                   [ngClass]="{ 'just-center': column.key === 'actions' }"
                   class="flex ali-center">
                   {{ column.label }}
-                  <div class="margin-left-16 flex">
+                  <div class="flex">
                     @if (!["actions", "resolvers"].includes(column.key)) {
                       <button
                         (click)="tableUtilsService.onSortButtonClick(column.key, sort)"

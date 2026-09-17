@@ -84,7 +84,7 @@
               <div class="flex ali-center">
                 {{ columnKeysMap[column] }}
                 @if (column !== "delete") {
-                  <div class="margin-left-16 flex">
+                  <div class="flex">
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column, sort)"
                       class="sort-button"
