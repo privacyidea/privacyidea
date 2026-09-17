@@ -43,3 +43,25 @@
     </button>
   }
 </div>
+
+<!-- Same actions as menu items, for the compact trigger shown next to "More Filter" once the
+     table is scrolled and this component's own button row is hidden. -->
+<mat-menu #actionsMenu="matMenu">
+  @if (authService.actionAllowed("container_create")) {
+    <button
+      [routerLink]="[ROUTE_PATHS.CONTAINERS_CREATE]"
+      mat-menu-item>
+      <mat-icon>folder</mat-icon>
+      <span i18n="@@common.createContainer">Create Container</span>
+    </button>
+  }
+  @if (authService.actionAllowed("container_delete")) {
+    <button
+      (click)="deleteSelectedContainer()"
+      [disabled]="!containerSelection.hasSelection()"
+      mat-menu-item>
+      <mat-icon>delete_sweep</mat-icon>
+      <span i18n="@@common.delete">Delete</span>
+    </button>
+  }
+</mat-menu>

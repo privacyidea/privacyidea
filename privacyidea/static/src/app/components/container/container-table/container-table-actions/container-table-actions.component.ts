@@ -20,7 +20,7 @@ import { Component, DOCUMENT, inject, viewChild } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { MatMenuModule, MatMenuTrigger } from "@angular/material/menu";
+import { MatMenu, MatMenuModule, MatMenuTrigger } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -54,6 +54,7 @@ export class ContainerTableActionsComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
   readonly advancedFilterTrigger = viewChild<MatMenuTrigger>("advancedFilterTrigger");
+  readonly actionsMenu = viewChild.required(MatMenu);
   containerSelection = this.containerService.containerSelection;
   selectedContainer = this.containerService.selectedContainerSerial;
 

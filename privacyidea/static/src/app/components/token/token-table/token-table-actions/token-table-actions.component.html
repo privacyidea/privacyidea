@@ -85,3 +85,63 @@
     }
   }
 </div>
+
+<!-- Same actions as menu items, for the compact trigger shown next to "More Filter" once the
+     table is scrolled and this component's own button row is hidden. -->
+<mat-menu #actionsMenu="matMenu">
+  @if (authService.tokenEnrollmentAllowed()) {
+    <button
+      [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+      mat-menu-item>
+      <mat-icon>shield</mat-icon>
+      <span i18n="@@common.enrollToken">Enroll Token</span>
+    </button>
+  }
+  @if (authService.oneActionAllowed(["delete", "assign", "unassign", "enable", "disable", "reset"])) {
+    @if (authService.actionAllowed("delete")) {
+      <button
+        (click)="deleteSelectedTokens()"
+        [disabled]="!tokenSelection.hasSelection()"
+        mat-menu-item>
+        <mat-icon>delete_sweep</mat-icon>
+        <span i18n="@@common.delete">Delete</span>
+      </button>
+    }
+    @if (authService.actionAllowed("assign")) {
+      <button
+        (click)="assignSelectedTokens()"
+        [disabled]="!tokenSelection.hasSelection()"
+        mat-menu-item>
+        <mat-icon>person_add</mat-icon>
+        <span i18n="@@token.assign">Assign</span>
+      </button>
+    }
+    @if (authService.actionAllowed("unassign")) {
+      <button
+        (click)="unassignSelectedTokens()"
+        [disabled]="!tokenSelection.hasSelection()"
+        mat-menu-item>
+        <mat-icon>person_remove</mat-icon>
+        <span i18n="@@common.unassign">Unassign</span>
+      </button>
+    }
+    @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
+      <button
+        (click)="toggleActiveSelectedTokens()"
+        [disabled]="!tokenSelection.hasSelection()"
+        mat-menu-item>
+        <mat-icon>toggle_on</mat-icon>
+        <span i18n="@@common.deActivate">(De)activate</span>
+      </button>
+    }
+    @if (authService.actionAllowed("reset")) {
+      <button
+        (click)="resetFailcounterSelectedTokens()"
+        [disabled]="!tokenSelection.hasSelection()"
+        mat-menu-item>
+        <mat-icon>restart_alt</mat-icon>
+        <span i18n="@@common.resetFailcounters">Reset Failcounters</span>
+      </button>
+    }
+  }
+</mat-menu>

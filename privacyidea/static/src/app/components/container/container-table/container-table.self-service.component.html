@@ -43,7 +43,9 @@
         </button>
       }
       <mat-paginator
+        appPaginatorPageSizeTooltip
         (page)="onPageEvent($event)"
+        class="hide-page-size-label"
         [length]="total()"
         [pageIndex]="pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"

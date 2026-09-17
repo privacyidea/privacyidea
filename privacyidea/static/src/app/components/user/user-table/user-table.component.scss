@@ -13,6 +13,12 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  // Once the table is scrolled, the filter hint below the input is just noise above the sticky
+  // header - the same content the hint describes is already scrolled out of view above it.
+  &:has(.table-scroll-region.scrolled-from-top) .token-table-filter mat-hint {
+    display: none;
+  }
 }
 
 .resolver-warning {

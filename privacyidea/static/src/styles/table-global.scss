@@ -26,6 +26,13 @@ mat-paginator .mat-mdc-paginator-page-size-label {
   white-space: nowrap;
 }
 
+// The label is redundant with the tooltip PaginatorPageSizeTooltipDirective puts on the size
+// picker itself - kept as a class rather than the default so a paginator without the directive
+// still shows its own label text.
+mat-paginator.hide-page-size-label .mat-mdc-paginator-page-size-label {
+  display: none;
+}
+
 mat-paginator .mat-mdc-paginator-range-label {
   margin: 0 16px;
   white-space: nowrap;
@@ -111,6 +118,18 @@ table.mat-mdc-table .mat-mdc-header-cell {
     height: 1px;
     background: var(--mat-sys-outline-variant);
   }
+}
+
+// Elevate the header once rows have scrolled under it, so it reads as raised above them rather
+// than flush. Set on the ::before fill, not the cell: the cell's own box-shadow would paint under
+// that fill rather than over the rows (see the ::after comment above). --elevation-3 is unsuitable
+// here - it is the ambient, two-directional "raised card" shadow used for depth-tinted surfaces,
+// which is faint and symmetric rather than a shadow cast downward, so it barely reads on a header
+// that is only ever raised on its bottom edge. --mat-sys-shadow is unsuitable too: it resolves to
+// an opaque, near-background grey in dark mode, so it disappears against the row it falls on -
+// this needs its own alpha to stay visible on any surface colour.
+.table-scroll-region.scrolled-from-top table.mat-mdc-table .mat-mdc-header-cell::before {
+  box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.4);
 }
 
 // The fill covers the cell's own background, so a striped header cell carries its stripe on the

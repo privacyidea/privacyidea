@@ -52,6 +52,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -106,7 +107,8 @@ const columnKeysMap = [
     MatTooltipModule,
     ScrollEdgesDirective,
     TableStateComponent,
-    RouterLink
+    RouterLink,
+    PaginatorPageSizeTooltipDirective
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
