@@ -6,6 +6,12 @@ Version 3.13.4
   Fixes:
   * Sped up /auth for administrators by counting the users with active tokens in the database
     and only once per request. (#5959)
+  * Fixed several queries that were not valid SQL on Oracle: reading policies filtered by their
+    active state, renaming a policy, resetting an event counter and looking up a passkey by its
+    credential id.
+  * Fixed containers, container templates and token groups being impossible to create on Oracle,
+    because their models no longer declared how the primary key is generated. A migration creates
+    the missing sequences on existing installations.
 
 Version 3.13.3
 

@@ -21,7 +21,8 @@ import logging
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Unicode, Integer, Boolean, DateTime, UniqueConstraint, select, UnicodeText
+from sqlalchemy import (Unicode, Integer, Boolean, DateTime, Identity, UniqueConstraint, select,
+                        UnicodeText)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.lib.utils import convert_column_to_unicode
@@ -38,7 +39,7 @@ class TokenContainer(MethodsMixin, db.Model):
     """
 
     __tablename__ = 'tokencontainer'
-    id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
+    id: Mapped[int] = mapped_column("id", Integer, Identity(always=False), primary_key=True)
     type: Mapped[str] = mapped_column(Unicode(100), default='Generic', nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Unicode(1024), default='')
     serial: Mapped[str] = mapped_column(Unicode(40), default='', unique=True, nullable=False, index=True)
@@ -71,7 +72,7 @@ class TokenContainer(MethodsMixin, db.Model):
 
 class TokenContainerOwner(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainerowner'
-    id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
+    id: Mapped[int] = mapped_column("id", Integer, Identity(always=False), primary_key=True)
     container_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey("tokencontainer.id"))
     resolver: Mapped[Optional[str]] = mapped_column(Unicode(120), default='', index=True)
     user_id: Mapped[Optional[str]] = mapped_column(Unicode(320), default='', index=True)
@@ -104,7 +105,7 @@ class TokenContainerOwner(MethodsMixin, db.Model):
 
 class TokenContainerStates(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainerstates'
-    id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
+    id: Mapped[int] = mapped_column("id", Integer, Identity(always=False), primary_key=True)
     container_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey("tokencontainer.id"))
     state: Mapped[str] = mapped_column(Unicode(100), default='active', nullable=False)
 
@@ -121,7 +122,7 @@ class TokenContainerInfo(MethodsMixin, db.Model):
     is specific to the containertype.
     """
     __tablename__ = 'tokencontainerinfo'
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, Identity(always=False), primary_key=True)
     key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     value: Mapped[Optional[str]] = mapped_column(UnicodeText(), default='')
     type: Mapped[Optional[str]] = mapped_column(Unicode(100), default='')
@@ -154,7 +155,7 @@ class TokenContainerRealm(MethodsMixin, db.Model):
 
 class TokenContainerTemplate(MethodsMixin, db.Model):
     __tablename__ = 'tokencontainertemplate'
-    id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
+    id: Mapped[int] = mapped_column("id", Integer, Identity(always=False), primary_key=True)
     options: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
     name: Mapped[Optional[str]] = mapped_column(Unicode(200), default='')
     container_type: Mapped[str] = mapped_column(Unicode(100), default='generic', nullable=False)

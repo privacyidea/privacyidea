@@ -303,7 +303,7 @@ class WebAuthn(MyApiTestCase):
         self.assertTrue(tcih)
         tcih.delete()
         token_info_entry = (TokenInfo.query.filter(TokenInfo.Key == "credential_id_hash")
-                            .filter(TokenInfo.Value == credential_id_hash).first())
+                            .filter(TokenInfo.Value.like(credential_id_hash)).first())
         self.assertTrue(token_info_entry)
         token_info_entry.delete()
 

@@ -152,7 +152,9 @@ class Policy(TimestampMethodsMixin, db.Model):
              "check_all_resolvers": self.check_all_resolvers,
              "user": self._split_string(self.user),
              "client": self._split_string(self.client),
-             "time": self.time,
+             # Oracle stores an empty string as NULL, so a policy without a time
+             # restriction reads back as None there; the callers expect a string.
+             "time": self.time or "",
              "conditions": self.get_conditions_tuples(),
              "priority": self.priority,
              "description": self.get_policy_description(),

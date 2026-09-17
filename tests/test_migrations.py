@@ -395,7 +395,11 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
         }
         IGNORED_MODIFY_TYPE_PAIRS: set[tuple[str, str]] = set()
     else:
-        IGNORED_DIFF_TYPES = {"remove_index", "add_index", "modify_nullable"}
+        # MySQL/MariaDB express an Identity column as AUTO_INCREMENT and reflect it as a
+        # plain autoincrementing integer, so alembic reports the model's Identity as a
+        # default the database is missing. PostgreSQL and Oracle have identity columns of
+        # their own and show no such difference.
+        IGNORED_DIFF_TYPES = {"remove_index", "add_index", "modify_nullable", "modify_default"}
         IGNORED_MODIFY_TYPE_PAIRS = {
             ("LONGTEXT", "UnicodeText"),
             ("TIME", "Interval"),
@@ -570,34 +574,27 @@ def _generic_dummy_value(col):
     return None
 
 
-def test_default_insert_succeeds_for_every_model_table(flask_app):
+def _insert_minimal_row_into_every_table() -> list[tuple[str, str]]:
     """
-    For every table the SQLAlchemy models declare, build a minimal INSERT and
-    execute it against the live (upgraded-to-head) DB. Catches failures that
-    schema checks cannot — e.g. a Sequence default declared on the model but
-    no CREATE SEQUENCE issued by any migration, an Identity column SQLAlchemy
-    can't drive on this dialect, or a NOT NULL column whose default isn't
-    actually applied.
+    Build a minimal INSERT for every table the SQLAlchemy models declare and run it
+    against the live database. Returns one ``(table, message)`` pair per table whose
+    INSERT failed, so a caller can report them all at once.
 
     Strategy:
       - PKs whose default is a Sequence or that are autoincrement are omitted
         so SQLAlchemy fires its auto-PK path — this is the exact path that
-        breaks when the migration created the table without the matching
-        CREATE SEQUENCE / AUTO_INCREMENT machinery the model expects.
+        breaks when the schema was built without the matching CREATE SEQUENCE /
+        AUTO_INCREMENT / IDENTITY machinery the model expects.
       - NOT NULL columns without any default get a type-appropriate dummy.
       - Nullable columns and columns with Python/server defaults are omitted.
       - FK checks are disabled for the duration so we don't have to insert in
-        dependency order; this test is about INSERT mechanics, not referential
+        dependency order; this is about INSERT mechanics, not referential
         integrity.
       - All inserts run inside a single transaction that is rolled back at
         the end, so no rows leak into the test DB.
     """
-    from flask_migrate import upgrade as flask_upgrade
     from sqlalchemy import Sequence
     from privacyidea.models import db
-
-    load_seed()
-    flask_upgrade()
 
     engine = create_engine(DB_URL)
     is_pg = is_postgres()
@@ -713,11 +710,54 @@ def test_default_insert_succeeds_for_every_model_table(flask_app):
                 teardown_conn.commit()
         engine.dispose()
 
+    return failures
+
+
+def test_default_insert_succeeds_for_every_model_table(flask_app):
+    """
+    Run those INSERTs against a database built the way an upgrade builds it: the
+    pinned seed plus every migration. Catches failures that schema checks cannot —
+    e.g. a Sequence declared on the model that no migration ever created, an
+    Identity column SQLAlchemy can't drive on this dialect, or a NOT NULL column
+    whose default isn't actually applied.
+    """
+    from flask_migrate import upgrade as flask_upgrade
+
+    load_seed()
+    flask_upgrade()
+
+    failures = _insert_minimal_row_into_every_table()
+
     assert not failures, (
         "INSERT failed for the following model tables after upgrade-to-head. "
         "This usually means a migration created the table without the auto-PK "
         "machinery the model expects (e.g. sa.Identity() instead of sa.Sequence(), "
         "or a NOT NULL column added without a default):\n"
+        + "\n".join(f"  {tbl}: {msg}" for tbl, msg in failures)
+    )
+
+
+def test_model_created_schema_accepts_a_row_in_every_table(flask_app):
+    """
+    The same INSERTs, but against a schema the models built themselves through
+    db.create_all() — the path ``pi-manage setup create_tables`` takes on a new
+    installation, and the one the migration tests never exercise.
+
+    A model that does not say how its primary key is generated still works on
+    MySQL (AUTO_INCREMENT) and PostgreSQL (SERIAL), which fill such a column by
+    convention, and fails on Oracle, which does not. The same goes for any other
+    column the models declare in a way a dialect cannot honour.
+    """
+    from privacyidea.models import db
+
+    db.create_all()
+
+    failures = _insert_minimal_row_into_every_table()
+
+    assert not failures, (
+        "INSERT failed for the following model tables in a schema created from the "
+        "models themselves. A new installation on this dialect would be unable to "
+        "write those tables:\n"
         + "\n".join(f"  {tbl}: {msg}" for tbl, msg in failures)
     )
 
