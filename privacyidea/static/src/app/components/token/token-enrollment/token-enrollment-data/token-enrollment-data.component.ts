@@ -93,18 +93,6 @@ export class TokenEnrollmentDataComponent {
   protected readonly pkcs12Password = computed(() => (this.enrolledData()?.["pkcs12_password"] as string) ?? "");
 
   showQRCode = computed(() => !NO_QR_CODE_TOKEN_TYPES.includes(this.tokenType()));
-  protected readonly hasEnrollmentData = computed(
-    () =>
-      !!(
-        (this.showQRCode() && this.qrCode()) ||
-        this.enrolledData()?.["password"] ||
-        (this.enrolledData()?.otpkey?.value && !this.enrolledData()?.["otps"] && this.showQRCode()) ||
-        this.tokenType() === "tiqr" ||
-        this.tokenType() === "registration" ||
-        this.enrolledData()?.["otps"] ||
-        (this.isCertificate() && (this.certificate() || this.pkcs12() || this.enrolledData()?.rollout_state))
-      )
-  );
   // A token waiting for enrollment verification cannot be regenerated: the backend rejects any
   // further /token/init for it until a valid "verify" value is supplied, so offering the button
   // would only ever produce an error.

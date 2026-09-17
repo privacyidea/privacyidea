@@ -26,7 +26,10 @@ import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
-import { ENROLLMENT_CANCELLED } from "@components/token/token-enrollment/token-enrollment.constants";
+import {
+  ENROLLMENT_CANCELLED,
+  NO_DISMISS_LAST_STEP_TOKEN_TYPES
+} from "@components/token/token-enrollment/token-enrollment.constants";
 import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -230,7 +233,10 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
     const dialogRef = this.dialogService.openDialog({
       component: TokenEnrollmentLastStepDialogComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: {
+        disableClose: NO_DISMISS_LAST_STEP_TOKEN_TYPES.includes(this.enrolledDialogData()?.tokenType ?? "")
+      }
     });
 
     dialogRef.afterClosed().subscribe(() => {

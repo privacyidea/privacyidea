@@ -59,6 +59,9 @@
       </mat-form-field>
       <span class="input-width-l"></span>
     </div>
+    @if (certTemplateDetails()) {
+      <span class="inline-hint margin-bottom-16">{{ certTemplateDetails() }}</span>
+    }
   }
   @switch (intention()) {
     @case ("generate") {

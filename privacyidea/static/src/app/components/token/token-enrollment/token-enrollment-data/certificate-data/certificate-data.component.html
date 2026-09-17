@@ -62,10 +62,17 @@
   }
 
   @if (pkcs12()) {
-    <p i18n="@@token.pkcs12Contains"
-      >The PKCS#12 container holds the private key and the certificate. It stays available for download in the token
-      details.</p
-    >
+    @if (isPending()) {
+      <p i18n="@@token.pkcs12ContainsKeyOnly"
+        >The PKCS#12 container holds the private key. It stays available for download in the token details, where the
+        certificate appears separately once the certificate authority has issued it.</p
+      >
+    } @else {
+      <p i18n="@@token.pkcs12Contains"
+        >The PKCS#12 container holds the private key and the certificate. It stays available for download in the token
+        details.</p
+      >
+    }
     @if (pkcs12Password()) {
       <div class="inline-warning certificate-password">
         <p i18n="@@token.pkcs12PasswordOnce"
@@ -90,7 +97,7 @@
             [copyText]="pkcs12Password()" />
         </div>
       </div>
-    } @else {
+    } @else if (fromEnrollment()) {
       <p
         class="inline-hint"
         i18n="@@token.pkcs12PasswordIsPin"

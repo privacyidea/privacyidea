@@ -25,6 +25,7 @@
   title="{{ title() }}">
   <app-token-enrolled-text
     (switchRoute)="onSwitchRoute()"
+    [navigationBlocked]="!!closeBlockedReason()"
     [containerSerial]="containerSerial"
     [onlyAddToRealm]="data.enrollParameters.data.onlyAddToRealm"
     [rollover]="data.rollover ?? false"

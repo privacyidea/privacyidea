@@ -26,6 +26,7 @@
   title="Token Successfully Enrolled">
   <app-token-enrolled-text
     (switchRoute)="onSwitchRoute()"
+    [navigationBlocked]="!!closeBlockedReason()"
     [containerSerial]="containerSerial"
     [rollover]="data.rollover ?? false"
     [serial]="serial"></app-token-enrolled-text>

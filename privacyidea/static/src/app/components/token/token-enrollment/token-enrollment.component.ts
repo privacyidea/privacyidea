@@ -84,6 +84,7 @@ import {
   CUSTOM_TOOLTIP_OPTIONS,
   ENROLLMENT_CANCELLED,
   NO_DISMISS_LAST_STEP_TOKEN_TYPES,
+  NO_PIN_TOKEN_TYPES,
   NO_REALM_ONLY_TOKEN_TYPES,
   USER_REQUIRED_TOKEN_TYPES
 } from "./token-enrollment.constants";
@@ -207,6 +208,9 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
   isUserRequired = computed(() => USER_REQUIRED_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? ""));
   protected readonly showOnlyAddToRealm = computed(
     () => !NO_REALM_ONLY_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? "")
+  );
+  protected readonly showPinFields = computed(
+    () => !NO_PIN_TOKEN_TYPES.includes(this.tokenService.selectedTokenType()?.key ?? "")
   );
 
   description = signal<string>("");
@@ -374,7 +378,7 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
       user: user?.username ?? "",
       realm: this.userService.selectedUserRealm() ?? "",
       onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false,
-      pin: this.setPin() ?? "",
+      pin: this.showPinFields() ? (this.setPin() ?? "") : "",
       serial: this.serial()
     };
 

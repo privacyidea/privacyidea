@@ -47,6 +47,12 @@ export const NO_QR_CODE_TOKEN_TYPES = [
 ];
 
 /**
+ * A list of token types that are not enrolled with a PIN, so the enrollment form does not offer
+ * the PIN fields for them.
+ */
+export const NO_PIN_TOKEN_TYPES = ["certificate", "sshkey"];
+
+/**
  * A list of token types that should not show a regenerate button in the last enrollment step dialog.
  */
 export const NO_REGENERATE_TOKEN_TYPES = [

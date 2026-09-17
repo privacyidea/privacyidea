@@ -302,6 +302,20 @@ describe("TokenEnrollmentComponent", () => {
       expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expected_parameters);
     });
 
+    // The certificate token is enrolled without a PIN, so the form hides the fields and a PIN
+    // left over from another type must not travel with the request.
+    it("Does not submit a PIN for a token type that is enrolled without one", () => {
+      const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
+      installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });
+      component.setPin.set("1234");
+      tokenService.selectedTokenType.set({ key: "certificate", name: "Certificate", info: "", text: "" });
+
+      component.enrollToken();
+
+      expect(component["showPinFields"]()).toBe(false);
+      expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expect.objectContaining({ pin: "" }));
+    });
+
     it("Setting validity dates works", () => {
       const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
       installStrategy(component, { buildEnrollmentArgs: enrollmentArgsGetterSpy });

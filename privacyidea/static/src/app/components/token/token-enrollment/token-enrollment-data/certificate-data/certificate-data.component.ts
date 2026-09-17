@@ -58,6 +58,12 @@ export class CertificateDataComponent {
    */
   pkcs12Password = input<string>("");
   rolloutState = input<string>("");
+  /**
+   * True while this shows an enrollment response. Only there does a missing passphrase mean
+   * that the token PIN was used instead: the server never stores the generated passphrase, so
+   * the token details cannot tell a PIN-encrypted container from one whose passphrase is lost.
+   */
+  fromEnrollment = input<boolean>(false);
 
   /**
    * Names what still has to be saved before the dialog may be closed, or an empty string once

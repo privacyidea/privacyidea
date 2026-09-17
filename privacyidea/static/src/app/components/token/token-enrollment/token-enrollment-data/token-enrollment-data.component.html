@@ -65,6 +65,7 @@
       <app-certificate-data
         (closeBlockedReasonChange)="closeBlockedReasonChange.emit($event)"
         [certificate]="certificate()"
+        [fromEnrollment]="true"
         [pkcs12]="pkcs12()"
         [pkcs12Password]="pkcs12Password()"
         [rolloutState]="enrolledData().rollout_state ?? ''"

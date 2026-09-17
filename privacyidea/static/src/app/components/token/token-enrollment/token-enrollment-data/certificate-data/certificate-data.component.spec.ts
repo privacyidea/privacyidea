@@ -39,7 +39,7 @@ describe("CertificateDataComponent", () => {
 
   const lastReason = () => blockedReasons.at(-1);
 
-  const setInputs = (inputs: Record<string, string>) => {
+  const setInputs = (inputs: Record<string, string | boolean>) => {
     Object.entries(inputs).forEach(([name, value]) => fixture.componentRef.setInput(name, value));
     fixture.detectChanges();
   };
@@ -282,10 +282,23 @@ describe("CertificateDataComponent", () => {
     });
 
     it("points to the token PIN when the container has no separate passphrase", () => {
-      setInputs({ serial: "CRT0001", pkcs12: PKCS12 });
+      setInputs({ serial: "CRT0001", pkcs12: PKCS12, fromEnrollment: true });
 
       expect(fixture.nativeElement.textContent).toContain("passphrase of the PKCS#12 container is the token PIN");
       expect(fixture.debugElement.query(By.css(".certificate-password-value"))).toBeNull();
+    });
+
+    it("stays silent about the passphrase outside the enrollment response", () => {
+      setInputs({ serial: "CRT0001", pkcs12: PKCS12 });
+
+      expect(fixture.nativeElement.textContent).not.toContain("is the token PIN");
+    });
+
+    it("promises only the private key while the request is pending", () => {
+      setInputs({ serial: "CRT0001", pkcs12: PKCS12, rolloutState: "pending" });
+
+      expect(fixture.nativeElement.textContent).toContain("The PKCS#12 container holds the private key.");
+      expect(fixture.nativeElement.textContent).not.toContain("private key and the certificate");
     });
   });
 });

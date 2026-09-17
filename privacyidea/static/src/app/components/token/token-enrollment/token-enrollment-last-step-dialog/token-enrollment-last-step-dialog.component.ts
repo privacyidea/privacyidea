@@ -90,6 +90,11 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   }
 
   onSwitchRoute() {
+    // Following a link closes the dialog, so it has to respect the same block as the close
+    // button: the enrollment data is shown exactly once and would be lost with the dialog.
+    if (this.closeBlockedReason()) {
+      return;
+    }
     this.dialogRef.close();
   }
 }

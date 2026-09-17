@@ -85,6 +85,17 @@ describe("EnrollCertComponent", () => {
     });
   });
 
+  describe("certTemplate reset", () => {
+    it("should drop the selected template when another CA connector is chosen", () => {
+      component.caConnector.set("conn-1");
+      component.certTemplate.set("t1");
+
+      component.caConnector.set("conn-2");
+
+      expect(component.certTemplate()).toBe("");
+    });
+  });
+
   describe("caConnectorOptions computed", () => {
     it("should return empty array when caConnectorResource has no value", () => {
       expect(component.caConnectorOptions()).toEqual([]);

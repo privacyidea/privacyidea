@@ -321,6 +321,19 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
                             "user": "cornelius"}
             self.assertTrue(check_otp_pin(req))
 
+        # The exemption only covers the absent PIN. The certificate token encrypts the PKCS#12
+        # container with the PIN, so a PIN that is sent has to satisfy the policies.
+        req.all_data = {"type": "certificate",
+                        "realm": "home",
+                        "user": "cornelius",
+                        "pin": "1"}
+        self.assertRaises(PolicyError, check_otp_pin, req)
+        req.all_data = {"type": "certificate",
+                        "realm": "home",
+                        "user": "cornelius",
+                        "pin": "abc123"}
+        self.assertTrue(check_otp_pin(req))
+
         # A type that does use a PIN is still checked, and so is a type we do not know.
         for token_type in ["hotp", "an-unknown-type"]:
             req.all_data = {"type": token_type,
@@ -427,6 +440,19 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
                             "realm": "home",
                             "user": "cornelius"}
             self.assertTrue(check_otp_pin(req))
+
+        # The exemption only covers the absent PIN. The certificate token encrypts the PKCS#12
+        # container with the PIN, so a PIN that is sent has to satisfy the policies.
+        req.all_data = {"type": "certificate",
+                        "realm": "home",
+                        "user": "cornelius",
+                        "pin": "1"}
+        self.assertRaises(PolicyError, check_otp_pin, req)
+        req.all_data = {"type": "certificate",
+                        "realm": "home",
+                        "user": "cornelius",
+                        "pin": "abc123"}
+        self.assertTrue(check_otp_pin(req))
 
         # A type that does use a PIN is still checked, and so is a type we do not know.
         for token_type in ["hotp", "an-unknown-type"]:

@@ -79,7 +79,12 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
     $localize`:@@token.uploadCertificate:Upload Certificate`
   ]);
   caConnector = signal<string>("");
-  certTemplate = signal<string>("");
+  // A template is defined by one CA connector, so selecting another connector drops it rather
+  // than submitting a template name the new CA does not know.
+  certTemplate = linkedSignal<string, string>({
+    source: this.caConnector,
+    computation: () => ""
+  });
   pem = signal<string>("");
 
   pemForm = form(this.pem, (f) => {
@@ -104,6 +109,20 @@ export class EnrollCertificateComponent extends EnrollTokenBase<CertificateEnrol
       );
       return selectedConnector && selectedConnector.templates ? Object.keys(selectedConnector.templates) : [];
     }
+  });
+  /** What the selected template configures, as the CA connector reports it. */
+  certTemplateDetails = computed(() => {
+    const selectedConnector = Object.values(this.systemService.caConnectors?.() ?? {}).find(
+      (connector) => connector.connectorname === this.caConnector()
+    );
+    const template = selectedConnector?.templates?.[this.certTemplate()];
+    if (!template) {
+      return "";
+    }
+    return Object.entries(template)
+      .filter(([, value]) => value !== null && value !== "")
+      .map(([option, value]) => `${option}: ${value}`)
+      .join(", ");
   });
 
   caConnectorTouched = signal<boolean>(false);
