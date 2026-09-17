@@ -158,7 +158,7 @@
             aria-label="{{ column.label }} Header"
             i18n-aria-label
             mat-header-cell
-            [class.cell-info-sized]="isInfoColumn(column.key) && hasColumnContent(column.key)">
+            [ngClass]="columnWidthClass(column)">
             <div class="flex ali-center">
               <div class="header-label">
                 {{ column.label }}
@@ -333,7 +333,7 @@
             i18n-aria-label
             mat-cell
             [class.cell-info]="isInfoColumn(column.key)"
-            [class.cell-info-sized]="isInfoColumn(column.key) && hasColumnContent(column.key)">
+            [ngClass]="columnWidthClass(column)">
             <div
               [class.cell-scroll]="scrollableColumnKeys.includes(column.key)"
               [class.cell-scroll-info]="isInfoColumn(column.key)">
