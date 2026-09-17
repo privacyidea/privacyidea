@@ -790,6 +790,9 @@ class HttpSMSTestCase(MyTestCase):
                          provider._render_option_value("payload={message}", "device-token", push_payload))
         self.assertEqual(123456, provider._render_option_value("{phone}", "123456", "SMS"))
         self.assertEqual(42, provider._render_option_value("{otp}", "123456", "42"))
+        # {message} belongs to the push payload, so an SMS leaves it for the gateway to expand
+        self.assertEqual("{message}", provider._render_option_value("{message}", "123456", "SMS"))
+        self.assertEqual("text={message}", provider._render_option_value("text={message}", "123456", "SMS"))
         delete_smsgateway(identifier)
 
     def test_14_reject_push_message_without_json_post(self):

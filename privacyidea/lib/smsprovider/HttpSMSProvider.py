@@ -60,14 +60,20 @@ class HttpSMSProvider(ISMSProvider):
     @staticmethod
     def _render_option_value(value, phone, message):
         if isinstance(message, dict):
+            # A structured push payload has to reach the gateway with its fields unchanged,
+            # so an option that is nothing but a placeholder keeps the object itself.
             if value == "{phone}":
                 return phone
             if value in ["{message}", "{otp}"]:
                 return message
+            serialized_message = json.dumps(message)
+            value = value.replace("{message}", serialized_message)
+            value = value.replace("{otp}", serialized_message)
+            return value.replace("{phone}", phone)
 
-        serialized_message = message if isinstance(message, str) else json.dumps(message)
-        value = value.replace("{message}", serialized_message)
-        value = value.replace("{otp}", serialized_message)
+        # {message} is not substituted for an SMS, so a gateway can pass the placeholder
+        # on to the remote provider for expansion there.
+        value = value.replace("{otp}", message)
         value = value.replace("{phone}", phone)
         try:
             return json.loads(value)
@@ -78,8 +84,9 @@ class HttpSMSProvider(ISMSProvider):
         """
         send a message to a phone via an http sms gateway
 
-        Additional options may use ``{phone}``, ``{otp}``, or ``{message}``.
-        An option consisting only of ``{message}`` preserves structured payloads.
+        Additional options of an SMS may use ``{phone}`` and ``{otp}``. A structured push
+        payload additionally expands ``{message}``, and an option consisting only of
+        ``{message}`` or ``{otp}`` preserves the payload as an object.
 
         :param phone: the phone number
         :param message: the message to submit to the phone
