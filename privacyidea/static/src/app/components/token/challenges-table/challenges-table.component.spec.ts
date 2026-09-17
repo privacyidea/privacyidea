@@ -35,6 +35,7 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ContentService } from "@services/content/content.service";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("ChallengesTableComponent", () => {
@@ -69,5 +70,20 @@ describe("ChallengesTableComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("inline cell filter", () => {
+    it("replaces the column's filter with the clicked value", () => {
+      const challengesService = TestBed.inject(ChallengesService) as unknown as MockChallengesService;
+      challengesService.activeFilter.set(new FilterValue({ value: "serial: OLD" }));
+
+      component.addFilterValue("serial", "HOTP1");
+
+      expect(challengesService.activeFilter().getValueOfKey("serial")).toBe("HOTP1");
+    });
+
+    it("names the column in the filter button tooltip", () => {
+      expect(component.filterTooltip("transaction_id")).toBe("Filter by this transaction ID");
+    });
   });
 });

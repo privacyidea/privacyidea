@@ -284,4 +284,29 @@ describe("ContainerTemplatesComponent", () => {
 
     expect(noDataCell.attributes["colspan"]).toBe(expectedColspan.toString());
   });
+
+  it("cycles the default filter through true, false and off", () => {
+    component.onClickFilter("default");
+    expect(component.filter().getFilterOfKey("default")).toBe("true");
+    expect(component.getFilterIconName("default")).toBe("screen_rotation_alt");
+    expect(component.pagedContainerTemplates().map((t) => t.name)).toEqual(["Template-A"]);
+
+    component.onClickFilter("default");
+    expect(component.filter().getFilterOfKey("default")).toBe("false");
+    expect(component.getFilterIconName("default")).toBe("filter_alt_off");
+    expect(component.pagedContainerTemplates().map((t) => t.name)).toEqual(["Template-C", "Template-B"]);
+
+    component.onClickFilter("default");
+    expect(component.filter().hasKey("default")).toBe(false);
+    expect(component.getFilterIconName("default")).toBe("filter_alt");
+  });
+
+  it("filters by the selected container type and clears it again", () => {
+    component.onContainerTypeSelected("Type-2");
+    expect(component.filter().getFilterOfKey("container_type")).toBe("Type-2");
+    expect(component.pagedContainerTemplates().map((t) => t.name)).toEqual(["Template-B"]);
+
+    component.onContainerTypeSelected(undefined);
+    expect(component.filter().hasKey("container_type")).toBe(false);
+  });
 });

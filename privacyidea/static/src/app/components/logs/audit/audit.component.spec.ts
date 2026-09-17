@@ -21,6 +21,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { ActivatedRoute } from "@angular/router";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditData, AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
@@ -109,6 +110,29 @@ describe("AuditComponent (unit)", () => {
   it("creates self service", () => {
     const selfFixture = TestBed.createComponent(AuditSelfServiceComponent);
     expect(selfFixture.componentInstance).toBeTruthy();
+  });
+
+  describe("inline cell filter", () => {
+    it("filters by the API keyword the column maps to", () => {
+      component.apiFilterKeyMap["realm"] = "realm_name";
+
+      component.addFilterValue("realm", "defrealm");
+
+      expect(mockAuditService.activeFilter().getValueOfKey("realm_name")).toBe("defrealm");
+      expect(mockAuditService.activeFilter().hasKey("realm")).toBe(false);
+    });
+
+    it("filters by the column key itself when it has no API mapping", () => {
+      mockAuditService.activeFilter.set(new FilterValue({ value: "serial: OLD" }));
+
+      component.addFilterValue("serial", "HOTP1");
+
+      expect(mockAuditService.activeFilter().getValueOfKey("serial")).toBe("HOTP1");
+    });
+
+    it("names the column in the filter button tooltip", () => {
+      expect(component.filterTooltip("policies")).toBe("Filter by this policy");
+    });
   });
 
   describe("page‑related derived signals", () => {

@@ -239,4 +239,24 @@ describe("ContainerTableComponent (Jest)", () => {
       );
     });
   });
+
+  describe("inline cell filter", () => {
+    it("filters by the user together with the row's realm", () => {
+      component.filterByUser("alice", "realm1");
+
+      expect(containerService.activeFilter().getValueOfKey("user")).toBe("alice");
+      expect(containerService.activeFilter().getValueOfKey("realm")).toBe("realm1");
+    });
+
+    it("filters by the user alone when the row has no realm", () => {
+      component.filterByUser("alice", "");
+
+      expect(containerService.activeFilter().getValueOfKey("user")).toBe("alice");
+      expect(containerService.activeFilter().hasKey("realm")).toBe(false);
+    });
+
+    it("names the column in the filter button tooltip", () => {
+      expect(component.filterTooltip("user")).toBe("Filter by this user");
+    });
+  });
 });

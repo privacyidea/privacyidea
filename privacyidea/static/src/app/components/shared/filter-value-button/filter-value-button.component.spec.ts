@@ -48,4 +48,16 @@ describe("FilterValueButtonComponent", () => {
     expect(emitted).toBe("alice");
     expect(stop).toHaveBeenCalled();
   });
+
+  it.each([
+    ["empty", ""],
+    ["blank", "   "],
+    ["null", null],
+    ["undefined", undefined]
+  ])("renders no button for a %s cell value", (_, value) => {
+    fixture.componentRef.setInput("value", value);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("button")).toBeNull();
+  });
 });
