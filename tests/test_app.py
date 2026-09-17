@@ -1,6 +1,7 @@
 """
 This testfile tests the basic app functionality of the privacyIDEA app
 """
+import json
 import os
 import subprocess
 import sys
@@ -11,8 +12,9 @@ import inspect
 import logging
 import mock
 from testfixtures import Comparison, compare, OutputCapture
-from privacyidea.app import create_app, _setup_database_engine_options
-from privacyidea.config import config, ConfigKey, TestingConfig
+from privacyidea.app import create_app, create_docker_app, _setup_database_engine_options
+from privacyidea.config import config, ConfigKey, DefaultConfigValues, TestingConfig
+from privacyidea.lib.crypto import pass_hash, verify_pass_hash
 
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
@@ -175,6 +177,72 @@ class AppTestCase(unittest.TestCase):
                            level=logging.NOTSET,
                            partial=True)
             ], logger.handlers)
+
+
+class HashConfigTestCase(unittest.TestCase):
+    """
+    passlib reports an unusable PI_HASH_ALGO_LIST or PI_HASH_ALGO_PARAMS only when a CryptContext
+    is built, which without a check at startup happens at the first login - and fails it.
+    """
+
+    def setUp(self):
+        self.logger = logging.getLogger()
+        self.orig_handlers = self.logger.handlers
+        self.logger.handlers = []
+        self.level = self.logger.level
+
+    def tearDown(self):
+        self.logger.handlers = self.orig_handlers
+        self.logger.level = self.level
+
+    @staticmethod
+    def _create_app(**hash_config):
+        config_class = type("Config", (TestingConfig,), hash_config)
+        with mock.patch.dict("privacyidea.config.config", {"testing": config_class}):
+            return create_app(config_name="testing", silent=True)
+
+    @staticmethod
+    def _create_docker_app(hash_algo_list):
+        env = {"PRIVACYIDEA_PI_ENCFILE": os.path.join(dirname, "tests/testdata/enckey"),
+               "PRIVACYIDEA_PI_PEPPER": "pepper",
+               "PRIVACYIDEA_SQLALCHEMY_DATABASE_URI": "sqlite://",
+               "PRIVACYIDEA_PI_HASH_ALGO_LIST": json.dumps(hash_algo_list)}
+        # The Docker factory also reads the pi.cfg of the machine the test runs on.
+        with mock.patch.object(DefaultConfigValues, "CFG_PATH", os.path.join(dirname, "no-such-pi.cfg")), \
+                mock.patch.dict(os.environ, env):
+            return create_docker_app()
+
+    def test_01_unknown_scheme_refuses_to_start(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_LIST.*nosuchscheme"):
+            self._create_app(PI_HASH_ALGO_LIST=["argon2", "nosuchscheme"])
+
+    def test_02_empty_list_refuses_to_start(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_LIST"):
+            self._create_app(PI_HASH_ALGO_LIST=[])
+
+    def test_03_unknown_parameter_refuses_to_start(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_PARAMS.*nosuchparam"):
+            self._create_app(PI_HASH_ALGO_PARAMS={"argon2__nosuchparam": 1})
+
+    def test_04_unusable_parameter_value_refuses_to_start(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_PARAMS"):
+            self._create_app(PI_HASH_ALGO_PARAMS={"argon2__rounds": "many"})
+
+    def test_05_valid_config_starts_and_hashes(self):
+        app = self._create_app(PI_HASH_ALGO_LIST=["pbkdf2_sha512", "argon2"],
+                               PI_HASH_ALGO_PARAMS={"pbkdf2_sha512__rounds": 1000})
+        with app.app_context():
+            password_hash = pass_hash("secret")
+            self.assertTrue(password_hash.startswith("$pbkdf2-sha512$1000$"), password_hash)
+            self.assertTrue(verify_pass_hash("secret", password_hash))
+
+    def test_06_docker_app_unknown_scheme_refuses_to_start(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_LIST.*nosuchscheme"):
+            self._create_docker_app(["nosuchscheme"])
+
+    def test_07_docker_app_valid_config_starts(self):
+        app = self._create_docker_app(["pbkdf2_sha512"])
+        self.assertEqual(["pbkdf2_sha512"], app.config[ConfigKey.HASH_ALGO_LIST])
 
 
 class DatabaseEngineOptionsTestCase(unittest.TestCase):

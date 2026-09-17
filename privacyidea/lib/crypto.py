@@ -63,6 +63,7 @@ from cryptography.hazmat.primitives.hashes import HashAlgorithm
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from passlib.context import CryptContext
 from passlib.exc import PasswordSizeError
+from privacyidea.config import ConfigKey
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException, ParameterError
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
@@ -230,8 +231,8 @@ def pass_hash(password):
     # configures PI_HASH_ALGO_PARAMS decide the parameters for every app created later in the same
     # process, since the module-level default is shared.
     hash_algo_params = dict(DEFAULT_HASH_ALGO_PARAMS)
-    hash_algo_params.update(get_app_config_value("PI_HASH_ALGO_PARAMS", default={}))
-    pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
+    hash_algo_params.update(get_app_config_value(ConfigKey.HASH_ALGO_PARAMS, default={}))
+    pass_ctx = CryptContext(get_app_config_value(ConfigKey.HASH_ALGO_LIST,
                                                  default=DEFAULT_HASH_ALGO_LIST),
                             **hash_algo_params)
     pw_dig = pass_ctx.hash(password)
@@ -250,7 +251,7 @@ def verify_pass_hash(password, hvalue):
     :return: True if the password matches
     :rtype: bool
     """
-    pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
+    pass_ctx = CryptContext(get_app_config_value(ConfigKey.HASH_ALGO_LIST,
                                                  default=DEFAULT_HASH_ALGO_LIST))
     try:
         return pass_ctx.verify(password, hvalue)
