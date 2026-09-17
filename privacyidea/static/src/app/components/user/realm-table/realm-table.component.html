@@ -18,6 +18,7 @@
             [showClearButton]="filterString().length > 0">
             <input
               #filterHTMLInputElement
+              [appRefocusAfterReload]="realmService.realmResource.isLoading()"
               (input)="onFilterInput(filterHTMLInputElement.value)"
               [value]="filterString()"
               aria-label="Filter Input"
@@ -60,12 +61,13 @@
             <ng-container [matColumnDef]="column.key">
               <th
                 *matHeaderCellDef
+                [ngClass]="column.width ? 'col-width-' + column.width : ''"
                 mat-header-cell>
                 <div
                   [ngClass]="{ 'just-center': column.key === 'actions' }"
                   class="flex ali-center">
                   {{ column.label }}
-                  <div class="margin-left-16 flex">
+                  <div class="flex">
                     @if (!["actions", "resolvers"].includes(column.key)) {
                       <button
                         (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
@@ -81,10 +83,11 @@
 
               <td
                 *matCellDef="let element"
-                [ngClass]="{
-                  'width-100': column.key === 'resolvers',
-                  'actions-cell': column.key === 'actions'
-                }"
+                [ngClass]="[
+                  column.width ? 'col-width-' + column.width : '',
+                  column.key === 'resolvers' ? 'width-100' : '',
+                  column.key === 'actions' ? 'actions-cell' : ''
+                ]"
                 mat-cell>
                 @switch (column.key) {
                   @case ("name") {

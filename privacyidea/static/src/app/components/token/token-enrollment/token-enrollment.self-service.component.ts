@@ -103,7 +103,8 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
 
     this.dialogService.openDialog({
       component: TokenEnrollmentLastStepDialogSelfServiceComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { disableClose: !this.lastStepDialogIsDismissable() }
     });
   }
 }

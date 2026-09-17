@@ -52,9 +52,26 @@ if _worker:
         os.environ["TEST_DATABASE_URL"] = f"sqlite:////tmp/pi-test-{_worker}.sqlite"
     elif _base.startswith("sqlite"):
         os.environ["TEST_DATABASE_URL"] = _base.replace(".sqlite", f"-{_worker}.sqlite")
+    elif _base.startswith("oracle"):
+        from sqlalchemy.engine.url import make_url
+        _url = make_url(_base)
+        os.environ["TEST_DATABASE_URL"] = _url.set(
+            username=f"{_url.username}_{_worker}").render_as_string(hide_password=False)
     else:  # mysql / postgres — suffix the DB name
         os.environ["TEST_DATABASE_URL"] = f"{_base}_{_worker}"
 ```
+
+Oracle is the one backend where the suffix cannot go on the tail of the
+URL. It has no per-URL "database": a schema *is* a user, and the service
+name identifies the PDB, not a namespace a worker can own. Appending
+`_gw0` to
+`oracle+oracledb://privacyidea:privacyidea@127.0.0.1:1521/?service_name=XEPDB1`
+asks for the service `XEPDB1_gw0`, which does not exist, so every worker
+but the first fails to connect. Suffixing the *user* is the equivalent
+move, and `make_url()` keeps the rest of the URL — password, host, port,
+service name — intact. `hide_password=False` is mandatory:
+`render_as_string()` otherwise emits `***` and every worker fails to
+authenticate.
 
 Serial runs (no `PYTEST_XDIST_WORKER` set) keep working unchanged.
 `pytest-xdist` is pinned in `tests/requirements.txt`.
@@ -80,6 +97,22 @@ creates tables in the default search path, so schemas would require a
 per-connection `SET search_path` that pollutes every SQLAlchemy session
 setup. Separate databases work identically on MariaDB and PostgreSQL
 with no code changes.
+
+**Oracle (local only):** there is no Oracle unit-test workflow, so the
+pre-creation is a manual step against `compose-dev.yml`'s `oracle-test`.
+Per worker, as `SYSTEM` in `XEPDB1`:
+
+```sql
+CREATE USER privacyidea_gw0 IDENTIFIED BY privacyidea;
+GRANT CONNECT, RESOURCE TO privacyidea_gw0;
+ALTER USER privacyidea_gw0 QUOTA UNLIMITED ON USERS;
+```
+
+Unlike a PDB, a schema is instant and costs no extra SGA. Oracle XE is
+licensed to 2 CPUs, so sharding buys roughly 2-3x and little more past
+~4 workers — do not size the worker count above that. Note that the
+suite still fails heavily on Oracle; the shim only gets each worker into
+its own schema.
 
 ### Step L3 — Flip pytest to xdist
 

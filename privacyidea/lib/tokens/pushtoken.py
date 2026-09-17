@@ -57,6 +57,7 @@ from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                            AUTH_EVENT_REASON_KEY,
+                                                                           AUTH_EVENT_TYPE_KEY,
                                                                            SUPPRESS_TERMINAL_EVENT_KEY,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.config import get_from_config
@@ -118,9 +119,42 @@ AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC = list(string.ascii_uppercase)
 AVAILABLE_PRESENCE_OPTIONS_NUMERIC = [f'{x:02}' for x in range(100)]
 ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
 DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
+# Caps bound each field's raw character count, but json.dumps(ensure_ascii=True), the encoding
+# Challenge.set_data encrypts, blows up non-ASCII chars to \uXXXX and hexlify then roughly
+# doubles that. So these alone don't bound the stored size; _fit_notification_to_storage_budget
+# enforces the actual encoded size as a safety net.
+MAX_CLIENT_TAG_LENGTH = 256
+MAX_STORED_QUESTION_LENGTH = 512
+MAX_STORED_TITLE_LENGTH = 128
+# Budget for len(json.dumps(data)): Challenge._data holds 2000 hex chars (32-char IV + ':' +
+# 2 hex/byte), leaving ~970 plaintext bytes. kept lower for the fixed fields and AES padding.
+MAX_NOTIFICATION_JSON_LENGTH = 900
 # The decline reasons this server version understands. A signed but unrecognized
 # reason still declines, but is logged as app/server vocabulary drift.
 KNOWN_DECLINE_REASONS = frozenset(r.value for r in PushDeclineReason)
+
+# How a signed decline reason classifies the answer for the authentication log, so a conditional-access
+# policy can count "I did not trigger this" apart from "I changed my mind" - the first is the user
+# reporting someone else's attempt, the second is abandonment. Keyed by the wire value, since that is
+# what the request carries.
+#
+# Anything not listed - a legacy app that sends no reason, or a reason a newer app invented - falls back
+# to the unspecified CHALLENGE_DECLINED. A future reason could be anything, so it must never be counted
+# as the repudiation, which is the same conservative mapping the challenge session takes.
+DECLINE_REASON_AUTH_EVENTS = {
+    PushDeclineReason.UNKNOWN_TRIGGER.value: AuthEventType.CHALLENGE_DECLINED_UNKNOWN_TRIGGER,
+    PushDeclineReason.CANCELLED.value: AuthEventType.CHALLENGE_CANCELLED,
+}
+
+# How a challenge the phone already refused classifies the *later* request that runs into it - the
+# /validate/check a client sends to finalize after polling. Keyed by the refusal status, because that
+# is what survives on the challenge; the decline reason itself does not, so a repudiation reads here
+# as the plain decline it also is. Its own event stays on the /ttype/push row where the phone made it,
+# which is what keeps the repudiation counted once rather than once per request that reports it.
+REFUSAL_STATUS_AUTH_EVENTS = {
+    CHALLENGE_REFUSAL_STATUS[ChallengeSession.CANCELLED]: AuthEventType.CHALLENGE_CANCELLED,
+    CHALLENGE_REFUSAL_STATUS[ChallengeSession.DECLINED]: AuthEventType.CHALLENGE_DECLINED,
+}
 
 # The optional push features this server advertises to the smartphone in every
 # challenge (see _build_smartphone_data). A newer app intersects these with its
@@ -259,28 +293,68 @@ def _get_presence_options(options) -> list:
     return available_presence_options
 
 
-def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: str, private_key_pem: str,
-                           options: dict, presence_options: list = None) -> dict:
+def _truncate_with_log(value: str, max_length: int, label: str) -> str:
     """
-    Create the dictionary to be sent to the smartphone as challenge
+    Truncate ``value`` to ``max_length`` characters, logging a debug message naming
+    ``label`` if it actually had to be cut.
+    """
+    if len(value) > max_length:
+        log.debug(f"Truncating {label} from {len(value)} to {max_length} characters.")
+        return value[:max_length]
+    return value
 
-    :param token: The token object for which to create the smartphone data
-    :type token: A tokenclass object
-    :param challenge: base32 encoded random data string
-    :type challenge: str
-    :param registration_url: The privacyIDEA URL, to which the Push token communicates
-    :type registration_url: str
-    :param options: the options dictionary
-    :type options: dict
-    :param presence_options: Require the user to confirm with the correct button from the list of options.
-    :type presence_options: list
-    :return: the created smartphone_data dictionary
-    :rtype: dict
+
+def _fit_notification_to_storage_budget(data: dict) -> dict:
     """
-    sslverify = get_action_values_from_options(SCOPE.AUTH, PushAction.SSL_VERIFY,
-                                               options) or "1"
-    if sslverify not in ["0", "1"]:
-        sslverify = "1"
+    Make sure the JSON encoding of ``data``, the same encoding Challenge.set_data encrypts
+    and stores, stays within MAX_NOTIFICATION_JSON_LENGTH. The per-field character caps
+    applied before this point do not bound that encoded size, since json.dumps escapes every
+    non-ASCII character to a \\uXXXX sequence. This is the safety net: it truncates the
+    question, the largest variable-length field, as far as still necessary.
+
+    :param data: the challenge data, with "notification" already set
+    :return: the (possibly further truncated) data dict
+    """
+    notification = data.get("notification")
+    if not notification:
+        return data
+    encoded_length = len(json.dumps(data))
+    if encoded_length <= MAX_NOTIFICATION_JSON_LENGTH:
+        return data
+    overshoot = encoded_length - MAX_NOTIFICATION_JSON_LENGTH
+
+    question = notification.get("question", "")
+    question_cut = min(overshoot, len(question))
+    if question_cut:
+        new_length = len(question) - question_cut
+        log.warning(f"Challenge notification still exceeds the storage budget after per-field "
+                    f"truncation ({encoded_length} > {MAX_NOTIFICATION_JSON_LENGTH} encoded chars). "
+                    f"Truncating the question from {len(question)} to {new_length} characters.")
+        notification["question"] = question[:new_length]
+    overshoot -= question_cut
+
+    if overshoot:
+        title = notification.get("title", "")
+        new_length = max(0, len(title) - overshoot)
+        log.warning(f"Challenge notification still exceeds the storage budget after truncating "
+                    f"the question ({encoded_length} > {MAX_NOTIFICATION_JSON_LENGTH} encoded chars). "
+                    f"Truncating the title from {len(title)} to {new_length} characters.")
+        notification["title"] = title[:new_length]
+
+    return data
+
+
+def _build_mobile_notification(token: TokenClass, options: dict) -> dict:
+    """
+    Build the notification the user sees on the smartphone: the question from the
+    push_text_on_mobile policy with its tags filled in, and the title. Needs the request
+    of the authenticating client, so it only yields the client's tags while that request
+    is being handled.
+
+    :param token: The token object for which to build the notification
+    :param options: the options dictionary
+    :return: a dict with the keys "question" and "title"
+    """
     default_message = str(DEFAULT_MOBILE_TEXT)
 
     message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
@@ -312,6 +386,8 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
                            recipient={"givenname": user.info.get("givenname") if user else "",
                                       "surname": user.info.get("surname") if user else ""},
                            challenge=options.get("challenge"))
+    for tag in ("ua_string", "ua_browser", "action"):
+        tags[tag] = _truncate_with_log(tags[tag], MAX_CLIENT_TAG_LENGTH, f"tag {tag!r}")
     try:
         message_on_mobile = message_on_mobile.format(**tags)
     except Exception as e:
@@ -323,11 +399,41 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
     log.debug(f"Sending to mobile: {message_on_mobile}")
 
     title = get_action_values_from_options(SCOPE.AUTH, PushAction.MOBILE_TITLE, options) or "privacyIDEA"
+    return {"question": message_on_mobile, "title": title}
+
+
+def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: str, private_key_pem: str,
+                           options: dict, presence_options: list = None,
+                           notification: dict = None) -> dict:
+    """
+    Create the dictionary to be sent to the smartphone as challenge
+
+    :param token: The token object for which to create the smartphone data
+    :type token: A tokenclass object
+    :param challenge: base32 encoded random data string
+    :type challenge: str
+    :param registration_url: The privacyIDEA URL, to which the Push token communicates
+    :type registration_url: str
+    :param options: the options dictionary
+    :type options: dict
+    :param presence_options: Require the user to confirm with the correct button from the list of options.
+    :type presence_options: list
+    :param notification: The question and title stored with the challenge. Without it they
+        are built from the current request.
+    :type notification: dict
+    :return: the created smartphone_data dictionary
+    :rtype: dict
+    """
+    sslverify = get_action_values_from_options(SCOPE.AUTH, PushAction.SSL_VERIFY,
+                                               options) or "1"
+    if sslverify not in ["0", "1"]:
+        sslverify = "1"
+    notification = notification or _build_mobile_notification(token, options)
     smartphone_data = {
         "nonce": challenge,
-        "question": message_on_mobile,
+        "question": notification["question"],
         "serial": token.token.serial,
-        "title": title,
+        "title": notification["title"],
         "sslverify": sslverify,
         "url": registration_url
     }
@@ -380,6 +486,22 @@ def _load_public_key(pubkey_pem: str) -> Any:
                  "-----END PUBLIC KEY-----"
 
     return serialization.load_pem_public_key(to_bytes(pubkey_pem), default_backend())
+
+
+def _log_challenge_answer(g: Any, transaction_id: str, status: str, reason: str | None = None) -> None:
+    """
+    Note the smartphone's answer to a push challenge - "accept", "confirmed" (code_to_phone,
+    where the user still has to submit the display code), "declined" or "cancelled" - in the
+    audit entry of the current request. It goes to ``action_detail`` because the authentication
+    endpoints overwrite ``info`` with their result message when the request ends.
+    """
+    audit_object = getattr(g, "audit_object", None)
+    if not audit_object:
+        return
+    detail = f"transaction_id: {transaction_id}, status: {status}"
+    if reason:
+        detail += f", reason: {reason}"
+    audit_object.add_to_log({"action_detail": detail}, add_with_comma=True)
 
 
 @dataclass
@@ -842,7 +964,7 @@ class PushTokenClass(TokenClass):
         return True
 
     @classmethod
-    def _handle_auth_response(cls, serial: str, request_data: dict) -> tuple[bool, dict]:
+    def _handle_auth_response(cls, g: Any, serial: str, request_data: dict) -> tuple[bool, dict]:
         log.debug("Handling the authentication response from the smartphone.")
         signature = get_optional(request_data, "signature")
         decline = is_true(get_optional(request_data, "decline", default=False))
@@ -854,6 +976,9 @@ class PushTokenClass(TokenClass):
         challenges = get_challenges(serial=serial)
         result = False
         details = {}
+        answer_status = None
+        answer_reason = None
+        answer_transaction_id = None
         signature_verified = False
         matched_transaction_id = None
 
@@ -890,12 +1015,16 @@ class PushTokenClass(TokenClass):
                         # server version does not know yet (app/server skew) - still a plain
                         # decline, but logged so the vocabulary drift is visible.
                         if decline_reason == PushDeclineReason.CANCELLED:
-                            challenge.set_session(ChallengeSession.CANCELLED)
+                            session = ChallengeSession.CANCELLED
                         else:
                             if decline_reason and decline_reason not in KNOWN_DECLINE_REASONS:
                                 log.info(f"Unknown push decline_reason {decline_reason!r} for token {serial}; "
                                          "recording as a plain decline.")
-                            challenge.set_session(ChallengeSession.DECLINED)
+                            session = ChallengeSession.DECLINED
+                        challenge.set_session(session)
+                        answer_status = CHALLENGE_REFUSAL_STATUS[session]
+                        answer_reason = decline_reason
+                        answer_transaction_id = challenge.transaction_id
                     else:
                         # Verify the presence_answer which is stored in the challenge data.
                         if (challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE and presence_answer):
@@ -927,6 +1056,10 @@ class PushTokenClass(TokenClass):
                                 DEFAULT_MOBILE_TEXT_CODE_TO_PHONE)
                         else:
                             challenge.set_otp_status(True)
+                        if result:
+                            answer_status = ("confirmed" if challenge_data.get("mode") == PushMode.CODE_TO_PHONE
+                                             else "accept")
+                            answer_transaction_id = challenge.transaction_id
                     if result:
                         # The smartphone answered (accepted, declined or - for
                         # code_to_phone - confirmed) within the answer window.
@@ -955,11 +1088,15 @@ class PushTokenClass(TokenClass):
                     # nonce matches at most one challenge, so break: there is nothing left to check.
                     break
 
+        if result and answer_status:
+            _log_challenge_answer(g, answer_transaction_id, answer_status, answer_reason)
+
         # Classify the smartphone's response for the authentication log.
         details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_ANSWERED_FAIL
         if signature_verified:
             if decline:
-                details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_DECLINED
+                details[PUSH_AUTH_EVENT] = DECLINE_REASON_AUTH_EVENTS.get(decline_reason,
+                                                                          AuthEventType.CHALLENGE_DECLINED)
                 details[AUTH_EVENT_REASON_KEY] = str(AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE)
             elif "display_code" in details:
                 details[PUSH_AUTH_EVENT] = AuthEventType.CHALLENGE_CONTINUED
@@ -1029,7 +1166,7 @@ class PushTokenClass(TokenClass):
             rejection = conditional_access_rejection(cls._resolve_token_owner(serial), PUSH_ANSWER_REJECTION)
             if rejection is not None:
                 return False, ({"message": rejection.message} if rejection.message else {})
-            return cls._handle_auth_response(serial, request_data)
+            return cls._handle_auth_response(g, serial, request_data)
         elif all(k in request_data for k in ('new_fb_token', 'timestamp', 'signature')):
             return cls._handle_firebase_update(serial, request_data)
         else:
@@ -1176,7 +1313,8 @@ class PushTokenClass(TokenClass):
                     presence_options = challenge_data.get("options")
                 # then return the necessary smartphone data to answer the challenge
                 smartphone_data = _build_smartphone_data(token, challenge.challenge, registration_url, private_key,
-                                                         options, presence_options)
+                                                         options, presence_options,
+                                                         notification=challenge_data.get("notification"))
                 open_challenges.append(smartphone_data)
             # return the challenges as a list in the result value
             result = open_challenges
@@ -1381,6 +1519,16 @@ class PushTokenClass(TokenClass):
         if fb_identifier:
             challenge = b32encode_and_unicode(geturandom())
             if options.get("session") != ChallengeSession.ENROLLMENT:
+                # Render and store it while the request of the authenticating client is still
+                # at hand: a poll brings the request of the smartphone instead.
+                data = data or {}
+                notification = _build_mobile_notification(self, options)
+                data["notification"] = {
+                    "question": _truncate_with_log(notification["question"], MAX_STORED_QUESTION_LENGTH,
+                                                    "notification question"),
+                    "title": _truncate_with_log(notification["title"], MAX_STORED_TITLE_LENGTH,
+                                                "notification title")}
+                data = _fit_notification_to_storage_budget(data)
                 if fb_identifier != POLL_ONLY:
                     # We only push to Firebase if this token is NOT POLL_ONLY.
                     fb_gateway = create_sms_instance(fb_identifier)
@@ -1389,7 +1537,8 @@ class PushTokenClass(TokenClass):
                     private_key_pem = self.get_tokeninfo(PRIVATE_KEY_SERVER)
                     smartphone_data = _build_smartphone_data(self,
                                                              challenge, registration_url,
-                                                             private_key_pem, options, current_presence_options)
+                                                             private_key_pem, options, current_presence_options,
+                                                             notification=data["notification"])
                     log.debug(f"Sending to firebase the smartphone_data: {smartphone_data}")
                     res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 
@@ -1530,6 +1679,7 @@ class PushTokenClass(TokenClass):
                 # challenge_status carrying the fine distinction, mirroring the polling flow.
                 if challenge_status:
                     reply = {"challenge_status": challenge_status}
+                    _log_challenge_answer(g, transaction_id, challenge_status)
 
         elif code_to_phone_enabled and options.get("transaction_id"):
             # Step 2 of code_to_phone: the user submits the display_code shown after
@@ -1630,7 +1780,18 @@ class PushTokenClass(TokenClass):
         transaction_id = options.get('transaction_id') or options.get('state')
         if transaction_id is None:
             return -1
-        return self._scan_challenge_response(transaction_id, passw).otp_counter
+        state = self._scan_challenge_response(transaction_id, passw)
+        if state.refused_status:
+            _log_challenge_answer(options.get("g"), transaction_id, state.refused_status)
+            # This request failed because the phone refused the challenge, not because anything was
+            # answered wrongly - nothing was answered here at all, since a refused challenge never
+            # reaches the response check. Classify it as the refusal so the log says why, and so the
+            # failed-attempt rate limits keep leaving a user's own cancellation uncounted: otherwise
+            # finalizing after a cancel would put back the CHALLENGE_ANSWERED_FAIL that excluding
+            # CHALLENGE_CANCELLED from those templates exists to avoid.
+            self.auth_details[AUTH_EVENT_TYPE_KEY] = REFUSAL_STATUS_AUTH_EVENTS[state.refused_status]
+            self.auth_details[AUTH_EVENT_REASON_KEY] = AuthEventReason.CHALLENGE_DECLINED_ON_DEVICE
+        return state.otp_counter
 
     @classmethod
     def enroll_via_validate(cls, g: Any, content: dict, user_obj: User, message: str = None) -> None:

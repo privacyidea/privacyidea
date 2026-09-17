@@ -128,6 +128,29 @@ describe("ReasonCell", () => {
     );
   });
 
+  it("opens the dialog from the placeholder link when the entry has no reason of its own", () => {
+    fixture.componentRef.setInput("reasons", []);
+    fixture.componentRef.setInput("info", {
+      reason_detail: { reasons: { OATH0001: "TOKEN_FAILCOUNT_EXCEEDED" }, policies: ["deny_vpn"] }
+    });
+    fixture.detectChanges();
+
+    placeholder()!.click();
+
+    expect(dialogService.openDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: ReasonDetailDialog,
+        data: {
+          used: [{ serial: "OATH0001", reason: "TOKEN_FAILCOUNT_EXCEEDED" }],
+          other: [],
+          namesTokens: false,
+          policies: ["deny_vpn"],
+          eventType: ""
+        }
+      })
+    );
+  });
+
   it("splits the detail by the tokens the entry names", () => {
     // The table passes them for a failed entry only.
     fixture.componentRef.setInput("reasons", []);
@@ -148,10 +171,18 @@ describe("ReasonCell", () => {
   });
 
   it("names what the button opens, since it carries no visible text", () => {
+    fixture.componentRef.setInput("reasons", ["WRONG_OTP"]);
     fixture.componentRef.setInput("info", { reason_detail: { policies: ["deny_vpn"] } });
     fixture.detectChanges();
 
     const button = detailButton()!;
     expect(button.getAttribute("aria-label")).toBe(component.detailLabel);
+  });
+
+  it("names what the placeholder link opens too, since its own text does not say", () => {
+    fixture.componentRef.setInput("info", { reason_detail: { policies: ["deny_vpn"] } });
+    fixture.detectChanges();
+
+    expect(placeholder()?.getAttribute("aria-label")).toBe(component.detailLabel);
   });
 });

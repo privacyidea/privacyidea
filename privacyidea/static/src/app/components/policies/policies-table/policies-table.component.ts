@@ -87,14 +87,28 @@ export class PoliciesTableComponent {
 
   readonly filterComponent = viewChild<PolicyFilterComponent>("filterComponent");
 
+  // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+  // to, so table.page-table-state-size(table.table-width(...)) in the .scss can be sized from the
+  // same numbers. actions/conditions carry a list that can badly overflow and are deliberately
+  // left without a tier (see the .scss for how their width is accounted for).
   readonly columns = {
-    priority: { label: $localize`:@@policy.priority:Priority`, filterable: true, sortable: true },
-    name: { label: $localize`:@@common.name:Name`, filterable: true, sortable: true },
-    scope: { label: $localize`:@@common.scope:Scope`, filterable: true, sortable: true },
-    description: { label: $localize`:@@common.description:Description`, filterable: true, sortable: true },
-    actions: { label: $localize`:@@common.actions:Actions`, filterable: true, sortable: false },
-    conditions: { label: $localize`:@@common.conditions:Conditions`, filterable: true, sortable: false },
-    active: { label: $localize`:@@common.active:Active`, filterable: true, sortable: true }
+    priority: { label: $localize`:@@policy.priority:Priority`, filterable: true, sortable: true, width: "s" },
+    name: { label: $localize`:@@common.name:Name`, filterable: true, sortable: true, width: "l" },
+    scope: { label: $localize`:@@common.scope:Scope`, filterable: true, sortable: true, width: "s" },
+    description: {
+      label: $localize`:@@common.description:Description`,
+      filterable: true,
+      sortable: true,
+      width: "xl"
+    },
+    actions: { label: $localize`:@@common.actions:Actions`, filterable: true, sortable: false, width: undefined },
+    conditions: {
+      label: $localize`:@@common.conditions:Conditions`,
+      filterable: true,
+      sortable: false,
+      width: undefined
+    },
+    active: { label: $localize`:@@common.active:Active`, filterable: true, sortable: true, width: "s" }
   } as const;
 
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);

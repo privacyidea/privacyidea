@@ -265,9 +265,12 @@ export class PolicyService implements PolicyServiceInterface {
   //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
   // });
 
-  _allPolicies = computed(() => {
-    if (!this.allPoliciesResource.hasValue()) return [];
-    return this.allPoliciesResource.value()?.result?.value ?? [];
+  // A reload in flight clears allPoliciesResource's value before the new response arrives - keep
+  // the previous list instead of dropping to empty, now that the table stays mounted through a
+  // reload (see TableState.lastKnownCount).
+  _allPolicies: Signal<PolicyDetail[]> = linkedSignal({
+    source: () => (this.allPoliciesResource.hasValue() ? this.allPoliciesResource.value()?.result?.value : undefined),
+    computation: (source, previous) => source ?? previous?.value ?? []
   });
 
   filteredGroupNamesOf(selectedScope: string, alreadyAddedActionNames: string[], filter: string): string[] {

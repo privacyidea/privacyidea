@@ -17,13 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component } from "@angular/core";
-import { MatDialogContent } from "@angular/material/dialog";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
 @Component({
   selector: "app-resync-otp-token-dialog",
-  imports: [MatDialogContent, DialogWrapperComponent],
+  imports: [DialogWrapperComponent],
   templateUrl: "resync-otp-token-dialog.component.html",
   styleUrl: "resync-otp-token-dialog.component.scss"
 })

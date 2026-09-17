@@ -34,6 +34,7 @@
             [showClearButton]="filterString().length > 0">
             <input
               #filterHTMLInputElement
+              [appRefocusAfterReload]="machineResolverService.machineResolverResource.isLoading()"
               (input)="onFilterInput(filterHTMLInputElement.value)"
               [value]="filterString()"
               aria-label="Filter Input"
@@ -70,12 +71,14 @@
         <ng-container matColumnDef="resolvername">
           <th
             *matHeaderCellDef
+            class="col-width-l"
             mat-header-cell
             mat-sort-header>
             <span i18n="@@common.name">Name</span>
           </th>
           <td
             *matCellDef="let element"
+            class="col-width-l"
             mat-cell>
             <div class="name-actions-container">
               <a [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER_DETAILS, element.resolvername]">
@@ -103,12 +106,14 @@
         <ng-container matColumnDef="type">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             mat-header-cell
             mat-sort-header>
             <span i18n="@@common.type">Type</span>
           </th>
           <td
             *matCellDef="let element"
+            class="col-width-s"
             mat-cell>
             {{ element.type }}
           </td>

@@ -53,8 +53,6 @@ export class SubscriptionExpiryService {
         this.dialog.open(SubscriptionExpiryDialogComponent, {
           disableClose: false,
           autoFocus: false,
-          width: "640px",
-          panelClass: "global-dialog-panel",
           data: { items: expiring }
         });
       }

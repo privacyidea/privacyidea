@@ -23,6 +23,7 @@ import { Component, inject, input, OnInit, output } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { DialogAction } from "@models/dialog";
 import { assert } from "@utils/assert";
 
@@ -30,7 +31,7 @@ import { assert } from "@utils/assert";
   selector: "app-dialog-wrapper",
   templateUrl: "./dialog-wrapper.component.html",
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatIcon, A11yModule],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatIcon, MatTooltipModule, A11yModule],
   styleUrls: ["./dialog-wrapper.component.scss"]
 })
 export class DialogWrapperComponent<R = unknown> implements OnInit {
@@ -38,11 +39,15 @@ export class DialogWrapperComponent<R = unknown> implements OnInit {
 
   title = input.required<string>();
   icon = input<string>();
+  // Width tier, see --dialog-width-* in styles.scss. Default holds ~65 characters of prose.
+  width = input<"s" | "m" | "l">("m");
   showCloseButton = input<boolean>(true);
   // Empty by default so the template falls back to the translated <div i18n>Cancel</div>.
   // A hardcoded "Cancel" here would bypass i18n and always render in English.
   cancelButtonLabel = input<string>("");
   cancelButtonPrimary = input<boolean>(false);
+  cancelButtonDisabled = input<boolean>(false);
+  cancelButtonTooltip = input<string>("");
   handleCloseExternally = input<boolean>(false);
   actions = input<DialogAction<R>[]>([]);
   actionTriggered = output<R>();

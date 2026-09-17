@@ -35,6 +35,7 @@ import { ADMIN_INTERNAL_ROLE } from "@core/models/user_role/user-role";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
@@ -65,6 +66,7 @@ import { concatMap, reduce } from "rxjs/operators";
   templateUrl: "./locked-users.component.html",
   styleUrl: "./locked-users.component.scss",
   imports: [
+    RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTableModule,
     MatButtonModule,

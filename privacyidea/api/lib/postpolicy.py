@@ -71,8 +71,6 @@ from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL
                                     SCOPE, AUTOASSIGNVALUE, AUTHORIZED, SESSION_PERSISTENCE, Match)
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
-                                           check_subscription,
-                                           SubscriptionError,
                                            EXPIRE_MESSAGE)
 from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token
 from privacyidea.lib.tokenclass import ChallengeSession
@@ -857,7 +855,8 @@ def get_webui_settings(request, response):
         content["result"]["value"]["deletion_confirmation"] = deletion_confirmation
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["show_node"] = get_privacyidea_node() if show_node else ""
-        content["result"]["value"]["subscription_status"] = subscription_status()
+        subscription_state = subscription_status()
+        content["result"]["value"]["subscription_status"] = subscription_state
         content["result"]["value"]["qr_image_android"] = qr_image_android
         content["result"]["value"]["qr_image_ios"] = qr_image_ios
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
@@ -873,11 +872,10 @@ def get_webui_settings(request, response):
             if len(subscriptions) == 1:
                 subscription = subscriptions[0]
                 version = get_version()
-                subject = f"Problem with {version!s}"
-                try:
-                    check_subscription("privacyidea")
-                except SubscriptionError:
-                    subject = EXPIRE_MESSAGE
+                # State 2 is what subscription_status() reports when the subscription no
+                # longer holds, so the support mail is addressed at that. It was checked
+                # above already; checking again would run the user count a second time.
+                subject = EXPIRE_MESSAGE if subscription_state == 2 else f"Problem with {version!s}"
                 # Check policy, if the admin is allowed to save config. This is a genuine
                 # permission check: an admin on a system without admin policies effectively
                 # has systemwrite rights, so the fail-open allowed() is intended here.
@@ -908,6 +906,15 @@ def autoassign(request, response):
     into account ACTION.MAXTOKENUSER and ACTION.MAXTOKENREALM.
     :return:
     """
+    if get_ca_context().rejected_by_conditional_access:
+        # The pre-auth conditional-access gate already refused this request - its rejection carries the same
+        # "value": false shape as an ordinary failed authentication (see conditional_access_gate), which is
+        # exactly what this function otherwise treats as "no token yet, try the submitted OTP against the
+        # realm's unassigned ones". Verifying the OTP here would flip a locked/blocked account's rejection into a
+        # success and additionally assign it a token. rejected_by_conditional_access reads true as soon as the
+        # rejection stages its enforcement-type event (conditional_access_rejection/_reject_restricted_login), so
+        # this also covers /auth and /ttype/push, not just conditional_access_gate's own endpoints.
+        return response
     content = response.json
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("value") is False:

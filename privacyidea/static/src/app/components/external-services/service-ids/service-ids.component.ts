@@ -16,12 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceId, ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -44,6 +46,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-service-ids",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
+    NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,

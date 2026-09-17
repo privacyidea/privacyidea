@@ -10,21 +10,13 @@
 .events-table-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
-  @include table.page-table-state-size;
+  // Plus a flat estimate for event/action/conditions, which have no tier (see columnWidths in
+  // event.component.ts) - all three hold lists or free text left to the table's remaining space -
+  // so the panel is not narrower than the real table.
+  @include table.page-table-state-size(calc(#{table.table-width(s, m, s, s, s, s)} + 3 * 240px));
 }
 
 .event-handler-table {
-  // The shared table styles stripe the columns; the handlers read as rows, so the stripes
-  // are turned by 90 degrees to run along them instead.
-  th,
-  td {
-    background: table.$table-bg;
-  }
-
-  tr.mat-mdc-row:nth-child(odd) td {
-    background: var(--mat-sys-surface-variant);
-  }
-
   td.mat-mdc-footer-cell {
     padding-top: 8px;
     padding-bottom: 8px;
@@ -78,11 +70,6 @@
 }
 
 .event-handler-table {
-  th.mat-mdc-header-cell.mat-column-ordering,
-  td.mat-mdc-cell.mat-column-ordering {
-    width: calc(var(--input-width-xs) + 16px);
-  }
-
   // A form field at its default height fills the row from border to border, so the
   // ordering input is shortened and inset to sit inside the cell instead of filling it.
   // Its filled background is dropped as well, leaving the underline and the hover tint

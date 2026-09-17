@@ -47,10 +47,10 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { NgClass } from "@angular/common";
 import { MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
@@ -63,23 +63,24 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
-import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_generic/filter-value-generic";
 import { TableState } from "@core/models/table_state/table-state";
-import { ResolverService } from "@services/resolver/resolver.service";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to, so a table.page-table-state-size(table.table-width(...)) call in the .scss listing the same tiers
+// (see table-width() in table.scss) can be sized from the same numbers.
 const columnKeysMap = [
-  { key: "username", label: $localize`:@@common.username:Username` },
-  { key: "userid", label: $localize`:@@common.userId:User ID` },
-  { key: "givenname", label: $localize`:@@user.givenName:Given Name` },
-  { key: "surname", label: $localize`:@@user.surname:Surname` },
-  { key: "email", label: $localize`:@@common.email:Email` },
-  { key: "phone", label: $localize`:@@user.phone:Phone` },
-  { key: "mobile", label: $localize`:@@user.mobile:Mobile` },
-  { key: "description", label: $localize`:@@common.description:Description` },
-  { key: "resolver", label: $localize`:@@common.resolver:Resolver` }
+  { key: "username", label: $localize`:@@common.username:Username`, width: "m" },
+  { key: "userid", label: $localize`:@@common.userId:User ID`, width: "s" },
+  { key: "givenname", label: $localize`:@@user.givenName:Given Name`, width: "s" },
+  { key: "surname", label: $localize`:@@user.surname:Surname`, width: "s" },
+  { key: "email", label: $localize`:@@common.email:Email`, width: "l" },
+  { key: "phone", label: $localize`:@@user.phone:Phone`, width: "m" },
+  { key: "mobile", label: $localize`:@@user.mobile:Mobile`, width: "m" },
+  { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+  { key: "resolver", label: $localize`:@@common.resolver:Resolver`, width: "m" }
 ];
 
 // Per-column predicates for the free-text search: a term matches if it is a substring of any column.
@@ -99,6 +100,7 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
 @Component({
   selector: "app-user-table",
   imports: [
+    RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatCell,
     MatCellDef,
@@ -140,9 +142,7 @@ export class UserTableComponent implements OnDestroy {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly userService: UserServiceInterface = inject(UserService);
-  protected readonly resolverService = inject(ResolverService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly dialog = inject(MatDialog);
   readonly apiFilterKeys = this.userService.apiFilterKeys;
   readonly filterHint = inlineFilterHint();
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
@@ -244,19 +244,6 @@ export class UserTableComponent implements OnDestroy {
 
   onClickUsername(user: UserData): void {
     this.userService.detailsUser.set({ username: user.username, realm: this.userService.selectedUserRealm() });
-  }
-
-  onClickResolver(resolverName: string): void {
-    const resolver = this.resolverService.resolvers().find((r) => r.resolvername === resolverName);
-    if (resolver) {
-      this.dialog.open(UserNewResolverComponent, {
-        data: { resolver },
-        width: "auto",
-        height: "auto",
-        maxWidth: "100vw",
-        maxHeight: "100vh"
-      });
-    }
   }
 
   // Keeps users where every term matches at least one column (AND across terms, OR across columns).

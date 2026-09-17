@@ -32,6 +32,7 @@
           [showClearButton]="containerService.filterDraft().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="containerResource.isLoading()"
             [appFilterAutocomplete]="filterKeywords"
             (input)="onFilterInput($event)"
             (keyup.enter)="containerService.applyFilterInput($event)"
@@ -97,10 +98,11 @@
             } @else {
               <th
                 *matHeaderCellDef
+                [ngClass]="'col-width-' + column.width"
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
-                  <div class="margin-left-16 flex">
+                  <div class="flex">
                     @if (
                       apiFilterKeyMap[column.key] &&
                       containerService.apiFilterKeys.includes(apiFilterKeyMap[column.key])
@@ -156,10 +158,8 @@
             }
             <td
               *matCellDef="let element; let row"
-              [ngClass]="{
-                'max-width-300': column.key === 'description',
-                'table-checkbox': column.key === 'select'
-              }"
+              [class.table-checkbox]="column.key === 'select'"
+              [ngClass]="column.key === 'select' ? null : 'col-width-' + column.width"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
