@@ -130,7 +130,8 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
 
     this.dialogService.openDialog({
       component: TokenEnrollmentLastStepDialogWizardComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { disableClose: !this.lastStepDialogIsDismissable() }
     });
   }
 }

@@ -15,17 +15,24 @@
   @if (showCloseButton() || actions().length > 0) {
     <div class="pi-dialog-footer">
       @if (showCloseButton()) {
-        <button
-          [attr.cdkFocusInitial]="cancelButtonPrimary() || null"
-          class="action-button-secondary button-width-s"
-          (click)="onCancelClick()"
-          mat-stroked-button>
-          @if (cancelButtonLabel()) {
-            {{ cancelButtonLabel() }}
-          } @else {
-            <div i18n="@@common.cancel">Cancel</div>
-          }
-        </button>
+        <span
+          [matTooltipDisabled]="!cancelButtonTooltip()"
+          [matTooltip]="cancelButtonTooltip()"
+          class="cancel-button-host"
+          matTooltipClass="multiline-tooltip">
+          <button
+            [attr.cdkFocusInitial]="cancelButtonPrimary() || null"
+            [disabled]="cancelButtonDisabled()"
+            class="action-button-secondary button-width-s"
+            (click)="onCancelClick()"
+            mat-stroked-button>
+            @if (cancelButtonLabel()) {
+              {{ cancelButtonLabel() }}
+            } @else {
+              <div i18n="@@common.cancel">Cancel</div>
+            }
+          </button>
+        </span>
       }
       @for (action of actions(); track $index) {
         @if (!action.hidden) {
