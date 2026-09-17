@@ -2,6 +2,35 @@
 
 ## Update from 3.13 to 3.14
 
+* **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
+  `static_old/`. Nothing has to be configured to get the new WebUI, it is what a fresh installation serves.
+
+  **If you enabled the preview**, remove these two lines from your `pi.cfg`:
+
+  ```
+  PI_STATIC_FOLDER = "static_new/"
+  PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"
+  ```
+
+  A configuration that still names `static_new` keeps working: the paths are remapped to the new location and a warning
+  is written to the log. **This fallback is only kept for this version**, so remove the lines during the update.
+
+  **To keep the previous WebUI** for this version, put both of these in your `pi.cfg`:
+
+  ```
+  PI_STATIC_FOLDER = "static_old/"
+  PI_TEMPLATE_FOLDER = "static_old/templates/"
+  ```
+
+  Both lines are needed: the first selects the files the WebUI is served from, the second the templates the server
+  renders itself. The previous WebUI will be **removed in the next version**, so treat this as a way to buy time for a
+  problem report, not as a permanent setting.
+
+* **The WebUI sources are no longer part of a release.** The Python packages ship the compiled WebUI
+  (`static/dist/`) and the assets it is served with (`static/public/`), but not the Angular sources it is built from.
+  Build the WebUI from the repository if you need to modify it. This also means the sources are no longer reachable
+  over HTTP under `/static/`.
+
 * **SSH key integrity checksum** — SSH key tokens now store an integrity checksum of the SSH key data (serial, key type,
   public key and comment) in the encrypted OTP key field of the token. The checksum is verified whenever the public SSH
   key is fetched (e.g. by `privacyidea-authorizedkeys`), so manipulations of the database entries are detected and the
@@ -426,6 +455,9 @@
   `PI_STATIC_FOLDER = "static_new/"`
 
   `PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"`
+
+  If you are updating to 3.14 or later, skip this: the new WebUI is served by default there and these two lines are
+  not needed any more. See "Update from 3.13 to 3.14".
 
 * The behaviour of the Certificate Token changes when the certificate key-pair is created by privacyIDEA. The secret key
   will not be saved to the tokeninfo anymore. Instead, only the PKCS12 container will contain the secret key. The PKCS12

@@ -561,10 +561,6 @@ You do not need to add this in the `pi.cfg` file, this is available by default.
 Custom Web UI
 -------------
 
-The Web UI is a single page application, that is initiated from the file
-``static/templates/index.html``. This file pulls all CSS, the javascript framework
-and all the javascript business logic.
-
 You can configure privacyIDEA to use your own WebUI, which is completely different and stored at another location.
 
 You can do this using the following config values::
@@ -574,7 +570,12 @@ You can do this using the following config values::
     PI_TEMPLATE_FOLDER = "mystatic/templates"
 
 In this example the file ``mystatic/templates/myindex.html`` would be loaded
-as the initial single page application.
+as the initial single page application, and its assets would be served from
+``mystatic`` under the unchanged URL ``/static/``.
+
+Both paths are relative to the ``privacyidea`` package directory. They are also how the
+WebUI privacyIDEA ships is selected, see :ref:`new_webui`: the folder that is served is
+``static/`` and the one privacyIDEA renders its own pages from is ``static_old/templates/``.
 
 
 .. _redis_cache:
