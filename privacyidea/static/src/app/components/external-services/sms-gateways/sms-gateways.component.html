@@ -31,6 +31,7 @@
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="smsGatewayService.smsGatewayResource.isLoading()"
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
@@ -96,6 +97,7 @@
       <ng-container matColumnDef="name">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['name']"
           i18n="@@common.name"
           mat-header-cell
           mat-sort-header
@@ -103,6 +105,7 @@
         >
         <td
           *matCellDef="let gateway"
+          [ngClass]="'col-width-' + columnWidths['name']"
           mat-cell>
           <app-copyable [copyText]="gateway.name">
             <a
@@ -120,6 +123,7 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['description']"
           i18n="@@common.description"
           mat-header-cell
           mat-sort-header
@@ -127,6 +131,7 @@
         >
         <td
           *matCellDef="let gateway"
+          [ngClass]="'col-width-' + columnWidths['description']"
           mat-cell>
           {{ gateway.description }}
         </td>
@@ -135,6 +140,7 @@
       <ng-container matColumnDef="providermodule">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-' + columnWidths['providermodule']"
           i18n="@@smsGateway.providerModule"
           mat-header-cell
           mat-sort-header
@@ -142,6 +148,7 @@
         >
         <td
           *matCellDef="let gateway"
+          [ngClass]="'col-width-' + columnWidths['providermodule']"
           mat-cell>
           {{ gateway.providermodule.split(".").pop() }}
         </td>

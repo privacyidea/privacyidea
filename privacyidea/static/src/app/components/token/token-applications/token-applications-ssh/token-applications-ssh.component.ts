@@ -38,11 +38,13 @@ import { MachineService, MachineServiceInterface, TokenApplication } from "@serv
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 @Component({
   selector: "app-token-applications-ssh",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     MatTabsModule,
     MatCell,
     MatCellDef,

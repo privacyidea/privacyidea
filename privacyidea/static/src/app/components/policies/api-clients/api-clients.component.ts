@@ -41,11 +41,13 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { IntegrationsService, IntegrationsServiceInterface } from "@services/integrations/integrations.service";
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 @Component({
   selector: "app-api-clients",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginator,
     MatSortModule,

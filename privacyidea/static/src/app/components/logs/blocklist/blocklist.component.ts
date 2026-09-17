@@ -34,6 +34,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import {
   BlocklistEntry,
@@ -56,6 +57,7 @@ import { concatMap, reduce } from "rxjs/operators";
   templateUrl: "./blocklist.component.html",
   styleUrl: "./blocklist.component.scss",
   imports: [
+    RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTableModule,
     MatButtonModule,

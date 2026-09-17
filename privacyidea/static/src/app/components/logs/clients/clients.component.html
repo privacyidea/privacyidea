@@ -34,6 +34,7 @@
         (clearButtonClick)="clearFilter()"
         [showClearButton]="filterValue !== ''">
         <input
+          [appRefocusAfterReload]="clientService.clientsResource.isLoading()"
           (input)="handleFilterInput($event)"
           [value]="filterValue"
           aria-label="Filter Input"
