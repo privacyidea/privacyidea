@@ -14,6 +14,16 @@ Version 3.14dev1
     subscription, with links to the documentation and the products (#4057, #5383)
 
   Enhancements:
+  * The token usage widget on the dashboard also reports how many users already own a token and how many do
+    not, and can be narrowed to a single realm. The chosen realm is stored with the widget. A resolver that
+    cannot be read is left out of both numbers and named below them, so an installation with a broken
+    resolver still sees the count of the resolvers that answered. The number of token owners, overall and
+    per resolver, is available via the new endpoint `GET /token/ownercount`, guarded by the `tokenlist`
+    action
+  * The user list can be narrowed to the users that own a token, or to those that do not, with the new
+    `has_tokens` filter of `GET /user/`. Token ownership is privacyIDEA's own record rather than a user
+    store attribute, so the filter is applied after the resolvers answered. The token usage widget links
+    its two user counts to the matching list
   * The decrypted public SSH key of an SSH key token can be retrieved via the new endpoint `GET /token/sshkey/<serial>`,
     guarded by the new policy action `sshkey_read` (admin and user scope).
   * SSH key tokens now store an integrity checksum of the SSH key data in the encrypted OTP key field. Manipulations

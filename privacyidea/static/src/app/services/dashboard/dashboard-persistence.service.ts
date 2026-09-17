@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable } from "@angular/core";
-import { WidgetInstance } from "@models/dashboard";
+import { WidgetInstance, WidgetSettings } from "@models/dashboard";
 import { UserSettingsService, UserSettingsServiceInterface } from "@services/user-settings/user-settings.service";
 import { catchError, map, Observable, of } from "rxjs";
 
@@ -66,9 +66,22 @@ export class DashboardPersistenceService implements DashboardPersistenceServiceI
       !!candidate &&
       typeof candidate.id === "string" &&
       typeof candidate.type === "string" &&
+      this.isWidgetSettings(candidate.settings) &&
       [candidate.x, candidate.y, candidate.cols, candidate.rows].every(
         (value) => typeof value === "number" && Number.isFinite(value)
       )
+    );
+  }
+
+  private isWidgetSettings(settings: unknown): settings is WidgetSettings | undefined {
+    if (settings === undefined) {
+      return true;
+    }
+    return (
+      typeof settings === "object" &&
+      settings !== null &&
+      !Array.isArray(settings) &&
+      Object.values(settings).every((value) => value === null || ["string", "number", "boolean"].includes(typeof value))
     );
   }
 }

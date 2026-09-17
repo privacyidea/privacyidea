@@ -120,6 +120,18 @@ def get_users():
         silently drop an unrecognised key and search without it, so an
         unmapped attribute is never reported as skipped there. The SCIM
         resolver does not apply any of the given search fields at all.
+    :query has_tokens: ``True`` keeps only the users that own at least
+        one token, ``False`` only those that own none. A token counts
+        for the realm its owner was assigned in, not for the realms the
+        token itself belongs to, as with the ``realm`` parameter of
+        :http:get:`/token/ownercount`. Ownership is
+        privacyIDEA's own record rather than a user-store attribute, so
+        this filter is applied after the resolvers answered; a resolver
+        reported in ``detail.skipped_resolvers`` therefore contributes
+        no users to either side. The same holds for a resolver whose
+        user listing carries no user id - an HTTP resolver without an
+        attribute mapping - except that its users are all reported as
+        owning no token rather than being left out.
     :query attributes: comma-separated list of attribute names to
         return per user (whitespace around names is stripped). In
         addition to user-store attributes, the privacyIDEA-managed

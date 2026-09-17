@@ -43,11 +43,15 @@ export interface WidgetSize {
   rows: number;
 }
 
+/** Persisted per-widget configuration, kept JSON-serialisable so it survives the user settings round trip. */
+export type WidgetSettings = Record<string, string | number | boolean | null>;
+
 export interface WidgetInstance extends WidgetSize {
   id: string;
   type: WidgetTypeId;
   x: number;
   y: number;
+  settings?: WidgetSettings;
 }
 
 @Directive()
