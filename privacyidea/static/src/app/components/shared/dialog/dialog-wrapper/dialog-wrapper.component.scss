@@ -37,6 +37,14 @@
   }
 }
 
+.cancel-button-host {
+  display: inline-flex;
+
+  button:disabled {
+    pointer-events: none;
+  }
+}
+
 .pi-dialog-s {
   --pi-dialog-width: var(--dialog-width-s);
 }

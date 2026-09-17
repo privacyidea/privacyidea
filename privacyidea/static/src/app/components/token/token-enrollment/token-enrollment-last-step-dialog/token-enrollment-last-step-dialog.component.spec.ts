@@ -102,6 +102,20 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     expect(component.title()).toBe("Token Successfully Enrolled");
   });
 
+  it("should close on a route switch while nothing blocks it", () => {
+    component.onSwitchRoute();
+
+    expect(component["dialogRef"].close).toHaveBeenCalled();
+  });
+
+  it("should keep the dialog open on a route switch while closing is blocked", () => {
+    component["onCloseBlockedReasonChange"]("Download the PKCS#12 file.");
+
+    component.onSwitchRoute();
+
+    expect(component["dialogRef"].close).not.toHaveBeenCalled();
+  });
+
   it("should render the enrollment data when showEnrollData is not set", () => {
     expect(fixture.nativeElement.querySelector("app-token-enrollment-data")).toBeTruthy();
   });

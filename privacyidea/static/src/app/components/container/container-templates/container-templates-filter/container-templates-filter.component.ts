@@ -20,13 +20,14 @@
 import { Component, ElementRef, Input, input, output, signal, viewChild } from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { ContainerTemplate } from "@services/container/container.service";
 
 @Component({
   selector: "app-container-templates-filter",
   standalone: true,
-  imports: [MatInputModule, ClearableInputComponent],
+  imports: [MatInputModule, ClearableInputComponent, RefocusAfterReloadDirective],
   templateUrl: "./container-templates-filter.component.html",
   styleUrl: "./container-templates-filter.component.scss"
 })
@@ -41,6 +42,7 @@ export class ContainerTemplatesFilterComponent {
   }
 
   unfilteredPolicies = input<ContainerTemplate[]>([]);
+  readonly isLoading = input<boolean>(false);
 
   readonly filterChange = output<FilterValueGeneric<ContainerTemplate>>();
   readonly inputElement = viewChild.required<ElementRef<HTMLInputElement>>("filterHTMLInputElement");

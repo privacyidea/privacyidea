@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -29,6 +30,7 @@ import {
   RadiusServerService,
   RadiusServerServiceInterface
 } from "@services/radius-server/radius-server.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -49,6 +51,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-radius-servers",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
+    NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,
@@ -91,6 +95,16 @@ export class RadiusServersComponent {
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
   displayedColumns: string[] = ["select", "identifier", "server", "dictionary", "description"];
+
+  // The col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed to;
+  // the .scss include's table.table-width() call sums the same tiers in the same order so the
+  // panel (see table-width() in table.scss) can be sized from the same numbers.
+  readonly columnWidths: Record<string, string> = {
+    identifier: "m",
+    server: "l",
+    dictionary: "l",
+    description: "xl"
+  };
 
   radiusDataSource = computed(() => {
     const servers = this.radiusService.radiusServers();
