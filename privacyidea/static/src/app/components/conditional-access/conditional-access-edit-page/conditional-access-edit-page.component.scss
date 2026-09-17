@@ -5,6 +5,15 @@
   max-width: 1008px;
 }
 
+// The pre-data state: the same box as the loaded page (via .edit-policy-layout, shared above) so
+// the panel does not resize once the policy arrives, just centering the spinner in it meanwhile.
+.edit-policy-layout--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 15rem;
+}
+
 .header-row {
   display: flex;
   align-items: center;

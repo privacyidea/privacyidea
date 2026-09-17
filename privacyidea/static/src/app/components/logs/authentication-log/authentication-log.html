@@ -30,6 +30,7 @@
           [showClearButton]="authenticationLogService.authenticationLogFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="authenticationLogService.authenticationLogResource.isLoading()"
             (input)="authenticationLogService.handleFilterInput($event)"
             [value]="authenticationLogService.authenticationLogFilter().value"
             aria-label="Filter Input"
@@ -157,7 +158,7 @@
             aria-label="{{ column.label }} Header"
             i18n-aria-label
             mat-header-cell
-            [class.cell-info-sized]="isInfoColumn(column.key) && hasColumnContent(column.key)">
+            [ngClass]="columnWidthClass(column)">
             <div class="flex ali-center">
               <div class="header-label">
                 {{ column.label }}
@@ -168,7 +169,7 @@
                 }
               </div>
               @if (column.filterable || column.sortable) {
-                <div class="margin-left-16 flex ali-center">
+                <div class="flex ali-center">
                   @if (column.filterable) {
                     @if (column.key === "event_type") {
                       <app-multi-select-filter
@@ -332,7 +333,7 @@
             i18n-aria-label
             mat-cell
             [class.cell-info]="isInfoColumn(column.key)"
-            [class.cell-info-sized]="isInfoColumn(column.key) && hasColumnContent(column.key)">
+            [ngClass]="columnWidthClass(column)">
             <div
               [class.cell-scroll]="scrollableColumnKeys.includes(column.key)"
               [class.cell-scroll-info]="isInfoColumn(column.key)">

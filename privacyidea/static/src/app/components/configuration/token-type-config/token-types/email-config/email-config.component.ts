@@ -31,8 +31,7 @@ import { EMAIL_SMTP_SERVER_KEY, EMAIL_VALIDITY_TIME_KEY } from "@constants/token
   selector: "app-email-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, RouterLink, ClearButtonComponent],
-  templateUrl: "./email-config.component.html",
-  styleUrl: "./email-config.component.scss"
+  templateUrl: "./email-config.component.html"
 })
 export class EmailConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;

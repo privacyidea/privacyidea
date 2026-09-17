@@ -37,7 +37,6 @@ export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [],
   templateUrl: "./enroll-tiqr.component.html",
-  styleUrl: "./enroll-tiqr.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollTiqrComponent) }
   ]

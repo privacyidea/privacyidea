@@ -37,6 +37,7 @@ import { AuditData, AuditService, AuditServiceInterface } from "@services/audit/
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { NgClass } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
@@ -89,38 +90,43 @@ const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
   resolver: "copy-text"
 };
 
-const columnKeysMap = [
-  { key: "number", label: $localize`:@@audit.number:Number` },
-  { key: "action", label: $localize`:@@common.action:Action` },
-  { key: "success", label: $localize`:@@common.successLabel:Success` },
-  { key: "authentication", label: $localize`:@@audit.authentication:Authentication` },
-  { key: "serial", label: $localize`:@@common.serial:Serial` },
-  { key: "container_serial", label: $localize`:@@common.containerSerial:Container Serial` },
-  { key: "startdate", label: $localize`:@@audit.startDate:Start Date` },
-  { key: "duration", label: $localize`:@@audit.duration:Duration` },
-  { key: "token_type", label: $localize`:@@common.tokenType:Token Type` },
-  { key: "user", label: $localize`:@@common.user:User` },
-  { key: "realm", label: $localize`:@@common.realm:Realm` },
-  { key: "administrator", label: $localize`:@@common.administrator:Administrator` },
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to. Columns left without a "width" stay flexible (long free text or a list that can overflow);
+// the ones that do have a tier and their combined sizes (see table-width() in table.scss) drive
+// the table's min-width in audit.component.scss.
+const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl" }[] = [
+  { key: "number", label: $localize`:@@audit.number:Number`, width: "s" },
+  { key: "action", label: $localize`:@@common.action:Action`, width: "l" },
+  { key: "success", label: $localize`:@@common.successLabel:Success`, width: "s" },
+  { key: "authentication", label: $localize`:@@audit.authentication:Authentication`, width: "m" },
+  { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+  { key: "container_serial", label: $localize`:@@common.containerSerial:Container Serial`, width: "m" },
+  { key: "startdate", label: $localize`:@@audit.startDate:Start Date`, width: "l" },
+  { key: "duration", label: $localize`:@@audit.duration:Duration`, width: "s" },
+  { key: "token_type", label: $localize`:@@common.tokenType:Token Type`, width: "s" },
+  { key: "user", label: $localize`:@@common.user:User`, width: "s" },
+  { key: "realm", label: $localize`:@@common.realm:Realm`, width: "s" },
+  { key: "administrator", label: $localize`:@@common.administrator:Administrator`, width: "m" },
   { key: "action_detail", label: $localize`:@@audit.actionDetail:Action Detail` },
   { key: "info", label: $localize`:@@audit.info:Info` },
   { key: "policies", label: $localize`:@@common.policies:Policies` },
-  { key: "client", label: $localize`:@@common.client:Client` },
-  { key: "user_agent", label: $localize`:@@common.userAgent:User Agent` },
-  { key: "user_agent_version", label: $localize`:@@audit.userAgentVersion:User Agent Version` },
-  { key: "privacyidea_server", label: $localize`:@@audit.privacyideaServer:PrivacyIDEA Server` },
-  { key: "log_level", label: $localize`:@@audit.logLevel:Log Level` },
-  { key: "clearance_level", label: $localize`:@@audit.clearanceLevel:Clearance Level` },
-  { key: "sig_check", label: $localize`:@@audit.signatureCheck:Signature Check` },
-  { key: "missing_line", label: $localize`:@@audit.missingLine:Missing Line` },
-  { key: "resolver", label: $localize`:@@common.resolver:Resolver` },
-  { key: "thread_id", label: $localize`:@@audit.threadId:Thread ID` },
-  { key: "container_type", label: $localize`:@@common.containerType:Container Type` }
+  { key: "client", label: $localize`:@@common.client:Client`, width: "s" },
+  { key: "user_agent", label: $localize`:@@common.userAgent:User Agent`, width: "l" },
+  { key: "user_agent_version", label: $localize`:@@audit.userAgentVersion:User Agent Version`, width: "s" },
+  { key: "privacyidea_server", label: $localize`:@@audit.privacyideaServer:PrivacyIDEA Server`, width: "m" },
+  { key: "log_level", label: $localize`:@@audit.logLevel:Log Level`, width: "s" },
+  { key: "clearance_level", label: $localize`:@@audit.clearanceLevel:Clearance Level`, width: "s" },
+  { key: "sig_check", label: $localize`:@@audit.signatureCheck:Signature Check`, width: "s" },
+  { key: "missing_line", label: $localize`:@@audit.missingLine:Missing Line`, width: "s" },
+  { key: "resolver", label: $localize`:@@common.resolver:Resolver`, width: "s" },
+  { key: "thread_id", label: $localize`:@@audit.threadId:Thread ID`, width: "m" },
+  { key: "container_type", label: $localize`:@@common.containerType:Container Type`, width: "s" }
 ];
 
 @Component({
   selector: "app-audit",
   imports: [
+    RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatCardModule,
     MatCell,
@@ -181,11 +187,14 @@ export class AuditComponent {
   });
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal({
     source: () => (this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined),
-    computation: (auditResource) => {
+    computation: (auditResource, previous) => {
       if (auditResource) {
         return new MatTableDataSource(auditResource.result?.value?.auditdata);
       }
-      return new MatTableDataSource<AuditData>([]);
+      // A reload in flight clears the resource value before the new response arrives - keep
+      // showing the previous rows instead of flashing empty, now that the table itself stays
+      // mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<AuditData>([]);
     }
   });
   readonly tableState = new TableState({

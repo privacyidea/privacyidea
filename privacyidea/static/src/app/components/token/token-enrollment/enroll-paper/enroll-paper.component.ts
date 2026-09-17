@@ -37,7 +37,6 @@ export interface PaperEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [],
   templateUrl: "./enroll-paper.component.html",
-  styleUrl: "./enroll-paper.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollPaperComponent) }
   ]

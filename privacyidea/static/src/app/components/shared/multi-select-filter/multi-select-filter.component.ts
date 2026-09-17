@@ -42,8 +42,7 @@ export type { MultiSelectFilterOption };
   selector: "app-multi-select-filter",
   standalone: true,
   imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, MultiSelectMenuComponent],
-  templateUrl: "./multi-select-filter.component.html",
-  styleUrl: "./multi-select-filter.component.scss"
+  templateUrl: "./multi-select-filter.component.html"
 })
 export class MultiSelectFilterComponent {
   readonly options = input.required<readonly (string | MultiSelectFilterOption)[]>();

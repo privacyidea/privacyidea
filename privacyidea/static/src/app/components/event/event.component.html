@@ -32,6 +32,7 @@
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="eventService.allEventsResource.isLoading()"
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
@@ -78,11 +79,12 @@
           <ng-container [matColumnDef]="column">
             <th
               *matHeaderCellDef
+              [ngClass]="columnWidths[column] ? 'col-width-' + columnWidths[column] : 'column-max-width'"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ columnKeysMap[column] }}
                 @if (column !== "delete") {
-                  <div class="margin-left-16 flex">
+                  <div class="flex">
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column, sort)"
                       class="sort-button"
@@ -96,7 +98,7 @@
             </th>
             <td
               *matCellDef="let element; let row"
-              class="column-max-width"
+              [ngClass]="columnWidths[column] ? 'col-width-' + columnWidths[column] : 'column-max-width'"
               mat-cell>
               @switch (column) {
                 @case ("name") {

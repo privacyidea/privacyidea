@@ -16,6 +16,15 @@
   }
 }
 
+// The pre-data state: the same box as the loaded page (via .machine-resolver-details-container,
+// shared above) so the panel does not resize once the data arrives, just centering the spinner in
+// it meanwhile.
+.machine-resolver-details-container--loading {
+  align-items: center;
+  justify-content: center;
+  min-height: 15rem;
+}
+
 .machine-resolver-details-body {
   display: flex;
   flex-direction: column;

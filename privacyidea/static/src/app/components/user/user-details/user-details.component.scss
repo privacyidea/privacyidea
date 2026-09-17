@@ -1,10 +1,20 @@
 @use "styles";
-@use "table";
 
 .details-container {
   @include styles.main-component-style;
   display: flex;
   flex-direction: column;
+}
+
+// The pre-data state: this component's cards use fixed pixel widths rather than the
+// --card-width-* tier system, so the loading placeholder matches the widest row's own static
+// width (user-info + attributes-column pair) instead of table.details-panel-width(). This just
+// centers the spinner in that same box so the panel does not resize once the data arrives.
+.details-container--loading {
+  width: calc(585px * 2 + 16px);
+  align-items: center;
+  justify-content: center;
+  min-height: 15rem;
 }
 
 .flex-column {

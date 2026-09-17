@@ -29,8 +29,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 @Component({
   selector: "app-verify-enrollment",
   imports: [MatFormField, MatInput, MatLabel, MatButton, MatIcon, FormField],
-  templateUrl: "./verify-enrollment.component.html",
-  styleUrl: "./verify-enrollment.component.scss"
+  templateUrl: "./verify-enrollment.component.html"
 })
 export class VerifyEnrollmentComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);

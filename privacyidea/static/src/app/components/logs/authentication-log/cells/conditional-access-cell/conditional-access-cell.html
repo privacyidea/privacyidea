@@ -27,6 +27,8 @@
           [attr.aria-controls]="'ca-outcome-' + outcome.key"
           [attr.aria-expanded]="isExpanded(outcome.key)"
           [attr.aria-label]="toggleLabel(outcome)"
+          matTooltip="Expand/Collapse details"
+          i18n-matTooltip
           (click)="toggle(outcome.key)">
           <mat-icon>{{ isExpanded(outcome.key) ? "expand_less" : "expand_more" }}</mat-icon>
         </button>
@@ -37,7 +39,10 @@
               i18n>Dry Run:</span>
           }
           @if (outcome.policyLink) {
-            <a [routerLink]="outcome.policyLink">{{ outcome.policy }}</a>
+            <a
+              [routerLink]="outcome.policyLink"
+              matTooltip="Navigate to policy"
+              i18n-matTooltip>{{ outcome.policy }}</a>
           } @else {
             {{ outcome.policy }}
           }

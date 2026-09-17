@@ -38,7 +38,6 @@ export interface SpassEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [],
   templateUrl: "./enroll-spass.component.html",
-  styleUrl: "./enroll-spass.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollSpassComponent) }
   ]
