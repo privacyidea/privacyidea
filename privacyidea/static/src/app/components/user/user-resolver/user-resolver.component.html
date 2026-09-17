@@ -34,6 +34,7 @@
             [showClearButton]="filterString().length > 0">
             <input
               #filterHTMLInputElement
+              [appRefocusAfterReload]="resolverService.resolversResource.isLoading()"
               (input)="onFilterInput(filterHTMLInputElement.value)"
               [value]="filterString()"
               aria-label="Filter Input"
@@ -55,12 +56,14 @@
         <ng-container matColumnDef="resolvername">
           <th
             *matHeaderCellDef
+            [ngClass]="'col-width-' + columnKeysMap[0].width"
             mat-header-cell
             mat-sort-header>
             <span i18n="@@common.name">Name</span>
           </th>
           <td
             *matCellDef="let element"
+            [ngClass]="'col-width-' + columnKeysMap[0].width"
             mat-cell>
             <div class="name-actions-container">
               <a
@@ -104,12 +107,14 @@
         <ng-container matColumnDef="type">
           <th
             *matHeaderCellDef
+            [ngClass]="'col-width-' + columnKeysMap[1].width"
             mat-header-cell
             mat-sort-header>
             <span i18n="@@common.type">Type</span>
           </th>
           <td
             *matCellDef="let element"
+            [ngClass]="'col-width-' + columnKeysMap[1].width"
             mat-cell>
             {{ element.type }}
           </td>

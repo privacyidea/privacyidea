@@ -1,6 +1,9 @@
-<div class="welcome-container">
+<app-dialog-wrapper
+  (actionTriggered)="onDialogAction($event)"
+  [actions]="dialogActions()"
+  [showCloseButton]="false"
+  [title]="dialogTitle()">
   @if (step() === 0) {
-    <h2 i18n="@@welcome.welcome">Welcome</h2>
     <div
       class="content"
       i18n="@@welcome.firstWeWouldLike"
@@ -17,18 +20,9 @@
         paid programming of new features.
       </p></div
     >
-    <div class="actions">
-      <button
-        (click)="nextWelcome()"
-        i18n="@@common.next"
-        mat-stroked-button
-        >Next</button
-      >
-    </div>
   }
 
   @if (step() === 1) {
-    <h2 i18n="@@welcome.valueOpenSource">The value of open source</h2>
     <div
       class="content"
       i18n="@@welcome.youReadingBooks"
@@ -54,18 +48,9 @@
         >
       </p></div
     >
-    <div class="actions">
-      <button
-        (click)="nextWelcome()"
-        i18n="@@common.next"
-        mat-stroked-button
-        >Next</button
-      >
-    </div>
   }
 
   @if (step() === 2) {
-    <h2 i18n="@@welcome.addedValuePrivacyidea">The added value of privacyIDEA Enterprise Edition</h2>
     <div class="content">
       <p i18n="@@welcome.accordingAgplv3"
         >According to the
@@ -124,39 +109,15 @@
         ></p
       >
     </div>
-    <div class="actions">
-      <button
-        (click)="nextWelcome()"
-        i18n="@@common.next"
-        mat-stroked-button
-        >Next</button
-      >
-    </div>
   }
 
   @if (step() === 3) {
-    <h2 i18n="@@welcome.thankYouImproving">Thank you for improving your security!</h2>
     <div
       class="content"
       i18n="@@welcome.thankYouUsing"
       ><p>Thank you for using privacyIDEA and making your network and thus this world a more secure place!</p>
       <p>Have fun using privacyIDEA!</p></div
     >
-    <div class="actions">
-      <button
-        (click)="resetWelcome()"
-        mat-stroked-button>
-        <mat-icon>replay</mat-icon>
-        <span i18n="@@welcome.readAgain">Read again</span>
-      </button>
-      <button
-        (click)="nextWelcome()"
-        class="action-button-secondary"
-        mat-stroked-button>
-        <mat-icon>keyboard_arrow_right</mat-icon>
-        <span i18n="@@welcome.diveIn">Dive In!</span>
-      </button>
-    </div>
   }
 
   @if (step() === 4) {
@@ -183,14 +144,5 @@
         paid programming of new features.
       </p></div
     >
-    <div class="actions">
-      <button
-        (click)="nextWelcome()"
-        class="action-button-secondary"
-        mat-stroked-button>
-        <mat-icon>done</mat-icon>
-        <span i18n="@@welcome.okay">Okay</span>
-      </button>
-    </div>
   }
-</div>
+</app-dialog-wrapper>

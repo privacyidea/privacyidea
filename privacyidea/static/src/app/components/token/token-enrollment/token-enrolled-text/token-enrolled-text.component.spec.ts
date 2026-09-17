@@ -64,6 +64,28 @@ describe("TokenEnrolledTextComponent", () => {
     expect(mockContentService.tokenSelected).toHaveBeenCalledWith("SERIAL123");
   });
 
+  it("should not navigate while navigation is blocked", () => {
+    const switchRouteSpy = jest.fn();
+    fixture.componentRef.setInput("serial", "SERIAL123");
+    fixture.componentRef.setInput("containerSerial", "CONT123");
+    fixture.componentRef.setInput("username", "alice");
+    fixture.componentRef.setInput("userRealm", "realm1");
+    fixture.componentRef.setInput("navigationBlocked", true);
+    fixture.detectChanges();
+    component.switchRoute.subscribe(switchRouteSpy);
+
+    component.tokenSelected();
+    component.natigateContainerDetails();
+    component.navigateUserDetails();
+    component.navigateRealms();
+
+    expect(switchRouteSpy).not.toHaveBeenCalled();
+    expect(mockContentService.tokenSelected).not.toHaveBeenCalled();
+    expect(mockContentService.navigateContainerDetails).not.toHaveBeenCalled();
+    expect(mockContentService.userSelected).not.toHaveBeenCalled();
+    expect(mockContentService.router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
   it("should do nothing if serial is not set", () => {
     const switchRouteSpy = jest.fn();
     component.switchRoute.subscribe(switchRouteSpy);

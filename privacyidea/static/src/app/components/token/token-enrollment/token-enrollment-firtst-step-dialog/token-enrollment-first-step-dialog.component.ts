@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject, Signal } from "@angular/core";
-import { MatDialogContent } from "@angular/material/dialog";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
@@ -44,9 +43,8 @@ type FirstStepDialogAction = "retry" | "cancelEnrollment";
 
 @Component({
   selector: "app-token-enrollment-first-step-dialog",
-  imports: [MatDialogContent, DialogWrapperComponent],
-  templateUrl: "./token-enrollment-first-step-dialog.component.html",
-  styleUrl: "./token-enrollment-first-step-dialog.component.scss"
+  imports: [DialogWrapperComponent],
+  templateUrl: "./token-enrollment-first-step-dialog.component.html"
 })
 export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogComponent<
   TokenEnrollmentFirstStepDialogData,

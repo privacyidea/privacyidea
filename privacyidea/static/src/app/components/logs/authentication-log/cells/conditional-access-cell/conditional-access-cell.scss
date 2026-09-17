@@ -3,7 +3,7 @@
 // One outcome collapsed to its one visible line: the expand toggle and the policy that acted.
 .outcome-summary {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 2px;
 }
 
@@ -11,12 +11,18 @@
 // other cells, and kept a real button (not a clickable icon) so it is reachable and operable by keyboard.
 .outcome-toggle {
   flex: 0 0 auto;
-  padding: 0;
+  padding: 3px;
   border: 0;
+  border-radius: 50%;
   background: transparent;
   color: var(--mat-sys-primary);
   cursor: pointer;
   line-height: 1;
+  transition: background-color 200ms ease;
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container-high);
+  }
 
   .mat-icon {
     width: 18px;

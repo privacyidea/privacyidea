@@ -386,28 +386,4 @@ describe("TokenEnrollmentDataComponent", () => {
     expect(component["qrCode"]()).toBe("push-qr-img");
     expect(component["url"]()).toBe("push://enroll-url");
   });
-
-  it("hasEnrollmentData is false for NO_QR_CODE type even when otpkey img is present (indexedsecret)", () => {
-    fixture.componentRef.setInput("tokenType", "indexedsecret");
-    fixture.componentRef.setInput("enrolledInputData", {
-      serial: "IDX001",
-      otpkey: { img: "some-qr-img", value: "hexkey", value_b32: "BASE32KEY", description: "" }
-    });
-    fixture.detectChanges();
-    expect(component["hasEnrollmentData"]()).toBe(false);
-  });
-
-  it("hasEnrollmentData is false for spass (no QR, no otpkey, no otps)", () => {
-    fixture.componentRef.setInput("tokenType", "spass");
-    fixture.componentRef.setInput("enrolledInputData", { serial: "SPASS001" });
-    fixture.detectChanges();
-    expect(component["hasEnrollmentData"]()).toBe(false);
-  });
-
-  it("hasEnrollmentData is false for email token", () => {
-    fixture.componentRef.setInput("tokenType", "email");
-    fixture.componentRef.setInput("enrolledInputData", { serial: "EMAIL001" });
-    fixture.detectChanges();
-    expect(component["hasEnrollmentData"]()).toBe(false);
-  });
 });

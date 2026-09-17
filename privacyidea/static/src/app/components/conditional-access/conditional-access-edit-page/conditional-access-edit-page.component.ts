@@ -25,6 +25,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -110,7 +111,8 @@ const COUNT_MODE_LABELS: Record<string, string> = {
     ClearButtonComponent,
     ErrorStateDirective,
     ConditionalAccessConditionsComponent,
-    ConditionalAccessStagesListComponent
+    ConditionalAccessStagesListComponent,
+    MatProgressSpinner
   ],
   templateUrl: "./conditional-access-edit-page.component.html",
   styleUrl: "./conditional-access-edit-page.component.scss"
@@ -132,6 +134,15 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // [formField] scalar edits and updateEditPolicy() array/boolean edits mutate the same model.
   editPolicy = signal<ConditionalAccessPolicySaveParams>(deepCopy(EMPTY_CONDITIONAL_ACCESS_POLICY));
   isNewPolicy = signal(true);
+  // True only while editing an existing policy whose data hasn't arrived yet: a new policy has
+  // nothing to wait for, and once policiesResource resolves once, a later reload (e.g. after
+  // another admin's change) must not blank the form the user is looking at.
+  protected readonly showInitialLoading = computed(
+    () =>
+      !this.isNewPolicy() &&
+      this.policyService.policiesResource.isLoading() &&
+      !this.policyService.policiesResource.hasValue()
+  );
 
   readonly title = computed(() =>
     this.isNewPolicy() ? $localize`Create Conditional-Access Policy` : $localize`Edit Conditional-Access Policy`

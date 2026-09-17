@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -38,11 +39,14 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 @Component({
   selector: "app-tokengroups",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
+    NgClass,
     MatTableModule,
     MatPaginator,
     MatSortModule,
@@ -86,6 +90,15 @@ export class TokengroupsComponent {
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
 
   displayedColumns: string[] = ["select", "id", "groupname", "description"];
+
+  // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+  // to; the sum of these tiers (see table-width() in table.scss) also sizes the table-state panel
+  // shown in place of the table, so it matches the table's own footprint instead of a fixed guess.
+  columnWidths: Record<string, string> = {
+    id: "s",
+    groupname: "m",
+    description: "xl"
+  };
 
   tokengroupDataSource = computed(() => {
     const groups = this.tokengroupService.tokengroups();

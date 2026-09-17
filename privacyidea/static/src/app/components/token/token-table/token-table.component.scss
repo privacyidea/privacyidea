@@ -7,7 +7,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  @include table.page-table-state-size;
+  // Sized from the same col-width-* tiers the columns below use (select checkbox + serial m +
+  // tokentype s + active s + description xl + failcount s + rollout_state s + username s +
+  // user_realm s + realms s + container_serial m), so the empty/error state is as wide as the table
+  // it stands in for, not the unrelated 44rem default.
+  @include table.page-table-state-size(table.table-width(checkbox, m, s, s, xl, s, s, s, s, s, m));
 
   .realm-break {
     margin-top: 3px;
@@ -16,15 +20,4 @@
   .sticky-header {
     z-index: 120;
   }
-
-  .container_serial-width {
-    width: 170px;
-  }
-}
-
-.filter-paginator-container > .margin-left-8 {
-  // Centre the button on the 56px input infix rather than the full field
-  // height, which includes the hint line below the input.
-  align-self: flex-start;
-  margin-top: 16px;
 }

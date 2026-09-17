@@ -31,6 +31,7 @@
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="caConnectorService.caConnectorResource.isLoading()"
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
@@ -96,6 +97,7 @@
       <ng-container matColumnDef="connectorname">
         <th
           *matHeaderCellDef
+          class="col-width-l"
           i18n="@@caConnector.caConnectorName"
           mat-header-cell
           mat-sort-header
@@ -103,6 +105,7 @@
         >
         <td
           *matCellDef="let connector"
+          class="col-width-l"
           mat-cell>
           <app-copyable [copyText]="connector.connectorname">
             <a
@@ -120,6 +123,7 @@
       <ng-container matColumnDef="type">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           i18n="@@common.type"
           mat-header-cell
           mat-sort-header
@@ -127,6 +131,7 @@
         >
         <td
           *matCellDef="let connector"
+          class="col-width-s"
           mat-cell>
           {{ connector.type }}
         </td>
