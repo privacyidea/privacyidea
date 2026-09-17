@@ -61,15 +61,31 @@
         matTooltip="More Filter">
         <mat-icon>filter_list</mat-icon>
       </button>
+      <button
+        [matMenuTriggerFor]="containerTableActions.actionsMenu()"
+        aria-label="Actions"
+        class="table-actions-trigger margin-left-8"
+        i18n-aria-label="@@common.actions"
+        i18n-matTooltip="@@common.actions"
+        mat-icon-button
+        matTooltip="Actions">
+        <mat-icon>menu</mat-icon>
+      </button>
       <mat-paginator
+        appPaginatorPageSizeTooltip
         (page)="onPageEvent($event)"
+        class="hide-page-size-label"
         [length]="total()"
         [pageIndex]="pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSize()"
         showFirstLastButtons />
     </div>
-    <app-container-table-actions />
+    <div class="container-actions-row">
+      <div class="container-actions-row-inner">
+        <app-container-table-actions #containerTableActions />
+      </div>
+    </div>
     <div
       class="table-scroll-region"
       appScrollEdges>

@@ -30,6 +30,12 @@
       width: 200px;
     }
   }
+
+  // Once the table is scrolled, the filter hint below the input is just noise above the sticky
+  // header - the same content the hint describes is already scrolled out of view above it.
+  &:has(.table-scroll-region.scrolled-from-top) .audit-table-filter mat-hint {
+    display: none;
+  }
 }
 
 .filter-action-button {

@@ -16,6 +16,43 @@
   :host-context(body.self-service-layout) & .table-scroll-region {
     flex: 0 1 auto;
   }
+
+  // Once the table is scrolled, the filter hint below the input is just noise above the sticky
+  // header - the same content the hint describes is already scrolled out of view above it.
+  &:has(.table-scroll-region.scrolled-from-top) .container-table-filter mat-hint {
+    display: none;
+  }
+
+  // The full action-button row only fits above the table; once scrolled it would sit under the
+  // sticky header and cover rows, so it is swapped for a single menu trigger next to "More Filter"
+  // instead of also being made sticky.
+  .table-actions-trigger {
+    display: none;
+  }
+
+  // Collapses via a grid track rather than max-height: a track animates smoothly between 1fr and
+  // 0fr regardless of the row's actual content height, where max-height needs that height guessed
+  // up front and then spends most of the transition shrinking past empty space above the content.
+  .container-actions-row {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 200ms ease;
+
+    .container-actions-row-inner {
+      min-height: 0;
+      overflow: hidden;
+    }
+  }
+
+  &:has(.table-scroll-region.scrolled-from-top) {
+    .container-actions-row {
+      grid-template-rows: 0fr;
+    }
+
+    .table-actions-trigger {
+      display: inline-flex;
+    }
+  }
 }
 
 tr.example-detail-row {

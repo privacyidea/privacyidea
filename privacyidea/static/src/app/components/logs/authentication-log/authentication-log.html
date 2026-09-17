@@ -45,7 +45,9 @@
       </mat-form-field>
     </div>
     <mat-paginator
+      appPaginatorPageSizeTooltip
       (page)="onPageEvent($event)"
+      class="hide-page-size-label"
       [length]="totalLength()"
       [pageIndex]="authenticationLogService.pageIndex() - 1"
       [pageSizeOptions]="pageSizeOptions()"
