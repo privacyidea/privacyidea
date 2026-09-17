@@ -25,6 +25,7 @@ import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
+import { CertificateDataComponent } from "@components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component";
 import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
 import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
 import { RegistrationCodeComponent } from "@components/token/token-enrollment/token-enrollment-data/registration-code/registration-code.component";
@@ -43,6 +44,7 @@ import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-
   selector: "app-token-enrollment-last-step-dialog-wizard",
   imports: [
     AsyncPipe,
+    CertificateDataComponent,
     OtpKeyComponent,
     TiqrEnrollUrlComponent,
     RegistrationCodeComponent,
@@ -51,8 +53,7 @@ import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-
     MatButtonModule,
     TokenEnrolledTextComponent
   ],
-  templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html",
-  styleUrl: "./token-enrollment-last-step-dialog.component.scss"
+  templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html"
 })
 export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
   protected override readonly Object = Object;
@@ -63,6 +64,12 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly isCertificate = this.data.tokenType === "certificate";
+  protected readonly certificate = (this.data.response?.detail?.["certificate"] as string) ?? "";
+  protected readonly pkcs12 = (this.data.response?.detail?.["pkcs12"] as string) ?? "";
+  protected readonly pkcs12Password = (this.data.response?.detail?.["pkcs12_password"] as string) ?? "";
+  protected readonly rolloutState = this.data.response?.detail?.rollout_state ?? "";
+
   tagData: Signal<Record<string, string>> = computed(() => ({
     serial: this.serial,
     qrCode: this.qrCode,
@@ -70,20 +77,25 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
   }));
 
   protected readonly actions = computed(() => {
+    // Creating a container closes the dialog and logging out navigates away, so both discard
+    // whatever the dialog still shows for the last time.
+    const blocked = !!this.closeBlockedReason();
     const actions: DialogAction<"create_container" | "logout">[] = [];
     if (this.authService.containerWizard().enabled) {
       actions.push({
         type: "auxiliary",
         label: $localize`:@@common.createContainer:Create Container`,
         value: "create_container",
-        className: "button-width-m"
+        className: "button-width-m",
+        disabled: blocked
       });
     }
     actions.push({
       type: "auxiliary",
       label: $localize`:@@common.logout:Logout`,
       value: "logout",
-      primary: true
+      primary: true,
+      disabled: blocked
     });
     return actions;
   });

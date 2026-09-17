@@ -35,8 +35,7 @@ import {
   selector: "app-tiqr-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
-  templateUrl: "./tiqr-config.component.html",
-  styleUrl: "./tiqr-config.component.scss"
+  templateUrl: "./tiqr-config.component.html"
 })
 export class TiqrConfigComponent {
   protected readonly TIQR_REG_SERVER = TIQR_REG_SERVER;

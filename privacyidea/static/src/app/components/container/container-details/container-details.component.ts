@@ -31,6 +31,7 @@ import {
 } from "@angular/core";
 import { MatInput } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatFormField } from "@angular/material/select";
 import { MatTableDataSource } from "@angular/material/table";
 import { Router } from "@angular/router";
@@ -124,7 +125,8 @@ interface TokenOption {
     ContainerDetailsStatesComponent,
     ContainerDetailsRealmsComponent,
     ContainerDetailsUserComponent,
-    ContainerAddTokenComponent
+    ContainerAddTokenComponent,
+    MatProgressSpinner
   ],
   providers: [DetailsEditRegistry],
   templateUrl: "./container-details.component.html",
@@ -181,6 +183,12 @@ export class ContainerDetailsComponent implements OnInit, OnDestroy {
       return emptyContainerDetails;
     }
   });
+  // True only for the first fetch, before the resource has ever resolved: a reload (e.g. after
+  // editing) keeps the previous value in place instead, so the page does not blank out under the
+  // user's own change.
+  protected readonly showInitialLoading = computed(
+    () => this.containerDetailResource.isLoading() && !this.containerDetailResource.hasValue()
+  );
   containerType = computed(() => {
     return this.containerDetails()?.type ?? "";
   });

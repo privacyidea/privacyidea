@@ -5,7 +5,16 @@
 .smtp-servers-container {
   @include styles.main-component-style;
   @include table.base-table-structure(".smtp-servers-table", ".smtp-table-filter", ".table-scroll-container");
-  @include table.page-table-state-size;
+  // Sized from the same col-width-* tiers the columns below use (select checkbox + identifier m +
+  // server l + sender l + tls s + description xl).
+  @include table.page-table-state-size(table.table-width(checkbox, m, l, l, s, xl));
+
+  // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead
+  // of holding it steady; fixed makes the header row's declared widths authoritative.
+  .smtp-servers-table {
+    table-layout: fixed;
+    width: auto;
+  }
 }
 
 .actions-container {

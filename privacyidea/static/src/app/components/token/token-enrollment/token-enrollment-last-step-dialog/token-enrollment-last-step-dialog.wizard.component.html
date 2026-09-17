@@ -31,6 +31,7 @@
   } @else {
     <app-token-enrolled-text
       (switchRoute)="onSwitchRoute()"
+      [navigationBlocked]="!!closeBlockedReason()"
       [rollover]="data.rollover ?? false"
       [serial]="serial"></app-token-enrolled-text>
   }
@@ -70,6 +71,17 @@
 
         @if (data.response?.detail?.["otps"]) {
           <app-otp-values [otpValues]="data.response?.detail?.['otps'] ?? []" />
+        }
+
+        @if (isCertificate) {
+          <app-certificate-data
+            (closeBlockedReasonChange)="onCloseBlockedReasonChange($event)"
+            [certificate]="certificate"
+            [fromEnrollment]="true"
+            [pkcs12Password]="pkcs12Password"
+            [pkcs12]="pkcs12"
+            [rolloutState]="rolloutState"
+            [serial]="serial" />
         }
       </div>
     }

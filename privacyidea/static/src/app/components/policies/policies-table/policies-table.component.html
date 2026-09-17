@@ -28,6 +28,7 @@
         #filterComponent
         (filterChange)="onFilterUpdate($event)"
         [initialFilter]="filter()"
+        [isLoading]="policyService.allPoliciesResource.isLoading()"
         [unfilteredPolicies]="policyService.allPolicies()"
         class="policies-table-filter"></app-policy-filter>
     }
@@ -37,7 +38,7 @@
     <table
       (matSortChange)="onSortChange($event)"
       [dataSource]="sortedFilteredPolicies()"
-      class="policies-table"
+      class="policies-table row-striped"
       mat-table
       matSort
       matSortActive="priority"
@@ -45,6 +46,7 @@
       <ng-container matColumnDef="select">
         <th
           *matHeaderCellDef
+          class="table-checkbox"
           mat-header-cell>
           <mat-checkbox
             (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
@@ -56,6 +58,7 @@
         </th>
         <td
           *matCellDef="let policy"
+          class="table-checkbox"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(policy, $event.checked)"
@@ -72,6 +75,7 @@
           <th
             *matHeaderCellDef
             [class]="'col-' + column.key"
+            [ngClass]="column.value.width ? 'col-width-' + column.value.width : null"
             [disabled]="!column.value.sortable || policyService.allPolicies().length === 0"
             mat-header-cell
             mat-sort-header>
@@ -106,6 +110,7 @@
           <td
             *matCellDef="let policy"
             [class]="'col-' + column.key"
+            [ngClass]="column.value.width ? 'col-width-' + column.value.width : null"
             mat-cell>
             <div class="column-max-height">
               @if (policy.name) {

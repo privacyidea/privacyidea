@@ -45,7 +45,6 @@ export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [MatFormField, MatInput, MatLabel, MatCheckbox, MatOption, MatSelect, MatError, MatHint, FormField],
   templateUrl: "./enroll-applspec.component.html",
-  styleUrl: "./enroll-applspec.component.scss",
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollApplspecComponent) }]
 })
 export class EnrollApplspecComponent extends EnrollTokenBase<ApplspecEnrollmentData> implements OnInit {

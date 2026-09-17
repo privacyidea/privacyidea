@@ -1,6 +1,3 @@
-@use "styles";
-@use "table";
-
 $border-color: var(--mat-sys-outline-variant);
 
 .user-container {
@@ -32,18 +29,6 @@ $border-color: var(--mat-sys-outline-variant);
     border-collapse: collapse;
     width: 100%;
     table-layout: fixed;
-
-    td:nth-child(even) {
-      background: transparent;
-    }
-
-    tr.mat-mdc-row:nth-child(odd) td {
-      background: var(--mat-sys-surface-variant);
-    }
-
-    tr.mat-mdc-row:nth-child(even) td {
-      background: transparent;
-    }
 
     th,
     td {

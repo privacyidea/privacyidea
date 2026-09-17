@@ -32,8 +32,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
   selector: "app-sms-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, RouterLink, ClearButtonComponent],
-  templateUrl: "./sms-config.component.html",
-  styleUrl: "./sms-config.component.scss"
+  templateUrl: "./sms-config.component.html"
 })
 export class SmsConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;

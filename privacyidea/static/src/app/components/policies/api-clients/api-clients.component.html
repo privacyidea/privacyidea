@@ -33,6 +33,7 @@
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="apiClientService.apiClientResource.isLoading()"
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
@@ -109,6 +110,7 @@
       <ng-container matColumnDef="display_name">
         <th
           *matHeaderCellDef
+          class="col-width-l"
           i18n="@@common.name"
           mat-header-cell
           mat-sort-header
@@ -116,6 +118,7 @@
         >
         <td
           *matCellDef="let client"
+          class="col-width-l"
           mat-cell>
           <app-copyable [copyText]="client.display_name">
             <a
@@ -133,6 +136,7 @@
       <ng-container matColumnDef="client_type">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@common.type"
           mat-header-cell
           mat-sort-header
@@ -140,6 +144,7 @@
         >
         <td
           *matCellDef="let client"
+          class="col-width-m"
           mat-cell>
           {{ clientTypeLabel(client.client_type) }}
         </td>
@@ -148,6 +153,7 @@
       <ng-container matColumnDef="status">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           i18n="@@common.status"
           mat-header-cell
           mat-sort-header
@@ -155,6 +161,7 @@
         >
         <td
           *matCellDef="let client"
+          class="col-width-s"
           mat-cell>
           <span
             [class.status-active]="client.status === 'active'"
@@ -168,6 +175,7 @@
       <ng-container matColumnDef="key_id">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           i18n="@@apiClient.keyId"
           mat-header-cell
           mat-sort-header>
@@ -175,6 +183,7 @@
         </th>
         <td
           *matCellDef="let client"
+          class="col-width-s"
           mat-cell>
           <code>pi_{{ client.key_id }}</code>
         </td>
@@ -183,6 +192,7 @@
       <ng-container matColumnDef="created_at">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@token.created"
           mat-header-cell
           mat-sort-header
@@ -190,6 +200,7 @@
         >
         <td
           *matCellDef="let client"
+          class="col-width-m"
           mat-cell>
           {{ client.created_at | date: "yyyy-MM-dd HH:mm" }}
         </td>
@@ -198,6 +209,7 @@
       <ng-container matColumnDef="last_used_at">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@apiClient.lastUsed"
           mat-header-cell
           mat-sort-header>
@@ -205,6 +217,7 @@
         </th>
         <td
           *matCellDef="let client"
+          class="col-width-m"
           mat-cell>
           {{ (client.last_used_at | date: "yyyy-MM-dd HH:mm") || "-" }}
         </td>
@@ -213,9 +226,11 @@
       <ng-container matColumnDef="actions">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           mat-header-cell></th>
         <td
           *matCellDef="let client"
+          class="col-width-s"
           mat-cell>
           <div class="flex-row gap-0">
             @if (authService.actionAllowed("api_client_rotate")) {
