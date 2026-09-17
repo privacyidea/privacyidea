@@ -39,7 +39,6 @@ export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [MatFormField, MatInput, MatLabel, MatError, FormField],
   templateUrl: "./enroll-indexedsecret.component.html",
-  styleUrl: "./enroll-indexedsecret.component.scss",
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollIndexedsecretComponent) }]
 })
 export class EnrollIndexedsecretComponent extends EnrollTokenBase<IndexedSecretEnrollmentData> {

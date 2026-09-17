@@ -32,8 +32,7 @@ import { ContainerCreatedDialogComponent } from "./container-created-dialog.comp
 @Component({
   selector: "app-container-created-wizard-dialog",
   imports: [AsyncPipe, DialogWrapperComponent],
-  templateUrl: "./container-created-dialog.wizard.component.html",
-  styleUrl: "./container-created-dialog.component.scss"
+  templateUrl: "./container-created-dialog.wizard.component.html"
 })
 export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {
   protected readonly actions: DialogAction<"logout">[] = [
