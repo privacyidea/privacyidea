@@ -22,9 +22,8 @@
 // The per-serial findings. Left-aligned and full width, so serial and reason line up in columns rather than being
 // read as one run of text - which is the whole point of showing them here instead of in the log's Info column.
 //
-// The app stripes the even *column* of every table (see styles/table.scss); this one is read along its rows - a serial
-// and the finding beside it - so it opts out and stripes the rows instead, the way the detail cards' key/value tables
-// do (details-key-value-table).
+// This one is read along its rows - a serial and the finding beside it - so it declares the
+// "row-striped" mode instead of the default column stripes (see styles/table-global.scss).
 .reason-detail-table {
   width: 100%;
   border-collapse: collapse;
@@ -34,17 +33,12 @@
     padding: 6px 8px;
     text-align: left;
     vertical-align: top;
-    background: transparent;
   }
 
   th {
     color: var(--mat-sys-on-surface-variant);
     font-weight: 500;
     border-bottom: 1px solid var(--mat-sys-outline-variant);
-  }
-
-  tbody tr:nth-child(odd) td {
-    background: var(--mat-sys-surface-variant);
   }
 }
 

@@ -18,9 +18,8 @@
  **/
 
 import { Component, inject } from "@angular/core";
-import { MatButton } from "@angular/material/button";
-import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle } from "@angular/material/dialog";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 export interface ContainerRegistrationCompletedDialogData {
@@ -31,7 +30,7 @@ export interface ContainerRegistrationCompletedDialogData {
   selector: "app-container-registration-completed-dialog",
   templateUrl: "./container-registration-completed-dialog.component.html",
   styleUrls: ["./container-registration-completed-dialog.component.scss"],
-  imports: [MatDialogContent, MatDialogTitle, MatDialogActions, MatButton, MatDialogClose]
+  imports: [DialogWrapperComponent]
 })
 export class ContainerRegistrationCompletedDialogComponent extends AbstractDialogComponent<
   ContainerRegistrationCompletedDialogData,
