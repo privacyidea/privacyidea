@@ -181,7 +181,7 @@ export class TokenTableComponent implements OnDestroy {
   });
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
     source: () => ({ value: this.tokenService.tokenResourceValue(), error: this.tokenResource.error() }),
-    computation: (src) => {
+    computation: (src, previous) => {
       // tokenlist only exists in the admin scope, so a self-service user must not be gated on it -
       // the same guard the token service applies before loading.
       const deniedForAdmin = this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist");
@@ -191,7 +191,10 @@ export class TokenTableComponent implements OnDestroy {
       if (src.value) {
         return new MatTableDataSource(src.value.tokens);
       }
-      return new MatTableDataSource<TokenDetails>([]);
+      // A reload in flight (filter/page/sort change) clears the resource value before the new
+      // response arrives - keep showing the previous rows instead of flashing empty, now that the
+      // table itself stays mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<TokenDetails>([]);
     }
   });
   totalLength: WritableSignal<number> = linkedSignal({

@@ -187,11 +187,14 @@ export class AuditComponent {
   });
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal({
     source: () => (this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined),
-    computation: (auditResource) => {
+    computation: (auditResource, previous) => {
       if (auditResource) {
         return new MatTableDataSource(auditResource.result?.value?.auditdata);
       }
-      return new MatTableDataSource<AuditData>([]);
+      // A reload in flight clears the resource value before the new response arrives - keep
+      // showing the previous rows instead of flashing empty, now that the table itself stays
+      // mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<AuditData>([]);
     }
   });
   readonly tableState = new TableState({

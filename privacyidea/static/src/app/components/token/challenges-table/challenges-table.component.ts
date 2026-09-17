@@ -112,11 +112,14 @@ export class ChallengesTableComponent {
       this.challengesService.challengesResource.hasValue()
         ? this.challengesService.challengesResource.value()
         : undefined,
-    computation: (challengesResource) => {
+    computation: (challengesResource, previous) => {
       if (challengesResource) {
         return new MatTableDataSource(challengesResource.result?.value?.challenges);
       }
-      return new MatTableDataSource<Challenge>([]);
+      // A reload in flight clears the resource value before the new response arrives - keep
+      // showing the previous rows instead of flashing empty, now that the table itself stays
+      // mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<Challenge>([]);
     }
   });
   readonly tableState = new TableState({

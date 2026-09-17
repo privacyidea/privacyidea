@@ -156,7 +156,7 @@ export class ClientsComponent {
   clientDataSource: WritableSignal<MatTableDataSource<FlattenedClientRow>> = linkedSignal({
     source: () =>
       this.clientService.clientsResource.hasValue() ? this.clientService.clientsResource.value() : undefined,
-    computation: (clientResource) => {
+    computation: (clientResource, previous) => {
       if (clientResource) {
         const clientData = clientResource.result?.value || ({} as ClientsDict);
         const dataSource = new MatTableDataSource(this.flattenedClientRowsFromDict(clientData));
@@ -169,7 +169,10 @@ export class ClientsComponent {
         };
         return dataSource;
       }
-      return new MatTableDataSource<FlattenedClientRow>([]);
+      // A reload in flight clears the resource value before the new response arrives - keep
+      // showing the previous rows instead of flashing empty, now that the table itself stays
+      // mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<FlattenedClientRow>([]);
     }
   });
 

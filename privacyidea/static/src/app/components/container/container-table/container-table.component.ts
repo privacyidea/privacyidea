@@ -152,7 +152,7 @@ export class ContainerTableComponent implements OnDestroy {
 
   containerDataSource: WritableSignal<MatTableDataSource<ContainerDetailData>> = linkedSignal({
     source: this.containerResource.value,
-    computation: (containerResource) => {
+    computation: (containerResource, previous) => {
       if (containerResource && containerResource.result?.value) {
         const processedData =
           containerResource.result?.value?.containers.map((item) => ({
@@ -162,7 +162,10 @@ export class ContainerTableComponent implements OnDestroy {
           })) ?? [];
         return new MatTableDataSource<ContainerDetailData>(processedData);
       }
-      return new MatTableDataSource<ContainerDetailData>([]);
+      // A reload in flight (filter/page/sort change) clears containerResource.value before the
+      // new response arrives - keep showing the previous rows instead of flashing empty, now that
+      // the table itself stays mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<ContainerDetailData>([]);
     }
   });
 
