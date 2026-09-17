@@ -380,6 +380,22 @@ describe("ContentService", () => {
       expect(service.routeUrl()).toBe(ROUTE_PATHS.CONTAINERS_DETAILS + "C1");
       expect(service.previousUrl()).toBe("/tokens");
     });
+
+    it("recovers the serial from the URL after a browser back then forward", () => {
+      // A back/forward pair only ever fires NavigationEnd (real popstate navigation, not
+      // navigateContainerDetails), so nothing ever calls containerSerial.set() again. Before this
+      // was fixed, the details branch below carried the previous value forward instead of reading
+      // the URL, and the intervening "back" to another route had already reset that previous value
+      // to "" - so "forward" landed back on the details route with the serial stuck empty forever.
+      service.navigateContainerDetails("C1");
+      expect(service.containerSerial()).toBe("C1");
+
+      emitNav("/tokens"); // back
+      expect(service.containerSerial()).toBe("");
+
+      emitNav(ROUTE_PATHS.CONTAINERS_DETAILS + "C1"); // forward
+      expect(service.containerSerial()).toBe("C1");
+    });
   });
 
   describe("machineResolverSelected()", () => {

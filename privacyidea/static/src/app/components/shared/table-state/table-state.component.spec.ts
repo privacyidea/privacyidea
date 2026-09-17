@@ -191,6 +191,20 @@ describe("TableStateComponent", () => {
       expect(text()).not.toContain("No entries yet");
     });
 
+    it("scales the spinner to the panel's --table-state-icon-size once rendered", () => {
+      value.set(undefined);
+      const state = buildState();
+      fixture = TestBed.createComponent(TableStateComponent);
+      fixture.nativeElement.style.setProperty("--table-state-icon-size", "56px");
+      fixture.componentRef.setInput("table", state);
+      fixture.componentRef.setInput("heading", "No entries yet");
+      fixture.detectChanges();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const spinnerDiameter = (fixture.componentInstance as any).spinnerDiameter as () => number;
+      expect(spinnerDiameter()).toBe(56);
+    });
+
     it("fills in around the spinner when the list turns out to be empty", () => {
       value.set(undefined);
       const state = buildState();

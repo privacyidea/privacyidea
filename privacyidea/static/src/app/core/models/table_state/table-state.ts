@@ -51,6 +51,20 @@ export class TableState {
     computation: (isLoading, previous) => (isLoading ? false : (previous?.value ?? false))
   });
 
+  /**
+   * The row count last seen while the resource actually had a value, frozen across a reload -
+   * undefined only until the very first value ever arrives. Angular's resource() clears
+   * hasValue() to false the instant its reactive request changes identity (a fresh filter/page/
+   * sort, not just the very first fetch), so raw hasValue() cannot tell "nothing loaded yet" from
+   * "reloading, but the last page of rows is still meaningful". Without this, every reload of an
+   * already-loaded table would read as "loading" and showTable() would tear down and rebuild the
+   * whole filter/paginator/table view underneath the user, taking keyboard focus with it.
+   */
+  private readonly lastKnownCount: Signal<number | undefined> = linkedSignal({
+    source: () => (this.options.resource.hasValue() ? this.options.count() : undefined),
+    computation: (sourceCount, previous) => sourceCount ?? previous?.value
+  });
+
   constructor(private readonly options: TableStateOptions) {
     this.status = computed(() => {
       if (this.options.allowed?.() === false) {
@@ -59,10 +73,14 @@ export class TableState {
       if (this.options.resource.error() != null) {
         return "error";
       }
-      if (!this.options.resource.hasValue()) {
+      // Read unconditionally, not just when hasValue() is false: linkedSignal only snapshots a
+      // value when it is actually read, so skipping this while hasValue() is true would leave it
+      // with nothing to fall back to the moment a reload clears hasValue() again.
+      const count = this.lastKnownCount();
+      if (count === undefined) {
         return this.cancelled() ? "cancelled" : "loading";
       }
-      if (this.options.count() > 0) {
+      if (count > 0) {
         return "ready";
       }
       return this.options.filterActive?.() ? "filtered" : "empty";

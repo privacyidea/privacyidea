@@ -1,0 +1,6 @@
+// While the dialog refuses to close, its links cannot be followed without losing the data it
+// shows, so they stop looking and behaving like links.
+.link-inert {
+  pointer-events: none;
+  opacity: 0.6;
+}

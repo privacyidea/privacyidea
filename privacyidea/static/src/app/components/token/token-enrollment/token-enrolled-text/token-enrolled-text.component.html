@@ -23,6 +23,8 @@
       >The token was successfully enrolled with serial number
       <a
         role="button"
+        [class.link-inert]="navigationBlocked()"
+        [attr.aria-disabled]="navigationBlocked()"
         tabindex="0"
         (click)="tokenSelected()"
         (keydown.enter)="tokenSelected()"
@@ -35,6 +37,8 @@
         >It has been enrolled in the container
         <a
           role="button"
+          [class.link-inert]="navigationBlocked()"
+          [attr.aria-disabled]="navigationBlocked()"
           tabindex="0"
           (click)="natigateContainerDetails()"
           (keydown.enter)="natigateContainerDetails()"
@@ -50,6 +54,8 @@
         @if (authService.actionAllowed("userlist")) {
           <a
             role="button"
+            [class.link-inert]="navigationBlocked()"
+            [attr.aria-disabled]="navigationBlocked()"
             tabindex="0"
             (click)="navigateUserDetails()"
             (keydown.enter)="navigateUserDetails()"
@@ -64,6 +70,8 @@
         @if (authService.role() === "admin") {
           <a
             role="button"
+            [class.link-inert]="navigationBlocked()"
+            [attr.aria-disabled]="navigationBlocked()"
             tabindex="0"
             (click)="navigateRealms()"
             (keydown.enter)="navigateRealms()"
@@ -82,6 +90,8 @@
         @if (authService.role() === "admin") {
           <a
             role="button"
+            [class.link-inert]="navigationBlocked()"
+            [attr.aria-disabled]="navigationBlocked()"
             tabindex="0"
             (click)="navigateRealms()"
             (keydown.enter)="navigateRealms()"
@@ -102,6 +112,8 @@
       >The token with serial number
       <a
         role="button"
+        [class.link-inert]="navigationBlocked()"
+        [attr.aria-disabled]="navigationBlocked()"
         tabindex="0"
         (click)="tokenSelected()"
         (keydown.enter)="tokenSelected()"

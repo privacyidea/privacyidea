@@ -16,12 +16,27 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  appScrollToTop
-  aria-label="Details"
-  class="details-container"
-  i18n-aria-label="@@common.details">
-  <div class="details-flex-layout flex-column">
+@if (showInitialLoading()) {
+  <!-- Shares the .details-container class so it renders at exactly the width the loaded page will
+    take, rather than a narrower box that jumps wider once the data arrives. -->
+  <div
+    aria-label="Details"
+    class="details-container details-container--loading"
+    i18n-aria-label="@@common.details"
+    role="status">
+    <mat-progress-spinner
+      [diameter]="40"
+      aria-label="Loading"
+      i18n-aria-label="@@common.loading"
+      mode="indeterminate" />
+  </div>
+} @else {
+  <div
+    appScrollToTop
+    aria-label="Details"
+    class="details-container"
+    i18n-aria-label="@@common.details">
+    <div class="details-flex-layout flex-column">
     <app-details-header
       [serial]="containerSerial()"
       entityLabel="Container"
@@ -36,46 +51,6 @@
         [containerType]="containerType()"></app-container-details-actions>
     </div>
     <div class="details-grid">
-      @if (descriptionRow(); as desc) {
-        <app-details-card
-          class="details-card--description"
-          [class.is-editing]="desc.isEditing()"
-          title="Description"
-          i18n-title="@@common.description">
-          <div class="value-row">
-            <div class="value-content">
-              @if (desc.isEditing()) {
-                <mat-form-field
-                  class="input-width-xl"
-                  subscriptSizing="dynamic">
-                  <textarea
-                    [value]="desc.value"
-                    (input)="desc.value = $any($event.target).value"
-                    i18n-placeholder="@@common.enterDescription"
-                    matInput
-                    placeholder="Enter description"
-                    rows="3"></textarea>
-                </mat-form-field>
-              } @else {
-                <span class="description-text">{{ desc.value || "-" }}</span>
-              }
-            </div>
-            <div class="value-edit">
-              @if (isEditableElement(desc.keyMap.key)) {
-                <app-edit-buttons
-                  [cancelEdit]="cancelContainerEdit.bind(this)"
-                  [element]="desc"
-                  [isEditingInfo]="isEditingInfo()"
-                  [isEditingUser]="isEditingUser()"
-                  [saveEdit]="saveContainerEdit.bind(this)"
-                  [shouldHideEdit]="isAnyEditing()"
-                  [toggleEdit]="toggleContainerEdit.bind(this)"></app-edit-buttons>
-              }
-            </div>
-          </div>
-        </app-details-card>
-      }
-
       <app-details-card
         class="details-card--group"
         title="Status"
@@ -130,6 +105,47 @@
         [host]="this"
         [userData]="userData()" />
 
+
+      @if (descriptionRow(); as desc) {
+        <app-details-card
+          class="details-card--description"
+          [class.is-editing]="desc.isEditing()"
+          title="Description"
+          i18n-title="@@common.description">
+          <div class="value-row">
+            <div class="value-content">
+              @if (desc.isEditing()) {
+                <mat-form-field
+                  class="input-width-xl"
+                  subscriptSizing="dynamic">
+                  <textarea
+                    [value]="desc.value"
+                    (input)="desc.value = $any($event.target).value"
+                    i18n-placeholder="@@common.enterDescription"
+                    matInput
+                    placeholder="Enter description"
+                    rows="3"></textarea>
+                </mat-form-field>
+              } @else {
+                <span class="description-text">{{ desc.value || "-" }}</span>
+              }
+            </div>
+            <div class="value-edit">
+              @if (isEditableElement(desc.keyMap.key)) {
+                <app-edit-buttons
+                  [cancelEdit]="cancelContainerEdit.bind(this)"
+                  [element]="desc"
+                  [isEditingInfo]="isEditingInfo()"
+                  [isEditingUser]="isEditingUser()"
+                  [saveEdit]="saveContainerEdit.bind(this)"
+                  [shouldHideEdit]="isAnyEditing()"
+                  [toggleEdit]="toggleContainerEdit.bind(this)"></app-edit-buttons>
+              }
+            </div>
+          </div>
+        </app-details-card>
+      }
+
       <div class="token-pair">
         <app-details-card class="details-card--add-token">
           <app-container-add-token (addToken)="addTokenToContainer($event)"></app-container-add-token>
@@ -155,4 +171,5 @@
       </app-details-card>
     </div>
   </div>
-</div>
+  </div>
+}
