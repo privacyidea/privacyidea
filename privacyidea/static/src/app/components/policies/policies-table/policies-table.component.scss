@@ -15,11 +15,11 @@
 .policies-table-layout {
   @include styles.main-component-style;
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
-  // Sized from the col-width-* tiers the columns below use (select xs + priority xs + name m +
-  // scope s + active xs), plus the description/actions/conditions columns' own current widths
-  // (400 + no fixed width for actions + 400), since those three are free text / a list that can
-  // badly overflow and are deliberately left without a tier.
-  @include table.page-table-state-size(calc(#{table.table-width(xs, xs, m, s, xs)} + 800px));
+  // Sized from the col-width-* tiers the columns below use (select checkbox + priority s + name m +
+  // scope s + description xl + active s), plus the actions/conditions columns' own current widths
+  // (no fixed width for actions + 400 for conditions), since those two are a list that can badly
+  // overflow and are deliberately left without a tier.
+  @include table.page-table-state-size(calc(#{table.table-width(checkbox, s, l, s, xl, s)} + 400px));
 
   & {
     display: flex;
@@ -104,8 +104,6 @@
     }
 
     td.col-description {
-      max-width: 400px;
-      min-width: 200px;
       padding-bottom: 8px;
       padding-top: 8px;
       white-space: normal;

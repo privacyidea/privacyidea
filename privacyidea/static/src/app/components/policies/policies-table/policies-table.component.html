@@ -46,6 +46,7 @@
       <ng-container matColumnDef="select">
         <th
           *matHeaderCellDef
+          class="table-checkbox"
           mat-header-cell>
           <mat-checkbox
             (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
@@ -57,7 +58,7 @@
         </th>
         <td
           *matCellDef="let policy"
-          class="col-width-xs"
+          class="table-checkbox"
           mat-cell>
           <mat-checkbox
             (change)="selector.setRowSelected(policy, $event.checked)"
@@ -74,6 +75,7 @@
           <th
             *matHeaderCellDef
             [class]="'col-' + column.key"
+            [ngClass]="column.value.width ? 'col-width-' + column.value.width : null"
             [disabled]="!column.value.sortable || policyService.allPolicies().length === 0"
             mat-header-cell
             mat-sort-header>
