@@ -18,7 +18,7 @@
 import logging
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Unicode, Integer, UniqueConstraint, select
+from sqlalchemy import Unicode, Integer, Sequence, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.lib.log import log_with
@@ -37,7 +37,7 @@ class Tokengroup(TimestampMethodsMixin, db.Model):
     A token can then be assigned to several of these tokengroups.
     """
     __tablename__ = 'tokengroup'
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, Sequence("tokengroup_seq"), primary_key=True, nullable=False)
     name: Mapped[str] = mapped_column(Unicode(255), default='', unique=True, nullable=False)
     Description: Mapped[str | None] = mapped_column(Unicode(2000), default='')
 
@@ -58,7 +58,7 @@ class TokenTokengroup(TimestampMethodsMixin, db.Model):
     """
     __tablename__ = 'tokentokengroup'
     __table_args__ = (UniqueConstraint('token_id', 'tokengroup_id', name='ttgix_2'),)
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, Sequence("tokentokengroup_seq"), primary_key=True)
     token_id: Mapped[int | None] = mapped_column(Integer, db.ForeignKey('token.id'))
     tokengroup_id: Mapped[int | None] = mapped_column(Integer, db.ForeignKey('tokengroup.id'))
 
