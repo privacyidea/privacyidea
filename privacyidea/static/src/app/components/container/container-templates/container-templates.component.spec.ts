@@ -45,6 +45,7 @@ describe("ContainerTemplatesComponent", () => {
 
   const mockContainerTemplateService = {
     templates: templatesSignal,
+    availableContainerTypes: signal<string[]>(["generic", "smartphone"]),
     templatesResource: {
       hasValue: () => templatesLoaded(),
       error: () => null,

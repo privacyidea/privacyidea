@@ -28,6 +28,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContainerDetailData, ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
@@ -43,6 +44,7 @@ import {
   MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 
 describe("ContainerTableComponent (Jest)", () => {
@@ -62,6 +64,7 @@ describe("ContainerTableComponent (Jest)", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: RealmService, useClass: MockRealmService },
         { provide: TokenService, useClass: MockTokenService },
         {
           provide: Router,
