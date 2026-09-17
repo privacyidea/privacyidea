@@ -1562,6 +1562,11 @@ class PushTokenClass(TokenClass):
                 if push_gateway_identifier != POLL_ONLY:
                     push_gateway = create_sms_instance(push_gateway_identifier)
                     if not push_gateway.allows_push_messages(push_gateway.smsgateway):
+                        # The token names a gateway that cannot deliver push messages, which only an
+                        # administrator can repair. The error reaches the authenticating user, so log
+                        # it here as well - that is where the responsible administrator can find it.
+                        log.warning(f"Token {self.token.serial} is configured for the SMS gateway "
+                                    f"{push_gateway_identifier!r}, which does not allow push messages.")
                         raise ConfigAdminError(
                             f'SMS gateway "{push_gateway_identifier}" does not support push messages.')
                     registration_url = get_action_values_from_options(

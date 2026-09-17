@@ -357,8 +357,13 @@ class PushTokenTestCase(MyTestCase):
         g.policy_object = PolicyClass()
         g.audit_object = mock.MagicMock(audit_data={})
 
-        with self.assertRaisesRegex(ConfigAdminError, "does not support push messages"):
+        with (self.assertLogs("privacyidea.lib.tokens.pushtoken", logging.WARNING) as logs,
+              self.assertRaisesRegex(ConfigAdminError, "does not support push messages")):
             token.create_challenge(options={"g": g})
+
+        # The error is returned to the user, so the administrator needs it in the log
+        self.assertIn(f"Token {token.get_serial()} is configured for the SMS gateway "
+                      f"'{gateway_identifier}', which does not allow push messages.", logs.output[0])
 
     def test_02d_challenge_without_gateway_raises_on_exception(self):
         token = self._create_push_token()

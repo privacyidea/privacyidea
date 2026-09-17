@@ -342,3 +342,9 @@ This is the file name of the script without the directory part.
 
 Here you can choose, whether the script should be started and run in the background or if the
 HTTP requests waits for the script to finish.
+
+.. note:: A script running in the background reports no exit code, so privacyIDEA cannot tell
+   whether the message was delivered. For a PUSH token this means that a script which fails
+   after it was started still counts as a successful send: the user is asked to confirm the
+   notification on the smartphone instead of being pointed at the polling fallback. Choose
+   ``wait`` if you want a failed delivery to be visible.
