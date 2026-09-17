@@ -1,0 +1,382 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { CommonModule, KeyValuePipe } from "@angular/common";
+import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { MatSortModule, Sort } from "@angular/material/sort";
+import { MatTableModule } from "@angular/material/table";
+import { MatTooltipModule } from "@angular/material/tooltip";
+
+import { Router, RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
+import { FilterOption } from "@core/models/filter_value_generic/filter-option";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { RowSelector } from "@services/table-utils/row-selector";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { StringUtils } from "@utils/string.utils";
+import { POLICY_VOCABULARY_ACTIONS, valueDisplayLabel } from "@utils/value-label.utils";
+import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
+import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
+import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
+import { ViewConditionsColumnComponent } from "./view-conditions-column/view-conditions-column.component";
+
+@Component({
+  selector: "app-policies-table",
+  standalone: true,
+  imports: [
+    CommonModule,
+    KeyValuePipe,
+    MatTableModule,
+    MatSortModule,
+    MatIconModule,
+    MatButtonModule,
+    MatSlideToggleModule,
+    MatInputModule,
+    PoliciesTableActionsComponent,
+    MatCheckboxModule,
+    ViewActionColumnComponent,
+    MatTooltipModule,
+    PolicyFilterComponent,
+    ViewConditionsColumnComponent,
+    CopyButtonComponent,
+    HighlightPipe,
+    TableStateComponent,
+    MultiSelectFilterComponent,
+    RouterLink
+  ],
+  templateUrl: "./policies-table.component.html",
+  styleUrl: "./policies-table.component.scss"
+})
+export class PoliciesTableComponent {
+  readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
+  readonly authService: AuthServiceInterface = inject(AuthService);
+  readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly router = inject(Router);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
+
+  readonly filterComponent = viewChild<PolicyFilterComponent>("filterComponent");
+
+  // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+  // to, so table.page-table-state-size(table.table-width(...)) in the .scss can be sized from the
+  // same numbers. actions/conditions carry a list that can badly overflow and are deliberately
+  // left without a tier (see the .scss for how their width is accounted for).
+  readonly columns = {
+    priority: { label: $localize`:@@policy.priority:Priority`, filterable: true, sortable: true, width: "s" },
+    name: { label: $localize`:@@common.name:Name`, filterable: true, sortable: true, width: "l" },
+    scope: { label: $localize`:@@common.scope:Scope`, filterable: true, sortable: true, width: "s" },
+    description: {
+      label: $localize`:@@common.description:Description`,
+      filterable: true,
+      sortable: true,
+      width: "xl"
+    },
+    actions: { label: $localize`:@@common.actions:Actions`, filterable: true, sortable: false, width: undefined },
+    conditions: {
+      label: $localize`:@@common.conditions:Conditions`,
+      filterable: true,
+      sortable: false,
+      width: undefined
+    },
+    active: { label: $localize`:@@common.active:Active`, filterable: true, sortable: true, width: "s" }
+  } as const;
+
+  readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
+
+  readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
+  readonly filterOptions: FilterOption<PolicyDetail>[] = createPolicyFilterOptions((name, scope, value) =>
+    valueDisplayLabel(value, this.policyService.getDetailsOfAction(name, scope)?.value, {
+      vocabulary: POLICY_VOCABULARY_ACTIONS.has(name)
+    })
+  );
+  readonly filter = linkedSignal<string, FilterValueGeneric<PolicyDetail>>({
+    source: () => (this.contentService.queryParams()["filter"] ?? "").replace(/^"(.*)"$/s, "$1"),
+    computation: (raw) => {
+      const filter = new FilterValueGeneric<PolicyDetail>({ availableFilters: this.filterOptions });
+      return raw ? filter.setByString(raw) : filter;
+    }
+  });
+
+  readonly ROUTE_PATHS = ROUTE_PATHS;
+  readonly tableState = new TableState({
+    resource: this.policyService.allPoliciesResource,
+    count: () => this.policyService.allPolicies().length,
+    allowed: () => this.authService.actionAllowed("policyread"),
+    resetFilter: () => this.onFilterUpdate(this.filter().clear())
+  });
+  readonly emptyHint = computed(() =>
+    this.authService.actionAllowed("policywrite")
+      ? $localize`:@@common.createAPolicyToControl:Create a policy to control what users and administrators are allowed to do and how the system behaves.`
+      : ""
+  );
+
+  // Terms to visually highlight per dense column: the keyword-less search terms plus that column's
+  // own keyword value. Short columns (name/scope/priority/active) are not highlighted on purpose.
+  readonly highlightTerms = computed(() => {
+    const filter = this.filter();
+    const freeText = filter.freeTextTerms;
+    const withKeyword = (key: string): string[] => {
+      const value = filter.getFilterOfKey(key);
+      return value ? [...freeText, value] : freeText;
+    };
+    return {
+      description: withKeyword("description"),
+      actions: withKeyword("actions"),
+      conditions: withKeyword("conditions")
+    };
+  });
+
+  readonly policiesListFiltered = computed(() => {
+    const all = this.policyService.allPolicies();
+    if (all.length === 0) {
+      return [];
+    }
+    return this.filter().filterItems(all);
+  });
+
+  readonly sortedFilteredPolicies = computed(() => {
+    const policies = this.policiesListFiltered();
+    const sort = this.sort();
+    if (!sort.active || sort.direction === "" || this.policyService.allPolicies().length === 0) return policies;
+
+    return [...policies].sort((a, b) => {
+      const isAsc = sort.direction === "asc";
+      const valA = a[sort.active as keyof PolicyDetail] ?? "";
+      const valB = b[sort.active as keyof PolicyDetail] ?? "";
+      if (valA === valB) return 0;
+      return (valA < valB ? -1 : 1) * (isAsc ? 1 : -1);
+    });
+  });
+
+  readonly selector = new RowSelector<PolicyDetail>({
+    keyGetter: (policy) => policy.name,
+    visibleRows: computed(() => this.sortedFilteredPolicies().filter((policy) => !!policy.name))
+  });
+
+  readonly keepOrder = () => 0;
+
+  onSortChange(sort: Sort): void {
+    this.sort.set(sort);
+  }
+
+  onFilterUpdate(newFilter: FilterValueGeneric<PolicyDetail>): void {
+    this.filter.set(newFilter);
+  }
+
+  onFilterClick(columnKey: string): void {
+    const option = this.filterOptions.find((o) => o.key === columnKey);
+    if (!option) return;
+    const nextFilter = option.toggle ? option.toggle(this.filter()) : this.filter().toggleKey(option.key);
+    this.onFilterUpdate(nextFilter);
+    this.filterComponent()?.updateFilterManually(nextFilter);
+  }
+
+  /**
+   * The scopes are a closed set, so that column filters by picking from them rather than by typing.
+   * Several may be picked at once; they are stored as the comma-separated value of the scope key,
+   * which is also what someone typing the filter by hand can write.
+   */
+  selectedScopes(): string[] {
+    return StringUtils.splitFilterList(this.filter().getFilterOfKey("scope"));
+  }
+
+  setScopeFilter(scopes: string[]): void {
+    const current = this.filter();
+    const nextFilter = scopes.length ? current.setValueOfKey("scope", scopes.join(",")) : current.removeKey("scope");
+    this.onFilterUpdate(nextFilter);
+    this.filterComponent()?.updateFilterManually(nextFilter);
+  }
+
+  getFilterIconName(columnKey: string): string {
+    const actionType = this.filterOptions.find((o) => o.key === columnKey)?.getActionType?.(this.filter()) ?? "add";
+    switch (actionType) {
+      case "add":
+        return "filter_alt";
+      case "remove":
+        return "filter_alt_off";
+      case "change":
+        return "screen_rotation_alt";
+      default:
+        return "filter_alt";
+    }
+  }
+
+  getFilterTooltipText(columnKey: string): string {
+    return this.filterOptions.find((o) => o.key === columnKey)?.hint ?? "";
+  }
+
+  isFilterable(columnKey: string): boolean {
+    return this.filterOptions.some((o) => o.key === columnKey);
+  }
+
+  togglePolicyActive(policy: PolicyDetail): void {
+    if (!policy.name) return;
+    this.policyService.togglePolicyActive(policy);
+  }
+
+  async editPolicy(policy: PolicyDetail): Promise<void> {
+    if (!policy.name) return;
+    this.router.navigateByUrl(ROUTE_PATHS.POLICIES_DETAILS + policy.name);
+  }
+}
+
+// Split a priority filter into its comparison operator and numeric operand.
+// The operand is parsed strictly: anything that is not a whole number (e.g.
+// ">10x") yields NaN, so a partially-numeric value does not silently match.
+const PRIORITY_OPERATORS: readonly [string, (a: number, b: number) => boolean][] = [
+  [">=", (a, b) => a >= b],
+  ["<=", (a, b) => a <= b],
+  ["!=", (a, b) => a !== b],
+  [">", (a, b) => a > b],
+  ["<", (a, b) => a < b],
+  ["=", (a, b) => a === b]
+];
+
+function matchesPriority(priority: number, val: string): boolean {
+  const [prefix, compare] = PRIORITY_OPERATORS.find(([p]) => val.startsWith(p)) ?? [
+    "",
+    (a: number, b: number) => a === b
+  ];
+  const rest = val.substring(prefix.length).trim();
+  if (!/^-?\d+$/.test(rest)) return false;
+  return compare(priority, Number(rest));
+}
+
+type PolicyActionLabelResolver = (name: string, scope: string, value: string | boolean) => string;
+
+function matchesActions(item: PolicyDetail, term: string, labelOf: PolicyActionLabelResolver): boolean {
+  if (!item.action) return false;
+  return Object.entries(item.action).some(
+    ([name, value]) =>
+      name.toLowerCase().includes(term) ||
+      String(value).toLowerCase().includes(term) ||
+      labelOf(name, item.scope, value).toLowerCase().includes(term)
+  );
+}
+
+function matchesConditions(item: PolicyDetail, term: string): boolean {
+  const listFields = [
+    item.adminrealm,
+    item.adminuser,
+    item.realm,
+    item.user,
+    item.pinode,
+    item.client,
+    item.user_agents
+  ];
+  if (listFields.some((list) => list?.some((entry) => entry.toLowerCase().includes(term)))) return true;
+  return Boolean(
+    item.time?.toLowerCase().includes(term) ||
+    item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(term)))
+  );
+}
+
+function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOption<PolicyDetail>[] {
+  return [
+    new FilterOption<PolicyDetail>({
+      key: "priority",
+      label: $localize`:@@policy.priority:Priority`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("priority");
+        return !val || matchesPriority(item.priority, val);
+      },
+      globalMatches: (item, term) => String(item.priority).includes(term)
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "active",
+      label: $localize`:@@common.active:Active`,
+      toggle: (filter) => {
+        const v = filter.getFilterOfKey("active")?.toLowerCase();
+        if (v === "true") return filter.setValueOfKey("active", "false");
+        if (v === "false") return filter.removeKey("active");
+        return filter.setValueOfKey("active", "true");
+      },
+      getActionType: (filter) => {
+        const v = filter.getFilterOfKey("active")?.toLowerCase();
+        return v === "true" ? "change" : v === "false" ? "remove" : "add";
+      },
+      matches: (item, filter) => {
+        const v = filter.getFilterOfKey("active")?.toLowerCase();
+        return v === "true" ? item.active === true : v === "false" ? item.active === false : true;
+      },
+      globalMatches: (item, term) => String(item.active).includes(term)
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "name",
+      label: $localize`:@@policy.policyName:Policy Name`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("name");
+        return !val || item.name.toLowerCase().includes(val.toLowerCase());
+      },
+      globalMatches: (item, term) => item.name.toLowerCase().includes(term)
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "scope",
+      label: $localize`:@@common.scope:Scope`,
+      // Comma-separated, so picking several scopes from the column filter keeps them all; each
+      // entry still matches as a substring, so a hand-typed partial scope works as before.
+      matches: (item, filter) => {
+        const scopes = StringUtils.splitFilterList(filter.getFilterOfKey("scope"));
+        return !scopes.length || scopes.some((scope) => item.scope.toLowerCase().includes(scope.toLowerCase()));
+      },
+      globalMatches: (item, term) => item.scope.toLowerCase().includes(term)
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "description",
+      label: $localize`:@@common.description:Description`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("description");
+        return !val || (item.description?.toLowerCase().includes(val.toLowerCase()) ?? false);
+      },
+      globalMatches: (item, term) => item.description?.toLowerCase().includes(term) ?? false
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "actions",
+      label: $localize`:@@common.actions:Actions`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("actions")?.toLowerCase();
+        return !val || matchesActions(item, val, labelOf);
+      },
+      globalMatches: (item, term) => matchesActions(item, term, labelOf)
+    }),
+    new FilterOption<PolicyDetail>({
+      key: "conditions",
+      label: $localize`:@@common.conditions:Conditions`,
+      matches: (item, filter) => {
+        const val = filter.getFilterOfKey("conditions")?.toLowerCase();
+        return !val || matchesConditions(item, val);
+      },
+      globalMatches: (item, term) => matchesConditions(item, term)
+    })
+  ];
+}

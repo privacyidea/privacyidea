@@ -1,0 +1,121 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
+import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { MatSort, MatSortModule } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+
+@Component({
+  selector: "app-machines",
+  standalone: true,
+  imports: [
+    RefocusAfterReloadDirective,
+    MatTableModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatIconModule,
+    MatButtonModule,
+    MatTooltipModule,
+    ScrollToTopDirective,
+    MatFormFieldModule,
+    MatInputModule,
+    ClearableInputComponent,
+    CopyableComponent,
+    TableStateComponent
+  ],
+  templateUrl: "./machines.component.html",
+  styleUrl: "./machines.component.scss"
+})
+export class MachinesComponent {
+  protected readonly machineService: MachineServiceInterface = inject(MachineService);
+  protected readonly router = inject(Router);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+
+  filterString = signal<string>("");
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
+  pageSize = signal(this.pageSizeOptions()[1] ?? 10);
+  totalLength: WritableSignal<number> = computed(
+    () => this.machineService.machines()?.length ?? 0
+  ) as WritableSignal<number>;
+  readonly tableState = new TableState({
+    resource: this.machineService.machinesResource,
+    count: () => this.machineService.machines()?.length ?? 0,
+    allowed: () => this.authService.actionAllowed("machinelist"),
+    resetFilter: () => this.resetFilter()
+  });
+
+  readonly paginator = viewChild(MatPaginator);
+  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef;
+
+  displayedColumns: string[] = ["hostname", "ip", "id", "resolver_name"];
+
+  machineDataSource = computed(() => {
+    const machines = this.machineService.machines() ?? [];
+    const dataSource = new MatTableDataSource(machines);
+    dataSource.paginator = this.paginator() ?? null;
+    dataSource.sort = this.sort;
+    return dataSource;
+  });
+
+  openDetailsDialog(machine: Machine): void {
+    this.router.navigateByUrl(
+      ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS + machine.id + "?resolver=" + encodeURIComponent(machine.resolver_name)
+    );
+  }
+
+  onFilterInput(value: string): void {
+    const trimmed = (value ?? "").trim();
+    this.filterString.set(trimmed);
+
+    const ds = this.machineDataSource();
+    ds.filter = trimmed.toLowerCase();
+  }
+
+  resetFilter(): void {
+    this.filterString.set("");
+    const ds = this.machineDataSource();
+    ds.filter = "";
+    const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
+    if (inputEl) {
+      inputEl.value = "";
+    }
+  }
+}

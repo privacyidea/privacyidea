@@ -1,0 +1,37 @@
+@use "styles";
+@use "table";
+
+.audit-table-container {
+  @include styles.main-component-style;
+  // Sized from the col-width-* tiers on the columns below, plus a flat estimate for
+  // action_detail, info and policies, which are left flexible and excluded from the tier sum
+  // since they hold long free text or a list that can overflow.
+  @include table.page-table-state-size(
+    calc(
+      #{table.table-width(s, l, s, m, m, m, l, s, s, s, s, m, s, l, s, m, s, s, s, s, s, m, s)} + 3 * 200px
+    )
+  );
+  @include table.base-table-structure(".audit-table", ".audit-table-filter", ".table-scroll-container");
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  // table-layout: auto redistributes column widths based on each render's actual cell content,
+  // so a col-width-* tier (e.g. action's l) would grow or shrink depending on the row data in
+  // view instead of staying put. table-layout: fixed makes the header row's declared widths (now
+  // that the th carries the same col-width-* class as the td, see audit.component.html)
+  // authoritative - but a fixed layout also collapses any column with no declared width to 0
+  // instead of sizing it from content, so the untiered columns (action_detail, info, policies)
+  // need their own explicit width: the flat 200px already assumed by the "+ 3 * 200px" above.
+  .audit-table {
+    table-layout: fixed;
+
+    .col-width-flex {
+      width: 200px;
+    }
+  }
+}
+
+.filter-action-button {
+  margin-left: 8px;
+}

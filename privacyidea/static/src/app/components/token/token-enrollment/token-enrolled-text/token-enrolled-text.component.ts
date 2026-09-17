@@ -1,0 +1,79 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { Component, inject, input, output } from "@angular/core";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+
+@Component({
+  selector: "app-token-enrolled-text",
+  imports: [],
+  templateUrl: "./token-enrolled-text.component.html",
+  styleUrl: "./token-enrolled-text.component.scss"
+})
+export class TokenEnrolledTextComponent {
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+
+  serial = input<string>();
+  containerSerial = input<string>();
+  username = input<string>();
+  userRealm = input<string>();
+  onlyAddToRealm = input<boolean>();
+  rollover = input<boolean>(false);
+  /**
+   * Set while the surrounding dialog refuses to close, because it shows data that cannot be
+   * retrieved again. Following a link would close it, so the links are inert until then.
+   */
+  navigationBlocked = input<boolean>(false);
+  switchRoute = output();
+
+  tokenSelected() {
+    if (this.navigationBlocked() || !this.serial()) {
+      return;
+    }
+    this.switchRoute.emit();
+    this.contentService.tokenSelected(this.serial() ?? "");
+  }
+
+  natigateContainerDetails() {
+    if (this.navigationBlocked() || !this.containerSerial()) {
+      return;
+    }
+    this.switchRoute.emit();
+    this.contentService.navigateContainerDetails(this.containerSerial() ?? "");
+  }
+
+  navigateUserDetails() {
+    if (this.navigationBlocked() || !this.username() || !this.userRealm()) {
+      return;
+    }
+    this.switchRoute.emit();
+    this.contentService.userSelected(this.username() ?? "", this.userRealm() ?? "");
+  }
+
+  navigateRealms() {
+    if (this.navigationBlocked()) {
+      return;
+    }
+    this.switchRoute.emit();
+    this.contentService.router.navigateByUrl(ROUTE_PATHS.USERS_REALMS);
+  }
+}

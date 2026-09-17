@@ -1,0 +1,550 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { NgClass, NgTemplateOutlet } from "@angular/common";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  OnInit,
+  Renderer2,
+  signal,
+  WritableSignal
+} from "@angular/core";
+import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
+import { MatSelectModule } from "@angular/material/select";
+import { MatTableDataSource } from "@angular/material/table";
+import { MatTooltip } from "@angular/material/tooltip";
+import { Router, RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { DetailFieldComponent } from "@components/shared/details-shared/detail-field/detail-field.component";
+import { DetailsCardComponent } from "@components/shared/details-shared/details-card/details-card.component";
+import { DetailFieldRowComponent } from "@components/shared/details-shared/field-editing/detail-field-row/detail-field-row.component";
+import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import {
+  SaveAndExitDialogComponent,
+  SaveAndExitDialogResult
+} from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+  ConditionalAccessStateService,
+  ConditionalAccessStateServiceInterface
+} from "@services/conditional-access-state/conditional-access-state.service";
+import {
+  AuthenticationLogService,
+  AuthenticationLogServiceInterface
+} from "@services/authentication-log/authentication-log.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { EditUserData, UserService, UserServiceInterface } from "@services/user/user.service";
+import { filter, firstValueFrom } from "rxjs";
+import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
+import { UserDetailsLockDialogComponent } from "./user-details-lock-dialog/user-details-lock-dialog.component";
+import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
+import { UserDetailsTokenTableComponent } from "./user-details-token-table/user-details-token-table.component";
+import { formatLocalDateTime } from "@utils/date-format.utils";
+
+@Component({
+  selector: "app-user-details",
+  imports: [
+    ScrollToTopDirective,
+    MatButtonModule,
+    UserDetailsTokenTableComponent,
+    ClearableInputComponent,
+    MatAutocomplete,
+    MatAutocompleteTrigger,
+    MatFormField,
+    MatIcon,
+    MatInput,
+    MatLabel,
+    MatOption,
+    MatFormField,
+    NgClass,
+    NgTemplateOutlet,
+    UserDetailsContainerTableComponent,
+    MatSelectModule,
+    MatTooltip,
+    RouterLink,
+    CopyableComponent,
+    UserDetailsEditComponent,
+    StickyHeaderDirective,
+    DetailsCardComponent,
+    DetailFieldComponent,
+    DetailFieldRowComponent,
+    MatProgressSpinner
+  ],
+  providers: [DetailsEditRegistry],
+  templateUrl: "./user-details.component.html",
+  styleUrl: "./user-details.component.scss"
+})
+export class UserDetailsComponent implements OnInit, OnDestroy {
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
+  protected readonly conditionalAccessStateService: ConditionalAccessStateServiceInterface =
+    inject(ConditionalAccessStateService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private router = inject(Router);
+  private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly renderer = inject(Renderer2);
+
+  readonly labels: Record<string, string> = {
+    username: $localize`:@@common.username:Username`,
+    givenname: $localize`:@@user.givenNameLabel:Given name`,
+    surname: $localize`:@@user.surname:Surname`,
+    email: $localize`:@@common.email:Email`,
+    phone: $localize`:@@user.phone:Phone`,
+    mobile: $localize`:@@user.mobile:Mobile`,
+    description: $localize`:@@common.description:Description`,
+    userid: $localize`:@@common.userId:User ID`,
+    resolver: $localize`:@@common.resolver:Resolver`
+  };
+  readonly excludedKeys = new Set(["editable"]);
+
+  userData = this.userService.user;
+  tokenResource = this.tokenService.tokenResource;
+  protected readonly showInitialLoading = computed(
+    () => this.userService.userResource.isLoading() && !this.userService.userResource.hasValue()
+  );
+
+  tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return new MatTableDataSource(tokenResourceValue.tokens);
+      }
+      return previous?.value ?? new MatTableDataSource();
+    }
+  });
+
+  attributeSetMap = this.userService.attributeSetMap;
+  deletableAttributes = this.userService.deletableAttributes;
+  keyOptions = this.userService.keyOptions;
+  hasWildcardKey = this.userService.hasWildcardKey;
+  canSetCustomAttribute = computed(() => this.keyOptions().length > 0 || this.hasWildcardKey());
+  showsAttributeExtrasColumn = computed(
+    () =>
+      this.canSetCustomAttribute() ||
+      this.userService.userAttributesList().length > 0 ||
+      this.authService.actionAllowed("get_user_internal_attributes") ||
+      this.authService.actionAllowed("user_lock_read")
+  );
+  expandedKeys = signal<Set<string>>(new Set<string>());
+  addKeyInput = signal<string>("");
+  addValueInput = signal<string>("");
+  selectedKey = signal<string | null>(null);
+  selectedValue = signal<string | null>(null);
+  keyMode = signal<"select" | "input">("select");
+  valueOptions = computed<string[]>(() => {
+    const map = this.attributeSetMap();
+    const mode = this.keyMode();
+    const key = mode === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "");
+    if (key && map[key]) return map[key];
+    if (map["*"]) return map["*"];
+    return [];
+  });
+  isValueInput = computed<boolean>(() => {
+    const opts = this.valueOptions();
+    if (opts.includes("*")) return true;
+    return opts.length === 0;
+  });
+  canAddAttribute = computed<boolean>(() => {
+    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
+    return key.length > 0 && value.length > 0;
+  });
+
+  constructor() {
+    effect(() => {
+      const hasWildcard = this.hasWildcardKey();
+      const hasFixedKeys = this.keyOptions().length > 0;
+      if (hasWildcard && !hasFixedKeys) {
+        this.keyMode.set("input");
+      } else {
+        this.keyMode.set("select");
+      }
+    });
+  }
+
+  detailsEntries = computed(() =>
+    Object.entries(this.userData() ?? {})
+      .filter(([key]) => !this.excludedKeys.has(key))
+      .map(([key, value]) => ({
+        key,
+        label: this.labels[key] ?? key,
+        value: value ?? "-"
+      }))
+  );
+  detailsEntryColumns = computed(() => {
+    const entries = this.detailsEntries();
+    const half = Math.ceil(entries.length / 2);
+    return [entries.slice(0, half), entries.slice(half)];
+  });
+  lockStatus = this.conditionalAccessStateService.userLockStatus;
+  isUserLocked = computed(() => this.lockStatus() !== null);
+  isPermanentLocked = computed(() => this.lockStatus()?.permanent ?? false);
+  lockStateClass = computed(() =>
+    this.isPermanentLocked() ? "highlight-false" : this.isUserLocked() ? "highlight-warning" : "highlight-true"
+  );
+  // Whether an administrator imposed the lock now in force rather than a conditional-access policy. Shown as
+  // a second line in the card so the four lockStatusText wordings stay about the lock itself.
+  lockCauseLabel = computed(() => {
+    const status = this.lockStatus();
+    if (!status) {
+      return "";
+    }
+    return status.lock_cause === "MANUAL"
+      ? $localize`Locked by an administrator`
+      : $localize`Locked by a conditional-access policy`;
+  });
+  lockStatusText = computed(() => {
+    const status = this.lockStatus();
+    if (!status) {
+      return $localize`Unlocked`;
+    }
+    if (status.permanent) {
+      return $localize`Locked permanently`;
+    }
+    if (status.lock_expires_at) {
+      return $localize`Locked until ${formatLocalDateTime(status.lock_expires_at)}`;
+    }
+    return $localize`Locked`;
+  });
+
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(
+      () =>
+        this.editIsDirty() ||
+        !!this.addKeyInput() ||
+        !!this.addValueInput() ||
+        !!this.selectedKey() ||
+        !!this.selectedValue()
+    );
+    this.pendingChangesService.registerValidChanges(() => {
+      if (this.editMode()) return true;
+      const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+      const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
+      return !!key && !!value;
+    });
+    this.pendingChangesService.registerSave(() => {
+      if (this.editMode()) return this.saveEditAsync();
+      return this.addCustomAttribute();
+    });
+  }
+
+  private async saveEditAsync(): Promise<boolean> {
+    const data = { ...this.editedUserData(), username: this.userData().username };
+    try {
+      const success = await firstValueFrom(this.userService.editUser(this.userData().resolver, data));
+      if (success) {
+        this.userService.userResource.reload();
+        this.editMode.set(false);
+      }
+      return !!success;
+    } catch (error) {
+      console.error("Failed to save user edits", error);
+      const message = error instanceof Error ? error.message : String(error);
+      this.notificationService.error(
+        $localize`:@@user.failedToSaveUserEdits:Failed to save user edits. ${message}:MESSAGE:`
+      );
+      return false;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
+
+  isExpanded(key: string): boolean {
+    return this.expandedKeys().has(key);
+  }
+
+  toggleExpanded(key: string): void {
+    const next = new Set(this.expandedKeys());
+    if (next.has(key)) {
+      next.delete(key);
+    } else {
+      next.add(key);
+    }
+    this.expandedKeys.set(next);
+  }
+
+  switchToCustomKey() {
+    this.keyMode.set("input");
+    this.selectedKey.set(null);
+  }
+
+  switchToSelectKey() {
+    this.keyMode.set("select");
+    this.addKeyInput.set("");
+  }
+
+  async addCustomAttribute(): Promise<boolean> {
+    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
+
+    if (!key || !value) return false;
+
+    try {
+      await firstValueFrom(this.userService.setUserAttribute(key, value));
+      this.userService.userAttributesResource.reload();
+      this.userService.userResource.reload();
+      this.addKeyInput.set("");
+      this.addValueInput.set("");
+      this.selectedKey.set(null);
+      this.selectedValue.set(null);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  deleteCustomAttribute(key: string) {
+    this.userService.deleteUserAttribute(key).subscribe({
+      next: () => {
+        this.userService.userAttributesResource.reload();
+        this.userService.userResource.reload();
+      }
+    });
+  }
+
+  assignUserToToken(option: TokenDetails) {
+    this.dialogService
+      .openDialog({ component: UserDetailsPinDialogComponent })
+      .afterClosed()
+      .pipe(filter((pin): pin is string => pin != null))
+      .subscribe((pin: string) => {
+        this.tokenService
+          .assignUser({
+            tokenSerial: option["serial"],
+            username: this.userService.detailsUser().username,
+            realm: this.userService.selectedUserRealm(),
+            pin: pin
+          })
+          .subscribe({
+            next: () => {
+              this.tokenService.userTokenResource.reload();
+              this.tokenService.tokenResource.reload();
+            }
+          });
+      });
+  }
+
+  enrollNewToken() {
+    const detailsUser = this.userService.detailsUser();
+    this.router
+      .navigate([ROUTE_PATHS.TOKENS_ENROLLMENT], {
+        queryParams: { realm: detailsUser.realm, user: detailsUser.username }
+      })
+      .then();
+  }
+
+  createNewContainer() {
+    const detailsUser = this.userService.detailsUser();
+    this.router
+      .navigate([ROUTE_PATHS.CONTAINERS_CREATE], {
+        queryParams: { realm: detailsUser.realm, user: detailsUser.username }
+      })
+      .then();
+  }
+
+  public showUserAuditLog() {
+    this.auditService.setFilter(new FilterValue({ value: `user: ${this.userService.detailsUser().username}` }));
+  }
+
+  public showUserAuthenticationLog() {
+    const user = this.userService.detailsUser();
+    const authLogFilter = new FilterValue().addEntry("username", user.username).addEntry("realm", user.realm);
+    this.authenticationLogService.authenticationLogFilter.set(authLogFilter);
+  }
+
+  lockUser() {
+    const detailsUser = this.userService.detailsUser();
+    this.dialogService
+      .openDialog({
+        component: UserDetailsLockDialogComponent,
+        data: { username: detailsUser.username, realm: detailsUser.realm }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (!result) {
+            return;
+          }
+          this.conditionalAccessStateService
+            .setUserLock({
+              login: detailsUser.username,
+              realm: detailsUser.realm,
+              resolver: this.userData().resolver,
+              duration_seconds: result.durationSeconds ?? undefined
+            })
+            .subscribe({
+              next: (lock) => {
+                if (lock) {
+                  this.conditionalAccessStateService.userLockResource.reload();
+                }
+              }
+            });
+        }
+      });
+  }
+
+  resetUserLock() {
+    const lockStatus = this.lockStatus();
+    if (!lockStatus) {
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Reset User Lock`,
+          items: [`${lockStatus.username}@${lockStatus.realm}`],
+          itemType: "user",
+          confirmAction: { label: $localize`Reset lock`, value: true, type: "confirm" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (!result) {
+            return;
+          }
+          this.conditionalAccessStateService
+            .resetUserLock({
+              resolver: lockStatus.resolver,
+              uid: lockStatus.uid,
+              realm: lockStatus.realm
+            })
+            .subscribe({
+              next: (success) => {
+                if (success) {
+                  this.conditionalAccessStateService.userLockResource.reload();
+                  return;
+                }
+                // The request succeeded but removed nothing, because the lock was already gone or sits outside this
+                // admin's visibility scope; the service only reports transport errors, so without this the button would
+                // look like it did nothing.
+                this.notificationService.error($localize`No lock was reset for this user.`);
+                this.conditionalAccessStateService.userLockResource.reload();
+              }
+            });
+        }
+      });
+  }
+
+  editMode = signal(false);
+  editedUserData: WritableSignal<EditUserData> = signal({ username: "" });
+
+  editIsDirty = computed(() => {
+    if (!this.editMode()) return false;
+    const original: Record<string, unknown> = this.userData() ?? {};
+    return Object.entries(this.editedUserData()).some(([key, value]) => (value ?? "") !== (original[key] ?? ""));
+  });
+
+  editUser() {
+    this.editedUserData.set({ ...this.userData() });
+    this.editMode.set(true);
+  }
+
+  cancelEdit() {
+    if (!this.editIsDirty()) {
+      this.editMode.set(false);
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SaveAndExitDialogComponent,
+        data: {
+          allowSaveExit: true,
+          saveExitDisabled: false
+        }
+      })
+      .afterClosed()
+      .subscribe((result: SaveAndExitDialogResult | undefined) => {
+        if (result === "discard") {
+          this.editMode.set(false);
+        } else if (result === "save-exit") {
+          this.saveEdit();
+        }
+      });
+  }
+
+  onUpdateEditedUser(newData: EditUserData) {
+    this.editedUserData.set(newData);
+  }
+
+  saveEdit() {
+    void this.saveEditAsync();
+  }
+
+  deleteUser() {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`:@@common.deleteUser:Delete User`,
+          items: [this.userData().username],
+          itemType: "user",
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.userService.deleteUser(this.userData().resolver, this.userData().username).subscribe({
+              next: (success) => {
+                if (success) {
+                  this.router.navigateByUrl(ROUTE_PATHS.USERS).then();
+                  this.userService.usersResource.reload();
+                }
+              }
+            });
+          }
+        }
+      });
+  }
+
+  protected readonly Array = Array;
+
+  protected str(value: unknown): string {
+    return value === null || value === undefined ? "" : String(value);
+  }
+}
