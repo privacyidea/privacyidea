@@ -31,8 +31,7 @@ export interface MessageConfirmationDialogData {
 @Component({
   selector: "app-message-confirmation-dialog",
   imports: [DialogWrapperComponent],
-  templateUrl: "./message-confirmation-dialog.component.html",
-  styleUrl: "./message-confirmation-dialog.component.scss"
+  templateUrl: "./message-confirmation-dialog.component.html"
 })
 export class MessageConfirmationDialogComponent extends AbstractDialogComponent<
   MessageConfirmationDialogData,

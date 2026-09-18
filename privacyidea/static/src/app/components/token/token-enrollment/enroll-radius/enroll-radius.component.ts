@@ -62,7 +62,6 @@ export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
     FormField
   ],
   templateUrl: "./enroll-radius.component.html",
-  styleUrl: "./enroll-radius.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollRadiusComponent) }
   ]
