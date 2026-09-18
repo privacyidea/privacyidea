@@ -6,14 +6,14 @@ that an installation which already applied them is recognised here, rather than
 being told that its current revision does not exist.
 
 Revision ID: f1a2b3c4d5e6
-Revises: ('e0f1a2b3c4d5', 'd3a4b5c6e7f8')
+Revises: ('d3e8b1c47f92', 'd3a4b5c6e7f8')
 Create Date: 2026-09-17 10:45:00.000000
 
 """
 
 # revision identifiers, used by Alembic.
 revision = 'f1a2b3c4d5e6'
-down_revision = ('e0f1a2b3c4d5', 'd3a4b5c6e7f8')
+down_revision = ('d3e8b1c47f92', 'd3a4b5c6e7f8')
 
 
 def upgrade():
