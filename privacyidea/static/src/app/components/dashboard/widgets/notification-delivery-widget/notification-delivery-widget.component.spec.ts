@@ -22,8 +22,11 @@ import { provideRouter } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
+import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { NotificationDeliveryHealth, SystemService } from "@services/system/system.service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 import { of, Subject, throwError } from "rxjs";
 import { NotificationDeliveryWidgetComponent } from "./notification-delivery-widget.component";
 
@@ -66,6 +69,10 @@ describe("NotificationDeliveryWidgetComponent", () => {
       imports: [NotificationDeliveryWidgetComponent],
       providers: [
         provideZonelessChangeDetection(),
+        // The widget keeps its window in the stored dashboard layout, so the layout service - and with it the
+        // user settings document - is built as soon as the widget is. Mocked, or the settings request goes out
+        // over the wire.
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
         provideRouter([]),
         { provide: SystemService, useClass: MockSystemService }
       ]
@@ -201,7 +208,7 @@ describe("NotificationDeliveryWidgetComponent", () => {
     emptyFixture.detectChanges();
 
     expect(emptyFixture.nativeElement.querySelector("table")).toBeNull();
-    expect(emptyFixture.nativeElement.textContent).toContain("No notification deliveries in the last hour.");
+    expect(emptyFixture.nativeElement.textContent).toContain("No notification deliveries in the selected time window.");
     emptyFixture.destroy();
   });
 
@@ -268,14 +275,54 @@ describe("NotificationDeliveryWidgetComponent", () => {
   });
 
   it("should stay in the loading state until the data ref is initialised", () => {
-    const initSpy = jest.spyOn(NotificationDeliveryWidgetComponent.prototype, "ngOnInit").mockReturnValue(undefined);
-
     const uninitFixture = TestBed.createComponent(NotificationDeliveryWidgetComponent);
     uninitFixture.componentRef.setInput("instance", instance);
-    uninitFixture.detectChanges();
+    // No change detection: the effect that starts the first fetch has not run, so the widget holds no data ref yet.
 
     expect(uninitFixture.componentInstance.state()).toBe("loading");
     uninitFixture.destroy();
-    initSpy.mockRestore();
+  });
+
+  it("should ask for the last hour when no window has been stored", () => {
+    expect(component.selectedWindow().id).toBe("1h");
+    expect(systemMock.getNotificationDelivery).toHaveBeenCalledWith(3600);
+  });
+
+  it("should open on the window stored in the widget options", () => {
+    systemMock.getNotificationDelivery.mockClear();
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const storedFixture = TestBed.createComponent(NotificationDeliveryWidgetComponent);
+    storedFixture.componentRef.setInput("instance", { ...instance, options: { range: "24h" } });
+    storedFixture.detectChanges();
+
+    expect(storedFixture.componentInstance.selectedWindow().id).toBe("24h");
+    expect(systemMock.getNotificationDelivery).toHaveBeenCalledWith(86400);
+    storedFixture.destroy();
+  });
+
+  it("should refetch for the picked window and write it to the widget options", () => {
+    const layoutService = TestBed.inject(DashboardLayoutService);
+    const setOptions = jest.spyOn(layoutService, "setWidgetOptions");
+    systemMock.getNotificationDelivery.mockClear();
+
+    component.selectWindow("6h");
+    fixture.detectChanges();
+
+    expect(component.selectedWindow().id).toBe("6h");
+    expect(systemMock.getNotificationDelivery).toHaveBeenCalledWith(21600);
+    expect(setOptions).toHaveBeenCalledWith(instance.id, { range: "6h" });
+    setOptions.mockRestore();
+  });
+
+  it("should drop the store entry of the window it leaves, so a refresh stops fetching it", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    expect(store.peek("dashboard:notification-delivery:1h")).not.toBeNull();
+
+    component.selectWindow("24h");
+    fixture.detectChanges();
+
+    expect(store.peek("dashboard:notification-delivery:1h")).toBeNull();
+    expect(store.peek("dashboard:notification-delivery:24h")).not.toBeNull();
   });
 });
