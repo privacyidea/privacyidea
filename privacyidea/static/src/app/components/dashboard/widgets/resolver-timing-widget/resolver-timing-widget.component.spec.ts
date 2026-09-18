@@ -25,10 +25,12 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { Resolver, Resolvers, ResolverService } from "@services/resolver/resolver.service";
 import { ResolverTimingEntry, SystemService } from "@services/system/system.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
 import { of, Subject, throwError } from "rxjs";
@@ -65,6 +67,10 @@ describe("ResolverTimingWidgetComponent", () => {
       imports: [ResolverTimingWidgetComponent],
       providers: [
         provideZonelessChangeDetection(),
+        // The widget keeps its window in the stored dashboard layout, so the layout service - and with it the
+        // user settings document - is built as soon as the widget is. Mocked, or the settings request goes out
+        // over the wire.
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
         provideRouter([]),
         { provide: SystemService, useClass: MockSystemService },
         { provide: ResolverService, useClass: MockResolverService },

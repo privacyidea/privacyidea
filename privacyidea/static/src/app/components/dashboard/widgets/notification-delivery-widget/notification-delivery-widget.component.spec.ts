@@ -22,9 +22,11 @@ import { provideRouter } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { NotificationDeliveryHealth, SystemService } from "@services/system/system.service";
 import { MockSystemService } from "@testing/mock-services/mock-system-service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 import { of, Subject, throwError } from "rxjs";
 import { NotificationDeliveryWidgetComponent } from "./notification-delivery-widget.component";
 
@@ -67,6 +69,10 @@ describe("NotificationDeliveryWidgetComponent", () => {
       imports: [NotificationDeliveryWidgetComponent],
       providers: [
         provideZonelessChangeDetection(),
+        // The widget keeps its window in the stored dashboard layout, so the layout service - and with it the
+        // user settings document - is built as soon as the widget is. Mocked, or the settings request goes out
+        // over the wire.
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
         provideRouter([]),
         { provide: SystemService, useClass: MockSystemService }
       ]
@@ -202,7 +208,7 @@ describe("NotificationDeliveryWidgetComponent", () => {
     emptyFixture.detectChanges();
 
     expect(emptyFixture.nativeElement.querySelector("table")).toBeNull();
-    expect(emptyFixture.nativeElement.textContent).toContain("No notification deliveries in the last hour.");
+    expect(emptyFixture.nativeElement.textContent).toContain("No notification deliveries in the selected time window.");
     emptyFixture.destroy();
   });
 
