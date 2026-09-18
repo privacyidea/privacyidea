@@ -27,12 +27,12 @@
 }
 
 .form-group {
-  @extend .flex-center-vertical;
+  @include styles.flex-center-vertical;
   margin-bottom: 8px;
 }
 
 .flex-row-space-between {
-  @extend .flex-row;
+  @include styles.flex-row;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
