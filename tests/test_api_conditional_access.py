@@ -48,7 +48,7 @@ from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.challenge import get_challenges, delete_challenges
-from privacyidea.lib.clients import create_client
+from privacyidea.lib.clients import create_client, update_client
 from privacyidea.lib.remembered_device import create_remembered_device, user_identity, PERSISTENT_COOKIE_NAME
 from privacyidea.lib.token import init_token, remove_token, get_tokens, revoke_token
 from privacyidea.lib.user import User
@@ -142,8 +142,10 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             db.session.query(model).delete()
         db.session.commit()
 
-    def _check(self, data: dict, remote_addr: str | None = None) -> dict:
+    def _check(self, data: dict, remote_addr: str | None = None, headers: dict | None = None) -> dict:
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
+        if headers:
+            kwargs["headers"] = headers
         with self.app.test_request_context('/validate/check', method='POST', data=data, **kwargs):
             response = self.app.full_dispatch_request()
             self.assertEqual(200, response.status_code, response)
@@ -917,6 +919,57 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         # And it is the lock that refused it, not the cookie: the same cookie is recognised once the lock is gone.
         unlock_user_by_username(self.user.login, self.user.realm)
         self.assertTrue(self._recognise_device(fresh_key, fresh_cookie).json["result"]["value"])
+
+    def _suspended_key(self) -> str:
+        """An API key whose client an administrator has suspended - real and well-formed, but not identifying."""
+        client, api_key = create_client("ca suspended client", "privacyidea-cp")
+        update_client(client.id, status="suspended")
+        return api_key
+
+    def test_a_suspended_api_key_does_not_suppress_the_policy_on_the_real_outcome(self):
+        # A suspended key is reported on the way out of every endpoint, after the view has staged what the request
+        # actually was. If that client signal were taken as the request's classification, the engine would be asked
+        # about it instead of about the failure - and whoever still holds a disabled key could switch conditional
+        # access off for any account by sending the header with every guess. Suspending a key is an administrator's
+        # revocation, so it must not hand its holder a capability the active key never had.
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
+        headers = {"X-API-Key": self._suspended_key()}
+
+        for _ in range(3):
+            self._check({"user": "cornelius", "pass": "pin000000"}, headers=headers)
+
+        self.assertTrue(is_user_locked(self.user))
+        # The signal is still recorded beside each failure, which is the point of it - it just does not classify.
+        self.assertEqual(3, sum(1 for entry in get_authentication_logs()
+                                if entry.event_type == AuthEventType.SUSPENDED_API_KEY_USED))
+
+    def test_a_suspended_api_key_does_not_suppress_a_source_ip_block(self):
+        # The same for the per-IP half, which is the only conditional-access control covering password guessing that
+        # never names a token. Threshold 1 because a source-IP policy counts DISTINCT_USERS by default and one user
+        # guessing is one of them; the point here is that the policy is asked about the failure at all.
+        self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=1, duration=600)
+        headers = {"X-API-Key": self._suspended_key()}
+
+        self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr="203.0.113.9", headers=headers)
+
+        self.assertTrue(is_ip_blocked("203.0.113.9"))
+
+    def test_a_suspended_api_key_still_classifies_a_request_that_authenticated_nothing(self):
+        # Passing the client signal over is only right while there is something to pass it over for. On a request
+        # that authenticated nothing the signal is the only staged event, so it classifies that request and a policy
+        # tracking it can still act - here a source-IP block, the subject a client signal actually has. Threshold 1
+        # again, and necessarily so: these rows name no user at all, so the default DISTINCT_USERS mode collapses
+        # any number of them into one.
+        self._make_block_ip_policy(counter_type=AuthEventType.SUSPENDED_API_KEY_USED, threshold=1, duration=600)
+        api_key = self._suspended_key()
+
+        with self.app.test_request_context('/validate/capabilities', method='GET',
+                                           environ_base={"REMOTE_ADDR": "203.0.113.10"},
+                                           headers={"X-API-Key": api_key}):
+            # Not identified by a suspended key, so the endpoint refuses - the signal is recorded all the same.
+            self.assertEqual(401, self.app.full_dispatch_request().status_code)
+
+        self.assertTrue(is_ip_blocked("203.0.113.10"))
 
     def test_a_lock_that_was_never_written_does_not_refuse_its_own_request(self):
         # A restricting action that did not restrict anything must not turn its own request into a rejection: the

@@ -510,10 +510,10 @@ class RestrictionCause(str, Enum):
 
 # Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the
 # handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, DEVICE_TOKEN_REUSED,
-# SUSPENDED_API_KEY_USED - that never actually reach reduce_request_events, because the endpoints that emit them
-# classify a request with a single event. The CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they classify a
-# request the pre-check rejected before any token logic ran, so they never reach reduce_request_events either, and are
-# excluded from the trackable vocabulary anyway (see CA_ENFORCEMENT_EVENT_TYPES).
+# SUSPENDED_API_KEY_USED - that never actually reach reduce_request_events, which reduces the per-token outcomes of
+# one token flow and none of these comes from one. The CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
+# classify a request the pre-check rejected before any token logic ran, so they never reach reduce_request_events
+# either, and are excluded from the trackable vocabulary anyway (see CA_ENFORCEMENT_EVENT_TYPES).
 #: Request-level precedence, highest signal first: which staged event classifies a request that
 #: produced several (see :func:`reduce_request_events`).
 REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
@@ -546,8 +546,11 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     AuthEventType.INVALID_TOKEN_TYPE,
     AuthEventType.UNKNOWN_FAIL_REASON,
     # Neither of these is produced by a token flow at all - they come from the remembered-device and API-client
-    # layers respectively, each already classifying its request with a single event - so, like the three above,
-    # they are listed only to satisfy the invariant that every trackable type has a rank.
+    # layers respectively - so, like the three above, they are listed only to satisfy the invariant that every
+    # trackable type has a rank, and reduce_request_events never sees one. SUSPENDED_API_KEY_USED is not even
+    # alone on its request: it is logged on the way out of *every* endpoint, beside whatever that endpoint
+    # classified the request as, which is why it is a CLIENT_SIGNAL_EVENT_TYPES member and neither classifies an
+    # attempt nor stands in for a request's own outcome.
     AuthEventType.DEVICE_TOKEN_REUSED,
     AuthEventType.SUSPENDED_API_KEY_USED,
 ]
