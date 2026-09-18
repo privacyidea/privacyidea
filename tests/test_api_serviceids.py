@@ -93,3 +93,48 @@ class APIServiceIDTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             value = res.json['result']['value']
             self.assertEqual(value, 1)
+
+    def test_02_selfservice_user_can_list_but_not_modify(self):
+        # A self-service user needs to be able to list service IDs to enroll
+        # an application specific password token, but must not be able to
+        # add or delete one.
+        with self.app.test_request_context('/serviceid/serviceC',
+                                           data={"description": "3rd service"},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+
+        # The user can list the service IDs
+        with self.app.test_request_context('/serviceid/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            value = res.json['result']['value']
+            self.assertIn("serviceC", value)
+
+        # ...but is not allowed to create a new service ID
+        with self.app.test_request_context('/serviceid/serviceD',
+                                           data={"description": "4th service"},
+                                           method='POST',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+        # ...nor to delete an existing one
+        with self.app.test_request_context('/serviceid/serviceC',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 401, res)
+
+        # clean up
+        with self.app.test_request_context('/serviceid/serviceC',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)

@@ -207,6 +207,7 @@ def _finalize_conditional_access():
 @authentication_log_blueprint.before_request
 @system_blueprint.before_request
 @info_blueprint.before_request
+@serviceid_blueprint.before_request
 @user_required
 def before_user_request():
     before_request()
@@ -289,7 +290,6 @@ def before_userendpoint_request():
 @subscriptions_blueprint.before_request
 @monitoring_blueprint.before_request
 @tokengroup_blueprint.before_request
-@serviceid_blueprint.before_request
 @clients_blueprint.before_request
 @conditional_access_blueprint.before_request
 @admin_required
