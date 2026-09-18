@@ -92,6 +92,14 @@ describe("MachineResolverDetailsComponent", () => {
       expect(component.currentMachineResolver().type).toBe("hosts");
     });
 
+    it("cannot delete a machine resolver that does not exist yet", async () => {
+      authServiceMock.actionAllowed.mockReturnValue(true);
+      expect(component.canDeleteMachineResolver()).toBe(false);
+      await component.deleteMachineResolver();
+      expect(dialog.open).not.toHaveBeenCalled();
+      expect(machineResolverServiceMock.deleteMachineResolver).not.toHaveBeenCalled();
+    });
+
     it("should register pending-changes hooks and clear them on destroy", () => {
       expect(pendingChangesService.registerHasChanges).toHaveBeenCalled();
       expect(pendingChangesService.registerSave).toHaveBeenCalled();
@@ -229,6 +237,44 @@ describe("MachineResolverDetailsComponent", () => {
       await component.onCancel();
       expect(errorSpy).toHaveBeenCalledWith("Error handling unsaved changes dialog:", expect.any(Error));
       errorSpy.mockRestore();
+    });
+
+    it("allows deleting only with the mresolverdelete right", () => {
+      authServiceMock.authData.update((data) => ({ ...data!, rights: ["mresolverwrite"] }));
+      expect(component.canDeleteMachineResolver()).toBe(false);
+      authServiceMock.authData.update((data) => ({ ...data!, rights: ["mresolverdelete"] }));
+      expect(component.canDeleteMachineResolver()).toBe(true);
+    });
+
+    describe("deleteMachineResolver", () => {
+      beforeEach(() => {
+        jest.mocked(router.navigateByUrl).mockClear();
+        pendingChangesService.clearAllRegistrations.mockClear();
+      });
+
+      it("deletes after confirmation and navigates back", async () => {
+        dialog.result$ = of(true);
+        await component.deleteMachineResolver();
+        expect(dialog.open).toHaveBeenCalled();
+        expect(machineResolverServiceMock.deleteMachineResolver).toHaveBeenCalledWith("hosts1");
+        expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+        expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.MACHINE_RESOLVER);
+      });
+
+      it("does nothing when the dialog is dismissed", async () => {
+        dialog.result$ = of(false);
+        await component.deleteMachineResolver();
+        expect(machineResolverServiceMock.deleteMachineResolver).not.toHaveBeenCalled();
+        expect(router.navigateByUrl).not.toHaveBeenCalled();
+      });
+
+      it("stays on the page when the deletion fails", async () => {
+        dialog.result$ = of(true);
+        machineResolverServiceMock.deleteMachineResolver.mockRejectedValue(new Error("delete failed"));
+        await component.deleteMachineResolver();
+        expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+        expect(router.navigateByUrl).not.toHaveBeenCalled();
+      });
     });
   });
 
