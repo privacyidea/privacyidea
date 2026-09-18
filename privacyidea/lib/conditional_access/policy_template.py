@@ -141,6 +141,11 @@ MFA_BRUTEFORCE = ConditionalAccessPolicyTemplate(
 
 # The failure event types the failed-attempt rate limits count, curated by hand rather than derived from the
 # FAILURE outcome class, so adding a new failure type here is always a conscious decision, never automatic.
+#
+# CHALLENGE_CANCELLED is the decision worth spelling out: a user who triggers a push and then abandons it has not
+# made a failed attempt, and counting it would spend part of a brute-force budget on people changing their mind.
+# The other two declines stay - the repudiation because it is an attempt someone else made, and the unspecified one
+# because a legacy app's reasonless decline could be either and the counting bucket must not shrink under it.
 _USER_AUTH_FAILURES = [
     AuthEventType.PASSWORD_FAIL,
     AuthEventType.PIN_FAIL,
@@ -148,6 +153,7 @@ _USER_AUTH_FAILURES = [
     AuthEventType.MFA_FAIL,
     AuthEventType.CHALLENGE_ANSWERED_FAIL,
     AuthEventType.CHALLENGE_DECLINED,
+    AuthEventType.CHALLENGE_DECLINED_UNKNOWN_TRIGGER,
     AuthEventType.NO_TOKEN,
     AuthEventType.NO_USABLE_TOKEN,
     AuthEventType.UNKNOWN_FAIL_REASON,

@@ -18,7 +18,6 @@
  **/
 import { Component, inject, Signal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialogContent } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
@@ -28,8 +27,7 @@ import { ContainerService, ContainerServiceInterface } from "@services/container
 @Component({
   selector: "app-container-registration-finalize-dialog",
   templateUrl: "./container-registration-finalize-dialog.component.html",
-  styleUrls: ["./container-registration-finalize-dialog.component.scss"],
-  imports: [MatDialogContent, MatIcon, DialogWrapperComponent, MatButtonModule]
+  imports: [MatIcon, DialogWrapperComponent, MatButtonModule]
 })
 export class ContainerRegistrationFinalizeDialogComponent extends AbstractDialogComponent<
   Signal<ContainerRegisterFinalizeData | undefined>,

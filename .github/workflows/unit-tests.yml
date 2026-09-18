@@ -165,6 +165,28 @@ jobs:
              GRANT ALL ON privacyidea_test_gw$i.* TO 'privacyidea'@'%';"
         done
 
+    - name: Raise the PostgreSQL connection limit
+      # The suite opens a fresh connection for every request, and every xdist worker does so
+      # against this one server, which overruns the image default of 100 ("sorry, too many
+      # clients already"). A service container takes no command, so the setting is written to
+      # the server and applied with a restart.
+      if: ${{ inputs.db-kind == 'postgres' }}
+      env:
+        PGPASSWORD: privacyidea
+        POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
+      run: |
+        psql -h 127.0.0.1 -U privacyidea -d privacyidea_test \
+          -c "ALTER SYSTEM SET max_connections = 300;"
+        docker restart "$POSTGRES_CONTAINER_ID"
+        for _ in $(seq 1 30); do
+          if pg_isready -h 127.0.0.1 -U privacyidea -d privacyidea_test; then
+            exit 0
+          fi
+          sleep 2
+        done
+        echo "PostgreSQL did not accept connections again after the restart" >&2
+        exit 1
+
     - name: Pre-create per-worker databases (PostgreSQL)
       if: ${{ inputs.db-kind == 'postgres' }}
       env:

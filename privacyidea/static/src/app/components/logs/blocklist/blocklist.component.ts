@@ -34,6 +34,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import {
   BlocklistEntry,
@@ -56,6 +57,7 @@ import { concatMap, reduce } from "rxjs/operators";
   templateUrl: "./blocklist.component.html",
   styleUrl: "./blocklist.component.scss",
   imports: [
+    RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTableModule,
     MatButtonModule,
@@ -134,7 +136,7 @@ export class BlocklistComponent {
   }
 
   blockCauseLabel(row: BlocklistEntry): string {
-    return row.block_cause === "MANUAL" ? $localize`Manual` : $localize`Policy`;
+    return row.block_cause === "MANUAL" ? $localize`:@@common.manual:Manual` : $localize`:@@common.policy:Policy`;
   }
 
   // Add an IP to the blocklist by hand. A never-block address is refused by the backend, and the
@@ -298,10 +300,10 @@ export class BlocklistComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Remove Blocklist Entries`,
+          title: $localize`:@@blocklist.removeBlocklistEntries:Remove Blocklist Entries`,
           items: rows.map((row) => row.identifier),
           itemType: "blocklist entry",
-          confirmAction: { label: $localize`Remove`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@container.remove:Remove`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -316,7 +318,9 @@ export class BlocklistComponent {
           )
           .subscribe((count) => {
             if (count > 0) {
-              this.notificationService.success($localize`Removed ${count} blocklist entry(s).`);
+              this.notificationService.success(
+                $localize`:@@blocklist.removedBlocklistEntryS:Removed ${count} blocklist entry(s).`
+              );
             }
             this.casService.blocklistResource.reload();
           });
@@ -328,11 +332,11 @@ export class BlocklistComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Clean Up Expired Entries`,
+          title: $localize`:@@blocklist.cleanUpExpiredEntries:Clean Up Expired Entries`,
           items: [],
           itemType: "expired blocklist entry",
-          message: $localize`This permanently deletes all expired blocklist entries from the database.`,
-          confirmAction: { label: $localize`Clean Up`, value: true, type: "destruct" }
+          message: $localize`:@@blocklist.permanentlyDeletesAllExpired:This permanently deletes all expired blocklist entries from the database.`,
+          confirmAction: { label: $localize`:@@blocklist.cleanUp:Clean Up`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -341,7 +345,9 @@ export class BlocklistComponent {
           return;
         }
         this.casService.purgeBlocklist().subscribe((count) => {
-          this.notificationService.success($localize`Deleted ${count} expired blocklist entry(s).`);
+          this.notificationService.success(
+            $localize`:@@blocklist.deletedExpiredBlocklistEntry:Deleted ${count} expired blocklist entry(s).`
+          );
           this.casService.blocklistResource.reload();
         });
       });

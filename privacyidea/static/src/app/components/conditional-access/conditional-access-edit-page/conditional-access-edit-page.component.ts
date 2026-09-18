@@ -25,6 +25,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
+import { MatProgressSpinner } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -78,16 +79,16 @@ const STANDING_DECISION_ACTIONS: string[] = ["DENY"];
 // Human-readable labels for the policy targets served by /conditionalaccess/targets; a target missing here falls back
 // to its raw value.
 const TARGET_LABELS: Record<string, string> = {
-  user: $localize`User`,
-  source_ip: $localize`Source IP`
+  user: $localize`:@@common.user:User`,
+  source_ip: $localize`:@@common.sourceIp:Source IP`
 };
 
 // Human-readable labels for the count modes served by /conditionalaccess/targets; a mode missing here falls back to its
 // raw value.
 const COUNT_MODE_LABELS: Record<string, string> = {
-  PER_REQUEST: $localize`Per Request`,
-  PER_ATTEMPT: $localize`Per Attempt`,
-  DISTINCT_USERS: $localize`Distinct Users`
+  PER_REQUEST: $localize`:@@conditionalAccess.perRequest:Per Request`,
+  PER_ATTEMPT: $localize`:@@conditionalAccess.perAttempt:Per Attempt`,
+  DISTINCT_USERS: $localize`:@@conditionalAccess.distinctUsers:Distinct Users`
 };
 
 @Component({
@@ -110,7 +111,8 @@ const COUNT_MODE_LABELS: Record<string, string> = {
     ClearButtonComponent,
     ErrorStateDirective,
     ConditionalAccessConditionsComponent,
-    ConditionalAccessStagesListComponent
+    ConditionalAccessStagesListComponent,
+    MatProgressSpinner
   ],
   templateUrl: "./conditional-access-edit-page.component.html",
   styleUrl: "./conditional-access-edit-page.component.scss"
@@ -132,9 +134,20 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   // [formField] scalar edits and updateEditPolicy() array/boolean edits mutate the same model.
   editPolicy = signal<ConditionalAccessPolicySaveParams>(deepCopy(EMPTY_CONDITIONAL_ACCESS_POLICY));
   isNewPolicy = signal(true);
+  // True only while editing an existing policy whose data hasn't arrived yet: a new policy has
+  // nothing to wait for, and once policiesResource resolves once, a later reload (e.g. after
+  // another admin's change) must not blank the form the user is looking at.
+  protected readonly showInitialLoading = computed(
+    () =>
+      !this.isNewPolicy() &&
+      this.policyService.policiesResource.isLoading() &&
+      !this.policyService.policiesResource.hasValue()
+  );
 
   readonly title = computed(() =>
-    this.isNewPolicy() ? $localize`Create Conditional-Access Policy` : $localize`Edit Conditional-Access Policy`
+    this.isNewPolicy()
+      ? $localize`:@@conditionalAccess.createConditionalAccessPolicy:Create Conditional-Access Policy`
+      : $localize`:@@conditionalAccess.editConditionalAccessPolicy:Edit Conditional-Access Policy`
   );
 
   // Only the name field goes through Signal Forms, as a plain required/length-bounded string;
@@ -168,8 +181,8 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
 
   // Info-hint help text as a $localize string, keeping all of this component's user-facing text in
   // one place and extractable for translation.
-  protected readonly priorityHelp = $localize`Unique order across policies, lowest first.`;
-  protected readonly priorityHelpAriaLabel = $localize`About priority`;
+  protected readonly priorityHelp = $localize`:@@conditionalAccess.uniqueOrderAcrossPolicies:Unique order across policies, lowest first.`;
+  protected readonly priorityHelpAriaLabel = $localize`:@@conditionalAccess.aboutPriority:About priority`;
 
   // Templates offered on the create page and the one currently picked, whose description shows as
   // a hint; editing an existing policy hides the picker.
@@ -338,41 +351,51 @@ export class ConditionalAccessEditPageComponent implements OnDestroy {
   saveBlockers = computed<string[]>(() => {
     const blockers: string[] = [];
     if (!this.editPolicy().name.trim()) {
-      blockers.push($localize`Name is required.`);
+      blockers.push($localize`:@@conditionalAccess.nameRequired:Name is required.`);
     } else if (this.nameTooLong()) {
-      blockers.push($localize`Name must not exceed 255 characters.`);
+      blockers.push($localize`:@@conditionalAccess.nameMustNotExceed:Name must not exceed 255 characters.`);
     }
     if (!this.timeWindowValid()) {
-      blockers.push($localize`Time window must be at least 1 second.`);
+      blockers.push($localize`:@@conditionalAccess.timeWindowMustLeast:Time window must be at least 1 second.`);
     }
     if (!this.priorityValid()) {
-      blockers.push($localize`Priority is required and must be a whole number of at least 1.`);
+      blockers.push(
+        $localize`:@@conditionalAccess.priorityRequiredMustWhole:Priority is required and must be a whole number of at least 1.`
+      );
     } else if (!this.priorityUnique()) {
-      blockers.push($localize`Priority must be unique across policies.`);
+      blockers.push($localize`:@@conditionalAccess.priorityMustUniqueAcross:Priority must be unique across policies.`);
     }
     if (!this.counterTypesValid()) {
-      blockers.push($localize`Select at least one tracked event type.`);
+      blockers.push($localize`:@@conditionalAccess.selectLeastOneTracked:Select at least one tracked event type.`);
     }
     if (!this.stagesValid()) {
       blockers.push(
-        $localize`Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY.`
+        $localize`:@@conditionalAccess.everyStageNeedsFailure:Every stage needs a failure threshold of at least 1 - or 0 on a stage carrying only DENY.`
       );
     }
     if (!this.stageThresholdsUnique()) {
-      blockers.push($localize`Each stage must have a different failure threshold.`);
+      blockers.push(
+        $localize`:@@conditionalAccess.eachStageMustHave2:Each stage must have a different failure threshold.`
+      );
     }
     if (!this.targetActionsValid()) {
-      blockers.push($localize`Some actions are not allowed for the selected target.`);
+      blockers.push(
+        $localize`:@@conditionalAccess.someActionsNotAllowed2:Some actions are not allowed for the selected target.`
+      );
     }
     if (!this.actionValuesValid()) {
-      blockers.push($localize`Fix the highlighted action value before saving.`);
+      blockers.push(
+        $localize`:@@conditionalAccess.fixHighlightedActionValue:Fix the highlighted action value before saving.`
+      );
     }
     if (!this.countModeValid()) {
-      blockers.push($localize`The selected count mode is not allowed for the selected target.`);
+      blockers.push(
+        $localize`:@@conditionalAccess.selectedCountModeNot:The selected count mode is not allowed for the selected target.`
+      );
     }
     if (!this.conditionValuesValid()) {
       blockers.push(
-        $localize`A condition names a value that no longer exists: ${this.staleConditionValues().join(", ")}.`
+        $localize`:@@conditionalAccess.conditionNamesValueNo:A condition names a value that no longer exists: ${this.staleConditionValues().join(", ")}.`
       );
     }
     return blockers;

@@ -35,6 +35,7 @@ import { ADMIN_INTERNAL_ROLE } from "@core/models/user_role/user-role";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
@@ -65,6 +66,7 @@ import { concatMap, reduce } from "rxjs/operators";
   templateUrl: "./locked-users.component.html",
   styleUrl: "./locked-users.component.scss",
   imports: [
+    RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTableModule,
     MatButtonModule,
@@ -131,15 +133,15 @@ export class LockedUsersComponent {
 
   // State filter options.
   readonly stateOptions: MultiSelectFilterOption[] = [
-    { label: $localize`Permanent`, value: "permanent" },
-    { label: $localize`Temporary`, value: "temporary" },
-    { label: $localize`Expired`, value: "expired" }
+    { label: $localize`:@@lockedUsers.permanent:Permanent`, value: "permanent" },
+    { label: $localize`:@@lockedUsers.temporary:Temporary`, value: "temporary" },
+    { label: $localize`:@@lockedUsers.expired:Expired`, value: "expired" }
   ];
 
   // Lock cause filter options: who imposed the lock now in force.
   readonly causeOptions: MultiSelectFilterOption[] = [
-    { label: $localize`Policy`, value: "POLICY" },
-    { label: $localize`Manual`, value: "MANUAL" }
+    { label: $localize`:@@common.policy:Policy`, value: "POLICY" },
+    { label: $localize`:@@common.manual:Manual`, value: "MANUAL" }
   ];
 
   // Keep the previously loaded rows visible while a reload is in flight
@@ -186,9 +188,7 @@ export class LockedUsersComponent {
   showAuthenticationLog(row: LockedUserEntry): void {
     if (this.isLocalAdmin(row)) {
       this.authenticationLogService.authenticationLogFilter.set(
-        new FilterValue()
-          .addEntry("username", this.displayLogin(row))
-          .addEntry("user_role", ADMIN_INTERNAL_ROLE)
+        new FilterValue().addEntry("username", this.displayLogin(row)).addEntry("user_role", ADMIN_INTERNAL_ROLE)
       );
       return;
     }
@@ -217,13 +217,15 @@ export class LockedUsersComponent {
 
   lockStateLabel(row: LockedUserEntry): string {
     if (row.permanent) {
-      return $localize`Permanent`;
+      return $localize`:@@lockedUsers.permanent:Permanent`;
     }
-    return this.isExpired(row) ? $localize`Expired` : $localize`Temporary`;
+    return this.isExpired(row)
+      ? $localize`:@@lockedUsers.expired:Expired`
+      : $localize`:@@lockedUsers.temporary:Temporary`;
   }
 
   lockCauseLabel(row: LockedUserEntry): string {
-    return row.lock_cause === "MANUAL" ? $localize`Manual` : $localize`Policy`;
+    return row.lock_cause === "MANUAL" ? $localize`:@@common.manual:Manual` : $localize`:@@common.policy:Policy`;
   }
 
   isAllSelected(): boolean {
@@ -313,10 +315,10 @@ export class LockedUsersComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Reset User Lock`,
+          title: $localize`:@@common.resetUserLock:Reset User Lock`,
           items: rows.map((row) => this.displayLogin(row)),
           itemType: "locked user",
-          confirmAction: { label: $localize`Reset`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.reset:Reset`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -339,7 +341,7 @@ export class LockedUsersComponent {
           )
           .subscribe((count) => {
             if (count > 0) {
-              this.notificationService.success($localize`Reset ${count} user lock(s).`);
+              this.notificationService.success($localize`:@@lockedUsers.resetUserLockS:Reset ${count} user lock(s).`);
             }
             this.casService.lockedUsersResource.reload();
           });
@@ -354,11 +356,11 @@ export class LockedUsersComponent {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Delete Expired Locks`,
+          title: $localize`:@@lockedUsers.deleteExpiredLocks:Delete Expired Locks`,
           items: [],
           itemType: "expired lock record",
-          message: $localize`This permanently deletes all expired lock records from the database.`,
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          message: $localize`:@@lockedUsers.permanentlyDeletesAllExpired:This permanently deletes all expired lock records from the database.`,
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -367,7 +369,9 @@ export class LockedUsersComponent {
           return;
         }
         this.casService.purgeUserLocks().subscribe((count) => {
-          this.notificationService.success($localize`Deleted ${count} expired lock(s).`);
+          this.notificationService.success(
+            $localize`:@@lockedUsers.deletedExpiredLockS:Deleted ${count} expired lock(s).`
+          );
           this.casService.lockedUsersResource.reload();
         });
       });

@@ -26,7 +26,7 @@ from enum import Enum
 from typing import Any, TYPE_CHECKING
 
 from netaddr import AddrFormatError, IPAddress
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnElement
 
@@ -559,7 +559,8 @@ def _types_label(types: "list[str]") -> str:
 
 
 def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str], window_seconds: float,
-                  window_end: datetime | None = None, since_last_success: bool = False) -> int:
+                  window_end: datetime | None = None, since_last_success: bool = False,
+                  exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count the ``authentication_log`` rows matching *subject* and *event_types* within the sliding window
     ``[window_end - window_seconds, window_end]`` (``PER_REQUEST``).
@@ -573,6 +574,14 @@ def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str]
     a success clears the slate. ``> last_success`` excludes the success row itself (a different event_type anyway, but
     the strict bound also keeps a same-instant failure from being masked by the success). The forensic log is
     untouched - only the *counted* range is narrowed.
+
+    :param exclude_row_ids: leave these row ids out of the final count, but never out of the last-success lookup -
+        unlike *subject* (which deliberately reaches both), excluding a row from *that* lookup too would move the
+        reset floor itself, not just the count: if the excluded row happens to be the success the floor would
+        otherwise stand on, "before this request's own contribution" would look further back in time than the
+        unexcluded count did, and could then count *more* than the unexcluded count - making the two incomparable
+        for :func:`_action_fires`'s ``count_before < threshold <= count``, which assumes count_before is the same
+        count with strictly fewer rows.
     """
     window_end = naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
@@ -587,19 +596,19 @@ def _count_events(subject: Sequence[ColumnElement[bool]], event_types: list[str]
                    AuthenticationLog.timestamp <= window_end))
         if last_success is not None:
             lower_bound = AuthenticationLog.timestamp > last_success
-    stmt = (select(func.count())
-            .select_from(AuthenticationLog)
-            .where(*subject,
-                   AuthenticationLog.event_type.in_(type_values),
-                   lower_bound,
-                   AuthenticationLog.timestamp <= window_end))
+    conditions = [*subject, AuthenticationLog.event_type.in_(type_values), lower_bound,
+                 AuthenticationLog.timestamp <= window_end]
+    if exclude_row_ids:
+        conditions.append(AuthenticationLog.id.notin_(exclude_row_ids))
+    stmt = select(func.count()).select_from(AuthenticationLog).where(*conditions)
     return get_ca_session().scalar(stmt) or 0
 
 
 def count_subject_events(subject: LockSubject, event_types: list[str],
                          window_seconds: float, window_end: datetime | None = None,
                          since_last_success: bool = False,
-                         extra_filters: "Sequence | None" = None) -> int:
+                         extra_filters: "Sequence | None" = None,
+                         exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count the ``authentication_log`` rows for one principal and event
     type(s) within a sliding time window ``[window_end - window_seconds, window_end]``.
@@ -635,11 +644,16 @@ def count_subject_events(subject: LockSubject, event_types: list[str],
     :param extra_filters: extra SQLAlchemy predicates ANDed into the ``WHERE``, narrowing which
         rows count to the ones a policy's conditions describe (see
         :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
-        empty counts every row of the subject.
+        empty counts every row of the subject. Reaches the last-success lookup too, unlike *exclude_row_ids*
+        (see :func:`_count_events`) - a condition scopes *what this policy tracks*, including what counts as
+        its own reset event, where an excluded row is specifically "not counted a second time", never "not a
+        reset".
+    :param exclude_row_ids: leave these row ids out of the count only (see :func:`_count_events`).
     :return: the number of matching events
     """
     return _count_events([*subject.log_filters, *(extra_filters or ())],
-                         event_types, window_seconds, window_end, since_last_success)
+                         event_types, window_seconds, window_end, since_last_success,
+                         exclude_row_ids=exclude_row_ids)
 
 
 def count_distinct_users_for_ip(source_ip: str, event_types: list[str], window_seconds: float,
@@ -793,7 +807,8 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
 
 def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[str], window_seconds: float,
                     window_end: datetime | None = None, since_last_success: bool = False,
-                    row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
+                    row_filter: "Callable[[AuthenticationLog], bool] | None" = None,
+                    exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count whole authentication *attempts* matching *subject* whose representative event is in *event_types*, within the
     sliding window ``[window_end - window_seconds, window_end]`` (``PER_ATTEMPT``).
@@ -814,15 +829,22 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
     ``extra_filters``. Narrowing the ``WHERE`` here would hide rows from the reduction rather than from the count, and
     an attempt reduced from a subset of its own rows is misclassified, not narrowed. Conditions arrive as *row_filter*
     instead and are applied to the reduced representative (see :func:`_count_matching_attempts`).
+
+    :param exclude_row_ids: leave these row ids out of the rows fetched, i.e. *before* the reduction to one
+        representative per attempt runs - unlike *row_filter*, which only ever reaches the already-reduced
+        representative and cannot be used for this. Excluding a row this way can change - or remove entirely -
+        which row an attempt's representative is, without dropping the attempt itself when it has other,
+        non-excluded rows.
     """
     window_end = naive_utc(window_end) if window_end is not None else utc_now()
     window_start = window_end - timedelta(seconds=window_seconds)
-    rows = get_ca_session().scalars(
-        select(AuthenticationLog)
-        .where(*subject,
-               AuthenticationLog.timestamp >= window_start,
-               AuthenticationLog.timestamp <= window_end,
-               AuthenticationLog.event_type.notin_(sorted(str(event) for event in CA_ENFORCEMENT_EVENT_TYPES)))).all()
+    conditions = [*subject,
+                 AuthenticationLog.timestamp >= window_start,
+                 AuthenticationLog.timestamp <= window_end,
+                 AuthenticationLog.event_type.notin_(sorted(str(event) for event in CA_ENFORCEMENT_EVENT_TYPES))]
+    if exclude_row_ids:
+        conditions.append(AuthenticationLog.id.notin_(exclude_row_ids))
+    rows = get_ca_session().scalars(select(AuthenticationLog).where(*conditions)).all()
     return _count_matching_attempts(rows, set(event_types), since_last_success=since_last_success,
                                     row_filter=row_filter)
 
@@ -830,7 +852,8 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
 def count_subject_attempts(subject: LockSubject, event_types: list[str],
                            window_seconds: float, window_end: datetime | None = None,
                            since_last_success: bool = False,
-                           row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
+                           row_filter: "Callable[[AuthenticationLog], bool] | None" = None,
+                           exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count whole authentication *attempts* (not individual ``authentication_log`` rows) for one principal whose
     representative event matches *event_types*, within a sliding time window ``[window_end - window_seconds,
@@ -852,15 +875,19 @@ def count_subject_attempts(subject: LockSubject, event_types: list[str],
         describe. It takes a row predicate rather than the ``extra_filters`` SQL predicates the event counters take:
         the conditions must be applied to the *reduced* representative, never to the rows the reduction reads (see
         :func:`_count_attempts`). ``None`` counts every attempt of the subject.
+    :param exclude_row_ids: leave these row ids out of the rows fetched before the attempt reduction runs (see
+        :func:`_count_attempts`) - used to compute the count as it stood before the current request's own
+        contribution, without dropping an attempt that also has other, non-excluded rows.
     :return: the number of matching attempts
     """
     return _count_attempts(subject.log_filters,
                            event_types, window_seconds, window_end, since_last_success,
-                           row_filter=row_filter)
+                           row_filter=row_filter, exclude_row_ids=exclude_row_ids)
 
 
 def count_ip_events(source_ip: str, event_types: list[str], window_seconds: float,
-                    window_end: datetime | None = None, extra_filters: "Sequence | None" = None) -> int:
+                    window_end: datetime | None = None, extra_filters: "Sequence | None" = None,
+                    exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count the ``authentication_log`` rows a single *source_ip* produced with any of *event_types* within the sliding
     window ``[window_end - window_seconds, window_end]``. This is the
@@ -890,15 +917,18 @@ def count_ip_events(source_ip: str, event_types: list[str], window_seconds: floa
         rows count to the ones a policy's conditions describe (see
         :func:`~privacyidea.lib.conditional_access.conditions.condition_sql_filters`). ``None`` or
         empty counts every row of the subject.
+    :param exclude_row_ids: leave these row ids out of the count (see :func:`_count_events`) - moot here since
+        this counter never floors on a last success, but kept for the same signature every counter takes.
     :return: the number of matching events
     """
     return _count_events([AuthenticationLog.source_ip == source_ip, *(extra_filters or ())],
-                         event_types, window_seconds, window_end)
+                         event_types, window_seconds, window_end, exclude_row_ids=exclude_row_ids)
 
 
 def count_ip_attempts(source_ip: str, event_types: list[str], window_seconds: float,
                       window_end: datetime | None = None,
-                      row_filter: "Callable[[AuthenticationLog], bool] | None" = None) -> int:
+                      row_filter: "Callable[[AuthenticationLog], bool] | None" = None,
+                      exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count whole authentication *attempts* (not individual ``authentication_log`` rows) a single *source_ip* produced
     whose representative event matches *event_types*, within the sliding window ``[window_end - window_seconds,
@@ -919,10 +949,14 @@ def count_ip_attempts(source_ip: str, event_types: list[str], window_seconds: fl
         describe. It takes a row predicate rather than the ``extra_filters`` SQL predicates the event counters take:
         the conditions must be applied to the *reduced* representative, never to the rows the reduction reads (see
         :func:`_count_attempts`). ``None`` counts every attempt of the subject.
+    :param exclude_row_ids: leave these row ids out of the rows fetched before the attempt reduction runs (see
+        :func:`_count_attempts`) - used to compute the count as it stood before the current request's own
+        contribution, without dropping an attempt that also has other, non-excluded rows.
     :return: the number of matching attempts
     """
     return _count_attempts([AuthenticationLog.source_ip == source_ip],
-                           event_types, window_seconds, window_end, row_filter=row_filter)
+                           event_types, window_seconds, window_end, row_filter=row_filter,
+                           exclude_row_ids=exclude_row_ids)
 
 
 def _count_scoping(policy: ConditionalAccessPolicy) -> "tuple[list | None, Callable[[AuthenticationLog], bool] | None]":
@@ -973,7 +1007,7 @@ def _effective_window_seconds(policy: ConditionalAccessPolicy, window_end: datet
 
 
 def _policy_count(policy: ConditionalAccessPolicy, subject: LockSubject, window_end: datetime,
-                  since_last_success: bool = False) -> int:
+                  since_last_success: bool = False, exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count a user-target policy's events (``PER_REQUEST``) or attempts (``PER_ATTEMPT``) over its window, per the
     policy's :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.count_mode`, scoped to the
@@ -990,6 +1024,13 @@ def _policy_count(policy: ConditionalAccessPolicy, subject: LockSubject, window_
         ``PER_REQUEST`` floors at the last ``LOGIN_SUCCESS`` row, ``PER_ATTEMPT`` at the last successful attempt.
         (Source-IP ``DISTINCT_USERS`` deliberately never resets, which is why it is a separate mode and does not go
         through here.)
+    :param exclude_row_ids: leave out these row ids - used to compute the count as it stood before the current
+        request's own contribution, so a crossing can be detected even when this request added more than one
+        matching row to it. ``PER_ATTEMPT`` excludes them from the rows fetched, before the attempt reduction
+        runs (:func:`count_subject_attempts`); ``PER_REQUEST`` excludes them from the row sum only, never from
+        the ``reset_on_success`` floor lookup (:func:`count_subject_events`, :func:`_count_events`) - excluding
+        a row from that too would move the floor itself whenever the excluded row is the success it would
+        otherwise stand on, making count_before no longer simply "the same count with fewer rows".
     :return: the event count (``PER_REQUEST``) or the attempt count (``PER_ATTEMPT``)
     """
     sql_filters, row_filter = _count_scoping(policy)
@@ -997,13 +1038,14 @@ def _policy_count(policy: ConditionalAccessPolicy, subject: LockSubject, window_
     if policy.count_mode == CountMode.PER_ATTEMPT:
         return count_subject_attempts(subject, policy.counter_types_to_track, window_seconds,
                                       window_end=window_end, since_last_success=since_last_success,
-                                      row_filter=row_filter)
+                                      row_filter=row_filter, exclude_row_ids=exclude_row_ids)
     return count_subject_events(subject, policy.counter_types_to_track, window_seconds,
                                 window_end=window_end, since_last_success=since_last_success,
-                                extra_filters=sql_filters)
+                                extra_filters=sql_filters, exclude_row_ids=exclude_row_ids)
 
 
-def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end: datetime) -> int:
+def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end: datetime,
+                     exclude_row_ids: "tuple[int, ...] | None" = None) -> int:
     """
     Count a source-IP-target policy's subject over its window, per the policy's
     :attr:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicy.count_mode`: distinct targeted accounts
@@ -1016,22 +1058,30 @@ def _policy_count_ip(policy: ConditionalAccessPolicy, source_ip: str, window_end
     :param policy: the policy whose ``time_window_seconds`` and ``counter_types_to_track`` are counted over
     :param source_ip: the client IP to count for
     :param window_end: the instant the window ends (reference time)
+    :param exclude_row_ids: leave out these row ids (see :func:`_policy_count` for how ``PER_REQUEST`` and
+        ``PER_ATTEMPT`` apply this differently) - has no effect on ``DISTINCT_USERS`` (see below)
     :return: the distinct-account count (``DISTINCT_USERS``), event count (``PER_REQUEST``) or attempt count
         (``PER_ATTEMPT``)
     """
     sql_filters, row_filter = _count_scoping(policy)
+    if policy.count_mode == CountMode.DISTINCT_USERS:
+        # Excluding this request's own rows is meaningless here: the signal is the *distinct* accounts seen,
+        # so an account that already appears via an earlier, unrelated row is already one of them regardless
+        # of this one - unlike a monotonic per-row/per-attempt count, "before this request's own contribution"
+        # is not simply "one row/attempt fewer". Callers that need count_before for crossing-detection
+        # (see _evaluate_policy) fall back to count - 1 for this mode instead of calling this with ids to
+        # exclude.
+        return count_distinct_users_for_ip(source_ip, policy.counter_types_to_track,
+                                           _effective_window_seconds(policy, window_end), window_end=window_end,
+                                           extra_filters=sql_filters)
     window_seconds = _effective_window_seconds(policy, window_end)
     if policy.count_mode == CountMode.PER_REQUEST:
         return count_ip_events(source_ip, policy.counter_types_to_track,
                                window_seconds, window_end=window_end,
-                               extra_filters=sql_filters)
-    if policy.count_mode == CountMode.PER_ATTEMPT:
-        return count_ip_attempts(source_ip, policy.counter_types_to_track,
-                                 window_seconds, window_end=window_end,
-                                 row_filter=row_filter)
-    return count_distinct_users_for_ip(source_ip, policy.counter_types_to_track,
-                                       window_seconds, window_end=window_end,
-                                       extra_filters=sql_filters)
+                               extra_filters=sql_filters, exclude_row_ids=exclude_row_ids)
+    return count_ip_attempts(source_ip, policy.counter_types_to_track,
+                             window_seconds, window_end=window_end,
+                             row_filter=row_filter, exclude_row_ids=exclude_row_ids)
 
 
 def get_subject_lock(subject: "LockSubject | None", now: datetime | None = None, *,
@@ -1383,7 +1433,8 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     policies = get_ca_session().scalars(
         select(ConditionalAccessPolicy)
         .options(selectinload(ConditionalAccessPolicy.conditions))
-        .where(ConditionalAccessPolicy.enabled.is_(True))
+        # ``== true()`` rather than ``.is_(True)``: Oracle has no boolean type and "IS 1" is not valid SQL there
+        .where(ConditionalAccessPolicy.enabled == true())
         .order_by(ConditionalAccessPolicy.priority.asc())
     ).all()
     outcomes: list[ConditionalAccessOutcome] = []
@@ -1474,6 +1525,11 @@ def _stage_denies(stage: ConditionalAccessPolicyStage, count: int) -> bool:
     Whether *stage* refuses the request at *count*: it carries a ``DENY`` action whose per-action condition is met
     (see :func:`_action_fires`), given that *stage* is the one :func:`_stage_in_range` returned for it. An
     unparsable action type is skipped rather than treated as a refusal.
+
+    Pre-auth, *count* is read before this request has logged anything of its own (see
+    :func:`_policy_access_decision`), so there is no "this request's own contribution" to exclude the way
+    :func:`_evaluate_policy` does post-auth - ``count - 1`` is passed as the *count_before* :func:`_action_fires`
+    takes, reproducing the plain ``count == threshold`` a fire-once ``DENY`` has always used here.
     """
     for action in stage.actions:
         try:
@@ -1482,7 +1538,7 @@ def _stage_denies(stage: ConditionalAccessPolicyStage, count: int) -> bool:
             continue
         if action_type != ConditionalAccessAction.DENY:
             continue
-        if _action_fires(action, stage.failure_threshold, count):
+        if _action_fires(action, stage.failure_threshold, count, count - 1):
             return True
     return False
 
@@ -1537,8 +1593,12 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
     includes it).
 
     Each action decides for itself whether it fires. By default an action fires
-    once, when the failure count reaches its stage's threshold exactly: an action
-    at threshold 8 runs on the 8th failure and not again on the 9th. An action with
+    once, on the evaluation that carries the failure count to at or above its
+    stage's threshold: an action at threshold 8 usually runs on the 8th failure
+    and not again on the 9th, and also runs if a single step (concurrent
+    requests, or several tracked rows staged by one request) skipped 8 outright -
+    see :func:`_action_fires` for the narrower race this still does not close
+    (several such requests all committing before any of them is evaluated). An action with
     ``retrigger_above_threshold`` fires on every request while the count stays
     within the range its stage owns - at or above threshold 8, but below the next
     stage's threshold - so a single stage can email once at 8 while keeping the
@@ -1587,7 +1647,8 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
         select(ConditionalAccessPolicy)
         .options(selectinload(ConditionalAccessPolicy.conditions))
         .join(ConditionalAccessPolicy.counter_types)
-        .where(ConditionalAccessPolicy.enabled.is_(True),
+        # ``== true()`` rather than ``.is_(True)``: Oracle has no boolean type and "IS 1" is not valid SQL there
+        .where(ConditionalAccessPolicy.enabled == true(),
                ConditionalAccessPolicyCounterType.counter_type == event_type)
         .order_by(ConditionalAccessPolicy.priority.asc())
     ).all()
@@ -1635,15 +1696,30 @@ def _stage_in_range(policy: ConditionalAccessPolicy, count: int) -> ConditionalA
     return next((stage for stage in policy.stages if stage.failure_threshold <= count), None)
 
 
-def _action_fires(action: ConditionalAccessStageAction, threshold: int, count: int) -> bool:
+def _action_fires(action: ConditionalAccessStageAction, threshold: int, count: int, count_before: int) -> bool:
     """
-    Whether *action* fires at *count*, given that its stage is the one :func:`_stage_in_range` returned for it -
-    this does not itself check that *count* falls in the stage's range.
+    Whether *action* fires given *count* and *count_before* (the same count as it stood immediately before the
+    current evaluation's own contribution - see :func:`_count_events`/:func:`_count_attempts`'s own
+    ``exclude_row_ids``), given that its stage is the one
+    :func:`_stage_in_range` returned for *count* - this does not itself check that *count* falls in the stage's
+    range.
 
-    Default (``retrigger_above_threshold`` unset): the action fires only when the count equals the threshold
-    exactly, so it triggers once as the count climbs into the stage's range. With ``retrigger_above_threshold`` the
-    action fires on every request for as long as the count stays in that range, so one stage can e.g. email once at
-    its threshold while keeping the user locked for every further failure up to the next one.
+    Default (``retrigger_above_threshold`` unset): the action fires only when this evaluation is the one that
+    carried the count from below the threshold to at or above it - ``count_before < threshold <= count`` - so it
+    triggers once as the count climbs into the stage's range, however large a single step that climb was. A step
+    of exactly one is the common case, and there ``count_before < threshold <= count`` is exactly
+    ``count == threshold``; the wider test additionally catches a step that skips the threshold value itself, e.g.
+    two concurrent requests each committing their own row before either counts, so both observe a count one past
+    what either alone would have produced, or one request staging more than one tracked row at once (a
+    multichallenge flow). Without it such a step would never satisfy the fire-once condition and the action would
+    silently never trigger for that crossing at all. Residual case this does not cover: several such requests all
+    committing before *any* of them is evaluated leaves every one of them with a count_before already at or past
+    the threshold (each excludes only its own rows, and every other one's row is already visible), so none
+    detects a crossing either. Resolving that fully would mean serializing count-then-act across concurrent
+    requests for the same subject, which no part of this module does - counting stays a plain read against
+    whatever is committed at the time, never a lock. With ``retrigger_above_threshold`` the action fires on every
+    request for as long as the count stays in that range, so one stage can e.g. email once at its threshold while
+    keeping the user locked for every further failure up to the next one.
 
     This is a live classification of the *current* count, not a state the policy remembers: once a more severe
     stage owns the count, :func:`_stage_in_range` stops returning this stage and its actions stop firing - but
@@ -1651,15 +1727,16 @@ def _action_fires(action: ConditionalAccessStageAction, threshold: int, count: i
     ``reset_on_success`` floor), at which point this stage owns the count once more and a re-triggering action
     fires again. There is no one-way hand-over; escalation and de-escalation follow the count symmetrically.
     """
-    return action.retrigger_above_threshold or count == threshold
+    return action.retrigger_above_threshold or (count_before < threshold <= count)
 
 
-def _pending_actions(stage: ConditionalAccessPolicyStage, count: int) -> list[ConditionalAccessStageAction]:
+def _pending_actions(stage: ConditionalAccessPolicyStage, count: int,
+                     count_before: int) -> list[ConditionalAccessStageAction]:
     """
     The actions of *stage* that fire at *count* (see :func:`_action_fires`), given that *stage* is the one
     :func:`_stage_in_range` returned for it.
     """
-    return [action for action in stage.actions if _action_fires(action, stage.failure_threshold, count)]
+    return [action for action in stage.actions if _action_fires(action, stage.failure_threshold, count, count_before)]
 
 
 def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_type: str,
@@ -1671,11 +1748,13 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
     done).
 
     Each action decides for itself whether it fires (see :func:`_action_fires`):
-    by default an action triggers only when the count equals its stage's
-    ``failure_threshold`` exactly; an action with ``retrigger_above_threshold``
-    fires on every request for as long as the count stays in that stage's range.
-    So one stage can, for example, email once at threshold 8 while keeping the
-    user locked for every further failure up to the threshold that supersedes it.
+    by default an action triggers only on the evaluation that carries the count
+    from below its stage's ``failure_threshold`` to at or above it - usually the
+    exact count equal to the threshold, but also a count that skipped past it in
+    one step; an action with ``retrigger_above_threshold`` fires on every request
+    for as long as the count stays in that stage's range. So one stage can, for
+    example, email once at threshold 8 while keeping the user locked for every
+    further failure up to the threshold that supersedes it.
 
     :return: what this policy produced - the outcomes describing what was done, empty if no stage triggered, and
         the targets it restricted. A dry run still produces outcomes, recording what enforcing the policy would
@@ -1727,13 +1806,36 @@ def _evaluate_policy(policy: ConditionalAccessPolicy, context: CAContext, event_
     # it cannot reach its own threshold again (the count has moved past it), and a stage above it has not been
     # reached yet. One stage per policy per request, therefore, with no severity search needed; contrast the
     # pre-auth DENY decision in _policy_access_decision, which asks the same owner a narrower question.
-    # By default, an action fires once, exactly at the threshold (a threshold-8 email sends on the 8th failure, not
-    # again at 9); retrigger_above_threshold keeps it firing for as long as this stage owns the count. Ownership is
-    # recomputed fresh from the current count on every request, not remembered, so a milder stage's re-triggering
-    # action stops once a more severe stage takes over and fires again if the count later drops back into its own
-    # range (the window sliding old events out, or a reset_on_success floor) - there is no permanent hand-over.
+    # By default, an action fires once, on the evaluation that carries the count to at or above the threshold (a
+    # threshold-8 email sends on the 8th failure, not again at 9, and also fires if a step skipped 8 outright - see
+    # count_before below); retrigger_above_threshold keeps it firing for as long as this stage owns the count.
+    # Ownership is recomputed fresh from the current count on every request, not remembered, so a milder
+    # stage's re-triggering action stops once a more severe stage takes over and fires again if the count
+    # later drops back into its own range (the window sliding old events out, or a reset_on_success floor) -
+    # there is no permanent hand-over.
     triggered_stage = _stage_in_range(policy, count)
-    pending_actions = _pending_actions(triggered_stage, count) if triggered_stage else []
+    if triggered_stage is None:
+        return ConditionalAccessEvaluation()
+    # count_before is count as it stood immediately before *this request's own* rows joined it, used by
+    # _action_fires to tell "this evaluation is the one that crossed the threshold" apart from "a more severe
+    # stage already owned an equal-or-higher count on a previous evaluation" - see _count_events/_count_attempts and
+    # _action_fires. context.own_row_ids names exactly this request's own rows (however many one request stages) -
+    # deliberately not context's attempt_id, since that id can be shared with an *earlier* request of the same
+    # multi-request attempt whose rows an earlier evaluation already counted (see CAContext.own_row_ids). Falls
+    # back to count - 1, i.e. the plain count == threshold this replaces, when either nothing was written (a
+    # caller outside a request context) or the mode is DISTINCT_USERS, where "this request's own contribution" is
+    # not well-defined (see _policy_count_ip) - both fall back rather than regress, at the cost of not detecting a
+    # step that skipped the threshold value in those two cases.
+    own_row_ids = context.own_row_ids
+    if own_row_ids and policy.count_mode != CountMode.DISTINCT_USERS:
+        if policy.target == ConditionalAccessTarget.SOURCE_IP:
+            count_before = _policy_count_ip(policy, source_ip, now, exclude_row_ids=own_row_ids)
+        else:
+            count_before = _policy_count(policy, subject, now, since_last_success=policy.reset_on_success,
+                                         exclude_row_ids=own_row_ids)
+    else:
+        count_before = count - 1
+    pending_actions = _pending_actions(triggered_stage, count, count_before)
     if not pending_actions:
         return ConditionalAccessEvaluation()
 
@@ -1774,28 +1876,47 @@ def _action_expiry(stage_action: ConditionalAccessStageAction, now: datetime) ->
     return now + timedelta(seconds=duration) if duration is not None else None
 
 
+#: The largest duration (in seconds) a LOCK_USER / BLOCK_IP action may store. Chosen to sit just under where
+#: `now + timedelta(seconds=duration)` (engine.py's LOCK_USER/BLOCK_IP execution) starts raising OverflowError -
+#: computed exactly as 251_612_956_799 seconds (datetime.max - a 2026 "now"), so this is that value with a large
+#: safety margin rather than a rounder, smaller number: a smaller cap would reject a duration that used to parse
+#: and execute successfully before this bound existed, which is a behavior change this fix does not need to make
+#: to close the actual bug. Without any cap, a policy carrying a duration past the true boundary saves
+#: successfully and then never actually locks or blocks anyone - the blanket `except Exception` around action
+#: execution swallows the OverflowError and only logs it - silently defeating the very restriction the policy was
+#: configured for. Deliberately not equal to policy.py's MAX_COLUMN_INT: that bound exists for actual
+#: database-column widths, and action_value (this field's own storage) is JSON, so no column width applies here.
+MAX_LOCK_DURATION_SECONDS = 250_000_000_000
+
+
 def parse_lock_duration_seconds(action_value: Any) -> int | None:
     """
     Parse the ``LOCK_USER`` / ``BLOCK_IP`` restriction duration (in seconds) from
     a stage action's JSON ``action_value``. Accepts a plain integer, a numeric
     string, or a dict carrying ``duration_seconds`` / ``duration``. Returns
-    ``None`` for anything that is not a positive integer number of seconds.
+    ``None`` for anything that is not a positive integer of at most
+    :data:`MAX_LOCK_DURATION_SECONDS` seconds.
 
     This is also the write path's validator
     (:func:`~privacyidea.lib.conditional_access.policy._validate_duration_action_value`),
     so what can be stored and what the engine can act on are the same set by
     construction rather than by two descriptions agreeing.
     """
-    if isinstance(action_value, bool):
-        # bool is an int subclass; a boolean is never a valid duration.
-        return None
     if isinstance(action_value, dict):
         action_value = action_value.get("duration_seconds", action_value.get("duration"))
+    if isinstance(action_value, bool):
+        # bool is an int subclass; a boolean is never a valid duration - whether given directly or unwrapped
+        # from a dict (e.g. {"duration_seconds": true}), since int(True) == 1 would otherwise silently pass as
+        # a one-second duration.
+        return None
     try:
         seconds = int(action_value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
+        # OverflowError specifically covers a non-finite float (float('inf')/float('-inf')) - int() raises that
+        # rather than ValueError, and a bare Infinity token is valid input to Python's stdlib json.loads, so it
+        # can arrive here straight from a request body.
         return None
-    return seconds if seconds > 0 else None
+    return seconds if 0 < seconds <= MAX_LOCK_DURATION_SECONDS else None
 
 
 class _SafeFormatDict(dict):

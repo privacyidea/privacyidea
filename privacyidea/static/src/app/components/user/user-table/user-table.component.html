@@ -29,7 +29,9 @@
         role="status">
         <mat-icon aria-hidden="true">warning_amber</mat-icon>
         <span>
-          <span i18n>These resolvers could not be queried, so the list may be incomplete:</span>
+          <span i18n="@@user.theseResolversCouldNot"
+            >These resolvers could not be queried, so the list may be incomplete:</span
+          >
           <!-- The gap to the first name is whitespace between elements, which the compiler drops unless it is
                spelled out. -->
           &ngsp;
@@ -55,6 +57,7 @@
             [showClearButton]="filterHTMLInputElement.value.length > 0">
             <input
               #filterHTMLInputElement
+              [appRefocusAfterReload]="userService.usersResource.isLoading()"
               [appFilterAutocomplete]="userService.apiFilterKeys"
               (input)="userService.handleFilterInput($event)"
               [value]="userService.filterDraft().filterString"
@@ -86,10 +89,11 @@
             <ng-container [matColumnDef]="column.key">
               <th
                 *matHeaderCellDef
+                [ngClass]="'col-width-' + column.width"
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
-                  <div class="margin-left-16 flex">
+                  <div class="flex">
                     @if (apiFilterKeys.includes(column.key)) {
                       <button
                         (click)="onFilterClick(column.key)"
@@ -117,9 +121,8 @@
               </th>
               <td
                 *matCellDef="let element; let row"
-                [ngClass]="{
-                  'table-checkbox': column.key === 'select'
-                }"
+                [class.table-checkbox]="column.key === 'select'"
+                [ngClass]="'col-width-' + column.width"
                 mat-cell>
                 <div>
                   @switch (column.key) {
@@ -135,14 +138,15 @@
                     }
                     @case ("resolver") {
                       <app-copyable [copyText]="element[column.key]">
-                        <a
-                          (click)="onClickResolver(element[column.key]); $event.preventDefault()"
-                          (keydown.enter)="onClickResolver(element[column.key]); $event.preventDefault()"
-                          [attr.aria-label]="linkLabel(column.label)"
-                          role="button"
-                          tabindex="0">
+                        @if (resolverLinkAllowed()) {
+                          <a
+                            [attr.aria-label]="linkLabel(column.label)"
+                            [routerLink]="resolverLink(element[column.key])">
+                            {{ element[column.key] }}
+                          </a>
+                        } @else {
                           {{ element[column.key] }}
-                        </a>
+                        }
                       </app-copyable>
                     }
                     @default {

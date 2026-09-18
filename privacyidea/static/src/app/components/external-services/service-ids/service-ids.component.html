@@ -31,6 +31,7 @@
           [showClearButton]="filterString().length > 0">
           <input
             #filterHTMLInputElement
+            [appRefocusAfterReload]="serviceIdService.serviceIdResource.isLoading()"
             (input)="onFilterInput(filterHTMLInputElement.value)"
             [value]="filterString()"
             aria-label="Filter Input"
@@ -104,6 +105,7 @@
       <ng-container matColumnDef="id">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-s'"
           i18n="@@common.idColumn"
           mat-header-cell
           mat-sort-header
@@ -111,6 +113,7 @@
         >
         <td
           *matCellDef="let service"
+          [ngClass]="'col-width-s'"
           mat-cell>
           {{ service.id }}
         </td>
@@ -119,6 +122,7 @@
       <ng-container matColumnDef="servicename">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-m'"
           i18n="@@common.name"
           mat-header-cell
           mat-sort-header
@@ -126,6 +130,7 @@
         >
         <td
           *matCellDef="let service"
+          [ngClass]="'col-width-m'"
           mat-cell>
           <app-copyable [copyText]="service.servicename">
             <a
@@ -143,6 +148,7 @@
       <ng-container matColumnDef="description">
         <th
           *matHeaderCellDef
+          [ngClass]="'col-width-xl'"
           i18n="@@common.description"
           mat-header-cell
           mat-sort-header
@@ -150,6 +156,7 @@
         >
         <td
           *matCellDef="let service"
+          [ngClass]="'col-width-xl'"
           mat-cell>
           {{ service.description }}
         </td>

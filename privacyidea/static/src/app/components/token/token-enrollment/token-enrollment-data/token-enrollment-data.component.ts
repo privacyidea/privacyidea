@@ -25,6 +25,7 @@ import {
   EnrollmentResponseDetail,
   TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { CertificateDataComponent } from "@components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component";
 import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
 import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
 import { QrCodeTextComponent } from "@components/token/token-enrollment/token-enrollment-data/qr-code-text/qr-code-text.component";
@@ -43,6 +44,7 @@ import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "@serv
   imports: [
     MatButton,
     MatIcon,
+    CertificateDataComponent,
     OtpKeyComponent,
     OtpValuesComponent,
     QrCodeTextComponent,
@@ -50,8 +52,7 @@ import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "@serv
     TiqrEnrollUrlComponent
   ],
   standalone: true,
-  templateUrl: "./token-enrollment-data.component.html",
-  styleUrl: "./token-enrollment-data.component.scss"
+  templateUrl: "./token-enrollment-data.component.html"
 })
 export class TokenEnrollmentDataComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -61,6 +62,7 @@ export class TokenEnrollmentDataComponent {
   enrollmentParameters = input.required<EnrollTokenArguments>();
   tokenType = input.required<string>();
   enrollmentResponseChange = output<EnrollmentResponse>();
+  closeBlockedReasonChange = output<string>();
 
   enrolledData = linkedSignal(() => this.enrolledInputData());
   protected readonly serial = computed(() => this.enrolledData()?.serial ?? "");
@@ -84,19 +86,12 @@ export class TokenEnrollmentDataComponent {
       ""
   );
   protected readonly verify_message = computed(() => this.enrolledData()?.verify?.message ?? null);
+  protected readonly isCertificate = computed(() => this.tokenType() === "certificate");
+  protected readonly certificate = computed(() => (this.enrolledData()?.["certificate"] as string) ?? "");
+  protected readonly pkcs12 = computed(() => (this.enrolledData()?.["pkcs12"] as string) ?? "");
+  protected readonly pkcs12Password = computed(() => (this.enrolledData()?.["pkcs12_password"] as string) ?? "");
 
   showQRCode = computed(() => !NO_QR_CODE_TOKEN_TYPES.includes(this.tokenType()));
-  protected readonly hasEnrollmentData = computed(
-    () =>
-      !!(
-        (this.showQRCode() && this.qrCode()) ||
-        this.enrolledData()?.["password"] ||
-        (this.enrolledData()?.otpkey?.value && !this.enrolledData()?.["otps"] && this.showQRCode()) ||
-        this.tokenType() === "tiqr" ||
-        this.tokenType() === "registration" ||
-        this.enrolledData()?.["otps"]
-      )
-  );
   // A token waiting for enrollment verification cannot be regenerated: the backend rejects any
   // further /token/init for it until a valid "verify" value is supplied, so offering the button
   // would only ever produce an error.

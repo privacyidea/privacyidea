@@ -100,7 +100,22 @@ Failure
      because a required policy is missing.
    ``CHALLENGE_DECLINED``
      a challenge was rejected out of band, for example a push notification
-     declined in the authenticator app.
+     declined in the authenticator app, without the app saying why. Either it is
+     an older app that does not send a decline reason, or it sent one this
+     server version does not know.
+   ``CHALLENGE_DECLINED_UNKNOWN_TRIGGER``
+     the user rejected a push challenge stating that they did not trigger it.
+     This is the user reporting someone else's attempt rather than a credential
+     the server found wrong, and the statement is signed by the smartphone, so
+     whoever triggered the challenge can neither forge nor suppress it. Worth a
+     policy of its own with a low threshold: if the challenge came from
+     ``/validate/check``, the first factor was already accepted, so somebody
+     else is holding a working credential.
+   ``CHALLENGE_CANCELLED``
+     the user aborted a push challenge they triggered themselves. Abandonment
+     rather than a failed attempt, which is why the ready-made failure rate
+     limits leave it out - counting it would spend part of a brute-force budget
+     on users changing their mind.
    ``ENROLLMENT_CANCELED_FAIL``
      cancelling an enrollment failed.
    ``NOT_AUTHORIZED``
@@ -193,7 +208,9 @@ Challenge-response
      disabled or a failcounter filled up in the meantime. This reason is the
      fallback for a token type that refuses the answer without naming a state.
    ``CHALLENGE_DECLINED_ON_DEVICE``
-     the challenge was rejected on the device.
+     the challenge was rejected on the device. Carried by all three decline
+     event types and says only where the refusal came from; which refusal it was
+     is what the event type names.
 
 A successful authentication needs no reason, and neither does one still in
 flight. An entry is also without one where nothing determined a cause, so no

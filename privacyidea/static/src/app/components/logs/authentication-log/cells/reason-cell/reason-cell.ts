@@ -66,7 +66,7 @@ export class ReasonCell {
   // has neither, and a placeholder on every one of those rows would be noise.
   readonly showsPlaceholder = computed<boolean>(() => !this.reasons()?.length && !!this.detail());
 
-  readonly detailLabel = $localize`Show which token was found to be what`;
+  readonly detailLabel = $localize`:@@authLog.showWhatEachUser:Show what each of the user's tokens found`;
 
   openDetail(detail: ReasonDetail): void {
     this.dialogService.openDialog({

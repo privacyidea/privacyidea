@@ -10,7 +10,7 @@ reach it - it runs against the token database. Apply the same change to the audi
 READ_BEFORE_UPDATE.md.
 
 Revision ID: e0f1a2b3c4d5
-Revises: d3e8b1c47f92
+Revises: b8c9d0e1f2a3
 Create Date: 2026-08-17 00:00:00.000000
 
 """
@@ -22,7 +22,7 @@ from sqlalchemy.exc import DatabaseError
 
 # revision identifiers, used by Alembic.
 revision = 'e0f1a2b3c4d5'
-down_revision = 'd3e8b1c47f92'
+down_revision = 'b8c9d0e1f2a3'
 branch_labels = None
 depends_on = None
 
@@ -47,9 +47,15 @@ def upgrade():
                                   type_=sa.Unicode(length=200),
                                   existing_nullable=True)
     except DatabaseError as exx:
+        # Re-raised, not swallowed: returning here would let this function complete "successfully" even though
+        # the column was never actually altered, and Alembic stamps a revision as applied the moment upgrade()
+        # returns without raising - regardless of whether it did what it says. A caller stuck on a lock timeout,
+        # denied by grants that don't cover ALTER TABLE, or out of disk space during the table rebuild would end
+        # up permanently behind this revision while the database claims to be at it, with no further "pi-manage
+        # db upgrade" ever revisiting it (current == head, nothing left to run).
         print("Could not increase 'serial' column size in 'pidea_audit' table.")
         print(exx)
-        return
+        raise
     if counts_entries:
         print(f"Updated the 'serial' column of {entry_count} audit entries in "
               f"{time.monotonic() - started:.0f} seconds.")

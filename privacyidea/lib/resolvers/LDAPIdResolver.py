@@ -787,6 +787,18 @@ class IdResolver(UserIdResolver):
                 # Every requested ID this entry could satisfy: the exact match plus any case
                 # variants of it, so two aliases of one user (see requested_ids_lower above) both
                 # get a result from the single entry the server returned for them.
+                #
+                # This assumes that IDs differing only in case name the same user, which holds
+                # wherever the uid attribute matches case-insensitively -- caseIgnoreMatch, the
+                # usual matching rule for cn and uid, and the case that made the mapping
+                # necessary in the first place. A directory that matches the uid attribute
+                # case-sensitively can hold two distinct entries whose IDs differ only in case,
+                # and there the assumption is wrong: both entries land in the same bucket, so
+                # each of them writes its attributes to both requested IDs and the entry the
+                # server returns last wins. One of the two users is then shown the other's
+                # attributes. Telling the two cases apart would mean reading the server's
+                # matching rule for the attribute, which is why this is left as an assumption;
+                # get_user_info() looks a single ID up by an exact filter and is unaffected.
                 matched_user_ids = set(requested_ids_lower.get(returned_id.lower(), ()))
                 if not matched_user_ids:  # pragma: no cover
                     log.info(f"Ignoring LDAP object with uid {returned_id!r}, which was not searched for.")

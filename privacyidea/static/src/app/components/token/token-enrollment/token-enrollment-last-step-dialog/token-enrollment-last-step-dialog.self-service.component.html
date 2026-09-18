@@ -17,18 +17,23 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
+  width="l"
+  [cancelButtonDisabled]="!!closeBlockedReason()"
+  [cancelButtonTooltip]="closeBlockedReason()"
   cancelButtonLabel="Close"
   i18n-cancelButtonLabel="@@common.close"
   i18n-title="@@token.tokenSuccessfully"
   title="Token Successfully Enrolled">
   <app-token-enrolled-text
     (switchRoute)="onSwitchRoute()"
+    [navigationBlocked]="!!closeBlockedReason()"
     [containerSerial]="containerSerial"
     [rollover]="data.rollover ?? false"
     [serial]="serial"></app-token-enrolled-text>
 
   @if (data.showEnrollData !== false && data.response) {
     <app-token-enrollment-data
+      (closeBlockedReasonChange)="onCloseBlockedReasonChange($event)"
       (enrollmentResponseChange)="onEnrollmentResponseChange($event)"
       [enrolledInputData]="data.response.detail"
       [enrollmentParameters]="data.enrollParameters"

@@ -42,7 +42,6 @@ import { lastValueFrom } from "rxjs";
   standalone: true,
   imports: [],
   templateUrl: "./enroll-push.component.html",
-  styleUrl: "./enroll-push.component.scss",
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollPushComponent) }]
 })
 export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
@@ -155,7 +154,7 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
         enrollmentResponse,
         showCancelButton: canCancel,
         showCloseButton: true,
-        cancelConfirmationMessage: $localize`When canceling the rollout the token will be deleted even when the QR code was scanned.`
+        cancelConfirmationMessage: $localize`:@@token.whenCancelingRolloutToken:When canceling the rollout the token will be deleted even when the QR code was scanned.`
       },
       configOverride: { disableClose: true }
     });

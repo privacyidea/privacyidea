@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -45,11 +46,14 @@ import {
 } from "@services/periodic-task/periodic-task.service";
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { firstValueFrom, lastValueFrom } from "rxjs";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 @Component({
   selector: "app-periodic-task",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
+    NgClass,
     MatTableModule,
     MatSortModule,
     MatIconModule,
@@ -83,6 +87,17 @@ export class PeriodicTaskComponent implements OnInit {
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   displayedColumns: string[] = ["select", "name", "taskmodule", "interval", "nodes", "options", "active"];
+
+  // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+  // to, keyed by column name. "options" is intentionally omitted - it holds a variable-length
+  // list of task options (more so in detailed view) that stays flexible instead of a fixed tier.
+  readonly columnWidths: Record<string, string> = {
+    name: "m",
+    taskmodule: "s",
+    interval: "s",
+    nodes: "m",
+    active: "s"
+  };
 
   protected readonly Object = Object;
   detailedView = signal<boolean>(false);

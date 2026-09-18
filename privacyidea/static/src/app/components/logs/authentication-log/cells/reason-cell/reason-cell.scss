@@ -19,11 +19,17 @@
   white-space: nowrap;
 }
 
-// Stands in for the reason an entry has none of, so the cell is not an empty column beside a lone button. Muted, in
-// the column's own size and face: it is a pointer rather than a value, and reads as one by being the quiet thing in
-// the row - it needs no styling of its own on top of that.
+// Groups the placeholder link with the icon button that can follow it, so the tooltip bound here covers both as one
+// area instead of each control raising its own.
+.reason-detail-trigger {
+  display: flex;
+  align-items: center;
+}
+
+// Stands in for the reason an entry has none of, so the cell is not an empty column beside a lone button. It opens
+// the same dialog the icon button beside it does, so it reads as a link rather than inert text.
 .reason-placeholder {
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--mat-sys-primary);
   white-space: nowrap;
 }
 

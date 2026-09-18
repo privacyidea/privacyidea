@@ -84,6 +84,7 @@ import { NodeInfo, SystemService, SystemServiceInterface } from "@services/syste
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { concat, last, lastValueFrom, take } from "rxjs";
 import { RealmDeleteAttributesDialogComponent } from "./realm-delete-attributes-dialog/realm-delete-attributes-dialog.component";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 interface ResolverWithPriority {
   name: string;
@@ -95,9 +96,12 @@ type NodeResolversMap = Record<string, ResolverWithPriority[]>;
 const ALL_NODES_VALUE = "__all_nodes__";
 const NO_NODE_ID = "";
 
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// to. "resolvers" and "actions" have no tier: resolvers holds a per-node list that can badly
+// overflow, and actions is a multi-button cell, so both stay flexible instead of forcing a fit.
 const columnKeysMap = [
-  { key: "name", label: $localize`:@@common.realm:Realm` },
-  { key: "isDefault", label: $localize`:@@common.default:Default` },
+  { key: "name", label: $localize`:@@common.realm:Realm`, width: "m" },
+  { key: "isDefault", label: $localize`:@@common.default:Default`, width: "s" },
   { key: "resolvers", label: $localize`:@@common.resolvers:Resolvers` },
   { key: "actions", label: $localize`:@@common.actions:Actions` }
 ];
@@ -106,6 +110,7 @@ const columnKeysMap = [
   selector: "app-realm-table",
   standalone: true,
   imports: [
+    RefocusAfterReloadDirective,
     ClearableInputComponent,
     CopyableComponent,
     MatButtonModule,

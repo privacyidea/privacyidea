@@ -1,11 +1,7 @@
-@use "styles";
-@use "table";
-
 .flex-column {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 500px;
   padding: 8px 0;
 }
 

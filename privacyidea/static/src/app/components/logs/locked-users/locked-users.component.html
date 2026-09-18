@@ -23,21 +23,22 @@
     <mat-form-field
       class="locked-users-table-filter"
       subscriptSizing="dynamic">
-      <mat-label i18n>Filter Locked Users ...</mat-label>
+      <mat-label i18n="@@lockedUsers.filterLockedUsers">Filter Locked Users ...</mat-label>
       <app-clearable-input
         (clearButtonClick)="clearFilter()"
         [showClearButton]="casService.lockedUsersFilter().isNotEmpty">
         <input
           #filterHTMLInputElement
+          [appRefocusAfterReload]="casService.lockedUsersResource.isLoading()"
           (input)="handleFilterInput($event)"
           [value]="casService.lockedUsersFilter().value"
           aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
+          i18n-aria-label="@@common.filterInput"
+          i18n-placeholder="@@lockedUsers.exampleQueryUsernamesAlice"
           matInput
           placeholder="Example query: 'usernames: alice realms: myrealm'" />
       </app-clearable-input>
-      <mat-hint i18n>
+      <mat-hint i18n="@@lockedUsers.useWildcardWrapFilter">
         Use * as a wildcard. Wrap the filter value in quotation marks if it contains colons or spaces.
       </mat-hint>
     </mat-form-field>
@@ -58,14 +59,14 @@
         class="action-button-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>lock_open</mat-icon>
-        <span i18n>Unlock</span>
+        <span i18n="@@common.unlock">Unlock</span>
       </button>
       <button
         (click)="deleteExpired()"
         class="action-button-delete-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
-        <span i18n>Delete Expired</span>
+        <span i18n="@@token.deleteExpired">Delete Expired</span>
       </button>
     }
   </div>
@@ -77,7 +78,7 @@
       [dataSource]="dataSource()"
       aria-label="Locked Users Table"
       class="locked-users-table"
-      i18n-aria-label
+      i18n-aria-label="@@lockedUsers.lockedUsersTable"
       mat-table>
       <ng-container matColumnDef="select">
         <th
@@ -105,12 +106,12 @@
           *matHeaderCellDef
           mat-header-cell>
           <span class="header-cell">
-            <span i18n>Username</span>
+            <span i18n="@@common.username">Username</span>
             <button
               (click)="onKeywordClick('usernames')"
               aria-label="Filter by username"
               class="filter-button"
-              i18n-aria-label
+              i18n-aria-label="@@lockedUsers.filterUsername"
               mat-icon-button
               type="button">
               <mat-icon class="keyword-button-icon margin-left-0">filter_alt</mat-icon>
@@ -119,7 +120,7 @@
               (click)="onSortClick('username')"
               aria-label="Sort by username"
               class="sort-button"
-              i18n-aria-label
+              i18n-aria-label="@@lockedUsers.sortUsername"
               mat-icon-button
               type="button">
               <mat-icon>{{ tableUtilsService.getSortIcon("username", sort()) }}</mat-icon>
@@ -153,7 +154,7 @@
             @if (row.username) {
               <app-filter-value-button
                 [value]="row.username"
-                i18n-label
+                i18n-label="@@common.filterUser"
                 label="Filter by this user"
                 (filterValue)="addFilterValue('usernames', $event)" />
             }
@@ -163,8 +164,8 @@
                 [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
                 aria-label="Show authentication log of this user"
                 class="auth-log-button"
-                i18n-aria-label
-                i18n-matTooltip
+                i18n-aria-label="@@lockedUsers.showAuthenticationLogUser"
+                i18n-matTooltip="@@lockedUsers.showAuthenticationLogUser"
                 matTooltip="Show authentication log of this user"
                 type="button">
                 <mat-icon class="mdi--list-lock auth-log-icon"></mat-icon>
@@ -179,9 +180,9 @@
           *matHeaderCellDef
           mat-header-cell>
           <span class="header-cell">
-            <span i18n>Realm</span>
+            <span i18n="@@common.realm">Realm</span>
             <app-multi-select-filter
-              i18n-label
+              i18n-label="@@common.realm"
               label="Realm"
               [options]="realmService.realmOptions()"
               [selected]="selectedFilterValues('realms')"
@@ -190,7 +191,7 @@
               (click)="onSortClick('realm')"
               aria-label="Sort by realm"
               class="sort-button"
-              i18n-aria-label
+              i18n-aria-label="@@lockedUsers.sortRealm"
               mat-icon-button
               type="button">
               <mat-icon>{{ tableUtilsService.getSortIcon("realm", sort()) }}</mat-icon>
@@ -213,9 +214,9 @@
           *matHeaderCellDef
           mat-header-cell>
           <span class="header-cell">
-            <span i18n>Resolver</span>
+            <span i18n="@@common.resolver">Resolver</span>
             <app-multi-select-filter
-              i18n-label
+              i18n-label="@@common.resolver"
               label="Resolver"
               [options]="resolverService.resolverOptions()"
               [selected]="selectedFilterValues('resolvers')"
@@ -224,7 +225,7 @@
               (click)="onSortClick('resolver')"
               aria-label="Sort by resolver"
               class="sort-button"
-              i18n-aria-label
+              i18n-aria-label="@@lockedUsers.sortResolver"
               mat-icon-button
               type="button">
               <mat-icon>{{ tableUtilsService.getSortIcon("resolver", sort()) }}</mat-icon>
@@ -247,9 +248,9 @@
           *matHeaderCellDef
           mat-header-cell>
           <span class="header-cell">
-            <span i18n>State</span>
+            <span i18n="@@common.state">State</span>
             <app-multi-select-filter
-              i18n-label
+              i18n-label="@@common.state"
               label="State"
               [options]="stateOptions"
               [selected]="selectedFilterValues('states')"
@@ -269,9 +270,9 @@
           *matHeaderCellDef
           mat-header-cell>
           <span class="header-cell">
-            <span i18n>Cause</span>
+            <span i18n="@@common.cause">Cause</span>
             <app-multi-select-filter
-              i18n-label
+              i18n-label="@@common.cause"
               label="Cause"
               [options]="causeOptions"
               [selected]="selectedFilterValues('causes')"
@@ -291,12 +292,12 @@
           *matHeaderCellDef
           mat-header-cell>
           <span class="header-cell">
-            <span i18n>Lock Expiry</span>
+            <span i18n="@@lockedUsers.lockExpiry">Lock Expiry</span>
             <button
               (click)="onSortClick('lock_expires_at')"
               aria-label="Sort by lock expiry"
               class="sort-button"
-              i18n-aria-label
+              i18n-aria-label="@@lockedUsers.sortLockExpiry"
               mat-icon-button
               type="button">
               <mat-icon>{{ tableUtilsService.getSortIcon("lock_expires_at", sort()) }}</mat-icon>
@@ -319,12 +320,12 @@
           *matHeaderCellDef
           mat-header-cell>
           <span class="header-cell">
-            <span i18n>Locked</span>
+            <span i18n="@@valueLabelLocked">Locked</span>
             <button
               (click)="onSortClick('locked_at')"
               aria-label="Sort by lock time"
               class="sort-button"
-              i18n-aria-label
+              i18n-aria-label="@@lockedUsers.sortLockTime"
               mat-icon-button
               type="button">
               <mat-icon>{{ tableUtilsService.getSortIcon("locked_at", sort()) }}</mat-icon>
@@ -343,12 +344,12 @@
           *matHeaderCellDef
           mat-header-cell>
           <span class="header-cell">
-            <span i18n>Error Message</span>
+            <span i18n="@@common.errorMessage">Error Message</span>
             <button
               (click)="onKeywordClick('error_messages')"
               aria-label="Filter by message"
               class="filter-button"
-              i18n-aria-label
+              i18n-aria-label="@@lockedUsers.filterMessage"
               mat-icon-button
               type="button">
               <mat-icon class="keyword-button-icon margin-left-0">filter_alt</mat-icon>
@@ -372,12 +373,12 @@
       <tr
         *matNoDataRow
         aria-label="No Data Row"
-        i18n-aria-label>
+        i18n-aria-label="@@common.noDataRow">
         <td
           [attr.colspan]="displayedColumns.length"
           aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
+          i18n="@@lockedUsers.noLockedUsersFound"
+          i18n-aria-label="@@common.noDataCell">
           No locked users found.
         </td>
       </tr>

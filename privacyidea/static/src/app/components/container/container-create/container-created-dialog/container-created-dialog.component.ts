@@ -18,10 +18,10 @@
  **/
 import { Component, inject, Signal, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialogContent, MatDialogTitle } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
 import { PiResponse } from "@app/app.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import {
   ContainerRegisterData,
   ContainerService,
@@ -37,9 +37,8 @@ export interface ContainerCreationDialogData {
 
 @Component({
   selector: "app-container-created-dialog",
-  imports: [MatDialogContent, MatDialogTitle, MatButtonModule, MatIcon],
-  templateUrl: "./container-created-dialog.component.html",
-  styleUrl: "./container-created-dialog.component.scss"
+  imports: [MatButtonModule, MatIcon, DialogWrapperComponent],
+  templateUrl: "./container-created-dialog.component.html"
 })
 export class ContainerCreatedDialogComponent extends AbstractDialogComponent<
   Signal<ContainerCreationDialogData | null>

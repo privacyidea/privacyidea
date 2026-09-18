@@ -36,6 +36,7 @@ import {
 } from "@angular/material/table";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -53,11 +54,14 @@ import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe
 import { StringUtils } from "@utils/string.utils";
 import { filter } from "rxjs";
 
-const columnKeysMap: { key: keyof ClientData; label: string }[] = [
-  { key: "application", label: $localize`:@@common.application:Application` },
-  { key: "hostname", label: $localize`:@@common.hostname:Hostname` },
-  { key: "ip", label: $localize`:@@common.ipAddress:IP Address` },
-  { key: "lastseen", label: $localize`:@@audit.lastAuthentication:Last Authentication Attempt` }
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// or clamped to, kept alongside the column definition so the table's overall min-width
+// (see table-width() in table.scss) can be sized from the same numbers.
+const columnKeysMap: { key: keyof ClientData; label: string; width: "s" | "m" | "l" | "xl" }[] = [
+  { key: "application", label: $localize`:@@common.application:Application`, width: "xl" },
+  { key: "hostname", label: $localize`:@@common.hostname:Hostname`, width: "l" },
+  { key: "ip", label: $localize`:@@common.ipAddress:IP Address`, width: "l" },
+  { key: "lastseen", label: $localize`:@@audit.lastAuthentication:Last Authentication Attempt`, width: "m" }
 ];
 
 export interface ClientTableRow {
@@ -80,6 +84,7 @@ interface FlattenedClientRow {
   templateUrl: "./clients.component.html",
   styleUrls: ["./clients.component.scss"],
   imports: [
+    RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTable,
     MatTableModule,
@@ -151,7 +156,7 @@ export class ClientsComponent {
   clientDataSource: WritableSignal<MatTableDataSource<FlattenedClientRow>> = linkedSignal({
     source: () =>
       this.clientService.clientsResource.hasValue() ? this.clientService.clientsResource.value() : undefined,
-    computation: (clientResource) => {
+    computation: (clientResource, previous) => {
       if (clientResource) {
         const clientData = clientResource.result?.value || ({} as ClientsDict);
         const dataSource = new MatTableDataSource(this.flattenedClientRowsFromDict(clientData));
@@ -164,7 +169,10 @@ export class ClientsComponent {
         };
         return dataSource;
       }
-      return new MatTableDataSource<FlattenedClientRow>([]);
+      // A reload in flight clears the resource value before the new response arrives - keep
+      // showing the previous rows instead of flashing empty, now that the table itself stays
+      // mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<FlattenedClientRow>([]);
     }
   });
 

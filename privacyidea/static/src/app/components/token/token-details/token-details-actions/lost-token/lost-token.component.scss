@@ -1,5 +1,3 @@
-@use "styles";
-
 .dialog-div {
   display: flex;
   flex-direction: column;
@@ -9,10 +7,6 @@
 
 .mat-mdc-button {
   color: var(--mat-sys-primary);
-}
-
-.lost-content {
-  width: 32rem;
 }
 
 .lost-card {
