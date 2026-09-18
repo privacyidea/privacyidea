@@ -18,7 +18,11 @@
 -->
 <div class="ca-stages-list gap-16">
   @if (stages().length === 0) {
-    <p class="ca-stages-list-empty" i18n>No stages defined yet. A policy needs at least one stage to take effect.</p>
+    <p
+      class="ca-stages-list-empty"
+      i18n="@@conditionalAccess.noStagesDefinedYet"
+      >No stages defined yet. A policy needs at least one stage to take effect.</p
+    >
   }
   @for (stage of stages(); track $index) {
     <app-conditional-access-stage-item
@@ -35,7 +39,7 @@
       class="action-button-secondary button-width-m"
       (click)="onAddStage()">
       <mat-icon>add</mat-icon>
-      <span i18n>Add Stage</span>
+      <span i18n="@@conditionalAccess.addStage">Add Stage</span>
     </button>
   </div>
 </div>
