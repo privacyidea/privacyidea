@@ -65,36 +65,36 @@ export interface ConditionRowSpec extends ConditionRowCopy {
 
 const CONDITION_COPY: Partial<Record<KnownConditionType, ConditionRowCopy>> = {
   USER_REALM: {
-    valuesLabel: $localize`Realms`,
-    operatorAriaLabel: $localize`How to compare the user realm`,
+    valuesLabel: $localize`:@@common.realms:Realms`,
+    operatorAriaLabel: $localize`:@@conditionalAccess.howCompareUserRealm:How to compare the user realm`,
     hints: {
-      IN: $localize`Restrict the realms this policy is applied to.`,
-      NOT_IN: $localize`Exclude realms from this policy.`
+      IN: $localize`:@@conditionalAccess.restrictRealmsPolicyApplied:Restrict the realms this policy is applied to.`,
+      NOT_IN: $localize`:@@conditionalAccess.excludeRealmsPolicy:Exclude realms from this policy.`
     },
-    clearToolTip: $localize`Remove all selected realms`
+    clearToolTip: $localize`:@@conditionalAccess.removeAllSelectedRealms:Remove all selected realms`
   },
   USER_ROLE: {
-    valuesLabel: $localize`Roles`,
-    operatorAriaLabel: $localize`How to compare the user role`,
+    valuesLabel: $localize`:@@conditionalAccess.roles:Roles`,
+    operatorAriaLabel: $localize`:@@conditionalAccess.howCompareUserRole:How to compare the user role`,
     hints: {
-      IN: $localize`Restrict the roles this policy is applied to.`,
-      NOT_IN: $localize`Exclude roles from this policy.`
+      IN: $localize`:@@conditionalAccess.restrictRolesPolicyApplied:Restrict the roles this policy is applied to.`,
+      NOT_IN: $localize`:@@conditionalAccess.excludeRolesPolicy:Exclude roles from this policy.`
     },
-    clearToolTip: $localize`Remove all selected roles`,
+    clearToolTip: $localize`:@@conditionalAccess.removeAllSelectedRoles:Remove all selected roles`,
     valueLabels: {
-      user: $localize`User`,
-      "admin-internal": $localize`Administrator (internal)`,
-      "admin-external": $localize`Administrator (external)`
+      user: $localize`:@@common.user:User`,
+      "admin-internal": $localize`:@@conditionalAccess.administratorInternal:Administrator (internal)`,
+      "admin-external": $localize`:@@conditionalAccess.administratorExternal:Administrator (external)`
     }
   },
   ENDPOINT: {
-    valuesLabel: $localize`Endpoints`,
-    operatorAriaLabel: $localize`How to compare the endpoint`,
+    valuesLabel: $localize`:@@conditionalAccess.endpoints:Endpoints`,
+    operatorAriaLabel: $localize`:@@conditionalAccess.howCompareEndpoint:How to compare the endpoint`,
     hints: {
-      IN: $localize`Restrict the endpoints this policy is applied to.`,
-      NOT_IN: $localize`Exclude endpoints from this policy.`
+      IN: $localize`:@@conditionalAccess.restrictEndpointsPolicyApplied:Restrict the endpoints this policy is applied to.`,
+      NOT_IN: $localize`:@@conditionalAccess.excludeEndpointsPolicy:Exclude endpoints from this policy.`
     },
-    clearToolTip: $localize`Remove all selected endpoints`
+    clearToolTip: $localize`:@@conditionalAccess.removeAllSelectedEndpoints:Remove all selected endpoints`
     // No valueLabels: an endpoint is its request path, and the path is what an admin recognizes it by.
   }
 };
@@ -111,12 +111,12 @@ function conditionCopy(type: string): ConditionRowCopy | undefined {
 function genericCopy(label: string): ConditionRowCopy {
   return {
     valuesLabel: label,
-    operatorAriaLabel: $localize`How to compare ${label}`,
+    operatorAriaLabel: $localize`:@@conditionalAccess.howCompare:How to compare ${label}`,
     hints: {
-      IN: $localize`Restrict the values this policy is applied to.`,
-      NOT_IN: $localize`Exclude these values from this policy.`
+      IN: $localize`:@@conditionalAccess.restrictValuesPolicyApplied:Restrict the values this policy is applied to.`,
+      NOT_IN: $localize`:@@conditionalAccess.excludeTheseValuesPolicy:Exclude these values from this policy.`
     },
-    clearToolTip: $localize`Remove all selected values`
+    clearToolTip: $localize`:@@conditionalAccess.removeAllSelectedValues:Remove all selected values`
   };
 }
 
@@ -124,8 +124,8 @@ function genericCopy(label: string): ConditionRowCopy {
 // (OPERATORS in privacyidea.lib.conditional_access.conditions) so nothing visibly changes once the
 // real ones arrive.
 const OPERATOR_FALLBACK: ConditionOperatorMeta[] = [
-  { name: "IN", label: $localize`is one of` },
-  { name: "NOT_IN", label: $localize`is not one of` }
+  { name: "IN", label: $localize`:@@conditionalAccess.one:is one of` },
+  { name: "NOT_IN", label: $localize`:@@conditionalAccess.notOne:is not one of` }
 ];
 
 // Operator a row starts on before anything is picked: the registry's first operator is the
@@ -135,7 +135,7 @@ const DEFAULT_OPERATOR: KnownConditionOperator = "IN";
 // Shown when the selected operator is one this WebUI has no wording for, i.e. the backend registry
 // has grown an operator the client does not know; states what the selection is for without claiming
 // a direction that would be wrong for half the possible operators.
-const UNKNOWN_OPERATOR_HINT = $localize`The values this condition compares against.`;
+const UNKNOWN_OPERATOR_HINT = $localize`:@@conditionalAccess.valuesConditionComparesAgainst:The values this condition compares against.`;
 
 // The selection of a row that carries no condition (see selectedValues).
 const NO_VALUES: string[] = [];
