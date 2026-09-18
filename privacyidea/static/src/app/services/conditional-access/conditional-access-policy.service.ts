@@ -52,7 +52,9 @@ export type AuthEventType =
   | "CHALLENGE_CANCELLED"
   | "ENROLLMENT_TRIGGERED"
   | "ENROLLMENT_CANCELED_FAIL"
-  | "UNKNOWN_FAIL_REASON";
+  | "UNKNOWN_FAIL_REASON"
+  | "DEVICE_TOKEN_REUSED"
+  | "SUSPENDED_API_KEY_USED";
 
 export type ConditionalAccessActionType =
   | "LOCK_USER"

@@ -147,6 +147,13 @@ class ConditionalAccessPolicyTemplateTestCase(MyTestCase):
             # declines are counted - the repudiation because the attempt was somebody else's, and the unspecified
             # one because a decline without a usable reason could be either.
             AuthEventType.CHALLENGE_CANCELLED,
+            # A stolen remember-device cookie is a security incident, not a guessed credential: it warrants an
+            # immediate, dedicated lock (threshold 1), not folding into a rate limit that tolerates several before
+            # acting.
+            AuthEventType.DEVICE_TOKEN_REUSED,
+            # About the *client* (a suspended API key still in use), not a failed credential attempt by the request
+            # itself, which succeeds or fails on its own merits independently of this.
+            AuthEventType.SUSPENDED_API_KEY_USED,
         }
         # This check covers only the trackable types: conditional access's own rejections (USER_LOCKED, IP_BLOCKED,
         # ACCESS_DENIED) are FAILURE outcomes too, but CA_ENFORCEMENT_EVENT_TYPES excludes them from the policy

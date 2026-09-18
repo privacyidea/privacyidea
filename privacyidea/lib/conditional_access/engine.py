@@ -33,7 +33,7 @@ from sqlalchemy.sql import ColumnElement
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            AuthLogUserRole,
-                                                                           CA_ENFORCEMENT_EVENT_TYPES,
+                                                                           NON_CLASSIFYING_EVENT_TYPES,
                                                                            CountMode,
                                                                            RestrictionCause)
 from privacyidea.lib.conditional_access.authentication_log import naive_utc
@@ -777,10 +777,11 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
     # First pass: for each row, track its attempt's latest row, its latest success row, and the newest LOGIN_SUCCESS
     # position (the since_last_success reset point).
     for row in rows:
-        if row.event_type in CA_ENFORCEMENT_EVENT_TYPES:
-            # A row conditional access wrote for its own rejection must never classify the attempt: as the latest row
-            # it would replace a real tracked failure with an untracked type and drop an already-counted attempt,
-            # stalling an escalation once the lock expires.
+        if row.event_type in NON_CLASSIFYING_EVENT_TYPES:
+            # A row conditional access wrote for its own rejection, or one describing the client a request arrived
+            # with, must never classify the attempt: as the latest row it would replace a real tracked failure with
+            # an untracked type and drop an already-counted attempt, stalling an escalation once the lock expires -
+            # or, for a client signal, letting whoever can produce one at will hide every failed attempt behind it.
             continue
         order = _row_order(row)
         if row.event_type == AuthEventType.LOGIN_SUCCESS:
@@ -820,9 +821,10 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
     fetching full :class:`AuthenticationLog` objects (rather than columns) is negligible and keeps the reduction working
     on named attributes.
 
-    The one exception is :data:`CA_ENFORCEMENT_EVENT_TYPES`: those rows classify a request conditional access itself
-    rejected, they can never be an attempt's representative (see :func:`_count_matching_attempts`), and excluding them
-    here rather than in Python means they cost neither a row over the wire nor an ORM object. It is an extra predicate
+    The one exception is :data:`NON_CLASSIFYING_EVENT_TYPES`: a row conditional access wrote for its own rejection,
+    or one describing the client a request arrived with, can never be an attempt's representative (see
+    :func:`_count_matching_attempts`), and excluding them here rather than in Python means they cost neither a row
+    over the wire nor an ORM object. It is an extra predicate
     on the same index range scan, not a different plan.
 
     *subject* deliberately carries no condition predicates - unlike the row counters, which take them as
@@ -841,7 +843,7 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
     conditions = [*subject,
                  AuthenticationLog.timestamp >= window_start,
                  AuthenticationLog.timestamp <= window_end,
-                 AuthenticationLog.event_type.notin_(sorted(str(event) for event in CA_ENFORCEMENT_EVENT_TYPES))]
+                 AuthenticationLog.event_type.notin_(sorted(str(event) for event in NON_CLASSIFYING_EVENT_TYPES))]
     if exclude_row_ids:
         conditions.append(AuthenticationLog.id.notin_(exclude_row_ids))
     rows = get_ca_session().scalars(select(AuthenticationLog).where(*conditions)).all()
