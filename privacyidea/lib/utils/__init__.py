@@ -31,8 +31,10 @@ import hashlib
 import html
 import logging
 import mimetypes
+import os
 import re
 import string
+import subprocess
 import threading
 import time
 import traceback
@@ -40,8 +42,10 @@ from dataclasses import dataclass, field, replace
 from datetime import time as dt_time
 from datetime import timedelta, datetime
 from enum import Enum
+from functools import lru_cache
 from importlib import import_module
 from importlib import metadata
+from pathlib import Path
 
 import segno
 import sqlalchemy
@@ -54,6 +58,9 @@ from privacyidea.lib.conditional_access.authentication_event_types import strip_
 from privacyidea.lib.framework import get_app_config_value, get_base_url
 
 log = logging.getLogger(__name__)
+
+# Splits "v3.14dev2-1568-g939ce0af5-dirty" into the tag and the local version segments
+GIT_DESCRIBE_PATTERN = re.compile(r"^v?(?P<tag>.+?)(?:-(?P<distance>\d+)-(?P<commit>g[0-9a-f]+))?(?P<dirty>-dirty)?$")
 
 BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
@@ -1325,15 +1332,61 @@ def get_module_class(package_name, class_name, check_method=None):
     return klass
 
 
-def get_version_number():
+def _get_version_from_git() -> str | None:
+    """
+    Determine the version from the git repository the package is running from.
+
+    This only applies to development environments. An installed privacyIDEA has no repository
+    next to the package, so its version keeps coming from the package metadata. The metadata is
+    written when the distribution is built and does not follow the checkout, which makes it report
+    a long outdated version while working on a branch.
+
+    The nearest reachable tag is used without guessing a successor, the same rule the build applies
+    through the "only-version" version scheme of setuptools_scm.
+
+    :return: A version derived from the nearest reachable tag or None if it can not be determined
+    """
+    repository = Path(__file__).resolve().parents[3]
+    # In a git worktree ".git" is a file pointing at the actual repository, so do not require a directory
+    if not (repository / ".git").exists():
+        return None
+    try:
+        described = subprocess.run(["git", "describe", "--tags", "--dirty", "--match", "v[0-9]*"],
+                                   cwd=repository, capture_output=True, text=True, timeout=5, check=True)
+    except (OSError, subprocess.SubprocessError) as e:
+        # No git binary, no tags fetched, a shallow clone or a repository git refuses to read
+        log.debug(f"Unable to determine the privacyidea version number from git: {e}")
+        return None
+
+    match = GIT_DESCRIBE_PATTERN.match(described.stdout.strip())
+    if not match:
+        log.debug(f"Unexpected git describe output: {described.stdout.strip()}")
+        return None
+    local_segments = [segment for segment in (match["distance"], match["commit"],
+                                              "dirty" if match["dirty"] else None) if segment]
+    if not local_segments:
+        return match["tag"]
+    return f"{match['tag']}+{'.'.join(local_segments)}"
+
+
+@lru_cache(maxsize=1)
+def get_version_number() -> str:
     """
     returns the privacyidea version
+
+    The environment variable PRIVACYIDEA_DEV_VERSION takes precedence, followed by the git
+    repository of a development checkout. An installed privacyIDEA has neither and reports the
+    version of the installed distribution.
+
+    The result is cached, because the version can not change while the process is running.
     """
-    version = "unknown"
-    try:
-        version = metadata.version("privacyidea")
-    except metadata.PackageNotFoundError as e:
-        log.info(f"We are not able to determine the privacyidea version number: {e}")
+    version = os.environ.get("PRIVACYIDEA_DEV_VERSION") or _get_version_from_git()
+    if not version:
+        version = "unknown"
+        try:
+            version = metadata.version("privacyidea")
+        except metadata.PackageNotFoundError as e:
+            log.info(f"We are not able to determine the privacyidea version number: {e}")
     return version
 
 
