@@ -12,7 +12,10 @@ import inspect
 import logging
 import mock
 from testfixtures import Comparison, compare, OutputCapture
-from privacyidea.app import create_app, create_docker_app, _setup_database_engine_options
+from contextlib import contextmanager
+
+from privacyidea.app import (ENV_KEY, create_app, create_docker_app,
+                             _setup_database_engine_options)
 from privacyidea.config import config, ConfigKey, DefaultConfigValues, TestingConfig
 from privacyidea.lib.crypto import pass_hash, verify_pass_hash
 
@@ -30,9 +33,19 @@ class AppTestCase(unittest.TestCase):
         self.logger.handlers = self.orig_handlers
         self.logger.level = self.level
 
+    @contextmanager
+    def isolated_config_file(self):
+        # A pi.cfg installed on the machine running the tests overwrites the values from
+        # config.py, so comparing the app config against config.py only works against an
+        # empty config file.
+        with tempfile.NamedTemporaryFile(suffix=".cfg") as config_file:
+            with mock.patch.dict(os.environ, {ENV_KEY: config_file.name}):
+                yield
+
     def test_01_create_default_app(self):
         # This will create the app with the 'development' configuration
-        app = create_app()
+        with self.isolated_config_file():
+            app = create_app()
         self.assertIsInstance(app, flask.app.Flask, app)
 #        self.assertEqual(app.env, 'production', app)
         self.assertTrue(app.debug, app)
@@ -80,7 +93,8 @@ class AppTestCase(unittest.TestCase):
         ], logger.handlers)
 
     def test_02_create_production_app(self):
-        app = create_app(config_name='production')
+        with self.isolated_config_file():
+            app = create_app(config_name='production')
         dc = config['production']()
         members = inspect.getmembers(dc, lambda a: not (inspect.isroutine(a)))
         conf = [m for m in members if not (m[0].startswith('__') and m[0].endswith('__'))]
@@ -194,6 +208,15 @@ class HashConfigTestCase(unittest.TestCase):
     def tearDown(self):
         self.logger.handlers = self.orig_handlers
         self.logger.level = self.level
+
+    @contextmanager
+    def isolated_config_file(self):
+        # A pi.cfg installed on the machine running the tests overwrites the values from
+        # config.py, so comparing the app config against config.py only works against an
+        # empty config file.
+        with tempfile.NamedTemporaryFile(suffix=".cfg") as config_file:
+            with mock.patch.dict(os.environ, {ENV_KEY: config_file.name}):
+                yield
 
     @staticmethod
     def _create_app(**hash_config):
