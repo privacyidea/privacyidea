@@ -1,0 +1,102 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { Component, computed, forwardRef, inject, input, signal } from "@angular/core";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { disabled, form, FormField, required, validate } from "@angular/forms/signals";
+
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  YubicoApiPayloadMapper,
+  YubicoEnrollmentData
+} from "@app/mappers/token-api-payload/yubico-token-api-payload.mapper";
+import {
+  EnrollmentArgs,
+  EnrollTokenBase
+} from "@components/token/token-enrollment/enroll-token-base";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+
+export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
+  type: "yubico";
+  yubicoIdentifier: string;
+}
+
+@Component({
+  selector: "app-enroll-yubico",
+  standalone: true,
+  imports: [MatFormField, MatInput, MatLabel, MatError, FormField],
+  templateUrl: "./enroll-yubico.component.html",
+  providers: [
+    { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollYubicoComponent) }
+  ]
+})
+export class EnrollYubicoComponent extends EnrollTokenBase<YubicoEnrollmentData> {
+  protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(YubicoApiPayloadMapper);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+
+  disabled = input<boolean>(false);
+
+  yubicoIdentifier = signal<string>("");
+  yubicoIdentifierForm = form(this.yubicoIdentifier, (f) => {
+    required(f);
+    validate(f, (ctx) => (ctx.value().length !== 12 ? [{ kind: "invalidLength" }] : []));
+    disabled(f, () => this.disabled());
+  });
+
+  yubicoIsConfigured = computed(() => {
+    if (!this.systemService.systemConfigResource.hasValue()) return false;
+    const cfg = this.systemService.systemConfigResource.value()?.result?.value;
+    return !!(cfg?.[YUBICO_ID] && cfg?.[YUBICO_URL] && cfg?.[YUBICO_SECRET]);
+  });
+
+  buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<YubicoEnrollmentData> | null {
+    if (!this.yubicoIdentifierForm().valid()) {
+      this.yubicoIdentifierForm().markAsTouched();
+      return null;
+    }
+
+    const enrollmentData: YubicoEnrollmentOptions = {
+      ...basicOptions,
+      type: "yubico",
+      yubicoIdentifier: this.yubicoIdentifier()
+    };
+    return {
+      data: enrollmentData,
+      mapper: this.enrollmentMapper
+    };
+  }
+
+  goToYubicoConfig() {
+    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "yubico" });
+  }
+
+  onYubicoConfigKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter" || event.key === " ") {
+      this.goToYubicoConfig();
+    }
+  }
+}

@@ -1,0 +1,23 @@
+// The role badge worn by a principal that is not an ordinary user, in the authentication log and on the
+// locked-users table. Global rather than scoped to either component: both show the same badge, and a copy in
+// each is a copy that drifts. What the badges say lives in app/components/logs/user-roles.ts.
+
+.role-badge {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.role-badge-admin-internal {
+  background-color: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
+}
+
+.role-badge-admin-external {
+  background-color: var(--mat-sys-surface-container-highest);
+  color: var(--mat-sys-on-surface-variant);
+}

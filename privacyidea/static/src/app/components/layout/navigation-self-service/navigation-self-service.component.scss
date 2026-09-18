@@ -1,0 +1,118 @@
+@use "styles";
+
+.navigation-self-service-column {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 16px;
+  padding: calc(2 * 16px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  box-sizing: border-box;
+  height: 100vh;
+  // The rail is sunk into the page, so it takes the shared inset tone and shadow rather than a
+  // fixed one: both are aimed by the light source and flattened by the depth setting. Set as
+  // properties instead of via card-recessed, which would round a rail that runs to the edges.
+  background: var(--inset-surface-5);
+  box-shadow: var(--inset-shadow-5);
+}
+
+// The user panel and the button below it are cards raised off the rail, so both take the shared
+// raised tone rather than a flat one.
+.user-details-container {
+  @include styles.card-raised(3);
+  width: 12rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.user-details-panel {
+  min-width: 12rem;
+}
+
+.user-details-panel:not(.mat-expanded) {
+  max-width: 12rem;
+  width: 100%;
+}
+
+.top-content {
+  flex: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tile-icon {
+  color: var(--mat-sys-primary) !important;
+  font-size: calc(6rem / 2.7);
+  width: calc(6rem / 2.7);
+  max-width: calc(6rem / 2.7);
+  height: calc(6rem / 2.7);
+  max-height: calc(6rem / 2.7);
+}
+
+.user-details-column {
+  grid-template-columns: auto 1fr;
+  row-gap: 16px;
+  display: grid;
+  column-gap: 8px;
+}
+
+.username {
+  color: var(--mat-sys-primary);
+  font-weight: bold;
+}
+
+.username-button {
+  @include styles.card-raised(3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 12rem;
+  height: 48px;
+  min-height: 48px;
+  padding: 8px 12px;
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+
+  &:hover {
+    box-shadow: var(--elevation-5);
+    transition: transform 0.2s ease-in-out;
+    transform: translateY(-2px);
+  }
+
+  .username {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 138px;
+  }
+
+  &.disabled {
+    cursor: default;
+    pointer-events: none;
+
+    .username {
+      color: var(--mat-sys-on-surface-variant);
+    }
+
+    &:hover {
+      box-shadow: var(--elevation-3);
+      transform: none;
+    }
+  }
+}
+
+.label {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.value {
+  font-size: 14px;
+}

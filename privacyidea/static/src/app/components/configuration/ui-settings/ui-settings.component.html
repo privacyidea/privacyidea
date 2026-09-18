@@ -1,0 +1,180 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div
+  aria-label="UI Settings"
+  class="settings-container"
+  i18n-aria-label="@@common.uiSettings">
+  <div class="settings-header">
+    <h3
+      class="margin-8"
+      i18n="@@common.uiSettings"
+      >UI Settings</h3
+    >
+    <button
+      (click)="resetSettings()"
+      [attr.aria-label]="resetTooltip"
+      [matTooltip]="resetTooltip"
+      mat-icon-button
+      type="button">
+      <mat-icon>restart_alt</mat-icon>
+    </button>
+  </div>
+
+  <div class="settings-group settings-group-main margin-bottom-16 margin-left-8">
+    <div class="settings-item settings-item-s">
+      <h4
+        class="settings-item-label margin-8"
+        i18n="@@uiSettings.language"
+        >Language</h4
+      >
+      <mat-form-field
+        class="input-width-m language-field margin-left-16"
+        subscriptSizing="dynamic">
+        <mat-select
+          (selectionChange)="selectLocale($event.value)"
+          [value]="preferredLocale()"
+          aria-label="Language"
+          i18n-aria-label="@@uiSettings.language">
+          @for (locale of locales; track locale.code) {
+            <mat-option [value]="locale.code">
+              {{ locale.label }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="settings-item settings-item-xs settings-item-center">
+      <h4
+        class="settings-item-label margin-8"
+        i18n="@@uiSettings.theme"
+        >Theme</h4
+      >
+      <app-theme-toggle />
+    </div>
+
+    <div class="settings-item settings-item-s">
+      <h4
+        class="settings-item-label margin-8"
+        i18n="@@uiSettings.landingPage"
+        >Landing Page</h4
+      >
+      <mat-form-field
+        class="input-width-m margin-left-16"
+        subscriptSizing="dynamic">
+        <mat-select
+          (selectionChange)="selectLandingPage($event.value)"
+          [value]="selectedLandingPage()"
+          aria-label="Landing Page"
+          i18n-aria-label="@@uiSettings.landingPage">
+          @for (page of availableLandingPages(); track page) {
+            <mat-option [value]="page">
+              {{ landingPageLabels[page] }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="settings-item settings-item-s settings-item-vcenter">
+      <h4
+        class="settings-item-label margin-8"
+        i18n="@@uiSettings.pendingRequests"
+        >Pending Requests</h4
+      >
+      <mat-slide-toggle
+        class="margin-left-16"
+        (change)="setShowLoadingUrls($event.checked)"
+        [checked]="showLoadingUrls()"
+        i18n="@@uiSettings.showEndpointsBeingRequested"
+        >Show endpoints being requested</mat-slide-toggle
+      >
+    </div>
+  </div>
+
+  <mat-expansion-panel class="settings-appearance-panel">
+    <mat-expansion-panel-header>
+      <mat-panel-title i18n="@@dashboard.appearance">Appearance</mat-panel-title>
+      <mat-panel-description>
+        <mat-icon
+          [attr.aria-label]="appearanceHint"
+          [matTooltip]="appearanceHint"
+          class="settings-appearance-hint"
+          >info_outline</mat-icon
+        >
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <div class="expansion-well">
+      <div class="settings-group settings-group-appearance">
+        <div class="settings-item settings-item-m settings-item-center">
+          <h4
+            class="settings-item-label margin-8"
+            i18n="@@uiSettings.corners"
+            >Corners</h4
+          >
+          <mat-button-toggle-group
+            (change)="selectCorners($event.value)"
+            [hideSingleSelectionIndicator]="true"
+            [value]="corners()"
+            aria-label="Corners"
+            i18n-aria-label="@@uiSettings.corners">
+            @for (level of cornerLevels; track level.value) {
+              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+
+        <div class="settings-item settings-item-m settings-item-center">
+          <h4
+            class="settings-item-label margin-8"
+            i18n="@@uiSettings.depth"
+            >Depth</h4
+          >
+          <mat-button-toggle-group
+            (change)="selectDepth($event.value)"
+            [hideSingleSelectionIndicator]="true"
+            [value]="depth()"
+            aria-label="Depth"
+            i18n-aria-label="@@uiSettings.depth">
+            @for (level of depthLevels; track level.value) {
+              <mat-button-toggle [value]="level.value">{{ level.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+
+        <div class="settings-item settings-item-m settings-item-center">
+          <h4
+            class="settings-item-label margin-8"
+            i18n="@@uiSettings.lightSource"
+            >Light Source</h4
+          >
+          <app-light-source-dial
+            [items]="lightSourceDialItems"
+            [selected]="lightSource()"
+            groupName="light-source"
+            legend="Light source"
+            i18n-legend="@@uiSettings.lightSource2"
+            (pick)="selectLightSource($event)" />
+        </div>
+      </div>
+    </div>
+  </mat-expansion-panel>
+</div>

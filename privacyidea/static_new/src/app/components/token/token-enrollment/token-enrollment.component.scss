@@ -1,8 +1,0 @@
-@use "styles";
-@use "table";
-
-.token-enrollment-container {
-  @include styles.main-component-style;
-  display: grid;
-  min-width: calc(616px + 2 * 16px);
-}

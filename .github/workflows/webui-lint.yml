@@ -5,14 +5,14 @@ name: Linting WebUI
 on:
   pull_request:
     paths:
-      - 'privacyidea/static_new/**'
+      - 'privacyidea/static/**'
 
 permissions:
   contents: read
 
 defaults:
   run:
-    working-directory: ./privacyidea/static_new
+    working-directory: ./privacyidea/static
 
 jobs:
   lint-webui:
@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: lts/*  # Use the latest LTS-release
           cache: npm
-          cache-dependency-path: privacyidea/static_new/package-lock.json
+          cache-dependency-path: privacyidea/static/package-lock.json
       - name: Install Node.js dependencies
         run: npm ci
       - name: Run ESLint
@@ -49,7 +49,7 @@ jobs:
         with:
           node-version: lts/*  # Use the latest LTS-release
           cache: npm
-          cache-dependency-path: privacyidea/static_new/package-lock.json
+          cache-dependency-path: privacyidea/static/package-lock.json
       - name: Install Node.js dependencies
         run: npm ci
       - name: Type-check the new WebUI including its specs

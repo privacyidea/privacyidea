@@ -1,0 +1,24 @@
+.content {
+  line-height: 1.6;
+}
+
+.items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.app {
+  font-weight: 600;
+}
+
+.value {
+  font-family: monospace;
+}

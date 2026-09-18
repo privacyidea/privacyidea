@@ -1,0 +1,149 @@
+@use "styles";
+@use "table";
+
+.policy-name-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  margin: 2px;
+  padding: 4px 0;
+  width: 100%;
+}
+
+.policies-table-layout {
+  @include styles.main-component-style;
+  @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
+  // Sized from the col-width-* tiers the columns below use (select checkbox + priority s + name m +
+  // scope s + description xl + active s), plus the actions/conditions columns' own current widths
+  // (no fixed width for actions + 400 for conditions), since those two are a list that can badly
+  // overflow and are deliberately left without a tier.
+  @include table.page-table-state-size(calc(#{table.table-width(checkbox, s, l, s, xl, s)} + 400px));
+
+  & {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .policies-table-filter {
+    max-width: 932px;
+    min-width: 300px;
+    width: 100%;
+  }
+
+  .policies-table {
+    border-collapse: collapse;
+    table-layout: auto;
+    width: 100%;
+
+    th,
+    td {
+      padding: 0 8px;
+      text-align: left;
+    }
+
+    .column-max-height {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .mat-mdc-row {
+      height: 0;
+    }
+
+    .table-header-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      flex-wrap: nowrap;
+      > div {
+        flex-shrink: 0;
+      }
+    }
+
+    td.col-description,
+    td.col-actions,
+    td.col-conditions {
+      vertical-align: top;
+    }
+
+    td.table-checkbox,
+    td.col-priority,
+    td.col-scope,
+    td.col-actions {
+      max-width: 100% !important;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .minimal-icon-button,
+    .text-link-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin: 0;
+      outline: none;
+      padding: 0;
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+
+    td.col-name {
+      vertical-align: middle;
+
+      .name-wrapper {
+        align-items: center;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+      }
+    }
+
+    td.col-description {
+      padding-bottom: 8px;
+      padding-top: 8px;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    td.col-actions {
+      padding: 0;
+    }
+
+    td.col-conditions {
+      padding: 0;
+      max-width: 100% !important;
+      width: 400px;
+      white-space: normal;
+      word-break: break-word;
+    }
+  }
+
+  .inactive-icon {
+    color: var(--mat-sys-on-surface-variant);
+    opacity: 0.5;
+  }
+  .active-icon {
+    color: var(--mat-sys-primary-base);
+    opacity: 1;
+  }
+  .clickable-icon {
+    cursor: pointer;
+  }
+
+  mat-checkbox {
+    margin: 0;
+    overflow: clip;
+  }
+
+  .no-data-cell {
+    padding: 16px;
+    text-align: center;
+    font-style: italic;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}

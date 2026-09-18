@@ -79,7 +79,9 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               check_container_action_allowed,
                                               UserAttributes,
                                               get_container_user_attributes)
-from privacyidea.api.lib.utils import attestation_certificate_allowed, is_fqdn, get_optional
+from privacyidea.api.lib.utils import (attestation_certificate_allowed, is_fqdn, get_optional,
+                                      log_authentication)
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -349,6 +351,13 @@ def check_otp_pin(request=None, action=None):
 
     The pin is investigated in the params as "otppin" or "pin"
 
+    Token types that do not use a PIN at all (``using_pin = False``) are exempt, whether the
+    request identifies the token by serial or, as at enrollment, only by its type. The
+    exemption by type only applies when no PIN was supplied at all: the enrollment form does
+    not offer a PIN for these types, but the certificate token encrypts the PKCS#12 container
+    with the PIN when one is given, so a PIN that is actually sent still has to satisfy the
+    policies.
+
     In case the given OTP PIN does not match the requirements an exception is
     raised.
     """
@@ -384,6 +393,10 @@ def check_otp_pin(request=None, action=None):
                 pin_user = token_owner
     # the default tokentype is still HOTP
     tokentype = tokentype or "hotp"
+    token_class = get_token_class(tokentype)
+    if token_class and token_class.using_pin is False and not pin:
+        log.debug(f"Token type {tokentype} does not use a PIN and none was given, skipping the PIN policies.")
+        return True
     check_pin(g, pin, tokentype, pin_user)
     return True
 
@@ -1309,12 +1322,15 @@ def check_base_action(request=None, action=None, anonymous=False):
     (role, username, realm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user, params)
 
     # In certain cases we can not resolve the user by the serial!
-    if action is PolicyAction.AUDIT:
-        # In case of audit requests, the parameters "realm" and "user" are used for
-        # filtering the audit log. So these values must not be taken from the request parameters,
-        # but rather be NONE. The restriction for the allowed realms in the audit log is determined
-        # in the decorator "allowed_audit_realm".
+    if role == ROLE.ADMIN and action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ):
+        # For an admin, realm/user only filter the log and must not drive the policy match, since the realm restriction
+        # is enforced separately (audit: allowed_audit_realm decorator; authentication log:
+        # get_policy_visibility_scopes), so they are cleared here. For a user reading their own log, realm/username come
+        # from their own identity (determine_logged_in_userparams) and are kept so a realm/resolver-scoped user-scope
+        # policy still matches - the user only ever sees their own entries anyway.
         realm = username = resolver = None
+    elif action in (PolicyAction.AUDIT, PolicyAction.AUTHENTICATION_LOG_READ):
+        pass
     else:
         realm = params.get("realm")
         if isinstance(realm, list) and len(realm) == 1:
@@ -2954,14 +2970,20 @@ def auth_timelimit(request, action):
         # normal user
         user_search_dict = {"user": user.login, "realm": user.realm}
 
-    # Check policies
+    # Check policies. Which limit was hit is classified here rather than by the checks, which this caller can do
+    # since it knows which of the two said no: their reply_dict is handed to the client as the error details, so the
+    # two most-reused policy helpers put nothing internal in it in the first place. The rest of the classification
+    # does travel in the reply (see AUTH_EVENT_TYPE_KEY), where the response boundary is what keeps it in.
+    reason = AuthEventReason.AUTH_MAX_FAIL
     result, reply_dict = check_max_auth_fail(user, user_search_dict, check_validate_check=not local_admin)
     if result:
         if local_admin:
             user_search_dict = {"administrator": user.login}
+        reason = AuthEventReason.AUTH_MAX_SUCCESS
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
+        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, reasons=[reason])
         raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 

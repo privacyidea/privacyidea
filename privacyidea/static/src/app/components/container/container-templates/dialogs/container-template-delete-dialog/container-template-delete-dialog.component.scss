@@ -1,0 +1,29 @@
+.delete-confirmation-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 0;
+
+  .warn-icon {
+    color: var(--mat-sys-error);
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+  }
+
+  .message-content {
+    display: flex;
+    flex-direction: column;
+    gap: calc(16px / 2);
+
+    p {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .sub-message {
+      color: var(--mat-sys-on-surface-variant);
+      font-size: 0.9rem;
+    }
+  }
+}

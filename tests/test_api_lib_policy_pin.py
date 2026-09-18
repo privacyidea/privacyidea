@@ -313,6 +313,34 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
                         "pin": ""}
         self.assertTrue(check_otp_pin(req))
 
+        # The same types are exempt at /token/init, where no serial exists yet and only the
+        # requested type is known.
+        for token_type in ["certificate", "sshkey"]:
+            req.all_data = {"type": token_type,
+                            "realm": "home",
+                            "user": "cornelius"}
+            self.assertTrue(check_otp_pin(req))
+
+        # The exemption only covers the absent PIN. The certificate token encrypts the PKCS#12
+        # container with the PIN, so a PIN that is sent has to satisfy the policies.
+        req.all_data = {"type": "certificate",
+                        "realm": "home",
+                        "user": "cornelius",
+                        "pin": "1"}
+        self.assertRaises(PolicyError, check_otp_pin, req)
+        req.all_data = {"type": "certificate",
+                        "realm": "home",
+                        "user": "cornelius",
+                        "pin": "abc123"}
+        self.assertTrue(check_otp_pin(req))
+
+        # A type that does use a PIN is still checked, and so is a type we do not know.
+        for token_type in ["hotp", "an-unknown-type"]:
+            req.all_data = {"type": token_type,
+                            "realm": "home",
+                            "user": "cornelius"}
+            self.assertRaises(PolicyError, check_otp_pin, req)
+
         # check that no pin is checked during rollover or verify
         logging.getLogger('privacyidea').setLevel(logging.DEBUG)
         req.all_data = {
@@ -404,6 +432,34 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
                         "user": "cornelius",
                         "pin": ""}
         self.assertTrue(check_otp_pin(req))
+
+        # The same types are exempt at /token/init, where no serial exists yet and only the
+        # requested type is known.
+        for token_type in ["certificate", "sshkey"]:
+            req.all_data = {"type": token_type,
+                            "realm": "home",
+                            "user": "cornelius"}
+            self.assertTrue(check_otp_pin(req))
+
+        # The exemption only covers the absent PIN. The certificate token encrypts the PKCS#12
+        # container with the PIN, so a PIN that is sent has to satisfy the policies.
+        req.all_data = {"type": "certificate",
+                        "realm": "home",
+                        "user": "cornelius",
+                        "pin": "1"}
+        self.assertRaises(PolicyError, check_otp_pin, req)
+        req.all_data = {"type": "certificate",
+                        "realm": "home",
+                        "user": "cornelius",
+                        "pin": "abc123"}
+        self.assertTrue(check_otp_pin(req))
+
+        # A type that does use a PIN is still checked, and so is a type we do not know.
+        for token_type in ["hotp", "an-unknown-type"]:
+            req.all_data = {"type": token_type,
+                            "realm": "home",
+                            "user": "cornelius"}
+            self.assertRaises(PolicyError, check_otp_pin, req)
 
         # check that no pin is checked during rollover or verify
         logging.getLogger('privacyidea').setLevel(logging.DEBUG)

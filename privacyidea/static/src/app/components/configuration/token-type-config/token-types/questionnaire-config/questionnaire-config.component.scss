@@ -1,0 +1,27 @@
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  > p {
+    margin-block: 0;
+  }
+}
+
+.flex-column {
+  h4,
+  p {
+    margin-block: 0;
+  }
+}
+
+.questionnaire-grid {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 16px;
+  overflow-x: auto;
+
+  mat-form-field {
+    width: var(--input-max-width, 100%);
+  }
+}

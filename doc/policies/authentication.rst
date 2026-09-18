@@ -652,7 +652,7 @@ dependent on the clients IP address and the user agent.
 push_text_on_mobile
 ~~~~~~~~~~~~~~~~~~~
 
-.. index:: push token, Firebase service
+.. index:: push token, push gateway
 
 type: ``string``
 
@@ -696,7 +696,7 @@ The text can contain the following tags, that will be filled:
 
 .. note:: The tags {client_ip}, {ua_browser}, {ua_string} and {action} describe the
    client that triggered the challenge, so they can only be filled in the notification
-   that is sent via Firebase. If the smartphone fetches its open challenges by polling
+   that is sent via the configured push gateway. If the smartphone fetches its open challenges by polling
    instead, the text is rendered again for the request of the smartphone, and no
    information about the client that triggered the challenge is available anymore.
    All four tags are empty then. The tags of the token owner are filled on both ways.
@@ -706,7 +706,7 @@ The text can contain the following tags, that will be filled:
 push_title_on_mobile
 ~~~~~~~~~~~~~~~~~~~~
 
-.. index:: push token, Firebase service
+.. index:: push token, push gateway
 
 type: ``string``
 
@@ -1164,6 +1164,8 @@ It is advised to use a condition with this policy, for example on the user-agent
     Triggering both types at the same time will probably result in a failed authentication because challenges are
     currently encoded differently for each token of these token types.
 
+.. _policy_hide_specific_error_message:
+
 hide_specific_error_message
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1174,6 +1176,13 @@ Other information is also removed from the `detail` object of the response.
 
 .. note:: To additionally return a uniform HTTP status code for failed authentications, see
     the :ref:`policies_hardening` scope policy ``hide_auth_error_status``.
+
+.. note:: This policy does **not** mask an error message configured for
+    :ref:`conditional_access`. Such a message exists only because an
+    administrator wrote it on a stage or enabled
+    :ref:`policy_show_default_ca_error_message`, so it survives while the rest
+    of the ``detail`` object is still collapsed. See
+    :ref:`conditional_access_error_messages_masking`.
 
 .. _policy_remember_device:
 

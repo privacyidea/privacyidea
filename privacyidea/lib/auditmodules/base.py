@@ -233,7 +233,7 @@ class Audit:  # pragma: no cover
                 # We need to create the entry
                 self.audit_data[k] = v
             else:
-                if add_with_comma:
+                if add_with_comma and self.audit_data[k]:
                     self.audit_data[k] += ","
                 self.audit_data[k] += v
 

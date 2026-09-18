@@ -1,0 +1,18 @@
+@use "inputs";
+
+.motp-pin-input {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.motp-input {
+  display: flex;
+  width: 31%;
+  border-radius: 3px;
+  outline: none;
+
+  &:focus {
+    outline: inputs.$input-focus-outline;
+  }
+}

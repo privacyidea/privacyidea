@@ -1,0 +1,200 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  appScrollToTop
+  class="service-ids-container">
+  @if (tableState.showTable()) {
+    <div class="filter-paginator-container">
+      <mat-form-field
+        appearance="fill"
+        class="table-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n="@@serviceId.filterService">Filter Service IDs...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="resetFilter()"
+          [showClearButton]="filterString().length > 0">
+          <input
+            #filterHTMLInputElement
+            [appRefocusAfterReload]="serviceIdService.serviceIdResource.isLoading()"
+            (input)="onFilterInput(filterHTMLInputElement.value)"
+            [value]="filterString()"
+            aria-label="Filter Input"
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@common.filterByNameDescription"
+            matInput
+            placeholder="Filter by name or description" />
+        </app-clearable-input>
+      </mat-form-field>
+      <mat-paginator
+        [length]="totalLength()"
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSizeOptions()[1]"
+        showFirstLastButtons />
+    </div>
+    <div class="actions-container margin-bottom-16">
+      <button
+        (click)="onCreateNewServiceId()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">storage</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n="@@common.createService">Create Service ID</span>
+      </button>
+      <button
+        (click)="deleteSelected()"
+        [disabled]="!selector.hasSelection()"
+        class="action-button-delete-secondary button-width-l"
+        mat-stroked-button>
+        <mat-icon>delete_sweep</mat-icon>
+        <span i18n="@@common.delete">Delete</span>
+      </button>
+
+      <p
+        class="margin-bottom-0 margin-top-0"
+        i18n="@@serviceId.serviceIdsUsed"
+        >Service IDs can be used to attach e.g. SSH keys to certain machines and services. <br />
+        To view attached tokens go to <a [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">token applications.</a></p
+      >
+    </div>
+
+    <table
+      [dataSource]="serviceIdDataSource()"
+      class="service-ids-table"
+      mat-table
+      matSort>
+      <ng-container matColumnDef="select">
+        <th
+          *matHeaderCellDef
+          class="table-checkbox"
+          mat-header-cell>
+          <mat-checkbox
+            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+            [checked]="selector.allRowsSelected()"
+            [disabled]="!selector.hasVisibleRows()"
+            [indeterminate]="selector.someRowsSelected()" />
+        </th>
+        <td
+          *matCellDef="let row"
+          class="table-checkbox"
+          mat-cell>
+          <mat-checkbox
+            (change)="selector.setRowSelected(row, $event.checked)"
+            (click)="$event.stopPropagation()"
+            [checked]="selector.isRowSelected(row)" />
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="id">
+        <th
+          *matHeaderCellDef
+          [ngClass]="'col-width-s'"
+          i18n="@@common.idColumn"
+          mat-header-cell
+          mat-sort-header
+          >Id</th
+        >
+        <td
+          *matCellDef="let service"
+          [ngClass]="'col-width-s'"
+          mat-cell>
+          {{ service.id }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="servicename">
+        <th
+          *matHeaderCellDef
+          [ngClass]="'col-width-m'"
+          i18n="@@common.name"
+          mat-header-cell
+          mat-sort-header
+          >Name</th
+        >
+        <td
+          *matCellDef="let service"
+          [ngClass]="'col-width-m'"
+          mat-cell>
+          <app-copyable [copyText]="service.servicename">
+            <a
+              role="button"
+              tabindex="0"
+              (click)="onEditServiceId(service)"
+              (keydown.enter)="onEditServiceId(service)"
+              class="flex ali-center">
+              {{ service.servicename }}
+            </a>
+          </app-copyable>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th
+          *matHeaderCellDef
+          [ngClass]="'col-width-xl'"
+          i18n="@@common.description"
+          mat-header-cell
+          mat-sort-header
+          >Description</th
+        >
+        <td
+          *matCellDef="let service"
+          [ngClass]="'col-width-xl'"
+          mat-cell>
+          {{ service.description }}
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns"
+        mat-row></tr>
+
+      <tr *matNoDataRow>
+        <td colspan="4">
+          <app-table-state
+            [status]="tableState.rowStatus()"
+            [table]="tableState" />
+        </td>
+      </tr>
+    </table>
+  } @else {
+    <app-table-state
+      [table]="tableState"
+      heading="No service IDs yet"
+      hint="Create a service ID to attach SSH tokens to it."
+      i18n-heading="@@serviceId.noServiceIDs"
+      i18n-hint="@@serviceId.createServiceID"
+      icon="storage">
+      <button
+        (click)="onCreateNewServiceId()"
+        class="action-button-primary button-width-l"
+        mat-stroked-button>
+        <span class="icon-badge">
+          <mat-icon class="padding-right-3">storage</mat-icon>
+          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+        </span>
+        <span i18n="@@common.createService">Create Service ID</span>
+      </button>
+    </app-table-state>
+  }
+</div>

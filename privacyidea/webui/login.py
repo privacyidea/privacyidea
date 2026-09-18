@@ -53,6 +53,9 @@ from privacyidea.lib.utils import get_client_ip, get_version_number, get_plugin_
 log = logging.getLogger(__name__)
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
+# Layout of the compiled WebUI below the static folder. It mirrors "outputPath" in
+# static/angular.json, and the locale directory below it mirrors the i18n "subPath".
+WEBUI_DIST_PATH = ("dist", "privacyidea-webui", "browser")
 # note: the empty comment in the following line allows to include it in the docs
 DEFAULT_LANGUAGE_LIST = ['en', 'de', 'nl', 'zh_Hant', 'fr', 'es', 'tr', 'cs',
                          'it', 'ta', 'pt', 'ru', 'uk']  #:
@@ -306,7 +309,7 @@ def _serve_locale(locale: str) -> Response | None:
     canonical = _canonical_locale(locale, pi_lang_list)
     if not canonical:
         return None
-    dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", canonical)
+    dist = os.path.join(current_app.static_folder, *WEBUI_DIST_PATH, canonical)
     index_file = os.path.join(dist, "index.html")
     if not os.path.isfile(index_file):
         return None
@@ -340,10 +343,10 @@ def single_page_application() -> Response:
     locale = get_preferred_language()
     if locale and locale != "en":
         url_locale = locale.replace("_", "-")
-        dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", url_locale)
+        dist = os.path.join(current_app.static_folder, *WEBUI_DIST_PATH, url_locale)
         if os.path.isfile(os.path.join(dist, "index.html")):
             return redirect(f"{request.script_root}/app/v2/{url_locale}/")
-    en_dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", "en")
+    en_dist = os.path.join(current_app.static_folder, *WEBUI_DIST_PATH, "en")
     if os.path.isfile(os.path.join(en_dist, "index.html")):
         return redirect(f"{request.script_root}/app/v2/")
     # Fallback to the classic AngularJS UI: no new-UI build exists, so render the

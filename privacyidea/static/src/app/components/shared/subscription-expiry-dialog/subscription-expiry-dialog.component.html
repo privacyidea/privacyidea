@@ -1,0 +1,33 @@
+<app-dialog-wrapper
+  cancelButtonLabel="Close"
+  i18n-cancelButtonLabel="@@common.close"
+  i18n-title="@@subscription.subscriptionExpires"
+  title="Subscription expires soon">
+  <div class="content">
+    <p i18n="@@subscription.oneMoreSubscriptions"
+      >One or more subscriptions will expire within the next month. Please review your subscriptions.</p
+    >
+
+    <ul class="items">
+      @for (item of data.items; track item.application) {
+        <li>
+          <div class="row">
+            <span class="app">{{ item.application }}</span>
+            <span
+              class="date"
+              i18n="@@subscription.validUntil"
+              >Valid until:</span
+            >
+            <span class="value">{{ item.date_till }}</span>
+            <span
+              class="days"
+              i18n="@@subscription.remainingDays"
+              >Remaining days:</span
+            >
+            <span class="value">{{ remainingDays(item) }}</span>
+          </div>
+        </li>
+      }
+    </ul>
+  </div>
+</app-dialog-wrapper>

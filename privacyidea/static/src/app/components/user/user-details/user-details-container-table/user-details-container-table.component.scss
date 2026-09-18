@@ -1,0 +1,13 @@
+@use "table";
+
+.user-details-container-table-layout {
+  @include table.base-table-structure(
+          ".user-details-container-table",
+          ".user-details-container-table-filter",
+          ".table-scroll-container"
+  );
+}
+
+.username-header {
+  color: var(--mat-sys-primary);
+}

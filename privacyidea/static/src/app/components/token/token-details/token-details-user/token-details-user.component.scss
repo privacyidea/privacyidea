@@ -1,0 +1,62 @@
+$border-color: var(--mat-sys-outline-variant);
+
+.user-container {
+  .value-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .value-content {
+    flex: 1 1 0;
+    min-width: 0;
+
+    mat-form-field {
+      width: 100%;
+    }
+  }
+
+  .value-edit {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+
+  .user-details-table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+
+    th,
+    td {
+      border: 1px solid $border-color;
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    td:nth-child(1) {
+      width: 110px;
+    }
+    td:nth-child(2) {
+      width: auto;
+    }
+  }
+
+  .user-detail-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .user-editable-row {
+    width: auto;
+    min-width: 0;
+  }
+
+  .user-pin-container-padding {
+    margin-top: auto;
+    padding: 0 16px;
+  }
+}

@@ -1,0 +1,1136 @@
+@use "sass:math";
+@use "sass:meta";
+@use "@angular/material" as mat;
+@use "@angular/material/core/style/elevation" as mat-elevation;
+@use "theme";
+@use "material-icons/iconfont/material-icons.scss";
+@forward "cards";
+
+@include meta.load-css("mixins.scss");
+@include meta.load-css("badges.scss");
+:root {
+  @include meta.load-css("buttons.scss");
+}
+@include meta.load-css("dialog.scss");
+@include meta.load-css("enroll.scss");
+@include meta.load-css("info.scss");
+@include meta.load-css("inputs.scss");
+@include meta.load-css("tab.scss");
+@include meta.load-css("panel.scss");
+@include meta.load-css("list.scss");
+@include meta.load-css("actions.scss");
+@include meta.load-css("overflow.scss");
+@include meta.load-css("snackbar.scss");
+@include meta.load-css("animations.scss");
+
+// Stops of the light-source dial, shared with light-source-dial.component.scss.
+$light-source-steps: 18;
+$light-source-step-angle: math.div(360, $light-source-steps);
+// Must stay in step with AppearanceService's DEFAULT_LIGHT_SOURCE.
+$default-light-source: 16;
+
+// A direction component reduced to -1, 0 or 1, for offsets that must land on whole pixels.
+@function sign-of($value) {
+  @if $value > 0 {
+    @return 1;
+  } @else if $value < 0 {
+    @return -1;
+  }
+  @return 0;
+}
+
+html,
+body {
+  background: var(--mat-sys-background);
+  font-family: "Roboto", sans-serif;
+  margin: 0;
+  overflow: hidden;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("fonts/Roboto-VariableFont_wdth,wght.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("fonts/static/Roboto-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+:root {
+  // Points at the light, 0deg due right and growing clockwise. The html.light-source-* class wins
+  // over :root and carries the level in effect; this is only what holds before one is applied.
+  --dial-angle: #{$default-light-source * $light-source-step-angle}deg;
+  --blur: 4px;
+  --border-radius: 4px;
+  --light-distance: -4px;
+  --shadow-distance: 2px;
+
+  // Card widths, applied via the card-width() mixin: n * 162px + (n - 1) * 16px for n = 1..5, so
+  // cards of different sizes line up on the same grid however they wrap.
+  --card-width-xs: 162px;
+  --card-width-s: 340px;
+  --card-width-m: 518px;
+  --card-width-l: 696px;
+  --card-width-xl: 874px;
+
+  // Table column widths, applied via the col-width-* utility classes below (or table.column-width()
+  // for a component-scoped rule): s fits a short code or badge (the checkbox column has its own
+  // fixed 42px via .table-checkbox instead of a tier), m the existing 170px convention (e.g. a
+  // serial), l/xl the existing 240/300px conventions (e.g. a wrapped description).
+  --column-width-s: 140px;
+  --column-width-m: 190px;
+  --column-width-l: 240px;
+  --column-width-xl: 290px;
+
+  // Pre-baked Material elevation shadows (0..24) as CSS variables.
+  // Generated at build time so that elevation can be re-skinned at runtime
+  // by reassigning --elevation-3 / --elevation-5 / --elevation-8.
+  @for $z from 0 through 24 {
+    --mat-elevation-#{$z}: #{mat-elevation.get-box-shadow($z)};
+  }
+
+  // Shadow geometry: a dark shadow toward one corner, a light highlight mirrored to the opposite
+  // one, blur roughly twice the offset. --mat-sys-shadow and --mat-sys-light are the theme's two
+  // tones, so the pair inverts in dark mode. --depth-scale (how far the shadows reach) and
+  // --depth-dir-x/-y (which corner the light comes from) are set by the html.depth-* and
+  // html.light-source-* blocks below.
+  --depth-scale: 1;
+  --depth-dir-x: 1;
+  --depth-dir-y: 1;
+  --depth-sign-x: 1;
+  --depth-sign-y: 1;
+
+  // Strength of the surface tints and the inset tones, defaulting to the shadow scale. Every
+  // html.depth-* level sets its own value.
+  --depth-tone-scale: var(--depth-scale);
+
+  // --depth-dir-x/-y are unit-vector components, so a diagonal light splits the offset 0.7071
+  // per axis.
+  --depth-x-3: calc(3px * var(--depth-scale) * var(--depth-dir-x));
+  --depth-y-3: calc(3px * var(--depth-scale) * var(--depth-dir-y));
+  --depth-blur-3: calc(6px * var(--depth-scale));
+  --depth-x-5: calc(6px * var(--depth-scale) * var(--depth-dir-x));
+  --depth-y-5: calc(6px * var(--depth-scale) * var(--depth-dir-y));
+  --depth-blur-5: calc(12px * var(--depth-scale));
+  --depth-x-8: calc(10px * var(--depth-scale) * var(--depth-dir-x));
+  --depth-y-8: calc(10px * var(--depth-scale) * var(--depth-dir-y));
+  --depth-blur-8: calc(21px * var(--depth-scale));
+
+  // User-tunable "current" elevations. Override at runtime to change look & feel.
+  --elevation-3:
+    var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-light);
+  --elevation-5:
+    var(--depth-x-5) var(--depth-y-5) var(--depth-blur-5) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-5)) calc(-1 * var(--depth-y-5)) var(--depth-blur-5) var(--mat-sys-light);
+  --elevation-8:
+    var(--depth-x-8) var(--depth-y-8) var(--depth-blur-8) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-8)) calc(-1 * var(--depth-y-8)) var(--depth-blur-8) var(--mat-sys-light);
+
+  // The same pairs turned inward, for surfaces sunk into the page. The slots are the nesting
+  // levels a card can sit at: 3 for a group on the page container, 5 for a group inside a group,
+  // 8 for one deeper again. Each pairs with the matching --inset-surface-* tone.
+  --inset-shadow-8:
+    inset var(--depth-x-8) var(--depth-y-8) var(--depth-blur-8) var(--mat-sys-shadow),
+    inset calc(-1 * var(--depth-x-8)) calc(-1 * var(--depth-y-8)) var(--depth-blur-8) var(--mat-sys-light);
+  --inset-shadow-5:
+    inset var(--depth-x-5) var(--depth-y-5) var(--depth-blur-5) var(--mat-sys-shadow),
+    inset calc(-1 * var(--depth-x-5)) calc(-1 * var(--depth-y-5)) var(--depth-blur-5) var(--mat-sys-light);
+  --inset-shadow-3:
+    inset var(--depth-x-3) var(--depth-y-3) var(--depth-blur-3) var(--mat-sys-shadow),
+    inset calc(-1 * var(--depth-x-3)) calc(-1 * var(--depth-y-3)) var(--depth-blur-3) var(--mat-sys-light);
+  // --elevation-5 with the vertical offset dropped, for surfaces whose bottom edge meets a bar
+  // (the active toolbar tab, the util groups). With the light straight up or down there is no
+  // horizontal component left and the glow disappears.
+  --side-glow:
+    var(--depth-x-5) 0 var(--depth-blur-5) var(--mat-sys-shadow),
+    calc(-1 * var(--depth-x-5)) 0 var(--depth-blur-5) var(--mat-sys-light);
+  // Surface shading: a gradient running light to dark when raised and dark to light when
+  // recessed. 90deg behind the dial angle puts its light end on the corner the light comes from.
+  --depth-gradient-angle: calc(var(--dial-angle) - 90deg);
+  --depth-tint: clamp(0%, calc(12% * var(--depth-tone-scale)), 100%);
+  --surface-raised: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--table-color)),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--table-color))
+  );
+
+  // Each step mixes more of the surrounding container tone into the card white, so nesting stays
+  // legible where the shadows are soft. The clamp stops a deep step overshooting that tone.
+  --inset-tone-8: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container-highest) clamp(0%, calc(45% * var(--depth-tone-scale)), 100%),
+    var(--mat-sys-surface-container-lowest)
+  );
+  --inset-tone-5: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container-high) clamp(0%, calc(40% * var(--depth-tone-scale)), 100%),
+    var(--mat-sys-surface-container-lowest)
+  );
+  --inset-tone-3: color-mix(
+    in srgb,
+    var(--mat-sys-surface-container) clamp(0%, calc(50% * var(--depth-tone-scale)), 100%),
+    var(--mat-sys-surface-container-lowest)
+  );
+  --inset-surface-8: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--inset-tone-8)),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--inset-tone-8))
+  );
+  --inset-surface-5: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--inset-tone-5)),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--inset-tone-5))
+  );
+  --inset-surface-3: linear-gradient(
+    var(--depth-gradient-angle),
+    color-mix(in srgb, var(--mat-sys-shadow) var(--depth-tint), var(--inset-tone-3)),
+    color-mix(in srgb, var(--mat-sys-light) var(--depth-tint), var(--inset-tone-3))
+  );
+
+  // Standardized input/field widths. Used by the .input-width-* helper classes
+  // and referenced in layout width calculations so they stay in sync.
+  --input-width-xs: 136px;
+  --input-width-s: 180px;
+  --input-width-m: 240px;
+  --input-width-l: 300px;
+  --input-width-xl: 616px;
+  --input-width-xxl: 932px;
+
+  // Width of a config form body: one input-width-xl field plus its leading inset.
+  --config-form-width: calc(var(--input-width-xl) + 16px);
+
+  --button-width-xs: 40px;
+  --button-width-s: 120px;
+  --button-width-m: 180px;
+  --button-width-l: 240px;
+  --button-width-xl: 300px;
+
+  --dialog-prose-width: 616px; // the readable measure; coincides with --input-width-xl
+  --dialog-width-s: 280px; // a 2-button footer, = Material's panel min-width
+  --dialog-width-m: calc(var(--dialog-prose-width) + 32px); // + the wrapper's content padding
+  --dialog-width-l: calc(var(--dialog-width-m) + 300px + 16px); // a QR code and its gap beside it
+
+  --light: #f3f3f3;
+
+  --green-brand-base: hsl(72, 100%, 32%);
+  --green-brand-light: hsl(72, 100%, 37%);
+  --background-green-brand: linear-gradient(145deg, var(--green-brand-light), var(--green-brand-base));
+
+  --box-shadow:
+    var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
+    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+  --box-shadow-white:
+    var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
+    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+  --box-shadow-inset:
+    inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
+    inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+
+  --background-blue: linear-gradient(145deg, var(--mat-sys-primary-dark), var(--mat-sys-primary));
+  --background-blue-inset: linear-gradient(145deg, var(--mat-sys-primary-light-active), var(--mat-sys-primary-light));
+  --box-shadow-blue:
+    inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-primary-light-active),
+    inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-dark);
+  --box-shadow-blue-inset:
+    inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-primary-dark),
+    inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-light-active);
+
+  --background-green: linear-gradient(145deg, var(--green-base), var(--green-light));
+  --background-green-inset: linear-gradient(145deg, var(--green-light), var(--green-base));
+  --box-shadow-green:
+    inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-light-active),
+    inset var(--light-distance) var(--light-distance) var(--blur) var(--green-dark);
+  --box-shadow-green-inset:
+    inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-dark),
+    inset var(--light-distance) var(--light-distance) var(--blur) var(--green-light-active);
+
+  --background-red: linear-gradient(145deg, var(--red-base), var(--red-light));
+  --background-red-inset: linear-gradient(145deg, var(--red-light), var(--red-base));
+  --box-shadow-red:
+    inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-light-active),
+    inset var(--light-distance) var(--light-distance) var(--blur) var(--red-dark);
+  --box-shadow-red-inset:
+    inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-dark),
+    inset var(--light-distance) var(--light-distance) var(--blur) var(--red-light-active);
+
+  --background-yellow: linear-gradient(145deg, var(--yellow-base), var(--yellow-light));
+  --background-yellow-inset: linear-gradient(145deg, var(--yellow-light), var(--yellow-base));
+
+  --background-gray: linear-gradient(145deg, var(--grey-base), var(--grey-light));
+  --background-gray-inset: linear-gradient(145deg, var(--grey-light), var(--grey-base));
+
+  --box-shadow-gray:
+    inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-light-active),
+    inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-dark);
+  --box-shadow-gray-inset:
+    inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-dark),
+    inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-light-active);
+
+  --box-shadow-header: 4px 2px var(--blur) var(--mat-sys-shadow);
+  --table-color: var(--mat-sys-surface-container-lowest);
+
+  --mat-form-field-filled-container-color: var(--mat-sys-surface-container-low);
+  --mat-tab-active-indicator-color: var(--mat-sys-primary);
+  --mat-form-field-filled-focus-active-indicator-color: var(--mat-sys-primary-light);
+  --mat-tab-active-focus-indicator-color: var(--mat-sys-primary);
+  --mat-tab-active-ripple-color: white;
+  --mat-tab-inactive-ripple-color: white;
+  --mat-select-focused-arrow-color: var(--mat-sys-primary-light);
+  --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary-light);
+  --mat-sys-corner-extra-small: var(--border-radius);
+  --drawer-width-self-service: 256px;
+
+  --mat-menu-container-color: var(--mat-sys-surface-container-low);
+}
+
+// Appearance levels the user picks in UI Settings. AppearanceService stamps one class per group
+// on <html>: it outranks the :root defaults above, and the CDK overlay container inherits it so
+// Material panels follow along. Every value stays a var() reference, so a level cannot freeze
+// one theme's tone into the other.
+
+// --depth-scale drives --elevation-*, --inset-shadow-*, --side-glow and, through --depth-tint,
+// the --surface-raised / --inset-surface-* gradients. "flat" overrides the shadow slots with a
+// 1px two-tone border, one pair per slot, so all three collapse onto the same edge and the inset tones alone say how deep a
+// surface sits.
+html.depth-flat {
+  --depth-scale: 0;
+  // Tone alone separates the levels here: the ladder at full strength, the tint at nothing, so
+  // every surface is one flat colour and each inset level a step darker than the one above.
+  --depth-tone-scale: 1;
+  --depth-tint: 0%;
+
+  // The border keeps the two tones of a shadow pair, so an edge still reads as lit from one side
+  // even with no shadow to cast: the darker tone on the two sides the light falls away from, the
+  // lighter one on the two it reaches. Three pairs, one per depth slot, off the ladders in
+  // theme.scss — see the note there for why the border cannot borrow the shadow pair's own tones
+  // or a step of the container ladder. The shallowest slot (3) gets the lightest pair and the
+  // deepest (8) the boldest, same as the elevation shadows below scale with --depth-scale.
+  @each $slot, $step in (3: 3, 5: 2, 8: 1) {
+    // Three bands, each an unspread 1px so the edge is an even 1px the whole way round. The two
+    // mirrored offsets reach only their own two sides, leaving one pixel bare at the two corners
+    // between them; the uniform ring is listed last, so it paints under both and fills exactly
+    // those corners.
+    --flat-pair-#{$slot}:
+      calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 0 var(--flat-border-shadow-#{$step}),
+      calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 0 var(--flat-border-light-#{$step}),
+      0 0 0 1px var(--flat-border-shadow-#{$step});
+    // The same three, inset: an inset band lands on the side its offset moves away from, so the
+    // mirrored pair covers all four edges inside the padding box.
+    --flat-inset-pair-#{$slot}:
+      inset calc(1px * var(--depth-sign-x)) calc(1px * var(--depth-sign-y)) 0 0 var(--flat-border-shadow-#{$step}),
+      inset calc(-1px * var(--depth-sign-x)) calc(-1px * var(--depth-sign-y)) 0 0 var(--flat-border-light-#{$step}),
+      inset 0 0 0 1px var(--flat-border-shadow-#{$step});
+
+    --elevation-#{$slot}: var(--flat-pair-#{$slot});
+    --inset-shadow-#{$slot}: var(--flat-inset-pair-#{$slot});
+  }
+  // The same border, horizontal only, at the slot-5 tone: these surfaces hang off a bar, and the
+  // ring the other slots use would draw a line along the bottom edge they share with it. Two
+  // mirrored bands run the full height, so no corner is left bare and no filler ring is needed.
+  --side-glow:
+    calc(1px * var(--depth-sign-x)) 0 0 0 var(--flat-border-shadow-2),
+    calc(-1px * var(--depth-sign-x)) 0 0 0 var(--flat-border-light-2);
+}
+
+// Each level's tone scale is the next level's shadow scale; very-strong tops the ladder out with
+// a tone step of its own.
+html.depth-subtle {
+  --depth-scale: 0.3;
+  --depth-tone-scale: 0.6;
+}
+
+html.depth-default {
+  --depth-scale: 0.6;
+  --depth-tone-scale: 0.9;
+}
+
+html.depth-strong {
+  --depth-scale: 0.9;
+  --depth-tone-scale: 1.2;
+}
+
+html.depth-very-strong {
+  --depth-scale: 1.2;
+  --depth-tone-scale: 1.5;
+}
+
+// One stop of the light-source dial: --dial-angle points at the light (0deg due right, growing
+// clockwise) and the shadow falls the opposite way, hence the negated unit vector.
+// $light-source-steps must stay in step with AppearanceService's LIGHT_SOURCE_STEPS.
+@for $i from 0 through $light-source-steps - 1 {
+  $angle: $i * $light-source-step-angle;
+
+  // 0 and 180 are skipped, matching LIGHT_SOURCE_LEVELS: a purely horizontal light leaves the
+  // shadows no vertical offset at all.
+  @if $angle != 0 and $angle != 180 {
+    $dir-x: -1 * math.cos($angle * 1deg);
+    $dir-y: -1 * math.sin($angle * 1deg);
+
+    html.light-source-#{$i} {
+      --dial-angle: #{$angle}deg;
+      --depth-dir-x: #{$dir-x};
+      --depth-dir-y: #{$dir-y};
+      // The same directions as -1, 0 or 1. Blurred shadows take the fractional ones; the flat
+      // border takes these, so its offsets stay whole pixels and every edge rasterizes to the same
+      // width wherever the box happens to land on the pixel grid.
+      --depth-sign-x: #{sign-of($dir-x)};
+      --depth-sign-y: #{sign-of($dir-y)};
+    }
+  }
+}
+
+// Capped at 12px: --border-radius feeds --mat-sys-corner-extra-small, and above that Material's
+// outlined form fields widen their notch gap and padding, shifting the input text instead of
+// rounding a corner. "square" is 0px, not a bare 0, because the value lands inside Material's
+// max() calls, where a unitless zero is not a length.
+$corner-radii: (
+  "square": 0px,
+  "default": 4px,
+  "round": 8px,
+  "extra-round": 12px
+);
+
+@each $name, $radius in $corner-radii {
+  html.corner-#{$name} {
+    --border-radius: #{$radius};
+  }
+}
+
+// The outer container of a routed page. `.admin-content` / `.selfservice-content-container`
+// (layout.component.scss) are size containers, so 100cq* is whatever the toolbars, the
+// self-service drawer and the region's own padding leave over. With border-box the caps measure
+// the padded box, so a page sizing its container to a content width must add this mixin's own
+// 16px padding on both sides, i.e. 32px.
+@mixin main-component-style {
+  box-sizing: border-box;
+  padding: 16px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--elevation-5);
+  background: var(--surface-raised);
+  max-width: 100cqw;
+  max-height: 100cqh;
+  overflow: auto;
+}
+
+// Global (unencapsulated) so it can match the router-outlet's dynamically inserted component.
+// Gives the routed host a definite height, so components that fill via `height: 100%` (e.g.
+// token-details, dashboard) reach the bottom. main-component-style's cap does not depend on this
+// chain: it measures the content region itself, so any number of wrappers may sit in between.
+.admin-content > *:not(router-outlet) {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.selfservice-content-container > *:not(router-outlet) {
+  min-height: 0;
+  min-width: 0;
+}
+
+.shadow {
+  color: var(--mat-sys-shadow);
+}
+
+.on-surface {
+  color: var(--mat-sys-on-surface);
+}
+
+.on-surface-variant {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.surface-highest {
+  color: var(--mat-sys-surface-container-highest);
+}
+
+.bold {
+  font-weight: bold;
+}
+
+.italic {
+  font-style: italic;
+}
+
+.red {
+  color: var(--red-base);
+}
+
+.red-light {
+  color: var(--red-light);
+}
+
+.red-light-active {
+  color: var(--red-light-active);
+}
+
+.green {
+  color: var(--green-base);
+}
+
+.green-light {
+  color: var(--green-light);
+}
+
+.green-light-active {
+  color: var(--green-light-active);
+}
+
+.yellow {
+  color: var(--yellow-base);
+}
+
+.yellow-light {
+  color: var(--yellow-light);
+}
+
+.yellow-light-active {
+  color: var(--yellow-light-active);
+}
+
+.blue-base {
+  color: var(--mat-sys-primary);
+}
+
+.h3-color {
+  color: var(--mat-sys-primary-dark);
+}
+
+.ali-center {
+  align-items: center;
+}
+
+.ali-end {
+  align-items: end;
+}
+
+.align-baseline {
+  align-items: baseline;
+}
+
+.just-center {
+  justify-content: center;
+}
+
+.just-end {
+  justify-content: end;
+}
+
+.just-space-between {
+  justify-content: space-between;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-center-vertical {
+  display: flex;
+  align-items: center;
+}
+
+.flex-center-horizontal {
+  display: flex;
+  justify-content: center;
+}
+
+.flex-top-center {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.flex-size-none {
+  flex: none;
+}
+
+.flex-size-1 {
+  flex: 1;
+}
+
+.flex-size-2 {
+  flex: 2;
+}
+
+.flex-size-3 {
+  flex: 3;
+}
+
+.flex-size-5 {
+  flex: 5;
+}
+
+.flex-size-8 {
+  flex: 8;
+}
+
+.flex-size-auto {
+  flex: auto;
+}
+
+.width-288px {
+  width: 288px;
+}
+
+.font-14 {
+  font-size: 14px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.flex-just-start {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.mat-mdc-input-element {
+  font-size: 14px;
+}
+
+.gap-20 {
+  gap: 20px;
+}
+
+.pad-0 {
+  padding: 0 !important;
+}
+
+.height-fit {
+  height: fit-content;
+}
+
+.margin-left-32 {
+  margin-left: 32px;
+}
+
+.margin-left-16 {
+  margin-left: 16px;
+}
+
+.margin-left-8 {
+  margin-left: 8px;
+}
+
+.margin-left-4 {
+  margin-left: 4px;
+}
+
+.margin-right-32 {
+  margin-right: 32px;
+}
+
+.margin-right-16 {
+  margin-right: 16px;
+}
+
+.margin-right-4 {
+  margin-right: 4px;
+}
+
+.margin-right-5 {
+  margin-right: 5px;
+}
+
+.margin-right-3 {
+  margin-right: 3px;
+}
+
+.margin-right-2 {
+  margin-right: 2px;
+}
+
+.margin-top-0 {
+  margin-top: 0;
+}
+
+.margin-top-4 {
+  margin-top: 4px;
+}
+
+.margin-top-8 {
+  margin-top: 8px;
+}
+
+.margin-top-16 {
+  margin-top: 16px;
+}
+
+.margin-top-32 {
+  margin-top: 32px;
+}
+
+.margin-top--16 {
+  margin-top: -16px;
+}
+
+.margin-top--32 {
+  margin-top: -32px;
+}
+
+.margin-top-0 {
+  margin-top: 0;
+}
+
+.margin-top-64 {
+  margin-top: 64px;
+}
+
+.margin-bottom-8 {
+  margin-bottom: 8px;
+}
+
+.margin-bottom-16 {
+  margin-bottom: 16px;
+}
+
+.margin-bottom-32 {
+  margin-bottom: 32px;
+}
+
+.margin-bottom-64 {
+  margin-bottom: 64px;
+}
+
+.margin-0 {
+  margin: 0;
+}
+
+.margin-left--8 {
+  margin-left: -8px;
+}
+
+.margin-right-auto {
+  margin-right: auto;
+}
+
+.margin-left-auto {
+  margin-left: auto;
+}
+
+.width-32 {
+  width: 32%;
+}
+
+.width-33 {
+  width: 33%;
+}
+
+.width-66 {
+  width: 66%;
+}
+
+.width-50 {
+  width: 50%;
+}
+
+.width-100 {
+  width: 100%;
+}
+
+.width-13rem {
+  width: 13rem;
+}
+
+.width-241 {
+  width: 241px;
+  max-width: 241px;
+}
+
+.height-53 {
+  height: 53px;
+}
+
+.height-auto {
+  height: auto;
+}
+
+.gap-0 {
+  gap: 0;
+}
+
+.gap-16 {
+  gap: 16px;
+}
+
+.gap-8 {
+  gap: 8px;
+}
+
+.gap-32 {
+  gap: 32px;
+}
+
+.margin-16 {
+  margin: 16px;
+}
+
+.margin-8 {
+  margin: 8px;
+}
+
+.margin-bottom-0 {
+  margin-bottom: 0;
+}
+
+.margin-bottom-4 {
+  margin-bottom: 4px;
+}
+
+.overflow {
+  overflow: auto;
+}
+
+.padding-0 {
+  padding: 0;
+}
+
+.padding-2 {
+  padding: 2px;
+}
+
+.padding-right-2 {
+  padding-right: 2px;
+}
+
+.padding-right-3 {
+  padding-right: 3px;
+}
+
+.padding-4 {
+  padding: 4px;
+}
+
+.padding-right-4 {
+  padding-right: 4px;
+}
+
+.padding-right-6 {
+  padding-right: 6px;
+}
+
+.padding-8 {
+  padding: 8px;
+}
+
+.padding-16 {
+  padding: 16px;
+}
+
+.padding-32 {
+  padding: 32px;
+}
+
+.padding-top-8 {
+  padding-top: 8px;
+}
+
+.margin-2 {
+  margin: 2px;
+}
+
+.margin-4 {
+  margin: 4px;
+}
+
+.margin-8 {
+  margin: 8px;
+}
+
+.margin-16 {
+  margin: 16px;
+}
+
+.margin-32 {
+  margin: 32px;
+}
+
+.margin-left-64 {
+  margin-left: 64px;
+}
+
+.width-300 {
+  width: 300px;
+}
+
+.max-width-300 {
+  max-width: 300px;
+}
+
+// Standardized table column width tiers (analogous to the card-width-* tiers above): a column opts
+// into one via a col-width-{size} class on its cell instead of a one-off pixel value, so every
+// table's columns - and the table-state placeholder sized from them (see table.table-width()) -
+// draw from the same scale.
+.col-width-s {
+  width: var(--column-width-s);
+  max-width: var(--column-width-s);
+}
+
+.col-width-m {
+  width: var(--column-width-m);
+  max-width: var(--column-width-m);
+}
+
+.col-width-l {
+  width: var(--column-width-l);
+  max-width: var(--column-width-l);
+}
+
+.col-width-xl {
+  width: var(--column-width-xl);
+  max-width: var(--column-width-xl);
+}
+
+.copy-button {
+  background: unset;
+  border: unset;
+  cursor: pointer;
+}
+
+.highlight {
+  background-color: var(--green-light-active) !important;
+}
+
+.mdc-snackbar {
+  margin-bottom: 76px !important;
+}
+
+.mat-mdc-icon-button {
+  display: flex;
+  align-items: center;
+}
+
+.content-layout {
+  max-width: 100vw;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.multi-column-panel.mat-mdc-select-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 308px));
+  max-height: unset;
+  column-gap: calc(16px / 3);
+  padding: 12px;
+  padding-bottom: 16px;
+  overflow-y: auto;
+}
+
+@media (max-width: 1302px) {
+  .multi-column-panel.mat-mdc-select-panel {
+    grid-template-columns: minmax(260px, 308px);
+    width: fit-content !important;
+    min-width: unset !important;
+  }
+}
+
+.single-column-panel.mat-mdc-select-panel {
+  max-height: unset;
+  padding: 12px;
+  padding-bottom: 16px;
+  overflow-y: auto;
+}
+
+.select-option {
+  box-shadow: var(--elevation-3);
+  border-radius: var(--border-radius);
+  margin: 0 0 calc(16px / 3) 0;
+}
+
+// The raised step arrives with .is-sticky and is faded in by the transition; unpinned the header
+// carries the page container's own shading and is flush with it.
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--surface-raised);
+  padding: 16px;
+  transition: box-shadow 0.3s ease-in-out;
+  border-radius: var(--border-radius);
+}
+
+.sticky-header.is-sticky {
+  box-shadow: var(--elevation-3);
+}
+
+.sticky-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.sticky-controls .mat-mdc-form-field-subscript-wrapper {
+  height: 0;
+}
+
+.flex-row-stretch {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.flex-nowrap {
+  flex-wrap: nowrap !important;
+}
+
+.flex-grow-1 {
+  flex-grow: 1;
+  flex-basis: 0;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.mat-pseudo-checkbox.mat-pseudo-checkbox-checked::after {
+  color: white !important;
+}
+
+.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
+  --mat-option-hover-state-layer-color: var(--mat-sys-primary-base);
+  --mat-option-focus-state-layer-color: var(--mat-sys-primary-base-active);
+  --mat-option-selected-state-layer-color: var(--mat-sys-primary-base-hover);
+}
+.mat-mdc-option.mdc-list-item:not(.mdc-list-item--disabled) {
+  --mat-option-hover-state-layer-color: var(--mat-sys-primary-light);
+  --mat-option-focus-state-layer-color: var(--mat-sys-primary-light-active);
+  --mat-option-selected-state-layer-color: var(--mat-sys-primary-light-hover);
+}
+
+// The hover / keyboard-active layers above are opaque primary tones, not the translucent overlay
+// Material ships, so the label has to move with them: against primary-light on-primary measures
+// 4.96:1 (light) and 5.71:1 (dark), where on-surface would be 3.84:1 and 2.94:1 and fail AA. This
+// applies to every panel - a multi-select's options take the same layers.
+.mat-mdc-select-panel {
+  .mat-mdc-option.mdc-list-item:not(.mdc-list-item--disabled):hover,
+  .mat-mdc-option.mdc-list-item.mat-mdc-option-active:not(.mdc-list-item--disabled) {
+    .mdc-list-item__primary-text {
+      color: var(--mat-sys-on-primary) !important;
+    }
+  }
+}
+
+// The *selected* layer only paints in a single-select panel - Material excludes
+// .mat-mdc-option-multiple from the selected background - so a multi-select's selected but
+// unhovered row keeps the surface background and must keep on-surface text with it.
+.mat-mdc-select-panel[aria-multiselectable="false"] {
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+    .mdc-list-item__primary-text {
+      color: var(--mat-sys-on-primary) !important;
+    }
+  }
+}
+
+.mat-mdc-menu-content {
+  max-height: 400px;
+}
+
+// Tooltips sit on the overlay container, so they are styled globally rather than per component. The border is derived
+// from the text color so it stays subtle in both themes without depending on a theme-scoped variable.
+.mat-mdc-tooltip .mdc-tooltip__surface {
+  border: 1px solid color-mix(in srgb, var(--mat-sys-on-surface, currentColor) 25%, transparent);
+}
+
+.filter-hint-tooltip {
+  white-space: pre-line;
+  text-align: left;
+
+  .mdc-tooltip__surface {
+    max-width: 340px;
+  }
+}
+
+.multiline-tooltip {
+  white-space: pre-line;
+  text-align: left;
+}
+
+// Panel class set by the shared app-multi-select-filter component. Its options can be long, so let the menu grow to
+// fit instead of truncating at the default 280px.
+.filter-select-menu.mat-mdc-menu-panel {
+  max-width: min(90vw, 480px);
+}
+
+mat-chip.mat-mdc-chip {
+  &.clickable-chip {
+    .mdc-evolution-chip__action--presentational {
+      cursor: pointer !important;
+    }
+  }
+}
+
+// The authentication-log date-range picker renders in the CDK overlay; panelClass lands on the <mat-calendar>, so we
+// scope the content container via :has() and the calendar directly. Other datepickers keep their default look.
+.mat-datepicker-content:has(.mat-calendar.auth-log-datepicker) {
+  background-color: var(--mat-sys-surface-container-lowest);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--mat-sys-surface-container-highest);
+}
+
+.mat-calendar.auth-log-datepicker {
+  border-radius: var(--border-radius);
+}
+
+.mat-drawer-backdrop {
+  opacity: 0.5;
+}
+
+.mdc-list-item.mdc-list-item--with-one-line {
+  height: auto !important;
+  padding-right: 0;
+  padding-bottom: 8px;
+}
+
+.user-details-panel {
+  .mat-expansion-panel-body {
+    padding: 0 16px 16px !important;
+  }
+}
+
+.mdc-evolution-chip-set__chips {
+  flex-flow: var(--chip-listbox-flex-flow, row wrap) !important;
+}
+
+// Material renders a button's icon badge and label text as inline siblings
+// inside .mdc-button__label. The badge is vertical-align: middle while the text
+// aligns to its baseline, so they don't line up vertically. Center them as a
+// flex row (global, since .mdc-button__label is generated by Material and has
+// no component encapsulation attribute).
+.mdc-button__label:has(.icon-badge) {
+  display: inline-flex;
+  align-items: center;
+}
+
+// The badge box is icon-sized while the label text sits high in its line box,
+// so the text reads ~2px above the badge's center. Nudge the text span (the
+// sibling right after the badge) down to optically center the two.
+.mdc-button__label .icon-badge + span {
+  position: relative;
+  top: 2px;
+}
