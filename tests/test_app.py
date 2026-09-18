@@ -204,10 +204,13 @@ class HashConfigTestCase(unittest.TestCase):
         self.orig_handlers = self.logger.handlers
         self.logger.handlers = []
         self.level = self.logger.level
+        self.pi_logger = logging.getLogger("privacyidea")
+        self.pi_state = (self.pi_logger.handlers[:], self.pi_logger.level, self.pi_logger.propagate)
 
     def tearDown(self):
         self.logger.handlers = self.orig_handlers
         self.logger.level = self.level
+        self.pi_logger.handlers, self.pi_logger.level, self.pi_logger.propagate = self.pi_state
 
     @contextmanager
     def isolated_config_file(self):
