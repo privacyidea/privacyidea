@@ -107,10 +107,12 @@ class RejectionShape:
     :ivar rid: the response id this endpoint renders with. ``prepare_result`` adds ``result.authentication`` only
         for ``rid > 1``, so a rejection at ``/ttype/push`` - which renders with ``1`` - must not grow a field the
         endpoint never carries.
-    :ivar carries_detail: whether an ordinary failed authentication here carries a ``detail`` at all. On
-        ``/validate/*`` every failure does, so a silent rejection carries the generic failure to have one too; at
-        ``/ttype/push`` none does, so a silent rejection carries none either - the generic message would be exactly
-        the tell that including it on ``/validate`` avoids.
+    :ivar carries_message: whether an ordinary failed authentication here says anything in words. On
+        ``/validate/*`` every failure carries a message, so a silent rejection carries the generic failure to have
+        one too; at ``/ttype/push`` no failure carries a ``detail`` at all, and at ``/validate/remember_device`` the
+        answer is a bare boolean in *extra_detail*, so in both a silent rejection says nothing - the generic message
+        would be exactly the tell that including it on ``/validate/check`` avoids. This is about the wording alone:
+        an endpoint can say nothing and still carry a detail, which is what *extra_detail* is for.
     :ivar extra_detail: fields every answer this endpoint gives carries, merged into the rejection's ``detail`` so
         a refusal answers through them like any other failure. ``/validate/remember_device`` is the one endpoint
         with any: its whole answer is ``detail.remembered_device``, so a rejection leaving it out would be the one
@@ -118,20 +120,20 @@ class RejectionShape:
     """
     value: Any = False
     rid: int = 2
-    carries_detail: bool = True
+    carries_message: bool = True
     extra_detail: Mapping[str, Any] | None = None
 
 
 #: How ``/ttype/push`` answers a refused challenge answer. The push token renders its own response through
 #: ``prepare_result`` with ``rid`` 1, so it carries no ``result.authentication``, and an ordinary failed answer there
 #: carries no ``detail`` at all - both of which a rejection has to match to be indistinguishable from one.
-PUSH_ANSWER_REJECTION = RejectionShape(rid=1, carries_detail=False)
+PUSH_ANSWER_REJECTION = RejectionShape(rid=1, carries_message=False)
 
 #: How ``/validate/remember_device`` answers a refused recognition. Recognition is not an authentication, so the
 #: endpoint renders with ``rid`` 1 and reports no ``result.authentication`` verdict; and an ordinary "not recognised"
 #: answer there carries no message at all, only ``detail.remembered_device``, so a silent rejection carries none
 #: either and says ``false`` through the one field the client reads.
-REMEMBER_DEVICE_REJECTION = RejectionShape(rid=1, carries_detail=False,
+REMEMBER_DEVICE_REJECTION = RejectionShape(rid=1, carries_message=False,
                                            extra_detail={"remembered_device": False})
 
 
@@ -245,8 +247,7 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
 
 # --- /validate/*: return the rejection as a response ---------------------------------------------------------------
 
-def conditional_access_precheck(user: User, rejection_value: Any = False,
-                                shape: RejectionShape | None = None) -> Response | None:
+def conditional_access_precheck(user: User, shape: RejectionShape | None = None) -> Response | None:
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
     max_auth checks) when conditional-access policies forbid it. Returns the failure
@@ -264,15 +265,13 @@ def conditional_access_precheck(user: User, rejection_value: Any = False,
     outcome for it.
 
     :param user: the identity to gate on
-    :param rejection_value: what ``result.value`` says on a rejection. ``False`` everywhere except
-        ``/validate/triggerchallenge``, where the value is the *number of challenges triggered* rather than a
-        boolean - answering that endpoint with ``False`` would change the type of a field its callers may be
-        reading as a number.
-    :param shape: the whole shape of a refusal here, for an endpoint whose ordinary failure is not the
-        ``/validate/*`` default - ``/validate/remember_device``, which answers a recognition rather than an
-        authentication. Supersedes *rejection_value*, which is the shape's ``value`` and nothing else.
+    :param shape: how this endpoint answers a refusal, defaulting to the ``/validate/*`` shape - an ordinary
+        ``200`` carrying ``result.value`` false and a message. ``/validate/triggerchallenge`` overrides the value
+        (the number of challenges triggered, where a boolean would change the type of a field its callers may be
+        reading as a number) and ``/validate/remember_device`` the whole shape, answering a recognition rather than
+        an authentication.
     """
-    shape = shape if shape is not None else RejectionShape(value=rejection_value)
+    shape = shape if shape is not None else RejectionShape()
     rejection = conditional_access_rejection(user, shape)
     if rejection is None:
         return None
@@ -326,16 +325,16 @@ def _rejection_wording(shape: RejectionShape, message: str | None) -> str | None
     What a rejection says on the endpoint *shape* describes, given the wording the restrictions carry.
 
     A configured message is said everywhere. A silent restriction is the interesting half: where an ordinary
-    failure carries a ``detail`` it says what every other failed authentication says, because a response *without*
-    one could only have come from conditional access; where an ordinary failure carries none - ``/ttype/push`` -
-    it says nothing, because there the generic message would be that same tell.
+    failure says something it says what every other failed authentication says, because a response *without* a
+    message could only have come from conditional access; where an ordinary failure says nothing - ``/ttype/push``,
+    ``/validate/remember_device`` - it says nothing, because there the generic message would be that same tell.
 
     :param message: the wording the restrictions in force carry, or ``None`` for the normal, silent case
     :return: the wording, or ``None`` when the rejection carries no detail at all
     """
     if message:
         return message
-    return None if not shape.carries_detail else str(GENERIC_AUTH_FAILURE)
+    return None if not shape.carries_message else str(GENERIC_AUTH_FAILURE)
 
 
 def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
@@ -422,13 +421,16 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
         omitted, ``request.User`` is used. Endpoints that must resolve the
         identity differently (a serial/credential-id request, or a transaction
         owner) pass their own resolver.
-    :param rejection_value: passed through to the pre-check; see there for the one endpoint that sets it.
+    :param rejection_value: what ``result.value`` says on a rejection, which is the whole of the refusal shape
+        for a decorated endpoint. ``False`` everywhere except ``/validate/triggerchallenge``, where the value
+        is the *number of challenges triggered* rather than a boolean - answering that endpoint with ``False``
+        would change the type of a field its callers may be reading as a number.
     """
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             user = identity_resolver() if identity_resolver is not None else request.User
-            rejection = conditional_access_precheck(user, rejection_value=rejection_value)
+            rejection = conditional_access_precheck(user, RejectionShape(value=rejection_value))
             if rejection is not None:
                 return rejection
             return wrapped_function(*args, **kwargs)

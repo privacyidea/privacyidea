@@ -115,9 +115,10 @@ remembered devices.
 
 Recognition is subject to :ref:`conditional_access`, because a recognised device
 is what lets a client skip the second factor. While a user lock or a source-IP
-block is in force the answer is "not recognised", and the presented cookie is not
-read at all - it is neither rotated nor cleared, so the device is recognised
-again once the restriction lifts. The client is told only what was configured on
+block is in force - or a policy's *deny* action decides the request - the answer
+is "not recognised", and the presented cookie is not read at all: it is neither
+rotated nor cleared, so the device is recognised again once the restriction
+lifts. The client is told only what was configured on
 the policy, exactly as at ``/validate/check``; with nothing configured a refusal
 looks like an ordinary miss, so a stolen cookie cannot be used to find out which
 accounts are locked.

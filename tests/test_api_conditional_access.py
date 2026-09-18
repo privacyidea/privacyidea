@@ -874,18 +874,23 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     def test_device_token_reuse_locks_the_user_out_of_recognition(self):
         # The two halves of this branch meeting: the stolen cookie is the DEVICE_TOKEN_REUSED event that locks the
-        # user, and the lock then refuses recognition for the device the same detection did not reach - here the
-        # user's device on a second client, which theft on the first one revokes as well.
+        # user, and the lock then refuses recognition for a device registered *after* the theft. The device has to
+        # be a fresh one: the theft escalation revokes every device the user had at the time, so recognising one of
+        # those would answer false whether or not the lock is enforced, and would prove nothing about the lock.
         self._make_lock_policy(counter_type=AuthEventType.DEVICE_TOKEN_REUSED, threshold=1, duration=600)
         api_key, cookie = self._remembered_client()
-        other_client, other_key = create_client("ca other client", "privacyidea-keycloak")
-        _other_device, other_cookie = create_remembered_device(user_identity(self.user), other_client.id)
 
         self.assertTrue(self._recognise_device(api_key, cookie).json["result"]["value"])
         self._recognise_device(api_key, cookie)  # stale counter replayed -> theft
         self.assertTrue(is_user_locked(self.user))
 
-        self.assertFalse(self._recognise_device(other_key, other_cookie).json["result"]["value"])
+        fresh_client, fresh_key = create_client("ca post-theft client", "privacyidea-keycloak")
+        _fresh_device, fresh_cookie = create_remembered_device(user_identity(self.user), fresh_client.id)
+        refused = self._recognise_device(fresh_key, fresh_cookie)
+        self.assertFalse(refused.json["result"]["value"], refused.json)
+        # And it is the lock that refused it, not the cookie: the same cookie is recognised once the lock is gone.
+        unlock_user_by_username(self.user.login, self.user.realm)
+        self.assertTrue(self._recognise_device(fresh_key, fresh_cookie).json["result"]["value"])
 
     def test_a_lock_that_was_never_written_does_not_refuse_its_own_request(self):
         # A restricting action that did not restrict anything must not turn its own request into a rejection: the

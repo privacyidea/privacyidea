@@ -1193,10 +1193,11 @@ def check_remember_device():
     reports); otherwise the answer is always ``false`` and a presented cookie is
     left untouched.
 
-    Conditional access refuses recognition for a locked user or a blocked source
-    IP, answering ``false`` without touching the presented cookie - the answer a
-    device that is simply not remembered gets, so the two are indistinguishable
-    unless an administrator configured a message to show.
+    Conditional access refuses recognition for a locked user, a blocked source IP
+    or a policy whose *deny* action decides this request, answering ``false``
+    without touching the presented cookie - the answer a device that is simply
+    not remembered gets, so the two are indistinguishable in the body unless an
+    administrator configured a message to show.
 
     Issuing a cookie stays on ``/validate/check`` (``request_persistent_cookie=1``).
 
@@ -1260,17 +1261,21 @@ def check_remember_device():
             # off the shared browser just because someone else logged in.
             pass
         elif result.status == RememberStatus.THEFT:
-            # consume_remember_device_cookie has already invalidated the stolen series. Escalate to every one of this
-            # user's remembered devices, on every client: a stolen cookie means the user's browser (or its cookie
-            # jar) is compromised, not just the one series that happened to be replayed, so recognition is revoked
-            # everywhere until the user re-registers. Record it in action_detail (which the error path does not
-            # overwrite), drop the cookie, and log a DEVICE_TOKEN_REUSED authentication event so conditional access
-            # can lock the account, block the source IP or notify as configured.
-            log.warning("Persistent device cookie reuse detected; series invalidated.")
-            revoke_devices(realm_id=identity.realm_id, resolver=identity.resolver, user_id=identity.user_id)
+            # consume_remember_device_cookie has already invalidated the stolen series. Record the detection first -
+            # in action_detail (which the error path does not overwrite) and as a DEVICE_TOKEN_REUSED authentication
+            # event, so conditional access can lock the account, block the source IP or notify as configured - and
+            # only then escalate. The order matters: revoke_devices commits, so a lock wait or deadlock on the bulk
+            # delete would otherwise raise out of the view with the stolen series already gone and the incident
+            # recorded nowhere. The escalation reaches every one of this user's remembered devices, on every client,
+            # because a stolen cookie means the user's browser (or its cookie jar) is compromised, not just the one
+            # series that happened to be replayed - so recognition is revoked everywhere until the user re-registers.
+            log.warning(f"Persistent device cookie reuse detected for client {g.get('client_id')!r}; "
+                        f"series invalidated and all remembered devices of this user revoked.")
             g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
                                       add_with_comma=True)
-            log_authentication(AuthEventType.DEVICE_TOKEN_REUSED, request, user=user)
+            log_authentication(AuthEventType.DEVICE_TOKEN_REUSED, request, user=user,
+                               other_info={"client_id": g.get("client_id")})
+            revoke_devices(realm_id=identity.realm_id, resolver=identity.resolver, user_id=identity.user_id)
             cookie_action = CookieAction("clear")
         else:  # miss: the cookie is dead (unknown or expired) - clear it
             cookie_action = CookieAction("clear")

@@ -263,7 +263,8 @@ request path:
   an application asking whether a device is remembered, so that it may skip the
   second factor. This is not an authentication and writes no entry of its own
   when it succeeds; it appears here when a replayed device cookie was detected
-  (``DEVICE_TOKEN_REUSED``) and when a lock or block turned the request away.
+  (``DEVICE_TOKEN_REUSED``) and when a lock, a block or a *deny* action turned
+  the request away.
 ``/ttype/push``
   a push challenge answered on the smartphone, which reaches the server out of
   band.
