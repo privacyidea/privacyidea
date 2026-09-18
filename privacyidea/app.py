@@ -45,6 +45,7 @@ from flask import Flask, current_app, jsonify, request, redirect
 from flask_babel import Babel
 from flask_migrate import Migrate
 from flask_talisman import Talisman
+from passlib.context import CryptContext
 
 # we need this import to add the before/after request function to the blueprints
 # noinspection PyUnresolvedReferences
@@ -87,7 +88,7 @@ from privacyidea.api.validate import validate_blueprint
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
 from privacyidea.lib import queue
 from privacyidea.lib.conditional_access.session import init_ca_session
-from privacyidea.lib.crypto import init_hsm
+from privacyidea.lib.crypto import DEFAULT_HASH_ALGO_LIST, DEFAULT_HASH_ALGO_PARAMS, init_hsm
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.models import db, NodeName
@@ -270,6 +271,25 @@ def _check_config(app: Flask):
                          "and response signing!\n")
         app.config[ConfigKey.AUDIT_NO_SIGN] = True
         app.config[ConfigKey.NO_RESPONSE_SIGN] = True
+
+
+def _check_hash_config(app: Flask):
+    # passlib only reports an unusable scheme or parameter when the CryptContext is built, which
+    # otherwise happens at the first hash verification, i.e. the first login.
+    hash_algo_list = app.config.get(ConfigKey.HASH_ALGO_LIST, DEFAULT_HASH_ALGO_LIST)
+    try:
+        pass_ctx = CryptContext(hash_algo_list)
+    except (KeyError, ValueError, TypeError) as e:
+        raise RuntimeError(f"'{ConfigKey.HASH_ALGO_LIST}' is not usable: {e.args[0] if e.args else e}") from e
+    if not pass_ctx.schemes():
+        raise RuntimeError(f"'{ConfigKey.HASH_ALGO_LIST}' must contain at least one hash algorithm")
+
+    hash_algo_params = dict(DEFAULT_HASH_ALGO_PARAMS)
+    hash_algo_params.update(app.config.get(ConfigKey.HASH_ALGO_PARAMS, {}))
+    try:
+        CryptContext(hash_algo_list, **hash_algo_params)
+    except (KeyError, ValueError, TypeError) as e:
+        raise RuntimeError(f"'{ConfigKey.HASH_ALGO_PARAMS}' is not usable: {e.args[0] if e.args else e}") from e
 
 
 def _warn_if_base_url_missing(app: Flask):
@@ -546,6 +566,7 @@ def create_app(config_name="development",
             DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = app.config.get(ConfigKey.LOGFILE)
         _setup_logging(app, DEFAULT_LOGGING_CONFIG)
 
+    _check_hash_config(app)
     _warn_if_base_url_missing(app)
 
     _resolve_ui_folders(app)
@@ -672,6 +693,7 @@ def create_docker_app():
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get(ConfigKey.LOGLEVEL)
     _setup_logging(app, DOCKER_LOGGING_CONFIG)
 
+    _check_hash_config(app)
     _warn_if_base_url_missing(app)
 
     _resolve_ui_folders(app)
