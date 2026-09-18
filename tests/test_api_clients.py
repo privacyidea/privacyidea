@@ -312,13 +312,58 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
         entry = self.find_most_recent_audit_entry(action_detail="*suspended API key presented*")
         self.assertIn("suspended API key presented", entry.get("action_detail", ""))
 
-        # The suspended-key use is its own row, ahead of the request's own classification of the auth attempt itself
-        # (cornelius has no token in this test fixture, so NO_TOKEN), both belonging to the one attempt this request
-        # made.
+        # The suspended-key use is its own row, written as the response goes out and so behind the request's own
+        # classification of the auth attempt itself (cornelius has no token in this test fixture, so NO_TOKEN).
         entries = get_authentication_logs()[logs_before:]
-        self.assertEqual([AuthEventType.SUSPENDED_API_KEY_USED, AuthEventType.NO_TOKEN],
+        self.assertEqual([AuthEventType.NO_TOKEN, AuthEventType.SUSPENDED_API_KEY_USED],
                          [entry.event_type for entry in entries])
+        self.assertEqual({"client_id": client["id"]}, entries[-1].other_info)
+
+    def test_06b_suspended_key_row_names_the_client_and_never_a_user(self):
+        # The row says which client presented the key and nothing about a user. The request was not identified by
+        # the key, so any user it carries is an unauthenticated claim the caller chose - and this event type is
+        # trackable, so attributing the row to that name would let whoever holds a disabled key write
+        # authentication-log rows against any account, which a policy counting them per user turns into a lockout.
+        self.setUp_user_realms()
+        client = self._create_client()
+        with self.app.test_request_context(f'/clients/{client["id"]}',
+                                           data={"status": "suspended"}, method='PATCH',
+                                           headers={'Authorization': self.at}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+        logs_before = len(get_authentication_logs())
+        # /validate/remember_device requires an identified client, so a suspended key is answered with a 401 by an
+        # error handler - the recording still happens, which is the case a before_request could not cover.
+        with self.app.test_request_context('/validate/remember_device', method='POST',
+                                           data={"user": "cornelius", "realm": self.realm1},
+                                           headers={'X-API-Key': client["api_key"]}):
+            self.assertEqual(401, self.app.full_dispatch_request().status_code)
+
+        entries = get_authentication_logs()[logs_before:]
+        self.assertEqual([AuthEventType.SUSPENDED_API_KEY_USED], [entry.event_type for entry in entries])
         self.assertEqual({"client_id": client["id"]}, entries[0].other_info)
+        self.assertIsNone(entries[0].username)
+        self.assertIsNone(entries[0].resolver)
+        self.assertIsNone(entries[0].uid)
+
+    def test_06c_suspended_key_is_recorded_outside_the_validate_blueprint(self):
+        # The signal follows the key, not the blueprint: it used to be recorded only by /validate's own
+        # before_request, so a suspended key on an admin or token endpoint went unreported.
+        client = self._create_client()
+        with self.app.test_request_context(f'/clients/{client["id"]}',
+                                           data={"status": "suspended"}, method='PATCH',
+                                           headers={'Authorization': self.at}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+        logs_before = len(get_authentication_logs())
+        with self.app.test_request_context('/token/', method='GET',
+                                           headers={'Authorization': self.at,
+                                                    'X-API-Key': client["api_key"]}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+        entries = get_authentication_logs()[logs_before:]
+        self.assertEqual([AuthEventType.SUSPENDED_API_KEY_USED], [entry.event_type for entry in entries])
+        self.assertEqual("/token", entries[0].endpoint)
 
     def test_07_unknown_key_is_not_audited(self):
         # An unknown/garbage key must NOT create an audit note (avoid flooding).

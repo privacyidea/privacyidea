@@ -85,6 +85,8 @@ from ..lib.error import (PrivacyIDEAError,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.api.lib.utils import log_authentication
 from privacyidea.lib.user import User
 import datetime
 import threading
@@ -115,10 +117,11 @@ def identify_api_client():
     ``/validate/remember_device``) enforce it themselves.
 
     A *known* key whose client is disabled (``suspended``) is stashed on
-    ``g.rejected_api_client`` so an endpoint with an audit object can record that
-    a real, previously issued key is still being used after it was disabled. An
-    unknown/invalid key is only logged (auditing every probe would flood the
-    audit log).
+    ``g.rejected_api_client``, and :func:`record_suspended_api_client` turns it
+    into an audit note and an authentication-log row once the response is on its
+    way out - which is where the audit object and the source IP exist, neither of
+    which this hook has yet. An unknown/invalid key is only logged (auditing every
+    probe would flood the audit log).
     """
     g.client_id = None
     g.rejected_api_client = None
@@ -568,6 +571,8 @@ def after_request(response):
     # constraint beyond running before teardown finalizes the entry.
     response = restore_rejection_audit(response)
 
+    response = record_suspended_api_client(response)
+
     response = shape_radius_response(request, response)
 
     # Strip version information before signing if the hide_version policy
@@ -578,6 +583,37 @@ def after_request(response):
     # replacement response still carries the no-cache guarantee.
     response.headers['Cache-Control'] = 'no-cache'
 
+    return response
+
+
+def record_suspended_api_client(response):
+    """
+    Record that a real, previously issued API key was presented after its client was disabled.
+
+    Central, and on the way out rather than on the way in, for three reasons. The middleware that detects it
+    (:func:`identify_api_client`) is a ``before_app_request`` and runs before any blueprint has built the audit
+    object or resolved the source IP, so a row written there would name neither. Every blueprint reaches here,
+    so the signal no longer depends on which ``before_request`` happens to look for it - it used to be recorded
+    by ``/validate``'s alone, which meant a suspended key was reported on a password reset and not on ``/auth``
+    or ``/token``. And this also runs for a response an *error handler* built, which is the normal case: the two
+    endpoints that require an identified client answer such a request with a ``401``.
+
+    The row names the **client**, never a user. The request was not identified by the key
+    (``g.client_id`` stays ``None``), so any user it carries is an unauthenticated claim the caller chose - and
+    with this event type trackable, attributing the row to that name would let whoever holds a disabled key
+    write authentication-log rows against any account, which a policy counting them per user would turn into a
+    lockout. The subject conditional access can act on here is the source IP, which is the integration still
+    calling with a key that was taken away.
+    """
+    rejected = g.get("rejected_api_client")
+    if not rejected:
+        return response
+    if "audit_object" in g:
+        g.audit_object.add_to_log(
+            {"action_detail": f"{rejected['status']} API key presented (client {rejected['client_id']})"},
+            add_with_comma=True)
+    log_authentication(AuthEventType.SUSPENDED_API_KEY_USED, request,
+                       other_info={"client_id": rejected["client_id"]})
     return response
 
 

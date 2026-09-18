@@ -814,14 +814,40 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         refused = self._recognise_device(api_key, cookie)
         self.assertFalse(refused.json["result"]["value"], refused.json)
         self.assertFalse(refused.json["detail"]["remembered_device"], refused.json)
-        # Recognition is not an authentication, and a refusal must not become one: no ACCEPT/REJECT verdict, and
-        # no Set-Cookie either way (the client keeps exactly the cookie it sent).
+        # Recognition is not an authentication, and a refusal must not become one: no ACCEPT/REJECT verdict, and no
+        # Set-Cookie at all (the client keeps exactly the cookie it sent).
         self.assertNotIn("authentication", refused.json["result"], refused.json)
         self.assertEqual([], self._remember_cookie_headers(refused), refused.headers)
 
         unlock_user_by_username(self.user.login, self.user.realm)
         recognised = self._recognise_device(api_key, cookie)
         self.assertTrue(recognised.json["result"]["value"], recognised.json)
+
+    def test_a_refusal_and_a_dead_cookie_differ_only_in_the_clearing_header(self):
+        # A known and accepted limit, pinned here so it is a decision rather than a surprise. The bodies match
+        # exactly, which is the property that matters: a caller cannot read a lock out of the answer. The headers
+        # do not - a dead cookie is cleared, a refusal leaves the cookie alone - so a caller that already holds a
+        # valid API key can distinguish the two by presenting a junk cookie. Closing that would mean clearing the
+        # cookie on every refusal, costing the user their device on every temporary lock, against a party already
+        # trusted with a key that can learn the same from /validate/check. If this ever changes, change it
+        # deliberately.
+        api_key, _cookie = self._remembered_client()
+
+        missed = self._recognise_device(api_key, "deadbeef:1")
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        refused = self._recognise_device(api_key, "deadbeef:1")
+
+        self.assertEqual(self._body(missed), self._body(refused))
+        self.assertEqual(1, len(self._remember_cookie_headers(missed)), missed.headers)
+        self.assertEqual([], self._remember_cookie_headers(refused), refused.headers)
+
+    @staticmethod
+    def _body(response) -> dict:
+        """The response's answer, without the envelope fields that differ between any two requests."""
+        envelope = {"id", "jsonrpc", "signature", "time", "version", "versionnumber"}
+        body = {key: value for key, value in response.json.items() if key not in envelope}
+        body.get("detail", {}).pop("threadid", None)
+        return body
 
     def test_a_blocked_source_ip_is_not_recognised(self):
         # The other half of the pre-check reaches recognition too: the device is the user's own and the cookie is

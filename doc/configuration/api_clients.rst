@@ -119,9 +119,17 @@ block is in force - or a policy's *deny* action decides the request - the answer
 is "not recognised", and the presented cookie is not read at all: it is neither
 rotated nor cleared, so the device is recognised again once the restriction
 lifts. The client is told only what was configured on
-the policy, exactly as at ``/validate/check``; with nothing configured a refusal
-looks like an ordinary miss, so a stolen cookie cannot be used to find out which
-accounts are locked.
+the policy, exactly as at ``/validate/check``; with nothing configured the
+*body* of a refusal is identical to that of an ordinary miss.
+
+.. note:: The match is not perfect, and deliberately so. A miss on a dead cookie
+   clears it (a ``Set-Cookie`` with a past expiry) while a refusal leaves the
+   cookie alone, so a caller that already holds a **valid API key** can tell the
+   two apart by the presence of that header, and could use it to learn which
+   accounts are locked. Closing this would mean clearing the cookie on every
+   refusal, which would cost the user their remembered device on every temporary
+   lock — a worse trade against a party that is already trusted enough to hold a
+   key, and that can learn the same thing from ``/validate/check``.
 
 On a miss the answer is simply "not recognised". The cookie is only cleared (a
 ``Set-Cookie`` with a past expiry) when it is genuinely dead - an unknown or
@@ -153,17 +161,27 @@ again. Each of the user's devices must then re-register, including those
 registered through other integrations.
 
 The detection is recorded as a ``DEVICE_TOKEN_REUSED`` authentication event, so a
-:ref:`conditional_access` policy can lock the account, block the source IP or
-send a notification on it. A threshold of one is appropriate here: a replay is a
-security incident rather than a failed guess, which is also why the ready-made
-rate-limiting templates leave the event out.
+:ref:`conditional_access` policy can act on it. A replay is a security incident
+rather than a failed guess, which is why the ready-made rate-limiting templates
+leave the event out and why a threshold of one is the sensible setting for it.
+
+.. warning:: Consider carefully what that one event should *do*. Notifying an
+   administrator at a threshold of one is safe. **Locking** the account at a
+   threshold of one is not, because the detection has a benign false positive
+   that no configuration removes: a client whose rotation response was lost
+   retries with the counter it still holds, and after the grace window that is
+   indistinguishable from a replay. With a lock in place, one dropped HTTP
+   response on a flaky connection costs the user every remembered device *and*
+   an account lockout only an administrator (or the timer) can lift. Start with
+   a notification, and lock only where the population and the network make that
+   trade worth it.
 
 A narrow exception tolerates concurrent requests: the immediately-previous
 counter is accepted, from the same source IP, within
-:ref:`ini_remember_device_grace` seconds, without rotating. This is an accepted
-trade-off — a legitimate client whose rotation response was lost and that retries
-*after* the grace window is treated as theft and must re-register; the user is
-never wrongly authenticated.
+:ref:`ini_remember_device_grace` seconds, without rotating. Widening that window
+is the first knob to reach for against false positives; it trades
+theft-detection tightness for fewer of them. The user is never wrongly
+authenticated either way.
 
 
 Viewing and revoking remembered devices

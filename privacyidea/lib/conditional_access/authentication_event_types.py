@@ -414,6 +414,22 @@ CA_ENFORCEMENT_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
     AuthEventType.ACCESS_DENIED,
 })
 
+#: Event types that describe the *client* a request arrived with rather than the outcome of an authentication.
+#: They are trackable - an administrator may well want to be told, or to block the address - but they are not
+#: something an authentication attempt produced, so they must never be the row that classifies one (see
+#: :func:`~privacyidea.lib.conditional_access.engine._count_matching_attempts`). Left in, such a row could arrive
+#: after the attempt's real outcome and replace it, dropping an already-counted failure out of a rate limit; and a
+#: ``PER_ATTEMPT`` policy tracking one could never count anything, because the endpoint's own classification always
+#: follows it within a request. ``PER_REQUEST`` is the mode that fits them, and it counts the rows directly.
+CLIENT_SIGNAL_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
+    AuthEventType.SUSPENDED_API_KEY_USED,
+})
+
+#: Every event type that must not classify an authentication attempt: the rejections conditional access wrote
+#: itself, and the signals about the request's client. What they have in common is that neither is an outcome the
+#: attempt reached.
+NON_CLASSIFYING_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+
 # The event types a conditional-access policy may count, i.e. everything an authentication attempt itself can produce.
 # This is what the policy CRUD validates against and what the policy editor offers; the authentication log's own
 # event-type endpoint still lists *all* types, because an admin must be able to filter for a rejection.

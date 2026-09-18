@@ -119,7 +119,8 @@ from privacyidea.api.lib.utils import (get_all_params, get_before_request_config
 from privacyidea.api.recover import recover_blueprint
 from privacyidea.lib.remembered_device import (create_remembered_device, consume_remember_device_cookie,
                                                user_identity, count_user_devices, apply_cookie_action,
-                                               CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus, revoke_devices)
+                                               CookieAction, PERSISTENT_COOKIE_NAME, RememberStatus,
+                                               handle_device_theft)
 from privacyidea.api.register import register_blueprint
 from privacyidea.lib.applications.offline import MachineApplication
 from privacyidea.lib.challenge import get_challenges, extract_answered_challenges, cancel_enrollment_via_multichallenge
@@ -219,18 +220,6 @@ def before_request():
         "user": request.User.login,
         "resolver": request.User.resolver,
         "realm": request.User.realm})
-
-    # A known API key whose client is disabled (e.g. suspended) was presented:
-    # the request is not identified (the middleware left g.client_id None), but a
-    # real, previously issued key still being used is worth recording.
-    rejected = g.get("rejected_api_client")
-    if rejected:
-        g.audit_object.add_to_log(
-            {"action_detail": f"{rejected['status']} API key presented "
-                              f"(client {rejected['client_id']})"},
-            add_with_comma=True)
-        log_authentication(AuthEventType.SUSPENDED_API_KEY_USED, request, user=request.User,
-                           other_info={"client_id": rejected["client_id"]})
 
 
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
@@ -1195,9 +1184,13 @@ def check_remember_device():
 
     Conditional access refuses recognition for a locked user, a blocked source IP
     or a policy whose *deny* action decides this request, answering ``false``
-    without touching the presented cookie - the answer a device that is simply
-    not remembered gets, so the two are indistinguishable in the body unless an
-    administrator configured a message to show.
+    without touching the presented cookie - the same body a device that is simply
+    not remembered gets, unless an administrator configured a message to show.
+    The headers still differ: a dead cookie is cleared on a miss and left alone on
+    a refusal, so a caller holding a valid API key can tell the two apart by that.
+    Accepted: clearing it on a refusal would cost the user their device on every
+    temporary lock, and a caller with a key learns the same from
+    ``/validate/check``.
 
     Issuing a cookie stays on ``/validate/check`` (``request_persistent_cookie=1``).
 
@@ -1261,21 +1254,20 @@ def check_remember_device():
             # off the shared browser just because someone else logged in.
             pass
         elif result.status == RememberStatus.THEFT:
-            # consume_remember_device_cookie has already invalidated the stolen series. Record the detection first -
-            # in action_detail (which the error path does not overwrite) and as a DEVICE_TOKEN_REUSED authentication
-            # event, so conditional access can lock the account, block the source IP or notify as configured - and
-            # only then escalate. The order matters: revoke_devices commits, so a lock wait or deadlock on the bulk
-            # delete would otherwise raise out of the view with the stolen series already gone and the incident
-            # recorded nowhere. The escalation reaches every one of this user's remembered devices, on every client,
-            # because a stolen cookie means the user's browser (or its cookie jar) is compromised, not just the one
-            # series that happened to be replayed - so recognition is revoked everywhere until the user re-registers.
+            # consume_remember_device_cookie has already invalidated the stolen series. Record the detection
+            # first - in action_detail (which the error path does not overwrite) and as a DEVICE_TOKEN_REUSED
+            # authentication event, so conditional access can lock the account, block the source IP or notify as
+            # configured - and only then escalate. The order matters: handle_device_theft commits, so a lock wait
+            # or deadlock on its bulk delete would otherwise raise out of the view with the stolen series already
+            # gone and the incident recorded nowhere. What the escalation does, and why it reaches beyond the one
+            # replayed series, is handle_device_theft's to state.
             log.warning(f"Persistent device cookie reuse detected for client {g.get('client_id')!r}; "
                         f"series invalidated and all remembered devices of this user revoked.")
             g.audit_object.add_to_log({"action_detail": "persistent cookie reuse detected"},
                                       add_with_comma=True)
             log_authentication(AuthEventType.DEVICE_TOKEN_REUSED, request, user=user,
                                other_info={"client_id": g.get("client_id")})
-            revoke_devices(realm_id=identity.realm_id, resolver=identity.resolver, user_id=identity.user_id)
+            handle_device_theft(identity)
             cookie_action = CookieAction("clear")
         else:  # miss: the cookie is dead (unknown or expired) - clear it
             cookie_action = CookieAction("clear")
