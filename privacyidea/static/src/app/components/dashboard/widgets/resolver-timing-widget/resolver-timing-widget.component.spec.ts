@@ -25,6 +25,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { Resolver, Resolvers, ResolverService } from "@services/resolver/resolver.service";
 import { ResolverTimingEntry, SystemService } from "@services/system/system.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -417,14 +418,65 @@ describe("ResolverTimingWidgetComponent", () => {
   });
 
   it("should stay in the loading state until the data ref is initialised", () => {
-    const initSpy = jest.spyOn(ResolverTimingWidgetComponent.prototype, "ngOnInit").mockReturnValue(undefined);
-
     const uninitFixture = TestBed.createComponent(ResolverTimingWidgetComponent);
     uninitFixture.componentRef.setInput("instance", instance);
-    uninitFixture.detectChanges();
+    // No change detection: the effect that starts the first fetch has not run, so the widget holds no data ref yet.
 
     expect(uninitFixture.componentInstance.state()).toBe("loading");
     uninitFixture.destroy();
-    initSpy.mockRestore();
+  });
+
+  it("should ask for the last hour when no window has been stored", () => {
+    expect(component.selectedWindow().id).toBe("1h");
+    expect(systemMock.getResolverTiming).toHaveBeenCalledWith(3600);
+  });
+
+  it("should open on the window stored in the widget options", () => {
+    systemMock.getResolverTiming.mockClear();
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const storedFixture = TestBed.createComponent(ResolverTimingWidgetComponent);
+    storedFixture.componentRef.setInput("instance", { ...instance, options: { range: "24h" } });
+    storedFixture.detectChanges();
+
+    expect(storedFixture.componentInstance.selectedWindow().id).toBe("24h");
+    expect(systemMock.getResolverTiming).toHaveBeenCalledWith(86400);
+    storedFixture.destroy();
+  });
+
+  it("should fall back to the default window when the stored id is unknown", () => {
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const strangeFixture = TestBed.createComponent(ResolverTimingWidgetComponent);
+    strangeFixture.componentRef.setInput("instance", { ...instance, options: { range: "7d" } });
+    strangeFixture.detectChanges();
+
+    expect(strangeFixture.componentInstance.selectedWindow().id).toBe("1h");
+    strangeFixture.destroy();
+  });
+
+  it("should refetch for the picked window and write it to the widget options", () => {
+    const layoutService = TestBed.inject(DashboardLayoutService);
+    const setOptions = jest.spyOn(layoutService, "setWidgetOptions");
+    systemMock.getResolverTiming.mockClear();
+
+    component.selectWindow("6h");
+    fixture.detectChanges();
+
+    expect(component.selectedWindow().id).toBe("6h");
+    expect(systemMock.getResolverTiming).toHaveBeenCalledWith(21600);
+    expect(setOptions).toHaveBeenCalledWith(instance.id, { range: "6h" });
+    setOptions.mockRestore();
+  });
+
+  it("should drop the store entry of the window it leaves, so a refresh stops fetching it", () => {
+    const store = TestBed.inject(DashboardDataStore);
+    expect(store.peek("dashboard:resolver-timing:1h")).not.toBeNull();
+
+    component.selectWindow("24h");
+    fixture.detectChanges();
+
+    expect(store.peek("dashboard:resolver-timing:1h")).toBeNull();
+    expect(store.peek("dashboard:resolver-timing:24h")).not.toBeNull();
   });
 });

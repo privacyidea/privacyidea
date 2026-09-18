@@ -603,9 +603,10 @@ def get_health_certificates():
 
     Each entry carries ``source``, ``name``, ``host``, ``tls_mode``, the
     certificate ``subject`` / ``issuer`` / ``not_after`` / ``days_remaining``,
-    an ``error`` message (or ``null``), and a ``status`` of ``ok`` (>30 days),
-    ``warning`` (<=30 days), ``critical`` (<=7 days), ``expired`` (<=0 days),
-    or ``error`` (the certificate could not be read).
+    an ``error`` message (or ``null``), ``checked_at`` (ISO 8601, when the list
+    was probed rather than when it was served from the cache), and a ``status``
+    of ``ok`` (>30 days), ``warning`` (<=30 days), ``critical`` (<=7 days),
+    ``expired`` (<=0 days), or ``error`` (the certificate could not be read).
 
     :queryparam refresh: If truthy, bypass the cache and re-check.
     :>json list value: List of certificate status entries (see above).

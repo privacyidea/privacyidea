@@ -17,6 +17,15 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
+<!-- Handed to the widget frame, which renders these in the header next to the reload button. Declared outside
+     app-widget-state so the frame can read them whatever state the data is in. -->
+<ng-template #headerActions>
+  <app-widget-window-picker
+    [choices]="windows"
+    [selected]="selectedWindow()"
+    (windowPicked)="selectWindow($event)" />
+</ng-template>
+
 <app-widget-state [state]="state()">
   <div class="table-container">
     @if (sections().push.length > 0) {
@@ -32,8 +41,8 @@
                 i18n-label="@@dashboard.gateway" />
             </th>
             <th
-              matTooltip="Successful deliveries within the last hour."
-              i18n-matTooltip="@@dashboard.successfulDeliveries">
+              matTooltip="Successful deliveries in the selected time window."
+              i18n-matTooltip="@@dashboard.successfulDeliveriesInWindow">
               <app-table-sort-header
                 key="ok"
                 [sortState]="pushSort"
@@ -42,8 +51,8 @@
                 [hasHintTooltip]="true" />
             </th>
             <th
-              matTooltip="Failed deliveries within the last hour."
-              i18n-matTooltip="@@dashboard.failedDeliveries">
+              matTooltip="Failed deliveries in the selected time window."
+              i18n-matTooltip="@@dashboard.failedDeliveriesInWindow">
               <app-table-sort-header
                 key="failed"
                 [sortState]="pushSort"
@@ -52,8 +61,8 @@
                 [hasHintTooltip]="true" />
             </th>
             <th
-              matTooltip="Delivery errors within the last hour."
-              i18n-matTooltip="@@dashboard.deliveryErrors">
+              matTooltip="Delivery errors in the selected time window."
+              i18n-matTooltip="@@dashboard.deliveryErrorsInWindow">
               <app-table-sort-header
                 key="error"
                 [sortState]="pushSort"
@@ -91,8 +100,8 @@
                 i18n-label="@@dashboard.gateway" />
             </th>
             <th
-              matTooltip="Successful deliveries within the last hour."
-              i18n-matTooltip="@@dashboard.successfulDeliveries">
+              matTooltip="Successful deliveries in the selected time window."
+              i18n-matTooltip="@@dashboard.successfulDeliveriesInWindow">
               <app-table-sort-header
                 key="ok"
                 [sortState]="smsSort"
@@ -101,8 +110,8 @@
                 [hasHintTooltip]="true" />
             </th>
             <th
-              matTooltip="Failed deliveries within the last hour."
-              i18n-matTooltip="@@dashboard.failedDeliveries">
+              matTooltip="Failed deliveries in the selected time window."
+              i18n-matTooltip="@@dashboard.failedDeliveriesInWindow">
               <app-table-sort-header
                 key="failed"
                 [sortState]="smsSort"
@@ -111,8 +120,8 @@
                 [hasHintTooltip]="true" />
             </th>
             <th
-              matTooltip="Delivery errors within the last hour."
-              i18n-matTooltip="@@dashboard.deliveryErrors">
+              matTooltip="Delivery errors in the selected time window."
+              i18n-matTooltip="@@dashboard.deliveryErrorsInWindow">
               <app-table-sort-header
                 key="error"
                 [sortState]="smsSort"
@@ -150,8 +159,8 @@
                 i18n-label="@@common.identifier" />
             </th>
             <th
-              matTooltip="Successful deliveries within the last hour."
-              i18n-matTooltip="@@dashboard.successfulDeliveries">
+              matTooltip="Successful deliveries in the selected time window."
+              i18n-matTooltip="@@dashboard.successfulDeliveriesInWindow">
               <app-table-sort-header
                 key="ok"
                 [sortState]="emailSort"
@@ -160,8 +169,8 @@
                 [hasHintTooltip]="true" />
             </th>
             <th
-              matTooltip="Failed deliveries within the last hour."
-              i18n-matTooltip="@@dashboard.failedDeliveries">
+              matTooltip="Failed deliveries in the selected time window."
+              i18n-matTooltip="@@dashboard.failedDeliveriesInWindow">
               <app-table-sort-header
                 key="failed"
                 [sortState]="emailSort"
@@ -170,8 +179,8 @@
                 [hasHintTooltip]="true" />
             </th>
             <th
-              matTooltip="Delivery errors within the last hour."
-              i18n-matTooltip="@@dashboard.deliveryErrors">
+              matTooltip="Delivery errors in the selected time window."
+              i18n-matTooltip="@@dashboard.deliveryErrorsInWindow">
               <app-table-sort-header
                 key="error"
                 [sortState]="emailSort"
@@ -197,7 +206,7 @@
     }
 
     @if (sections().push.length === 0 && sections().sms.length === 0 && sections().email.length === 0) {
-      <p i18n="@@dashboard.noNotification">No notification deliveries in the last hour.</p>
+      <p i18n="@@dashboard.noNotificationInWindow">No notification deliveries in the selected time window.</p>
     }
   </div>
 </app-widget-state>

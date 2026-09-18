@@ -16,14 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, OnInit, signal } from "@angular/core";
+import { Component, computed, effect, inject, signal, TemplateRef, viewChild } from "@angular/core";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { DEFAULT_METRICS_WINDOW, METRICS_WINDOWS, MetricsWindow } from "@components/dashboard/widgets/metrics-window";
 import { TableSort } from "@components/dashboard/widgets/table-sort/table-sort";
 import { TableSortHeaderComponent } from "@components/dashboard/widgets/table-sort/table-sort-header.component";
+import { WidgetRangeSetting } from "@components/dashboard/widgets/widget-range-setting";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
+import { WidgetWindowPickerComponent } from "@components/dashboard/widgets/window-picker/widget-window-picker.component";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -54,11 +57,18 @@ function toMs(seconds: number | null | undefined): number | null {
 @Component({
   selector: "app-resolver-timing-widget",
   standalone: true,
-  imports: [MatTooltip, WidgetStateComponent, TruncationTooltipDirective, RouterLink, TableSortHeaderComponent],
+  imports: [
+    MatTooltip,
+    WidgetStateComponent,
+    TruncationTooltipDirective,
+    RouterLink,
+    TableSortHeaderComponent,
+    WidgetWindowPickerComponent
+  ],
   templateUrl: "./resolver-timing-widget.component.html",
   styleUrl: "./resolver-timing-widget.component.scss"
 })
-export class ResolverTimingWidgetComponent extends DashboardWidget implements OnInit {
+export class ResolverTimingWidgetComponent extends DashboardWidget {
   static override readonly type = "resolver-timing";
   static override readonly title = $localize`:@@dashboard.resolverTiming:Resolver Timing`;
   static override readonly icon = "speed";
@@ -68,14 +78,28 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
   static override readonly minSize: WidgetSize = { cols: 10, rows: 4 };
   static override readonly maxSize: WidgetSize = { cols: 18, rows: 10 };
 
+  // Read by the widget frame, which renders these in its header.
+  override readonly headerActions = viewChild<TemplateRef<unknown>>("headerActions");
+
+  protected readonly windows = METRICS_WINDOWS;
+
   private readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly store = inject(DashboardDataStore);
 
+  private readonly windowSetting = new WidgetRangeSetting<MetricsWindow>(
+    this.instance,
+    METRICS_WINDOWS,
+    DEFAULT_METRICS_WINDOW
+  );
+  readonly selectedWindow = this.windowSetting.selected.asReadonly();
+
   readonly resolverLinkAllowed = computed(() => this.authService.actionAllowed("resolverread"));
 
   private readonly dataRef = signal<DashboardDataRef<ResolverTimingResponses> | null>(null);
+  // The store key currently in use, so the previous window's entry can be dropped when the window changes.
+  private storeKey: string | null = null;
 
   override readonly refreshFailed = computed(() => {
     const ref = this.dataRef();
@@ -139,21 +163,31 @@ export class ResolverTimingWidgetComponent extends DashboardWidget implements On
       const ok = value.timing.result?.status === true && value.resolvers?.result?.status !== false;
       this.state.set(ok ? "ready" : "error");
     });
+    // Refetches whenever the window changes, and on the first run, which is what draws the widget.
+    effect(() => this.loadData(this.selectedWindow()));
   }
 
   override reload(): void {
-    this.loadData();
+    this.loadData(this.selectedWindow());
   }
 
-  ngOnInit(): void {
-    this.loadData();
+  selectWindow(id: string): void {
+    this.windowSetting.select(id);
   }
 
-  private loadData(): void {
+  private loadData(window: MetricsWindow): void {
+    const key = `dashboard:resolver-timing:${window.id}`;
+    // Each window needs a key of its own, so switching shows a loading state rather than the previous window's
+    // numbers. The entry left behind has to go, though: DashboardDataStore.refreshAll() refetches every entry it
+    // holds, so a stale key would keep re-querying a window nobody is looking at on each dashboard refresh.
+    if (this.storeKey && this.storeKey !== key) {
+      this.store.invalidate(this.storeKey);
+    }
+    this.storeKey = key;
     this.dataRef.set(
-      this.store.load("dashboard:resolver-timing", () =>
+      this.store.load(key, () =>
         forkJoin({
-          timing: this.systemService.getResolverTiming(),
+          timing: this.systemService.getResolverTiming(window.seconds),
           resolvers: this.resolverLinkAllowed() ? this.resolverService.listResolvers() : of(null)
         })
       )
