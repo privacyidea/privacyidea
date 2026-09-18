@@ -103,8 +103,7 @@ export function challengesTriggered<Value, Detail = unknown>(response: PiRespons
   selector: "app-root",
   standalone: true,
   imports: [RouterOutlet],
-  templateUrl: "./app.component.html",
-  styleUrl: "./app.component.scss"
+  templateUrl: "./app.component.html"
 })
 export class AppComponent {
   private readonly authService: AuthServiceInterface = inject(AuthService);

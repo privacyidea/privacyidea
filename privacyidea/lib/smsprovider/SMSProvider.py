@@ -58,6 +58,7 @@ SMS_PROVIDERS = [
 # Keywords in option keys that indicate the value is sensitive and must be
 # stored encrypted in the database (case-insensitive substring match).
 SENSITIVE_OPTION_KEYWORDS = ("PASSWORD", "SECRET")
+ALLOW_PUSH = "ALLOW_PUSH"
 
 
 def _is_sensitive_key(key):
@@ -82,7 +83,36 @@ class SMSError(Exception):
 
 
 class ISMSProvider:
-    """ the SMS Provider Interface - BaseClass """
+    """
+    The SMS provider interface.
+
+    Providers that accept structured push payloads set ``supports_push_messages``
+    to ``True``. Individual gateways require ``ALLOW_PUSH=yes`` unless the
+    provider enables PUSH by default.
+    """
+
+    supports_push_messages = False
+    push_messages_enabled_by_default = False
+
+    @classmethod
+    def allows_push_messages(cls, smsgateway):
+        if not cls.supports_push_messages:
+            return False
+        configured = smsgateway.option_dict.get(ALLOW_PUSH)
+        if configured in (None, ""):
+            return cls.push_messages_enabled_by_default
+        return str(configured).lower() == "yes"
+
+    @staticmethod
+    def allow_push_parameter():
+        return {
+            "required": False,
+            "description": lazy_gettext(
+                "Allow this gateway to deliver PUSH messages. Defaults to yes for Firebase and no for all other "
+                "providers."
+            ),
+            "values": ["yes", "no"]
+        }
 
     regexp_description = lazy_gettext("Regular expression to modify the phone number to make it compatible with"
                                       " the provider. For example to remove pluses and slashes"

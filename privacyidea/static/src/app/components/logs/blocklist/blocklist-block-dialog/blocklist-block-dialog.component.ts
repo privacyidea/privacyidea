@@ -82,7 +82,7 @@ export class BlocklistBlockDialogComponent extends AbstractDialogComponent<void,
 
   readonly dialogActions = computed((): DialogAction<string>[] => [
     {
-      label: $localize`Block`,
+      label: $localize`:@@blocklist.block:Block`,
       value: "confirm",
       type: "confirm",
       disabled: !this.canConfirm(),

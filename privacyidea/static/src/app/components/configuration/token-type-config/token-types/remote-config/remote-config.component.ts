@@ -29,8 +29,7 @@ import { parseBooleanValue } from "@utils/parse-boolean-value";
   selector: "app-remote-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
-  templateUrl: "./remote-config.component.html",
-  styleUrl: "./remote-config.component.scss"
+  templateUrl: "./remote-config.component.html"
 })
 export class RemoteConfigComponent {
   protected readonly REMOTE_SERVER = REMOTE_SERVER;

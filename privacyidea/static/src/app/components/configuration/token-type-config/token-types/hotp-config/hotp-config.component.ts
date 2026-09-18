@@ -29,8 +29,7 @@ import { labeledOptions } from "@utils/value-label.utils";
   selector: "app-hotp-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatSelectModule, ClearButtonComponent],
-  templateUrl: "./hotp-config.component.html",
-  styleUrl: "./hotp-config.component.scss"
+  templateUrl: "./hotp-config.component.html"
 })
 export class HotpConfigComponent {
   formData = input.required<Record<string, string | undefined>>();

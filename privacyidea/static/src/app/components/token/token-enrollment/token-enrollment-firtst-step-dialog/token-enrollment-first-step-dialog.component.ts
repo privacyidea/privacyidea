@@ -62,14 +62,14 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
     if (this.data.showCancelButton) {
       actions.push({
         type: "destruct",
-        label: $localize`Cancel`,
+        label: $localize`:@@common.cancel:Cancel`,
         value: "cancelEnrollment"
       });
     }
     if (this.data.onRetry && this.registrationFailed()) {
       actions.push({
         type: "confirm",
-        label: $localize`Retry`,
+        label: $localize`:@@token.retry:Retry`,
         value: "retry",
         primary: true
       });
@@ -101,9 +101,9 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
       .openDialog({
         component: MessageConfirmationDialogComponent,
         data: {
-          title: $localize`Cancel Enrollment`,
+          title: $localize`:@@token.cancelEnrollment:Cancel Enrollment`,
           message: confirmationMessage,
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+          confirmAction: { label: $localize`:@@common.delete:Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

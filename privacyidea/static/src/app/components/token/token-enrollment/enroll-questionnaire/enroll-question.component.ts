@@ -55,7 +55,6 @@ export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   standalone: true,
   imports: [MatFormField, MatInput, MatLabel, MatError],
   templateUrl: "./enroll-question.component.html",
-  styleUrl: "./enroll-question.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollQuestionComponent) }
