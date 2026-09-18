@@ -415,12 +415,22 @@ CA_ENFORCEMENT_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
 })
 
 #: Event types that describe the *client* a request arrived with rather than the outcome of an authentication.
-#: They are trackable - an administrator may well want to be told, or to block the address - but they are not
-#: something an authentication attempt produced, so they must never be the row that classifies one (see
-#: :func:`~privacyidea.lib.conditional_access.engine._count_matching_attempts`). Left in, such a row could arrive
-#: after the attempt's real outcome and replace it, dropping an already-counted failure out of a rate limit; and a
-#: ``PER_ATTEMPT`` policy tracking one could never count anything, because the endpoint's own classification always
-#: follows it within a request. ``PER_REQUEST`` is the mode that fits them, and it counts the rows directly.
+#: They are written to the log and can be filtered and reported on there - which is what they are for - but a policy
+#: cannot count them, and they must never be the row that classifies an attempt (see
+#: :func:`~privacyidea.lib.conditional_access.engine._count_matching_attempts`) or a request (see
+#: :attr:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.classifying`).
+#:
+#: Both exclusions are about interference: such a row is staged after the outcome it sits beside, so left in it
+#: would replace that outcome - dropping an already-counted failure out of a rate limit, and standing in for the
+#: request's classification so the policies tracking its real outcome are never asked about it.
+#:
+#: They are kept out of the trackable vocabulary because no way of counting one does what an administrator would
+#: expect. These rows name no user, so a ``user`` target never sees them and the default ``DISTINCT_USERS`` mode of
+#: a ``source_ip`` target collapses any number of them into one; ``PER_ATTEMPT`` is excluded by the rule above. That
+#: leaves ``source_ip`` with ``PER_REQUEST`` as the single working combination out of five, and it is the default of
+#: neither axis - a policy configured any other way would save, show its events accumulating in the log, and never
+#: fire. Offering a vocabulary entry that behaves like that is worse than not offering it, so until such an event
+#: can be evaluated in its own right, it is a signal to look at rather than one to count.
 CLIENT_SIGNAL_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
     AuthEventType.SUSPENDED_API_KEY_USED,
 })
@@ -430,11 +440,19 @@ CLIENT_SIGNAL_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
 #: attempt reached.
 NON_CLASSIFYING_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
 
+#: Every event type a conditional-access policy may not count: the rejections conditional access wrote itself, and
+#: the signals about the request's client. Neither is an outcome an authentication attempt reached, which is also
+#: why neither may classify one - see :data:`NON_CLASSIFYING_EVENT_TYPES`, the same membership seen from the other
+#: side. The two sets are equal today and are kept apart because they answer different questions: one what a policy
+#: may count, the other what may stand for a request or an attempt.
+UNTRACKABLE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+
 # The event types a conditional-access policy may count, i.e. everything an authentication attempt itself can produce.
 # This is what the policy CRUD validates against and what the policy editor offers; the authentication log's own
-# event-type endpoint still lists *all* types, because an admin must be able to filter for a rejection.
+# event-type endpoint still lists *all* types, because an admin must be able to filter for a rejection - or for a
+# client signal, which is the whole point of recording one.
 TRACKABLE_EVENT_TYPES: list[AuthEventType] = [event_type for event_type in AuthEventType
-                                              if event_type not in CA_ENFORCEMENT_EVENT_TYPES]
+                                              if event_type not in UNTRACKABLE_EVENT_TYPES]
 
 
 def outcome_of(event_type: AuthEventType) -> AuthEventOutcome:

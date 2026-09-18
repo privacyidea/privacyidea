@@ -954,22 +954,18 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
         self.assertTrue(is_ip_blocked("203.0.113.9"))
 
-    def test_a_suspended_api_key_still_classifies_a_request_that_authenticated_nothing(self):
-        # Passing the client signal over is only right while there is something to pass it over for. On a request
-        # that authenticated nothing the signal is the only staged event, so it classifies that request and a policy
-        # tracking it can still act - here a source-IP block, the subject a client signal actually has. Threshold 1
-        # again, and necessarily so: these rows name no user at all, so the default DISTINCT_USERS mode collapses
-        # any number of them into one.
-        self._make_block_ip_policy(counter_type=AuthEventType.SUSPENDED_API_KEY_USED, threshold=1, duration=600)
+    def test_a_suspended_api_key_is_still_recorded_on_a_request_that_authenticated_nothing(self):
+        # The signal is written wherever a disabled key is presented, including where the endpoint refuses the
+        # request outright - that visibility is what it is for, now that no policy can count it.
         api_key = self._suspended_key()
 
         with self.app.test_request_context('/validate/capabilities', method='GET',
                                            environ_base={"REMOTE_ADDR": "203.0.113.10"},
                                            headers={"X-API-Key": api_key}):
-            # Not identified by a suspended key, so the endpoint refuses - the signal is recorded all the same.
             self.assertEqual(401, self.app.full_dispatch_request().status_code)
 
-        self.assertTrue(is_ip_blocked("203.0.113.10"))
+        self.assertEqual([AuthEventType.SUSPENDED_API_KEY_USED],
+                         [entry.event_type for entry in get_authentication_logs()])
 
     def test_a_lock_that_was_never_written_does_not_refuse_its_own_request(self):
         # A restricting action that did not restrict anything must not turn its own request into a rejection: the
