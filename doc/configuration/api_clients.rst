@@ -113,6 +113,15 @@ so a remembered device survives a login rename and is never recognised for a
 the bound user still resolves, so deleting or removing a user revokes their
 remembered devices.
 
+Recognition is subject to :ref:`conditional_access`, because a recognised device
+is what lets a client skip the second factor. While a user lock or a source-IP
+block is in force the answer is "not recognised", and the presented cookie is not
+read at all - it is neither rotated nor cleared, so the device is recognised
+again once the restriction lifts. The client is told only what was configured on
+the policy, exactly as at ``/validate/check``; with nothing configured a refusal
+looks like an ordinary miss, so a stolen cookie cannot be used to find out which
+accounts are locked.
+
 On a miss the answer is simply "not recognised". The cookie is only cleared (a
 ``Set-Cookie`` with a past expiry) when it is genuinely dead - an unknown or
 expired series, or a detected theft. If the presented cookie is still live but
@@ -135,9 +144,18 @@ Theft detection
 ~~~~~~~~~~~~~~~
 
 The counter must match the value stored server-side. Presenting a **stale**
-counter (the hallmark of a replayed or cloned cookie) causes the whole device
-series to be deleted, so neither the attacker nor the legitimate client can use
-it again; the device must then re-register.
+counter is the hallmark of a replayed or cloned cookie, and is treated as a
+compromise of the user's browser rather than of the one series that happened to
+be replayed: **every** remembered device of that user is revoked, on every
+client, so neither the attacker nor the legitimate client can use any of them
+again. Each of the user's devices must then re-register, including those
+registered through other integrations.
+
+The detection is recorded as a ``DEVICE_TOKEN_REUSED`` authentication event, so a
+:ref:`conditional_access` policy can lock the account, block the source IP or
+send a notification on it. A threshold of one is appropriate here: a replay is a
+security incident rather than a failed guess, which is also why the ready-made
+rate-limiting templates leave the event out.
 
 A narrow exception tolerates concurrent requests: the immediately-previous
 counter is accepted, from the same source IP, within

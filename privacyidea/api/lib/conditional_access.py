@@ -24,6 +24,11 @@ rejection reaches the client:
 
 * :func:`conditional_access_gate` guards ``/validate/*`` and **returns** the rejection as a :class:`~flask.Response`:
   an ordinary ``200`` carrying ``result.value`` false and no error object, like any other failed authentication there.
+  ``/validate/remember_device`` is guarded the same way but calls :func:`conditional_access_precheck` from inside its
+  view instead of wearing the decorator, because it must first establish that the caller may ask at all: it is the one
+  ``/validate`` endpoint that requires an identified API client, and a gate above that check would let an
+  unidentified caller write a rejection - and its authentication-log classification - for any username it cares to
+  post.
 * :func:`conditional_access_login_gate` guards the JWT login ``/auth`` and **raises** an :class:`AuthError` the login
   screen renders, so a human is told what is in force instead of "Wrong credentials" for ten minutes. Its id is
   :attr:`~privacyidea.lib.error.Error.AUTHENTICATE` (``403``). An ``AuthError`` needs some message, so
@@ -64,7 +69,7 @@ survives; the rest of the detail is collapsed, which is what those actions are f
 import functools
 import logging
 from dataclasses import dataclass, replace
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from flask import request, g, Response
@@ -106,16 +111,28 @@ class RejectionShape:
         ``/validate/*`` every failure does, so a silent rejection carries the generic failure to have one too; at
         ``/ttype/push`` none does, so a silent rejection carries none either - the generic message would be exactly
         the tell that including it on ``/validate`` avoids.
+    :ivar extra_detail: fields every answer this endpoint gives carries, merged into the rejection's ``detail`` so
+        a refusal answers through them like any other failure. ``/validate/remember_device`` is the one endpoint
+        with any: its whole answer is ``detail.remembered_device``, so a rejection leaving it out would be the one
+        answer its clients cannot read.
     """
     value: Any = False
     rid: int = 2
     carries_detail: bool = True
+    extra_detail: Mapping[str, Any] | None = None
 
 
 #: How ``/ttype/push`` answers a refused challenge answer. The push token renders its own response through
 #: ``prepare_result`` with ``rid`` 1, so it carries no ``result.authentication``, and an ordinary failed answer there
 #: carries no ``detail`` at all - both of which a rejection has to match to be indistinguishable from one.
 PUSH_ANSWER_REJECTION = RejectionShape(rid=1, carries_detail=False)
+
+#: How ``/validate/remember_device`` answers a refused recognition. Recognition is not an authentication, so the
+#: endpoint renders with ``rid`` 1 and reports no ``result.authentication`` verdict; and an ordinary "not recognised"
+#: answer there carries no message at all, only ``detail.remembered_device``, so a silent rejection carries none
+#: either and says ``false`` through the one field the client reads.
+REMEMBER_DEVICE_REJECTION = RejectionShape(rid=1, carries_detail=False,
+                                           extra_detail={"remembered_device": False})
 
 
 def _rejected_transaction_id() -> str | None:
@@ -228,7 +245,8 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
 
 # --- /validate/*: return the rejection as a response ---------------------------------------------------------------
 
-def conditional_access_precheck(user: User, rejection_value: Any = False) -> Response | None:
+def conditional_access_precheck(user: User, rejection_value: Any = False,
+                                shape: RejectionShape | None = None) -> Response | None:
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
     max_auth checks) when conditional-access policies forbid it. Returns the failure
@@ -250,8 +268,11 @@ def conditional_access_precheck(user: User, rejection_value: Any = False) -> Res
         ``/validate/triggerchallenge``, where the value is the *number of challenges triggered* rather than a
         boolean - answering that endpoint with ``False`` would change the type of a field its callers may be
         reading as a number.
+    :param shape: the whole shape of a refusal here, for an endpoint whose ordinary failure is not the
+        ``/validate/*`` default - ``/validate/remember_device``, which answers a recognition rather than an
+        authentication. Supersedes *rejection_value*, which is the shape's ``value`` and nothing else.
     """
-    shape = RejectionShape(value=rejection_value)
+    shape = shape if shape is not None else RejectionShape(value=rejection_value)
     rejection = conditional_access_rejection(user, shape)
     if rejection is None:
         return None
@@ -281,9 +302,13 @@ def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return None
-    # Staged like any other event, so request teardown writes it. A rejection row *replaces* the row the request
-    # would have written anyway, which is why every gated endpoint wants one: they all log an authentication event
-    # when they succeed. The one endpoint that does not - /validate/polltransaction - is not gated at all.
+    # Staged like any other event, so request teardown writes it. On the authenticating endpoints a rejection row
+    # *replaces* the row the request would have written anyway: they all log an authentication event when they
+    # succeed. /validate/remember_device is the exception - recognition is not an authentication and logs no event
+    # of its own - so the row there is net new. It is wanted all the same, since it is the only place an admin can
+    # filter for a refusal, and it is safe: an enforcement type is excluded from the trackable vocabulary
+    # (CA_ENFORCEMENT_EVENT_TYPES), so no policy counts it and a refusal cannot feed the policy that caused it.
+    # /validate/polltransaction logs no event either and is not gated at all.
     log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
                        transaction_id=_rejected_transaction_id())
     _audit_rejection(rejection.audit_info, user)
@@ -330,7 +355,10 @@ def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
         :func:`_rejection_wording`)
     """
     # An empty detail is dropped by prepare_result, which is exactly what an endpoint carrying none needs.
-    return send_result(shape.value, rid=shape.rid, details={"message": message} if message else {})
+    details = dict(shape.extra_detail or {})
+    if message:
+        details["message"] = message
+    return send_result(shape.value, rid=shape.rid, details=details)
 
 
 def restore_rejection_audit(response: Response) -> Response:

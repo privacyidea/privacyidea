@@ -112,7 +112,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            webauthntoken_request, check_application_tokentype,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
-from privacyidea.api.lib.conditional_access import conditional_access_gate
+from privacyidea.api.lib.conditional_access import (conditional_access_gate, conditional_access_precheck,
+                                                    REMEMBER_DEVICE_REJECTION)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
@@ -1192,6 +1193,11 @@ def check_remember_device():
     reports); otherwise the answer is always ``false`` and a presented cookie is
     left untouched.
 
+    Conditional access refuses recognition for a locked user or a blocked source
+    IP, answering ``false`` without touching the presented cookie - the answer a
+    device that is simply not remembered gets, so the two are indistinguishable
+    unless an administrator configured a message to show.
+
     Issuing a cookie stays on ``/validate/check`` (``request_persistent_cookie=1``).
 
     :reqheader X-API-Key: the API client's key
@@ -1199,7 +1205,8 @@ def check_remember_device():
     :formparam user: the username the cookie was issued for
     :formparam realm: the user's realm
     :status 200: ``result.value`` is ``true`` when the device is recognised,
-        ``false`` otherwise (a miss is a normal answer, not an error).
+        ``false`` otherwise (a miss is a normal answer, not an error, and so is a
+        recognition conditional access refused).
     :status 401: no API client is identified.
     """
     if g.get("client_id") is None:
@@ -1207,6 +1214,21 @@ def check_remember_device():
                         id=Error.AUTHENTICATE_AUTH_HEADER)
 
     user = request.User
+    # Recognition is what lets the calling client skip the second factor, so it is gated like an authentication:
+    # a lock or block that did not reach here would leave the one path that skips MFA the one path conditional
+    # access does not guard. Two orderings matter. It runs *after* the API-key requirement above, so that an
+    # unidentified caller cannot write a rejection - and the authentication-log row classifying it - for any
+    # username it cares to post; this is the only /validate endpoint that can insist on that. And it runs *before*
+    # the cookie is read, as every other gate runs before the credentials it refuses: a refused request consumes
+    # and rotates nothing, so a stolen cookie replayed while the lock is in force is neither usable nor spent, and
+    # is detected on the first presentation after the lock lifts. A refusal is audited as every conditional-access
+    # rejection is, success false and authentication REJECT, which is the one answer here that belongs in the
+    # authentication accounting the rest of this endpoint stays out of: a hit is not a successful authentication and
+    # a miss is not a failed one, but a refusal is a request that was turned away.
+    rejection = conditional_access_precheck(user, shape=REMEMBER_DEVICE_REJECTION)
+    if rejection is not None:
+        return rejection
+
     recognised = False
     cookie_action = None
 
