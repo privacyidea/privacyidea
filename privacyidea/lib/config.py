@@ -536,6 +536,10 @@ def get_enrollable_token_types() -> list[str]:
     deprecation use case where a type stays functional but can no longer be
     freshly enrolled.
 
+    The ``deprecated`` sentinel type itself is never enrollable and cannot be
+    re-enabled via pi.cfg, because ``DeprecatedTokenClass`` refuses every
+    enrollment anyway.
+
     :return: list of enrollable token types
     """
     token_types = get_token_types()
@@ -544,7 +548,7 @@ def get_enrollable_token_types() -> list[str]:
     effectively_disabled = set(disabled_token_types) - set(enable_token_types)
 
     # Remove the disabled token types
-    enrollable_token_types = list(set(token_types) - effectively_disabled)
+    enrollable_token_types = list(set(token_types) - effectively_disabled - {"deprecated"})
 
     return enrollable_token_types
 
