@@ -34,6 +34,7 @@ from flask import has_request_context
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
+                                                                           CLIENT_SIGNAL_EVENT_TYPES,
                                                                            REASON_DETAIL_INFO_KEY)
 from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent, update_authentication_events,
                                                                    write_authentication_events)
@@ -142,6 +143,30 @@ class ConditionalAccessContext:
         one.
         """
         return self.pending[-1] if self.pending else None
+
+    @property
+    def classifying(self) -> PendingAuthEvent | None:
+        """
+        The staged event that classifies what this request *authenticated*, or ``None`` if nothing was staged.
+
+        :attr:`latest`, except that a
+        :data:`~privacyidea.lib.conditional_access.authentication_event_types.CLIENT_SIGNAL_EVENT_TYPES` event is
+        passed over while any other staged event remains. Such an event describes the client a request arrived with,
+        not an outcome the request reached, and it is staged on the way out - after the view has staged the real
+        outcome - so as ``latest`` it would stand in for that outcome and decide which policies are evaluated
+        (:meth:`run_post_eval` asks the engine about one event type). A caller able to produce one at will could then
+        keep every policy tracking its actual failures from ever being asked about them, which is the same hazard
+        :data:`~privacyidea.lib.conditional_access.authentication_event_types.NON_CLASSIFYING_EVENT_TYPES` already
+        keeps off the counting side.
+
+        A client signal is still returned when it is all there is - a request that authenticated nothing has no
+        classification for it to stand in for, so a policy tracking it can fire there and nowhere is it hiding
+        anything.
+        """
+        for event in reversed(self.pending):
+            if event.event_type not in CLIENT_SIGNAL_EVENT_TYPES:
+                return event
+        return self.latest
 
     @property
     def amendable(self) -> PendingAuthEvent | None:
@@ -390,8 +415,12 @@ class ConditionalAccessContext:
         also absent from the trackable vocabulary, so no policy could match one anyway - this saves the query and keeps
         the guarantee readable where the evaluation happens
         (:data:`~privacyidea.lib.conditional_access.authentication_event_types.CA_ENFORCEMENT_EVENT_TYPES`).
+
+        What is evaluated is the request's :attr:`classifying` event rather than simply the last one staged, because
+        the engine is asked about a single event type and a client signal staged on the way out would otherwise be
+        it - see there.
         """
-        event = self.latest
+        event = self.classifying
         if event is None or event.event_type == self._evaluated_as:
             return
         if event.event_type in CA_ENFORCEMENT_EVENT_TYPES:
