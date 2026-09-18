@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable } from "@angular/core";
-import { WidgetInstance } from "@models/dashboard";
+import { WidgetInstance, WidgetOptions } from "@models/dashboard";
 import { UserSettingsService, UserSettingsServiceInterface } from "@services/user-settings/user-settings.service";
 import { catchError, map, Observable, of } from "rxjs";
 
@@ -57,7 +57,23 @@ export class DashboardPersistenceService implements DashboardPersistenceServiceI
     if (!Array.isArray(widgets)) {
       return null;
     }
-    return structuredClone(widgets.filter((widget) => this.isWidgetInstance(widget)));
+    return structuredClone(widgets.filter((widget) => this.isWidgetInstance(widget))).map((widget) => ({
+      ...widget,
+      options: this.readOptions(widget.options)
+    }));
+  }
+
+  /**
+   * Keeps only the option keys this version knows, so a document written by a newer WebUI - or edited by hand - is
+   * read for what it holds rather than carried along whole and written back. A widget resolves the id it gets, so an
+   * unknown one costs nothing beyond falling back to the widget's default.
+   */
+  private readOptions(options: unknown): WidgetOptions | undefined {
+    if (!options || typeof options !== "object") {
+      return undefined;
+    }
+    const range = (options as Partial<WidgetOptions>).range;
+    return typeof range === "string" ? { range } : undefined;
   }
 
   private isWidgetInstance(widget: unknown): widget is WidgetInstance {
