@@ -278,8 +278,10 @@ class User:
         Check if the user object exists in the user store
         :return: True or False
         """
-        # TODO: really check if user exist (ask user store and maybe re-evaluate realm)
-        exist = self.uid and self.realm_id
+        # uid and realm_id alone do not prove that the user still exists.
+        # The login is resolved from the user store in __init__, so an empty
+        # login means the user is gone from the store (e.g. deleted).
+        exist = self.uid and self.realm_id and self.login
         return exist
 
     @property

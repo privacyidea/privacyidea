@@ -798,6 +798,21 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
     def test_user_exist(self):
         root = User("root", resolver=self.resolvername1, realm=self.realm1)
         self.assertTrue(root.exist())
+        # A user constructed from a uid also resolves its login
+        root_by_uid = User(uid=root.uid, resolver=self.resolvername1,
+                           realm=self.realm1)
+        self.assertTrue(root_by_uid.exist())
+
+    def test_user_exist_deleted_from_userstore(self):
+        # If the user no longer exists in the user store, uid and realm_id
+        # are still known, but the login can not be resolved anymore.
+        # Such a user must not count as existing, otherwise orphaned
+        # tokens or settings can not be identified correctly.
+        # See https://github.com/privacyidea/privacyidea/issues/4788
+        ghost = User(uid="424242", resolver=self.resolvername1,
+                     realm=self.realm1)
+        self.assertFalse(ghost.login)
+        self.assertFalse(ghost.exist())
 
     def test_ordered_resolver(self):
         save_resolver({"resolver": "resolver2",
