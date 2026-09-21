@@ -96,6 +96,28 @@ log = logging.getLogger(__name__)
 system_blueprint = Blueprint('system_blueprint', __name__)
 
 
+
+# Substrings that mark an application-config key as holding a secret rather than a path or a flag.
+# The report renders every PI_* key of pi.cfg verbatim, and a deployment is free to put a secret in
+# one of them - an HSM module password is the usual example. Matching on the name is a denylist and
+# so is not exhaustive; it is chosen over an allowlist of known-safe keys because the set of keys is
+# open (a plugin may add its own) and an allowlist would silently drop those from the report instead
+# of merely showing them. "KEY" is deliberately not a marker: the PI_*_KEY keys in pi.cfg hold file
+# paths, and redacting those would cost the report its diagnostic value for no gain.
+SENSITIVE_APP_CONFIG_MARKERS = ("PASSWORD", "SECRET", "TOKEN", "PASSPHRASE", "PEPPER", "CREDENTIAL")
+
+
+def _censored_app_config(app_config) -> dict:
+    """
+    A copy of the application config with the values of secret-looking keys replaced.
+
+    :param app_config: the Flask application config
+    :return: a plain dict safe to render into the documentation report
+    """
+    return {key: (CENSORED if any(marker in key.upper() for marker in SENSITIVE_APP_CONFIG_MARKERS) else value)
+            for key, value in app_config.items()}
+
+
 @system_blueprint.route('/documentation', methods=['GET'])
 @admin_required
 @prepolicy(check_base_action, request, PolicyAction.CONFIGDOCUMENTATION)
@@ -126,7 +148,7 @@ def get_config_documentation():
     context = {"system": socket.getfqdn(socket.gethostname()),
                "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                "systemconfig": config,
-               "appconfig": current_app.config,
+               "appconfig": _censored_app_config(current_app.config),
                "resolverconfig": resolvers,
                "realmconfig": realms,
                "policyconfig": policies,
