@@ -417,7 +417,8 @@ CA_ENFORCEMENT_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
 #: Event types that describe the *client* a request arrived with rather than the outcome of an authentication.
 #: They are written to the log and can be filtered and reported on there - which is what they are for - but a policy
 #: cannot count them, and they must never be the row that classifies an attempt (see
-#: :func:`~privacyidea.lib.conditional_access.engine._count_matching_attempts`) or a request (see
+#: :func:`~privacyidea.lib.conditional_access.engine._count_matching_attempts`), nor stand in for a request that
+#: reached an outcome of its own (see
 #: :attr:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.classifying`).
 #:
 #: Both exclusions are about interference: such a row is staged after the outcome it sits beside, so left in it
@@ -435,16 +436,16 @@ CLIENT_SIGNAL_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
     AuthEventType.SUSPENDED_API_KEY_USED,
 })
 
-#: Every event type that must not classify an authentication attempt: the rejections conditional access wrote
-#: itself, and the signals about the request's client. What they have in common is that neither is an outcome the
-#: attempt reached.
-NON_CLASSIFYING_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+#: Every event type that must never be an attempt's representative - the row whose type classifies the whole
+#: attempt: the rejections conditional access wrote itself, and the signals about the request's client. What they
+#: have in common is that neither is an outcome the attempt reached.
+NON_REPRESENTATIVE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
 
 #: Every event type a conditional-access policy may not count: the rejections conditional access wrote itself, and
 #: the signals about the request's client. Neither is an outcome an authentication attempt reached, which is also
-#: why neither may classify one - see :data:`NON_CLASSIFYING_EVENT_TYPES`, the same membership seen from the other
-#: side. The two sets are equal today and are kept apart because they answer different questions: one what a policy
-#: may count, the other what may stand for a request or an attempt.
+#: why neither may represent one - see :data:`NON_REPRESENTATIVE_EVENT_TYPES`, the same membership seen from the
+#: other side. The two sets are equal today and are kept apart because they answer different questions: one what a
+#: policy may count, the other what may stand for an attempt.
 UNTRACKABLE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
 
 # The event types a conditional-access policy may count, i.e. everything an authentication attempt itself can produce.
