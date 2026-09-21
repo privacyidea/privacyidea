@@ -60,6 +60,23 @@
   your admin policies that reference `getchallenges`
   and decide whether each admin should also get `cancelchallenge`.
 
+* **Self-registration is deprecated.** The `register` policy scope and the anonymous
+  `GET`/`POST /register` endpoints — which let a visitor create their own account in an editable
+  resolver and have the registration key mailed to them — are deprecated and will be removed in a
+  future release. Its only user interface is the "Register" link of the old WebUI, which is being
+  removed, and the new WebUI does not offer registration at all.
+
+  Nothing stops working in this release: if you have a `register` policy, registration keeps
+  behaving exactly as before. Both endpoints now write one warning to the log per process when
+  they are used **and the feature is configured** — probing the endpoint of an installation that
+  never enabled registration leaves no line, so the warning really does mean "this installation
+  uses self-registration". Grep your logs for `is deprecated` if you are unsure. **If your installation relies on self-registration, tell us before it is removed** —
+  we have had no reports about it, which is the reason for retiring it rather than extending it.
+
+  These endpoints are anonymous by design. For the remainder of their life, treat them like any
+  other anonymous endpoint you expose, and set the `requiredemail` action so that the
+  registration mail can only go to addresses you accept.
+
 * **A python class named by configuration is checked against an allowlist, which only warns by
   default.** Two pieces of configuration name a python class for privacyIDEA to import: the
   `module` of an SMS gateway definition and the value of the `pinhandling` policy action. Both are
