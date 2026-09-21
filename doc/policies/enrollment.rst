@@ -173,6 +173,10 @@ The action value take the class of a PinHandler like
 The base PinHandler just logs the PIN to the log file. You can add classes to
 send the PIN via email or print it in a letter.
 
+A class of your own is declared in ``PI_PIN_HANDLER_MODULES``, see
+:ref:`picfg_module_allowlist`. Without the declaration it is still used, and privacyIDEA writes
+a warning to the log naming it.
+
 For more information see the base class :ref:`code_pinhandler`.
 
 .. _policy_change_pin_first_use:

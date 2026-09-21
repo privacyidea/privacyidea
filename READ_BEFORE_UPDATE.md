@@ -60,6 +60,30 @@
   your admin policies that reference `getchallenges`
   and decide whether each admin should also get `cancelchallenge`.
 
+* **A python class named by configuration is checked against an allowlist, which only warns by
+  default.** Two pieces of configuration name a python class for privacyIDEA to import: the
+  `module` of an SMS gateway definition and the value of the `pinhandling` policy action. Both are
+  now checked against the classes that ship with privacyIDEA before the class is imported.
+
+  **Nothing changes for you on this upgrade.** The default mode is `warn`: a class that is on
+  neither list is used exactly as before, and a line is written to the log naming it and the
+  setting to declare it in. So an installation that runs its own SMS provider or its own pin
+  handler — which is a supported thing to do — keeps working without any configuration change.
+
+  If you want the check to actually refuse an undeclared class, declare the classes you use and
+  then switch the mode on::
+
+      PI_SMS_PROVIDER_MODULES = ["mycompany.smsprovider.MyProvider"]
+      PI_PIN_HANDLER_MODULES = ["mycompany.pinhandler.LetterPinHandler"]
+      PI_MODULE_ALLOWLIST_MODE = "enforce"
+
+  The recommended order is to leave the default in place for a while first, read the log for the
+  warnings, declare what appears there, and only then set `enforce` — that way the strict mode
+  cannot take a working gateway or pin handler out of service. Note that the classes privacyIDEA
+  ships never need declaring, and that `privacyidea.lib.smsprovider.SMSProvider.ISMSProvider` is
+  the abstract base class rather than a usable provider, so a gateway pointing at it needs
+  declaring like any other non-shipped class.
+
 * **A new policy action `token_rollover` is required to roll a token over.** `POST /token/init` updates a token when it
   is called with the serial of a token that already exists. While the enrollment of that token is still under way — the
   second request of a two-step or a FIDO2 enrollment, a token waiting to be verified — that is part of the enrollment

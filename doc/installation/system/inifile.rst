@@ -467,6 +467,36 @@ reduces the amount of possible serials. To generate completely random serials us
     See :py:func:`~privacyidea.lib.token.gen_serial` for more information on
     the generation of a token serial.
 
+.. _picfg_module_allowlist:
+
+Classes privacyIDEA may import
+..............................
+
+.. versionadded:: 3.14
+
+Two pieces of configuration name a python class for privacyIDEA to import: the ``module`` of an
+SMS gateway definition and the value of the :ref:`policy_pinhandling` policy action. Since both
+are written through the API rather than through this file, the class is checked against the
+classes that ship with privacyIDEA before it is imported.
+
+Writing an own class is supported, so the check is extensible. Name your own classes here::
+
+    PI_SMS_PROVIDER_MODULES = ["mycompany.smsprovider.MyProvider"]
+    PI_PIN_HANDLER_MODULES = ["mycompany.pinhandler.LetterPinHandler"]
+
+What happens to a class that is on neither list is decided by::
+
+    PI_MODULE_ALLOWLIST_MODE = "warn"
+
+``warn`` is the default. The class is used, and a warning is written to the log naming the class
+and the setting to declare it in, so nothing stops working on an upgrade and you can see what
+your installation actually uses. Setting it to ``enforce`` refuses such a class instead.
+
+.. note::
+    Declare the classes you use before switching to ``enforce``, otherwise an SMS gateway or a
+    pin handler that relies on an own class stops working. The classes that ship with
+    privacyIDEA never need declaring.
+
 .. _picfg_3rd_party_tokens:
 
 3rd party token types

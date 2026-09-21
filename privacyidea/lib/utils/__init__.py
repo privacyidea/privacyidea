@@ -47,6 +47,7 @@ from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal, tzutc
 from netaddr import IPAddress, IPNetwork, AddrFormatError
 
+from privacyidea.config import ConfigKey
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError, PolicyError
 from privacyidea.lib.framework import get_app_config_value, get_base_url
 
@@ -1178,6 +1179,59 @@ def check_pin_contents(pin, policy):
             comment.append(f"Missing character in PIN: {str!s}")
 
     return ret, ",".join(comment)
+
+
+# Classes whose absence from the allowlist has already been logged in this process.
+_module_allowlist_warned = set()
+
+
+def check_module_allowed(class_name: str, shipped: list[str], config_key: str, description: str) -> None:
+    """
+    Check that a python class privacyIDEA is about to import is one it is meant to import.
+
+    The class is named by configuration that is written through the API - an SMS gateway
+    definition, a policy action - rather than by ``pi.cfg``, so it is worth being explicit
+    about which classes an installation actually uses. The name is checked before the import,
+    because importing is what runs the module.
+
+    Writing an own class is a supported thing to do, so the list is extensible: the classes
+    that ship with privacyIDEA are allowed, plus everything named in ``config_key``.
+
+    What happens to a class on neither list is decided by ``PI_MODULE_ALLOWLIST_MODE``:
+
+    * ``warn`` (the default) logs it and imports it anyway. An installation that upgrades
+      into this check keeps working, and the log says what to declare in ``pi.cfg``.
+    * ``enforce`` rejects it.
+
+    The default is deliberately the permissive one. This runs on configuration that already
+    exists in the database of an installation being upgraded, and an upgrade must not stop a
+    gateway or a pin handler from working because a class was never declared in a file that
+    did not read it before.
+
+    :param class_name: the dotted path of the class that is about to be imported
+    :param shipped: the dotted paths of the classes that ship with privacyIDEA
+    :param config_key: the ``pi.cfg`` key that names additional allowed classes
+    :param description: what kind of class this is, for the message
+    :raises ParameterError: in ``enforce`` mode, if the class is on neither list
+    """
+    # to_list, so that a single class written as a plain string rather than as a one-element
+    # list is read as that class and not as its characters.
+    declared = to_list(get_app_config_value(config_key) or [])
+    if class_name in list(shipped) + declared:
+        return
+
+    message = (f"The {description} '{class_name}' is not one of the classes that ship with "
+               f"privacyIDEA. Add it to {config_key} in pi.cfg to declare that this "
+               f"installation uses it.")
+    if (get_app_config_value(ConfigKey.MODULE_ALLOWLIST_MODE) or "warn").lower() == "enforce":
+        raise ParameterError(message)
+    # Warned once per class per process: this runs on every use of the class - for a pin handler
+    # that is every enrollment - and the same line repeated per request buries the signal it
+    # carries rather than carrying it.
+    if class_name not in _module_allowlist_warned:
+        _module_allowlist_warned.add(class_name)
+        log.warning(f"{message} It is used anyway, because {ConfigKey.MODULE_ALLOWLIST_MODE} is "
+                    f"not set to 'enforce'.")
 
 
 def get_module_class(package_name, class_name, check_method=None):

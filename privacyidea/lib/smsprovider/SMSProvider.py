@@ -38,7 +38,9 @@ import time
 from sqlalchemy import select, update
 
 from privacyidea.lib import lazy_gettext
+from privacyidea.config import ConfigKey
 from privacyidea.lib.crypto import is_censored, censor_dict, encryptPassword, decryptPassword
+from privacyidea.lib.utils import check_module_allowed
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
@@ -402,7 +404,13 @@ def create_sms_instance(identifier):
     if not gateway_definition:
         raise ConfigAdminError('Could not find gateway definition with '
                                f'identifier "{identifier!s}"')
-    package_name, class_name = gateway_definition[0].providermodule.rsplit(".", 1)
+    provider_module = gateway_definition[0].providermodule
+    # Also here and not only where a gateway is written: a definition can reach the database
+    # through a configuration import or predate the check, and this is where the class is
+    # actually imported.
+    check_module_allowed(provider_module, SMS_PROVIDERS, ConfigKey.SMS_PROVIDER_MODULES,
+                         "SMS provider class")
+    package_name, class_name = provider_module.rsplit(".", 1)
     sms_klass = get_sms_provider_class(package_name, class_name)
     sms_object = sms_klass(smsgateway=gateway_definition[0])
     return sms_object

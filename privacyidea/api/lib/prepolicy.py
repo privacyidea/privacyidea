@@ -118,8 +118,10 @@ from privacyidea.lib.user import (get_user_from_param, get_default_realm,
                                   split_user, User)
 from privacyidea.lib.utils import (parse_timedelta, is_true,
                                    generate_charlists_from_pin_policy,
-                                   get_module_class,
+                                   get_module_class, check_module_allowed,
                                    determine_logged_in_userparams, parse_string_to_dict)
+from privacyidea.lib.pinhandling.base import PIN_HANDLERS
+from privacyidea.config import ConfigKey
 
 log = logging.getLogger(__name__)
 
@@ -275,6 +277,12 @@ def init_random_pin(request=None, action=None):
         #  PIN in several ways!
         for handle_pol in handle_pols:
             log.debug(f"Handle the random PIN with the class {handle_pol!s}")
+            # The class comes from the policy action value, so unlike the modules named in
+            # pi.cfg it is checked before it is imported. This is the load site rather than a
+            # write site, because the value is a plain policy action and so reaches the server
+            # through every path a policy can be written or imported through.
+            check_module_allowed(handle_pol, PIN_HANDLERS, ConfigKey.PIN_HANDLER_MODULES,
+                                 "pin handler class")
             package_name, class_name = handle_pol.rsplit(".", 1)
             pin_handler_class = get_module_class(package_name, class_name)
             pin_handler = pin_handler_class()

@@ -2,6 +2,9 @@ from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.crypto import CENSORED
+from privacyidea.lib.smsprovider.SMSProvider import (get_smsgateway, delete_smsgateway,
+                                                    create_sms_instance)
+from privacyidea.lib.error import ParameterError
 
 
 class APISmsGatewayTestCase(MyApiTestCase):
@@ -226,6 +229,50 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertTrue("URL" in http_parameters.get("parameters"))
             self.assertTrue("PROXY" in http_parameters.get("parameters"))
             self.assertTrue("HTTP_METHOD" in http_parameters.get("parameters"))
+
+    def test_04a_provider_module_allowlist(self):
+        shipped = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"
+        # Importable, but not one of the classes privacyIDEA ships as a provider - which is
+        # the case the check is about: the import itself would succeed.
+        custom = "privacyidea.lib.smsprovider.SMSProvider.ISMSProvider"
+
+        def post(module):
+            with self.app.test_request_context('/smsgateway',
+                                               data={"name": "allowlistGW", "module": module,
+                                                     "description": "d"},
+                                               method='POST',
+                                               headers={'Authorization': self.at}):
+                return self.app.full_dispatch_request()
+
+        try:
+            # The default mode lets a gateway that names an own class keep working
+            self.assertEqual(200, post(custom).status_code)
+
+            self.app.config["PI_MODULE_ALLOWLIST_MODE"] = "enforce"
+            # A class that ships with privacyIDEA needs no declaration
+            self.assertEqual(200, post(shipped).status_code)
+
+            res = post(custom)
+            self.assertEqual(400, res.status_code, res.data)
+            message = res.json["result"]["error"]["message"]
+            self.assertIn(custom, message)
+            self.assertIn("PI_SMS_PROVIDER_MODULES", message)
+
+            # Declaring it makes it allowed again
+            self.app.config["PI_SMS_PROVIDER_MODULES"] = [custom]
+            self.assertEqual(200, post(custom).status_code)
+
+            # The class is checked where it is imported too, not only where it is written: a
+            # definition can reach the database through a configuration import.
+            self.app.config.pop("PI_SMS_PROVIDER_MODULES")
+            self.assertRaises(ParameterError, create_sms_instance, "allowlistGW")
+            self.app.config["PI_SMS_PROVIDER_MODULES"] = [custom]
+            self.assertIsNotNone(create_sms_instance("allowlistGW"))
+        finally:
+            self.app.config.pop("PI_MODULE_ALLOWLIST_MODE", None)
+            self.app.config.pop("PI_SMS_PROVIDER_MODULES", None)
+            if get_smsgateway("allowlistGW"):
+                delete_smsgateway("allowlistGW")
 
     def test_05_read_write_policies(self):
         set_policy(name="pol_read", scope=SCOPE.ADMIN,
