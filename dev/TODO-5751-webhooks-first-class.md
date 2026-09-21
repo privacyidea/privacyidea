@@ -392,7 +392,9 @@ reachable at all, since an admin can't otherwise tell what enabling the guard wo
   `https://` at `set_webhook()` time. Nothing to do here for 2.4; listed for completeness against the addendum's
   numbering.
 - [x] Resolve hostname (`socket.getaddrinfo`, IPv6 zone id stripped), reject if **any** resolved address falls in a
-  blocked range (`BLOCKED_NETWORKS`: loopback, RFC1918, link-local/metadata, CGNAT, `::1`, ULA, `0.0.0.0/8`, plus the
+  blocked range (`BLOCKED_NETWORKS`: loopback, RFC1918, link-local/metadata, CGNAT, `::1`, ULA, the unspecified
+  addresses `0.0.0.0/8` **and `::/128`** — connecting to either reaches a locally bound listener, and `::` needs
+  its own entry because it is not the IPv4-mapped form of `0.0.0.0` — plus the
   IPv4-mapped IPv6 form of each) — all addresses are checked, not just the first
 - [ ] ~~Connect to the address that was checked (pin it)~~ — **deliberately not implemented**, per the addendum's own
   escape valve: pinning the connection needs either a custom `HTTPAdapter`/SSLContext wiring or a process-global
@@ -402,9 +404,15 @@ reachable at all, since an admin can't otherwise tell what enabling the guard wo
   resolve check with a public address and have the second, real lookup made by `requests` return a blocked address
   instead. This requires control over the hostname's DNS answers specifically for a hostname an admin already chose to
   configure, which is the same trust boundary the addendum accepted as out of scope.
-- [x] `allow_redirects=False` whenever the guard is not `off` — a redirect target was never checked, so following it
-  would defeat the resolve/range check. `off` keeps today's default (`True`) so an installation that hasn't opted in
-  sees no behaviour change.
+- [x] `allow_redirects=False` in `enforce` **only** — a redirect target was never checked, so following it
+  would defeat the resolve/range check. `off` keeps the previous default (`True`), and `warn` does too: it is a
+  trial run of `enforce` and must not alter delivery either, or an admin cannot tell what their traffic does
+  today from what the guard would do to it. `warn` logs the followed redirect instead — that is the delivery
+  that would stop working on `enforce`.
+- [x] An **unfollowed redirect is a failed delivery**. `requests.Response.ok` is true for anything below 400,
+  so a 3xx would otherwise come back as `success: True` with nothing delivered, and the event handler or the
+  Conditional Access `WEBHOOK` action would record the notification as sent. An endpoint that answers 301/302 is
+  ordinary (an `http`→`https` rewrite, a load balancer), so this is the common case rather than a corner one.
 - [x] Proxy interaction: `_guard_target()` checks the configured proxy's host instead of the destination's whenever
   `http_proxy`/`https_proxy` applies to the request's scheme — the proxy is what resolves and connects to the
   destination, so checking the destination would protect against nothing
@@ -1246,8 +1254,172 @@ constraints above.
 
 # Addendum to #5751 — outbound request guard (opt-in)
 
-**Folded into the plan above** as [2.4 — Outbound request guard](#24--outbound-request-guard-opt-in),
-[4.3 — Outbound guard on the test endpoint](#43--outbound-guard-on-the-test-endpoint-see-24), and the corresponding
-additions to 8.2 (security review) and 9.1/9.5 (documentation). This section is kept only as a changelog entry: the
-addendum was originally proposed as a standalone spec, replacing the "SSRF"
-bullet under *Security notes* above, and has since been merged into the phased checklist rather than tracked separately.
+**Status:** proposed spec addendum, to be handed to the implementer of #5751. **Relation to #5751:** replaces the "
+**SSRF**" bullet under *Security notes*, which currently
+resolves the question as "inherent to the feature, document it as a right to hand out carefully".
+Everything else in #5751 stands unchanged.
+
+**Naming note:** every `PI_*` key and function name below is **proposed, not existing**. None of
+them is in the tree today; they are named here so the spec can be read, and the implementer should
+treat the names as a suggestion.
+
+---
+
+## Why this belongs in #5751 rather than in its own issue
+
+#5751 already moves the endpoint out of the handler options and into an object that owns "URL,
+method, auth, headers, TLS, proxy, timeout". A network-reachability guard is one more property of *the endpoint*, so it
+lands in the same object and the same `fire_webhook()` call path. Doing it
+later means touching the same code twice.
+
+The second reason is the one that actually matters: #5751 makes webhooks reachable from **Conditional Access stage
+actions**, which fire inside the authentication request. That widens the
+blast radius of a misdirected webhook from "management operations" to "the authentication path
+under attack traffic". The issue already reasons about this for the timeout; the same reasoning
+applies to where the request is allowed to go.
+
+## The constraint: this cannot change behaviour on upgrade
+
+privacyIDEA is on-premise and upgrades skip versions (#5751 establishes this constraint for the
+migration, and it applies here identically). Installations legitimately post webhooks to addresses
+this guard would reject:
+
+- a SIEM, log collector or ticket system on the internal network (`10.0.0.0/8`, `192.168.0.0/16`)
+- a sidecar or agent on `127.0.0.1` — normal in a container deployment
+- a service reached by a hostname that resolves into private space (split-horizon DNS)
+
+A guard that is on by default breaks all three silently on upgrade, and the failure mode is
+"webhooks stopped firing", which nobody notices until they need the webhook. So: **default off,
+and the default must remain off for the life of the 3.x line.**
+
+## Three modes, not a boolean
+
+The boolean is what makes an opt-in guard undeployable in practice: an admin cannot tell whether
+turning it on will break anything without turning it on. So the setting has three states, and the
+middle one is the point of the design.
+
+| `PI_OUTBOUND_GUARD` | Behaviour                                                                                                                      |
+|---------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| `off` (**default**) | No checks. Byte-for-byte today's behaviour.                                                                                    |
+| `warn`              | Every check runs; a would-be rejection is logged at WARNING and written to the audit entry, and **the request is still sent**. |
+| `enforce`           | A rejected request is not sent.                                                                                                |
+
+`warn` lets an admin enable the guard on a Friday, read the log for a release cycle, add whatever
+internal endpoints they legitimately use to the allowlist, and only then move to `enforce`. It is
+also what lets us recommend the guard in the docs without hedging: the recommendation becomes "set
+it to `warn`, it cannot break anything", which is an easy thing for an admin to agree to.
+
+Do not add a per-webhook-object override. A per-object "this one may reach the intranet" flag reads
+as convenience but means the guard's effective posture is spread across N config rows; the
+allowlist below covers the same need in one place.
+
+## What the guard checks
+
+In order, cheapest first:
+
+1. **Scheme allowlist** — `http` and `https` only. This is the one check that is worth applying
+   even in `off` mode, because no existing installation can be relying on a webhook URL with a
+   `file://`, `gopher://` or `ftp://` scheme: the current handler passes the URL to
+   `requests.post`, which raises `InvalidSchema: No connection adapters were found` for all three (verified against the
+   pinned `requests` version). Rejecting them explicitly is therefore not a
+   behaviour change here — it matters because the same helper is meant to be adopted later by call
+   sites that do *not* go through `requests`, such as the RSS reader's `feedparser.parse`, where a
+   `file://` URL is a working file read.
+
+2. **Resolve, then check every resolved address.** Resolve the hostname and reject if *any*
+   returned address falls in a blocked range. Checking only the first address is a bypass: a name
+   with an A record in public space and a second in `127.0.0.0/8` passes a first-address check and
+   may connect to either.
+
+   Blocked by default when the guard is on (the ranges, not the hostnames):
+   `127.0.0.0/8`, `::1`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`
+   (this is the cloud metadata range — AWS/GCP/Azure all sit on `169.254.169.254`), `fe80::/10`,
+   `fc00::/7`, `0.0.0.0/8`, `100.64.0.0/10` (CGNAT), and the IPv4-mapped forms of the above.
+
+3. **Connect to the address that was checked.** Between the check and the connection, a second
+   DNS lookup can return a different answer — the hostname resolves to a public address for the
+   check and to `169.254.169.254` for the request. Pin the verified address for the actual
+   connection rather than letting `requests` resolve again.
+
+   *This is the only part of the spec with real implementation cost.* With `requests` it means
+   either a custom `HTTPAdapter` that connects to the pinned IP while keeping the original `Host`
+   header and TLS SNI, or accepting the gap and documenting it. **If it makes the change too
+   large, ship checks 1, 2, 4 and 5 and document that a rebinding-capable attacker who already
+   controls DNS for a configured webhook hostname is out of scope** — that attacker already
+   controls where the webhook goes, so the marginal loss is small. Do not silently skip it.
+
+4. **Redirects.** Simplest correct answer: `allow_redirects=False` for webhook delivery. A webhook
+   is a POST to a known endpoint; following a redirect to an address the guard never saw defeats
+   checks 2 and 3, and no receiver needs it. If redirects must be supported, re-run checks 2 and 3
+   on every hop, not just the final URL.
+
+5. **Proxy interaction.** `http_proxy`/`https_proxy` are per-object fields in #5751. When a proxy
+   is configured the connection goes to the proxy, so the URL host is resolved by the *proxy*, not
+   by us, and checks 2 and 3 are meaningless for the destination. Decide explicitly and document
+   it: either the guard checks the proxy address instead (correct — the proxy is the thing we
+   connect to), or the guard refuses to run alongside a configured proxy. Do not let it appear to
+   protect something it cannot see.
+
+### The allowlist is what makes `enforce` reachable
+
+`PI_OUTBOUND_GUARD_ALLOW` — a list of CIDRs and/or `host:port` entries that are permitted even
+when they fall in a blocked range. Without it, every installation with an internal SIEM is stuck on
+`warn` forever, which means the guard never actually enforces anywhere and we have built a logging
+feature. The `warn`-mode log line should name the rejected address in exactly the form that can be
+pasted into this list.
+
+## Enforcement points
+
+- `fire_webhook()` in the new `lib/webhook.py` — the single delivery path, per #5751.
+- **The `/webhook/test` endpoint.** This matters more than the delivery path: the test endpoint
+  takes an admin-supplied URL and reports the status code and response body back to the caller.
+  That is a *read* primitive, where delivery is blind. An unguarded test endpoint is strictly more
+  useful to an attacker than an unguarded webhook, so the guard must apply there — and the test
+  endpoint should report a rejection as a clear "this address is blocked by
+  `PI_OUTBOUND_GUARD`" message with the allowlist key named, since that is exactly the moment an
+  admin is trying to work out why their webhook does not fire.
+
+## Failure semantics
+
+Follow #5751's existing rule: a delivery failure is logged and never propagates. A *rejection* is
+not the same as a failure — it is a configuration error, not a dead endpoint — but the handling is
+the same, for the same reason: a Conditional Access stage action must not turn into a failed
+authentication, and must not skip the stage's remaining actions.
+
+- Log at WARNING with the webhook identifier, the rejected address and the mode.
+- Write it to the audit entry alongside the "webhook fired" record #5751 already specifies —
+  identifier and outcome, never the URL, which may carry an embedded token.
+- In `warn` mode the request proceeds and the log line says so, so the two modes are
+  distinguishable in a log after the fact.
+
+## Reusability, without widening the scope
+
+#5751 says a shared HTTP helper is "worth checking whether extractable" but explicitly excludes
+refactoring the HTTP SMS provider. Keep that boundary. Write the guard as a standalone function —
+proposed `check_outbound_target(url, mode, allowlist)` — that takes the URL and returns the
+verified address or a rejection reason, and call it from `fire_webhook()`.
+
+Written that way it is the piece the other outbound sinks (resolver and machine-resolver `test`
+endpoints, the RSS feed reader, the remote and federation tokens, HTTP SMS) can adopt one at a
+time later, each keeping its own default, with no shared-helper refactor and no behaviour change
+until someone opts a call site in. That sequencing is the whole reason to write it as a function
+rather than inline in the delivery path.
+
+## Documentation
+
+- The webhook configuration page gets a section on the guard: what the three modes do, that the
+  default is `off`, and the recommendation to run `warn` first.
+- #5751's existing note — that `webhook_write` lets an admin make the server issue arbitrary
+  outbound requests — **stays**. The guard narrows that right when enabled; it does not remove it,
+  and the docs should not imply that enabling the guard makes `webhook_write` safe to delegate.
+
+## Test coverage
+
+- Each of the five checks, in `enforce` and in `warn` (same verdict, different outcome).
+- `off` mode sends unchanged, including to a private address — this is the upgrade-safety test and
+  the one that must never be "fixed" by changing the default.
+- A hostname with a mixed public/private A-record set (check 2's bypass).
+- Allowlist entry re-permits an address the range list blocks.
+- `/webhook/test` is guarded, and its rejection names the allowlist key.
+- A rejection does not raise out of a Conditional Access stage, and the stage's remaining actions
+  still run..

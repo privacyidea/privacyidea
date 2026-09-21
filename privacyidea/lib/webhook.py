@@ -662,13 +662,20 @@ class GuardMode:
 
 #: Networks the guard rejects by default when it is not in OFF mode: loopback,
 #: RFC1918 private space, link-local (this also covers the cloud metadata
-#: endpoint 169.254.169.254), unique-local IPv6, the "this network" range and
-#: CGNAT. IPv4-mapped IPv6 forms of an address (e.g. ``::ffff:127.0.0.1``) are
-#: unwrapped and checked against the IPv4 entries in :func:`_is_blocked_address`.
+#: endpoint 169.254.169.254), unique-local IPv6, the "this network" and
+#: unspecified ranges, and CGNAT. IPv4-mapped IPv6 forms of an address (e.g.
+#: ``::ffff:127.0.0.1``) are unwrapped and checked against the IPv4 entries in
+#: :func:`_is_blocked_address`.
+#:
+#: The unspecified addresses are listed for the same reason as loopback and not as a formality:
+#: connecting to ``0.0.0.0`` or ``::`` reaches a locally bound listener, so leaving either out
+#: hands an admin with ``webhook_write`` every local port the guard exists to keep them from.
+#: ``::`` needs its own entry because it is not the IPv4-mapped form of ``0.0.0.0`` and so is not
+#: covered by ``0.0.0.0/8``.
 BLOCKED_NETWORKS = tuple(ipaddress.ip_network(cidr) for cidr in (
     "127.0.0.0/8", "0.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12",
     "192.168.0.0/16", "169.254.0.0/16", "100.64.0.0/10",
-    "::1/128", "fe80::/10", "fc00::/7",
+    "::/128", "::1/128", "fe80::/10", "fc00::/7",
 ))
 
 
@@ -909,6 +916,8 @@ def fire_webhook(identifier, payload=None):
     session = None
     try:
         mode, allowlist = _guard_config()
+        # Only ENFORCE withholds a redirect; see the request call below.
+        follow_redirects = mode != GuardMode.ENFORCE
         rejection = check_outbound_target(_guard_target(config), mode=mode,
                                           allowlist=allowlist)
         if rejection:
@@ -962,28 +971,50 @@ def fire_webhook(identifier, payload=None):
             verify=verify,
             proxies=proxies,
             timeout=config["timeout"],
-            # A redirect target was never checked by the guard above, so
-            # following one would defeat it. Only deviate from the previous
-            # default (True, the behaviour of privacyIDEA 3.14 and older)
-            # once the guard is actually active -- an installation on OFF
-            # must see byte-for-byte identical behaviour.
-            allow_redirects=(mode == GuardMode.OFF),
+            # A redirect target was never checked by the guard above, so following one would
+            # defeat it -- but only ENFORCE is meant to change what happens. OFF is byte-for-byte
+            # the behaviour of privacyIDEA 3.14 and older, and WARN is a trial run of ENFORCE that
+            # must not alter delivery either: it follows the redirect and says what ENFORCE would
+            # have done instead (below), which is the whole point of having a mode to try first.
+            allow_redirects=follow_redirects,
         )
-        success = response.ok
+        # requests.Response.ok is true for anything below 400, so a 3xx counts as a success by
+        # default. With redirects not followed that is wrong twice over: nothing was delivered,
+        # and the caller - an event handler, or a Conditional Access WEBHOOK action - would
+        # record the notification as sent. An endpoint that answers 301/302 is ordinary (an
+        # http->https rewrite, a load balancer), so this is the common case, not a corner one.
+        unfollowed_redirect = not follow_redirects and 300 <= response.status_code < 400
+        success = response.ok and not unfollowed_redirect
         body_text = _truncate(response.text)
 
         # Never log the URL (it may embed a token) or the headers.
         log.info(f"Webhook {identifier!r} answered with HTTP "
                  f"{response.status_code}")
         log.debug(f"Webhook {identifier!r} response body: {body_text}")
-        if not success:
+        if unfollowed_redirect:
+            log.warning(f"Webhook {identifier!r} answered with HTTP {response.status_code} and the "
+                        f"outbound request guard ({mode}) does not follow redirects, so nothing was "
+                        f"delivered. Configure the webhook with the final URL.")
+        elif response.history:
+            # Followed, which only happens in OFF and WARN. Worth a line in WARN, because it is
+            # exactly the delivery that would stop working on ENFORCE.
+            log.info(f"Webhook {identifier!r} followed {len(response.history)} redirect(s); the "
+                     f"outbound request guard would refuse to in {GuardMode.ENFORCE!r} mode, and "
+                     f"the redirect target is never checked against the guard.")
+        elif not success:
             log.warning(f"Webhook {identifier!r} failed with HTTP "
                         f"{response.status_code}")
 
         _record_webhook_call(identifier, start, success)
+        if success:
+            error = None
+        elif unfollowed_redirect:
+            error = (f"HTTP {response.status_code}: the endpoint redirects and the outbound "
+                     f"request guard ({mode}) does not follow redirects")
+        else:
+            error = f"HTTP {response.status_code}"
         return {"success": success, "status_code": response.status_code,
-                "response": body_text,
-                "error": None if success else f"HTTP {response.status_code}"}
+                "response": body_text, "error": error}
     except Exception as ex:
         # Deliberately broad: a webhook must never break its caller, so even a
         # programming error in the TLS setup is downgraded to a logged failure.

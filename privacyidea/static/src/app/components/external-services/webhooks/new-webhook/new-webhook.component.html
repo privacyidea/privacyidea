@@ -1,0 +1,461 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="webhook-page-layout">
+  <div
+    #scrollContainer
+    class="webhook-page-container">
+    @if (isEditMode()) {
+      <h3
+        class="margin-8"
+        i18n="@@webhook.editWebhook">Edit Webhook
+      </h3>
+    } @else {
+      <h3
+        class="margin-8"
+        i18n="@@webhook.createWebhook">Create Webhook
+      </h3>
+    }
+
+    <div
+      [appStickyHeader]="scrollContainer"
+      class="sticky-header">
+      <div class="sticky-controls ali-center">
+        <button
+          (click)="onCancel()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span i18n="@@common.cancel">Cancel</span>
+        </button>
+        <button
+          (click)="save()"
+          [disabled]="!webhookForm().valid()"
+          class="action-button-primary button-width-s"
+          mat-stroked-button>
+          <mat-icon>save</mat-icon>
+          <span i18n="@@common.save">Save</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="webhook-dialog-content">
+      <div class="webhook-form">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l margin-bottom-16">
+          <mat-label i18n="@@common.identifier">Identifier</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="webhookModel.update((m) => ({ ...m, identifier: '' }))"
+            [showClearButton]="!isEditMode() && !!webhookModel().identifier">
+            <input
+              [formField]="webhookForm.identifier"
+              matInput
+              placeholder="siem" />
+          </app-clearable-input>
+          <mat-hint
+            i18n="@@webhook.uniqueIdentifying">The unique name event handlers and conditional access policies refer to.
+          </mat-hint>
+          @if (webhookForm
+            .identifier()
+            .errors()
+            .some((e) => e.kind === "required")) {
+            <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong></mat-error>
+          }
+          @if (webhookForm
+            .identifier()
+            .errors()
+            .some((e) => e.kind === "pattern")) {
+            <mat-error
+              i18n="@@common.identifierContains">Identifier contains <strong>invalid characters</strong>. Only
+                                                 alphanumeric characters, dots, underscores and hyphens are allowed.
+            </mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l margin-bottom-32">
+          <mat-label i18n="@@common.description">Description</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="webhookModel.update((m) => ({ ...m, description: '' }))"
+            [showClearButton]="!!webhookModel().description">
+            <input
+              [formField]="webhookForm.description"
+              matInput />
+          </app-clearable-input>
+        </mat-form-field>
+
+        <mat-divider />
+
+        <h4
+          class="margin-top-16"
+          i18n="@@webhook.endpointSection">Endpoint
+        </h4>
+
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l margin-bottom-16">
+          <mat-label i18n="@@webhook.url">URL</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="webhookModel.update((m) => ({ ...m, url: '' }))"
+            [showClearButton]="!!webhookModel().url">
+            <input
+              [formField]="webhookForm.url"
+              matInput
+              placeholder="https://siem.example.com/hook" />
+          </app-clearable-input>
+          <mat-hint i18n="@@webhook.urlHint">The URL may embed a token, so it is never written to the log.</mat-hint>
+          @if (webhookForm
+            .url()
+            .errors()
+            .some((e) => e.kind === "required")) {
+            <mat-error i18n="@@webhook.urlRequired">URL is <strong>required</strong></mat-error>
+          }
+          @if (webhookForm
+            .url()
+            .errors()
+            .some((e) => e.kind === "pattern")) {
+            <mat-error
+              i18n="@@webhook.urlScheme">The URL must start with <strong>http://</strong> or <strong>https://</strong>
+            </mat-error>
+          }
+        </mat-form-field>
+
+        <div class="flex-row gap-16 margin-bottom-16">
+          <mat-form-field
+            appearance="fill"
+            class="input-width-s">
+            <mat-label i18n="@@webhook.httpMethod">Method</mat-label>
+            <mat-select [formField]="webhookForm.http_method">
+              @for (method of httpMethods; track method) {
+                <mat-option [value]="method">{{ method }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            class="input-width-s">
+            <mat-label i18n="@@webhook.timeout">Timeout (seconds)</mat-label>
+            <input
+              [formField]="webhookForm.timeout"
+              matInput
+              type="number" />
+            <mat-hint i18n="@@webhook.timeoutHint">Delivery is synchronous, so this bounds the wait.</mat-hint>
+            @if (webhookForm
+              .timeout()
+              .errors()
+              .some((e) => e.kind === "timeout")) {
+              <mat-error i18n="@@webhook.timeoutPositive">The timeout must be a positive number.</mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l margin-bottom-16">
+          <mat-label i18n="@@webhook.contentType">Content type</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="webhookModel.update((m) => ({ ...m, content_type: '' }))"
+            [showClearButton]="!!webhookModel().content_type">
+            <input
+              [attr.list]="'webhook-content-types'"
+              [formField]="webhookForm.content_type"
+              matInput
+              placeholder="application/json" />
+          </app-clearable-input>
+          <datalist id="webhook-content-types">
+            @for (type of contentTypes; track type) {
+              <option [value]="type"></option>
+            }
+          </datalist>
+          <mat-hint i18n="@@webhook.contentTypeHint">Any valid MIME type; a JSON body is dumped as JSON.</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l margin-bottom-16">
+          <mat-label i18n="@@webhook.defaultPayload">Default payload</mat-label>
+          <textarea
+            [formField]="webhookForm.default_payload"
+            matInput
+            rows="4"></textarea>
+          <mat-hint
+            i18n="@@webhook.defaultPayloadHint">Sent when the event handler or policy supplies no body of its own.
+          </mat-hint>
+        </mat-form-field>
+
+        <mat-divider />
+
+        <h4
+          class="margin-top-16"
+          i18n="@@webhook.authSection">Authentication
+        </h4>
+
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l margin-bottom-16">
+          <mat-label i18n="@@webhook.authType">Authentication</mat-label>
+          <mat-select [formField]="webhookForm.auth_type">
+            @for (type of authTypes; track type) {
+              <mat-option [value]="type">{{ type }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        @if (showBasicAuth()) {
+          <div class="flex-row gap-16 margin-bottom-16">
+            <mat-form-field
+              appearance="fill"
+              class="input-width-l">
+              <mat-label i18n="@@common.username">Username</mat-label>
+              <app-clearable-input
+                (clearButtonClick)="webhookModel.update((m) => ({ ...m, username: '' }))"
+                [showClearButton]="!!webhookModel().username">
+                <input
+                  [formField]="webhookForm.username"
+                  matInput />
+              </app-clearable-input>
+              @if (webhookForm
+                .username()
+                .errors()
+                .some((e) => e.kind === "required")) {
+                <mat-error i18n="@@webhook.basicNeedsUsername">Basic authentication needs a username.</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field
+              appearance="fill"
+              class="input-width-l">
+              <mat-label i18n="@@common.password">Password</mat-label>
+              <input
+                [formField]="webhookForm.password"
+                matInput
+                type="password" />
+              <mat-hint
+                i18n="@@webhook.secretKept">Leave the placeholder to keep the stored secret; clear it to remove it.
+              </mat-hint>
+            </mat-form-field>
+          </div>
+        }
+
+        @if (showHeaderAuthNote()) {
+          <p
+            class="section-note"
+            i18n="@@webhook.headerAuthNote">Header authentication carries the credential in a header. Add it in the
+                                            header table below and mark it as secret so its value is stored encrypted.
+          </p>
+        }
+
+        @if (showMtls()) {
+          <div class="flex-row gap-16 margin-bottom-16">
+            <mat-form-field
+              appearance="fill"
+              class="input-width-l">
+              <mat-label i18n="@@webhook.clientCertificate">Client certificate</mat-label>
+              <app-clearable-input
+                (clearButtonClick)="webhookModel.update((m) => ({ ...m, client_certificate: '' }))"
+                [showClearButton]="!!webhookModel().client_certificate">
+                <input
+                  [formField]="webhookForm.client_certificate"
+                  matInput
+                  placeholder="/etc/privacyidea/client.pem" />
+              </app-clearable-input>
+              <mat-hint i18n="@@webhook.pathOnServer">A path on the privacyIDEA server.</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field
+              appearance="fill"
+              class="input-width-l">
+              <mat-label i18n="@@webhook.clientKey">Client key</mat-label>
+              <app-clearable-input
+                (clearButtonClick)="webhookModel.update((m) => ({ ...m, client_key: '' }))"
+                [showClearButton]="!!webhookModel().client_key">
+                <input
+                  [formField]="webhookForm.client_key"
+                  matInput
+                  placeholder="/etc/privacyidea/client.key" />
+              </app-clearable-input>
+            </mat-form-field>
+
+            <mat-form-field
+              appearance="fill"
+              class="input-width-l">
+              <mat-label i18n="@@webhook.clientKeyPassword">Client key password</mat-label>
+              <input
+                [formField]="webhookForm.client_key_password"
+                matInput
+                type="password" />
+              <mat-hint
+                i18n="@@webhook.secretKept">Leave the placeholder to keep the stored secret; clear it to remove it.
+              </mat-hint>
+            </mat-form-field>
+          </div>
+        }
+
+        <mat-divider />
+
+        <h4
+          class="margin-top-16"
+          i18n="@@webhook.headersSection">Headers
+        </h4>
+
+        @for (header of headers(); track $index) {
+          <div class="header-row margin-bottom-16">
+            <mat-form-field
+              appearance="fill"
+              class="input-width-l">
+              <mat-label i18n="@@webhook.headerName">Name</mat-label>
+              <input
+                (input)="updateHeader($index, { key: $any($event.target).value })"
+                [value]="header.key"
+                matInput
+                placeholder="X-Api-Key" />
+            </mat-form-field>
+            <mat-form-field
+              appearance="fill"
+              class="input-width-l">
+              <mat-label i18n="@@webhook.headerValue">Value</mat-label>
+              <input
+                (input)="updateHeader($index, { value: $any($event.target).value })"
+                [value]="header.value"
+                matInput />
+            </mat-form-field>
+            <mat-checkbox
+              (change)="updateHeader($index, { secret: $event.checked })"
+              [checked]="header.secret"
+              i18n-matTooltip="@@webhook.secretHeaderTooltip"
+              matTooltip="Store this header's value encrypted.">
+              <span i18n="@@webhook.secretHeader">Secret</span>
+            </mat-checkbox>
+            <button
+              (click)="removeHeader($index)"
+              i18n-matTooltip="@@webhook.removeHeader"
+              mat-icon-button
+              matTooltip="Remove header">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        }
+
+        <button
+          (click)="addHeader()"
+          class="action-button-secondary button-width-l margin-bottom-16"
+          mat-stroked-button>
+          <mat-icon>add</mat-icon>
+          <span i18n="@@webhook.addHeader">Add header</span>
+        </button>
+
+        <mat-divider />
+
+        <h4
+          class="margin-top-16"
+          i18n="@@webhook.tlsProxySection">TLS and proxy
+        </h4>
+
+        <div class="checkbox-group">
+          <mat-checkbox
+            (change)="webhookModel.update((m) => ({ ...m, verify_tls: $event.checked }))"
+            [checked]="webhookModel().verify_tls">
+            <span i18n="@@webhook.verifyTls">Verify the server certificate</span>
+          </mat-checkbox>
+        </div>
+
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l margin-bottom-16">
+          <mat-label i18n="@@webhook.caBundle">CA bundle</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="webhookModel.update((m) => ({ ...m, tls_ca_bundle: '' }))"
+            [showClearButton]="!!webhookModel().tls_ca_bundle">
+            <input
+              [formField]="webhookForm.tls_ca_bundle"
+              matInput
+              placeholder="/etc/ssl/certs/ca.pem" />
+          </app-clearable-input>
+          <mat-hint i18n="@@webhook.caBundleHint">Only consulted while verification is on.</mat-hint>
+        </mat-form-field>
+
+        <div class="flex-row gap-16 margin-bottom-16">
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n="@@webhook.httpProxy">HTTP proxy</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="webhookModel.update((m) => ({ ...m, http_proxy: '' }))"
+              [showClearButton]="!!webhookModel().http_proxy">
+              <input
+                [formField]="webhookForm.http_proxy"
+                matInput />
+            </app-clearable-input>
+          </mat-form-field>
+
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n="@@webhook.httpsProxy">HTTPS proxy</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="webhookModel.update((m) => ({ ...m, https_proxy: '' }))"
+              [showClearButton]="!!webhookModel().https_proxy">
+              <input
+                [formField]="webhookForm.https_proxy"
+                matInput />
+            </app-clearable-input>
+          </mat-form-field>
+        </div>
+
+        <mat-divider />
+
+        <h4
+          class="margin-top-16"
+          i18n="@@webhook.testSection">Test
+        </h4>
+
+        <p
+          class="section-note"
+          i18n="@@webhook.testNote">The stored configuration is fired once, for real. Save your changes first; testing a
+                                    production endpoint has real side effects.
+        </p>
+
+        <button
+          (click)="test()"
+          [disabled]="isTesting() || !canTest()"
+          class="action-button-secondary button-width-l margin-bottom-16"
+          mat-stroked-button>
+          <mat-icon>send</mat-icon>
+          <span i18n="@@webhook.sendTestRequest">Send test request</span>
+        </button>
+
+        @if (testResult(); as result) {
+          <div class="test-result">
+            @if (result.success) {
+              <span i18n="@@webhook.testStatus">Status: {{ result.status_code }}</span>
+            } @else {
+              <span
+                class="test-result-failed"
+                i18n="@@webhook.testFailedWith">Failed: {{ result.error || result.status_code }}</span>
+            }
+            @if (result.response) {
+              <p class="test-result-body">{{ result.response }}</p>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

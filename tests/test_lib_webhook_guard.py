@@ -77,6 +77,15 @@ class CheckOutboundTargetTestCase(MyTestCase):
                 "http://cgnat.example/", mode=GuardMode.ENFORCE)
         self.assertIsNotNone(result)
 
+    def test_enforce_blocks_the_unspecified_addresses(self):
+        # '0.0.0.0' and '::' both reach a locally bound listener, so they belong with loopback.
+        for address in ("0.0.0.0", "::"):
+            with self.subTest(address=address):
+                with patch("socket.getaddrinfo",
+                           _fake_getaddrinfo({"siem.corp": [address]})):
+                    result = check_outbound_target("https://siem.corp/", mode=GuardMode.ENFORCE)
+                self.assertIsNotNone(result, address)
+
     def test_enforce_blocks_ipv6_loopback_and_ula(self):
         with patch("socket.getaddrinfo",
                    _fake_getaddrinfo({"v6.example": ["::1"]})):
@@ -377,6 +386,74 @@ class FireWebhookGuardTestCase(MyTestCase):
         # as a rejection, not as an exception out of fire_webhook().
         self.app.config["PI_OUTBOUND_GUARD"] = GuardMode.ENFORCE
         set_webhook("hook", url="http://internal.example:abc/hook")
+
+        result = fire_webhook("hook")
+
+        self.assertFalse(result["success"])
+        self.assertIn("outbound request guard", result["error"])
+        self.assertEqual(len(responses.calls), 0)
+
+    @responses.activate
+    def test_enforce_mode_reports_an_unfollowed_redirect_as_a_failure(self):
+        # requests.Response.ok is true for anything below 400, so without this a 302 would come
+        # back as a successful delivery although the body went nowhere - and the event handler or
+        # Conditional Access action would record the notification as sent.
+        self.app.config["PI_OUTBOUND_GUARD"] = GuardMode.ENFORCE
+        responses.add(responses.POST, "https://siem.example/hook", status=302,
+                      headers={"Location": "https://siem.example/hook2"})
+        set_webhook("hook", url="https://siem.example/hook")
+
+        with patch("socket.getaddrinfo",
+                   _fake_getaddrinfo({"siem.example": ["93.184.216.34"]})):
+            result = fire_webhook("hook")
+
+        self.assertFalse(result["success"])
+        self.assertEqual(302, result["status_code"])
+        self.assertIn("redirect", result["error"])
+        # The redirect itself was not followed, so only the first request went out.
+        self.assertEqual(len(responses.calls), 1)
+
+    @responses.activate
+    def test_warn_mode_still_follows_redirects(self):
+        # WARN is a trial run of ENFORCE and must not alter delivery, or an admin cannot tell what
+        # their traffic does today from what the guard would do to it. It reports the redirect in
+        # the log instead - that is the delivery that would stop working on ENFORCE.
+        self.app.config["PI_OUTBOUND_GUARD"] = GuardMode.WARN
+        responses.add(responses.POST, "https://siem.example/hook", status=302,
+                      headers={"Location": "https://siem.example/hook2"})
+        # requests turns a 302 into a GET on the target, as any HTTP client does.
+        responses.add(responses.GET, "https://siem.example/hook2", json={"ok": True}, status=200)
+        set_webhook("hook", url="https://siem.example/hook")
+
+        with patch("socket.getaddrinfo",
+                   _fake_getaddrinfo({"siem.example": ["93.184.216.34"]})):
+            result = fire_webhook("hook")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(200, result["status_code"])
+        self.assertEqual(len(responses.calls), 2)
+
+    @responses.activate
+    def test_off_mode_still_follows_redirects(self):
+        # The upgrade-safety case: an installation that has not opted in must see the behaviour of
+        # privacyIDEA 3.14 and older.
+        self.app.config["PI_OUTBOUND_GUARD"] = GuardMode.OFF
+        responses.add(responses.POST, self.URL, status=301,
+                      headers={"Location": "http://internal.example/hook2"})
+        responses.add(responses.GET, "http://internal.example/hook2", json={"ok": True}, status=200)
+        set_webhook("hook", url=self.URL)
+
+        result = fire_webhook("hook")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(200, result["status_code"])
+
+    @responses.activate
+    def test_enforce_mode_blocks_the_ipv6_unspecified_address(self):
+        # Connecting to '::' reaches a locally bound listener, exactly like 127.0.0.1 or 0.0.0.0.
+        # It needs its own entry: it is not the IPv4-mapped form of 0.0.0.0, so 0.0.0.0/8 misses it.
+        self.app.config["PI_OUTBOUND_GUARD"] = GuardMode.ENFORCE
+        set_webhook("hook", url="http://[::]:8000/hook")
 
         result = fire_webhook("hook")
 
