@@ -1680,11 +1680,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">734</context>
+          <context context-type="linenumber">736</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">749</context>
+          <context context-type="linenumber">751</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/event/event.service.ts</context>
@@ -18192,7 +18192,7 @@
         <source>Failed to delete conditional-access policy.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">724</context>
+          <context context-type="linenumber">726</context>
         </context-group>
       </trans-unit>
       <trans-unit id="lockedUsers.sortUsername" datatype="html">
@@ -18220,7 +18220,7 @@
         <source>Successfully saved the new conditional-access policy order.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">840</context>
+          <context context-type="linenumber">842</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.noStagesDefinedYet" datatype="html">
@@ -18383,7 +18383,7 @@
         <source>Delete Conditional-Access Policies</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">747</context>
+          <context context-type="linenumber">749</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.blocksLocksOverTime" datatype="html">
@@ -18892,7 +18892,7 @@
         <source>Failed to switch the conditional-access policy to dry-run mode.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">818</context>
+          <context context-type="linenumber">820</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.disabled" datatype="html">
@@ -19083,7 +19083,7 @@
         <source>Fill in the subject and body; without them no email is sent.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">282</context>
+          <context context-type="linenumber">284</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.uniqueOrderAcrossPolicies" datatype="html">
@@ -19306,7 +19306,7 @@
         <source>Failed to switch the conditional-access policy to enforcing mode.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">819</context>
+          <context context-type="linenumber">821</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.conditionsRestrictWhichRequests" datatype="html">
@@ -19380,7 +19380,7 @@
         <source>Failed to enable conditional-access policy.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">801</context>
+          <context context-type="linenumber">803</context>
         </context-group>
       </trans-unit>
       <trans-unit id="blocklist.block" datatype="html">
@@ -19602,7 +19602,7 @@
         <source>Successfully updated conditional-access policy.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">693</context>
+          <context context-type="linenumber">695</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.failedBlockIp" datatype="html">
@@ -19700,7 +19700,7 @@
         <source>Failed to disable conditional-access policy.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">809</context>
+          <context context-type="linenumber">811</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.hideDetails" datatype="html">
@@ -20008,7 +20008,7 @@
         <source>Successfully deleted conditional-access policy.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">716</context>
+          <context context-type="linenumber">718</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.someActionsNotAllowed2" datatype="html">
@@ -20054,7 +20054,7 @@
         <source>This action takes no value. Clear it before saving.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">290</context>
+          <context context-type="linenumber">292</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.whenOffActionRuns" datatype="html">
@@ -20089,7 +20089,7 @@
         <source>Do you really want to delete <x id="PH" equiv-text="policies.length"/> selected policies?</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">748</context>
+          <context context-type="linenumber">750</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.durationNeedsTemporaryLock" datatype="html">
@@ -20348,7 +20348,7 @@
         <source>Failed to delete conditional-access policies.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">771</context>
+          <context context-type="linenumber">773</context>
         </context-group>
       </trans-unit>
       <trans-unit id="userRole.administratorAdminRealm" datatype="html">
@@ -20369,7 +20369,7 @@
         <source>Do you really want to delete the policy &quot;<x id="PH" equiv-text="policy.name"/>&quot;?</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">733</context>
+          <context context-type="linenumber">735</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.failedLockUser" datatype="html">
@@ -20496,7 +20496,7 @@
         <source>Delete Conditional-Access Policy</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">732</context>
+          <context context-type="linenumber">734</context>
         </context-group>
       </trans-unit>
       <trans-unit id="blocklist.blockIpAddress" datatype="html">
@@ -20696,7 +20696,7 @@
         <source>Successfully created conditional-access policy.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">694</context>
+          <context context-type="linenumber">696</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.authenticationAttemptsNotSingle" datatype="html">
@@ -20801,7 +20801,7 @@
         <source>Enter how long the restriction lasts; without a duration this action never runs.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">274</context>
+          <context context-type="linenumber">276</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.excludeTheseValuesPolicy" datatype="html">
@@ -20843,7 +20843,7 @@
         <source>Failed to reorder conditional-access policies.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">855</context>
+          <context context-type="linenumber">857</context>
         </context-group>
       </trans-unit>
       <trans-unit id="authLog.takenXForwardedHeader" datatype="html">
@@ -20906,7 +20906,7 @@
         <source>Failed to save conditional-access policy.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">703</context>
+          <context context-type="linenumber">705</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.restrictionsForce" datatype="html">
@@ -21050,7 +21050,7 @@
         <source>Someone else changed priorities while you were rearranging them. The list has been refreshed - please redo your changes.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">854</context>
+          <context context-type="linenumber">856</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.priorityMustWholeNumber" datatype="html">
@@ -21192,7 +21192,7 @@
         <source>Successfully deleted <x id="PH" equiv-text="policies.length"/> conditional-access policies.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/conditional-access/conditional-access-policy.service.ts</context>
-          <context context-type="linenumber">762</context>
+          <context context-type="linenumber">764</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.howCompareUserRole" datatype="html">
