@@ -70,6 +70,17 @@ def _allowed_realm_ids(action):
     # (a policy scoped by user or resolver and carrying no realm). An empty set of realm ids
     # matches no row, which is the refusal these paths express.
     realm_ids = {get_realm_id(name) for name in granted_realms}
+    if None in realm_ids:
+        # The policy engine matches the realm field with exclusions ("!realmb") and regular
+        # expressions as well as plain names, and a plain name may also belong to a realm that has
+        # since been deleted. None of those resolve to a realm id, so they cannot be part of the
+        # filter and the boundary ends up narrower than the policy describes. Narrower is the safe
+        # direction, but an administrator whose revoke then reports "0 revoked" has no other way to
+        # find out why.
+        unresolved = sorted(name for name in granted_realms if get_realm_id(name) is None)
+        log.warning(f"The {action} policies grant realms that do not resolve to a realm: "
+                    f"{', '.join(unresolved)}. They are left out of the boundary, so this request "
+                    f"acts on fewer realms than the policies describe.")
     realm_ids.discard(None)
     return realm_ids
 

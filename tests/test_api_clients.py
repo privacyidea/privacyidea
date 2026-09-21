@@ -757,6 +757,22 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             delete_realm("tworesolvers")
             delete_resolver("secondres")
 
+    def test_17d_wildcard_realm_grant_is_every_realm(self):
+        # The realm field of a policy is matched by the policy engine, which reads "*" as every
+        # realm. Carried out of the policy as a literal name it resolves to no realm at all, so the
+        # boundary collapses and the revoke reports success having done nothing - the worst answer
+        # for the incident-response action it is.
+        client, _ = create_client("wildcard client", "privacyidea-cp")
+        self._device(client.id, "cornelius", realm=self.realm1)
+        set_policy("clients_wildcard", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="*")
+        try:
+            res = self._revoke_all(client.id)
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(1, res.json['result']['value'], res.json)
+        finally:
+            delete_policy("clients_wildcard")
+
     def test_18_revoke_single_respects_admin_realm_scope(self):
         set_realm("xcscope", [{"name": self.resolvername1}])
         client, _ = create_client("scoped single client", "privacyidea-cp")

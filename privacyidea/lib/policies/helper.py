@@ -242,6 +242,11 @@ def admin_granted_realms(action: str) -> list[str] | None:
     granted_realms = {}
     for policy in Match.admin(g, action=action).policies():
         policy_realms = policy.get("realm")
+        if policy_realms and "*" in policy_realms:
+            # The realm field is matched with the policy engine's own comparison, which reads "*" as
+            # every realm. Returning it as a literal name would have a caller look it up, find no
+            # realm called "*", and quietly end up with an empty boundary.
+            return None
         if not policy_realms:
             if policy.get("resolver") or policy.get("user"):
                 # Scoped, but along a dimension a realm list cannot carry. Say "refuse" rather than
