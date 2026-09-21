@@ -721,8 +721,17 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{device.device_id}',
                                                method='DELETE', headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
-                self.assertEqual(403, res.status_code, res)
+                self.assertEqual(404, res.status_code, res)
+                out_of_scope = res.json["result"]["error"]
             self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
+
+            # A device the admin may not revoke in answers exactly as an absent one: an admin who can
+            # tell the two apart can probe the device ids of realms they are not allowed to see.
+            with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/nosuchdevice',
+                                               method='DELETE', headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(404, res.status_code, res)
+                self.assertEqual(out_of_scope["code"], res.json["result"]["error"]["code"])
         finally:
             delete_policy("clients_scoped")
 

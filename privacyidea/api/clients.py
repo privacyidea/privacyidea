@@ -35,7 +35,7 @@ import logging
 from flask import Blueprint, request, g
 
 from .lib.utils import send_result
-from ..lib.error import ParameterError, PolicyError, ResourceNotFoundError
+from ..lib.error import ParameterError, ResourceNotFoundError
 from ..lib.params import get_optional, get_pagination_params, get_required
 from ..lib.log import log_with
 from ..lib.event import event
@@ -367,17 +367,17 @@ def revoke_client_remembered_device_api(client_id, device_id):
     :param device_id: path component, the public device id (never the cookie's
         secret series id).
     :status 200: ``result.value`` is the device id of the revoked remembered device.
-    :status 403: the acting admin may not revoke in the device's realm.
-    :status 404: no such device exists for this client.
+    :status 404: no such device exists for this client, or it belongs to a realm the acting admin
+        may not revoke in - the two are deliberately indistinguishable.
     """
-    # The request carries no realm, so check_base_action could not realm-scope it:
-    # enforce the admin's realm restriction against the device's own realm.
+    # The request carries no realm, so check_base_action could not realm-scope it: enforce the
+    # admin's realm restriction against the device's own realm. A device outside that restriction
+    # answers as an absent one, because an admin who can tell the two apart can probe device ids of
+    # realms they are not allowed to see.
     device = get_client_device(client_id, device_id)
-    if not device:
-        raise ResourceNotFoundError(f"The device {device_id!r} does not exist for this client.")
     allowed_realm_ids = _allowed_realm_ids(PolicyAction.REMEMBERED_DEVICE_REVOKE)
-    if allowed_realm_ids is not None and device.realm_id not in allowed_realm_ids:
-        raise PolicyError("You are not allowed to revoke remembered devices in this device's realm.")
+    if not device or (allowed_realm_ids is not None and device.realm_id not in allowed_realm_ids):
+        raise ResourceNotFoundError(f"The device {device_id!r} does not exist for this client.")
 
     # Delete the row already fetched above rather than re-querying it.
     device.delete()
