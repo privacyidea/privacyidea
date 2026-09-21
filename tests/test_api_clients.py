@@ -1,6 +1,6 @@
 from unittest import mock
 
-from .base import MyApiTestCase
+from .base import MyApiTestCase, PWFILE
 
 from privacyidea.lib.clients import hash_api_key, create_client
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
@@ -9,7 +9,7 @@ from privacyidea.lib.remembered_device import create_remembered_device, user_ide
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.params import MAX_PAGE_SIZE
-from privacyidea.lib.realm import set_realm
+from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.user import User
 from privacyidea.models import Client, RememberedDevice
 
@@ -729,6 +729,33 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_two).first())
         finally:
             delete_policy("clients_user_scoped")
+
+    def test_17c_revoke_by_user_acts_on_the_named_resolver(self):
+        # The policy is checked against request.User, which carries the request's `resolver`. If the
+        # revoke rebuilds the user from login and realm alone, the realm's resolver priority picks a
+        # resolver of its own, and the rows deleted are not the rows the check was made about.
+        from privacyidea.lib.resolver import save_resolver, delete_resolver
+        save_resolver({"resolver": "secondres", "type": "passwdresolver", "fileName": PWFILE})
+        set_realm("tworesolvers", [{"name": self.resolvername1, "priority": 1},
+                                   {"name": "secondres", "priority": 2}])
+        client, _ = create_client("two resolver client", "privacyidea-cp")
+        # bound to the LOWER priority resolver, which the priority pick would not choose
+        low = user_identity(User(login="cornelius", realm="tworesolvers", resolver="secondres"))
+        device, _cookie = create_remembered_device(low, client.id)
+        series = device.series_id      # read before the delete detaches the instance
+        try:
+            with self.app.test_request_context(
+                    f'/clients/{client.id}/remembered_devices',
+                    query_string={"realm": "tworesolvers", "user": "cornelius",
+                                  "resolver": "secondres"},
+                    method='DELETE', headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(1, res.json['result']['value'], res.json)
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=series).first())
+        finally:
+            delete_realm("tworesolvers")
+            delete_resolver("secondres")
 
     def test_18_revoke_single_respects_admin_realm_scope(self):
         set_realm("xcscope", [{"name": self.resolvername1}])

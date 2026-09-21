@@ -47,7 +47,6 @@ from ..lib.remembered_device import (get_client_device, get_client_devices,
                                revoke_client_devices, revoke_devices, devices_to_dicts, user_identity)
 from ..lib.policies.helper import admin_granted_realms
 from ..lib.realm import get_realm_id
-from ..lib.user import User
 
 log = logging.getLogger(__name__)
 
@@ -219,7 +218,12 @@ def revoke_remembered_devices_api():
     user = get_optional(request.all_data, "user")
     resolver = user_id = None
     if user:
-        identity = user_identity(User(login=user, realm=realm))
+        # request.User is the object check_base_action matched the policy against, and it carries the
+        # request's `resolver`. Building a second user from login and realm alone drops it and lets
+        # the realm's resolver priority pick a different one, so the policy would be checked for one
+        # resolver and the rows deleted in another - and a login present in more than one resolver of
+        # the realm would keep the devices held in the others.
+        identity = user_identity(request.User)
         if not identity:
             raise ParameterError(f"The user {user!r} does not resolve in realm {realm!r}.")
         resolver, user_id, realm_id = identity
@@ -321,7 +325,9 @@ def revoke_client_remembered_devices_api(client_id):
         # resolve there is nothing to target by login (its devices, if any, are
         # already unrecognisable and reaped by expiry / realm deletion). This
         # request carries the realm, so check_base_action already realm-scoped it.
-        identity = user_identity(User(login=user, realm=realm))
+        # As in revoke_remembered_devices_api: resolve the user the policy was checked against,
+        # rather than rebuilding one from a subset of the same parameters.
+        identity = user_identity(request.User)
         if not identity:
             raise ParameterError(f"The user {user!r} does not resolve in realm {realm!r}.")
         resolver, user_id, realm_id = identity
