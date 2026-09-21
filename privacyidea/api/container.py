@@ -25,6 +25,7 @@ from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
+                                           resolver_realm_access,
                                            check_admin_tokenlist, check_container_action,
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
@@ -224,6 +225,7 @@ def list_containers():
 
 
 @container_blueprint.route('<string:container_serial>/assign', methods=['POST'])
+@prepolicy(resolver_realm_access, request, action=PolicyAction.CONTAINER_ASSIGN_USER)
 @prepolicy(check_user_params, request, action=PolicyAction.CONTAINER_ASSIGN_USER)
 @prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_ASSIGN_USER)
 @event('container_assign', request, g)

@@ -95,6 +95,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
+from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
                                    get_token_owner)
@@ -338,6 +339,45 @@ def realmadmin(request=None, action=None):
                         request.all_data["realm"] = unique_realms[0]
                     else:
                         request.all_data["realm"] = unique_realms
+
+    return True
+
+
+def resolver_realm_access(request=None, action=None):
+    """
+    Bind an operation that addresses a user store by resolver to the realms the admin may administer.
+
+    An admin policy grants an action in a realm, while these endpoints take the user store from the
+    resolver in the request. The two are independent: creating and deleting a user carry no realm at all,
+    and where a realm is given nothing ties it to the resolver. The resolver is therefore resolved to the
+    realms containing it, and at least one of them has to be granted by a matching policy.
+
+    :param request: The HTTP request
+    :param action: The action like PolicyAction.ADDUSER
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return True
+
+    params = request.all_data
+    resolver = get_optional(params, "resolver") or get_optional(params, "resolvername")
+    if not resolver:
+        return True
+
+    granted_realms = set()
+    for policy in Match.admin(g, action=action).policies():
+        policy_realms = policy.get("realm")
+        if not policy_realms:
+            # A policy without a realm restriction grants every realm
+            return True
+        granted_realms.update(policy_realms)
+    if not granted_realms:
+        # No matching policy at all, check_base_action decides whether the action is allowed
+        return True
+
+    resolver_realms = {realm for realm, realm_config in get_realms().items()
+                       if resolver in [entry.get("name") for entry in realm_config.get("resolver", [])]}
+    if not resolver_realms & granted_realms:
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
 
     return True
 
