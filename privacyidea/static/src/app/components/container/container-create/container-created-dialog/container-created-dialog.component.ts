@@ -38,8 +38,7 @@ export interface ContainerCreationDialogData {
 @Component({
   selector: "app-container-created-dialog",
   imports: [MatButtonModule, MatIcon, DialogWrapperComponent],
-  templateUrl: "./container-created-dialog.component.html",
-  styleUrl: "./container-created-dialog.component.scss"
+  templateUrl: "./container-created-dialog.component.html"
 })
 export class ContainerCreatedDialogComponent extends AbstractDialogComponent<
   Signal<ContainerCreationDialogData | null>

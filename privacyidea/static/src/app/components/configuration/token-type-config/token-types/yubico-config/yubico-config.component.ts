@@ -27,8 +27,7 @@ import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants
   selector: "app-yubico-config",
   standalone: true,
   imports: [MatExpansionModule, MatFormFieldModule, MatInputModule],
-  templateUrl: "./yubico-config.component.html",
-  styleUrl: "./yubico-config.component.scss"
+  templateUrl: "./yubico-config.component.html"
 })
 export class YubicoConfigComponent {
   protected readonly YUBICO_ID = YUBICO_ID;

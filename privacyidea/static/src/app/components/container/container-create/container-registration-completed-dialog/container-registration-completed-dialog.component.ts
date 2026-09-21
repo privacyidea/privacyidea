@@ -29,7 +29,6 @@ export interface ContainerRegistrationCompletedDialogData {
 @Component({
   selector: "app-container-registration-completed-dialog",
   templateUrl: "./container-registration-completed-dialog.component.html",
-  styleUrls: ["./container-registration-completed-dialog.component.scss"],
   imports: [DialogWrapperComponent]
 })
 export class ContainerRegistrationCompletedDialogComponent extends AbstractDialogComponent<

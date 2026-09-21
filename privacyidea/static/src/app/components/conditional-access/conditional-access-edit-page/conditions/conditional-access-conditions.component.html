@@ -48,7 +48,7 @@
               @if (isStaleValue(row.type, value)) {
                 <span
                   class="ca-condition-stale-tag"
-                  i18n>
+                  i18n="@@conditionalAccess.noLongerValid">
                   (no longer valid)
                 </span>
               }
@@ -67,7 +67,9 @@
           field's aria-describedby. -->
         @if (staleValuesFor(row.type).length > 0) {
           <mat-hint class="ca-condition-stale">
-            <span i18n>No longer valid: {{ staleValuesFor(row.type).join(", ") }}. Remove to save this policy.</span>
+            <span i18n="@@conditionalAccess.noLongerValidRemove"
+              >No longer valid: {{ staleValuesFor(row.type).join(", ") }}. Remove to save this policy.</span
+            >
           </mat-hint>
         } @else {
           <mat-hint>{{ hintFor(row) }}</mat-hint>

@@ -1049,12 +1049,16 @@ export class TokenService extends FilterableTableService implements TokenService
     return this.deleteToken(tokenSerial).pipe(
       tap(() => {
         this.stopPolling();
-        this.notificationService.info($localize`The enrollment of token ${tokenSerial} was cancelled.`);
+        this.notificationService.info(
+          $localize`:@@token.enrollmentTokenCancelled:The enrollment of token ${tokenSerial} was cancelled.`
+        );
       }),
       catchError((error) => {
         console.error("Failed to cancel the enrollment.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.error($localize`Failed to cancel the enrollment. ${message}`);
+        this.notificationService.error(
+          $localize`:@@token.failedCancelEnrollment:Failed to cancel the enrollment. ${message}`
+        );
         return throwError(() => error);
       })
     );
