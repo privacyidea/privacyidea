@@ -1,0 +1,75 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { APP_BASE_HREF } from "@angular/common";
+import { provideHttpClient, withInterceptors } from "@angular/common/http";
+import {
+  ApplicationConfig,
+  inject,
+  LOCALE_ID,
+  provideAppInitializer,
+  provideZonelessChangeDetection
+} from "@angular/core";
+import { MatPaginatorIntl } from "@angular/material/paginator";
+import { provideRouter } from "@angular/router";
+import { localeBaseHref, scriptRoot } from "@core/locale";
+import { UiPreferencesService } from "@services/user-settings/ui-preferences.service";
+import { routes } from "./app.routes";
+import { loadingInterceptor } from "./interceptor/loading/loading.interceptor";
+import { unauthorizedInterceptor } from "./interceptor/unauthorized/unauthorized.interceptor";
+import { userAgentInterceptor } from "./interceptor/user-agent/user-agent.interceptor";
+import { createPaginatorIntl } from "./paginator-intl";
+import { AppearanceService } from "./services/appearance/appearance.service";
+import { AuthService } from "./services/auth/auth.service";
+import { ConfigService } from "./services/config/config.service";
+import { ThemeService } from "./services/theme/theme.service";
+
+export function baseHrefFactory(): string {
+  return scriptRoot() + localeBaseHref(inject(LOCALE_ID));
+}
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    // Before the router resolves the first URL: a path asking for a locale bundle the
+    // server did not serve would otherwise be answered with the landing page.
+    provideAppInitializer(() => {
+      const uiPreferencesService = inject(UiPreferencesService);
+      uiPreferencesService.normalizeLocaleUrl();
+    }),
+    provideAppInitializer(() => {
+      // Order matters: loadConfig() sends the stored bearer token as it is, so the session has
+      // to be restored -- and an expired or corrupt one cleared -- before it reads storage.
+      inject(AuthService).bootstrapSession();
+      inject(ConfigService).loadConfig();
+    }),
+    provideZonelessChangeDetection(),
+    provideRouter(routes),
+    {
+      provide: APP_BASE_HREF,
+      useFactory: baseHrefFactory
+    },
+    AuthService,
+    { provide: MatPaginatorIntl, useFactory: createPaginatorIntl },
+    provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor, unauthorizedInterceptor])),
+    provideAppInitializer(() => {
+      const themeService = inject(ThemeService);
+      themeService.initializeTheme();
+      inject(AppearanceService).initializeAppearance();
+    })
+  ]
+};

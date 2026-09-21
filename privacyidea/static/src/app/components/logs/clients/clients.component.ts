@@ -1,0 +1,230 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+import { CommonModule, NgClass } from "@angular/common";
+import { Component, effect, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatSort, MatSortHeader, MatSortModule } from "@angular/material/sort";
+import {
+  MatCell,
+  MatCellDef,
+  MatColumnDef,
+  MatHeaderCell,
+  MatHeaderCellDef,
+  MatHeaderRow,
+  MatHeaderRowDef,
+  MatRow,
+  MatRowDef,
+  MatTable,
+  MatTableDataSource,
+  MatTableModule
+} from "@angular/material/table";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ClientData, ClientsDict, ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
+
+import { MatIconButton } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
+import { MatTooltip } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
+import { StringUtils } from "@utils/string.utils";
+import { filter } from "rxjs";
+
+// width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
+// or clamped to, kept alongside the column definition so the table's overall min-width
+// (see table-width() in table.scss) can be sized from the same numbers.
+const columnKeysMap: { key: keyof ClientData; label: string; width: "s" | "m" | "l" | "xl" }[] = [
+  { key: "application", label: $localize`:@@common.application:Application`, width: "xl" },
+  { key: "hostname", label: $localize`:@@common.hostname:Hostname`, width: "l" },
+  { key: "ip", label: $localize`:@@common.ipAddress:IP Address`, width: "l" },
+  { key: "lastseen", label: $localize`:@@audit.lastAuthentication:Last Authentication Attempt`, width: "m" }
+];
+
+export interface ClientTableRow {
+  application: string;
+  clientData: ClientData[];
+}
+
+// Helper interface for flattened rows
+interface FlattenedClientRow {
+  application: string;
+  hostname?: string;
+  ip?: string;
+  lastseen?: Date;
+  isFirst: boolean;
+  rowspan: number;
+}
+
+@Component({
+  selector: "app-clients",
+  templateUrl: "./clients.component.html",
+  styleUrls: ["./clients.component.scss"],
+  imports: [
+    RefocusAfterReloadDirective,
+    ScrollToTopDirective,
+    MatTable,
+    MatTableModule,
+    MatColumnDef,
+    MatCell,
+    MatCellDef,
+    MatHeaderCell,
+    MatHeaderCellDef,
+    MatHeaderRow,
+    MatHeaderRowDef,
+    MatRow,
+    MatRowDef,
+    MatSort,
+    MatSortHeader,
+    MatSortModule,
+    NgClass,
+    CommonModule,
+    MatFormField,
+    MatInput,
+    MatLabel,
+    MatFormField,
+    CopyButtonComponent,
+    RouterLink,
+    MatIconButton,
+    MatTooltip,
+    MatIcon,
+    ClearableInputComponent,
+    LocalDateTimePipe,
+    TableStateComponent
+  ]
+})
+export class ClientsComponent {
+  readonly columnKeysMap = columnKeysMap;
+  readonly columnKeys = columnKeysMap.map((c) => c.key);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected readonly filter = filter;
+  clientService: ClientsServiceInterface = inject(ClientsService);
+  authService = inject(AuthService);
+  auditService = inject(AuditService);
+  activeSortColumn = signal<string | null>(null);
+  @ViewChild(MatSort) sort!: MatSort;
+
+  constructor() {
+    effect(() => {
+      this.clientDataSource().sort = this.sort;
+    });
+  }
+
+  // Flattens the grouped client data for the material table, from ClientsDict
+  flattenedClientRowsFromDict = (dict: ClientsDict): FlattenedClientRow[] => {
+    const rows: FlattenedClientRow[] = [];
+    for (const application of Object.keys(dict)) {
+      const clientDataArr = dict[application];
+      const len = clientDataArr.length;
+      clientDataArr.forEach((client, idx) => {
+        rows.push({
+          application,
+          hostname: client.hostname ?? undefined,
+          ip: client.ip ?? undefined,
+          lastseen: client.lastseen ? new Date(client.lastseen) : undefined,
+          isFirst: idx === 0,
+          rowspan: idx === 0 ? len : 1
+        });
+      });
+    }
+    return rows;
+  };
+
+  clientDataSource: WritableSignal<MatTableDataSource<FlattenedClientRow>> = linkedSignal({
+    source: () =>
+      this.clientService.clientsResource.hasValue() ? this.clientService.clientsResource.value() : undefined,
+    computation: (clientResource, previous) => {
+      if (clientResource) {
+        const clientData = clientResource.result?.value || ({} as ClientsDict);
+        const dataSource = new MatTableDataSource(this.flattenedClientRowsFromDict(clientData));
+        // Custom sorting for lastseen
+        dataSource.sortingDataAccessor = (item, property) => {
+          if (property === "lastseen") {
+            return item.lastseen ? item.lastseen.getTime() : 0;
+          }
+          return item[property as keyof FlattenedClientRow] as string | number;
+        };
+        return dataSource;
+      }
+      // A reload in flight clears the resource value before the new response arrives - keep
+      // showing the previous rows instead of flashing empty, now that the table itself stays
+      // mounted through a reload (see TableState.lastKnownCount).
+      return previous?.value ?? new MatTableDataSource<FlattenedClientRow>([]);
+    }
+  });
+
+  readonly tableState = new TableState({
+    resource: this.clientService.clientsResource,
+    count: () => this.clientDataSource().data.length,
+    allowed: () => this.authService.actionAllowed("clienttype"),
+    resetFilter: () => this.clearFilter()
+  });
+
+  filterValue = "";
+
+  onSortChange(event: { active: string }) {
+    this.activeSortColumn.set(event.active || null);
+  }
+
+  clearFilter(): void {
+    this.filterValue = "";
+    this.clientDataSource().filter = "";
+  }
+
+  handleFilterInput($event: Event): void {
+    this.filterValue = ($event.target as HTMLInputElement).value.trim();
+    this.clientDataSource().filter = this.filterValue.toLowerCase();
+  }
+
+  showInAuditLog(column: string, value: string) {
+    if (column === "application") {
+      const userAgent = this._split_user_agent(value);
+      this.auditService.setFilter(
+        new FilterValue({ value: `user_agent: ${userAgent.userAgent} user_agent_version: ${userAgent.version}` })
+      );
+    } else if (column === "ip") {
+      this.auditService.setFilter(new FilterValue({ value: `client: ${value}` }));
+    }
+  }
+
+  useApplicationRowSpan(columnKey: string): boolean {
+    return (
+      columnKey === "application" &&
+      (!this.activeSortColumn() || this.activeSortColumn() === "application") &&
+      !this.filterValue
+    );
+  }
+
+  private _split_user_agent(application: string): { userAgent: string; version: string; comment: string } {
+    const applicationSplit = StringUtils.splitOnce(application, "/");
+    const userAgent = applicationSplit.head;
+    const versionCommentSplit = StringUtils.splitOnce(applicationSplit.tail, " ");
+    const version = versionCommentSplit.head;
+    const comment = versionCommentSplit.tail;
+
+    return { userAgent: userAgent, version: version, comment: comment };
+  }
+}

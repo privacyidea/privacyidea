@@ -1,0 +1,8 @@
+.flex-row {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+:host {
+  display: block;
+}

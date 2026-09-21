@@ -8,6 +8,7 @@ The api.lib.policy.py depends on lib.policy and on flask!
 import json
 import logging
 from datetime import datetime, timedelta
+from unittest import mock
 
 from dateutil.tz import tzlocal
 from flask import Request, g, current_app, jsonify
@@ -40,7 +41,7 @@ from privacyidea.lib.machine import attach_token
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE, AUTOASSIGNVALUE, AUTHORIZED,
-                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
+                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, SESSION_PERSISTENCE)
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    check_user_pass, unassign_token)
@@ -49,7 +50,7 @@ from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from privacyidea.lib.utils import AUTH_RESPONSE
-from privacyidea.lib.utils import (create_img)
+from privacyidea.lib.utils import (create_img, get_version)
 from .base import (MyApiTestCase)
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -523,6 +524,53 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertTrue(res)
 
         delete_policy("pol2")
+
+    def test_05_autoassign_skips_a_conditional_access_rejection(self):
+        # Regression: a response conditional_access_gate already refused carries the same "value": false shape as
+        # an ordinary failed authentication - the only shape autoassign otherwise checks - so without this guard
+        # autoassign would verify the submitted OTP itself and assign a token to a locked/blocked account on the
+        # strength of a rejection that was never actually a credential check.
+        from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+        from privacyidea.lib.conditional_access.authentication_log import PendingAuthEvent
+        from privacyidea.lib.conditional_access.request_context import get_ca_context
+
+        self.setUp_user_realms()
+        init_token({"serial": "UASSIGN2", "type": "hotp",
+                   "otpkey": "3132333435363738393031"
+                             "323334353637383930"},
+                   tokenrealms=[self.realm1])
+        user_obj = User("autoassignuser", self.realm1)
+        unassign_token(None, user=user_obj)
+
+        builder = EnvironBuilder(method='POST', data={}, headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.all_data = {"user": "autoassignuser", "realm": self.realm1, "pass": "test287082"}
+        req.User = User("autoassignuser", self.realm1)
+        res = {"jsonrpc": "2.0", "result": {"status": True, "value": False},
+              "version": "privacyIDEA test", "id": 1}
+        resp = jsonify(res)
+
+        set_policy(name="pol2", scope=SCOPE.ENROLL,
+                  action="{0!s}={1!s}".format(PolicyAction.AUTOASSIGN, AUTOASSIGNVALUE.NONE),
+                  client="10.0.0.0/8")
+        g.policy_object = PolicyClass()
+        # rejected_by_conditional_access reads true off the latest staged event's type - exactly what the real
+        # gate rejection does by staging one of these before autoassign ever runs (conditional_access_rejection).
+        get_ca_context().stage(PendingAuthEvent(event_type=AuthEventType.USER_LOCKED))
+        try:
+            new_response = autoassign(req, resp)
+        finally:
+            delete_policy("pol2")
+
+        jresult = new_response.json
+        self.assertFalse(jresult.get("result").get("value"), jresult)
+        self.assertIsNone(jresult.get("detail"))
+        # No token was assigned either - the whole point of skipping is that no credential check happened at all.
+        res, _dict = check_user_pass(User("autoassignuser", self.realm1), "test287082")
+        self.assertFalse(res)
 
     def test_05_autoassign_userstore(self):
         # init a token, that does has no user
@@ -1019,6 +1067,69 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual("smartphone", new_response.json["result"]["value"]["default_container_type"])
         delete_policy("default_container")
 
+        # Test session persistence
+        # policy not set: the session belongs to the tab it was opened in
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.TAB, new_response.json["result"]["value"]["session_persistence"])
+        # A policy widens it to the whole browser
+        set_policy(name="pol_session_persistence", scope=SCOPE.WEBUI,
+                   action={PolicyAction.SESSION_PERSISTENCE: SESSION_PERSISTENCE.BROWSER})
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.BROWSER, new_response.json["result"]["value"]["session_persistence"])
+        # An inactive policy leaves the session on the default
+        set_policy(name="pol_session_persistence", active=False)
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.TAB, new_response.json["result"]["value"]["session_persistence"])
+        delete_policy("pol_session_persistence")
+
+    def test_08b_get_webui_settings_session_persistence_per_principal(self):
+        # The whole point of the policy is that it can differ per principal
+        self.setUp_user_realms()
+
+        builder = EnvironBuilder(method='POST', data={}, headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "192.168.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        req.all_data = {"user": "cornelius"}
+
+        res = {"jsonrpc": "2.0",
+               "result": {"status": True,
+                          "value": {"role": "user",
+                                    "username": "cornelius",
+                                    "realm": self.realm1}},
+               "version": "privacyIDEA test",
+               "id": 1}
+        resp = jsonify(res)
+
+        set_policy(name="pol_session_persistence", scope=SCOPE.WEBUI, realm=self.realm1,
+                   action={PolicyAction.SESSION_PERSISTENCE: SESSION_PERSISTENCE.BROWSER})
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.BROWSER,
+                         new_response.json["result"]["value"]["session_persistence"])
+
+        # Restricted to another user of the same realm, "cornelius" is back on the default
+        set_policy(name="pol_session_persistence", scope=SCOPE.WEBUI, realm=self.realm1, user="root",
+                   action={PolicyAction.SESSION_PERSISTENCE: SESSION_PERSISTENCE.BROWSER})
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.TAB,
+                         new_response.json["result"]["value"]["session_persistence"])
+
+        # A policy for admins does not reach a logged-in user either
+        set_policy(name="pol_session_persistence", scope=SCOPE.WEBUI, adminrealm=self.realm1,
+                   action={PolicyAction.SESSION_PERSISTENCE: SESSION_PERSISTENCE.BROWSER})
+        g.policy_object = PolicyClass()
+        new_response = get_webui_settings(req, resp)
+        self.assertEqual(SESSION_PERSISTENCE.TAB,
+                         new_response.json["result"]["value"]["session_persistence"])
+
+        delete_policy("pol_session_persistence")
+
     def test_09_get_webui_settings_token_pagesize(self):
         # Test that policies like tokenpagesize are also user dependent
         self.setUp_user_realms()
@@ -1159,8 +1270,18 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                      ).save()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
-        self.assertIn("privacyidea@example.com", jresult.get("result").get("value").get("supportmail"))
-        self.assertIn(str(EXPIRE_MESSAGE), jresult.get("result").get("value").get("supportmail"))
+        supportmail = jresult.get("result").get("value").get("supportmail")
+        self.assertIn("privacyidea@example.com", supportmail)
+        # The subscription holds, so the mail is about the running version
+        self.assertIn(f"Problem with {get_version()!s}", supportmail)
+        self.assertNotIn(str(EXPIRE_MESSAGE), supportmail)
+
+        # A subscription that no longer holds is what the admin is offered to write about
+        with mock.patch("privacyidea.api.lib.postpolicy.subscription_status", return_value=2):
+            new_response = get_webui_settings(req, resp)
+        jresult = new_response.json
+        supportmail = jresult.get("result").get("value").get("supportmail")
+        self.assertIn(str(EXPIRE_MESSAGE), supportmail)
 
     def test_12_get_webui_settings_container_wizard(self):
         self.setUp_user_realms()
@@ -1482,6 +1603,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         self.setUp_user_realms()
         req.User = User("autoassignuser", self.realm1)
+        req.all_data = {}
         # The response contains the token type HOTP, successful authentication
         res = {"jsonrpc": "2.0",
                "result": {"status": True,

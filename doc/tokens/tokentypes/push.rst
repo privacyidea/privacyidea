@@ -3,7 +3,7 @@
 Push Token
 ----------
 
-.. index:: Push Token, Firebase service
+.. index:: Push Token, Firebase service, push gateway
 
 The push token uses the *privacyIDEA Authenticator* app. You can get it
 from `Google Play Store`_ or `Apple App Store`_.
@@ -11,8 +11,10 @@ from `Google Play Store`_ or `Apple App Store`_.
 .. _Google Play Store: https://play.google.com/store/apps/details?id=it.netknights.piauthenticator
 .. _Apple App Store: https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301
 
-The token type *push* sends a cryptographic challenge via the
-Google Firebase service to the smartphone of the user. This push
+The token type *push* sends a cryptographic challenge via a configured
+push-capable SMS gateway to the smartphone of the user. The built-in Firebase,
+HTTP, and Script providers support PUSH messages. Firebase gateways are enabled
+by default; HTTP and Script gateways require ``ALLOW_PUSH=yes``. This push
 notification is displayed on the smartphone of the user with a text
 that tells the user that he or somebody else requests to login to a
 service. The user can simply accept this request.
@@ -20,15 +22,15 @@ The smartphone sends a cryptographically signed response to the
 privacyIDEA server and the login request gets marked as confirmed
 in the privacyIDEA server. The application checks for this mark and
 logs the user in automatically. For an example of how the components in a
-typical deployment of push tokens interact reference the following diagram.
+typical Firebase deployment of push tokens interact reference the following diagram.
 
 .. figure:: images/push_token_deployment.svg
    :width: 500
 
    A typical push token deployment
 
-To allow privacyIDEA to send push notifications, a Firebase service
-needs to be configured. To do so see :ref:`firebase_provider`.
+To allow privacyIDEA to send push notifications, configure a push-capable SMS
+gateway. See :ref:`sms_gateway_config` and :ref:`firebase_provider`.
 
 The PUSH token implements the :ref:`outofband mode <authentication_mode_outofband>`.
 
@@ -63,7 +65,8 @@ The smartphone stores this data and creates a new key pair.
 Step 2
 ......
 
-The smartphone sends its Firebase ID, the public key of the keypair,
+The smartphone sends its device token (named ``fbtoken`` in the enrollment API
+for compatibility), the public key of the keypair,
 the serial number and an enrollment credential back to the
 enrollment URL of the privacyIDEA server.
 
@@ -81,9 +84,8 @@ challenge response tokens either with the PIN to the
 endpoint ``/validate/check`` or via the endpoint
 ``/validate/triggerchallenge``.
 
-privacyIDEA sends a cryptographic challenge with a signature to
-the Firebase service.
-The firebase service sends the notification to the smartphone,
+privacyIDEA sends a cryptographic challenge with a signature to the configured
+push gateway. The gateway sends the notification to the smartphone,
 which can verify the signature using the public key from enrollment step 2.
 
 Accepting login
@@ -97,6 +99,38 @@ request as successfully answered.
 
 In some cases the push notification does not reach the smartphone. Since
 version 3.4 the smartphone can also poll for active challenges.
+
+Declining login
+...............
+
+Instead of accepting, the user can decline the request. The app signs a reason
+together with its answer and thus distinguishes two cases: the user did not
+trigger this login at all (``unknown_trigger``), or triggered it and aborted
+(``cancelled``). The first marks the challenge as *declined*, the second as
+*cancelled*, which ``/validate/polltransaction`` reports as the
+``challenge_status``, so that the application can react accordingly.
+
+Every answer the server acts on is written to the audit log. The
+``action_detail`` of the entry of the answer (``POST /ttype/push``) names the
+transaction and the resulting status -- ``accept``, ``declined``, ``cancelled``,
+or ``confirmed`` for the smartphone step of code_to_phone -- plus the reason the
+app sent with a refusal. An answer the server rejects, such as a wrong or
+missing presence answer, records no status: there is no outcome to name, and the
+challenge stays open for another try. The authentication that fails because of a
+refusal names transaction and status as well. An app sending a reason this
+server version does not know declines the challenge like an app that sends no
+reason at all; the value it did send is only visible in the audit entry of the
+answer.
+
+The two reasons are also separate events in the authentication log, so
+conditional access can act on them differently:
+``CHALLENGE_DECLINED_UNKNOWN_TRIGGER`` for the login the user says they did not
+start, ``CHALLENGE_CANCELLED`` for the one they abandoned themselves, and the
+plain ``CHALLENGE_DECLINED`` where no usable reason was sent. The first is the
+user reporting somebody else's attempt and deserves a policy with a low
+threshold; the last is deliberately the fallback for an unknown reason, so a
+value a newer app invents is never read as that report. See
+:ref:`authentication_log_event_types`.
 
 Login to application
 ....................

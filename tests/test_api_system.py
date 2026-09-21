@@ -1,7 +1,8 @@
 """ API testcases for the "/system/ endpoint """
 import datetime
 import json
-import os
+import shutil
+import tempfile
 import unittest
 from unittest.mock import patch
 from urllib.parse import urlencode
@@ -21,7 +22,8 @@ from privacyidea.models import UserCache
 from privacyidea.models import db, NodeName
 from privacyidea.models.metric_aggregate import MetricAggregate
 from .base import MyApiTestCase
-from .test_lib_caconnector import CACERT, CAKEY, WORKINGDIR, OPENSSLCNF
+from .conftest import prepare_ca_directory
+from .test_lib_caconnector import CACERT, CAKEY, OPENSSLCNF
 from .test_lib_resolver import LDAPDirectory, ldap3mock
 
 PWFILE = "tests/testdata/passwords"
@@ -1287,14 +1289,15 @@ class APIConfigTestCase(MyApiTestCase):
         delete_radius("remote")
 
     def test_23_list_ca_connectors(self):
-        cwd = os.getcwd()
+        ca_path = prepare_ca_directory(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, ca_path)
         save_caconnector({'type': 'local',
                           'secret': 'value',
                           'caconnector': 'localCA',
                           "cakey": CAKEY,
                           "cacert": CACERT,
                           "openssl.cnf": OPENSSLCNF,
-                          "WorkingDir": cwd + "/" + WORKINGDIR,
+                          "WorkingDir": ca_path,
                           ATTR.TEMPLATE_FILE: "templates.yaml"})
 
         def _check_caconnector_response(response):

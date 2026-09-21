@@ -1,7 +1,0 @@
-@use "styles";
-@use "table";
-
-.token-applications {
-  @include styles.main-component-style;
-  display: grid;
-}

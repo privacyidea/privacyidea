@@ -1,0 +1,222 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  #scrollContainer
+  appScrollToTop
+  aria-label="Token Table"
+  class="token-table-layout"
+  i18n-aria-label="@@token.tokenTable">
+  @if (tableState.showTable()) {
+    <div
+      [appStickyHeader]="scrollContainer"
+      class="filter-paginator-container sticky-header">
+      <h3
+        class="selfservice-paginator-label"
+        i18n="@@token.yourTokens"
+        >Your Tokens</h3
+      >
+      <mat-paginator
+        (page)="onPageEvent($event)"
+        [length]="totalLength()"
+        [pageIndex]="pageIndex()"
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSize()"
+        showFirstLastButtons />
+    </div>
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="tokenDataSource()"
+        aria-label="Token Data Table"
+        class="token-table"
+        i18n-aria-label="@@token.tokenDataTable"
+        mat-table>
+        @for (column of columnKeysMapSelfService(); track column) {
+          <ng-container [matColumnDef]="column.key">
+            <th
+              *matHeaderCellDef
+              mat-header-cell>
+              <div class="flex ali-center">
+                {{ column.label }}
+                <div class="flex">
+                  <button
+                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                    aria-label="Sort by {{ column.label }}"
+                    i18n-aria-label="@@common.sortBy"
+                    class="sort-button"
+                    mat-icon-button
+                    type="button">
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </th>
+            <td
+              *matCellDef="let element; let row"
+              class="max-width-300"
+              mat-cell>
+              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+                @switch (column.key) {
+                  @case ("serial") {
+                    <app-copyable [copyText]="element.serial">
+                      <a
+                        (click)="contentService.tokenSelected(element.serial)"
+                        (keydown.enter)="contentService.tokenSelected(element.serial)"
+                        (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                        [attr.aria-label]="linkLabel(column.label)"
+                        role="button"
+                        tabindex="0">
+                        {{ element[column.key] }}
+                      </a>
+                    </app-copyable>
+                  }
+                  @case ("container_serial") {
+                    <app-copyable [copyText]="element.container_serial">
+                      @if (containerService.containerBelongsToUser(element.container_serial)) {
+                        <a
+                          (click)="contentService.navigateContainerDetails(element.container_serial)"
+                          (keydown.enter)="contentService.navigateContainerDetails(element.container_serial)"
+                          (keydown.space)="
+                            $event.preventDefault(); contentService.navigateContainerDetails(element.container_serial)
+                          "
+                          [attr.aria-label]="linkLabel(column.label)"
+                          role="button"
+                          tabindex="0">
+                          {{ element[column.key] }}
+                        </a>
+                      } @else {
+                        {{ element[column.key] }}
+                      }
+                    </app-copyable>
+                  }
+                  @case ("active") {
+                    @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
+                      <span
+                        (click)="toggleActive(element)"
+                        (keydown.enter)="toggleActive(element)"
+                        (keydown.space)="$event.preventDefault(); toggleActive(element)"
+                        [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
+                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                        role="button"
+                        tabindex="0">
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
+                      </span>
+                    } @else {
+                      <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
+                      </span>
+                    }
+                  }
+                  @case ("failcount") {
+                    @if (authService.actionAllowed("reset")) {
+                      <span
+                        (click)="resetFailCount(element)"
+                        (keydown.enter)="resetFailCount(element)"
+                        (keydown.space)="$event.preventDefault(); resetFailCount(element)"
+                        [ngClass]="tableUtilsService.getClassForColumn(column.key, element)"
+                        role="button"
+                        tabindex="0">
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
+                      </span>
+                    } @else {
+                      <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
+                      </span>
+                    }
+                  }
+                  @case ("revoke") {
+                    @if (!element.revoked) {
+                      <button
+                        (click)="revokeToken(element.serial)"
+                        aria-label="Revoke Token"
+                        i18n-aria-label="@@token.revokeToken"
+                        i18n-matTooltip="@@token.revokeToken"
+                        mat-icon-button
+                        matTooltip="Revoke Token">
+                        <mat-icon> undo</mat-icon>
+                      </button>
+                    }
+                  }
+                  @case ("delete") {
+                    <button
+                      (click)="deleteToken(element.serial)"
+                      aria-label="Delete Token"
+                      i18n-aria-label="@@common.deleteToken"
+                      i18n-matTooltip="@@common.deleteToken"
+                      mat-icon-button
+                      matTooltip="Delete Token">
+                      <mat-icon> delete</mat-icon>
+                    </button>
+                  }
+                  @default {
+                    @if (tableUtilsService.isLink(column.key)) {
+                      <a
+                        [attr.aria-label]="linkLabel(column.label)"
+                        href="#">
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
+                      </a>
+                    } @else {
+                      <span>
+                        {{ tableUtilsService.getDisplayText(column.key, element) }}
+                      </span>
+                    }
+                  }
+                }
+              </div>
+            </td>
+          </ng-container>
+        }
+        <tr
+          *matHeaderRowDef="columnKeysSelfService; sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: columnKeysSelfService"
+          mat-row></tr>
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeysSelfService.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
+          </td>
+        </tr>
+      </table>
+    </div>
+  } @else {
+    <app-table-state
+      [hint]="emptyHint()"
+      [table]="tableState"
+      heading="You have no tokens yet"
+      i18n-heading="@@token.youHaveNoTokens"
+      icon="shield">
+      @if (authService.tokenEnrollmentAllowed()) {
+        <button
+          [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <span class="icon-badge">
+            <mat-icon class="padding-right-3">shield</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+          <span i18n="@@common.enrollToken">Enroll Token</span>
+        </button>
+      }
+    </app-table-state>
+  }
+</div>

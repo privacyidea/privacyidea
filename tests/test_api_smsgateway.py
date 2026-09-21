@@ -3,7 +3,7 @@ from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.smsprovider.SMSProvider import (get_smsgateway, delete_smsgateway,
-                                                    create_sms_instance)
+                                                     create_sms_instance, ALLOW_PUSH)
 from privacyidea.lib.error import ParameterError
 
 
@@ -229,6 +229,11 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertTrue("URL" in http_parameters.get("parameters"))
             self.assertTrue("PROXY" in http_parameters.get("parameters"))
             self.assertTrue("HTTP_METHOD" in http_parameters.get("parameters"))
+            self.assertIn(ALLOW_PUSH, http_parameters.get("parameters"))
+            self.assertIn(ALLOW_PUSH, value['privacyidea.lib.smsprovider.'
+                                            'FirebaseProvider.FirebaseProvider']["parameters"])
+            self.assertIn(ALLOW_PUSH, value['privacyidea.lib.smsprovider.'
+                                            'ScriptSMSProvider.ScriptSMSProvider']["parameters"])
 
     def test_04a_provider_module_allowlist(self):
         shipped = "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider"

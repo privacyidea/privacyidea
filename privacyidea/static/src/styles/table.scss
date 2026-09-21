@@ -1,0 +1,370 @@
+@use "sass:map";
+
+$td-max-width: 18rem;
+$scrollable-height: calc(var(--mat-sys-body-medium-line-height) * 3);
+$scrollable-margin-right: -16px;
+$scrollable-padding-right: 16px;
+$realm-margin-top: 17px;
+$realm-list-margin-top: 7px;
+
+// --surface-raised (the ancestor card background) is a depth-tinted gradient, not a flat color, so
+// no flat swatch can match it at every pixel once Depth is above "flat" - transparent is the only
+// value that stays seamless with the card at every depth level.
+$table-bg: transparent;
+$link-color: var(--mat-sys-primary);
+$paginator-bg: transparent;
+$highlight-padding: 2px 6px;
+$icon-font-size: 22px;
+$fix-width: 20rem;
+
+// Height of a Material form field's input row, i.e. the field without the hint line underneath.
+$field-input-height: 56px;
+// Size of the filter trigger sitting next to that input, on every table, and of the icon in it.
+$filter-trigger-size: 40px;
+$filter-trigger-icon-size: 24px;
+
+$table-max-width: 20rem;
+$gap-small: 8px;
+$margin-left-small: 10px;
+$padding-top-small: 8px;
+$description-width: 18rem;
+
+// The striping modes a table can be in. A table picks one by its class
+// ("row-striped", "column-striped-explicit", "unstriped", or nothing for the default)
+// and table-global.scss applies the matching mixin, so no table ever has to reset
+// another mode's rules.
+@mixin column-stripes {
+  td:nth-child(even),
+  th:nth-child(even) {
+    background: var(--mat-sys-surface-variant);
+  }
+}
+
+// For tables that drop cells for row-spanned columns: the DOM nth-child position no
+// longer matches the logical column, so the template marks every cell that carries a
+// stripe and this colours exactly those.
+@mixin column-stripes-explicit {
+  td.col-stripe,
+  th.col-stripe {
+    background: var(--mat-sys-surface-variant);
+  }
+}
+
+// For tables whose record reads along the row rather than down the column. The
+// header carries no stripe here, it stays on the opaque fallback.
+@mixin row-stripes($parity: odd) {
+  tr:nth-child(#{$parity}) > td {
+    background: var(--mat-sys-surface-variant);
+  }
+}
+
+// Key/value Material table used inside the token and container detail cards, so
+// both render identical rows. The table carries "row-striped" for the stripes.
+@mixin details-key-value-table {
+  width: 100%;
+}
+
+// Fixed 35% / 65% key/value column layout for the tables above.
+@mixin details-key-value-columns {
+  table-layout: fixed;
+
+  td:nth-child(1) {
+    width: 35%;
+  }
+
+  td:nth-child(2) {
+    width: 65%;
+  }
+}
+
+// Shared flex layout for the detail-card grids in token-details and
+// container-details: equal-ish columns ~28rem wide that wrap to fewer per row
+// as the width shrinks.
+@mixin details-cards-flex {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+
+  > * {
+    flex: 1 1 28rem;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}
+
+// Standardized description card (token-details + container-details): sized to
+// hold an input-width-xl (616px) field plus the inline edit buttons. The field
+// is a multi-line textarea, so longer text wraps to more rows instead of
+// widening the card.
+// Standardized detail-card width tiers (s/m/l), analogous to .input-width-*.
+// The card is fixed at its tier width — it neither grows nor shrinks with the
+// row/zoom.
+@mixin card-width($size) {
+  flex: 0 0 var(--card-width-#{$size});
+  min-width: 0;
+  max-width: var(--card-width-#{$size});
+}
+
+// A details page's own panel (main-component-style) has no width of its own - it is exactly as
+// wide as its widest row of cards. $sizes is that row's card-width tiers, in the order they sit
+// in the row (e.g. (m, l) for the add-token/token-table pair); this sums their --card-width-*
+// custom properties plus a 16px gap between each and the panel's own 16px left/right padding, so
+// every details page (container, token, user, machine-resolver, and each one's pre-data loading
+// placeholder) is sized from the same rule instead of a hand-picked, driftable number.
+@function details-panel-width($sizes...) {
+  $expr: "2 * 16px";
+  @each $size in $sizes {
+    $expr: "#{$expr} + var(--card-width-#{$size})";
+  }
+  $gaps: length($sizes) - 1;
+  @if $gaps > 0 {
+    $expr: "#{$expr} + #{$gaps * 16px}";
+  }
+  @return unquote("calc(#{$expr})");
+}
+
+// Shared key/value layout for the token & container "Information" cards.
+@mixin details-info-grid {
+  .info-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, max-content) 1fr;
+    column-gap: 16px;
+    row-gap: 4px;
+    margin: 0 0 0 16px;
+    padding: 0;
+    // The left inset is part of the card's content box, so the grid takes the
+    // remaining width instead of the full one.
+    width: auto;
+
+    // Key uses the same font as everything else and is vertically centered.
+    .info-key {
+      align-self: center;
+      text-align: left;
+    }
+
+    .info-value {
+      margin: 0;
+      align-self: center;
+      overflow-wrap: anywhere;
+      text-align: left;
+      min-width: 0;
+
+      // Display value sits on a subtle fill, matching the description card text.
+      > span {
+        display: block;
+        padding: 8px 16px;
+        background: var(--mat-sys-surface-container);
+        border-radius: var(--border-radius);
+      }
+    }
+  }
+
+  .info-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .info-edit-field {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    // An entry the token maintains itself has no input, its value keeps the display look while editing so the
+    // row still reads as a value rather than as an empty field.
+    .info-value-readonly {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 8px 16px;
+      overflow-wrap: anywhere;
+      background: var(--mat-sys-surface-container);
+      border-radius: var(--border-radius);
+    }
+
+    button {
+      flex: 0 0 auto;
+    }
+  }
+
+  // The add row holds a key and a value field whose .input-width-* caps are
+  // wider than the card, so they shrink to the card instead of overflowing it.
+  .info-add-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    margin-left: 16px;
+
+    mat-form-field {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+}
+
+@mixin details-description-card {
+  align-self: flex-start;
+  flex: 0 1 var(--card-width-l);
+  min-height: 160.5px;
+
+  // Long unbroken values (e.g. "WWWW…") must wrap, not overflow the card.
+  // Mirror the fill form-field's background and text padding so the displayed
+  // characters sit in the same position as when editing the input.
+  .description-text {
+    display: block;
+    overflow-wrap: anywhere;
+    padding: 20px 16px;
+    background: var(--mat-sys-surface-container);
+    border-radius: var(--border-radius);
+  }
+}
+
+// Sizes the standalone state panel (empty, denied, error) for a table that owns its
+// page: the panel claims the footprint the table would have had, so it reads as the
+// page content rather than as a small island at the top of an empty content area.
+// Tables embedded as one section of a details page deliberately do not opt in — there
+// the compact default keeps the section proportionate to its neighbours.
+// Opted into by tables that own their page: the state panel fills the footprint
+// the table would have had, and steps up one typescale/icon size with it. A
+// panel alone on a page and a panel sitting among a page's other sections are
+// the same component at two sizes, not two different components.
+@mixin page-table-state-size($min-width: 44rem) {
+  // The footprint is the page container's own box: main-component-style caps it at 100cq* against
+  // the content region and pads 16px per side, so the panel takes that box less the padding.
+  // $min-width is itself capped at that same box: a table with enough columns to need its own
+  // horizontal scroll (see .table-scroll-region) only scrolls *inside* the loaded page, never
+  // widening the page itself - the empty/error/loading panel must not either, or it forces the
+  // whole page into a horizontal scroll a spinner never needed.
+  --table-state-min-height: calc(100cqh - 2 * 16px);
+  --table-state-min-width: min(#{$min-width}, calc(100cqw - 2 * 16px));
+  --table-state-heading-font: var(--mat-sys-title-large);
+  --table-state-icon-frame-size: 7rem;
+  --table-state-icon-size: 56px;
+}
+
+// A sortable column's header carries its label plus a sort icon-button (~40px) behind a 16px
+// margin, on top of the cell's own tier width; a column with the s tier is usually too narrow for
+// that combination alone, so the browser's auto table-layout grows the column past its declared
+// tier. This is an absolute floor, not an offset added to the tier - measured (token-table, 1800px
+// viewport, --column-width-s/m at 120/180px): the widest s-tier sortable column rendered at 150px,
+// while m/l/xl columns (180px+) already absorbed the header controls with no growth. A floor
+// instead of a fixed reserve so this stays correct if --column-width-s (styles.scss) is retuned
+// later for its own reason without this map being retuned to match.
+$header-chrome-floor: (
+  "s": 150px,
+  "m": 0px,
+  "l": 0px,
+  "xl": 0px
+);
+
+// A row-select checkbox column has no header label or sort control at all - .table-checkbox (below)
+// fixes it at a flat 42px regardless of column.width. Sizing it from an s-tier floor as if it were
+// a sortable column would overshoot: pass "checkbox" instead of a tier for this one column so
+// table-width() sizes it from its real rendered width.
+$checkbox-column-width: 72px;
+
+// Sums a table's own col-width-* tiers (see the --column-width-* tokens and .col-width-* classes in
+// styles.scss) into one width, for page-table-state-size($min-width) above: the empty/error/loading
+// panel shown in place of the table is then sized from the same tiers its columns actually use,
+// rather than the unrelated 44rem guess that mixin defaults to. Pass "checkbox" (see
+// $checkbox-column-width) instead of a tier for a row-select column.
+@function table-width($sizes...) {
+  $expr: "0px";
+  @each $size in $sizes {
+    @if $size == checkbox {
+      $expr: "#{$expr} + #{$checkbox-column-width}";
+    } @else {
+      $floor: map.get($header-chrome-floor, $size);
+      @if $floor and $floor > 0px {
+        $expr: "#{$expr} + max(var(--column-width-#{$size}), #{$floor})";
+      } @else {
+        $expr: "#{$expr} + var(--column-width-#{$size})";
+      }
+    }
+  }
+  @return unquote("calc(-32px + #{$expr})");
+}
+
+@mixin base-table-structure(
+  $table-class: ".table",
+  $filter-class: ".table-filter",
+  $scroll-container: ".table-scroll-container"
+) {
+  #{$table-class} {
+    border-collapse: collapse;
+    width: 100%;
+
+    td,
+    th {
+      border: 1px solid var(--mat-sys-outline-variant);
+    }
+
+    th.mat-sort-header {
+      padding-right: 5px;
+    }
+  }
+
+  #{$filter-class} {
+    max-width: var(--input-width-xxl);
+    min-width: 300px;
+    width: 100%;
+    flex: 7 1;
+
+    @media (max-width: 600px) {
+      min-width: 0;
+    }
+  }
+
+  #{$scroll-container} {
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+    height: $scrollable-height;
+    margin-right: $scrollable-margin-right;
+    padding-right: $scrollable-padding-right;
+    display: flex;
+    flex-direction: column;
+
+    > * {
+      flex: 0 0 auto;
+    }
+
+    &::before,
+    &::after {
+      content: "";
+      flex: 1 0 auto;
+    }
+  }
+
+  .table-scroll-region {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+
+    // Flush with the top of the region: the cover each edge needs comes from the ::before below,
+    // which overhangs without moving the cell, so neither edge is uncovered to pay for the other.
+    .mat-mdc-header-cell {
+      top: 0 !important;
+    }
+
+    // Divider shown only when content is hidden in that direction
+    // (classes toggled by appScrollEdges).
+    &.scrolled-from-top {
+      border-top: 1px solid var(--mat-sys-outline-variant);
+    }
+
+    &.more-below {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+    }
+  }
+
+  .realm-list {
+    margin-top: $realm-list-margin-top;
+  }
+}

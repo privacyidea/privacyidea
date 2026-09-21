@@ -1,0 +1,97 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-dialog-wrapper
+  width="s"
+  (actionTriggered)="onAction($event)"
+  [actions]="dialogActions()"
+  [showCloseButton]="false"
+  i18n-title="@@user.tokenAssignment"
+  title="Token Assignment">
+  <mat-form-field
+    appearance="fill"
+    class="pin-field">
+    <mat-label i18n="@@common.pinOptional">PIN (optional)</mat-label>
+    <input
+      (input)="pin.set($event.target['value'])"
+      [type]="hidePin() ? 'password' : 'text'"
+      [value]="pin()"
+      autocomplete="new-password"
+      matInput />
+
+    <button
+      (click)="togglePinVisibility()"
+      mat-icon-button
+      matSuffix
+      type="button">
+      @if (hidePin()) {
+        <mat-icon
+          aria-hidden="false"
+          aria-label="Show PIN"
+          i18n-aria-label="@@common.showPin">
+          visibility_off
+        </mat-icon>
+      } @else {
+        <mat-icon
+          aria-hidden="false"
+          aria-label="Hide PIN"
+          i18n-aria-label="@@user.hidePin">
+          visibility
+        </mat-icon>
+      }
+    </button>
+  </mat-form-field>
+
+  <mat-form-field
+    appearance="fill"
+    class="pin-field">
+    <mat-label i18n="@@common.pinRepeat">PIN (repeat)</mat-label>
+    <input
+      (input)="pinRepeat.set($event.target['value'])"
+      [type]="hidePin() ? 'password' : 'text'"
+      [value]="pinRepeat()"
+      autocomplete="new-password"
+      matInput />
+
+    <button
+      (click)="togglePinVisibility()"
+      mat-icon-button
+      matSuffix
+      type="button">
+      @if (hidePin()) {
+        <mat-icon
+          aria-hidden="false"
+          aria-label="Show PIN"
+          i18n-aria-label="@@common.showPin">
+          visibility_off
+        </mat-icon>
+      } @else {
+        <mat-icon
+          aria-hidden="false"
+          aria-label="Hide PIN"
+          i18n-aria-label="@@user.hidePin">
+          visibility
+        </mat-icon>
+      }
+    </button>
+
+    @if (pinRepeat() && !pinsMatch()) {
+      <mat-error i18n="@@common.pinsDoNotMatch">PINs do not match</mat-error>
+    }
+  </mat-form-field>
+</app-dialog-wrapper>

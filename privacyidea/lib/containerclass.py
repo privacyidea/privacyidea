@@ -192,17 +192,19 @@ class TokenContainerClass:
     def realms(self) -> list[Realm]:
         return self._db_container.realms
 
-    def set_realms(self, realms: list[str], add=False) -> dict[str, bool]:
+    def set_realms(self, realms: list[str], add=False) -> dict:
         """
         Set the realms of the container. If `add` is True, the realms will be added to the existing realms, otherwise
         the existing realms will be removed.
 
         :param realms: List of realm names
         :param add: False if the existing realms shall be removed, True otherwise
-        :return: Dictionary in the format {realm: success}, the entry 'deleted' indicates whether existing realms were
-                 deleted.
+        :return: Dictionary with the entry 'realms' in the format {realm: success} and the entry 'deleted' indicating
+                 whether existing realms were deleted. The per-realm status is nested so that no realm name can
+                 collide with a status key - a realm may legitimately be called "deleted".
         """
-        result = {"deleted": False}
+        realm_status = {}
+        deleted = False
 
         if not realms:
             realms = []
@@ -228,8 +230,7 @@ class TokenContainerClass:
             realms_to_delete = [realm for realm in existing_realms if realm.name in realm_names_to_delete]
             for realm in realms_to_delete:
                 self._db_container.realms.remove(realm)
-            if realms_to_delete:
-                result["deleted"] = True
+            deleted = bool(realms_to_delete)
 
         # Add new realms
         for realm in realms_to_add:
@@ -237,22 +238,22 @@ class TokenContainerClass:
                 stmt = select(Realm).filter_by(name=realm)
                 realm_db = db.session.execute(stmt).scalar_one_or_none()
                 if not realm_db:
-                    result[realm] = False
+                    realm_status[realm] = False
                     log.warning(f"Realm {realm} does not exist. Cannot add it to container {self.serial}.")
                 else:
                     self._db_container.realms.append(realm_db)
-                    result[realm] = True
+                    realm_status[realm] = True
 
         # Set success status for already added realms
         for realm in already_added_realms:
             # If the realms are set completely new, the status for already added realms is True, if they should only be
             # added, the status is False
             # TODO: Not sure whether this makes sense, but this is the actual behaviour ...
-            result[realm] = not add
+            realm_status[realm] = not add
 
         self._db_container.save()
 
-        return result
+        return {"realms": realm_status, "deleted": deleted}
 
     @property
     def registration_state(self) -> RegistrationState:

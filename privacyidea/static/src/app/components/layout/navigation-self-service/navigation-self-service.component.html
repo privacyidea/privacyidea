@@ -1,0 +1,110 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="navigation-self-service-column">
+  @if (contentService.onUserDetailsSelfService() || !authService.actionAllowed("userlist")) {
+    <div class="username-button disabled">
+      <mat-icon>account_circle</mat-icon>
+      <span class="username">{{ authService.username() || "-" }} &#64; {{ authService.realm() || "-" }}</span>
+    </div>
+  } @else {
+    <a
+      [routerLink]="ROUTE_PATHS.USERS_DETAILS"
+      class="username-button"
+      mat-ripple>
+      <mat-icon>account_circle</mat-icon>
+      <span class="username">{{ authService.username() || "-" }} &#64; {{ authService.realm() || "-" }}</span>
+    </a>
+  }
+
+  <app-user-utils-panel-self-service></app-user-utils-panel-self-service>
+
+  @if (!authService.tokenWizard() && !authService.containerWizard().enabled) {
+    <app-navigation-self-service-button
+      i18n-title="@@nav.tokenOverview"
+      key="{{ this.ROUTE_PATHS.TOKENS }}"
+      matIconClass="ms--shield-list"
+      matIconSize="tile-icon-x-large"
+      title="Token Overview" />
+    @if (authService.tokenEnrollmentAllowed()) {
+      <app-navigation-self-service-button
+        i18n-title="@@common.tokenEnrollment"
+        key="{{ this.ROUTE_PATHS.TOKENS_ENROLLMENT }}"
+        matIconName="add_moderator"
+        title="Token Enrollment" />
+    }
+    @if (authService.tokenWizard2nd()) {
+      <app-navigation-self-service-button
+        i18n-title="@@nav.tokenEnrollment"
+        key="{{ this.ROUTE_PATHS.TOKENS_WIZARD }}"
+        matIconName="auto_awesome"
+        title="Token Enrollment Wizard" />
+    }
+    @if (authService.rights().includes("assign")) {
+      <app-navigation-self-service-button
+        i18n-title="@@common.assignToken"
+        key="{{ this.ROUTE_PATHS.TOKENS_ASSIGN_TOKEN }}"
+        matIconName="admin_panel_settings"
+        matIconSize="tile-icon-large"
+        title="Assign Token" />
+    }
+    @if (authService.actionAllowed("userlist")) {
+      <app-navigation-self-service-button
+        i18n-title="@@common.userDetails"
+        key="{{ this.ROUTE_PATHS.USERS_DETAILS }}"
+        matIconName="manage_accounts"
+        title="User Details" />
+    }
+    @if (authService.rights().includes("container_list")) {
+      <app-navigation-self-service-button
+        i18n-title="@@nav.containerOverview"
+        key="{{ this.ROUTE_PATHS.CONTAINERS }}"
+        matIconClass="mdi--folder-list"
+        matIconSize="tile-icon-x-large"
+        title="Container Overview" />
+    }
+    @if (authService.rights().includes("container_create") && authService.containerWizard().enabled) {
+      <app-navigation-self-service-button
+        i18n-title="@@common.createContainer"
+        key="{{ this.ROUTE_PATHS.CONTAINERS_CREATE }}"
+        matIconName="create_new_folder"
+        title="Create Container" />
+    }
+    @if (authService.rights().includes("auditlog")) {
+      <app-navigation-self-service-button
+        i18n-title="@@nav.auditLog"
+        key="{{ this.ROUTE_PATHS.AUDIT }}"
+        matIconName="receipt_long"
+        title="Audit Log" />
+    }
+    @if (authService.rights().includes("authentication_log_read")) {
+      <app-navigation-self-service-button
+        i18n-title="@@nav.authenticationLog"
+        key="{{ this.ROUTE_PATHS.AUTHENTICATION_LOG }}"
+        matIconClass="mdi--list-lock"
+        title="Authentication Log" />
+    }
+    @if (authService.rssAge() > 0) {
+      <app-navigation-self-service-button
+        i18n-title="@@nav.news"
+        key="{{ this.ROUTE_PATHS.NEWS }}"
+        matIconName="campaign"
+        title="News" />
+    }
+  }
+</div>

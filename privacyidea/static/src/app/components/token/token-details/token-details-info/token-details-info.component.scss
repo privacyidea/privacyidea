@@ -1,0 +1,7 @@
+@use "table";
+
+:host {
+  display: block;
+}
+
+@include table.details-info-grid;

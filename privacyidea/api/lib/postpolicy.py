@@ -56,7 +56,10 @@ from urllib.parse import quote
 from flask import g, current_app, Request
 from flask_babel import _, lazy_gettext
 
-from privacyidea.api.lib.utils import get_all_params, hardening_action_active
+from privacyidea.api.lib.utils import get_all_params, log_authentication, hardening_action_active
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                          build_reason_detail)
+from privacyidea.lib.conditional_access.request_context import get_ca_context, claimed_ca_message
 from privacyidea.config import ConfigKey
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import (get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node)
@@ -65,11 +68,9 @@ from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
-                                    SCOPE, AUTOASSIGNVALUE, AUTHORIZED, Match)
+                                    SCOPE, AUTOASSIGNVALUE, AUTHORIZED, SESSION_PERSISTENCE, Match)
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
-                                           check_subscription,
-                                           SubscriptionError,
                                            EXPIRE_MESSAGE)
 from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token
 from privacyidea.lib.tokenclass import ChallengeSession
@@ -93,6 +94,7 @@ DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_CONTAINER_TYPE = "generic"
 DEFAULT_TIMEOUT_ACTION = "lockscreen"
+DEFAULT_SESSION_PERSISTENCE = SESSION_PERSISTENCE.TAB
 DEFAULT_POLICY_TEMPLATE_URL = "/static/policy-templates/"
 BODY_TEMPLATE = lazy_gettext("""
 <--- Please describe your Problem in detail --->
@@ -546,10 +548,23 @@ def no_detail_on_fail(request, response):
     the details will be stripped if
     the authentication request failed.
 
+    A conditional-access message is the one thing that survives, exactly as it survives
+    :func:`hide_specific_error_message`: this action strips what privacyIDEA volunteers about the attempt, whereas
+    that message is something an admin either wrote on a stage or turned on by policy. Without this a lock would
+    say nothing on the very requests it refuses.
+
+    Read from the claim (:func:`~privacyidea.lib.conditional_access.request_context.claimed_ca_message`) rather than
+    from the response body: the gate builds its rejection inside the decorator stack, so the claim is what carries
+    the configured wording across this strip.
+
     :param request:
     :param response:
     :return:
     """
+    # Guarded like hide_specific_error_message, so this is safe wherever it sits: construct_radius_response
+    # replaces the body with a non-JSON one, and Response.json is then None rather than a dict.
+    if not response or not response.json:
+        return response
     content = response.json
 
     # get the serials from a policy definition
@@ -561,7 +576,11 @@ def no_detail_on_fail(request, response):
         # TODO: this strips away possible transactions ids during a
         #  challenge-response authentication. We should consider the
         #  result->authentication entry and only strip away possible user information
-        del content["detail"]
+        ca_message = claimed_ca_message()
+        if ca_message:
+            content["detail"] = {"message": ca_message}
+        else:
+            del content["detail"]
         response.set_data(json.dumps(content))
         g.audit_object.add_policy({p.get("name") for p in detail_policy})
 
@@ -673,6 +692,9 @@ def get_webui_settings(request, response):
                                         user=username, realm=realm).action_values(unique=True)
         timeout_action_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TIMEOUT_ACTION, user_object=user,
                                            user=username, realm=realm).action_values(unique=True)
+        session_persistence_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SESSION_PERSISTENCE,
+                                                user_object=user, user=username,
+                                                realm=realm).action_values(unique=True)
         audit_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.AUDITPAGESIZE, user_object=user,
                                             user=username, realm=realm).action_values(unique=True)
         token_page_size_pol = Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.TOKENPAGESIZE, user_object=user,
@@ -794,6 +816,13 @@ def get_webui_settings(request, response):
         if len(timeout_action_pol) == 1:
             timeout_action = list(timeout_action_pol)[0]
 
+        # The WebUI stores its bearer token in the browser storage this value selects, so it is
+        # the deployment's decision, not the user's: a session that outlives the tab it was
+        # opened in leaves the token on disk until the JWT expires.
+        session_persistence = DEFAULT_SESSION_PERSISTENCE
+        if len(session_persistence_pol) == 1:
+            session_persistence = list(session_persistence_pol)[0]
+
         policy_template_url_pol = Match.action_only(g, scope=SCOPE.WEBUI,
                                                     action=PolicyAction.POLICYTEMPLATEURL).action_values(unique=True)
         policy_template_url = DEFAULT_POLICY_TEMPLATE_URL
@@ -819,13 +848,15 @@ def get_webui_settings(request, response):
         content["result"]["value"]["dialog_no_token"] = dialog_no_token
         content["result"]["value"]["search_on_enter"] = len(search_on_enter) > 0
         content["result"]["value"]["timeout_action"] = timeout_action
+        content["result"]["value"]["session_persistence"] = session_persistence
         content["result"]["value"]["token_rollover"] = token_rollover
         content["result"]["value"]["hide_welcome"] = hide_welcome
         content["result"]["value"]["hide_buttons"] = hide_buttons
         content["result"]["value"]["deletion_confirmation"] = deletion_confirmation
         content["result"]["value"]["show_seed"] = show_seed
         content["result"]["value"]["show_node"] = get_privacyidea_node() if show_node else ""
-        content["result"]["value"]["subscription_status"] = subscription_status()
+        subscription_state = subscription_status()
+        content["result"]["value"]["subscription_status"] = subscription_state
         content["result"]["value"]["qr_image_android"] = qr_image_android
         content["result"]["value"]["qr_image_ios"] = qr_image_ios
         content["result"]["value"]["qr_image_custom"] = qr_image_custom
@@ -841,11 +872,10 @@ def get_webui_settings(request, response):
             if len(subscriptions) == 1:
                 subscription = subscriptions[0]
                 version = get_version()
-                subject = f"Problem with {version!s}"
-                try:
-                    check_subscription("privacyidea")
-                except SubscriptionError:
-                    subject = EXPIRE_MESSAGE
+                # State 2 is what subscription_status() reports when the subscription no
+                # longer holds, so the support mail is addressed at that. It was checked
+                # above already; checking again would run the user count a second time.
+                subject = EXPIRE_MESSAGE if subscription_state == 2 else f"Problem with {version!s}"
                 # Check policy, if the admin is allowed to save config. This is a genuine
                 # permission check: an admin on a system without admin policies effectively
                 # has systemwrite rights, so the fail-open allowed() is intended here.
@@ -876,6 +906,15 @@ def autoassign(request, response):
     into account ACTION.MAXTOKENUSER and ACTION.MAXTOKENREALM.
     :return:
     """
+    if get_ca_context().rejected_by_conditional_access:
+        # The pre-auth conditional-access gate already refused this request - its rejection carries the same
+        # "value": false shape as an ordinary failed authentication (see conditional_access_gate), which is
+        # exactly what this function otherwise treats as "no token yet, try the submitted OTP against the
+        # realm's unassigned ones". Verifying the OTP here would flip a locked/blocked account's rejection into a
+        # success and additionally assign it a token. rejected_by_conditional_access reads true as soon as the
+        # rejection stages its enforcement-type event (conditional_access_rejection/_reject_restricted_login), so
+        # this also covers /auth and /ttype/push, not just conditional_access_gate's own endpoints.
+        return response
     content = response.json
     # check, if the authentication was successful, then we need to do nothing
     if content.get("result").get("value") is False:
@@ -1147,6 +1186,21 @@ def multichallenge_enroll_via_validate(request, response):
             challenge.save()
         content.get("detail", {})["enroll_via_multichallenge"] = True
         content.get("detail", {})["enroll_via_multichallenge_optional"] = enrollment_optional
+
+        # Reclassifies the staged authentication-log event, or creates one if none exists yet
+        enrolled_serial = content.get("detail", {}).get("serial")
+        context = get_ca_context()
+        if context.amendable is not None:
+            # Pass only what this policy determined, so an absent serial does not clear the logged one.
+            corrections = {}
+            if enrolled_serial is not None:
+                corrections["serial"] = enrolled_serial
+            if transaction_id:
+                corrections["transaction_id"] = transaction_id
+            context.reclassify(AuthEventType.ENROLLMENT_TRIGGERED, **corrections)
+        else:
+            log_authentication(AuthEventType.ENROLLMENT_TRIGGERED, request, user=user,
+                               serial=enrolled_serial, transaction_id=transaction_id)
     response.set_data(json.dumps(content))
 
     return response
@@ -1219,6 +1273,26 @@ def is_authorized(request, response):
 
     if authorized_pol:
         if list(authorized_pol)[0] == AUTHORIZED.DENY:
+            context = get_ca_context()
+            # Nothing to classify when conditional access already turned the request away before any token logic ran:
+            # its rejection row already records why, and a NOT_AUTHORIZED row here would bury that reason and hand the
+            # conditional-access counters an attempt the lock itself produced.
+            if not context.rejected_by_conditional_access:
+                # Name the policy that denied it: with several authorization policies in play, "which rule do I
+                # have to change" is the whole question the log has to answer.
+                reason_detail = build_reason_detail(policies=next(iter(authorized_pol.values()), None))
+                if context.amendable is not None:
+                    # Correcting the staged event. The detail is merged, so the per-serial reasons the token layer
+                    # recorded survive alongside the policy that overrode them.
+                    # The policy applies whatever the tokens looked like, so it *replaces* the token layer's
+                    # reasons rather than joining them: it is the one thing to act on now.
+                    context.reclassify(AuthEventType.NOT_AUTHORIZED,
+                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
+                                       reason_detail=reason_detail)
+                else:
+                    log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=request.User,
+                                       reasons=[AuthEventReason.AUTHORIZATION_DENIED],
+                                       reason_detail=reason_detail)
             raise ValidateError("User is not authorized to authenticate under these conditions.")
 
     return response

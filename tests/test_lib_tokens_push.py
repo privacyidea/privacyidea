@@ -26,15 +26,16 @@ from testfixtures import LogCapture
 from werkzeug.test import EnvironBuilder
 
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.crypto import geturandom
-from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.crypto import encryptPassword, geturandom
+from privacyidea.lib.error import ConfigAdminError, ValidateError
 from privacyidea.lib.error import ParameterError, PrivacyIDEAError, PolicyError
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
-from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH, set_smsgateway, delete_smsgateway
+from privacyidea.lib.token import (get_tokens, remove_token, init_token, import_tokens,
+                                   create_challenge)
 from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.tokens.push_types import PushMode, PushCapability
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
@@ -43,11 +44,17 @@ from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY,
                                               PushPresenceOptions, strip_pem_headers,
-                                              SERVER_PUSH_CAPABILITIES, _build_smartphone_data)
+                                              SERVER_PUSH_CAPABILITIES, _build_smartphone_data,
+                                              _log_challenge_answer,
+                                              _fit_notification_to_storage_budget,
+                                              _get_push_gateways,
+                                              MAX_CLIENT_TAG_LENGTH, MAX_STORED_QUESTION_LENGTH,
+                                              MAX_STORED_TITLE_LENGTH, MAX_NOTIFICATION_JSON_LENGTH,
+                                              DEFAULT_MOBILE_TEXT)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
-from .base import MyTestCase, FakeFlaskG
+from .base import MyTestCase, FakeAudit, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
 FIREBASE_FILE = "tests/testdata/firebase-test.json"
@@ -64,25 +71,32 @@ def _create_credential_mock():
     return mock.MagicMock(spec=c, expired=False, expiry=None, access_token='my_new_bearer_token')
 
 
-def _check_firebase_params(request):
-    payload = json.loads(request.body)
-    # check the signature in the payload!
-    data = payload.get("message").get("data")
+def _verify_push_payload_signatures(push_payload):
+    # Check the signature in the payload!
+    sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**push_payload)
+    if push_payload.get("require_presence") is not None:
+        sign_string += f"|{push_payload['require_presence']}"
 
-    sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**data)
-    token = get_tokens(serial=data.get("serial"))[0]
+    token = get_tokens(serial=push_payload["serial"])[0]
     pem_public_key = token.get_tokeninfo(PUBLIC_KEY_SERVER)
     public_key = load_pem_public_key(to_bytes(pem_public_key), backend=default_backend())
-    signature = b32decode(data.get("signature"))
     # If signature does not match it will raise InvalidSignature exception
-    public_key.verify(signature, sign_string.encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
+    public_key.verify(b32decode(push_payload["signature"]), sign_string.encode("utf8"),
+                      padding.PKCS1v15(), hashes.SHA256())
+
     # The capabilities advertisement travels as a JSON string and carries its own
     # detached signature over the canonical form of {capabilities, nonce}, built
     # from the parsed structure. The main signature above is unaffected by it.
-    capabilities = json.loads(data.get("capabilities"))
-    capabilities_sign_input = rfc8785.dumps({"capabilities": capabilities, "nonce": data.get("nonce")})
-    public_key.verify(b32decode(data.get("capabilities_signature")),
+    capabilities = json.loads(push_payload["capabilities"])
+    capabilities_sign_input = rfc8785.dumps({"capabilities": capabilities,
+                                             "nonce": push_payload["nonce"]})
+    public_key.verify(b32decode(push_payload["capabilities_signature"]),
                       capabilities_sign_input, padding.PKCS1v15(), hashes.SHA256())
+
+
+def _check_firebase_params(request):
+    payload = json.loads(request.body)
+    _verify_push_payload_signatures(payload["message"]["data"])
     headers = {"request-id": "728d329e-0e86-11e4-a748-0c84dc037c13"}
     return 200, headers, json.dumps({})
 
@@ -127,6 +141,26 @@ class PushTokenTestCase(MyTestCase):
         token.token.active = True
         return token
 
+    def _poll_request(self, serial):
+        """Build the signed request the smartphone sends to poll for challenges."""
+        timestamp = datetime.now(timezone.utc).isoformat()
+        signature = self.smartphone_private_key.sign(f"{serial}|{timestamp}".encode("utf8"),
+                                                     padding.PKCS1v15(), hashes.SHA256())
+        request = Request(EnvironBuilder(method="GET", headers={}).get_environ())
+        request.all_data = {"serial": serial, "timestamp": timestamp, "signature": b32encode(signature)}
+        return request
+
+    def _trigger_challenge(self, user_agent="TestPlugin/9.9", client_ip="10.1.2.3"):
+        """Trigger a push challenge through /validate/check as the given client."""
+        with self.app.test_request_context("/validate/check", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1,
+                                                 "pass": "pushpin"},
+                                           headers={"User-Agent": user_agent},
+                                           environ_base={"REMOTE_ADDR": client_ip}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            return res.json["detail"]["transaction_id"]
+
     def test_01_create_token(self):
         db_token = Token(self.serial1, tokentype="push")
         db_token.save()
@@ -152,7 +186,11 @@ class PushTokenTestCase(MyTestCase):
         self.assertRaises(ParameterError, token.update, {"otpkey": "1234", "pubkey": "1234"})
 
         # Unknown config
-        self.assertRaises(ParameterError, token.get_init_detail, params={"firebase_config": "bla"})
+        self.assertRaisesRegex(
+            ParameterError, "Unknown or incompatible push gateway configuration!",
+            token.get_init_detail,
+            params={"policies": {PushAction.FIREBASE_CONFIG: "bla",
+                                 PushAction.REGISTRATION_URL: REGISTRATION_URL}})
 
         fb_config = {FirebaseConfig.REGISTRATION_URL: "http://test/ttype/push",
                      FirebaseConfig.JSON_CONFIG: CLIENT_FILE,
@@ -215,6 +253,42 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(parsed_server_pubkey.public_numbers(), parsed_stripped_server_pubkey.public_numbers())
         remove_token(self.serial1)
 
+    def test_01a_list_push_capable_gateways(self):
+        http_gateway = "push-http"
+        smtp_gateway = "sms-smtp"
+        set_smsgateway(http_gateway,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com", "HTTP_METHOD": "POST",
+                                "SEND_DATA_AS_JSON": "yes"})
+        set_smsgateway(smtp_gateway,
+                       "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
+                       options={"SMTPIDENTIFIER": "mail", "MAILTO": "user@example.com"})
+
+        self.assertEqual([], _get_push_gateways(http_gateway))
+        self.assertEqual([], _get_push_gateways(smtp_gateway))
+        invalid_gateway = mock.MagicMock(providermodule="invalid.Provider")
+        with mock.patch("privacyidea.lib.tokens.pushtoken.get_smsgateway", return_value=[invalid_gateway]), \
+                self.assertLogs("privacyidea.lib.tokens.pushtoken", logging.WARNING) as logs:
+            self.assertEqual([], _get_push_gateways())
+        self.assertIn("Failed to load SMS provider", logs.output[0])
+
+        incompatible_provider = type("IncompatibleProvider", (), {})
+        with mock.patch("privacyidea.lib.tokens.pushtoken.get_smsgateway", return_value=[invalid_gateway]), \
+                mock.patch("privacyidea.lib.tokens.pushtoken.get_sms_provider_class",
+                           return_value=incompatible_provider), \
+                self.assertLogs("privacyidea.lib.tokens.pushtoken", logging.WARNING):
+            self.assertEqual([], _get_push_gateways())
+
+        set_smsgateway(http_gateway,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com", "HTTP_METHOD": "POST",
+                                "SEND_DATA_AS_JSON": "yes", ALLOW_PUSH: "yes"})
+        self.assertEqual([http_gateway],
+                         [gateway.identifier for gateway in _get_push_gateways(http_gateway)])
+
+        delete_smsgateway(http_gateway)
+        delete_smsgateway(smtp_gateway)
+
     def test_01a_enroll_with_app_pin(self):
         token_param = {"type": "push", "genkey": 1}
         token_param.update(FB_CONFIG_VALS)
@@ -234,6 +308,96 @@ class PushTokenTestCase(MyTestCase):
                    action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
         token = self._create_push_token()
         remove_token(token.get_serial())
+
+    @responses.activate
+    def test_02b_send_push_via_http_gateway(self):
+        gateway_identifier = "push-http"
+        set_smsgateway(gateway_identifier,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com/send",
+                                "HTTP_METHOD": "POST",
+                                "SEND_DATA_AS_JSON": "yes",
+                                ALLOW_PUSH: "yes",
+                                "device_token": "{phone}",
+                                "push_payload": "{message}"})
+        set_policy("push-http", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={gateway_identifier},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        token = self._create_push_token()
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
+        responses.add(responses.POST, "https://push.example.com/send", status=200)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+        g.serial = token.get_serial()
+
+        success, _, transaction_id, _ = token.create_challenge(options={"g": g})
+
+        self.assertTrue(success)
+        self.assertTrue(transaction_id)
+        request_body = json.loads(responses.calls[0].request.body)
+        self.assertEqual("firebaseT", request_body["device_token"])
+        push_payload = request_body["push_payload"]
+        self.assertEqual(token.get_serial(), push_payload["serial"])
+        _verify_push_payload_signatures(push_payload)
+        remove_token(token.get_serial())
+        delete_policy("push-http")
+        delete_smsgateway(gateway_identifier)
+
+    def test_02c_reject_push_gateway_without_permission(self):
+        gateway_identifier = "push-disabled"
+        set_smsgateway(gateway_identifier,
+                       "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
+                       options={"URL": "https://push.example.com/send", "HTTP_METHOD": "POST"})
+        self.addCleanup(delete_smsgateway, gateway_identifier)
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, gateway_identifier)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+
+        with (self.assertLogs("privacyidea.lib.tokens.pushtoken", logging.WARNING) as logs,
+              self.assertRaisesRegex(ConfigAdminError, "does not support push messages")):
+            token.create_challenge(options={"g": g})
+
+        # The error is returned to the user, so the administrator needs it in the log
+        self.assertIn(f"Token {token.get_serial()} is configured for the SMS gateway "
+                      f"'{gateway_identifier}', which does not allow push messages.", logs.output[0])
+
+    def test_02d_challenge_without_gateway_raises_on_exception(self):
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        token.remove_tokeninfo(PushAction.FIREBASE_CONFIG)
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+
+        with self.assertRaisesRegex(ValidateError, "Can not send via push gateway"):
+            token.create_challenge(options={"g": g, "exception": True})
+
+    def test_02e_gateway_exception_uses_polling_fallback_and_records_metrics(self):
+        token = self._create_push_token()
+        self.addCleanup(remove_token, token.get_serial())
+        gateway = mock.MagicMock()
+        gateway.allows_push_messages.return_value = True
+        gateway.submit_message.side_effect = RuntimeError("gateway unavailable")
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = mock.MagicMock(audit_data={})
+
+        with mock.patch("privacyidea.lib.tokens.pushtoken.create_sms_instance", return_value=gateway), \
+                mock.patch("privacyidea.lib.tokens.pushtoken.observe") as observe_mock, \
+                mock.patch("privacyidea.lib.tokens.pushtoken.inc") as inc_mock:
+            success, message, transaction_id, _ = token.create_challenge(options={"g": g})
+
+        self.assertTrue(success)
+        self.assertTrue(transaction_id)
+        self.assertIn("Use the polling feature", message)
+        labels = {"gateway": self.firebase_config_name}
+        inc_mock.assert_any_call("push_delivery_total", {**labels, "result": "error"})
+        inc_mock.assert_any_call("sms_send_total", {**labels, "result": "failed"})
+        self.assertEqual(2, observe_mock.call_count)
 
     @responses.activate
     def test_03a_api_authenticate_fail(self):
@@ -280,7 +444,7 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with(f"Failed to submit message to Firebase service for token {serial}.")
+                    mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
                     # Check that the user was informed about the need to poll
                     detail = res.json.get("detail")
                     self.assertEqual("Please confirm the authentication on your mobile device! "
@@ -312,7 +476,7 @@ class PushTokenTestCase(MyTestCase):
                 self.assertFalse(result.get("status"))
                 error = result.get("error")
                 self.assertEqual(401, error.get("code"))
-                self.assertEqual("ERR401: Failed to submit message to Firebase service.", error.get("message"))
+                self.assertEqual("ERR401: Failed to submit message to push gateway.", error.get("message"))
 
             # Remove the created challenge
             challenge = get_challenges(serial=token.token.serial)
@@ -337,7 +501,7 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with(f"Failed to submit message to Firebase service for token {serial}.")
+                    mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
             # disallow polling the specific token through a policy
             set_policy("push_poll", SCOPE.AUTH,
@@ -356,7 +520,7 @@ class PushTokenTestCase(MyTestCase):
                     self.assertFalse(result.get("value"))
                     self.assertEqual("CHALLENGE", result.get("authentication"))
                     # Check that the warning was written to the log file.
-                    mock_log.assert_called_with(f"Failed to submit message to Firebase service for token {serial}.")
+                    mock_log.assert_called_with(f"Failed to submit message to push gateway for token {serial}.")
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
 
             # Do the same with the parameter "exception", so that we receive an Error on HTTP
@@ -372,7 +536,7 @@ class PushTokenTestCase(MyTestCase):
                 self.assertFalse(result.get("status"))
                 error = result.get("error")
                 self.assertEqual(401, error.get("code"))
-                self.assertEqual("ERR401: Failed to submit message to Firebase service.", error.get("message"))
+                self.assertEqual("ERR401: Failed to submit message to push gateway.", error.get("message"))
 
             # Check that the challenge is created if the request to firebase
             # succeeded even though polling is disabled
@@ -1853,6 +2017,328 @@ class PushTokenTestCase(MyTestCase):
         token2.delete_token()
         delete_smsgateway(self.firebase_config_name)
 
+    TRIGGER_TEXT = "login from {client_ip} via {ua_browser} ({ua_string}) at {action}"
+
+    def _setup_notification_token(self, policy_suffix):
+        """A poll-only push token owned by cornelius, with a text using the client tags."""
+        self.setUp_user_realms()
+        set_policy(f"push_{policy_suffix}_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy(f"push_{policy_suffix}_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}={self.TRIGGER_TEXT}")
+        token = self._create_push_token()
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        return token
+
+    def _teardown_notification_token(self, token, policy_suffix):
+        delete_policy(f"push_{policy_suffix}_text")
+        delete_policy(f"push_{policy_suffix}_enroll")
+        remove_token(token.get_serial())
+
+    def test_16_poll_answers_with_the_triggering_clients_data(self):
+        # A poll-only token never renders for Firebase, so before the challenge carried the
+        # text, the client tags could only ever be empty in the polled notification.
+        token = self._setup_notification_token("16")
+        serial = token.get_serial()
+        self._trigger_challenge(user_agent="TestPlugin/9.9", client_ip="10.1.2.3")
+
+        expected = "login from 10.1.2.3 via TestPlugin (TestPlugin/9.9) at /validate/check"
+        stored = get_challenges(serial=serial)[0].get_data()["notification"]
+        self.assertEqual(expected, stored["question"])
+        self.assertEqual("privacyIDEA", stored["title"])
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        # The poll request carries the smartphone, not the client that triggered the challenge
+        self.assertIsNone(g.request_headers)
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        polled = res[1]["result"]["value"][0]
+        self.assertEqual(expected, polled["question"])
+        self.assertEqual("privacyIDEA", polled["title"])
+
+        self._teardown_notification_token(token, "16")
+
+    def test_16a_poll_renders_challenge_without_stored_notification(self):
+        # A challenge written by an earlier server version has no notification stored. The
+        # poll still answers - with the empty client tags it had before, not with an error.
+        token = self._setup_notification_token("16a")
+        serial = token.get_serial()
+        db_challenge = Challenge(serial, challenge=b32encode_and_unicode(geturandom()))
+        db_challenge.save()
+        self.assertEqual({}, get_challenges(serial=serial)[0].get_data())
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        self.assertEqual("login from  via  () at ", res[1]["result"]["value"][0]["question"])
+
+        self._teardown_notification_token(token, "16a")
+
+    def test_16b_long_client_header_cannot_break_the_challenge(self):
+        # The User-Agent is the client's to choose and may be kilobytes long. Since the
+        # rendered text is stored, it must not push the encrypted data over the 2000
+        # characters of the column - a truncated ciphertext would lose mode and
+        # correct_answer of the challenge.
+        token = self._setup_notification_token("16b")
+        serial = token.get_serial()
+        self._trigger_challenge(user_agent="TestPlugin/9.9 " + "x" * 8000)
+
+        stored = get_challenges(serial=serial)[0].get_data()
+        question = stored["notification"]["question"]
+        self.assertLessEqual(len(question), MAX_STORED_QUESTION_LENGTH)
+        self.assertIn("TestPlugin", question)
+        # The stored value ends where the cap cut the user agent, it is not the whole header
+        self.assertNotIn("x" * (MAX_CLIENT_TAG_LENGTH + 1), question)
+
+        self.assertLessEqual(len(encryptPassword(json.dumps(stored))), 2000)
+        # The challenge is still readable, so its own fields survived
+        self.assertEqual("push", stored["type"])
+
+        self._teardown_notification_token(token, "16b")
+
+    def test_16c_firebase_and_poll_show_the_same_text(self):
+        # Both ways to the phone have to show the same notification, so the text that goes
+        # to Firebase is the one that is stored - capped included.
+        token = self._setup_notification_token("16c")
+        serial = token.get_serial()
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, self.firebase_config_name)
+
+        with mock.patch("privacyidea.lib.tokens.pushtoken.create_sms_instance") as mock_gateway:
+            mock_gateway.return_value.submit_message.return_value = True
+            self._trigger_challenge(user_agent="TestPlugin/9.9", client_ip="10.1.2.3")
+            firebase_data = mock_gateway.return_value.submit_message.call_args[0][1]
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        polled = res[1]["result"]["value"][0]
+        self.assertEqual(firebase_data["question"], polled["question"])
+        self.assertEqual(firebase_data["title"], polled["title"])
+        self.assertIn("10.1.2.3", firebase_data["question"])
+
+        self._teardown_notification_token(token, "16c")
+
+    def test_16d_poll_signature_covers_the_stored_text(self):
+        # The stored text has to be signed as it is handed out, otherwise the app rejects
+        # the challenge and a correct text would never be seen.
+        token = self._setup_notification_token("16d")
+        serial = token.get_serial()
+        self._trigger_challenge()
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        polled = res[1]["result"]["value"][0]
+        self.assertEqual(get_challenges(serial=serial)[0].get_data()["notification"]["question"],
+                         polled["question"])
+
+        sign_string = "{nonce}|{url}|{serial}|{question}|{title}|{sslverify}".format(**polled)
+        server_pubkey = serialization.load_pem_public_key(to_bytes(self.server_public_key_pem),
+                                                          default_backend())
+        server_pubkey.verify(b32decode(polled["signature"]), sign_string.encode("utf8"),
+                             padding.PKCS1v15(), hashes.SHA256())
+
+        self._teardown_notification_token(token, "16d")
+
+    def test_16e_long_policy_text_is_capped_when_stored(self):
+        # A text that is long by policy rather than by header hits the second cap
+        self.setUp_user_realms()
+        set_policy("push_16e_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_16e_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}={'A' * 700},"
+                          f"{PushAction.MOBILE_TITLE}={'T' * 200}")
+        token = self._create_push_token()
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        serial = token.get_serial()
+        self._trigger_challenge()
+
+        challenge_data = get_challenges(serial=serial)[0].get_data()
+        stored = challenge_data["notification"]
+        self.assertEqual(MAX_STORED_QUESTION_LENGTH, len(stored["question"]))
+        self.assertEqual(MAX_STORED_TITLE_LENGTH, len(stored["title"]))
+        self.assertLessEqual(len(encryptPassword(json.dumps(challenge_data))), 2000)
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        self.assertEqual(stored["question"], res[1]["result"]["value"][0]["question"])
+
+        delete_policy("push_16e_text")
+        delete_policy("push_16e_enroll")
+        remove_token(serial)
+
+    def test_16f_each_challenge_keeps_its_own_client(self):
+        # Two logins are open at the same time, so the text belongs to the challenge and
+        # not to the token.
+        token = self._setup_notification_token("16f")
+        serial = token.get_serial()
+        self._trigger_challenge(user_agent="FirstPlugin/1.0", client_ip="10.0.0.1")
+        self._trigger_challenge(user_agent="SecondPlugin/2.0", client_ip="10.0.0.2")
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        questions = sorted(c["question"] for c in res[1]["result"]["value"])
+        self.assertEqual(["login from 10.0.0.1 via FirstPlugin (FirstPlugin/1.0) at /validate/check",
+                          "login from 10.0.0.2 via SecondPlugin (SecondPlugin/2.0) at /validate/check"],
+                         questions)
+
+        self._teardown_notification_token(token, "16f")
+
+    def test_16g_code_to_phone_retrigger_without_earlier_challenge(self):
+        # A code_to_phone re-trigger whose transaction has no earlier challenge leaves the
+        # challenge data at None, which the notification must not stumble over.
+        token = self._setup_notification_token("16g")
+        serial = token.get_serial()
+        set_policy("push_16g_code", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+
+        token.create_challenge(transactionid="01234567890123456789",
+                               options={"g": g, "push_triggered": True})
+
+        stored = get_challenges(serial=serial)[0].get_data()
+        self.assertIn("notification", stored)
+        self.assertEqual("login from  via  () at ", stored["notification"]["question"])
+
+        delete_policy("push_16g_code")
+        self._teardown_notification_token(token, "16g")
+
+    def test_16h_presence_challenge_keeps_options_and_notification(self):
+        # The notification shares the challenge data with the presence options, so neither
+        # may push out the other.
+        token = self._setup_notification_token("16h")
+        serial = token.get_serial()
+        set_policy("push_16h_presence", scope=SCOPE.AUTH, action=f"{PushAction.REQUIRE_PRESENCE}=1")
+        self._trigger_challenge()
+
+        stored = get_challenges(serial=serial)[0].get_data()
+        self.assertEqual(PushMode.REQUIRE_PRESENCE, stored["mode"])
+        self.assertIn(stored["correct_answer"], stored["options"])
+        self.assertIn("10.1.2.3", stored["notification"]["question"])
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        polled = res[1]["result"]["value"][0]
+        self.assertEqual(",".join(stored["options"]), polled["require_presence"])
+        self.assertEqual(stored["notification"]["question"], polled["question"])
+
+        delete_policy("push_16h_presence")
+        self._teardown_notification_token(token, "16h")
+
+    def test_16i_stored_text_survives_a_client_specific_policy(self):
+        # The poll matches policies against the smartphone, so a text policy bound to the
+        # authenticating client would not be found there. The stored text does not care.
+        self.setUp_user_realms()
+        set_policy("push_16i_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_16i_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}={self.TRIGGER_TEXT}", client="10.1.2.3")
+        token = self._create_push_token()
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        serial = token.get_serial()
+
+        self._trigger_challenge(client_ip="10.1.2.3")
+        triggered_nonce = get_challenges(serial=serial)[0].challenge
+        # A challenge without a stored text, as an earlier server version left it behind
+        legacy_nonce = b32encode_and_unicode(geturandom())
+        create_challenge(serial, challenge=legacy_nonce)
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.client_ip = "192.168.0.99"
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        polled = {c["nonce"]: c["question"] for c in res[1]["result"]["value"]}
+        self.assertEqual("login from 10.1.2.3 via TestPlugin (TestPlugin/9.9) at /validate/check",
+                         polled[triggered_nonce])
+        # The policy does not match the polling client, so the challenge without a stored
+        # text falls back to the default - this is what every challenge looked like before.
+        self.assertEqual(str(DEFAULT_MOBILE_TEXT), polled[legacy_nonce])
+
+        delete_policy("push_16i_text")
+        delete_policy("push_16i_enroll")
+        remove_token(serial)
+
+    def test_16j_enrollment_challenge_gets_no_notification(self):
+        # An enrollment challenge is not a login request, so there is no client to name
+        token = self._setup_notification_token("16j")
+        serial = token.get_serial()
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        g.audit_object = FakeAudit()
+
+        token.create_challenge(options={"g": g, "session": ChallengeSession.ENROLLMENT})
+
+        self.assertNotIn("notification", get_challenges(serial=serial)[0].get_data())
+        self._teardown_notification_token(token, "16j")
+
+    def test_16k_unformattable_text_falls_back_to_the_default(self):
+        # A text the policy cannot format must not fail the authentication - the default
+        # is what reaches the phone, and what is stored.
+        self.setUp_user_realms()
+        set_policy("push_16k_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_16k_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}=login from {{nope}}")
+        token = self._create_push_token()
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        serial = token.get_serial()
+        self._trigger_challenge()
+
+        stored = get_challenges(serial=serial)[0].get_data()["notification"]
+        self.assertEqual(str(DEFAULT_MOBILE_TEXT), stored["question"])
+
+        delete_policy("push_16k_text")
+        delete_policy("push_16k_enroll")
+        remove_token(serial)
+
+    def test_16l_non_ascii_text_is_capped_by_encoded_size(self):
+        # The per-field character cap alone does not bound the stored size: json.dumps
+        # escapes every non-ASCII character to a \uXXXX sequence, so a question that is
+        # within MAX_STORED_QUESTION_LENGTH characters can still blow up the encoded
+        # JSON well past MAX_NOTIFICATION_JSON_LENGTH. The safety net has to catch that.
+        self.setUp_user_realms()
+        set_policy("push_16l_enroll", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_16l_text", scope=SCOPE.AUTH,
+                   action=f"{PushAction.MOBILE_TEXT}={'ü' * 500}")
+        token = self._create_push_token()
+        token.write_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
+        token.set_pin("pushpin")
+        token.add_user(User("cornelius", self.realm1))
+        serial = token.get_serial()
+
+        with LogCapture(level=logging.WARNING) as lc:
+            self._trigger_challenge()
+            lc.check_present(("privacyidea.lib.tokens.pushtoken", "WARNING", mock.ANY))
+
+        challenge_data = get_challenges(serial=serial)[0].get_data()
+        stored = challenge_data["notification"]
+        # The character cap alone would have left 500 characters standing
+        self.assertLess(len(stored["question"]), 500)
+        self.assertLessEqual(len(json.dumps(challenge_data)), MAX_NOTIFICATION_JSON_LENGTH)
+        self.assertLessEqual(len(encryptPassword(json.dumps(challenge_data))), 2000)
+
+        g = FakeFlaskG()
+        g.policy_object = PolicyClass()
+        res = PushTokenClass.api_endpoint(self._poll_request(serial), g)
+        self.assertEqual(stored["question"], res[1]["result"]["value"][0]["question"])
+
+        delete_policy("push_16l_text")
+        delete_policy("push_16l_enroll")
+        remove_token(serial)
+
     @responses.activate
     def test_20_api_authenticate_two_tokens(self):
         # Test the /validate/check endpoints, user has two push tokens, require presence
@@ -2070,6 +2556,30 @@ class PushTokenTestCase(MyTestCase):
 
         remove_token(token.get_serial())
 
+    def test_23a_build_smartphone_data_normalizes_an_invalid_sslverify_policy_value(self):
+        token = self._create_push_token()
+        with mock.patch("privacyidea.lib.tokens.pushtoken.get_action_values_from_options",
+                        return_value="maybe"):
+            smartphone_data = _build_smartphone_data(token, "NONCE", REGISTRATION_URL,
+                                                      self.server_private_key_pem, options={})
+        self.assertEqual(smartphone_data["sslverify"], "1")
+        remove_token(token.get_serial())
+
+    def test_23b_build_mobile_notification_survives_a_broken_user_lookup(self):
+        token = self._create_push_token()
+        with mock.patch("privacyidea.lib.tokenclass.TokenClass.user",
+                        new_callable=mock.PropertyMock, side_effect=Exception("boom")):
+            smartphone_data = _build_smartphone_data(token, "NONCE", REGISTRATION_URL,
+                                                      self.server_private_key_pem, options={})
+        self.assertIn("question", smartphone_data)
+        remove_token(token.get_serial())
+
+    def test_23c_fit_notification_to_storage_budget_truncates_an_oversized_question(self):
+        data = {"notification": {"question": "x" * 2000, "title": "y" * 200}}
+        fitted = _fit_notification_to_storage_budget(data)
+        self.assertLessEqual(len(json.dumps(fitted)), MAX_NOTIFICATION_JSON_LENGTH)
+        self.assertLess(len(fitted["notification"]["question"]), 2000)
+
     @responses.activate
     def test_24_notification_names_the_triggering_client(self):
         # The tags of the client that triggered the challenge are filled in the notification
@@ -2132,3 +2642,36 @@ class PushCapabilitiesTestCase(MyTestCase):
         # reproduce. Guards against an accidental format/shape change.
         signed = rfc8785.dumps({"capabilities": SERVER_PUSH_CAPABILITIES, "nonce": "ABC123"})
         self.assertEqual(b'{"capabilities":{"decline_reason":true},"nonce":"ABC123"}', signed)
+
+
+class PushChallengeAnswerAuditTestCase(MyTestCase):
+    """The audit detail a smartphone's answer to a push challenge is recorded as."""
+
+    @staticmethod
+    def _g_with_audit():
+        g = FakeFlaskG()
+        g.audit_object = FakeAudit()
+        return g
+
+    def test_01_answer_is_recorded(self):
+        g = self._g_with_audit()
+        _log_challenge_answer(g, "12345", "declined")
+        self.assertEqual("transaction_id: 12345, status: declined",
+                         g.audit_object.audit_data["action_detail"])
+
+    def test_02_reason_is_recorded_alongside_the_status(self):
+        g = self._g_with_audit()
+        _log_challenge_answer(g, "12345", "declined", reason="unknown_trigger")
+        self.assertEqual("transaction_id: 12345, status: declined, reason: unknown_trigger",
+                         g.audit_object.audit_data["action_detail"])
+
+    def test_03_a_second_answer_keeps_the_first(self):
+        # Several push tokens of one user share a transaction_id and the finalizing
+        # request evaluates every one of them, so this runs more than once per request
+        # - and a request has a single audit entry to write all of them to.
+        g = self._g_with_audit()
+        _log_challenge_answer(g, "12345", "cancelled")
+        _log_challenge_answer(g, "12345", "declined", reason="unknown_trigger")
+        self.assertEqual("transaction_id: 12345, status: cancelled,"
+                         "transaction_id: 12345, status: declined, reason: unknown_trigger",
+                         g.audit_object.audit_data["action_detail"])

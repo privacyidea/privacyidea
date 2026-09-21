@@ -1,0 +1,8 @@
+@use "@angular/material";
+
+.button-row {
+  display: flex;
+  flex-direction: row;
+  align-items: start;
+  gap: 16px;
+}

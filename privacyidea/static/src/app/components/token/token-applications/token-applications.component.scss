@@ -1,0 +1,6 @@
+@use "styles";
+
+.token-applications {
+  @include styles.main-component-style;
+  display: grid;
+}

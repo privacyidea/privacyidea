@@ -1,0 +1,76 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { Component, inject } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { ChallengesService, ChallengesServiceInterface } from "@services/token/challenges/challenges.service";
+import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
+
+@Component({
+  selector: "app-challenges-table-actions",
+  standalone: true,
+  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, OverflowNavDirective],
+  templateUrl: "./challenges-table-actions.component.html"
+})
+export class ChallengesTableActionsComponent {
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly challengesService: ChallengesServiceInterface = inject(ChallengesService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+
+  readonly advancedApiFilterKeys = this.challengesService.advancedApiFilterKeys;
+
+  onDeleteExpiredChallenges(): void {
+    this.challengesService.deleteExpiredChallenges().subscribe({
+      next: () => {
+        this.challengesService.challengesResource.reload();
+      },
+      error: (err) => {
+        const message =
+          err?.error?.result?.error?.message ??
+          $localize`:@@token.failedDeleteExpired:Failed to delete expired challenges.`;
+        this.notificationService.error(message);
+      }
+    });
+  }
+
+  toggleFilter(filterKeyword: string): void {
+    this.challengesService.updateFilter((current) =>
+      this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: current
+      })
+    );
+  }
+
+  onAdvancedFilterClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+  }
+
+  getFilterIconName(keyword: string): string {
+    const isSelected = this.challengesService.activeFilter().hasKey(keyword);
+    return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+}
