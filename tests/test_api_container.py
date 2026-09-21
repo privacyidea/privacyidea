@@ -397,6 +397,31 @@ class APIContainerSynchronization(APIContainerTest):
 
         delete_policy("challenge_ttl")
 
+    def test_09a_challenge_scope_is_limited_to_client_operations(self):
+        registration = self.register_smartphone_success()
+        serial = registration.mock_smph.container_serial
+
+        # The operations a client performs itself all get a challenge
+        for operation in ["container/synchronize", "container/register/terminate/client",
+                          "container/rollover"]:
+            self.request_assert_success('container/challenge',
+                                        {"scope": f"https://pi.net/{operation}",
+                                         "container_serial": serial}, None, 'POST')
+
+        # Finalizing a registration is not a client-initiated operation: its challenge is minted
+        # on the registration path, so it cannot be asked for here.
+        self.request_assert_error(400, "container/challenge",
+                                  {"scope": "https://pi.net/container/register/finalize",
+                                   "container_serial": serial}, None, "POST",
+                                  error_code=905, try_unspecific=False)
+
+        # Neither can anything else
+        for scope in ["https://pi.net/container/", "https://other.example.com/collect",
+                       "https://pi.net/token/init"]:
+            self.request_assert_error(400, "container/challenge",
+                                      {"scope": scope, "container_serial": serial}, None, "POST",
+                                      error_code=905, try_unspecific=False)
+
     def test_10_challenge_fail(self):
         # container does not exists
         scope = "https://pi.net/container/synchronize"
