@@ -45,6 +45,7 @@ from ..lib.clients import (get_client, get_clients, create_client, update_client
                            rotate_client_key, delete_client, client_to_dict)
 from ..lib.remembered_device import (get_client_device, get_client_devices,
                                revoke_client_devices, revoke_devices, devices_to_dicts, user_identity)
+from ..lib.policies.helper import admin_granted_realms
 from ..lib.realm import get_realm_id
 from ..lib.user import User
 
@@ -63,14 +64,13 @@ def _allowed_realm_ids(action):
     realms for the given action (mirroring the tokenlist scoping) so those paths
     can enforce the same restriction. An empty set means "no realms".
     """
-    from ..lib.policy import Match, SCOPE
+    from ..lib.policy import SCOPE
     if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
         return None
-    realm_ids = set()
-    for pol in Match.admin(g, action=action).policies():
-        if not pol.get("realm"):
-            return None
-        realm_ids.update(get_realm_id(name) for name in pol.get("realm"))
+    granted_realms = admin_granted_realms(action)
+    if granted_realms is None:
+        return None
+    realm_ids = {get_realm_id(name) for name in granted_realms}
     realm_ids.discard(None)
     return realm_ids
 

@@ -207,6 +207,38 @@ def own_entries_scope(login: str, realm: str) -> "AuthenticationLogVisibilitySco
     return None
 
 
+def admin_granted_realms(action: str) -> list[str] | None:
+    """
+    The realms the logged-in admin's policies grant for *action*, as the union over every applicable policy.
+
+    The realm-only counterpart of :func:`get_policy_visibility_scopes`, for the callers that need to answer
+    "may this admin act in realm X" rather than build a query condition. Three answers, and they are not
+    interchangeable:
+
+    * ``None`` - unrestricted. At least one applicable policy carries no realm, which grants every realm.
+    * a non-empty list - restricted to exactly these realms, deduplicated in the order the policies name
+      them, because a caller that has to reduce them to a single realm picks the first.
+    * an empty list - **no applicable policy at all**. This is deliberately not folded into ``None``: the
+      callers disagree about what it means (deny everything, or defer to the action check that already ran)
+      and the disagreement is harmless only because every caller runs behind ``check_base_action`` for the
+      same action, which refuses this case before they are reached. A caller that is not behind that check
+      has to decide for itself.
+
+    adminrealm, adminuser and policy conditions need no handling here: ``Match.admin(...).policies()``
+    already returns only the policies applicable to the current admin and request.
+
+    :param action: the policy action whose realm scoping to read
+    :return: the granted realm names, or ``None`` for unrestricted
+    """
+    granted_realms = {}
+    for policy in Match.admin(g, action=action).policies():
+        policy_realms = policy.get("realm")
+        if not policy_realms:
+            return None
+        granted_realms.update(dict.fromkeys(policy_realms))
+    return list(granted_realms)
+
+
 def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibilityScope"] | None:
     """
     Determine the visibility boundary for *action*: which records the logged-in principal may act on, expressed as

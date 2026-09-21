@@ -92,7 +92,8 @@ from privacyidea.lib.error import (PolicyError, RegistrationError,
                                    TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
+from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth_success,
+                                             DEFAULT_JWT_VALIDITY, admin_granted_realms)
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
 from privacyidea.lib.realm import get_realms
@@ -318,27 +319,15 @@ def realmadmin(request=None, action=None):
             # An empty realm (e.g. "?realm=") is treated the same as an absent one:
             # otherwise a realm-restricted admin would be evaluated against an
             # empty realm instead of falling back to their granted realm(s).
-            # Collect the union of realms from every matching policy.
-            matching_policies = Match.admin(g, action=action).policies()
-            if matching_policies:
-                all_realms = []
-                for pol in matching_policies:
-                    pol_realms = pol.get("realm")
-                    if not pol_realms:
-                        # A policy with no realm restriction means
-                        # "all realms" — leave request.all_data without
-                        # a realm filter so the downstream function
-                        # queries every realm.
-                        all_realms = []
-                        break
-                    all_realms.extend(pol_realms)
-                if all_realms:
-                    # Deduplicate while preserving order
-                    unique_realms = list(dict.fromkeys(all_realms))
-                    if len(unique_realms) == 1 or action != PolicyAction.USERLIST:
-                        request.all_data["realm"] = unique_realms[0]
-                    else:
-                        request.all_data["realm"] = unique_realms
+            # A policy with no realm restriction means "all realms", and so does no matching policy at
+            # all: both leave request.all_data without a realm filter so the downstream function queries
+            # every realm.
+            granted_realms = admin_granted_realms(action)
+            if granted_realms:
+                if len(granted_realms) == 1 or action != PolicyAction.USERLIST:
+                    request.all_data["realm"] = granted_realms[0]
+                else:
+                    request.all_data["realm"] = granted_realms
 
     return True
 
@@ -363,20 +352,17 @@ def resolver_realm_access(request=None, action=None):
     if not resolver:
         return True
 
-    granted_realms = set()
-    for policy in Match.admin(g, action=action).policies():
-        policy_realms = policy.get("realm")
-        if not policy_realms:
-            # A policy without a realm restriction grants every realm
-            return True
-        granted_realms.update(policy_realms)
+    granted_realms = admin_granted_realms(action)
+    if granted_realms is None:
+        # A policy without a realm restriction grants every realm
+        return True
     if not granted_realms:
         # No matching policy at all, check_base_action decides whether the action is allowed
         return True
 
     resolver_realms = {realm for realm, realm_config in get_realms().items()
                        if resolver in [entry.get("name") for entry in realm_config.get("resolver", [])]}
-    if not resolver_realms & granted_realms:
+    if not resolver_realms & set(granted_realms):
         raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
 
     return True
