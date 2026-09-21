@@ -64,12 +64,12 @@ def _allowed_realm_ids(action):
     realms for the given action (mirroring the tokenlist scoping) so those paths
     can enforce the same restriction. An empty set means "no realms".
     """
-    from ..lib.policy import SCOPE
-    if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
-        return None
     granted_realms = admin_granted_realms(action)
     if granted_realms is None:
         return None
+    # An empty answer means the admin is restricted along a dimension a realm list cannot carry
+    # (a policy scoped by user or resolver and carrying no realm). An empty set of realm ids
+    # matches no row, which is the refusal these paths express.
     realm_ids = {get_realm_id(name) for name in granted_realms}
     realm_ids.discard(None)
     return realm_ids

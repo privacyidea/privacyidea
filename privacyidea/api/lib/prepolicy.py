@@ -323,6 +323,11 @@ def realmadmin(request=None, action=None):
             # all: both leave request.all_data without a realm filter so the downstream function queries
             # every realm.
             granted_realms = admin_granted_realms(action)
+            # NOTE: an empty answer (restricted by user or resolver, with no realm) leaves the realm
+            # unset here and so queries every realm. That is the same shape as the remembered-device
+            # defect this function's helper documents, but it has not been reproduced for the user
+            # listing, and guessing at it would change what a legitimate configuration lists. It is
+            # recorded as a suspected sibling to verify rather than silently altered.
             if granted_realms:
                 if len(granted_realms) == 1 or action != PolicyAction.USERLIST:
                     request.all_data["realm"] = granted_realms[0]
@@ -354,11 +359,12 @@ def resolver_realm_access(request=None, action=None):
 
     granted_realms = admin_granted_realms(action)
     if granted_realms is None:
-        # A policy without a realm restriction grants every realm
+        # Nothing restricts this admin: no admin policy at all, or one that carries no target scope
         return True
     if not granted_realms:
-        # No matching policy at all, check_base_action decides whether the action is allowed
-        return True
+        # Restricted along a dimension a realm list cannot carry, so this resolver cannot be shown to
+        # be inside the boundary. Refuse rather than widen it.
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
 
     resolver_realms = {realm for realm, realm_config in get_realms().items()
                        if resolver in [entry.get("name") for entry in realm_config.get("resolver", [])]}

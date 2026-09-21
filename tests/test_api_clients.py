@@ -711,6 +711,25 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         finally:
             delete_policy("clients_scoped")
 
+    def test_17b_revoke_all_for_client_respects_a_user_scoped_policy(self):
+        # An admin policy may be scoped by user or resolver instead of by realm. A realm list cannot
+        # express such a boundary, and reading "no realm on the policy" as "every realm" hands an
+        # admin granted one named user the power to revoke every user's devices: the request carries
+        # no user, and a policy dimension whose search value is None is skipped when matching.
+        client, _ = create_client("user scoped client", "privacyidea-cp")
+        keep_one = self._device(client.id, "cornelius", realm=self.realm1).series_id
+        keep_two = self._device(client.id, "hans", realm=self.realm1).series_id
+        set_policy("clients_user_scoped", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_REVOKE, user="alice")
+        try:
+            res = self._revoke_all(client.id)
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(0, res.json['result']['value'], res.json)
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_one).first())
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_two).first())
+        finally:
+            delete_policy("clients_user_scoped")
+
     def test_18_revoke_single_respects_admin_realm_scope(self):
         set_realm("xcscope", [{"name": self.resolvername1}])
         client, _ = create_client("scoped single client", "privacyidea-cp")

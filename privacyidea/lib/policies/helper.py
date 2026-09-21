@@ -215,25 +215,38 @@ def admin_granted_realms(action: str) -> list[str] | None:
     "may this admin act in realm X" rather than build a query condition. Three answers, and they are not
     interchangeable:
 
-    * ``None`` - unrestricted. At least one applicable policy carries no realm, which grants every realm.
+    * ``None`` - unrestricted, which means one of two things: the installation defines no active admin
+      policy at all, or an applicable policy carries no target scope whatsoever. Only the second is
+      "this policy grants every realm"; the first is "nothing is restricted here yet".
     * a non-empty list - restricted to exactly these realms, deduplicated in the order the policies name
       them, because a caller that has to reduce them to a single realm picks the first.
-    * an empty list - **no applicable policy at all**. This is deliberately not folded into ``None``: the
-      callers disagree about what it means (deny everything, or defer to the action check that already ran)
-      and the disagreement is harmless only because every caller runs behind ``check_base_action`` for the
-      same action, which refuses this case before they are reached. A caller that is not behind that check
-      has to decide for itself.
+    * an **empty list - restricted, but not to anything this function can name.** An applicable policy is
+      scoped by ``user`` or ``resolver`` and carries no realm, so the admin is restricted while the
+      restriction has no realm to express it with. **Every caller must refuse.** Reading this as
+      unrestricted is precisely the defect this function was written with: a policy granting
+      ``remembered_device_revoke`` for one named user matched a request that named no user at all - a
+      dimension whose search value is ``None`` is skipped by ``list_policies`` - and the caller then
+      revoked every user's devices in every realm. A caller that needs the user and resolver dimensions
+      rather than just a yes/no should use :func:`get_policy_visibility_scopes`, which carries all three.
 
     adminrealm, adminuser and policy conditions need no handling here: ``Match.admin(...).policies()``
     already returns only the policies applicable to the current admin and request.
 
     :param action: the policy action whose realm scoping to read
-    :return: the granted realm names, or ``None`` for unrestricted
+    :return: the granted realm names, ``None`` for unrestricted, or an empty list for "refuse"
     """
+    if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
+        # No admin policy anywhere: nothing is restricted, which is not the same as a policy granting
+        # everything, but has the same answer here.
+        return None
     granted_realms = {}
     for policy in Match.admin(g, action=action).policies():
         policy_realms = policy.get("realm")
         if not policy_realms:
+            if policy.get("resolver") or policy.get("user"):
+                # Scoped, but along a dimension a realm list cannot carry. Say "refuse" rather than
+                # silently widening it to every realm.
+                return []
             return None
         granted_realms.update(dict.fromkeys(policy_realms))
     return list(granted_realms)
