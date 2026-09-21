@@ -3398,8 +3398,8 @@ class ValidateAPITestCase(MyApiTestCase):
                 self.assertEqual(400, res.status_code, res.data)
                 self.assertEqual(b'', res.data)
                 # The shaped replacement response must still carry the shared
-                # after_request no-cache guarantee.
-                self.assertEqual("no-cache", res.headers.get("Cache-Control"), res.headers)
+                # after_request caching guarantee.
+                self.assertEqual("no-store", res.headers.get("Cache-Control"), res.headers)
 
         # A revoked token raises TokenAdminError -> still an empty 400
         revoke_token("spass_radius_err")
@@ -3408,7 +3408,7 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(400, res.status_code, res.data)
             self.assertEqual(b'', res.data)
-            self.assertEqual("no-cache", res.headers.get("Cache-Control"), res.headers)
+            self.assertEqual("no-store", res.headers.get("Cache-Control"), res.headers)
 
         # Malformed application/json makes get_all_params() raise before the
         # view and Flask produces a non-JSON (HTML) 400. /validate/radiuscheck
