@@ -101,6 +101,15 @@
   the abstract base class rather than a usable provider, so a gateway pointing at it needs
   declaring like any other non-shipped class.
 
+* **The action and the position of an event handler definition are now checked when it is
+  saved.** `POST /event` previously accepted any string for `action` and `position` and stored
+  the binding, which then failed when its event occurred. Both are now checked against the
+  actions and positions the chosen handler module defines, and a definition naming something else
+  is refused with an error that lists the valid values. The WebUI only ever offers valid values,
+  so this is only visible to a script or an integration that posts event definitions itself.
+  Importing an event configuration (`pi-manage config import`) is **not** affected — it does not
+  go through this endpoint.
+
 * **A new policy action `token_rollover` is required to roll a token over.** `POST /token/init` updates a token when it
   is called with the serial of a token that already exists. While the enrollment of that token is still under way — the
   second request of a two-step or a FIDO2 enrollment, a token waiting to be verified — that is part of the enrollment

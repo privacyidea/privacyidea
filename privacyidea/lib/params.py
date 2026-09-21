@@ -151,6 +151,28 @@ def get_optional_int(param: dict, key: str, default: int | None = None) -> int |
         raise ParameterError(f"Invalid value for parameter {key}: expected an integer.", id=905)
 
 
+def require_in(value: Any, allowed: Iterable[Any], key: str) -> Any:
+    """
+    Check a parameter against the set of values that exist for it.
+
+    This is for a parameter that does not carry free text but names something the server
+    then looks up - a handler module, an action, a position. Checking it where it enters
+    means the lookup is only ever reached with a name that exists, and that the caller is
+    told which names do, instead of the request failing further in with a message about an
+    object that could not be found.
+
+    :param value: the value the request supplied
+    :param allowed: the values that exist for this parameter
+    :param key: the name of the parameter, for the error message
+    :raises ParameterError: if the value is not one of the allowed ones
+    :return: the value
+    """
+    allowed = list(allowed)
+    if value not in allowed:
+        raise ParameterError(f"Unknown {key}: {value}. Allowed are: {', '.join(sorted(map(str, allowed)))}")
+    return value
+
+
 def get_pagination_params(param: dict, default_page_size: int = 15) -> tuple[int, int]:
     """
     Get the ``page`` and ``pagesize`` parameters of a paginated listing.
