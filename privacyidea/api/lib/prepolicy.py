@@ -2149,6 +2149,11 @@ def webauthntoken_request(request, action):
     :return:
     :rtype:
     """
+    # The origin is what binds an assertion to the site it was made for, so it may only come from the
+    # request itself. It is set from the environment further down, but only for a request recognised as
+    # a WebAuthn one; dropping a parameter of the same name here means a request that is not recognised
+    # reaches the verifier without an origin, and is refused, rather than with the one the client chose.
+    request.all_data.pop("HTTP_ORIGIN", None)
 
     scope = None
 
