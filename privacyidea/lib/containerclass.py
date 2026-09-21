@@ -698,7 +698,7 @@ class TokenContainerClass:
         """
         Create a challenge for the container.
         """
-        return {}
+        raise NotImplementedError("Challenge-response is not implemented for this container type.")
 
     def validate_challenge(self, signature: bytes, public_key: EllipticCurvePublicKey, scope: str,
                            transaction_id: str = None, key: str = None, container: str = None, device_brand: str = None,
