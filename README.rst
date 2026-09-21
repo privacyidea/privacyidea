@@ -106,6 +106,13 @@ additional dependencies::
 You may also want to read the blog post about development and debugging at
 https://www.privacyidea.org/privacyidea-development-howto/
 
+In such a checkout the version reported by the API and shown in the WebUI is
+derived from ``git describe``, so that it follows the branch you are working on.
+An installed privacyIDEA has no repository next to the package and reports the
+version of the installed distribution instead. For a source tree without a
+repository, such as an exported archive, the environment variable
+``PRIVACYIDEA_DEV_VERSION`` overrides both and displays the given version.
+
 Running it
 ==========
 
