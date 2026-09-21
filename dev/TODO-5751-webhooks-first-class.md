@@ -98,12 +98,29 @@ changes so each phase produces a testable unit.
 - [x] **No deduplication** — two handlers posting to the same URL produce two webhook objects (safe,
   behaviour-preserving)
 - [x] Migration moves **no secrets** (current handler has no auth) — plaintext only
-- [x] Must be **idempotent** (re-running is a no-op if rows already exist)
+- [x] Must be **idempotent** — including after a run that failed *partway through*. Migrations run under
+  `isolation_level="AUTOCOMMIT"`, so a webhook row is durable the moment it is written and nothing rolls it back
+  if the handler-option insert then fails. Keying the skip on that option row alone made the documented advice ("re-run,
+  it resumes where it stopped") fail with a `uq_webhook_identifier` violation on every later attempt.
+  The re-run now **adopts** a webhook row an earlier run of this migration left behind.
+- [x] **Ownership of a `webhook` row is recorded on the row** (`MIGRATION_MARKER` in its `description`), not
+  inferred from the `from_<name>_<id>` naming, which says what a row is *called* and not who created it. Matched
+  by the resume check and by `restore_snapshot()` — the two places that act on a `webhook` table that stays
+  standing. A webhook of the colliding name that is *not* marked is left alone and the handler stays on its
+  inline configuration, with a warning: adopting it would point the handler at an endpoint nobody chose for it.
+- [x] `downgrade()` needs none of that — it drops the `webhook` table, which takes every row with it, so
+  selecting rows to delete first would be a statement with no observable effect. What it does have to get right
+  is `eventhandleroption`, which survives it: it removes **every** `webhook` option row, including one an
+  administrator wrote by hand. Keeping theirs would not preserve it but break it twice — the option would point
+  at a webhook the downgrade destroyed, and the next upgrade's idempotency check ("this handler already has a
+  webhook option") would skip that handler, so it would never get a working webhook object either. Removed, the
+  handler falls back to its inline options and a later upgrade migrates it cleanly. Extracted to
+  `_remove_webhook_handler_options(conn)` for the same testability reason as `_run_data_migration(conn)`.
 - [x] Legacy content_type values (`json`, `urlencoded`) normalized to MIME types
 - [x] `timeout=10` preserves existing handler behaviour (vs. new default of 3)
 - [x] Core logic extracted to `_run_data_migration(conn)` for testability
 
-**Tests:** ✅ `tests/test_migration_e1f2a3b4c5d6.py` — 11 tests, all passing
+**Tests:** ✅ `tests/test_migration_e1f2a3b4c5d6.py` — 29 tests, all passing
 
 - [x] Test migration on a DB with 0 webhook handlers (no-op)
 - [x] Test migration with 1 handler (produces 1 webhook object)
@@ -115,6 +132,13 @@ changes so each phase produces a testable unit.
 - [x] Test non-WebHook handlers are ignored
 - [x] Test special characters in handler name are sanitized
 - [x] Test missing content_type defaults to application/json
+- [x] Test created webhook rows carry the marker
+- [x] Test a re-run adopts the webhook a crashed run left behind, and stays idempotent afterwards
+- [x] Test a foreign webhook of the same name is not hijacked
+- [x] Test `downgrade()` drops the handler link and leaves the inline configuration intact
+- [x] Test `downgrade()` drops a hand-made link too, and the next upgrade then migrates that handler
+  cleanly instead of skipping it
+- [x] Test `restore_snapshot()` clears the orphan a crashed run left behind, so the upgrade can start over
 
 ### 1.4 — Pre-migration snapshot (safety net) ✅
 
@@ -354,7 +378,15 @@ reachable at all, since an admin can't otherwise tell what enabling the guard wo
     - `PI_OUTBOUND_GUARD` — `off` (default) / `warn` (check + log, request still sent) / `enforce`
       (rejected request is not sent). An unrecognised value logs a warning and falls back to `off`.
     - `PI_OUTBOUND_GUARD_ALLOW` — list of CIDR and/or `host[:port]` entries (`_entry_matches()`), checked both against
-      the configured hostname (before any DNS lookup) and against every resolved address
+      the configured hostname (before any DNS lookup) and against every resolved address. A bare IPv6 address is
+      accepted bracketed or not (`::1` as well as `[::1]`) — that is the spelling `BLOCKED_NETWORKS` uses, so it is
+      the spelling an admin reads off the blocked list when writing an exception for it; bracketing is only needed
+      to attach a port. Addresses are compared as addresses, so `0:0:0:0:0:0:0:1` matches `::1`. A malformed entry
+      matches nothing rather than failing the delivery it was meant to permit.
+- [x] Nothing in the guard path raises: a target URL whose port cannot be parsed (`_validate()` only checks the
+  scheme prefix, so one can be stored) is a *rejection*, and `_guard_config()` / `check_outbound_target()` run
+  inside `fire_webhook()`'s `try` along with the request setup. `fire_webhook()` promising never to raise is not
+  cosmetic — an event handler configured to abort on error would otherwise fail the API request that triggered it.
 - [x] Check 1 — scheme allowlist — **already implemented**, unconditionally, not gated by the guard:
   `_validate_webhook_params()` in `privacyidea/lib/webhook.py:130` rejects any URL that doesn't start with `http://`/
   `https://` at `set_webhook()` time. Nothing to do here for 2.4; listed for completeness against the addendum's
@@ -678,36 +710,55 @@ than a "lockout" one — it notifies and restricts nothing.
 
 ---
 
-## Phase 7 — WebUI (static)
+## Phase 7 — WebUI (static) ✅
 
 > Goal: Admins can manage webhooks in the new UI and select them from dropdowns.
 
-### 7.1 — Webhook configuration section
+### 7.1 — Webhook configuration section ✅
 
-- [ ] **Location:** `privacyidea/static/` (appropriate directory)
-- [ ] List view: show all configured webhooks (identifier, URL, auth type)
-- [ ] Add/Edit form:
-    - Identifier, description, URL, HTTP method
-    - Content-Type, default payload
-    - Auth type selector → conditionally show basic auth fields / mTLS fields / header auth note
-    - TLS verification toggle, CA bundle path
-    - Proxy settings
-    - Timeout
-    - Headers table (key, value, encrypted toggle) — add/remove rows
-- [ ] **Test button**: fire test request, show status code + response
-- [ ] Delete with confirmation
+- [x] **Service:** `privacyidea/static/src/app/services/webhook/webhook.service.ts` — the `httpResource`
+  over `GET /webhook/`, gated on `webhook_read` and on being on a page that uses the list (the webhook
+  page itself or the conditional-access editor), the way `SmtpService` is. `postWebhook()` flattens the
+  header table into the `header.*` / `secret.header.*` parameters the API takes, and sends
+  `clear_headers` when the table was emptied — with no `header.*` parameter the server keeps the stored
+  set, so removing the last header would otherwise be a silent no-op.
+- [x] **List view** (`components/external-services/webhooks/`): identifier, URL, method, auth type and
+  description, with a filter, pagination and multi-select delete behind a confirmation.
+- [x] **Add/Edit form** (`webhooks/new-webhook/`): identifier, description, URL, method, content type,
+  default payload, auth type selector (basic fields / mTLS fields / a note for header auth), TLS
+  verification toggle with the CA bundle disabled while it is off, HTTP/HTTPS proxy, timeout, and the
+  headers table with an encryption checkbox per row. The `__CENSORED__` placeholder round-trips
+  unchanged, so editing an unrelated field never rewrites a stored secret.
+- [x] **Test button**: fires `POST /webhook/<identifier>/test` and shows the status code plus the (truncated) response
+  body. It is disabled while the form has unsaved changes, because the endpoint
+  fires the *stored* definition — testing an edited form would report on something else than what is
+  on screen.
+- [x] Registered in `route_paths.ts`, `admin.routes.ts`, `app.routes.ts` (provider),
+  `content.service.ts` (`onExternalWebhook`), the External Services toolbar in
+  `navigation.component.html` (gated on `webhook_read`) and the reload handler in
+  `user-utils-panel.component.ts`.
 
-### 7.2 — Event handler form: webhook dropdown
+### 7.2 — Event handler form: webhook dropdown ✅
 
-- [ ] In the event handler configuration form, when handler type is `WebHookHandler`:
-    - Add a `webhook` dropdown populated from `GET /webhook/`
-    - Keep `data` / `replace` fields for payload configuration
-    - Existing inline fields (`URL`, `content_type`) can remain visible but are superseded when a webhook is selected
+No UI change was needed. The action tab renders any handler option carrying a `value` list as a
+`mat-select` (`event-action-tab.component.html`), and the `webhook` option added in 5.1 sits on a
+`@property` filled from `get_webhook_identifiers()`, so it is served fresh on every `/event/actions`
+request and rendered as a dropdown. `data` / `replace` stay as they were, and `URL` / `content_type`
+remain visible but are superseded once a webhook is picked — which the option's own description says.
 
-### 7.3 — Conditional Access action editor: webhook dropdown
+### 7.3 — Conditional Access action editor: webhook dropdown ✅
 
-- [ ] In the Conditional Access stage action editor:
-    - When action type is `WEBHOOK`, show webhook dropdown + optional payload field
+- [x] `ConditionalAccessActionType` gained `WEBHOOK`, with a description and a `webhook` value mode in
+  `conditional-access-action-item.component.ts`.
+- [x] `actionValueError()` reports a missing identifier, the client-side half of
+  `_validate_webhook_action_value`; the payload stays optional (without one the webhook's own
+  `default_payload` is sent).
+- [x] The identifier is a select over the configured webhooks, with the same three states the SMTP
+  select has: a stale identifier is kept in the list and flagged, an empty list says where to configure
+  one, and without `webhook_read` it falls back to a free-text input explaining why.
+- [x] The placeholder help lists only the tags the engine renders for a webhook payload — `{email}`,
+  `{givenname}` and `{surname}` are resolver-backed and fetched lazily by the email action alone, so a
+  webhook payload referencing them would render them unsubstituted.
 
 ---
 

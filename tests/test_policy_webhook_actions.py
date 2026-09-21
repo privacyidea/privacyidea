@@ -30,11 +30,11 @@ from .base import MyApiTestCase
 ROOT = Path(__file__).resolve().parent.parent
 
 POLICY_TEMPLATES = [
-    ROOT / "privacyidea" / "static" / "policy-templates" / "superuser.json",
-    ROOT / "privacyidea" / "static_new" / "public" / "policy-templates" / "superuser.json",
+    ROOT / "privacyidea" / "static_old" / "policy-templates" / "superuser.json",
+    ROOT / "privacyidea" / "static" / "public" / "policy-templates" / "superuser.json",
 ]
 
-POLICY_ACTIONS_TS = (ROOT / "privacyidea" / "static_new" / "src" / "app" /
+POLICY_ACTIONS_TS = (ROOT / "privacyidea" / "static" / "src" / "app" /
                      "services" / "auth" / "policy-actions.ts")
 
 

@@ -10,6 +10,7 @@ import tempfile
 
 from privacyidea.models import db
 from privacyidea.models.event import EventHandler, EventHandlerOption
+from privacyidea.lib.webhook import set_webhook
 from privacyidea.models.webhook import Webhook
 from .base import MyTestCase
 
@@ -499,3 +500,203 @@ class WebhookMigrationSnapshotTestCase(MyTestCase):
 
         with self.assertRaises(ValueError):
             restore_snapshot(db.session.connection(), path)
+
+
+class MigrationOwnershipMarkerTestCase(MyTestCase):
+    """
+    Which ``webhook`` rows belong to this migration is recorded on the rows themselves
+    (``MIGRATION_MARKER`` in their description), not inferred from the
+    ``from_``/``webhook_from_handler_`` naming. A name says what a row is called, not who
+    created it, and the resume after a partial failure turns on exactly that distinction:
+    adopt our own leftover, leave anything else alone.
+
+    ``downgrade()`` needs none of it - it drops the table - and is covered here for the one
+    thing it does have to get right: the ``eventhandleroption`` rows, which survive it.
+    """
+
+    def _cleanup(self):
+        for wh in Webhook.query.all():
+            wh.delete()
+        for eh in EventHandler.query.filter_by(handlermodule="WebHook").all():
+            db.session.delete(eh)
+        db.session.commit()
+
+    def setUp(self):
+        super().setUp()
+        self._cleanup()
+        self.tmpdir = tempfile.mkdtemp(prefix="pi-snapshot-test-")
+        os.environ["PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR"] = self.tmpdir
+        os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
+
+    def tearDown(self):
+        os.environ.pop("PRIVACYIDEA_MIGRATION_SNAPSHOT_DIR", None)
+        os.environ.pop("PRIVACYIDEA_MIGRATION_NO_SNAPSHOT", None)
+        self._cleanup()
+        super().tearDown()
+
+    def _run_migration(self):
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _run_data_migration
+        )
+        result = _run_data_migration(db.session.connection())
+        db.session.commit()
+        return result
+
+    @staticmethod
+    def _webhook_option(handler_id):
+        return EventHandlerOption.query.filter_by(
+            eventhandler_id=handler_id, Key="webhook").first()
+
+    @staticmethod
+    def _drop_webhook_option(handler_id):
+        """
+        Leave the database in exactly the state a crash between the webhook insert and the
+        handler-option insert produces: migrations run under AUTOCOMMIT, so the webhook row is
+        durable the moment it is written and nothing rolls it back.
+        """
+        EventHandlerOption.query.filter_by(
+            eventhandler_id=handler_id, Key="webhook").delete()
+        db.session.commit()
+
+    # ------------------------------------------------------------------
+    # The marker itself
+    # ------------------------------------------------------------------
+
+    def test_created_webhook_rows_carry_the_marker(self):
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            MIGRATION_MARKER
+        )
+        eh = _create_webhook_handler(name="Siem", url="https://siem.example.com")
+        self.assertEqual(self._run_migration(), 1)
+
+        webhook = Webhook.query.one()
+        self.assertTrue(webhook.description.startswith(MIGRATION_MARKER), webhook.description)
+        # The link row carries provenance for whoever reads it later, but nothing matches on it.
+        option = self._webhook_option(eh.id)
+        self.assertIn("webhook migration", option.Description)
+
+    # ------------------------------------------------------------------
+    # Resume after a partial failure
+    # ------------------------------------------------------------------
+
+    def test_re_run_adopts_the_webhook_a_crashed_run_left_behind(self):
+        # What upgrade() tells the admin to do when the data migration fails: "Re-run
+        # 'pi-manage db upgrade'. This migration is idempotent and additive, so it resumes where
+        # it stopped." Before the marker, this raised a UNIQUE violation on webhook.identifier
+        # and every later upgrade attempt failed the same way.
+        eh = _create_webhook_handler(name="Siem Hook", url="https://siem.example.com")
+        self.assertEqual(self._run_migration(), 1)
+        identifier = Webhook.query.one().identifier
+        self._drop_webhook_option(eh.id)
+
+        self.assertEqual(self._run_migration(), 1)
+
+        # The leftover row was adopted rather than duplicated, and the handler is linked to it.
+        self.assertEqual(Webhook.query.count(), 1)
+        self.assertEqual(Webhook.query.one().identifier, identifier)
+        self.assertEqual(self._webhook_option(eh.id).Value, identifier)
+
+    def test_re_run_after_a_resume_is_still_idempotent(self):
+        eh = _create_webhook_handler(name="Siem Hook", url="https://siem.example.com")
+        self._run_migration()
+        self._drop_webhook_option(eh.id)
+        self._run_migration()
+
+        self.assertEqual(self._run_migration(), 0)
+        self.assertEqual(Webhook.query.count(), 1)
+        self.assertEqual(EventHandlerOption.query.filter_by(
+            eventhandler_id=eh.id, Key="webhook").count(), 1)
+
+    def test_a_foreign_webhook_of_the_same_name_is_not_hijacked(self):
+        # An unmarked row of that name belongs to someone else. Adopting it would point the
+        # handler at an endpoint nobody chose for it, so the handler is left on its inline
+        # configuration - which still works, because those options are never removed.
+        eh = _create_webhook_handler(name="Siem Hook", url="https://siem.example.com")
+        set_webhook(f"from_Siem_Hook_{eh.id}", url="https://somewhere.else.example/hook")
+        db.session.commit()
+
+        self.assertEqual(self._run_migration(), 0)
+
+        self.assertIsNone(self._webhook_option(eh.id))
+        self.assertEqual(Webhook.query.one().url, "https://somewhere.else.example/hook")
+        # The inline configuration the handler falls back to is untouched.
+        inline = EventHandlerOption.query.filter_by(eventhandler_id=eh.id, Key="URL").one()
+        self.assertEqual(inline.Value, "https://siem.example.com")
+
+    # ------------------------------------------------------------------
+    # Downgrade
+    # ------------------------------------------------------------------
+
+    def test_downgrade_drops_the_handler_link_and_leaves_the_inline_config(self):
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _remove_webhook_handler_options
+        )
+        eh = _create_webhook_handler(name="Siem Hook", url="https://siem.example.com")
+        self._run_migration()
+
+        _remove_webhook_handler_options(db.session.connection())
+        db.session.commit()
+        db.session.expire_all()
+
+        self.assertIsNone(self._webhook_option(eh.id))
+        # The inline options are never deleted, so the handler simply works as it did before.
+        self.assertEqual(
+            EventHandlerOption.query.filter_by(eventhandler_id=eh.id, Key="URL").one().Value,
+            "https://siem.example.com")
+
+    def test_downgrade_drops_a_hand_made_link_too(self):
+        # A link an administrator wrote by hand goes as well, and that is the kinder outcome: the
+        # webhook it names is about to be dropped with the table, and a surviving option row would
+        # both point at nothing and make the next upgrade skip this handler (the idempotency check
+        # keys on exactly that row), so it would never be given a working webhook object either.
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _remove_webhook_handler_options, _run_data_migration
+        )
+        eh = _create_webhook_handler(name="Manual", url="https://manual.example.com")
+        set_webhook("from_manual", url="https://manual.example.com/hook")
+        db.session.add(EventHandlerOption(
+            eventhandler_id=eh.id, Key="webhook", Value="from_manual"))
+        db.session.commit()
+
+        _remove_webhook_handler_options(db.session.connection())
+        db.session.commit()
+        db.session.expire_all()
+        self.assertIsNone(self._webhook_option(eh.id))
+
+        # DROP TABLE takes every webhook row; emptying the table stands in for it, since the test
+        # database keeps its schema across the cycle.
+        for webhook in Webhook.query.all():
+            webhook.delete()
+        db.session.commit()
+
+        # Upgrading again migrates the handler cleanly instead of skipping it.
+        self.assertEqual(_run_data_migration(db.session.connection()), 1)
+        db.session.commit()
+        db.session.expire_all()
+        self.assertEqual(self._webhook_option(eh.id).Value, Webhook.query.one().identifier)
+
+    # ------------------------------------------------------------------
+    # Restore after a partial failure
+    # ------------------------------------------------------------------
+
+    def test_restore_clears_the_orphan_a_crashed_run_left_behind(self):
+        # restore_snapshot() is the recovery route for a run that failed partway through, so the
+        # one state it must handle is a webhook row committed without the option row naming it.
+        # Finding the rows through those options would leave exactly that one behind, and the
+        # next upgrade would collide with it.
+        from privacyidea.migrations.versions.e1f2a3b4c5d6_add_webhook_tables import (
+            _write_snapshot, restore_snapshot
+        )
+        eh = _create_webhook_handler(name="Siem Hook", url="https://siem.example.com")
+        path = _write_snapshot(db.session.connection())
+        self._run_migration()
+        self._drop_webhook_option(eh.id)
+
+        restore_snapshot(db.session.connection(), path)
+        db.session.commit()
+        db.session.expire_all()
+
+        self.assertEqual(Webhook.query.count(), 0)
+        # And the upgrade can now start over cleanly.
+        self.assertEqual(self._run_migration(), 1)
+        self.assertEqual(Webhook.query.count(), 1)

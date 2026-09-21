@@ -170,6 +170,51 @@ class CheckOutboundTargetTestCase(MyTestCase):
                 allowlist=["10.1.2.3"])
         self.assertIsNone(result)
 
+    def test_allowlist_accepts_an_unbracketed_ipv6_address(self):
+        # The spelling BLOCKED_NETWORKS itself uses, and so the spelling an admin reads off the
+        # blocked list when writing an exception for it. Bracketing is only needed to attach a port.
+        for entry in ("::1", "[::1]", "0:0:0:0:0:0:0:1"):
+            with self.subTest(entry=entry):
+                with patch("socket.getaddrinfo",
+                           _fake_getaddrinfo({"siem.corp": ["::1"]})):
+                    result = check_outbound_target(
+                        "https://siem.corp/", mode=GuardMode.ENFORCE, allowlist=[entry])
+                self.assertIsNone(result, entry)
+
+    def test_an_unbracketed_ipv6_entry_still_only_permits_its_own_address(self):
+        with patch("socket.getaddrinfo",
+                   _fake_getaddrinfo({"siem.corp": ["fd00::1"]})):
+            result = check_outbound_target(
+                "https://siem.corp/", mode=GuardMode.ENFORCE, allowlist=["::1"])
+        self.assertIsNotNone(result)
+
+    def test_a_bracketed_ipv6_entry_still_honours_its_port(self):
+        with patch("socket.getaddrinfo",
+                   _fake_getaddrinfo({"siem.corp": ["::1"]})):
+            allowed = check_outbound_target(
+                "https://siem.corp:8443/", mode=GuardMode.ENFORCE, allowlist=["[::1]:8443"])
+            wrong_port = check_outbound_target(
+                "https://siem.corp:9999/", mode=GuardMode.ENFORCE, allowlist=["[::1]:8443"])
+        self.assertIsNone(allowed)
+        self.assertIsNotNone(wrong_port)
+
+    def test_a_malformed_allowlist_entry_matches_nothing_and_does_not_raise(self):
+        # A broken entry must not fail the delivery it was meant to permit; it simply permits nothing.
+        for entry in ("siem.corp:not-a-port", "", "   ", "not a host/24"):
+            with self.subTest(entry=entry):
+                with patch("socket.getaddrinfo",
+                           _fake_getaddrinfo({"siem.corp": ["10.1.2.3"]})):
+                    result = check_outbound_target(
+                        "https://siem.corp/", mode=GuardMode.ENFORCE, allowlist=[entry])
+                self.assertIsNotNone(result, entry)
+
+    def test_a_target_url_with_an_unparsable_port_is_rejected_not_raised(self):
+        # _validate() only checks the scheme prefix, so a stored URL can carry something that is not a
+        # port. The guard cannot judge a target it cannot parse, so it refuses it.
+        result = check_outbound_target("http://siem.corp:abc/hook", mode=GuardMode.ENFORCE)
+        self.assertIsNotNone(result)
+        self.assertIn("port", result)
+
 
 class FireWebhookGuardTestCase(MyTestCase):
     """Integration of the guard into fire_webhook()."""
@@ -294,3 +339,47 @@ class FireWebhookGuardTestCase(MyTestCase):
 
         self.assertTrue(result["success"])
         self.assertEqual(len(responses.calls), 1)
+
+    @responses.activate
+    def test_a_raising_guard_is_reported_not_propagated(self):
+        # fire_webhook() promises never to raise, and an event handler configured to abort on error
+        # would fail the API request that triggered it if it did. The guard reads the app config and
+        # parses a stored URL, so it has to be covered by that promise like the request itself.
+        responses.add(responses.POST, self.URL, json={"ok": True}, status=200)
+        set_webhook("hook", url=self.URL)
+
+        with patch("privacyidea.lib.webhook._guard_config",
+                   side_effect=RuntimeError("Working outside of application context.")):
+            result = fire_webhook("hook")
+
+        self.assertFalse(result["success"])
+        self.assertIn("RuntimeError", result["error"])
+        self.assertEqual(len(responses.calls), 0)
+
+    @responses.activate
+    def test_a_raising_request_setup_is_reported_not_propagated(self):
+        # The same promise covers the setup between the guard and the request: it decrypts secrets and
+        # reads key files off disk, either of which can fail on a misconfigured webhook.
+        responses.add(responses.POST, self.URL, json={"ok": True}, status=200)
+        set_webhook("hook", url=self.URL)
+
+        with patch("privacyidea.lib.webhook._build_verify",
+                   side_effect=OSError("CA bundle is not readable")):
+            result = fire_webhook("hook")
+
+        self.assertFalse(result["success"])
+        self.assertIn("CA bundle is not readable", result["error"])
+        self.assertEqual(len(responses.calls), 0)
+
+    @responses.activate
+    def test_an_unparsable_port_in_the_stored_url_is_blocked_in_enforce_mode(self):
+        # _validate() accepts it (it only checks the scheme prefix), so the guard is where it surfaces -
+        # as a rejection, not as an exception out of fire_webhook().
+        self.app.config["PI_OUTBOUND_GUARD"] = GuardMode.ENFORCE
+        set_webhook("hook", url="http://internal.example:abc/hook")
+
+        result = fire_webhook("hook")
+
+        self.assertFalse(result["success"])
+        self.assertIn("outbound request guard", result["error"])
+        self.assertEqual(len(responses.calls), 0)

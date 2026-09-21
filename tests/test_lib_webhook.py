@@ -257,6 +257,46 @@ class WebhookCrudTestCase(MyTestCase):
         self.assertEqual(wh["headers"]["Authorization"], CENSORED)
         self.assertEqual(wh["headers"]["X-Env"], "prod")
 
+    def test_set_webhook_never_logs_the_url_or_a_secret_header(self):
+        """The DEBUG entry log of a write must not carry either secret.
+
+        Both slip past the name based hiding of log_with(): a token embedded in
+        the URL path is not a named field at all, and a secret header is secret
+        because secret_headers says so, not because "X-Webhook-Token" reads as
+        sensitive.
+        """
+        with self.assertLogs("privacyidea.lib.webhook", level="DEBUG") as logs:
+            set_webhook("hook",
+                        url="https://example.com/t/SUPERSECRETTOKEN",
+                        auth_type=AuthType.HEADER,
+                        password="TOPSECRETPW",
+                        headers={"X-Webhook-Token": "LEAKME"},
+                        secret_headers={"X-Webhook-Token"})
+
+        everything = "\n".join(logs.output)
+        self.assertNotIn("SUPERSECRETTOKEN", everything)
+        self.assertNotIn("LEAKME", everything)
+        self.assertNotIn("TOPSECRETPW", everything)
+        # The identifier is still reported, so the write itself is traceable.
+        self.assertIn("'hook'", everything)
+
+    def test_import_webhook_never_logs_the_url_or_a_secret_header(self):
+        """import_webhook() reaches set_webhook() with the same secrets."""
+        with self.assertLogs("privacyidea.lib.webhook", level="DEBUG") as logs:
+            import_webhook({"hook": {
+                "url": "https://example.com/t/SUPERSECRETTOKEN",
+                "auth_type": AuthType.HEADER,
+                "password": "TOPSECRETPW",
+                "headers": {"X-Webhook-Token": "LEAKME"},
+                "secret_headers": ["X-Webhook-Token"],
+            }})
+
+        everything = "\n".join(logs.output)
+        self.assertNotIn("SUPERSECRETTOKEN", everything)
+        self.assertNotIn("LEAKME", everything)
+        self.assertNotIn("TOPSECRETPW", everything)
+        self.assertIn("'hook'", everything)
+
     def test_headers_replace_removes_missing(self):
         """Passing a headers dict replaces the stored set entirely."""
         set_webhook("hook", url="https://example.com",

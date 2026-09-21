@@ -85,6 +85,7 @@ export class MockContentService implements ContentServiceInterface {
   onConfigurationMachines = computed(() => this.matchesPath(ROUTE_PATHS.CONFIGURATION_MACHINES));
 
   onExternalSmtp = computed(() => this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP));
+  onExternalWebhook = computed(() => this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS));
   onExternalRadius = computed(() => this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS));
   onExternalSms = computed(() => this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_SMS));
   onExternalCaConnectors = computed(() => this.matchesPath(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS));

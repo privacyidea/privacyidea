@@ -308,6 +308,36 @@ class WebhookAPITestCase(MyApiTestCase):
         response = self._request("/webhook/nosuchhook/test", "POST")
         self.assertEqual(404, response.status_code, response.data)
 
+    def test_26_audit_records_the_identifier_and_not_the_url(self):
+        # The URL may embed a token in its path, so the audit log names the
+        # webhook by its identifier instead. The audit log is readable by any
+        # admin with auditlog rights, not only by the holder of webhook_read.
+        secret_url = "https://hook.example.com/t/SUPERSECRETTOKEN"
+        self._request("/webhook/audited", "POST",
+                      data={"url": secret_url,
+                            "auth_type": AuthType.HEADER,
+                            "header.X-Webhook-Token": "LEAKME",
+                            "secret.header.X-Webhook-Token": "1"})
+
+        entry = self.find_most_recent_audit_entry(action="POST /webhook/<identifier>")
+        self.assertIn("audited", entry["info"])
+        serialised = str(entry)
+        self.assertNotIn("SUPERSECRETTOKEN", serialised)
+        self.assertNotIn("LEAKME", serialised)
+
+    @responses.activate
+    def test_27_audit_of_the_test_endpoint_names_the_identifier(self):
+        secret_url = "https://hook.example.com/t/SUPERSECRETTOKEN"
+        responses.add(responses.POST, secret_url, status=200)
+        set_webhook("audited", url=secret_url)
+
+        self._request("/webhook/audited/test", "POST")
+
+        entry = self.find_most_recent_audit_entry(
+            action="POST /webhook/<identifier>/test")
+        self.assertIn("audited", entry["info"])
+        self.assertNotIn("SUPERSECRETTOKEN", str(entry))
+
 
 class WebhookAPIPolicyTestCase(MyApiTestCase):
     """End-to-end enforcement of webhook_read / webhook_write."""

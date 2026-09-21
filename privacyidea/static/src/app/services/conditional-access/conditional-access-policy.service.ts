@@ -64,7 +64,8 @@ export type ConditionalAccessActionType =
   | "EMAIL_USER"
   | "BLOCK_IP"
   | "PERMANENT_BLOCK_IP"
-  | "DENY";
+  | "DENY"
+  | "WEBHOOK";
 
 // The identity a policy counts and acts on.
 export type ConditionalAccessTarget = "user" | "source_ip";
@@ -284,6 +285,15 @@ export function actionValueError(action: ConditionalAccessStageAction): string |
       return missing.length > 0
         ? $localize`:@@conditionalAccess.fillSubjectBodyWithout:Fill in the subject and body; without them no email is sent.`
         : null;
+    }
+    case "WEBHOOK": {
+      // Unlike the email actions' smtp_identifier, this one is required: without it the action names no
+      // endpoint at all, so it could only ever be skipped (_validate_webhook_action_value on the server).
+      const webhook =
+        value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+      return String(webhook["webhook"] ?? "").trim()
+        ? null
+        : $localize`Pick the webhook to fire; without one this action never runs.`;
     }
     default:
       // The PERMANENT_* restrictions and the DENY decision never read a value, and the backend rejects

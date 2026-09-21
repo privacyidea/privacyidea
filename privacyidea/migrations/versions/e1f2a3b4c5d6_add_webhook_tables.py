@@ -39,6 +39,18 @@ The directory is chosen in this order:
 If anything goes wrong the exact pre-migration state can be restored with
 :func:`restore_snapshot` without having to downgrade or replay a full dump.
 
+Which rows are ours
+-------------------
+Every ``webhook`` row this migration creates carries :data:`MIGRATION_MARKER` in its
+``description``, and that marker is what :func:`restore_snapshot` and the resume check in
+:func:`_run_data_migration` match on. The identifier naming (``from_<name>_<id>``) says what a
+row is called, not who created it, so it cannot tell the row a crashed run committed from one
+that was already there - and telling those apart is exactly what makes re-running after a
+partial failure resume rather than collide on ``uq_webhook_identifier``.
+
+:func:`downgrade` needs none of this: it drops the ``webhook`` table, which takes every row with
+it, ours or not.
+
 See https://github.com/privacyidea/privacyidea/issues/5751
 
 Revision ID: e1f2a3b4c5d6
@@ -72,6 +84,42 @@ PI_BACKUP_DIR = "/var/lib/privacyidea/backup"
 
 #: Columns of ``eventhandleroption`` captured in the snapshot.
 _OPTION_COLUMNS = ("id", "eventhandler_id", "Key", "Value", "Type", "Description")
+
+#: Written into the ``description`` of every ``webhook`` row this migration creates. It is what
+#: makes such a row recognisably *ours* to :func:`restore_snapshot` and to the resume check in
+#: :func:`_run_data_migration`, both of which act on a ``webhook`` table that stays standing.
+#:
+#: The alternative, matching the ``from_``/``webhook_from_handler_`` identifier prefix, cannot tell a
+#: migration-created row from one an administrator happened to name that way - and, more to the
+#: point, cannot tell the row a crashed run committed from one that was already there. The resume
+#: depends on exactly that distinction: adopt our own leftover, leave anything else alone.
+#:
+#: Deliberately free of ``%`` and ``_``, so it can be matched with ``LIKE`` without escaping.
+MIGRATION_MARKER = "pi-migration:e1f2a3b4c5d6"
+
+
+def _webhook_description(handler_id):
+    """The ``description`` of a webhook row created for the given handler."""
+    return (f"{MIGRATION_MARKER} - created from the inline options of WebHook "
+            f"event handler {handler_id} (#5751)")
+
+
+def _option_description(handler_id):
+    """
+    The ``Description`` of the ``webhook`` option row linking a handler to its webhook.
+
+    Provenance for whoever reads the row later, nothing more: no code matches on it. The column
+    would otherwise be empty, and "why does this handler have an option I never added?" is a fair
+    question to find an answer to in the row itself.
+    """
+    return (f"Added by the privacyIDEA 3.15 webhook migration: links WebHook event handler "
+            f"{handler_id} to the webhook object created from its inline options (#5751)")
+
+
+def _marked(column):
+    """A filter selecting the ``webhook`` rows this migration created, by their marker."""
+    return column.like(f"{MIGRATION_MARKER}%")
+
 
 # revision identifiers, used by Alembic.
 revision = 'e1f2a3b4c5d6'
@@ -114,6 +162,7 @@ _webhook = sa.table(
     'webhook',
     sa.column('id', sa.Integer),
     sa.column('identifier', sa.Unicode(255)),
+    sa.column('description', sa.Unicode(2000)),
     sa.column('url', sa.Unicode(2000)),
     sa.column('http_method', sa.Unicode(10)),
     sa.column('content_type', sa.Unicode(100)),
@@ -262,14 +311,14 @@ def restore_snapshot(conn, path):
     options = snapshot.get("eventhandleroption") or []
 
     # 1. Drop the webhook objects this migration created.
+    #
+    #    Found by their own marker, not via the handlers' "webhook" option rows: the state this
+    #    function exists for is a run that failed partway through, and the worst such state is a
+    #    webhook row committed without the option row that names it. Looking the rows up through
+    #    those options would leave exactly that one behind, and the next upgrade would collide
+    #    with it.
     if sa.inspect(conn).has_table("webhook"):
-        identifiers = [
-            opt["Value"] for opt in _migration_created_options(conn, handler_ids)
-        ]
-        if identifiers:
-            conn.execute(
-                _webhook.delete().where(_webhook.c.identifier.in_(identifiers))
-            )
+        conn.execute(_webhook.delete().where(_marked(_webhook.c.description)))
 
     # 2. Reset eventhandleroption for the affected handlers to the snapshot state.
     if handler_ids:
@@ -287,19 +336,6 @@ def restore_snapshot(conn, path):
     # transaction control to the caller.
     print(f"Restored {len(options)} eventhandleroption row(s) from {path}")
     return len(options)
-
-
-def _migration_created_options(conn, handler_ids):
-    """Return the current 'webhook' option rows of the given handlers."""
-    if not handler_ids:
-        return []
-    rows = conn.execute(
-        sa.select(_eventhandleroption.c.Value).where(
-            _eventhandleroption.c.eventhandler_id.in_(handler_ids),
-            _eventhandleroption.c.Key == 'webhook',
-        )
-    ).fetchall()
-    return [{"Value": row[0]} for row in rows]
 
 
 # ---------------------------------------------------------------------------
@@ -436,29 +472,59 @@ def _run_data_migration(conn):
         raw_ct = opts.get('content_type', 'application/json')
         content_type = _CONTENT_TYPE_MAP.get(raw_ct, raw_ct)
 
-        # 6. Insert the webhook row.
-        #    timeout=10 matches the handler's current TIMEOUT constant to preserve
-        #    existing behaviour (the new default for manually created webhooks is 3).
-        conn.execute(
-            _webhook.insert().values(
-                identifier=identifier,
-                url=url,
-                http_method='POST',
-                content_type=content_type,
-                auth_type='none',
-                verify_tls=True,
-                timeout=10,
+        # 6. Insert the webhook row - unless a previous, interrupted run already did.
+        #
+        #    Migrations run under AUTOCOMMIT (see migrations/env.py), so the insert below is durable
+        #    the moment it succeeds and nothing rolls it back if step 7 then fails. The check in
+        #    step 2 keys on the option row step 7 writes, so on a re-run it would not skip this
+        #    handler and the identifier would collide with the row already there - leaving the
+        #    upgrade permanently stuck on a UNIQUE violation, which is precisely the state the
+        #    printed advice to "just re-run" promises to resolve. So the leftover is adopted instead.
+        existing = conn.execute(
+            sa.select(_webhook.c.identifier, _webhook.c.description)
+            .where(_webhook.c.identifier == identifier)
+        ).fetchone()
+        if existing is None:
+            #    timeout=10 matches the handler's current TIMEOUT constant to preserve
+            #    existing behaviour (the new default for manually created webhooks is 3).
+            conn.execute(
+                _webhook.insert().values(
+                    identifier=identifier,
+                    description=_webhook_description(handler_id),
+                    url=url,
+                    http_method='POST',
+                    content_type=content_type,
+                    auth_type='none',
+                    verify_tls=True,
+                    timeout=10,
+                )
             )
-        )
+        elif not str(existing.description or "").startswith(MIGRATION_MARKER):
+            # Someone else's webhook happens to carry this name. Adopting it would silently point
+            # the handler at an endpoint nobody chose for it, so the handler is left alone: its
+            # inline URL/content_type options are still in place, so it keeps working exactly as
+            # before and an admin can link it by hand.
+            log.warning(
+                f"WebHook handler {handler_id} would migrate to webhook '{identifier}', but a "
+                f"webhook of that name already exists and was not created by this migration. "
+                f"Leaving the handler on its inline configuration; link it by hand if you want it "
+                f"to use a webhook object."
+            )
+            continue
+        else:
+            log.info(
+                f"Webhook '{identifier}' already exists from an earlier, interrupted run of this "
+                f"migration - reusing it."
+            )
 
-        # 7. Add a "webhook" option to the handler pointing at the new identifier.
+        # 7. Add a "webhook" option to the handler pointing at the identifier.
         conn.execute(
             _eventhandleroption.insert().values(
                 eventhandler_id=handler_id,
                 Key='webhook',
                 Value=identifier,
                 Type='',
-                Description='',
+                Description=_option_description(handler_id),
             )
         )
 
@@ -521,33 +587,48 @@ def upgrade():
         raise
 
 
+def _remove_webhook_handler_options(conn):
+    """
+    Delete every ``webhook`` option row of every event handler, as part of a downgrade.
+
+    **Every** one, not only the ones this migration wrote. :func:`downgrade` drops the ``webhook``
+    table a few statements later, so after it there is nothing left for such a row to name -
+    including one an administrator wrote by hand to link a handler to a webhook of their own.
+
+    Keeping theirs would not preserve it, it would break it twice over: the option would point at
+    a webhook the downgrade destroyed, and on the next upgrade the data migration's idempotency
+    check ("this handler already has a webhook option") would skip that handler, so it would never
+    be given a working webhook object either. Removed, the handler falls straight back to its
+    inline ``URL``/``content_type`` options - which are never deleted - and a later upgrade
+    migrates it cleanly.
+
+    This is why the webhook rows themselves are not deleted here: ``DROP TABLE`` takes them, and
+    picking marked rows out first would only be a statement whose effect nothing can observe.
+    :data:`MIGRATION_MARKER` earns its keep in the two places that leave the table standing - the
+    resume check in :func:`_run_data_migration` and :func:`restore_snapshot`.
+
+    Extracted from :func:`downgrade` so it can be called directly from tests without a full
+    Alembic context, like :func:`_run_data_migration`.
+
+    :return: the number of ``eventhandleroption`` rows deleted
+    """
+    deleted = conn.execute(
+        _eventhandleroption.delete().where(_eventhandleroption.c.Key == 'webhook')
+    ).rowcount
+    log.info(f"Removed {deleted} 'webhook' handler option row(s); the handlers fall back to "
+             f"their inline URL/content_type configuration.")
+    return deleted
+
+
 def downgrade():
     conn = op.get_bind()
 
-    # 1. Remove the "webhook" option rows that point to migration-created identifiers.
-    conn.execute(
-        _eventhandleroption.delete().where(
-            _eventhandleroption.c.Key == 'webhook',
-            sa.or_(
-                _eventhandleroption.c.Value.like('from_%'),
-                _eventhandleroption.c.Value.like('webhook_from_handler_%'),
-            ),
-        )
-    )
+    # 1. Remove every "webhook" handler option: the table they name is dropped below, and the
+    #    handlers' inline URL/content_type options are still in place for them to fall back to.
+    _remove_webhook_handler_options(conn)
 
-    # 2. Remove the webhook objects created by this migration.
-    #    (The original URL/content_type options are still in eventhandleroption,
-    #    so the handler falls back to inline mode — no data loss.)
-    conn.execute(
-        _webhook.delete().where(
-            sa.or_(
-                _webhook.c.identifier.like('from_%'),
-                _webhook.c.identifier.like('webhook_from_handler_%'),
-            )
-        )
-    )
-
-    # 3. Drop child table first (FK dependency), then parent.
+    # 2. Drop child table first (FK dependency), then parent. This is what removes the webhook
+    #    rows - there is no separate delete for them.
     try:
         op.drop_table('webhookheader')
     except (OperationalError, ProgrammingError) as ex:

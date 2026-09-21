@@ -362,7 +362,14 @@ def get_webhook_identifiers():
 # Write
 # ---------------------------------------------------------------------------
 
-@log_with(log)
+# log_entry=False, not a plain @log_with(log): two of the arguments carry
+# secrets that the name based hiding of log_with() cannot recognise. The URL may
+# embed a token in its path, and a secret header is secret by virtue of being
+# listed in secret_headers -- its name ("X-Webhook-Token") says nothing, so the
+# denylist cannot hide its value. Only the whole argument list can be withheld.
+# The identifier is logged at INFO on the way out, which is the line an admin
+# reads to see that the write happened.
+@log_with(log, log_entry=False)
 def set_webhook(identifier, url=None, description=None, http_method=None,
                 content_type=None, default_payload=None,
                 auth_type=None, username=None, password=None,
@@ -676,15 +683,39 @@ def _is_blocked_address(address):
                for candidate in candidates for network in BLOCKED_NETWORKS)
 
 
+def _same_address(left, right):
+    """
+    Whether two IP address strings denote the same address, comparing them as
+    addresses rather than as text: ``::1`` and ``0:0:0:0:0:0:0:1`` are one
+    address written two ways, and a plain string comparison would miss it.
+    A value that is not an IP address at all (a hostname) never matches.
+    """
+    if not left or not right:
+        return False
+    try:
+        return ipaddress.ip_address(left) == ipaddress.ip_address(right)
+    except ValueError:
+        return False
+
+
 def _entry_matches(entry, host, address, port):
     """
     Check a single ``PI_OUTBOUND_GUARD_ALLOW`` entry against the target.
 
     An entry containing a ``/`` is a CIDR and matches the resolved
     ``address`` regardless of port. Otherwise it is a bare host or IP,
-    optionally followed by ``:port`` (bracket an IPv6 host, e.g.
-    ``[::1]:8443``), and matches either the hostname as configured on the
-    webhook or the resolved address.
+    optionally followed by ``:port``, and matches either the hostname as
+    configured on the webhook or the resolved address.
+
+    A bare IPv6 address is recognised whether or not it is bracketed, so
+    ``::1`` works as an entry and not only ``[::1]``. It has to be: that is
+    the spelling :data:`BLOCKED_NETWORKS` itself uses, so it is the spelling
+    an admin reads off the blocked list when writing an exception for it.
+    Bracketing is only needed to attach a port (``[::1]:8443``), since
+    otherwise the last colon group is indistinguishable from one.
+
+    This never raises. A malformed entry - an unparsable port, say - matches
+    nothing rather than failing the delivery it was meant to permit.
     """
     entry = entry.strip()
     if not entry:
@@ -699,14 +730,27 @@ def _entry_matches(entry, host, address, port):
             return False
         return addr.version == network.version and addr in network
 
-    parsed = urlsplit(f"//{entry}")
-    entry_host = parsed.hostname
-    if entry_host is None:
+    try:
+        # A bare IP address, port-less by construction: an unbracketed IPv6
+        # address cannot carry one, and urlsplit would read its last colon
+        # group as a port and fail.
+        ipaddress.ip_address(entry)
+        entry_host, entry_port = entry, None
+    except ValueError:
+        parsed = urlsplit(f"//{entry}")
+        try:
+            entry_port = parsed.port
+        except ValueError:
+            # Not a port at all; the entry describes no reachable target.
+            return False
+        entry_host = parsed.hostname
+        if entry_host is None:
+            return False
+
+    if entry_port is not None and entry_port != port:
         return False
-    if parsed.port is not None and parsed.port != port:
-        return False
-    entry_host = entry_host.lower()
-    return entry_host == (host.lower() if host else None) or entry_host == address
+    return (entry_host.lower() == (host.lower() if host else None)
+            or _same_address(entry_host, address))
 
 
 def _resolve(host):
@@ -751,7 +795,13 @@ def check_outbound_target(url, mode=GuardMode.OFF, allowlist=None):
     host = parsed.hostname
     if not host:
         return f"could not determine a host to check in {url!r}"
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    try:
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    except ValueError:
+        # _validate() only checks the scheme prefix, so a stored URL may carry
+        # something that is not a port. The guard cannot judge a target it
+        # cannot parse, so it refuses it rather than waving it through.
+        return f"could not determine a port to check in {url!r}"
 
     if any(_entry_matches(entry, host, None, port) for entry in allowlist):
         return None
@@ -850,42 +900,45 @@ def fire_webhook(identifier, payload=None):
         return {"success": False, "status_code": None, "response": "",
                 "error": str(ex)}
 
-    mode, allowlist = _guard_config()
-    rejection = check_outbound_target(_guard_target(config), mode=mode,
-                                      allowlist=allowlist)
-    if rejection:
-        log.warning(f"Webhook {identifier!r}: outbound request guard "
-                    f"({mode}) rejected the target: {rejection}")
-        if mode == GuardMode.ENFORCE:
-            _record_webhook_call(identifier, start, False, error=True)
-            return {"success": False, "status_code": None, "response": "",
-                    "error": f"blocked by the outbound request guard "
-                             f"({mode}): {rejection}"}
-        # warn mode: the request still goes out. fire_webhook() has no audit
-        # object to write to, so the log line above is the only record of
-        # the rejection; it does not appear in the audit log.
-
-    headers = dict(config["headers"] or {})
-    body = _resolve_body(config, payload)
-    if body is not None:
-        # Only advertise a content type when there is something to describe.
-        headers.setdefault("Content-Type", config["content_type"])
-
-    auth, cert, key_password = _build_auth_and_cert(config)
-    verify = _build_verify(config)
-    proxies = _build_proxies(config)
-    # requests treats None as "not set" for data, auth, cert and proxies, so
-    # they can all be passed unconditionally.
-    if key_password:
-        # The password-protected key is loaded into the SSLContext below;
-        # cert= has no way to carry the password.
-        cert = None
-
+    # Everything from here on runs inside the try: the guard reads the app
+    # config and parses a stored URL, and the request setup decrypts secrets
+    # and reads key files off disk, so either can raise on a misconfiguration.
+    # This function promises never to raise - an event handler configured to
+    # abort on error would otherwise fail the API request that triggered it -
+    # so a failure anywhere in here has to come back as a reported failure.
     session = None
     try:
+        mode, allowlist = _guard_config()
+        rejection = check_outbound_target(_guard_target(config), mode=mode,
+                                          allowlist=allowlist)
+        if rejection:
+            log.warning(f"Webhook {identifier!r}: outbound request guard "
+                        f"({mode}) rejected the target: {rejection}")
+            if mode == GuardMode.ENFORCE:
+                _record_webhook_call(identifier, start, False, error=True)
+                return {"success": False, "status_code": None, "response": "",
+                        "error": f"blocked by the outbound request guard "
+                                 f"({mode}): {rejection}"}
+            # warn mode: the request still goes out. fire_webhook() has no audit
+            # object to write to, so the log line above is the only record of
+            # the rejection; it does not appear in the audit log.
+
+        headers = dict(config["headers"] or {})
+        body = _resolve_body(config, payload)
+        if body is not None:
+            # Only advertise a content type when there is something to describe.
+            headers.setdefault("Content-Type", config["content_type"])
+
+        auth, cert, key_password = _build_auth_and_cert(config)
+        verify = _build_verify(config)
+        proxies = _build_proxies(config)
+        # requests treats None as "not set" for data, auth, cert and proxies, so
+        # they can all be passed unconditionally.
         if key_password:
-            # Encrypted client key: load the chain into an SSLContext, because
-            # requests' cert= parameter has no way to pass the password.
+            # Encrypted client key: requests' cert= parameter has no way to pass
+            # the password, so the chain is loaded into an SSLContext instead and
+            # cert= is left unset.
+            cert = None
             certificate = config["client_certificate"]
             key = config["client_key"]
             context = ssl.create_default_context()
