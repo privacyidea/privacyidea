@@ -688,11 +688,11 @@ class TokenContainerClass:
         """
         raise NotImplementedError("Registration is not implemented for this container type.")
 
-    def check_challenge_response(self, params: dict):
+    def check_challenge_response(self, params: dict) -> bool:
         """
         Checks if the response to a challenge is valid.
         """
-        return False
+        raise NotImplementedError("Challenge-response is not implemented for this container type.")
 
     def create_challenge(self, scope, validity_time=2):
         """

@@ -50,7 +50,7 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
                                                        CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL, SSL_VERIFY)
 from privacyidea.lib.containers.container_states import ContainerStates
-from privacyidea.lib.error import ParameterError, ContainerNotRegistered, Error
+from privacyidea.lib.error import ContainerInvalidChallenge, ParameterError, ContainerNotRegistered, Error
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
@@ -1014,7 +1014,8 @@ def registration_terminate_client():
             server_url = " "
         scope = create_endpoint_url(server_url, "container/register/terminate/client")
         params.update({'scope': scope})
-        container.check_challenge_response(params)
+        if not container.check_challenge_response(params):
+            raise ContainerInvalidChallenge("The container challenge response could not be verified!")
 
         res = unregister(container)
 
@@ -1201,9 +1202,10 @@ def synchronize():
         params.update({'scope': scope})
 
         # 2nd synchronization step: Validate challenge and get container diff between client and server
-        container.check_challenge_response(params)
-        initially_add_tokens = request.all_data.get("client_policies").get(
-            PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        if not container.check_challenge_response(params):
+            raise ContainerInvalidChallenge("The container challenge response could not be verified!")
+        client_policies = request.all_data.get("client_policies") or {}
+        initially_add_tokens = client_policies.get(PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
         container_dict = container.synchronize_container_details(container_client, initially_add_tokens)
 
         # Write token serials to audit log

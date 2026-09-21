@@ -2892,6 +2892,9 @@ def smartphone_config(request, action=None):
                 policies[action] = False
 
         request.all_data["client_policies"] = policies
+    else:
+        # The client policies are derived from the server side policies, they are not taken from the request
+        request.all_data.pop("client_policies", None)
     return is_smartphone
 
 
