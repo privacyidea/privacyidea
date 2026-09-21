@@ -20,10 +20,13 @@
 <!-- Handed to the widget frame, which renders these in the header next to the reload button. Declared outside
      app-widget-state so the frame can read them whatever state the data is in. -->
 <ng-template #headerActions>
-  <app-widget-window-picker
-    [choices]="windows"
-    [selected]="selectedWindow()"
-    (windowPicked)="selectWindow($event)" />
+  <app-widget-header-picker
+    [choices]="timeWindows"
+    [selected]="selectedTimeWindow()"
+    tooltip="Choose the time window"
+    i18n-tooltip="@@dashboard.chooseTimeWindow"
+    icon="schedule"
+    (picked)="selectTimeWindow($event)" />
 </ng-template>
 
 <app-widget-state [state]="state()">

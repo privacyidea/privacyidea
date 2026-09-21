@@ -16,8 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { provideZonelessChangeDetection } from "@angular/core";
+import { getDebugNode, provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { WidgetHeaderPickerComponent } from "@components/dashboard/widgets/header-picker/widget-header-picker.component";
 import { provideRouter } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { DashboardWidget, WidgetInstance } from "@models/dashboard";
@@ -284,7 +285,7 @@ describe("NotificationDeliveryWidgetComponent", () => {
   });
 
   it("should ask for the last hour when no window has been stored", () => {
-    expect(component.selectedWindow().id).toBe("1h");
+    expect(component.selectedTimeWindow().id).toBe("1h");
     expect(systemMock.getNotificationDelivery).toHaveBeenCalledWith(3600);
   });
 
@@ -296,7 +297,7 @@ describe("NotificationDeliveryWidgetComponent", () => {
     storedFixture.componentRef.setInput("instance", { ...instance, options: { range: "24h" } });
     storedFixture.detectChanges();
 
-    expect(storedFixture.componentInstance.selectedWindow().id).toBe("24h");
+    expect(storedFixture.componentInstance.selectedTimeWindow().id).toBe("24h");
     expect(systemMock.getNotificationDelivery).toHaveBeenCalledWith(86400);
     storedFixture.destroy();
   });
@@ -306,10 +307,10 @@ describe("NotificationDeliveryWidgetComponent", () => {
     const setOptions = jest.spyOn(layoutService, "setWidgetOptions");
     systemMock.getNotificationDelivery.mockClear();
 
-    component.selectWindow("6h");
+    component.selectTimeWindow("6h");
     fixture.detectChanges();
 
-    expect(component.selectedWindow().id).toBe("6h");
+    expect(component.selectedTimeWindow().id).toBe("6h");
     expect(systemMock.getNotificationDelivery).toHaveBeenCalledWith(21600);
     expect(setOptions).toHaveBeenCalledWith(instance.id, { range: "6h" });
     setOptions.mockRestore();
@@ -319,10 +320,27 @@ describe("NotificationDeliveryWidgetComponent", () => {
     const store = TestBed.inject(DashboardDataStore);
     expect(store.peek("dashboard:notification-delivery:1h")).not.toBeNull();
 
-    component.selectWindow("24h");
+    component.selectTimeWindow("24h");
     fixture.detectChanges();
 
     expect(store.peek("dashboard:notification-delivery:1h")).toBeNull();
     expect(store.peek("dashboard:notification-delivery:24h")).not.toBeNull();
+  });
+
+  it("should wire the header picker to its time window", () => {
+    const view = component.headerActions()!.createEmbeddedView(null);
+    view.detectChanges();
+    const pickerNode = view.rootNodes.find((node: Node) => node.nodeType === Node.ELEMENT_NODE);
+    const picker = getDebugNode(pickerNode)!.componentInstance as WidgetHeaderPickerComponent;
+
+    expect(picker.selected()).toBe(component.selectedTimeWindow());
+    expect(picker.tooltip()).toBe("Choose the time window");
+    expect(picker.icon()).toBe("schedule");
+
+    picker.picked.emit("24h");
+    fixture.detectChanges();
+
+    expect(component.selectedTimeWindow().id).toBe("24h");
+    view.destroy();
   });
 });

@@ -26,7 +26,7 @@ import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@servic
  *
  * Constructed in a widget's field initializer, which is what puts it in an injection context::
  *
- *     protected readonly window = new WidgetRangeSetting(this.instance, METRICS_WINDOWS, DEFAULT_METRICS_WINDOW);
+ *     protected readonly window = new WidgetRangeSetting(this.instance, METRICS_TIME_WINDOWS, DEFAULT_METRICS_TIME_WINDOW);
  *
  * The selection follows the stored id rather than standing beside it, so a layout arriving after the widget has been
  * drawn - the settings request is in flight while the dashboard renders its defaults - moves the widget onto the

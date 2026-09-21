@@ -18,22 +18,24 @@
 -->
 <button
   mat-button
-  class="window-trigger"
+  class="picker-trigger"
   type="button"
-  [matMenuTriggerFor]="windowMenu"
-  [matTooltip]="tooltip"
-  [attr.aria-label]="tooltip">
-  <mat-icon>schedule</mat-icon>
-  <span class="window-label">{{ selected().label }}</span>
+  [matMenuTriggerFor]="pickerMenu"
+  [matTooltip]="tooltip()"
+  [attr.aria-label]="tooltip()">
+  @if (icon(); as glyph) {
+    <mat-icon>{{ glyph }}</mat-icon>
+  }
+  <span class="picker-label">{{ selected().label }}</span>
 </button>
-<mat-menu #windowMenu="matMenu">
+<mat-menu #pickerMenu="matMenu">
   @for (choice of choices(); track choice.id) {
     <button
       mat-menu-item
       type="button"
       role="menuitemradio"
       [attr.aria-checked]="choice.id === selected().id"
-      (click)="windowPicked.emit(choice.id)">
+      (click)="picked.emit(choice.id)">
       <mat-icon>{{ choice.id === selected().id ? "radio_button_checked" : "radio_button_unchecked" }}</mat-icon>
       <span>{{ choice.label }}</span>
     </button>

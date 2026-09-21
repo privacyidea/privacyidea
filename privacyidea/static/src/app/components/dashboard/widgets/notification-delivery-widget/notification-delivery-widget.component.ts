@@ -19,12 +19,16 @@
 import { Component, computed, effect, inject, signal, TemplateRef, viewChild } from "@angular/core";
 import { MatTooltip } from "@angular/material/tooltip";
 import { PiResponse } from "@app/app.component";
-import { DEFAULT_METRICS_WINDOW, METRICS_WINDOWS, MetricsWindow } from "@components/dashboard/widgets/metrics-window";
+import {
+  DEFAULT_METRICS_TIME_WINDOW,
+  METRICS_TIME_WINDOWS,
+  MetricsTimeWindow
+} from "@components/dashboard/widgets/metrics-time-window";
 import { TableSortHeaderComponent } from "@components/dashboard/widgets/table-sort/table-sort-header.component";
 import { TableSort } from "@components/dashboard/widgets/table-sort/table-sort";
 import { WidgetRangeSetting } from "@components/dashboard/widgets/widget-range-setting";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
-import { WidgetWindowPickerComponent } from "@components/dashboard/widgets/window-picker/widget-window-picker.component";
+import { WidgetHeaderPickerComponent } from "@components/dashboard/widgets/header-picker/widget-header-picker.component";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import {
@@ -58,7 +62,7 @@ function withDeliveries(entries: NotificationChannelEntry[] | undefined): Notifi
 @Component({
   selector: "app-notification-delivery-widget",
   standalone: true,
-  imports: [MatTooltip, WidgetStateComponent, TableSortHeaderComponent, WidgetWindowPickerComponent],
+  imports: [MatTooltip, WidgetStateComponent, TableSortHeaderComponent, WidgetHeaderPickerComponent],
   templateUrl: "./notification-delivery-widget.component.html",
   styleUrl: "./notification-delivery-widget.component.scss"
 })
@@ -73,17 +77,17 @@ export class NotificationDeliveryWidgetComponent extends DashboardWidget {
   // Read by the widget frame, which renders these in its header.
   override readonly headerActions = viewChild<TemplateRef<unknown>>("headerActions");
 
-  protected readonly windows = METRICS_WINDOWS;
+  protected readonly timeWindows = METRICS_TIME_WINDOWS;
 
   private readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly store = inject(DashboardDataStore);
 
-  private readonly windowSetting = new WidgetRangeSetting<MetricsWindow>(
+  private readonly timeWindowSetting = new WidgetRangeSetting<MetricsTimeWindow>(
     this.instance,
-    METRICS_WINDOWS,
-    DEFAULT_METRICS_WINDOW
+    METRICS_TIME_WINDOWS,
+    DEFAULT_METRICS_TIME_WINDOW
   );
-  readonly selectedWindow = this.windowSetting.selected.asReadonly();
+  readonly selectedTimeWindow = this.timeWindowSetting.selected.asReadonly();
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<NotificationDeliveryHealth>> | null>(null);
   // The store key currently in use, so the previous window's entry can be dropped when the window changes.
@@ -127,18 +131,18 @@ export class NotificationDeliveryWidgetComponent extends DashboardWidget {
       this.state.set(value.result?.status === true ? "ready" : "error");
     });
     // Refetches whenever the window changes, and on the first run, which is what draws the widget.
-    effect(() => this.loadData(this.selectedWindow()));
+    effect(() => this.loadData(this.selectedTimeWindow()));
   }
 
   override reload(): void {
-    this.loadData(this.selectedWindow());
+    this.loadData(this.selectedTimeWindow());
   }
 
-  selectWindow(id: string): void {
-    this.windowSetting.select(id);
+  selectTimeWindow(id: string): void {
+    this.timeWindowSetting.select(id);
   }
 
-  private loadData(window: MetricsWindow): void {
+  private loadData(window: MetricsTimeWindow): void {
     const key = `dashboard:notification-delivery:${window.id}`;
     // Each window needs a key of its own, so switching shows a loading state rather than the previous window's
     // numbers. The entry left behind has to go, though: DashboardDataStore.refreshAll() refetches every entry it

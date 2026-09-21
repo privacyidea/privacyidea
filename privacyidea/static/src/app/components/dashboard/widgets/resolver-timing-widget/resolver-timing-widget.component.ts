@@ -21,12 +21,16 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
-import { DEFAULT_METRICS_WINDOW, METRICS_WINDOWS, MetricsWindow } from "@components/dashboard/widgets/metrics-window";
+import { WidgetHeaderPickerComponent } from "@components/dashboard/widgets/header-picker/widget-header-picker.component";
+import {
+  DEFAULT_METRICS_TIME_WINDOW,
+  METRICS_TIME_WINDOWS,
+  MetricsTimeWindow
+} from "@components/dashboard/widgets/metrics-time-window";
 import { TableSort } from "@components/dashboard/widgets/table-sort/table-sort";
 import { TableSortHeaderComponent } from "@components/dashboard/widgets/table-sort/table-sort-header.component";
 import { WidgetRangeSetting } from "@components/dashboard/widgets/widget-range-setting";
 import { WidgetStateComponent } from "@components/dashboard/widgets/widget-state/widget-state.component";
-import { WidgetWindowPickerComponent } from "@components/dashboard/widgets/window-picker/widget-window-picker.component";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -63,7 +67,7 @@ function toMs(seconds: number | null | undefined): number | null {
     TruncationTooltipDirective,
     RouterLink,
     TableSortHeaderComponent,
-    WidgetWindowPickerComponent
+    WidgetHeaderPickerComponent
   ],
   templateUrl: "./resolver-timing-widget.component.html",
   styleUrl: "./resolver-timing-widget.component.scss"
@@ -81,19 +85,19 @@ export class ResolverTimingWidgetComponent extends DashboardWidget {
   // Read by the widget frame, which renders these in its header.
   override readonly headerActions = viewChild<TemplateRef<unknown>>("headerActions");
 
-  protected readonly windows = METRICS_WINDOWS;
+  protected readonly timeWindows = METRICS_TIME_WINDOWS;
 
   private readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly store = inject(DashboardDataStore);
 
-  private readonly windowSetting = new WidgetRangeSetting<MetricsWindow>(
+  private readonly timeWindowSetting = new WidgetRangeSetting<MetricsTimeWindow>(
     this.instance,
-    METRICS_WINDOWS,
-    DEFAULT_METRICS_WINDOW
+    METRICS_TIME_WINDOWS,
+    DEFAULT_METRICS_TIME_WINDOW
   );
-  readonly selectedWindow = this.windowSetting.selected.asReadonly();
+  readonly selectedTimeWindow = this.timeWindowSetting.selected.asReadonly();
 
   readonly resolverLinkAllowed = computed(() => this.authService.actionAllowed("resolverread"));
 
@@ -164,18 +168,18 @@ export class ResolverTimingWidgetComponent extends DashboardWidget {
       this.state.set(ok ? "ready" : "error");
     });
     // Refetches whenever the window changes, and on the first run, which is what draws the widget.
-    effect(() => this.loadData(this.selectedWindow()));
+    effect(() => this.loadData(this.selectedTimeWindow()));
   }
 
   override reload(): void {
-    this.loadData(this.selectedWindow());
+    this.loadData(this.selectedTimeWindow());
   }
 
-  selectWindow(id: string): void {
-    this.windowSetting.select(id);
+  selectTimeWindow(id: string): void {
+    this.timeWindowSetting.select(id);
   }
 
-  private loadData(window: MetricsWindow): void {
+  private loadData(window: MetricsTimeWindow): void {
     const key = `dashboard:resolver-timing:${window.id}`;
     // Each window needs a key of its own, so switching shows a loading state rather than the previous window's
     // numbers. The entry left behind has to go, though: DashboardDataStore.refreshAll() refetches every entry it

@@ -22,32 +22,32 @@ import { MatIcon } from "@angular/material/icon";
 import { MatMenu, MatMenuItem, MatMenuTrigger } from "@angular/material/menu";
 import { MatTooltip } from "@angular/material/tooltip";
 
-/** The least a picker needs of a preset: something to store it by, and something to show. */
-export interface PickableWindow {
+/** The least a picker needs of a choice: something to store it by, and something to show. */
+export interface PickerChoice {
   id: string;
   label: string;
 }
 
 /**
- * The time window a widget is read over, shown in the widget frame's header and changed from there.
+ * One choice a widget is read by - the time window it covers, say - shown in the widget frame's header and changed
+ * from there.
  *
- * A labelled trigger rather than an icon: the window the numbers stand for has to be legible without opening
- * anything, which was the whole reason a picker went in. It lives in the header because both widgets that use it are
- * dense tables with no row to spare, and it is a menu rather than a toggle group because the header has room for one
- * control, not three.
+ * A labelled trigger rather than an icon: the current choice has to be legible without opening anything. It is a menu
+ * rather than a toggle group because the header has room for one control, not one per choice.
  */
 @Component({
-  selector: "app-widget-window-picker",
+  selector: "app-widget-header-picker",
   standalone: true,
   imports: [MatButton, MatIcon, MatMenu, MatMenuItem, MatMenuTrigger, MatTooltip],
-  templateUrl: "./widget-window-picker.component.html",
-  styleUrl: "./widget-window-picker.component.scss"
+  templateUrl: "./widget-header-picker.component.html",
+  styleUrl: "./widget-header-picker.component.scss"
 })
-export class WidgetWindowPickerComponent {
-  readonly choices = input.required<readonly PickableWindow[]>();
-  readonly selected = input.required<PickableWindow>();
+export class WidgetHeaderPickerComponent {
+  readonly choices = input.required<readonly PickerChoice[]>();
+  readonly selected = input.required<PickerChoice>();
+  // Also the trigger's accessible name, saying what is being chosen.
+  readonly tooltip = input.required<string>();
+  readonly icon = input<string>();
 
-  readonly windowPicked = output<string>();
-
-  protected readonly tooltip = $localize`:@@dashboard.chooseTimeWindow:Choose the time window`;
+  readonly picked = output<string>();
 }

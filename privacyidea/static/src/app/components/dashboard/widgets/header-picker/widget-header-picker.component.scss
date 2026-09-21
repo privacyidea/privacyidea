@@ -24,7 +24,7 @@
 
 // The frame's own header buttons are 28px with an 18px glyph; a labelled button has to match their height or it
 // pushes the header row taller than every other widget's.
-.window-trigger.mat-mdc-button-base {
+.picker-trigger.mat-mdc-button-base {
   height: 28px;
   min-width: 0;
   padding: 0 8px;
@@ -43,6 +43,6 @@
   }
 }
 
-.window-label {
+.picker-label {
   white-space: nowrap;
 }

@@ -66,7 +66,9 @@ export class DashboardPersistenceService implements DashboardPersistenceServiceI
   /**
    * Keeps only the option keys this version knows, so a document written by a newer WebUI - or edited by hand - is
    * read for what it holds rather than carried along whole and written back. A widget resolves the id it gets, so an
-   * unknown one costs nothing beyond falling back to the widget's default.
+   * unknown one costs nothing beyond falling back to the widget's default. The cost is that an older WebUI saving the
+   * layout during a mixed-version rollout erases what a newer one stored: accepted while `range` is the only key, and
+   * the point at which a second one is added is the point to carry unknown keys along instead.
    */
   private readOptions(options: unknown): WidgetOptions | undefined {
     if (!options || typeof options !== "object") {

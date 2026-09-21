@@ -16,37 +16,32 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { DEFAULT_METRICS_WINDOW, METRICS_WINDOWS, metricsWindowById } from "./metrics-window";
+import { DEFAULT_METRICS_TIME_WINDOW, METRICS_TIME_WINDOWS } from "./metrics-time-window";
 
 // What lib/metrics.py keeps: rows are dropped once they are older than RETENTION_SECONDS, which the MetricsCleanup
 // task defaults to as well. A window past it would be a promise the store cannot keep - the widget would show the
 // hours that happen to be left rather than the span its label names.
 const RETENTION_SECONDS = 24 * 3600;
 
-describe("metrics windows", () => {
+describe("metrics time windows", () => {
   it("should offer distinct ids", () => {
-    const ids = METRICS_WINDOWS.map((window) => window.id);
+    const ids = METRICS_TIME_WINDOWS.map((window) => window.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("should ask for no more than the metric store keeps", () => {
-    for (const window of METRICS_WINDOWS) {
+    for (const window of METRICS_TIME_WINDOWS) {
       expect(window.seconds).toBeGreaterThan(0);
       expect(window.seconds).toBeLessThanOrEqual(RETENTION_SECONDS);
     }
   });
 
-  it("should look a window up by id", () => {
-    expect(metricsWindowById("24h")?.seconds).toBe(86400);
-  });
-
-  it("should return nothing for an id it does not know", () => {
-    expect(metricsWindowById("7d")).toBeUndefined();
-    expect(metricsWindowById(undefined)).toBeUndefined();
-  });
-
   it("should open on the hour", () => {
-    expect(DEFAULT_METRICS_WINDOW.id).toBe("1h");
-    expect(DEFAULT_METRICS_WINDOW.seconds).toBe(3600);
+    expect(DEFAULT_METRICS_TIME_WINDOW.id).toBe("1h");
+    expect(DEFAULT_METRICS_TIME_WINDOW.seconds).toBe(3600);
+  });
+
+  it("should offer the default among its windows, so the picker can show it as selected", () => {
+    expect(METRICS_TIME_WINDOWS).toContain(DEFAULT_METRICS_TIME_WINDOW);
   });
 });

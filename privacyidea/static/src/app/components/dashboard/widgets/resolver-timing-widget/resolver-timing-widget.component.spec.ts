@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpErrorResponse } from "@angular/common/http";
-import { provideZonelessChangeDetection } from "@angular/core";
+import { getDebugNode, provideZonelessChangeDetection } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { WidgetHeaderPickerComponent } from "@components/dashboard/widgets/header-picker/widget-header-picker.component";
 import { provideRouter } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -433,7 +434,7 @@ describe("ResolverTimingWidgetComponent", () => {
   });
 
   it("should ask for the last hour when no window has been stored", () => {
-    expect(component.selectedWindow().id).toBe("1h");
+    expect(component.selectedTimeWindow().id).toBe("1h");
     expect(systemMock.getResolverTiming).toHaveBeenCalledWith(3600);
   });
 
@@ -445,7 +446,7 @@ describe("ResolverTimingWidgetComponent", () => {
     storedFixture.componentRef.setInput("instance", { ...instance, options: { range: "24h" } });
     storedFixture.detectChanges();
 
-    expect(storedFixture.componentInstance.selectedWindow().id).toBe("24h");
+    expect(storedFixture.componentInstance.selectedTimeWindow().id).toBe("24h");
     expect(systemMock.getResolverTiming).toHaveBeenCalledWith(86400);
     storedFixture.destroy();
   });
@@ -457,7 +458,7 @@ describe("ResolverTimingWidgetComponent", () => {
     strangeFixture.componentRef.setInput("instance", { ...instance, options: { range: "7d" } });
     strangeFixture.detectChanges();
 
-    expect(strangeFixture.componentInstance.selectedWindow().id).toBe("1h");
+    expect(strangeFixture.componentInstance.selectedTimeWindow().id).toBe("1h");
     strangeFixture.destroy();
   });
 
@@ -466,10 +467,10 @@ describe("ResolverTimingWidgetComponent", () => {
     const setOptions = jest.spyOn(layoutService, "setWidgetOptions");
     systemMock.getResolverTiming.mockClear();
 
-    component.selectWindow("6h");
+    component.selectTimeWindow("6h");
     fixture.detectChanges();
 
-    expect(component.selectedWindow().id).toBe("6h");
+    expect(component.selectedTimeWindow().id).toBe("6h");
     expect(systemMock.getResolverTiming).toHaveBeenCalledWith(21600);
     expect(setOptions).toHaveBeenCalledWith(instance.id, { range: "6h" });
     setOptions.mockRestore();
@@ -479,10 +480,27 @@ describe("ResolverTimingWidgetComponent", () => {
     const store = TestBed.inject(DashboardDataStore);
     expect(store.peek("dashboard:resolver-timing:1h")).not.toBeNull();
 
-    component.selectWindow("24h");
+    component.selectTimeWindow("24h");
     fixture.detectChanges();
 
     expect(store.peek("dashboard:resolver-timing:1h")).toBeNull();
     expect(store.peek("dashboard:resolver-timing:24h")).not.toBeNull();
+  });
+
+  it("should wire the header picker to its time window", () => {
+    const view = component.headerActions()!.createEmbeddedView(null);
+    view.detectChanges();
+    const pickerNode = view.rootNodes.find((node: Node) => node.nodeType === Node.ELEMENT_NODE);
+    const picker = getDebugNode(pickerNode)!.componentInstance as WidgetHeaderPickerComponent;
+
+    expect(picker.selected()).toBe(component.selectedTimeWindow());
+    expect(picker.tooltip()).toBe("Choose the time window");
+    expect(picker.icon()).toBe("schedule");
+
+    picker.picked.emit("24h");
+    fixture.detectChanges();
+
+    expect(component.selectedTimeWindow().id).toBe("24h");
+    view.destroy();
   });
 });
