@@ -151,13 +151,11 @@ class ConditionalAccessPolicyTemplateTestCase(MyTestCase):
             # immediate, dedicated lock (threshold 1), not folding into a rate limit that tolerates several before
             # acting.
             AuthEventType.DEVICE_TOKEN_REUSED,
-            # About the *client* (a suspended API key still in use), not a failed credential attempt by the request
-            # itself, which succeeds or fails on its own merits independently of this.
-            AuthEventType.SUSPENDED_API_KEY_USED,
         }
-        # This check covers only the trackable types: conditional access's own rejections (USER_LOCKED, IP_BLOCKED,
-        # ACCESS_DENIED) are FAILURE outcomes too, but CA_ENFORCEMENT_EVENT_TYPES excludes them from the policy
-        # vocabulary by construction, so there is no decision to make about them here.
+        # This check covers only the trackable types. The other FAILURE outcomes - conditional access's own
+        # rejections (USER_LOCKED, IP_BLOCKED, ACCESS_DENIED) and the client signals (SUSPENDED_API_KEY_USED) - are
+        # kept out of the policy vocabulary by construction (UNTRACKABLE_EVENT_TYPES), so there is no decision to
+        # make about them here: no template can count what no policy may count.
         all_failures = {event_type.value for event_type in TRACKABLE_EVENT_TYPES
                         if outcome_of(event_type) == AuthEventOutcome.FAILURE}
         user_counted = {str(t) for t in self._policy("user_failed_rate_limiting")["counter_types_to_track"]}
