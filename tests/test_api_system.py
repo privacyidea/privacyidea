@@ -36,6 +36,7 @@ except OSError as _e:
 
 
 class APIConfigTestCase(MyApiTestCase):
+    NO_VALUE = object()
 
     def test_00_get_empty_config(self):
         with self.app.test_request_context('/system/',
@@ -77,6 +78,80 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
             self.assertEqual(res.json['result']['value']['key3'], 'update',
                              res.json)
+
+    def test_02a_password_config_is_censored_in_audit(self):
+        # A password-typed entry is created with the type named, so the audit line is censored.
+        with self.app.test_request_context('/system/setConfig',
+                                           data={"secretKey": "firstSecret",
+                                                 "secretKey.type": "password"},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+        entry = self.find_most_recent_audit_entry(action="*setConfig*")
+        self.assertNotIn("firstSecret", entry.get("info") or "", entry)
+        self.assertIn(CENSORED, entry.get("info") or "", entry)
+
+        # The update names no type. The entry is still password-typed, so the audit line for
+        # the new value is censored the same way.
+        with self.app.test_request_context('/system/setConfig',
+                                           data={"secretKey": "secondSecret"},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+        entry = self.find_most_recent_audit_entry(action="*setConfig*")
+        self.assertNotIn("secondSecret", entry.get("info") or "", entry)
+        self.assertIn(CENSORED, entry.get("info") or "", entry)
+
+        # A value that is not password-typed stays readable, which is what the line is for.
+        with self.app.test_request_context('/system/setConfig',
+                                           data={"plainKey": "plainValue"},
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res)
+        entry = self.find_most_recent_audit_entry(action="*setConfig*")
+        self.assertIn("plainValue", entry.get("info") or "", entry)
+
+    def test_02b_documentation_censors_secret_appconfig_values(self):
+        # The report is read by somebody other than whoever wrote pi.cfg, so a value that holds
+        # a credential must not be in it. The decision is made on the name of the key, so a
+        # key an installation or a plugin defines itself is covered too.
+        secrets = {"PI_HSM_MODULE_PASSWORD": "hsm-secret-value",
+                   "PI_HSM_MODULE_KEY": "hsm-key-value",
+                   "PI_DB_PASSWORD": "db-secret-value",
+                   # A plugin defines its keys with the PI_ prefix, which is what the report renders
+                   "PI_MYPLUGIN_API_SECRET": "plugin-secret-value"}
+        # A flag and a path whose names contain "KEY" are not secrets and stay readable,
+        # otherwise the report loses what it is read for.
+        readable = {"PI_AUDIT_NO_PRIVATE_KEY_CHECK": True,
+                    "PI_ALLOWED_SSH_KEY_TYPES": "ssh-ed25519"}
+        original = {key: self.app.config.get(key, self.NO_VALUE)
+                    for key in list(secrets) + list(readable)}
+        self.app.config.update(secrets)
+        self.app.config.update(readable)
+        try:
+            with self.app.test_request_context('/system/documentation',
+                                               method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.data)
+                body = res.data.decode("utf-8")
+
+            for key, value in secrets.items():
+                self.assertIn(key, body, f"{key} is missing from the report")
+                self.assertNotIn(value, body, f"{key} was rendered in clear in the report")
+            self.assertIn("PI_ALLOWED_SSH_KEY_TYPES: **ssh-ed25519**", body)
+            self.assertIn("PI_AUDIT_NO_PRIVATE_KEY_CHECK: **True**", body)
+        finally:
+            # Restore, do not pop: some of these keys are part of the test configuration, and
+            # removing them would break every test that runs after this one.
+            for key, value in original.items():
+                if value is self.NO_VALUE:
+                    self.app.config.pop(key, None)
+                else:
+                    self.app.config[key] = value
 
     def test_03_set_and_del_default(self):
         with self.app.test_request_context('/system/setDefault',
