@@ -36,6 +36,18 @@
       </ng-container>
     </app-details-header>
 
+    @if (authService.actionAllowed("delete")) {
+      <div class="header-status-actions">
+        <button
+          (click)="deleteToken()"
+          class="action-button-delete-secondary button-width-l"
+          mat-stroked-button>
+          <mat-icon>delete</mat-icon>
+          <span i18n="@@common.delete">Delete</span>
+        </button>
+      </div>
+    }
+
     <div class="details-grid">
       <app-token-details-status
         [tokenDetails]="tokenDetails()"

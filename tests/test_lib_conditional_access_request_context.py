@@ -64,6 +64,29 @@ class ConditionalAccessContextTestCase(MyTestCase):
     def _event(username, event_type=AuthEventType.LOGIN_SUCCESS):
         return PendingAuthEvent(event_type=event_type, username=username)
 
+    def test_00a_classifying_passes_over_a_client_signal(self):
+        # A client signal is staged on the way out, after the view has staged what the request actually was, so as
+        # the latest event it would stand in for that outcome and decide which policies are evaluated. It must not:
+        # whoever can produce one at will could otherwise keep every policy tracking their real failures from being
+        # asked about them.
+        context = ConditionalAccessContext()
+        outcome = context.stage(self._event("alice", AuthEventType.MFA_FAIL))
+        context.stage(self._event(None, AuthEventType.SUSPENDED_API_KEY_USED))
+
+        self.assertEqual(AuthEventType.SUSPENDED_API_KEY_USED, context.latest.event_type)
+        self.assertIs(outcome, context.classifying)
+
+    def test_00b_classifying_is_the_client_signal_when_it_is_all_there_is(self):
+        # Passing it over is only right while there is something to pass it over for. A request that authenticated
+        # nothing has no classification for the signal to stand in for.
+        context = ConditionalAccessContext()
+        signal = context.stage(self._event(None, AuthEventType.SUSPENDED_API_KEY_USED))
+
+        self.assertIs(signal, context.classifying)
+
+    def test_00c_classifying_is_none_with_nothing_staged(self):
+        self.assertIsNone(ConditionalAccessContext().classifying)
+
     def test_01_context_is_cached_per_app_context(self):
         context = get_ca_context()
         self.assertIs(context, get_ca_context())
