@@ -30,7 +30,7 @@
     [multiple]="true"
     [disabled]="isDisabled()"
     (selectionChange)="onSelectionChange($event)"
-    (closed)="leaveHeader()">
+    (closed)="resetMarker()">
     <mat-select-trigger>
       {{ triggerValue() }}
     </mat-select-trigger>
