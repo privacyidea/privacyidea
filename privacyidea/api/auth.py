@@ -89,7 +89,7 @@ from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                           AUTH_EVENT_TYPE_KEY, build_reason_detail,
                                                                           LOG_TRANSACTION_ID_KEY)
-from privacyidea.lib.conditional_access.request_context import continue_attempt
+from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
@@ -319,6 +319,10 @@ def get_auth_token():
         raise AuthError(_("Authentication with passkey disabled."), id=Error.AUTHENTICATE_ILLEGAL_METHOD)
     if credential_id and passkey_login_enabled:
         transaction_id: str = get_required(request.all_data, "transaction_id")
+        # The passkey branch is the only one that consumes the transaction it was given, so it is where the
+        # attempt claimed in before_request is settled. The password branch below never reads it, and echoes
+        # it onto its row regardless, which is why naming a transaction cannot settle an attempt by itself.
+        confirm_attempt(transaction_id)
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
             log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
