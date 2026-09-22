@@ -39,6 +39,7 @@ from flask_babel import _
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                           AuthLogUserRole,
+                                                                          CLIENT_SIGNAL_EVENT_TYPES,
                                                                           AUTH_EVENT_REASON_KEY,
                                                                           AUTH_EVENT_REASON_DETAIL_KEY,
                                                                           AUTH_EVENT_SERIALS_KEY,
@@ -501,7 +502,14 @@ def log_authentication(event_type: AuthEventType | None, request: Request | None
     # Records the authenticating principal, including the token owner resolved just above that the caller doesn't know
     # about, on the request context so policy evaluation and the logged row agree on the same subject; kept as an
     # AuthPrincipal rather than a bare User because a local database admin has no user object.
-    context.principal = AuthPrincipal(user=user or User(), username=login_name, internal_admin=internal_admin)
+    #
+    # A CLIENT_SIGNAL_EVENT_TYPES event is the exception: it says nothing about who the request authenticated. It
+    # names no user on purpose - it describes the client a request arrived with, and attributing it to a
+    # caller-supplied name would let whoever produces it write rows against any account - and it is logged on the way
+    # out, after the view has already recorded who did authenticate. Overwriting that with an empty principal would
+    # leave the request's own evaluation to run against nobody.
+    if event_type not in CLIENT_SIGNAL_EVENT_TYPES:
+        context.principal = AuthPrincipal(user=user or User(), username=login_name, internal_admin=internal_admin)
     context.source_ip = source_ip
     # The caller's own info and the reason detail share the row's other_info, the detail under a key of its own
     # (see REASON_DETAIL_INFO_KEY), so neither has to know about the other.

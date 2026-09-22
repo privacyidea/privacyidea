@@ -36,7 +36,6 @@ export interface ContainerRegistrationInitDialogData {
 @Component({
   selector: "app-container-registration-init-dialog",
   templateUrl: "./container-registration-init-dialog.component.html",
-  styleUrls: ["./container-registration-init-dialog.component.scss"],
   imports: [ContainerRegistrationConfigComponent, DialogWrapperComponent]
 })
 export class ContainerRegistrationInitDialogComponent extends AbstractDialogComponent<ContainerRegistrationInitDialogData> {

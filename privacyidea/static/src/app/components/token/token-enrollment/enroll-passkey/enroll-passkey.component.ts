@@ -52,7 +52,6 @@ import { lastValueFrom } from "rxjs";
   standalone: true,
   imports: [],
   templateUrl: "./enroll-passkey.component.html",
-  styleUrl: "./enroll-passkey.component.scss",
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollPasskeyComponent) }]
 })
 export class EnrollPasskeyComponent extends EnrollTokenBase<PasskeyEnrollmentData> {

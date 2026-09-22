@@ -59,7 +59,6 @@ export interface SmsEnrollmentOptions extends TokenEnrollmentData {
     FormField
   ],
   templateUrl: "./enroll-sms.component.html",
-  styleUrl: "./enroll-sms.component.scss",
   providers: [
     { provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollSmsComponent) }
   ]

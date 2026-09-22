@@ -24,7 +24,6 @@ import { DialogAction } from "@models/dialog";
 @Component({
   selector: "app-audit-download-dialog",
   templateUrl: "./audit-download-dialog.component.html",
-  styleUrl: "./audit-download-dialog.component.scss",
   standalone: true,
   imports: [DialogWrapperComponent]
 })

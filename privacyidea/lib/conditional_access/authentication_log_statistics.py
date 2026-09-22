@@ -430,7 +430,9 @@ def get_conditional_access_outcome_statistics(start_time: datetime,
                                                    (ConditionalAccessOutcome.policy_name, policy_names))
                    if (condition := match_condition(column, value, case_insensitive)) is not None]
     if dry_run is not None:
-        conditions.append(ConditionalAccessOutcome.dry_run.is_(dry_run))
+        # ``== dry_run`` rather than ``.is_(...)``: Oracle has no boolean type and
+        # "IS 1" is not valid SQL there (ORA-00908). The value is never None here.
+        conditions.append(ConditionalAccessOutcome.dry_run == dry_run)
     if visibility_scopes is not None:
         conditions.append(visibility_condition(visibility_scopes))
 
