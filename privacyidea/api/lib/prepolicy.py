@@ -323,12 +323,18 @@ def realmadmin(request=None, action=None):
             # all: both leave request.all_data without a realm filter so the downstream function queries
             # every realm.
             granted_realms = admin_granted_realms(action)
-            # NOTE: an empty answer (restricted by user or resolver, with no realm) leaves the realm
-            # unset here and so queries every realm. That is the same shape as the remembered-device
-            # defect this function's helper documents, but it has not been reproduced for the user
-            # listing, and guessing at it would change what a legitimate configuration lists. It is
-            # recorded as a suspected sibling to verify rather than silently altered.
-            if granted_realms:
+            if granted_realms == []:
+                # The policies that grant this action are scoped by user or by resolver and carry no
+                # realm, so the boundary cannot be written as a realm filter. Leaving the realm unset
+                # would hand back every realm, which is what the request was supposed to be narrowed
+                # away from. If the request names a user, check_base_action has scoped it against
+                # that user and there is nothing unbounded left to refuse; if it names nobody, there
+                # is no boundary left to apply and the request has to be turned away.
+                if not params.get("user"):
+                    raise PolicyError(_("Your permissions for this action are restricted to "
+                                        "individual users or resolvers rather than to realms, so "
+                                        "this request has to name the realm it applies to."))
+            elif granted_realms:
                 if len(granted_realms) == 1 or action != PolicyAction.USERLIST:
                     request.all_data["realm"] = granted_realms[0]
                 else:
