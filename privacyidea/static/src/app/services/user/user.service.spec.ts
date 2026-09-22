@@ -326,10 +326,7 @@ describe("UserService", () => {
       const result = lastValueFrom(userService.setUserAttribute("department", "finance"));
 
       const req = httpMock.expectOne((r) => r.method === "POST" && r.url.endsWith("/user/attribute"));
-      req.flush(
-        { result: { error: { message: "denied" } } },
-        { status: 500, statusText: "Server Error" }
-      );
+      req.flush({ result: { error: { message: "denied" } } }, { status: 500, statusText: "Server Error" });
 
       await expect(result).resolves.toBeUndefined();
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to set user attribute. denied");
@@ -340,10 +337,7 @@ describe("UserService", () => {
       const result = lastValueFrom(userService.deleteUserAttribute("department"));
 
       const req = httpMock.expectOne((r) => r.method === "DELETE");
-      req.flush(
-        { result: { error: { message: "denied" } } },
-        { status: 500, statusText: "Server Error" }
-      );
+      req.flush({ result: { error: { message: "denied" } } }, { status: 500, statusText: "Server Error" });
 
       await expect(result).resolves.toBeUndefined();
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete user attribute. denied");
@@ -491,9 +485,9 @@ describe("UserService", () => {
       expect(userService.filterParams()).toEqual({ has_tokens: "False" });
     });
 
-    it("drops has_tokens when the value does not read as a boolean", () => {
+    it("sends has_tokens as typed when the value does not read as a boolean, for the backend to reject", () => {
       userService.activeFilter.set(new FilterValue({ value: "has_tokens: maybe" }));
-      expect(userService.filterParams()).not.toHaveProperty("has_tokens");
+      expect(userService.filterParams()).toEqual({ has_tokens: "maybe" });
     });
 
     it("offers has_tokens as an advanced keyword, not a plain column filter", () => {
@@ -548,21 +542,22 @@ describe("UserService", () => {
     });
   });
 
-  describe("fetchUsernames()", () => {
-    it("requests username and resolver, without a realm param when none is given", async () => {
-      const promise = lastValueFrom(userService.fetchUsernames());
-      const req = httpMock.expectOne((r) => r.url === environment.proxyUrl + "/user/");
-      expect(req.request.params.get("attributes")).toBe("username,resolver");
+  describe("fetchUserCount()", () => {
+    it("requests the user count without a realm param when none is given", async () => {
+      const promise = lastValueFrom(userService.fetchUserCount());
+      const req = httpMock.expectOne((r) => r.url === environment.proxyUrl + "/user/count");
       expect(req.request.params.has("realm")).toBe(false);
-      req.flush(MockPiResponse.fromValue([buildUser("alice")]));
-      await expect(promise).resolves.toBeTruthy();
+      req.flush(MockPiResponse.fromValue({ count: 3, with_tokens: 1 }));
+      await expect(promise).resolves.toEqual(
+        expect.objectContaining({ result: expect.objectContaining({ value: { count: 3, with_tokens: 1 } }) })
+      );
     });
 
     it("scopes the request to the given realm", () => {
-      userService.fetchUsernames("realm1").subscribe();
-      const req = httpMock.expectOne((r) => r.url === environment.proxyUrl + "/user/");
+      userService.fetchUserCount("realm1").subscribe();
+      const req = httpMock.expectOne((r) => r.url === environment.proxyUrl + "/user/count");
       expect(req.request.params.get("realm")).toBe("realm1");
-      req.flush(MockPiResponse.fromValue([]));
+      req.flush(MockPiResponse.fromValue({ count: 0, with_tokens: 0 }));
     });
   });
 

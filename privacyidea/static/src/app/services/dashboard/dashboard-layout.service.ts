@@ -166,7 +166,9 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
 
   public updateWidgetSettings(id: string, settings: WidgetSettings): void {
     this.widgets.update((widgets) =>
-      widgets.map((widget) => (widget.id === id ? { ...widget, settings: { ...settings } } : widget))
+      widgets.map((widget) =>
+        widget.id === id ? { ...widget, settings: { ...widget.settings, ...settings } } : widget
+      )
     );
     this.persistIfLive();
   }

@@ -897,7 +897,14 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     # do not own a token. Resolved after the resolvers answered, see below. An empty value does
     # not filter, as with realm and resolver above.
     has_tokens = get_optional(param, "has_tokens")
-    has_tokens = is_true(has_tokens) if has_tokens not in (None, "") else None
+    if has_tokens in (None, ""):
+        has_tokens = None
+    elif is_true(has_tokens):
+        has_tokens = True
+    elif has_tokens in (0, "0", False, "False", "false", "FALSE"):
+        has_tokens = False
+    else:
+        raise ParameterError(f"Invalid value for has_tokens: {has_tokens!r}")
     owner_keys = {}
 
     # determine which scope we want to show
@@ -1018,7 +1025,7 @@ def get_user_list(param: dict | None = None, user: User | None = None,
                 succeeded_resolvers.add(resolver_name)
                 for user_info in user_list:
                     # Read before the attribute stripping below, which may drop it from the record.
-                    user_id = str(user_info.get("userid") or "")
+                    owner_key = _owner_key(realm, resolver_name, user_info.get("userid"))
                     if not requested_attributes or "realm" in requested_pi_user_attributes:
                         user_info["realm"] = realm
                     if not requested_attributes or "resolver" in requested_pi_user_attributes:
@@ -1046,7 +1053,7 @@ def get_user_list(param: dict | None = None, user: User | None = None,
                         user_info.pop("username", None)
                     if user_tuple not in users_dict:
                         users_dict[user_tuple] = user_info
-                        owner_keys[user_tuple] = ((realm or "").lower(), resolver_name, user_id)
+                        owner_keys[user_tuple] = owner_key
                 log.debug(f"Found this userlist: {user_list!r}")
 
             except (ResolverError, ParameterError) as ex:
@@ -1068,14 +1075,56 @@ def get_user_list(param: dict | None = None, user: User | None = None,
         failures[:] = [name for name in failures if name not in succeeded_resolvers]
 
     if has_tokens is not None and users_dict:
-        # Imported here because privacyidea.lib.token imports this module.
-        from privacyidea.lib.token import get_token_owner_keys
-        owners = get_token_owner_keys(resolvers=sorted(succeeded_resolvers))
+        owners = _token_owners(owner_keys.values())
         users_dict = {user_tuple: user_info for user_tuple, user_info in users_dict.items()
                       if (owner_keys.get(user_tuple) in owners) == has_tokens}
 
     users = list(users_dict.values())
     return users
+
+
+def _owner_key(realm: str | None, resolver: str, user_id: Any) -> tuple[str, str, str] | None:
+    """
+    The key of a listed user among the token owners, see :func:`privacyidea.lib.token.get_token_owner_keys`.
+    A user without a user id has none, as no token can be assigned to them.
+    """
+    user_id = "" if user_id is None else str(user_id)
+    return ((realm or "").lower(), resolver, user_id) if user_id else None
+
+
+def _token_owners(owner_keys) -> set[tuple[str, str, str]]:
+    """
+    Those of the given owner keys that own a token. A key that is None owns none.
+    """
+    # Imported here because privacyidea.lib.token imports this module.
+    from privacyidea.lib.token import get_token_owner_keys
+    owner_keys = [owner_key for owner_key in owner_keys if owner_key]
+    if not owner_keys:
+        return set()
+    return get_token_owner_keys(resolvers=sorted({owner_key[1] for owner_key in owner_keys}),
+                                user_ids=sorted({owner_key[2] for owner_key in owner_keys}))
+
+
+@log_with(log)
+def count_users(param: dict | None = None, failures: list[str] | None = None) -> dict[str, int]:
+    """
+    Count the users :func:`get_user_list` lists for ``param``, and how many of them own a token.
+
+    Both numbers come from one listing, deduplicated the same way the user list is, so the users without a
+    token are their difference and each number matches the length of the user list with the corresponding
+    ``has_tokens`` filter. A ``has_tokens`` entry in ``param`` is ignored.
+
+    :param param: search parameters, as for :func:`get_user_list`
+    :param failures: optional list, receives the resolvers that could not be queried, as for
+        :func:`get_user_list`
+    :return: ``{"count": <number of users>, "with_tokens": <number of those that own a token>}``
+    """
+    param = {key: value for key, value in (param or {}).items() if key != "has_tokens"}
+    users = get_user_list(param, requested_attributes=["username", "userid", "realm", "resolver"],
+                          failures=failures)
+    owner_keys = [_owner_key(user.get("realm"), user.get("resolver"), user.get("userid")) for user in users]
+    owners = _token_owners(owner_keys)
+    return {"count": len(users), "with_tokens": sum(1 for owner_key in owner_keys if owner_key in owners)}
 
 
 @log_with(log)

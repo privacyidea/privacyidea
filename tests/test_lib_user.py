@@ -13,19 +13,21 @@ from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realm_id, get_realms, get_ordered_resolvers)
 from privacyidea.lib.resolver import (save_resolver, delete_resolver, get_resolver_list)
+from privacyidea.lib.error import ParameterError, ResolverError
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
                                                        CLIENT_SECRET, TENANT)
 from privacyidea.lib.user import (User, create_user,
                                   get_username,
                                   get_user_list,
+                                  count_users,
                                   split_user,
                                   get_user_from_param,
                                   UserError, get_attributes)
 from privacyidea.lib.user import log as user_log
 from sqlalchemy import delete, select
 
-from privacyidea.models import InternalUserAttribute, NodeName, db
+from privacyidea.models import InternalUserAttribute, NodeName, TokenOwner, db
 from . import ldap3mock
 from .base import MyTestCase, OverrideConfigTestCase, PristineSqliteFixtures
 from .test_lib_resolver import LDAPDirectory_small
@@ -286,6 +288,114 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         finally:
             if serial:
                 remove_token(serial)
+
+    def test_get_user_list_has_tokens_matches_a_user_id_of_0(self):
+        # A resolver with an integer id column may hand out the id 0 - root of the passwd file has
+        # it. It has to match the owner row "0", while a user without an id must not match an owner
+        # row without one.
+        from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdResolver
+
+        original_list = PasswdResolver.getUserList
+
+        def list_with_user_id(user_id):
+            def list_users(resolver_self, search_dict=None, attributes=None):
+                users = original_list(resolver_self, search_dict, attributes)
+                for user in users:
+                    if user.get("username") == "root":
+                        user["userid"] = user_id
+                return users
+            return list_users
+
+        serial = None
+        try:
+            token = init_token({"type": "spass"}, user=User("root", self.realm1, self.resolvername1))
+            serial = token.get_serial()
+            owner_row = db.session.execute(
+                select(TokenOwner).where(TokenOwner.token_id == token.token.id)).unique().scalar_one()
+
+            with mock.patch.object(PasswdResolver, "getUserList", list_with_user_id(0)):
+                self.assertEqual(["root"], [user["username"] for user in
+                                            get_user_list({"realm": self.realm1, "has_tokens": "True"})])
+
+            owner_row.user_id = ""
+            db.session.commit()
+            with mock.patch.object(PasswdResolver, "getUserList", list_with_user_id(None)):
+                self.assertEqual([], get_user_list({"realm": self.realm1, "has_tokens": "True"}))
+        finally:
+            if serial:
+                owner_row.user_id = "0"
+                db.session.commit()
+                remove_token(serial)
+
+    def test_count_users(self):
+        everyone = get_user_list({"realm": self.realm1})
+        self.assertEqual({"count": len(everyone), "with_tokens": 0}, count_users({"realm": self.realm1}))
+
+        serial = None
+        try:
+            token = init_token({"type": "spass"}, user=User("cornelius", self.realm1, self.resolvername1))
+            serial = token.get_serial()
+            # a second token of the same user does not make a second owner
+            init_token({"type": "spass", "serial": f"{serial}-2"},
+                       user=User("cornelius", self.realm1, self.resolvername1))
+
+            counts = count_users({"realm": self.realm1})
+            self.assertEqual({"count": len(everyone), "with_tokens": 1}, counts)
+            # each number is the length of the matching user list
+            self.assertEqual(len(get_user_list({"realm": self.realm1, "has_tokens": "True"})), counts["with_tokens"])
+            self.assertEqual(len(get_user_list({"realm": self.realm1, "has_tokens": "False"})),
+                             counts["count"] - counts["with_tokens"])
+            # has_tokens does not narrow what is counted
+            self.assertEqual(counts, count_users({"realm": self.realm1, "has_tokens": "False"}))
+            # nor does a search that finds nobody break it
+            self.assertEqual({"count": 0, "with_tokens": 0},
+                             count_users({"realm": self.realm1, "username": "does-not-exist"}))
+        finally:
+            if serial:
+                remove_token(serial)
+                remove_token(f"{serial}-2")
+
+    def test_count_users_leaves_out_an_owner_shadowed_by_a_resolver_of_higher_priority(self):
+        # Two resolvers serving the same users: a login name of the realm is the user of the resolver
+        # with the higher priority, so the same name in the other resolver is not listed - and its
+        # token must not be counted either, or the users without a token would come out too few.
+        shadowed_resolver = "reso-shadowed"
+        save_resolver({"resolver": shadowed_resolver, "type": "passwdresolver", "fileName": PWFILE})
+        set_realm(self.realm2, [{"name": self.resolvername1, "priority": 1},
+                                {"name": shadowed_resolver, "priority": 2}])
+        everyone = get_user_list({"realm": self.realm2})
+
+        serial = None
+        try:
+            token = init_token({"type": "spass"}, user=User("cornelius", self.realm2, shadowed_resolver))
+            serial = token.get_serial()
+            self.assertEqual({"count": len(everyone), "with_tokens": 0}, count_users({"realm": self.realm2}))
+            self.assertEqual([], get_user_list({"realm": self.realm2, "has_tokens": "True"}))
+            remove_token(serial)
+
+            token = init_token({"type": "spass"}, user=User("cornelius", self.realm2, self.resolvername1))
+            serial = token.get_serial()
+            self.assertEqual({"count": len(everyone), "with_tokens": 1}, count_users({"realm": self.realm2}))
+        finally:
+            if serial:
+                remove_token(serial)
+
+    def test_count_users_reports_a_resolver_it_could_not_read(self):
+        failures = []
+        with patch_resolver_to_raise(self.resolvername1, ResolverError("down")):
+            self.assertEqual({"count": 0, "with_tokens": 0}, count_users({"realm": self.realm1}, failures=failures))
+        self.assertEqual([self.resolvername1], failures)
+
+    def test_get_user_list_has_tokens_values(self):
+        with_tokens = get_user_list({"realm": self.realm1, "has_tokens": "True"})
+        for value in ("1", "true", "TRUE"):
+            self.assertEqual(with_tokens, get_user_list({"realm": self.realm1, "has_tokens": value}), value)
+        without_tokens = get_user_list({"realm": self.realm1, "has_tokens": "False"})
+        for value in ("0", "false", "FALSE"):
+            self.assertEqual(without_tokens, get_user_list({"realm": self.realm1, "has_tokens": value}), value)
+        # A value that reads as neither must not be taken for False, which would invert the filter.
+        for value in ("yes", "Tru", "on"):
+            self.assertRaises(ParameterError, get_user_list, {"realm": self.realm1, "has_tokens": value})
 
     def test_get_user_list_dedup_without_username_attribute(self):
         """

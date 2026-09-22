@@ -17,9 +17,9 @@ Version 3.14dev1
   * The token usage widget on the dashboard also reports how many users already own a token and how many do
     not, and can be narrowed to a single realm. The chosen realm is stored with the widget. A resolver that
     cannot be read is left out of both numbers and named below them, so an installation with a broken
-    resolver still sees the count of the resolvers that answered. The number of token owners, overall and
-    per resolver, is available via the new endpoint `GET /token/ownercount`, guarded by the `tokenlist`
-    action
+    resolver still sees the count of the resolvers that answered. Both numbers come from the new endpoint
+    `GET /user/count`, which counts the users `GET /user/` lists and how many of them own a token, guarded
+    by the `userlist` action like the user list itself
   * The user list can be narrowed to the users that own a token, or to those that do not, with the new
     `has_tokens` filter of `GET /user/`. Token ownership is privacyIDEA's own record rather than a user
     store attribute, so the filter is applied after the resolvers answered. The token usage widget links
@@ -113,6 +113,10 @@ Version 3.14dev1
   * Updated the pinned dependencies for the backend.
 
   Fixes:
+  * The token owner table has an index on its token column. This only matters on SQLite, where listing or
+    counting the tokens of a realm slowed down badly once many tokens were assigned. MySQL and MariaDB
+    already index the foreign key themselves, and on PostgreSQL and Oracle the same queries were measured
+    to take the same time with the index as without it, so nothing changes for them either way
   * `POST /token/copypin` and `POST /token/copyuser` check the `copytokenpin` / `copytokenuser` right for the
     source as well as for the destination token
   * The lost token process always creates a new replacement token. An earlier replacement of the same token

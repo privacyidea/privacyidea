@@ -114,8 +114,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          get_serial_by_otp, get_tokens,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token, set_token_type_info, get_settable_tokeninfo_keys,
-                         assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token,
-                         get_token_owners_per_resolver)
+                         assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
 from ..lib.policydecorators import check_admin_allowed_for_token_owner
@@ -774,52 +773,6 @@ def list_api():
         return send_csv_result(tokens)
     else:
         return send_result(tokens)
-
-
-@token_blueprint.route('/ownercount', methods=['GET'])
-@admin_required
-@prepolicy(check_admin_tokenlist, request, PolicyAction.TOKENLIST)
-@event("token_ownercount", request, g)
-@log_with(log)
-def owner_count_api():
-    """
-    Return the number of distinct users that own at least one token.
-
-    Only administrators may call this endpoint. Requires the policy
-    action ``tokenlist``; a realm-admin only ever counts the owners in
-    the realms their policies grant, even without a ``realm``
-    parameter.
-
-    A user is counted once no matter how many tokens are assigned to
-    them, in how many of the counted realms those tokens sit, and
-    whether the tokens are active. Unassigned tokens do not contribute.
-
-    The count is also broken down by resolver. Every owner falls into
-    exactly one resolver, so those numbers add up to ``count``, and a
-    caller that could read only some of the resolvers - see
-    ``detail.skipped_resolvers`` of :http:get:`/user/` - can add up the
-    part that matches the users it was able to list.
-
-    :query realm: only count the owners in this realm. This is the realm
-        of the owner, not the ``tokenrealm`` of the token, so the count
-        matches :http:get:`/user/` for the same realm. A token assigned
-        to a user without a realm belongs to no realm here and is left
-        out of every realm's count, as it is by the ``has_tokens``
-        filter of :http:get:`/user/`. Several realms may be given as a
-        comma-separated list. Without this parameter every realm the
-        caller may see is counted.
-    :status 200: ``result.value`` is ``{"count": <number>,
-        "by_resolver": {<resolver name>: <number>}}``.
-    """
-    realm = get_optional(request.all_data, "realm")
-    realms = [r.strip() for r in realm.split(",") if r.strip()] if realm else None
-    allowed_realms = getattr(request, "pi_allowed_realms", None)
-    if allowed_realms is not None:
-        allowed = [r.lower() for r in allowed_realms]
-        realms = [r for r in realms if r.lower() in allowed] if realms else allowed
-    per_resolver = get_token_owners_per_resolver(realms=realms)
-    g.audit_object.log({"success": True, "info": f"realm: {realms!s}"})
-    return send_result({"count": sum(per_resolver.values()), "by_resolver": per_resolver})
 
 
 @token_blueprint.route('/assign', methods=['POST'])

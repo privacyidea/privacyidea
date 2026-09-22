@@ -24,8 +24,8 @@ import { AuthService } from "@services/auth/auth.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.service";
 import { RealmService, Realms } from "@services/realm/realm.service";
-import { TokenCountParams, TokenOwnerCount, TokenService } from "@services/token/token.service";
-import { UserData, UserListResponseDetail, UserService } from "@services/user/user.service";
+import { TokenCountParams, TokenService } from "@services/token/token.service";
+import { UserCount, UserListResponseDetail, UserService } from "@services/user/user.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
@@ -47,23 +47,11 @@ function makeCountResponse(count: number) {
   };
 }
 
-function makeOwnerCountResponse(ownerCount: TokenOwnerCount) {
-  return MockPiResponse.fromValue<TokenOwnerCount>(ownerCount);
-}
-
-function buildUser(username: string, resolver: string): UserData {
-  return {
-    username,
-    userid: username,
-    description: "",
-    editable: true,
-    email: "",
-    givenname: "",
-    surname: "",
-    mobile: "",
-    phone: "",
-    resolver
-  };
+function makeUserCountResponse(count: number, withTokens: number, skippedResolvers?: string[]) {
+  return MockPiResponse.fromValue<UserCount, UserListResponseDetail>(
+    { count, with_tokens: withTokens },
+    skippedResolvers ? { skipped_resolvers: skippedResolvers } : {}
+  );
 }
 
 describe("TokensWidgetComponent", () => {
@@ -110,10 +98,9 @@ describe("TokensWidgetComponent", () => {
       }
       return of(makeCountResponse(100));
     });
-    tokenMock.getTokenOwnerCount.mockReturnValue(of(makeOwnerCountResponse({ count: 0, by_resolver: {} })));
 
     userMock = TestBed.inject(UserService) as unknown as MockUserService;
-    userMock.fetchUsernames.mockReturnValue(of(MockPiResponse.fromValue<UserData[]>([])));
+    userMock.fetchUserCount.mockReturnValue(of(makeUserCountResponse(0, 0)));
 
     realmMock = TestBed.inject(RealmService) as unknown as MockRealmService;
     // The widget always counts one realm; the mock's default realm is "realm1", which every test
@@ -331,8 +318,7 @@ describe("TokensWidgetComponent", () => {
 
     it("counts the default realm rather than every realm", () => {
       expect(tokenMock.getTokenCount).toHaveBeenCalledWith(expect.objectContaining({ tokenrealm: "realm1" }));
-      expect(tokenMock.getTokenOwnerCount).toHaveBeenCalledWith("realm1");
-      expect(userMock.fetchUsernames).toHaveBeenCalledWith("realm1");
+      expect(userMock.fetchUserCount).toHaveBeenCalledWith("realm1");
     });
 
     it("waits for the default realm instead of counting without one", () => {
@@ -415,6 +401,24 @@ describe("TokensWidgetComponent", () => {
       expect(invalidateSpy).toHaveBeenCalledWith("dashboard:token-users:realm1");
     });
 
+    it("drops the cache entries of a stored realm that turns out not to exist any more", () => {
+      const store = TestBed.inject(DashboardDataStore);
+      realmMock.realmResource.value.set(undefined);
+      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+      fixture2.componentRef.setInput("instance", { ...instance, settings: { realm: "oldrealm" } });
+      fixture2.detectChanges();
+      expect(fixture2.componentInstance.realm()).toBe("oldrealm");
+
+      const invalidateSpy = jest.spyOn(store, "invalidate");
+      realmMock.realmResource.value.set(MockPiResponse.fromValue<Realms>({}));
+      fixture2.detectChanges();
+
+      expect(fixture2.componentInstance.realm()).toBe("realm1");
+      expect(invalidateSpy).toHaveBeenCalledWith("dashboard:tokens:oldrealm");
+      expect(invalidateSpy).toHaveBeenCalledWith("dashboard:token-users:oldrealm");
+      fixture2.destroy();
+    });
+
     it("does nothing when the picked realm is already selected, or when none is picked", () => {
       const updateSpy = jest.spyOn(layoutService, "updateWidgetSettings");
       component.selectRealm("realm1");
@@ -449,15 +453,9 @@ describe("TokensWidgetComponent", () => {
   });
 
   describe("user counts", () => {
-    it("counts distinct (resolver, username) pairs and subtracts the owner count", () => {
-      const store = TestBed.inject(DashboardDataStore);
-      store.invalidate();
-      tokenMock.getTokenOwnerCount.mockReturnValue(
-        of(makeOwnerCountResponse({ count: 2, by_resolver: { resolver1: 2 } }))
-      );
-      userMock.fetchUsernames.mockReturnValue(
-        of(MockPiResponse.fromValue<UserData[]>([buildUser("alice", "resolver1"), buildUser("bob", "resolver1")]))
-      );
+    it("takes both counts from one user count, so they add up to the users of the realm", () => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      userMock.fetchUserCount.mockReturnValue(of(makeUserCountResponse(5, 2)));
 
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
       fixture2.componentRef.setInput("instance", instance);
@@ -465,73 +463,43 @@ describe("TokensWidgetComponent", () => {
 
       expect(fixture2.componentInstance.userCounts()).toEqual({
         withTokens: 2,
-        withoutTokens: 0,
+        withoutTokens: 3,
         skippedResolvers: []
       });
       fixture2.destroy();
     });
 
-    it("excludes skipped resolvers from both counts so the difference stays meaningful", () => {
-      const store = TestBed.inject(DashboardDataStore);
-      store.invalidate();
-      tokenMock.getTokenOwnerCount.mockReturnValue(
-        of(makeOwnerCountResponse({ count: 12, by_resolver: { reachable: 2, broken: 10 } }))
-      );
-      userMock.fetchUsernames.mockReturnValue(
-        of(
-          MockPiResponse.fromValue<UserData[], UserListResponseDetail>(
-            [buildUser("alice", "reachable"), buildUser("bob", "reachable")],
-            { skipped_resolvers: ["broken"] }
-          )
-        )
-      );
+    it("names the resolvers the user count could not read", () => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      userMock.fetchUserCount.mockReturnValue(of(makeUserCountResponse(2, 1, ["broken"])));
 
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
       fixture2.componentRef.setInput("instance", instance);
       fixture2.detectChanges();
 
-      expect(fixture2.componentInstance.userCounts()).toEqual({
-        withTokens: 2,
-        withoutTokens: 0,
-        skippedResolvers: ["broken"]
-      });
+      expect(fixture2.componentInstance.userCounts().skippedResolvers).toEqual(["broken"]);
       expect(fixture2.nativeElement.textContent).toContain("broken");
       fixture2.destroy();
     });
 
-    it("falls back to the total when the server reports no per-resolver breakdown", () => {
-      const store = TestBed.inject(DashboardDataStore);
-      store.invalidate();
-      tokenMock.getTokenOwnerCount.mockReturnValue(
-        of(MockPiResponse.fromValue({ count: 5 } as unknown as TokenOwnerCount))
-      );
+    it("shows the token counts while the user count is still on its way", () => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      userMock.fetchUserCount.mockReturnValue(new Subject().asObservable());
 
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
       fixture2.componentRef.setInput("instance", instance);
       fixture2.detectChanges();
 
-      expect(fixture2.componentInstance.userCounts().withTokens).toBe(5);
-      fixture2.destroy();
-    });
-
-    it("shows an em dash for both rows while the owner count has not arrived", () => {
-      const store = TestBed.inject(DashboardDataStore);
-      store.invalidate();
-      tokenMock.getTokenOwnerCount.mockReturnValue(new Subject().asObservable());
-
-      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
-      fixture2.componentRef.setInput("instance", instance);
-      fixture2.detectChanges();
-
+      expect(fixture2.componentInstance.state()).toBe("ready");
+      expect(fixture2.componentInstance.counts().total).toBe(100);
       expect(fixture2.componentInstance.withTokensLabel()).toBe("—");
       expect(fixture2.componentInstance.withoutTokensLabel()).toBe("—");
       fixture2.destroy();
     });
 
-    it("does not fail the widget state when the owner count endpoint errors", () => {
-      const store = TestBed.inject(DashboardDataStore);
-      store.invalidate();
-      tokenMock.getTokenOwnerCount.mockReturnValue(throwError(() => new Error("boom")));
+    it("does not fail the widget state when the user count errors", () => {
+      TestBed.inject(DashboardDataStore).invalidate();
+      userMock.fetchUserCount.mockReturnValue(throwError(() => new Error("boom")));
 
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
       fixture2.componentRef.setInput("instance", instance);
@@ -542,22 +510,21 @@ describe("TokensWidgetComponent", () => {
       fixture2.destroy();
     });
 
-    it("does not show the without-tokens row or fetch usernames without the userlist right", () => {
-      const store = TestBed.inject(DashboardDataStore);
-      store.invalidate();
+    it("shows no user rows and counts no users without the userlist right", () => {
+      TestBed.inject(DashboardDataStore).invalidate();
       authMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["tokenlist"] });
-      userMock.fetchUsernames.mockClear();
+      userMock.fetchUserCount.mockClear();
 
       const fixture2 = TestBed.createComponent(TokensWidgetComponent);
       fixture2.componentRef.setInput("instance", instance);
       fixture2.detectChanges();
 
       expect(fixture2.componentInstance.canListUsers()).toBe(false);
-      expect(userMock.fetchUsernames).not.toHaveBeenCalled();
+      expect(userMock.fetchUserCount).not.toHaveBeenCalled();
       const labels = Array.from(fixture2.nativeElement.querySelectorAll("td:first-child")).map((td) =>
         (td as Element).textContent?.trim()
       );
-      expect(labels).toContain("Users with tokens");
+      expect(labels).not.toContain("Users with tokens");
       expect(labels).not.toContain("Users without tokens");
       fixture2.destroy();
     });
@@ -566,10 +533,7 @@ describe("TokensWidgetComponent", () => {
       const links = Array.from(fixture.nativeElement.querySelectorAll("a")) as HTMLAnchorElement[];
       const userLinks = links.filter((link) => link.textContent?.includes("Users "));
 
-      expect(userLinks.map((link) => link.textContent?.trim())).toEqual([
-        "Users with tokens",
-        "Users without tokens"
-      ]);
+      expect(userLinks.map((link) => link.textContent?.trim())).toEqual(["Users with tokens", "Users without tokens"]);
       expect(userLinks.every((link) => link.search === "?realm=realm1")).toBe(true);
     });
 

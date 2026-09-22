@@ -204,6 +204,7 @@ describe("UserTableComponent", () => {
       ...mockUserService.apiFilterKeys,
       ...mockUserService.advancedApiFilterKeys
     ]);
+    expect(component.filterKeywords).toContain("has_tokens");
   });
 
   describe("a preset filter handed over by another view", () => {

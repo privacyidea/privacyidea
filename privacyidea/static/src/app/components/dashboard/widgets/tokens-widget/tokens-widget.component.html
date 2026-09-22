@@ -147,9 +147,9 @@
             <td>{{ unassignedTotal() }}</td>
           </tr>
         }
-        <tr class="user-counts-start">
-          <td>
-            @if (canListUsers()) {
+        @if (canListUsers()) {
+          <tr class="user-counts-start">
+            <td>
               <a
                 [routerLink]="routePaths.USERS"
                 [queryParams]="{ realm: realm() }"
@@ -157,13 +157,9 @@
                 i18n="@@dashboard.usersWithTokens"
                 >Users with tokens</a
               >
-            } @else {
-              <span i18n="@@dashboard.usersWithTokens">Users with tokens</span>
-            }
-          </td>
-          <td>{{ withTokensLabel() }}</td>
-        </tr>
-        @if (canListUsers()) {
+            </td>
+            <td>{{ withTokensLabel() }}</td>
+          </tr>
           <tr>
             <td>
               <a

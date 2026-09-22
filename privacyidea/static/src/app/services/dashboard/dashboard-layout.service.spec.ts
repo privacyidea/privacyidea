@@ -354,12 +354,12 @@ describe("DashboardLayoutService", () => {
       expect(service.widgets()[0].settings).toEqual({ realm: "realm1" });
     });
 
-    it("should replace, not merge, previously stored settings", () => {
+    it("should merge into, not replace, previously stored settings", () => {
       const id = service.widgets()[0].id;
-      service.updateWidgetSettings(id, { realm: "realm1", extra: "keep?" });
+      service.updateWidgetSettings(id, { realm: "realm1", extra: "kept" });
       service.updateWidgetSettings(id, { realm: "realm2" });
 
-      expect(service.widgets()[0].settings).toEqual({ realm: "realm2" });
+      expect(service.widgets()[0].settings).toEqual({ realm: "realm2", extra: "kept" });
     });
 
     it("should not change other widgets", () => {

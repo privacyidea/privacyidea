@@ -2,6 +2,7 @@
 
 from urllib.parse import urlencode, quote
 
+from privacyidea.lib.error import ResolverError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.realm import set_realm, delete_realm
@@ -1081,3 +1082,66 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
             if serial:
                 remove_token(serial)
             delete_policy("pol-userlist")
+
+    def test_18_get_users_has_tokens_rejects_an_unknown_value(self):
+        self.setUp_user_realms()
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode({"realm": self.realm1, "has_tokens": "yes"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.json)
+
+    def test_19_count_users(self):
+        self.setUp_user_realms()
+
+        def get(path, query, auth=None):
+            with self.app.test_request_context(path,
+                                               method='GET',
+                                               query_string=urlencode(query),
+                                               headers={'Authorization': auth or self.at}):
+                return self.app.full_dispatch_request()
+
+        def count(query, auth=None):
+            res = get('/user/count', query, auth)
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json["result"]["value"]
+
+        everyone = get('/user/', {"realm": self.realm1}).json["result"]["value"]
+        self.assertEqual({"count": len(everyone), "with_tokens": 0}, count({"realm": self.realm1}))
+
+        serial = None
+        try:
+            token = init_token({"type": "spass"}, user=User("cornelius", self.realm1))
+            serial = token.get_serial()
+            counts = count({"realm": self.realm1})
+            self.assertEqual({"count": len(everyone), "with_tokens": 1}, counts)
+            with_tokens = get('/user/', {"realm": self.realm1, "has_tokens": "True"}).json["result"]["value"]
+            self.assertEqual(len(with_tokens), counts["with_tokens"])
+
+            # A user counts only their own record, as they only ever list that one.
+            self.authenticate_selfservice_user()
+            set_policy(name="pol-userlist", scope=SCOPE.USER, action=PolicyAction.USERLIST)
+            self.assertEqual({"count": 1, "with_tokens": 0}, count({"realm": self.realm1}, auth=self.at_user))
+            delete_policy("pol-userlist")
+
+            # The userlist action guards the count as it guards the list.
+            set_policy(name="pol-only-init", scope=SCOPE.ADMIN, action="enrollHOTP")
+            res = get('/user/count', {"realm": self.realm1})
+            self.assertEqual(403, res.status_code, res.json)
+            delete_policy("pol-only-init")
+        finally:
+            if serial:
+                remove_token(serial)
+
+    def test_20_count_users_reports_skipped_resolvers(self):
+        self.setUp_user_realms()
+        with patch_resolver_to_raise(self.resolvername1, ResolverError("down")):
+            with self.app.test_request_context('/user/count',
+                                               method='GET',
+                                               query_string=urlencode({"realm": self.realm1}),
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual({"count": 0, "with_tokens": 0}, res.json["result"]["value"])
+        self.assertEqual([self.resolvername1], res.json["detail"]["skipped_resolvers"])

@@ -31,14 +31,8 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
-import {
-  TokenCount,
-  TokenCountParams,
-  TokenOwnerCount,
-  TokenService,
-  TokenServiceInterface
-} from "@services/token/token.service";
-import { UserData, UserListResponseDetail, UserService, UserServiceInterface } from "@services/user/user.service";
+import { TokenCount, TokenCountParams, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserCount, UserListResponseDetail, UserService, UserServiceInterface } from "@services/user/user.service";
 import { catchError, forkJoin, of } from "rxjs";
 
 /** Key the chosen realm is stored under in the widget instance settings. Empty value: the default realm. */
@@ -53,7 +47,7 @@ export interface TokenCounts {
 }
 
 /**
- * Both counts cover the same population: the resolvers the user list could be read from. A count
+ * Both counts come from one listing of the users, so they add up to the users of the realm. A count
  * is null while the numbers behind it are missing or unreadable. ``skippedResolvers`` names the
  * resolvers left out of both, so a partial count can say what it is missing.
  */
@@ -69,11 +63,9 @@ interface TokenCountResponses {
   software: PiResponse<TokenCount>;
   unassigned_hardware: PiResponse<TokenCount>;
   unassigned_software: PiResponse<TokenCount>;
-  /** Null when the server does not know the endpoint, which costs the user counts and nothing else. */
-  owners: PiResponse<TokenOwnerCount> | null;
 }
 
-type UserListResponse = PiResponse<UserData[], UserListResponseDetail | undefined>;
+type UserCountResponse = PiResponse<UserCount, UserListResponseDetail | undefined>;
 
 @Component({
   selector: "app-tokens-widget",
@@ -109,7 +101,7 @@ export class TokensWidgetComponent extends DashboardWidget {
   // Fetched next to the token counts, not with them: a resolver that does not answer would
   // otherwise hold back the counts for as long as it takes to time out.
   private readonly dataRef = signal<DashboardDataRef<TokenCountResponses> | null>(null);
-  private readonly usersRef = signal<DashboardDataRef<UserListResponse | null> | null>(null);
+  private readonly usersRef = signal<DashboardDataRef<UserCountResponse | null> | null>(null);
 
   override readonly partialLoading = computed(
     () => (this.dataRef()?.revalidating() ?? false) || (this.usersRef()?.revalidating() ?? false)
@@ -185,17 +177,12 @@ export class TokensWidgetComponent extends DashboardWidget {
   });
 
   readonly userCounts = computed<UserTokenCounts>(() => {
-    const owners = this.dataRef()?.value()?.owners?.result?.value;
-    const userList = this.usersRef()?.value();
-    const skippedResolvers = userList?.detail?.skipped_resolvers ?? [];
-    const users = userList?.result?.value;
-    const withTokens = owners ? this.reachableOwners(owners, new Set(skippedResolvers)) : null;
-    // A resolver shared between realms reports its users once per realm; the owner count does not.
-    const total = users && new Set(users.map((user) => `${user.resolver}\u0000${user.username}`)).size;
+    const response = this.usersRef()?.value();
+    const counts = response?.result?.value;
     return {
-      withTokens,
-      withoutTokens: withTokens !== null && total !== undefined ? Math.max(0, total - withTokens) : null,
-      skippedResolvers
+      withTokens: counts?.with_tokens ?? null,
+      withoutTokens: counts ? counts.count - counts.with_tokens : null,
+      skippedResolvers: response?.detail?.skipped_resolvers ?? []
     };
   });
 
@@ -234,12 +221,7 @@ export class TokensWidgetComponent extends DashboardWidget {
         this.state.set(ref.error() ? "error" : "loading");
         return;
       }
-      // The owner count is left out: it is an addition to this widget, not what it is about, so
-      // a server that does not serve it yet still shows every token count it does serve.
-      const { owners: _, ...tokenCounts } = value;
-      this.state.set(
-        Object.values(tokenCounts).every((response) => response.result?.status === true) ? "ready" : "error"
-      );
+      this.state.set(Object.values(value).every((response) => response.result?.status === true) ? "ready" : "error");
     });
   }
 
@@ -275,11 +257,6 @@ export class TokensWidgetComponent extends DashboardWidget {
     }
     // The load is given the new realm: the instance input only carries it after the next
     // change detection run, so reading it back here would still yield the previous one.
-    // Dropped, or the entries of every realm ever picked would be refetched on each refresh.
-    if (previous) {
-      this.store.invalidate(this.storeKey(previous));
-      this.store.invalidate(this.usersStoreKey(previous));
-    }
     this.load(realm);
   }
 
@@ -288,20 +265,6 @@ export class TokensWidgetComponent extends DashboardWidget {
     if (realm) {
       this.load(realm);
     }
-  }
-
-  /**
-   * Token owners minus those of the resolvers the user list could not reach. Every owner falls
-   * into exactly one resolver, so what is left counts the same people the user list does and the
-   * difference between the two stays meaningful. A server that reports no breakdown at all leaves
-   * the total, which is also the right answer when there is nothing to count.
-   */
-  private reachableOwners(owners: TokenOwnerCount, skipped: Set<string>): number {
-    const byResolver = Object.entries(owners.by_resolver ?? {});
-    if (byResolver.length === 0) {
-      return owners.count;
-    }
-    return byResolver.filter(([resolver]) => !skipped.has(resolver)).reduce((sum, [, count]) => sum + count, 0);
   }
 
   private countLabel(count: number | null): string {
@@ -330,6 +293,11 @@ export class TokensWidgetComponent extends DashboardWidget {
       this.state.set("denied");
       return;
     }
+    // Dropped, or the entries of every realm ever loaded would be refetched on each refresh.
+    if (this.loadedRealm && this.loadedRealm !== realm) {
+      this.store.invalidate(this.storeKey(this.loadedRealm));
+      this.store.invalidate(this.usersStoreKey(this.loadedRealm));
+    }
     this.loadedRealm = realm;
     const scope: TokenCountParams = { tokenrealm: realm };
     this.dataRef.set(
@@ -349,8 +317,7 @@ export class TokensWidgetComponent extends DashboardWidget {
             infokey: "tokenkind",
             infovalue: "software",
             assigned: "False"
-          }),
-          owners: this.tokenService.getTokenOwnerCount(realm).pipe(catchError(() => of(null)))
+          })
         })
       )
     );
@@ -361,7 +328,7 @@ export class TokensWidgetComponent extends DashboardWidget {
     this.usersRef.set(
       // A failure here only costs the "without tokens" row, not the whole widget.
       this.store.load(this.usersStoreKey(realm), () =>
-        this.userService.fetchUsernames(realm).pipe(catchError(() => of(null)))
+        this.userService.fetchUserCount(realm).pipe(catchError(() => of(null)))
       )
     );
   }

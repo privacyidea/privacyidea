@@ -62,7 +62,8 @@ from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
-from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all, get_user_from_param
+from privacyidea.lib.user import (get_user_list, count_users, create_user, User, is_attribute_at_all,
+                                  get_user_from_param)
 from privacyidea.lib.usersetting import (SettingsSubject, delete_user_settings, get_user_settings,
                                          set_user_settings)
 from privacyidea.lib.utils import is_true
@@ -123,8 +124,7 @@ def get_users():
     :query has_tokens: ``True`` keeps only the users that own at least
         one token, ``False`` only those that own none. A token counts
         for the realm its owner was assigned in, not for the realms the
-        token itself belongs to, as with the ``realm`` parameter of
-        :http:get:`/token/ownercount`. Ownership is
+        token itself belongs to. Ownership is
         privacyIDEA's own record rather than a user-store attribute, so
         this filter is applied after the resolvers answered; a resolver
         reported in ``detail.skipped_resolvers`` therefore contributes
@@ -195,19 +195,13 @@ def get_users():
     # Normalise to a comma-separated string so the audit info stays scalar.
     if isinstance(realm, list):
         realm = ",".join(realm)
-    search_parameters = dict(request.all_data)
+    search_parameters = _search_parameters()
     requested_attributes = request.all_data.get("attributes")
-    if "attributes" in search_parameters:
-        # Never forward "attributes" as a resolver search field, even when its
-        # value is empty and therefore not parsed into a filter list below.
-        del search_parameters["attributes"]
     if requested_attributes:
         requested_attributes = [attr.strip() for attr in requested_attributes.split(",")]
 
     include_custom_attributes = (is_true(request.all_data.get("include_custom_attributes", True))
                                  and is_attribute_at_all())
-    if "include_custom_attributes" in search_parameters:
-        del search_parameters["include_custom_attributes"]
     failures: list[str] = []
     users = get_user_list(search_parameters, include_custom_attributes=include_custom_attributes,
                           requested_attributes=requested_attributes, failures=failures)
@@ -222,6 +216,54 @@ def get_users():
                         'info': info})
 
     return send_result(users, details=details)
+
+
+@user_blueprint.route('/count', methods=['GET'])
+@prepolicy(realmadmin, request, PolicyAction.USERLIST)
+@prepolicy(check_base_action, request, PolicyAction.USERLIST)
+@event("user_count", request, g)
+def count_users_api():
+    """
+    Count the users :http:get:`/user/` lists, and how many of them own a token.
+
+    Takes the same parameters, policies and scoping as :http:get:`/user/`,
+    and both numbers come from one listing, deduplicated the same way. So
+    ``count`` is the length of the user list, ``with_tokens`` the length
+    of the list with ``has_tokens=True``, and their difference the length
+    of the list with ``has_tokens=False``. A user whose login name is also
+    served by a resolver of higher priority in the same realm is not
+    listed, and neither are their tokens counted. ``has_tokens``,
+    ``attributes`` and ``include_custom_attributes`` are ignored.
+
+    :status 200: ``result.value`` is ``{"count": <number>, "with_tokens":
+        <number>}``. Resolvers that could not be queried contribute to
+        neither number and are reported in ``detail.skipped_resolvers``,
+        as for :http:get:`/user/`.
+    """
+    realm = get_optional(request.all_data, "realm")
+    if isinstance(realm, list):
+        realm = ",".join(realm)
+    failures: list[str] = []
+    counts = count_users(_search_parameters(), failures=failures)
+
+    info = f"realm: {realm!s}; resolver: {get_optional(request.all_data, 'resolver')!s}"
+    details = None
+    if failures:
+        skipped_names = sorted(failures)
+        info += f"; skipped_resolvers: {','.join(skipped_names)}"
+        details = {"skipped_resolvers": skipped_names}
+    g.audit_object.log({'success': True, 'info': info})
+
+    return send_result(counts, details=details)
+
+
+def _search_parameters() -> dict:
+    """
+    The request parameters that search the user stores. ``attributes`` and ``include_custom_attributes`` shape
+    the answer and are never forwarded as a search field, even when their value is empty.
+    """
+    return {key: value for key, value in request.all_data.items()
+            if key not in ("attributes", "include_custom_attributes")}
 
 
 @user_blueprint.route('/settings', methods=['GET'])
