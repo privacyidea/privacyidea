@@ -34,6 +34,15 @@
 
     <div class="header-row">
       <div class="action-buttons">
+        @if (isEditMode() && authService.actionAllowed("serviceid_delete")) {
+          <button
+            (click)="deleteServiceId()"
+            class="action-button-delete-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>delete</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        }
         <button
           (click)="onCancel()"
           class="action-button-secondary button-width-s"

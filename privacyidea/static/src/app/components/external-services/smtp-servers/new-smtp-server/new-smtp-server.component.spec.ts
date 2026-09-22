@@ -308,6 +308,50 @@ describe("NewSmtpServerComponent", () => {
         expect(router.navigateByUrl).not.toHaveBeenCalled();
       });
     });
+
+    describe("deleteServer", () => {
+      let dialog: MockDialogService;
+      let pending: MockPendingChangesService;
+      let service: MockSmtpService;
+      let navigateSpy: jest.SpyInstance;
+
+      beforeEach(() => {
+        dialog = TestBed.inject(DialogService) as unknown as MockDialogService;
+        pending = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+        service = TestBed.inject(SmtpService) as unknown as MockSmtpService;
+        navigateSpy = jest.spyOn(TestBed.inject(Router), "navigateByUrl").mockResolvedValue(true);
+        component["editIdentifier"] = "smtp-server";
+      });
+
+      it("does nothing without an identifier", async () => {
+        component["editIdentifier"] = null;
+        await component.deleteServer();
+        expect(dialog.confirmDelete).not.toHaveBeenCalled();
+        expect(service.deleteSmtpServer).not.toHaveBeenCalled();
+      });
+
+      it("does not delete when the confirmation is cancelled", async () => {
+        dialog.confirmDelete.mockResolvedValue(false);
+        await component.deleteServer();
+        expect(service.deleteSmtpServer).not.toHaveBeenCalled();
+        expect(navigateSpy).not.toHaveBeenCalled();
+      });
+
+      it("deletes after confirmation and navigates back to the list", async () => {
+        await component.deleteServer();
+        expect(dialog.confirmDelete).toHaveBeenCalledWith(expect.objectContaining({ items: ["smtp-server"] }));
+        expect(service.deleteSmtpServer).toHaveBeenCalledWith("smtp-server");
+        expect(pending.clearAllRegistrations).toHaveBeenCalled();
+        expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
+      });
+
+      it("stays on the page when the deletion fails", async () => {
+        service.deleteSmtpServer.mockRejectedValue(new Error("delete failed"));
+        await component.deleteServer();
+        expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
+        expect(navigateSpy).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe("Edit mode", () => {
