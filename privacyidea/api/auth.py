@@ -70,7 +70,8 @@ import jwt
 from flask import (Blueprint, request, current_app, g)
 from flask_babel import _
 
-from privacyidea.api.lib.conditional_access import conditional_access_login_gate
+from privacyidea.api.lib.conditional_access import (conditional_access_login_gate,
+                                                    reject_locked_fallback_user)
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
@@ -513,6 +514,11 @@ def get_auth_token():
                     # expected a local admin
                     request.User = user
                     g.resolved_user["is_local_admin"] = False
+                    # And for the same reason the login gate has to see this user: it judged the request a local
+                    # admin's, which the failed admin password has just settled it is not. It runs before
+                    # auth_timelimit for the reason the gate itself documents - that pre-policy logs a trackable
+                    # row, which a refused login must not be given the chance to write.
+                    reject_locked_fallback_user(user)
                     auth_timelimit(request, None)
                     increase_failcounter_on_challenge(request, None)
                     disabled_token_types(request, None)

@@ -1910,6 +1910,18 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             target=ConditionalAccessTarget.USER, priority=priority)
 
     @staticmethod
+    def _make_password_policy_exempting_local_admins(*, threshold, duration=600, window=3600, priority=1):
+        create_conditional_access_policy(
+            name="ca_pw_no_admins", time_window_seconds=window,
+            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+            stages=[{"failure_threshold": threshold,
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": duration}]}],
+            conditions=[{"condition_type": str(ConditionType.USER_ROLE),
+                         "operator": str(ConditionOperator.NOT_IN),
+                         "value": [str(AuthLogUserRole.ADMIN_INTERNAL)]}],
+            target=ConditionalAccessTarget.USER, priority=priority)
+
+    @staticmethod
     def _make_dry_run_password_policy(*, threshold, duration=600, window=3600, priority=1):
         create_conditional_access_policy(
             name="ca_pw_dry", time_window_seconds=window,
@@ -2563,20 +2575,85 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
     def test_a_name_that_is_both_a_local_admin_and_a_user_is_refused_on_the_users_lock(self):
         # /auth takes a bare login name and only learns which principal it named by seeing which credential
         # matches: the local admin's password is tried first, and a same-named user in the default realm is the
-        # fallback. The pre-check runs before that, so it refuses on either one's lock. The failures of such a name
-        # land on the user's row, so looking only under the admin's would let the name be locked over and over
-        # while every request went through - here, with the admin's own password, as a successful login.
+        # fallback. A lock on the user refuses that fallback - the half of the request that turns out to be
+        # theirs - so the bare name is no way in for them while they are locked.
         self.assertEqual(self.realm1, get_default_realm(),
                          "the collision needs the user's realm to be the one a bare login name resolves to")
         create_db_admin(self.user.login, password="adminpw")
         try:
             lock_user(self.user)
 
-            res = self._auth(self.user.login, "adminpw")
+            res = self._auth(self.user.login, "test")
 
             self.assertEqual(401, res.status_code, res.json)
             entries = get_authentication_logs()
             self.assertEqual(str(AuthEventType.USER_LOCKED), entries[-1].event_type)
+            self.assertEqual(str(AuthLogUserRole.USER), entries[-1].user_role)
+        finally:
+            delete_db_admin(self.user.login)
+
+    def test_a_locked_user_does_not_lock_out_the_local_admin_of_the_same_name(self):
+        # The other half of the collision: the two accounts are separate principals, and the one an operator
+        # recovers a deployment with is not locked by a row written for somebody who merely shares its name.
+        create_db_admin(self.user.login, password="adminpw")
+        try:
+            lock_user(self.user)
+
+            res = self._auth(self.user.login, "adminpw")
+
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"]["token"], res.json)
+        finally:
+            delete_db_admin(self.user.login)
+
+    def test_a_namesakes_lock_refuses_a_local_admin_a_lock_policy_covers(self):
+        # Where a policy does lock local admins, the name stays ambiguous until a credential matches, and the
+        # failures of such a name land on the user's row: looking only under the admin's own key would let the
+        # name be locked over and over while every request went through. So the user's row refuses them too.
+        self._make_password_policy(threshold=1)
+        create_db_admin(self.user.login, password="adminpw")
+        try:
+            self.assertEqual(401, self._auth(self.user.login, "wrongpass").status_code)
+            self.assertTrue(is_user_locked(self.user))
+
+            res = self._auth(self.user.login, "adminpw")
+
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertEqual(str(AuthEventType.USER_LOCKED), get_authentication_logs()[-1].event_type)
+        finally:
+            delete_db_admin(self.user.login)
+
+    def test_a_namesakes_lock_lets_through_a_local_admin_every_lock_policy_exempts(self):
+        # A USER_ROLE exemption says this account is not to be locked, and a namesake's row cannot lock it after
+        # all: the name a local admin carries is often one a directory holds a user of as well, and that user's
+        # failures are driven by whoever can reach the login screen.
+        self._make_password_policy_exempting_local_admins(threshold=1)
+        create_db_admin(self.user.login, password="adminpw")
+        try:
+            self.assertEqual(401, self._auth(self.user.login, "wrongpass").status_code)
+            self.assertTrue(is_user_locked(self.user), "the namesake user is not exempt and should be locked")
+            self.assertIsNone(self._admin_lock(self.user.login))
+
+            res = self._auth(self.user.login, "adminpw")
+
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"]["token"], res.json)
+        finally:
+            delete_db_admin(self.user.login)
+
+    def test_a_namesake_in_another_realm_does_not_lock_out_an_exempt_local_admin(self):
+        # A lock is looked for under the bare name in every realm, so scoping the policy away from the default
+        # realm does not settle it either: the exemption has to hold wherever the namesake lives.
+        self.setUp_user_realm2()
+        self._make_password_policy_exempting_local_admins(threshold=1)
+        create_db_admin(self.user.login, password="adminpw")
+        try:
+            self.assertEqual(401, self._auth(f"{self.user.login}@{self.realm2}", "wrongpass").status_code)
+            self.assertTrue(is_user_locked(User(self.user.login, self.realm2)))
+
+            res = self._auth(self.user.login, "adminpw")
+
+            self.assertEqual(200, res.status_code, res.json)
         finally:
             delete_db_admin(self.user.login)
 
@@ -2596,17 +2673,9 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertTrue(res.json["result"]["value"]["token"], res.json)
 
     def test_a_user_policy_condition_exempts_the_local_admin(self):
-        # Break glass for a user-target policy, which now reaches local admins too: the same USER_ROLE condition
+        # Break glass for a user-target policy, which reaches local admins too: the same USER_ROLE condition
         # that exempts them from a source-IP DENY keeps the emergency account out of a lock policy.
-        create_conditional_access_policy(
-            name="ca_pw_no_admins", time_window_seconds=3600,
-            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": 1,
-                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
-            conditions=[{"condition_type": str(ConditionType.USER_ROLE),
-                         "operator": str(ConditionOperator.NOT_IN),
-                         "value": [str(AuthLogUserRole.ADMIN_INTERNAL)]}],
-            target=ConditionalAccessTarget.USER, priority=1)
+        self._make_password_policy_exempting_local_admins(threshold=1)
 
         self.assertEqual(401, self._auth(self.testadmin, "wrongpass").status_code)
         self.assertIsNone(self._admin_lock(self.testadmin))

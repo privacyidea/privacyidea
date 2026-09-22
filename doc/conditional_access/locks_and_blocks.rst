@@ -141,13 +141,29 @@ identified differently, though, and it shows in a few places:
   at ordinary users, and a policy scoped to a login name does not reach a local
   administrator who happens to share it. Lifting one needs a ``user_lock_reset``
   policy with no target scope, or the command line.
-* If a user of the same login name exists in the default realm, the two share a
-  lockout. ``/auth`` takes a bare login name and only learns which of them was
-  meant from the credential that matches, so a request is refused while *either*
-  is locked - anything else would let the name be locked over and over without a
-  single request being refused. The failure count is shared for the same reason
-  (see :ref:`policy_auth_max_fail`), so a colliding name is worth avoiding: give
-  the local administrator one no realm will ever hold.
+* If a user of the same login name exists, the two share a lockout. ``/auth``
+  takes a bare login name and only learns which of them was meant from the
+  credential that matches, so a request is refused while *either* is locked - and
+  a lock standing on such a user in **any** realm counts, the realm the name
+  would have resolved to not being settled that early. Anything else would let
+  the name be locked over and over without a single request being refused. The
+  failure count is shared for the same reason (see :ref:`policy_auth_max_fail`).
+
+  The one thing the user's lock does not do is lock the administrator out of an
+  account no policy may lock in the first place. Where every enforcing locking
+  policy excludes them - by the ``USER_ROLE`` condition below, or any other
+  condition that does not match them - the administrator's own password still
+  gets in, while the same-named user stays refused on the request that turns out
+  to be theirs.
+
+  .. warning:: That is the only part the exemption settles. The **count** is
+     still shared: the administrator's own failed passwords are counted against
+     the user, the request being a user's as soon as the administrator password
+     does not match, so anybody who can reach the login screen can lock that user
+     out under the administrator's name. Which account a bare name means is
+     unknown until a credential matches, and nothing in the request decides it.
+     **Give the local administrator a login name no realm will ever hold** - that
+     is what makes this section mean what it says.
 
 Since a lock applies to them like anyone else, a policy can lock out the account
 you would use to undo it. Two things guard against that: a timed lock lifts
