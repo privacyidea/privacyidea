@@ -445,6 +445,16 @@ describe("PeriodicTaskEditComponent", () => {
   });
 
   describe("deleteTask", () => {
+    it("does not offer deletion while the task list is unresolved", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name });
+      expect(component.taskExists()).toBe(false);
+    });
+
+    it("offers deletion once the task is present in the list", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      expect(component.taskExists()).toBe(true);
+    });
+
     it("does nothing in create mode", async () => {
       const { component } = await createComponent({});
       await component.deleteTask();

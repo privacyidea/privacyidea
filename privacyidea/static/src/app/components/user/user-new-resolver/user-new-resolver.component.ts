@@ -447,6 +447,12 @@ export class UserNewResolverComponent implements OnDestroy {
             $localize`:@@resolver.resolverNotFound:Resolver "${name}:RESOLVER:" not found.`
           );
         }
+      },
+      error: (err) => {
+        const message = err.error?.result?.error?.message || err.message;
+        this._notificationService.error(
+          $localize`:@@resolver.failedDeleteResolver:Failed to delete resolver. ${message}:MESSAGE:`
+        );
       }
     });
   }

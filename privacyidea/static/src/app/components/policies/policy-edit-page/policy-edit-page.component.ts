@@ -192,7 +192,14 @@ export class PolicyEditPageComponent implements OnDestroy {
       return;
     }
     try {
-      await this.policyService.deletePolicy(name);
+      const response = await this.policyService.deletePolicy(name);
+      if (response?.result?.error) {
+        const message = response.result.error.message;
+        this.notificationService.error(
+          $localize`:@@policy.failedDeletePolicy:Failed to delete policy. ${message}:MESSAGE:`
+        );
+        return;
+      }
     } catch (error) {
       const message = (error as HttpErrorResponse)?.error?.result?.error?.message || "";
       this.notificationService.error(

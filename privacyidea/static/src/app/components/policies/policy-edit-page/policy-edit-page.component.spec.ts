@@ -39,6 +39,7 @@ import {
   MockContentService,
   MockNotificationService,
   MockPendingChangesService,
+  MockPiResponse,
   MockPolicyService
 } from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
@@ -264,6 +265,16 @@ describe("PolicyEditPageComponent – edit mode", () => {
     it("shows the server message and stays on the page when the deletion fails", async () => {
       policyService.deletePolicy.mockRejectedValue(
         new HttpErrorResponse({ error: { result: { error: { message: "policy is in use" } } } })
+      );
+      await component.deletePolicy();
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("policy is in use"));
+      expect(notificationService.success).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("shows the server message and stays on the page when the response carries an error", async () => {
+      policyService.deletePolicy.mockResolvedValue(
+        new MockPiResponse<number>({ result: { status: false, error: { code: 905, message: "policy is in use" } } })
       );
       await component.deletePolicy();
       expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("policy is in use"));

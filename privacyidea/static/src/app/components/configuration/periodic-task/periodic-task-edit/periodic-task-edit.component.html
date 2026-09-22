@@ -45,7 +45,7 @@
         <span i18n="@@common.inactive">Inactive</span>
       }
     </mat-slide-toggle>
-    @if (!isNewTask() && authService.actionAllowed("periodictask_write")) {
+    @if (!isNewTask() && taskExists() && authService.actionAllowed("periodictask_write")) {
       <button
         (click)="deleteTask()"
         class="action-button-delete-secondary button-width-s"

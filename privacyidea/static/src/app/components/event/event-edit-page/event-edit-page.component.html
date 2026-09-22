@@ -44,7 +44,7 @@
             <span i18n="@@common.inactive">Inactive</span>
           }
         </mat-slide-toggle>
-        @if (!isNewEvent() && authService.actionAllowed("eventhandling_write")) {
+        @if (eventLoaded() && !isNewEvent() && authService.actionAllowed("eventhandling_write")) {
           <button
             (click)="$event.stopPropagation(); deleteEvent()"
             class="action-button-delete-secondary button-width-s"

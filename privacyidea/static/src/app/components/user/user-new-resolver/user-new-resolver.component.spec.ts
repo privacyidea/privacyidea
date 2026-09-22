@@ -653,5 +653,15 @@ describe("UserNewResolverComponent", () => {
       expect(notificationService.success).not.toHaveBeenCalled();
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
+
+    it("reports the server message when the deletion is rejected", async () => {
+      resolverService.deleteResolver.mockReturnValue(
+        throwError(() => ({ error: { result: { error: { message: "resolver is in use" } } } }))
+      );
+      await component.deleteResolver();
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("resolver is in use"));
+      expect(notificationService.success).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
   });
 });
