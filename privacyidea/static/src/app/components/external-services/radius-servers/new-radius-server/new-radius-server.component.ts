@@ -92,7 +92,7 @@ export class NewRadiusServerComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   isEditMode = signal(false);
   isTesting = signal(false);
@@ -210,6 +210,28 @@ export class NewRadiusServerComponent implements OnDestroy {
         this.isTesting.set(false);
       });
     }
+  }
+
+  async deleteServer(): Promise<void> {
+    const identifier = this.editIdentifier;
+    if (!identifier) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@radiusServer.deleteRadiusServer:Delete RADIUS Server`,
+      items: [identifier],
+      itemType: $localize`:@@radiusServer.radiusServer:RADIUS server`
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.radiusService.deleteRadiusServer(identifier);
+    } catch {
+      return;
+    }
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
   }
 
   onCancel(): void {

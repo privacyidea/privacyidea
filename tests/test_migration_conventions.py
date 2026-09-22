@@ -103,9 +103,10 @@ def test_migrations_since_start_revision_have_version_prefixed_messages():
 
 def test_migration_versions_are_non_decreasing_along_chain():
     """
-    Walking the chain from START_REVISION to head, the ``vX.Y[.Z]:`` release
-    prefixes must never go backwards: every v3.13 migration has to come before
-    every v3.14 one, and so on.
+    Along every edge of the chain from START_REVISION to head, the ``vX.Y[.Z]:``
+    release prefixes must never go backwards: a migration's parents all belong to
+    its own release or an earlier one, so every v3.13 migration comes before
+    every v3.14 one.
 
     This catches the common merge-forward mistake where a maintenance-branch
     migration (e.g. v3.13.x) gets spliced into the chain *after* the next
@@ -117,34 +118,45 @@ def test_migration_versions_are_non_decreasing_along_chain():
 
     Ordering *within* a single release is not constrained — those migrations
     carry no dependency on each other and their relative order is arbitrary.
+
+    The comparison is per edge rather than along one walk of the chain, because a
+    maintenance fix merged back is a *branch*: its migrations and the feature
+    release's are concurrent, so any single ordering of the two is arbitrary and
+    a walk could place either first. Comparing each parent with its child states
+    the same rule without depending on which order the walk picks.
     """
     script = _script_directory()
-    # iterate_revisions yields head-first; reverse to walk in upgrade order.
-    ordered = list(reversed(list(script.iterate_revisions("head", START_REVISION))))
-
-    violations = []
-    previous_version = None
-    previous_revision = None
-    for rev in ordered:
+    window = list(script.iterate_revisions("head", START_REVISION))
+    versions = {}
+    for rev in window:
         first_line = (rev.doc or "").splitlines()[0] if rev.doc else ""
         version = _version_tuple(first_line)
+        if version is not None:
+            versions[rev.revision] = version
+
+    violations = []
+    for rev in window:
+        version = versions.get(rev.revision)
+        # A missing/invalid prefix is reported by the prefix test above, on either
+        # end of the edge; skip it here so the two failures don't pile onto the
+        # same root cause. A parent below START_REVISION carries no prefix either.
         if version is None:
-            # Missing/invalid prefix is reported by the prefix test above; skip
-            # it here so the two failures don't pile onto the same root cause.
             continue
-        if previous_version is not None and version < previous_version:
-            previous_label = ".".join(str(p) for p in previous_version)
-            current_label = ".".join(str(p) for p in version)
+        parents = rev.down_revision or ()
+        if isinstance(parents, str):
+            parents = (parents,)
+        for parent in parents:
+            parent_version = versions.get(parent)
+            if parent_version is None or parent_version <= version:
+                continue
             violations.append(
-                f"  {rev.revision} (v{current_label}) is ordered after "
-                f"{previous_revision} (v{previous_label})"
+                f"  {rev.revision} (v{'.'.join(str(p) for p in version)}) has the later "
+                f"{parent} (v{'.'.join(str(p) for p in parent_version)}) as its parent"
             )
-        previous_version = version
-        previous_revision = rev.revision
 
     assert not violations, (
-        "Migration release versions go backwards along the chain (a later "
-        "migration belongs to an earlier release than its predecessor):\n"
+        "Migration release versions go backwards along the chain (a migration "
+        "has a parent that belongs to a later release):\n"
         + "\n".join(violations)
         + "\n\nRe-point the down_revisions so all migrations of one release "
         "precede those of the next."

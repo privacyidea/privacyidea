@@ -26,7 +26,7 @@ import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { EMPTY_PERIODIC_TASK, PeriodicTask, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { SystemService } from "@services/system/system.service";
-import { MockAuthService, MockDialogService } from "@testing/mock-services";
+import { MockAuthService, MockDialogService, MockPiResponse } from "@testing/mock-services";
 import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
 import { MockPeriodicTaskService } from "@testing/mock-services/mock-periodic-task-service";
 import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
@@ -441,6 +441,52 @@ describe("PeriodicTaskEditComponent", () => {
       expect(metadataRows[1].textContent).toContain(expectedLocalDateTimeFromInput("2026-01-16T11:30:00"));
       expect(metadataRows[0].textContent).not.toContain("2026-01-15T10:00:00");
       expect(component.isDateValue("2026-01-16T11:30:00")).toBe(true);
+    });
+  });
+
+  describe("deleteTask", () => {
+    it("does not offer deletion while the task list is unresolved", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name });
+      expect(component.taskExists()).toBe(false);
+    });
+
+    it("offers deletion once the task is present in the list", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      expect(component.taskExists()).toBe(true);
+    });
+
+    it("does nothing in create mode", async () => {
+      const { component } = await createComponent({});
+      await component.deleteTask();
+      expect(periodicTaskService.deleteWithConfirmDialog).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when the loaded task has no id", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [
+        { ...VALID_TASK, id: null as unknown as number }
+      ]);
+      await component.deleteTask();
+      expect(periodicTaskService.deleteWithConfirmDialog).not.toHaveBeenCalled();
+    });
+
+    it("stays on the page when the deletion is not confirmed", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      periodicTaskService.deleteWithConfirmDialog.mockResolvedValue(undefined);
+      await component.deleteTask();
+      expect(periodicTaskService.deleteWithConfirmDialog).toHaveBeenCalledWith(
+        expect.objectContaining({ id: VALID_TASK.id, name: VALID_TASK.name })
+      );
+      expect(periodicTaskService.periodicTasksResource.reload).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("reloads the tasks and navigates back after deleting", async () => {
+      const { component } = await createComponent({ name: VALID_TASK.name }, [VALID_TASK]);
+      periodicTaskService.deleteWithConfirmDialog.mockResolvedValue(MockPiResponse.fromValue(1));
+      await component.deleteTask();
+      expect(periodicTaskService.periodicTasksResource.reload).toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
     });
   });
 });

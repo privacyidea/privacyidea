@@ -1,6 +1,8 @@
 from .base import MyApiTestCase
 
 from privacyidea.lib.clients import create_client
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.remembered_device import PERSISTENT_COOKIE_NAME, create_remembered_device, user_identity
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
@@ -336,6 +338,33 @@ class RememberDeviceRecognitionTestCase(MyApiTestCase):
 
             entry = self.find_most_recent_audit_entry(action_detail="*persistent cookie reuse detected*")
             self.assertIn("persistent cookie reuse detected", entry.get("action_detail", ""))
+        finally:
+            self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
+
+    def test_06b_reuse_logs_event_and_revokes_every_device(self):
+        # A stolen cookie means this user's browser is compromised, not just the
+        # one series that got replayed: reuse is logged as DEVICE_TOKEN_REUSED
+        # (so conditional access can lock the account, block the IP or notify),
+        # and every one of the user's remembered devices, on every client, is
+        # revoked - not just the replayed series.
+        self.app.config["PI_REMEMBER_DEVICE_GRACE_SECONDS"] = 0
+        try:
+            client, api_key = create_client("reuse escalation client", "privacyidea-cp")
+            other_client, _other_key = create_client("other client", "privacyidea-keycloak")
+            _device, cookie = create_remembered_device(self.identity, client.id)
+            other_device, _other_cookie = create_remembered_device(self.identity, other_client.id)
+            other_series_id = other_device.series_id
+
+            logs_before = len(get_authentication_logs())
+            self._recognise(api_key=api_key, cookie=cookie)                      # rotates to counter 2
+            self._recognise(api_key=api_key, cookie=cookie, expect_value=False)  # stale counter 1 replayed -> theft
+
+            entries = get_authentication_logs()[logs_before:]
+            self.assertEqual([AuthEventType.DEVICE_TOKEN_REUSED],
+                             [entry.event_type for entry in entries])
+
+            # The other client's device for the same user is gone too, though it was never touched directly.
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=other_series_id).first())
         finally:
             self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
 

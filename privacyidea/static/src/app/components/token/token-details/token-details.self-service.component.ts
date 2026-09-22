@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 import { DetailsEditRegistry } from "@components/shared/details-shared/field-editing/details-edit-registry.service";
 import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
@@ -41,7 +43,9 @@ import { TokenDetailsComponent } from "./token-details.component";
     TokenDetailsAssignmentsComponent,
     TokenDetailsDescriptionComponent,
     TokenDetailsMachineComponent,
-    DetailsHeaderComponent
+    DetailsHeaderComponent,
+    MatButtonModule,
+    MatIconModule
   ],
   providers: [DetailsEditRegistry],
   templateUrl: "./token-details.self-service.component.html",

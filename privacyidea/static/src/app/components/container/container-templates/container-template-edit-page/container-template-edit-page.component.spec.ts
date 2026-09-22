@@ -22,6 +22,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerTemplateDeleteDialogComponent } from "@components/container/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
 import { ContainerTemplate } from "@services/container/container.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
@@ -343,5 +344,53 @@ describe("ContainerTemplateEditPageComponent", () => {
     await component.onAction("save");
 
     expect(deleteSpy).not.toHaveBeenCalled();
+  });
+
+  describe("deleteTemplate", () => {
+    const existing: ContainerTemplate = {
+      name: "ToDelete",
+      container_type: "generic",
+      template_options: { tokens: [] },
+      default: false
+    };
+    let dialogService: MockDialogService;
+    let pendingChangesService: MockPendingChangesService;
+
+    beforeEach(() => {
+      dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+      pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      component.initTemplate.set(existing);
+    });
+
+    it("does nothing without a loaded template", async () => {
+      component.initTemplate.set(null);
+      await component.deleteTemplate();
+      expect(dialogService.openDialogAsync).not.toHaveBeenCalled();
+      expect(containerTemplateServiceMock.deleteTemplate).not.toHaveBeenCalled();
+    });
+
+    it("does not delete when the dialog is not confirmed", async () => {
+      dialogService.openDialogAsync.mockResolvedValue(false);
+      await component.deleteTemplate();
+      expect(dialogService.openDialogAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ component: ContainerTemplateDeleteDialogComponent, data: [existing] })
+      );
+      expect(containerTemplateServiceMock.deleteTemplate).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("deletes the template and navigates back after confirmation", async () => {
+      await component.deleteTemplate();
+      expect(containerTemplateServiceMock.deleteTemplate).toHaveBeenCalledWith("ToDelete");
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.CONTAINERS_TEMPLATES);
+    });
+
+    it("stays on the page when the deletion fails", async () => {
+      containerTemplateServiceMock.deleteTemplate.mockRejectedValue(new Error("delete failed"));
+      await component.deleteTemplate();
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
   });
 });

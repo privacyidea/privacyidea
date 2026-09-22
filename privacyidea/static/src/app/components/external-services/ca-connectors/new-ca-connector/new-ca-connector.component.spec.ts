@@ -357,4 +357,47 @@ describe("NewCaConnectorComponent edit mode", () => {
       expect(pendingChangesService.save).not.toHaveBeenCalled();
     });
   });
+
+  describe("deleteConnector", () => {
+    let dialog: MockDialogService;
+    let pending: MockPendingChangesService;
+    let service: MockCaConnectorService;
+    let navigateSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      dialog = TestBed.inject(DialogService) as unknown as MockDialogService;
+      pending = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      service = TestBed.inject(CaConnectorService) as unknown as MockCaConnectorService;
+      navigateSpy = jest.spyOn(TestBed.inject(Router), "navigateByUrl").mockResolvedValue(true);
+    });
+
+    it("does nothing without an identifier", async () => {
+      component["editConnectorName"] = null;
+      await component.deleteConnector();
+      expect(dialog.confirmDelete).not.toHaveBeenCalled();
+      expect(service.deleteCaConnector).not.toHaveBeenCalled();
+    });
+
+    it("does not delete when the confirmation is cancelled", async () => {
+      dialog.confirmDelete.mockResolvedValue(false);
+      await component.deleteConnector();
+      expect(service.deleteCaConnector).not.toHaveBeenCalled();
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it("deletes after confirmation and navigates back to the list", async () => {
+      await component.deleteConnector();
+      expect(dialog.confirmDelete).toHaveBeenCalledWith(expect.objectContaining({ items: ["edit-me"] }));
+      expect(service.deleteCaConnector).toHaveBeenCalledWith("edit-me");
+      expect(pending.clearAllRegistrations).toHaveBeenCalled();
+      expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
+    });
+
+    it("stays on the page when the deletion fails", async () => {
+      service.deleteCaConnector.mockRejectedValue(new Error("delete failed"));
+      await component.deleteConnector();
+      expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+  });
 });
