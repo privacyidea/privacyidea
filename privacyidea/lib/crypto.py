@@ -219,7 +219,7 @@ def hash(val, seed, algo=None):
     return hexlify_and_unicode(m.digest())
 
 
-_PASS_CONTEXT_KEY = "pass_context"
+_HASH_CONTEXT_KEY = "hash_context"
 
 
 def build_pass_context() -> CryptContext:
@@ -277,12 +277,12 @@ def build_pass_context() -> CryptContext:
         raise RuntimeError(f"'{ConfigKey.HASH_ALGO_PARAMS}' is not usable: {', '.join(unused_params)} "
                            f"names a hash algorithm that is not in '{ConfigKey.HASH_ALGO_LIST}'")
 
-    get_app_local_store()[_PASS_CONTEXT_KEY] = pass_ctx
+    get_app_local_store()[_HASH_CONTEXT_KEY] = pass_ctx
     return pass_ctx
 
 
 def _get_pass_context() -> CryptContext:
-    return get_app_local_store().get(_PASS_CONTEXT_KEY) or build_pass_context()
+    return get_app_local_store().get(_HASH_CONTEXT_KEY) or build_pass_context()
 
 
 @log_with(log, log_entry=False, log_exit=False)
