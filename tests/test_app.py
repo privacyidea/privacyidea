@@ -24,10 +24,12 @@ dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
 
 @contextmanager
-def isolated_config_file():
+def isolated_config_file(content=""):
     # A pi.cfg installed on the machine running the tests overwrites the values of the config
-    # class, so the tests read an empty config file instead.
-    with tempfile.NamedTemporaryFile(suffix=".cfg") as config_file:
+    # class, so the tests read a config file that holds only the given content.
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".cfg") as config_file:
+        config_file.write(content)
+        config_file.flush()
         with mock.patch.dict(os.environ, {ENV_KEY: config_file.name}):
             yield
 
@@ -44,8 +46,8 @@ class AppTestCase(unittest.TestCase):
         self.logger.level = self.level
 
     def test_01_create_default_app(self):
-        # This will create the app with the 'development' configuration
-        with isolated_config_file():
+        # This will create the app with the 'development' configuration, which has no pepper
+        with isolated_config_file('PI_PEPPER = "pepper"\n'):
             app = create_app()
         self.assertIsInstance(app, flask.app.Flask, app)
 #        self.assertEqual(app.env, 'production', app)
@@ -94,10 +96,12 @@ class AppTestCase(unittest.TestCase):
         ], logger.handlers)
 
     def test_02_create_production_app(self):
-        with isolated_config_file():
+        # The production enckey is created at installation and does not exist on a test machine.
+        with isolated_config_file(), mock.patch.object(config['production'], "PI_ENCFILE",
+                                                       os.path.join(dirname, "tests/testdata/enckey")):
             app = create_app(config_name='production')
-        dc = config['production']()
-        members = inspect.getmembers(dc, lambda a: not (inspect.isroutine(a)))
+            dc = config['production']()
+            members = inspect.getmembers(dc, lambda a: not (inspect.isroutine(a)))
         conf = [m for m in members if not (m[0].startswith('__') and m[0].endswith('__'))]
         self.assertTrue(all(app.config[k] == v for k, v in conf), app)
 
