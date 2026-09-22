@@ -118,11 +118,21 @@ function dailyWindow(days: number, bucketMs: number): (now: Date) => ActivityWin
 }
 
 export const ACTIVITY_RANGES: readonly ActivityRange[] = [
-  { id: "1h", label: $localize`1 h`, window: rollingWindow(MS_PER_HOUR, 5 * MS_PER_MINUTE), dayBuckets: false },
-  { id: "24h", label: $localize`24 h`, window: rollingWindow(MS_PER_DAY, MS_PER_HOUR), dayBuckets: false },
-  { id: "7d", label: $localize`7 d`, window: dailyWindow(7, 6 * MS_PER_HOUR), dayBuckets: false },
-  { id: "30d", label: $localize`30 d`, window: dailyWindow(30, MS_PER_DAY), dayBuckets: true },
-  { id: ALL_RANGE_ID, label: $localize`All`, window: allWindow(ALL_RANGE_BINS), dayBuckets: false }
+  {
+    id: "1h",
+    label: $localize`:@@dashboard.h:1 h`,
+    window: rollingWindow(MS_PER_HOUR, 5 * MS_PER_MINUTE),
+    dayBuckets: false
+  },
+  {
+    id: "24h",
+    label: $localize`:@@dashboard.h2:24 h`,
+    window: rollingWindow(MS_PER_DAY, MS_PER_HOUR),
+    dayBuckets: false
+  },
+  { id: "7d", label: $localize`:@@dashboard.d2:7 d`, window: dailyWindow(7, 6 * MS_PER_HOUR), dayBuckets: false },
+  { id: "30d", label: $localize`:@@dashboard.d:30 d`, window: dailyWindow(30, MS_PER_DAY), dayBuckets: true },
+  { id: ALL_RANGE_ID, label: $localize`:@@dashboard.all:All`, window: allWindow(ALL_RANGE_BINS), dayBuckets: false }
 ];
 
 // A bucket's exclusive end, said the way the authentication log's own filter says it. The log takes both bounds
