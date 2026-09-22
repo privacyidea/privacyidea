@@ -311,11 +311,22 @@ describe("EventEditPageComponent — edit mode", () => {
     expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EVENTS);
   });
 
-  it("should delete event and reload events", async () => {
+  it("should delete event, reload events and navigate back", async () => {
     const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
     await component.deleteEvent();
     expect(mockEventService.deleteWithConfirmDialog).toHaveBeenCalled();
     expect(reloadSpy).toHaveBeenCalled();
+    expect(mockPendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EVENTS);
+  });
+
+  it("should stay on the page when the deletion is not confirmed", async () => {
+    const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
+    mockEventService.deleteWithConfirmDialog.mockResolvedValue(undefined);
+    await component.deleteEvent();
+    expect(reloadSpy).not.toHaveBeenCalled();
+    expect(mockPendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+    expect(mockRouter.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it("should toggle active and call enable/disable on service", () => {
