@@ -826,6 +826,27 @@ def reset_user_lock():
     return send_result(removed)
 
 
+def _require_unscoped_blocklist_permission(action: str) -> None:
+    """
+    Refuse a blocklist request whose permission for *action* is scoped to named targets.
+
+    A blocklist entry is a source IP. It carries no realm, no resolver and no user, which are the only terms an
+    admin policy scopes a target by, so a scoped permission selects nothing of it - and reading that as "the
+    scope does not apply here" would hand an administrator delegated one realm the whole list, and the power to
+    lift a block placed on behalf of another. The lock endpoints already hold the same administrator to their
+    boundary for the one lock row that has no realm either, a local administrator's (see
+    :func:`~privacyidea.lib.conditional_access.state.unlock_internal_admin`); this is that answer for a table
+    where *no* row has one.
+
+    :param action: the policy action the endpoint requires
+    :raises PolicyError: if the logged-in administrator's permission is scoped by realm, resolver or user
+    """
+    if get_policy_visibility_scopes(action) is not None:
+        raise PolicyError("Your permissions for this action are restricted to individual realms, resolvers or "
+                          "users. The blocklist is keyed on source IP addresses, which belong to none of these, "
+                          "so managing it requires a permission that is not restricted to named targets.")
+
+
 @conditional_access_blueprint.route('blocklist', methods=['GET'])
 @admin_required
 @prepolicy(check_base_action, request, PolicyAction.BLOCKLIST_READ)
@@ -837,12 +858,14 @@ def get_blocklist():
     ``include_expired=false`` to return only the entries still in force. Each row
     carries the expiry fields so the caller can tell the two apart.
 
-    Requires the admin policy action :ref:`policy_blocklist_read`.
+    Requires the admin policy action :ref:`policy_blocklist_read`, granted without a target scope (see
+    :func:`_require_unscoped_blocklist_permission`).
 
     :query include_expired: include stale (expired) entries as well as
         currently-enforced ones (default ``true``)
     :status 200: a list of blocklist-entry dicts in ``result.value``
     """
+    _require_unscoped_blocklist_permission(PolicyAction.BLOCKLIST_READ)
     include_expired = is_true(get_optional(request.all_data, "include_expired", True))
     entries = list_blocklist(include_expired=include_expired)
     g.audit_object.log({"success": True, "info": f"{len(entries)} blocklist entr(y/ies)"})
@@ -862,14 +885,16 @@ def add_blocklist_entry():
     400 rather than silently skipped: the engine skips one so an automatic action cannot lock everyone out
     behind a shared proxy, but an admin asking for a block needs to be told it did not happen.
 
-    Requires the admin policy action :ref:`policy_blocklist_set`. The blocklist is IP-keyed and has no
-    realm/resolver dimension, so no visibility scoping applies - as for reading and clearing it.
+    Requires the admin policy action :ref:`policy_blocklist_set`, granted without a target scope: the blocklist
+    is IP-keyed and has no realm/resolver/user dimension, so a scoped permission names nothing in it and is
+    refused rather than read as unrestricted - as for reading and clearing it.
 
     :jsonparam ip: the source IP to block. Required.
     :jsonparam duration_seconds: how long the block lasts. Omitted, the block is permanent.
     :status 200: the new blocklist entry in ``result.value``
     :status 400: the IP is unparsable or on the never-block list, or the duration is not positive
     """
+    _require_unscoped_blocklist_permission(PolicyAction.BLOCKLIST_SET)
     params = request.all_data
     ip = get_required(params, "ip")
     duration_seconds = _duration_param(params)
@@ -889,10 +914,12 @@ def purge_blocklist():
     Delete stale blocklist records (expired or already-unblocked rows). Permanent
     and currently-enforced blocks are kept.
 
-    Requires the admin policy action :ref:`policy_blocklist_reset`.
+    Requires the admin policy action :ref:`policy_blocklist_reset`, granted without a target scope (see
+    :func:`_require_unscoped_blocklist_permission`).
 
     :status 200: the number of rows removed, in ``result.value``
     """
+    _require_unscoped_blocklist_permission(PolicyAction.BLOCKLIST_RESET)
     count = purge_expired_blocklist()
     g.audit_object.log({"success": True, "info": f"purged {count} stale blocklist entr(y/ies)"})
     return send_result(count)
@@ -906,10 +933,12 @@ def remove_blocklist(entry):
     """
     Remove a single blocklist entry by its identifier (a source IP today).
 
-    Requires the admin policy action :ref:`policy_blocklist_reset`.
+    Requires the admin policy action :ref:`policy_blocklist_reset`, granted without a target scope (see
+    :func:`_require_unscoped_blocklist_permission`).
 
     :status 200: ``true`` if an entry was removed, ``false`` if none existed
     """
+    _require_unscoped_blocklist_permission(PolicyAction.BLOCKLIST_RESET)
     removed = remove_blocklist_entry(entry)
     g.audit_object.log({"success": removed, "info": f"removed blocklist entry {entry}"})
     return send_result(removed)

@@ -103,6 +103,13 @@ which is the other way round from the engine, see
 Imposing a restriction has rights of its own, :ref:`policy_user_lock_set` and
 :ref:`policy_blocklist_set`, kept apart from the ``*_reset`` rights.
 
+The lock rights are scoped like any other administrator right: a policy naming
+realms, resolvers or users reaches only the locks of the users it names. The
+blocklist rights cannot be, an entry being a source IP with none of those three
+dimensions to it - so a policy that scopes its target and grants a blocklist
+right names nothing in the blocklist, and such a request is refused rather than
+read as unrestricted. Grant the blocklist rights without a target scope.
+
 A local administrator is locked by hand from the command line only, with
 ``--admin`` in place of ``--realm``. There is no WebUI action for it: the
 **Lock** button lives on a user's details page, and a local administrator has

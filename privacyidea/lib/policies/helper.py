@@ -257,6 +257,16 @@ def admin_granted_realms(action: str) -> list[str] | None:
     return list(granted_realms)
 
 
+def _named_targets(policy_values: list[str] | None) -> list[str]:
+    """
+    The entries of one target dimension of a policy that name something, dropping the wildcard.
+
+    ``"*"`` is not a name the dimension can be matched against: the policy engine reads it as every value, so a
+    dimension carrying it restricts nothing and contributes no names to a boundary.
+    """
+    return [value for value in (policy_values or []) if value != "*"]
+
+
 def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibilityScope"] | None:
     """
     Determine the visibility boundary for *action*: which records the logged-in principal may act on, expressed as
@@ -299,9 +309,13 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
         return []
     scopes = []
     for policy in Match.admin(g, action=action).policies():
-        realms = policy.get("realm") or []
-        resolvers = policy.get("resolver") or []
-        usernames = policy.get("user") or []
+        # A dimension holding "*" is matched by the policy engine's own comparison as every value, so it
+        # restricts nothing and is dropped here. Kept as a literal it would be looked up as the name of a realm,
+        # a resolver or a user, match none of them, and turn a grant over everything into a boundary that admits
+        # nothing - the opposite of what it says.
+        realms = _named_targets(policy.get("realm"))
+        resolvers = _named_targets(policy.get("resolver"))
+        usernames = _named_targets(policy.get("user"))
         if not (realms or resolvers or usernames):
             # An applicable policy with no target scope grants access to all entries.
             return None
