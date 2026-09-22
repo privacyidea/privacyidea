@@ -575,6 +575,39 @@ class ConditionalAccessContextTestCase(MyTestCase):
         finally:
             delete_challenges(serial=serial)
 
+    def test_40a_a_claimed_attempt_is_not_joined_until_it_is_confirmed(self):
+        # Naming a transaction is a claim: it is held aside until something shows the request engaged with that
+        # challenge, so a request that merely carries a live transaction id starts an attempt of its own.
+        context = ConditionalAccessContext()
+        challenge = mock.Mock(serial="CA_ATTEMPT_TOK", **{"get_data.return_value": {ATTEMPT_ID_CHALLENGE_KEY: "aaa"}})
+        with mock.patch("privacyidea.lib.challenge.get_challenges", return_value=[challenge]):
+            context.continue_attempt("1234567890")
+
+        self.assertFalse(context.attempt_resolved)
+        context.confirm_attempt("1234567890")
+        self.assertEqual("aaa", context.attempt_id)
+
+    def test_40b_a_caller_that_resolved_the_challenge_itself_joins_the_attempt(self):
+        # The out-of-band push answer matches its challenge by verifying a signature over the nonce and only learns
+        # the transaction while logging its row, so there is no later point at which a claim could be confirmed.
+        context = ConditionalAccessContext()
+        challenge = mock.Mock(serial="CA_ATTEMPT_TOK", **{"get_data.return_value": {ATTEMPT_ID_CHALLENGE_KEY: "bbb"}})
+        with mock.patch("privacyidea.lib.challenge.get_challenges", return_value=[challenge]):
+            context.join_attempt("1234567890")
+
+        self.assertTrue(context.attempt_resolved)
+        self.assertEqual("bbb", context.attempt_id)
+
+    def test_40c_joining_leaves_an_attempt_already_settled_alone(self):
+        # A challenge created and answered inside one request (push_wait) keeps the attempt it started with.
+        context = ConditionalAccessContext()
+        own_attempt = context.attempt_id
+        challenge = mock.Mock(serial="CA_ATTEMPT_TOK", **{"get_data.return_value": {ATTEMPT_ID_CHALLENGE_KEY: "ccc"}})
+        with mock.patch("privacyidea.lib.challenge.get_challenges", return_value=[challenge]):
+            context.join_attempt("1234567890")
+
+        self.assertEqual(own_attempt, context.attempt_id)
+
     def test_42_a_request_gets_an_attempt_id(self):
         # The converse of test_41: inside a request there is an attempt to attribute a challenge to, and it is the one
         # the request's buffer holds.

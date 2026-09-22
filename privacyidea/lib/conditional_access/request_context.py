@@ -280,6 +280,25 @@ class ConditionalAccessContext:
             return
         self._attempt_id = self._claimed_attempt_id
 
+    def join_attempt(self, transaction_id: str | None) -> None:
+        """
+        Join the attempt of the challenge *transaction_id* outright, for a caller that resolved that challenge
+        itself rather than being handed its id by the client.
+
+        :meth:`continue_attempt` withholds the claim because a transaction id arriving in the request proves
+        nothing: anyone can name a live transaction. That reasoning does not apply where the server found the
+        challenge on its own - the out-of-band push answer matches one by verifying a signature over its nonce,
+        the client having sent no transaction id at all - and there the engagement with the challenge *is* the
+        thing that produced the id. Nothing further can confirm it, either: such a caller only learns the
+        transaction while logging the row, at which point a claim left unsettled would already have been minted
+        into an attempt of its own.
+
+        A no-op once this request has settled on an attempt, so a challenge created and answered inside one
+        request keeps the attempt it started with.
+        """
+        self.continue_attempt(transaction_id)
+        self.confirm_attempt(transaction_id)
+
     def confirm_attempt_for_serials(self, serials: Iterable[str]) -> None:
         """
         Settle on the claimed attempt when its challenge belongs to one of *serials* - the tokens this request is
@@ -503,6 +522,16 @@ def continue_attempt(transaction_id: str | None) -> None:
     """
     if transaction_id:
         get_ca_context().continue_attempt(transaction_id)
+
+
+def join_attempt(transaction_id: str | None) -> None:
+    """
+    Join the attempt of a challenge this caller resolved itself
+    (:meth:`ConditionalAccessContext.join_attempt`).
+    """
+    if not has_request_context() or not transaction_id:
+        return
+    get_ca_context().join_attempt(transaction_id)
 
 
 def confirm_attempt_for_serials(serials: Iterable[str]) -> None:
