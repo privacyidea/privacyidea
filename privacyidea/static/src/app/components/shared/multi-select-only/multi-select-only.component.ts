@@ -168,7 +168,7 @@ export class MultiSelectOnlyComponent<T = string | number> {
     // The correction below has to see where MatSelect's own handler left the highlight, so it is
     // queued for after the event. Not queueMicrotask: the browser runs a microtask checkpoint
     // after every listener, which would come before MatSelect has even handled the key.
-    const indexBefore = select._keyManager.activeItemIndex;
+    const indexBefore = select._keyManager.activeItemIndex ?? -1;
     cancelAnimationFrame(this.scrollFrame);
     this.scrollFrame = requestAnimationFrame(() => this.revealFirstOption(indexBefore));
 
