@@ -54,6 +54,7 @@ import binascii
 import ctypes
 import base64
 import traceback
+import warnings
 from threading import Lock
 
 from cryptography.hazmat.primitives._serialization import NoEncryption
@@ -62,7 +63,7 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from passlib.context import CryptContext
-from passlib.exc import PasswordSizeError
+from passlib.exc import MissingBackendError, PasslibWarning, PasswordSizeError
 from privacyidea.config import ConfigKey
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException, ParameterError
@@ -218,6 +219,72 @@ def hash(val, seed, algo=None):
     return hexlify_and_unicode(m.digest())
 
 
+_PASS_CONTEXT_KEY = "pass_context"
+
+
+def build_pass_context() -> CryptContext:
+    """
+    Build the CryptContext for password and PIN hashes from ``PI_HASH_ALGO_LIST`` and
+    ``PI_HASH_ALGO_PARAMS`` of the current app and keep it in the app local store.
+
+    The app factories call this at startup. Building the context rejects an unknown scheme or
+    parameter name and a value that can not be converted, but not a missing backend or a value
+    that only fails when hashing. So this also requires a backend for every scheme, hashes once
+    with the default scheme, turns every passlib warning (a clipped or deprecated parameter) into
+    an error and rejects a parameter for a scheme that is not in the list.
+
+    :return: the CryptContext
+    :raises RuntimeError: if the configuration does not give a usable CryptContext
+    """
+    hash_algo_list = get_app_config_value(ConfigKey.HASH_ALGO_LIST, default=DEFAULT_HASH_ALGO_LIST)
+    try:
+        handlers = CryptContext(hash_algo_list).schemes(resolve=True)
+    except (KeyError, ValueError, TypeError) as e:
+        raise RuntimeError(f"'{ConfigKey.HASH_ALGO_LIST}' is not usable: {e.args[0] if e.args else e}") from e
+    if not handlers:
+        raise RuntimeError(f"'{ConfigKey.HASH_ALGO_LIST}' must contain at least one hash algorithm")
+    for handler in handlers:
+        try:
+            if hasattr(handler, "get_backend"):
+                handler.get_backend()
+        except MissingBackendError as e:
+            raise RuntimeError(f"'{ConfigKey.HASH_ALGO_LIST}' is not usable: {e}") from e
+        except ValueError as e:
+            # passlib 1.7 fails to load the backend of bcrypt 5 with a ValueError
+            raise RuntimeError(f"'{ConfigKey.HASH_ALGO_LIST}' is not usable: {handler.name}: {e}") from e
+
+    # Merge into a copy: updating DEFAULT_HASH_ALGO_PARAMS in place would let the first app that
+    # configures PI_HASH_ALGO_PARAMS decide the parameters for every app created later in the same
+    # process, since the module-level default is shared.
+    configured_params = get_app_config_value(ConfigKey.HASH_ALGO_PARAMS, default={})
+    hash_algo_params = dict(DEFAULT_HASH_ALGO_PARAMS)
+    try:
+        hash_algo_params.update(configured_params)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", PasslibWarning)
+            pass_ctx = CryptContext(hash_algo_list, **hash_algo_params)
+            pass_ctx.hash(secrets.token_hex(8))
+    except (KeyError, ValueError, TypeError, OverflowError, PasslibWarning) as e:
+        raise RuntimeError(f"'{ConfigKey.HASH_ALGO_PARAMS}' is not usable: {e.args[0] if e.args else e}") from e
+
+    # passlib ignores a parameter for a scheme that is not in the context, e.g. "argon2id__rounds"
+    # instead of "argon2__rounds", so the configured value would silently have no effect.
+    known_schemes = (*pass_ctx.schemes(), "all", "context")
+    unused_params = sorted(key for key in configured_params
+                           if len(parts := key.replace(".", "__").split("__")) > 1
+                           and parts[-2] not in known_schemes)
+    if unused_params:
+        raise RuntimeError(f"'{ConfigKey.HASH_ALGO_PARAMS}' is not usable: {', '.join(unused_params)} "
+                           f"names a hash algorithm that is not in '{ConfigKey.HASH_ALGO_LIST}'")
+
+    get_app_local_store()[_PASS_CONTEXT_KEY] = pass_ctx
+    return pass_ctx
+
+
+def _get_pass_context() -> CryptContext:
+    return get_app_local_store().get(_PASS_CONTEXT_KEY) or build_pass_context()
+
+
 @log_with(log, log_entry=False, log_exit=False)
 def pass_hash(password):
     """
@@ -227,16 +294,7 @@ def pass_hash(password):
     :type password: str
     :return: The hash string of the password
     """
-    # Merge into a copy: updating DEFAULT_HASH_ALGO_PARAMS in place would let the first app that
-    # configures PI_HASH_ALGO_PARAMS decide the parameters for every app created later in the same
-    # process, since the module-level default is shared.
-    hash_algo_params = dict(DEFAULT_HASH_ALGO_PARAMS)
-    hash_algo_params.update(get_app_config_value(ConfigKey.HASH_ALGO_PARAMS, default={}))
-    pass_ctx = CryptContext(get_app_config_value(ConfigKey.HASH_ALGO_LIST,
-                                                 default=DEFAULT_HASH_ALGO_LIST),
-                            **hash_algo_params)
-    pw_dig = pass_ctx.hash(password)
-    return pw_dig
+    return _get_pass_context().hash(password)
 
 
 @log_with(log, log_entry=False, log_exit=False)
@@ -251,10 +309,8 @@ def verify_pass_hash(password, hvalue):
     :return: True if the password matches
     :rtype: bool
     """
-    pass_ctx = CryptContext(get_app_config_value(ConfigKey.HASH_ALGO_LIST,
-                                                 default=DEFAULT_HASH_ALGO_LIST))
     try:
-        return pass_ctx.verify(password, hvalue)
+        return _get_pass_context().verify(password, hvalue)
     except PasswordSizeError:
         # A password beyond the size limit of the algorithm can not be hashed, so it can not
         # match any stored hash. This says something about the value that was presented and
