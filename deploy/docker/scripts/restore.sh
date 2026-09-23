@@ -81,7 +81,11 @@ if [[ ! -f "${BACKUP_FILE}" ]]; then
     exit 1
 fi
 
-if ! docker compose -f "${COMPOSE_FILE}" ps --services --filter "status=running" 2>/dev/null | grep -q "^db$"; then
+# Read the list first and match on it: "grep -q" would exit on the first match and,
+# with "pipefail" set above, the writer failing on the closed pipe would take the
+# whole pipeline down. Wrapped in newlines so "db" matches a whole service name.
+running_services=$'\n'"$(docker compose -f "${COMPOSE_FILE}" ps --services --filter "status=running" 2>/dev/null)"$'\n'
+if [[ "${running_services}" != *$'\ndb\n'* ]]; then
     echo "ERROR: the db service is not running. Start the stack before restoring."
     exit 1
 fi
@@ -103,7 +107,11 @@ if [[ "${BACKUP_FILE}" == *.age ]]; then
 fi
 
 echo "[restore] Extracting archive..."
-if tar -tzf "${ARCHIVE}" | grep -q '/'; then
+# Read the listing instead of piping it into "grep -q": grep exits on the first match, and
+# with "pipefail" set above tar failing on the closed pipe would flip the answer — a big
+# archive would then be extracted without stripping its leading directory.
+archive_listing="$(tar -tzf "${ARCHIVE}")"
+if [[ "${archive_listing}" == */* ]]; then
     tar -xzf "${ARCHIVE}" -C "${TEMP_DIR}" --strip-components=1
 else
     tar -xzf "${ARCHIVE}" -C "${TEMP_DIR}"
