@@ -41,6 +41,12 @@ fail() {
     exit 1
 }
 
+# Never pipe a command into "grep -q". grep exits on its first match, and with the
+# "pipefail" set above the writer then fails on the closed pipe and takes the whole
+# pipeline down with it — curl reports exit 23 for that, sometimes without printing
+# anything, so a correct answer is reported as a failed check. Everything below reads
+# the output into a variable first and matches on it with the shell.
+
 echo "[smoke] Waiting up to ${TIMEOUT}s for ${BASE_URL}/healthz/readyz ..."
 deadline=$((SECONDS + TIMEOUT))
 until curl -fsS -o /dev/null "${BASE_URL}/healthz/readyz" 2>/dev/null; do
@@ -61,7 +67,7 @@ auth_response="$(curl -fsS -X POST "${BASE_URL}/auth" \
     --data-urlencode "password=${ADMIN_PASSWORD}")" \
     || fail "POST /auth request failed"
 
-if ! echo "${auth_response}" | grep -q '"token"'; then
+if [[ "${auth_response}" != *'"token"'* ]]; then
     echo "[smoke] /auth response: ${auth_response}"
     fail "no token in /auth response"
 fi
@@ -77,7 +83,15 @@ case "${root_response}" in
     *) fail "GET / answered '${root_response}', expected a redirect to /app/v2/" ;;
 esac
 
-if ! curl -fsS "${BASE_URL}/app/v2/" | grep -q '<base href='; then
+# The status code is appended on its own line, so a wrong answer can be reported with
+# its code instead of only "not the WebUI".
+webui_response="$(curl -sS -w '\n%{http_code}' "${BASE_URL}/app/v2/")" \
+    || fail "GET /app/v2/ request failed"
+webui_status="${webui_response##*$'\n'}"
+webui_page="${webui_response%$'\n'*}"
+if [[ "${webui_status}" != "200" || "${webui_page}" != *'<base href='* ]]; then
+    echo "[smoke] GET /app/v2/ answered HTTP ${webui_status}, first 300 characters of the body:"
+    printf '%.300s\n' "${webui_page}"
     fail "GET /app/v2/ did not answer with the WebUI"
 fi
 
@@ -86,10 +100,13 @@ curl -fsS -o /dev/null "${BASE_URL}/static/public/policy-templates/index.json" \
 echo "[smoke] The WebUI is served."
 
 echo "[smoke] Checking pi-cron ..."
-if ! docker compose -f "${COMPOSE_FILE}" ps --services --filter "status=running" | grep -q "^pi-cron$"; then
-    fail "pi-cron is not running"
+# Wrapped in newlines so the match is anchored to a whole service name.
+running_services=$'\n'"$(docker compose -f "${COMPOSE_FILE}" ps --services --filter "status=running")"$'\n'
+if [[ "${running_services}" != *$'\npi-cron\n'* ]]; then
+    fail "pi-cron is not running, running services:${running_services//$'\n'/ }"
 fi
-if ! docker compose -f "${COMPOSE_FILE}" logs pi-cron 2>/dev/null | grep -q "\[pi-cron\] Starting"; then
+cron_logs="$(docker compose -f "${COMPOSE_FILE}" logs pi-cron 2>/dev/null)"
+if [[ "${cron_logs}" != *"[pi-cron] Starting"* ]]; then
     fail "pi-cron did not log its startup banner"
 fi
 echo "[smoke] pi-cron is running."
