@@ -20,6 +20,7 @@
 from flask_babel import _
 import json
 import logging
+import re
 
 from flask import Blueprint, request, g
 
@@ -89,11 +90,13 @@ def _challenge_scope_operation(scope: str) -> str:
     :return: the operation the scope names, or the path if it names none
     """
     path = urlparse(scope).path.strip("/")
-    marker = "container/"
     # The last occurrence, not the first: privacyIDEA can be mounted under a base path that
-    # itself ends in "container", and the operation is what the path ends with.
-    position = path.rfind(marker)
-    return path[position:] if position >= 0 else path
+    # itself ends in "container", and the operation is what the path ends with. Anchored on a
+    # segment boundary, so a path segment merely ending in "container" names no operation.
+    match = re.match(r"(?:.*/)?(container/.*)$", path)
+    return match.group(1) if match else path
+
+
 log = logging.getLogger(__name__)
 
 __doc__ = """

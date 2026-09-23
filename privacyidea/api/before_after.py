@@ -622,11 +622,12 @@ def record_suspended_api_client(response):
 
     Central, and on the way out rather than on the way in, for three reasons. The middleware that detects it
     (:func:`identify_api_client`) is a ``before_app_request`` and runs before any blueprint has built the audit
-    object or resolved the source IP, so a row written there would name neither. Every blueprint reaches here,
-    so the signal no longer depends on which ``before_request`` happens to look for it - it used to be recorded
-    by ``/validate``'s alone, which meant a suspended key was reported on a password reset and not on ``/auth``
-    or ``/token``. And this also runs for a response an *error handler* built, which is the normal case: the two
-    endpoints that require an identified client answer such a request with a ``401``.
+    object or resolved the source IP, so a row written there would name neither. Every blueprint attached to the
+    shared ``after_request`` below reaches here, so the signal no longer depends on which ``before_request``
+    happens to look for it - it used to be recorded by ``/validate``'s alone, which meant a suspended key was
+    reported on a password reset and not on ``/auth`` or ``/token``. And this also runs for a response an
+    *error handler* built, which is the normal case: the two endpoints that require an identified client
+    answer such a request with a ``401``.
 
     The row names the **client**, never a user. The request was not identified by the key
     (``g.client_id`` stays ``None``), so any user it carries is an unauthenticated claim the caller chose - and
