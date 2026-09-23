@@ -222,9 +222,14 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
     If a client rotated the cookie but never received the response and retries
     after the grace window, it still holds the old counter, so the series is
     destroyed and a reuse warning is logged even though nothing was stolen. The
-    only cost is that the device must re-register; the user is never wrongly
-    authenticated. Widening ``PI_REMEMBER_DEVICE_GRACE_SECONDS`` trades
-    theft-detection tightness for fewer such re-registrations.
+    user is never wrongly authenticated, but the cost is no longer confined to
+    the one series: the caller escalates a detection to
+    :func:`handle_device_theft`, which revokes every remembered device that user
+    holds, and records an event a conditional-access policy may act on. A dropped
+    response therefore costs this user a re-registration on every integration,
+    and as much again as whatever policy an administrator configured. Widening
+    ``PI_REMEMBER_DEVICE_GRACE_SECONDS`` trades theft-detection tightness for
+    fewer such false positives, and is the knob to reach for first.
 
     :param cookie_value: the raw cookie value from the request
     :param client_id: the id of the API client making the request (g.client_id)
@@ -359,7 +364,11 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
     place a presented cookie is consumed.
 
     Recognition only: this performs no authentication, triggers no challenge and
-    writes no audit record - the caller decides what to do with the outcome.
+    writes no audit record - the caller decides what to do with the outcome. That
+    includes the response to a theft: this function invalidates the replayed
+    series and reports the status, and the caller records the incident and then
+    calls :func:`handle_device_theft` to escalate it (see there for why the two
+    are not merged).
 
     :param cookie_value: the raw cookie value from the request
     :param client_id: the id of the API client making the request (g.client_id)
@@ -607,6 +616,27 @@ def revoke_devices(realm_id: int | None = None, resolver: str | None = None, use
     count = RememberedDevice.query.filter_by(**criteria).delete(synchronize_session=False)
     db.session.commit()
     return count
+
+
+def handle_device_theft(identity: UserIdentity) -> int:
+    """
+    Escalate a detected cookie replay: revoke every remembered device *identity* holds, on every client.
+
+    :func:`consume_remember_device_cookie` has already invalidated the replayed series by the time this runs - this
+    is the response to the detection, not the detection itself. It reaches every device of the user because a
+    replayed cookie means the browser, or its cookie jar, is compromised rather than the one series that happened
+    to be presented, so recognition is withdrawn everywhere until the user re-registers.
+
+    Named and kept here, beside the invalidation it escalates, so that a caller which detects theft cannot
+    accidentally implement a different response - but it is deliberately **not** called from
+    :func:`consume_remember_device_cookie`. The caller has to record the incident first (an audit note and a
+    ``DEVICE_TOKEN_REUSED`` authentication event): this commits, so a lock wait or a deadlock here would otherwise
+    raise with the series already gone and nothing written down. Detect, record, then escalate.
+
+    :param identity: the resolver-stable identity whose devices to revoke
+    :return: the number of revoked remembered devices, the replayed series not among them
+    """
+    return revoke_devices(realm_id=identity.realm_id, resolver=identity.resolver, user_id=identity.user_id)
 
 
 def devices_to_dicts(devices: list[RememberedDevice]) -> list[dict]:

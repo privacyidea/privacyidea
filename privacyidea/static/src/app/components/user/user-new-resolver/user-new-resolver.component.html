@@ -143,6 +143,15 @@
             <span i18n="@@resolver.testConnection">Test Connection</span>
           </button>
         }
+        @if (isEditMode() && authService.actionAllowed("resolverdelete")) {
+          <button
+            (click)="deleteResolver()"
+            class="action-button-delete-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>delete</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        }
         <button
           (click)="onCancel()"
           class="action-button-secondary button-width-s"

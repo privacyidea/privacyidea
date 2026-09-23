@@ -136,7 +136,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     // template: Audit, Known Clients, Authentication Log, Locked Users, IP Blocklist) that master's own "audit"
     // rename does not know about, so this keeps routing to ROUTE_PATHS.LOGS/section "logs" rather than master's
     // flattened single-page ROUTE_PATHS.AUDIT/"audit".
-    { icon: "receipt_long", label: $localize`Audit`, route: ROUTE_PATHS.LOGS, section: "logs" },
+    { icon: "receipt_long", label: $localize`:@@nav.audit:Audit`, route: ROUTE_PATHS.LOGS, section: "logs" },
     {
       icon: "hub",
       label: $localize`:@@nav.externalServices:External Services`,
@@ -262,9 +262,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
         case "users":
           return this.authService.actionAllowed("userlist");
         case "policies":
-          return (
-            this.authService.actionAllowed("policyread") || this.authService.actionAllowed("eventhandling_read")
-          );
+          return this.authService.actionAllowed("policyread") || this.authService.actionAllowed("eventhandling_read");
         case "subscription":
           return this.authService.actionAllowed("managesubscription");
         case "logs":

@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { HttpErrorResponse } from "@angular/common/http";
 import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatButtonModule } from "@angular/material/button";
@@ -31,9 +32,16 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
-import { MockContentService, MockPendingChangesService, MockPolicyService } from "@testing/mock-services";
+import {
+  MockContentService,
+  MockNotificationService,
+  MockPendingChangesService,
+  MockPiResponse,
+  MockPolicyService
+} from "@testing/mock-services";
 import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
 
@@ -63,7 +71,8 @@ function createTestBed(paramName: string | null) {
       { provide: PolicyService, useClass: MockPolicyService },
       { provide: ContentService, useClass: MockContentService },
       { provide: DialogService, useClass: MockDialogService },
-      { provide: PendingChangesService, useClass: MockPendingChangesService }
+      { provide: PendingChangesService, useClass: MockPendingChangesService },
+      { provide: NotificationService, useClass: MockNotificationService }
     ]
   })
     .overrideComponent(PolicyEditPageComponent, {
@@ -184,6 +193,11 @@ describe("PolicyEditPageComponent – create mode", () => {
     expect(success).toBe(false);
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
+  it("deletePolicy does nothing in create mode", async () => {
+    await component.deletePolicy();
+    expect(dialogService.confirmDelete).not.toHaveBeenCalled();
+    expect(policyService.deletePolicy).not.toHaveBeenCalled();
+  });
 });
 
 describe("PolicyEditPageComponent – edit mode", () => {
@@ -219,5 +233,60 @@ describe("PolicyEditPageComponent – edit mode", () => {
     const success = await component.onSave();
     expect(success).toBe(false);
     expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  describe("deletePolicy", () => {
+    let dialogService: MockDialogService;
+    let notificationService: MockNotificationService;
+    let pendingChangesService: MockPendingChangesService;
+
+    beforeEach(() => {
+      dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+      notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+      pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    });
+
+    it("deletes the policy after confirmation and navigates back", async () => {
+      await component.deletePolicy();
+      expect(dialogService.confirmDelete).toHaveBeenCalledWith(expect.objectContaining({ items: ["TestPolicy"] }));
+      expect(policyService.deletePolicy).toHaveBeenCalledWith("TestPolicy");
+      expect(notificationService.success).toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES);
+    });
+
+    it("does not delete when the confirmation is cancelled", async () => {
+      dialogService.confirmDelete.mockResolvedValue(false);
+      await component.deletePolicy();
+      expect(policyService.deletePolicy).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("shows the server message and stays on the page when the deletion fails", async () => {
+      policyService.deletePolicy.mockRejectedValue(
+        new HttpErrorResponse({ error: { result: { error: { message: "policy is in use" } } } })
+      );
+      await component.deletePolicy();
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("policy is in use"));
+      expect(notificationService.success).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("shows the server message and stays on the page when the response carries an error", async () => {
+      policyService.deletePolicy.mockResolvedValue(
+        new MockPiResponse<number>({ result: { status: false, error: { code: 905, message: "policy is in use" } } })
+      );
+      await component.deletePolicy();
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("policy is in use"));
+      expect(notificationService.success).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("shows a generic error when the failure carries no message", async () => {
+      policyService.deletePolicy.mockRejectedValue(new Error("network down"));
+      await component.deletePolicy();
+      expect(notificationService.error).toHaveBeenCalledWith("Failed to delete policy. ");
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
   });
 });
