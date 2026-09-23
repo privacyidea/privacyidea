@@ -256,9 +256,9 @@ def build_pass_context() -> CryptContext:
     # Merge into a copy: updating DEFAULT_HASH_ALGO_PARAMS in place would let the first app that
     # configures PI_HASH_ALGO_PARAMS decide the parameters for every app created later in the same
     # process, since the module-level default is shared.
-    configured_params = get_app_config_value(ConfigKey.HASH_ALGO_PARAMS, default={})
     hash_algo_params = dict(DEFAULT_HASH_ALGO_PARAMS)
     try:
+        configured_params = dict(get_app_config_value(ConfigKey.HASH_ALGO_PARAMS, default={}))
         hash_algo_params.update(configured_params)
         with warnings.catch_warnings():
             warnings.simplefilter("error", PasslibWarning)

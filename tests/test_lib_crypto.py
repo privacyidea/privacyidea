@@ -1192,3 +1192,9 @@ class BuildPassContextTestCase(unittest.TestCase):
                 self.assertTrue(verify_pass_hash("secret", password_hash))
             crypt_context.assert_not_called()
         self.assertTrue(password_hash.startswith("$pbkdf2-sha512$1000$"), password_hash)
+
+    def test_14_parameter_pairs_for_unlisted_scheme(self):
+        # A JSON list of key-value pairs, as the Docker environment can deliver it, is checked
+        # like the mapping it spells out.
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_PARAMS.*argon2id__rounds names a hash algorithm"):
+            self._build(PI_HASH_ALGO_PARAMS=[["argon2id__rounds", 5]])
