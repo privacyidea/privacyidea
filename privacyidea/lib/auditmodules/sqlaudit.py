@@ -41,13 +41,16 @@ If the PI_AUDIT_SQL_URI is omitted the Audit data is written to the
 token database.
 """
 
+import csv
 import datetime
 import inspect
+import io
 import logging
+import re
 import traceback
 from collections import OrderedDict
 
-from sqlalchemy import asc, desc, and_, or_, select, delete, text
+from sqlalchemy import asc, desc, and_, or_, func, select, delete, text
 from sqlalchemy import inspect as sqlalchemy_inspect
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
@@ -68,6 +71,44 @@ from privacyidea.models.audit import AUDIT_TABLE_NAME
 from privacyidea.models import audit_column_length as column_length
 
 log = logging.getLogger(__name__)
+
+# Characters that make a spreadsheet application read a cell as a formula rather than as text.
+# "|" starts a DDE reference, which is the same class of thing.
+_CELL_TEXT_PREFIXES = ("=", "+", "-", "@", "|", "\t", "\r")
+
+# A plain number, so that a negative value keeps its sign instead of being marked as text. Not
+# float(), which also accepts "-inf" and the underscore separators of "-1_0".
+_NUMBER = re.compile(r"[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?")
+
+# Entries read from the database per round while streaming the CSV export. Every round costs one
+# query for the entries and one for their neighbouring ids, so this trades queries against the
+# memory a round holds.
+_CSV_EXPORT_CHUNK_SIZE = 500
+
+# How many ids are asked for in a single IN list. Oracle accepts at most 1000 elements, and a
+# batch of entries asks for two neighbours each.
+_ID_LOOKUP_SLICE_SIZE = 500
+
+
+def _csv_cell(value: object) -> str:
+    """
+    Render one audit value for the CSV export.
+
+    A cell starting with one of ``= + - @`` is read as a formula by spreadsheet applications
+    instead of as the text it is, so such a value is prefixed with an apostrophe, which is the
+    conventional way of marking a cell as text. Values that are simply numbers are left alone,
+    so the numeric columns stay numeric.
+
+    :param value: The value of one audit column
+    :return: The value as it should appear in the CSV cell
+    """
+    text = str(value)
+    # Leading whitespace is trimmed by spreadsheet applications before they decide whether the
+    # cell is a formula, so it is trimmed here before the check as well.
+    if text.lstrip().startswith(_CELL_TEXT_PREFIXES):
+        if not _NUMBER.fullmatch(text.strip()):
+            return f"'{text}"
+    return text
 
 
 def _pool_accepts_pool_size(connect_string, engine_kwargs):
@@ -538,7 +579,31 @@ class Audit(AuditBase):
                     self.session.rollback()
         return self._id_stride
 
-    def _check_missing(self, audit_id):
+    def _existing_neighbour_ids(self, audit_ids: list[int]) -> set[int]:
+        """
+        Return those ids neighbouring the given entries that exist in the audit log.
+
+        This answers :func:`_check_missing` for a whole batch of entries with a couple of
+        queries instead of one query per entry, which is what makes it usable for a listing
+        or an export rather than for a single entry.
+
+        :param audit_ids: The ids of the entries whose neighbours are of interest
+        :return: The subset of the neighbouring ids that exist
+        """
+        stride = self._get_id_stride()
+        wanted = set()
+        for audit_id in audit_ids:
+            wanted.update((int(audit_id) - stride, int(audit_id) + stride))
+        found = set()
+        wanted = sorted(wanted)
+        # Ask in slices: the number of elements an IN list accepts is limited on some databases
+        # (1000 on Oracle), and a batch may be larger than that.
+        for start in range(0, len(wanted), _ID_LOOKUP_SLICE_SIZE):
+            stmt = select(LogEntry.id).where(LogEntry.id.in_(wanted[start:start + _ID_LOOKUP_SLICE_SIZE]))
+            found.update(self.session.scalars(stmt).all())
+        return found
+
+    def _check_missing(self, audit_id: int, existing_neighbour_ids: set[int] | None = None) -> bool:
         """
         Check if the audit log contains the entries before and after
         the given id.
@@ -548,11 +613,17 @@ class Audit(AuditBase):
               meta information:
               1. Which one was the first entry. (use initialize_log)
               2. Which one was the last entry.
+
+        :param existing_neighbour_ids: The result of :func:`_existing_neighbour_ids` for a batch
+            of entries this one belongs to. When given, the neighbours are looked up in that set
+            instead of with a query of this entry's own.
         """
         res = False
         try:
             stride = self._get_id_stride()
             neighbour_ids = (int(audit_id) - stride, int(audit_id) + stride)
+            if existing_neighbour_ids is not None:
+                return all(neighbour_id in existing_neighbour_ids for neighbour_id in neighbour_ids)
             found = self.session.query(LogEntry.id).filter(LogEntry.id.in_(neighbour_ids)).count()
             # We may not do a commit!
             # self.session.commit()
@@ -642,12 +713,57 @@ class Audit(AuditBase):
         :return: None. It yields results as a generator
         """
         filter_condition = self._create_filter(param, admin_params=admin_params, timelimit=timelimit)
-        stmt = select(LogEntry).where(filter_condition).order_by(LogEntry.date)
-        logentries = self.session.scalars(stmt).all()
 
-        for le in logentries:
-            audit_dict = self.audit_entry_to_dict(le)
-            yield ",".join([f"'{x!s}'" for x in audit_dict.values()]) + "\n"
+        # The rows are written through the csv module so that a value containing a comma, a quote
+        # or a line break is quoted and escaped the way every CSV reader expects, instead of being
+        # wrapped in literal single quotes that the value itself can contain. The line terminator
+        # stays "\n", which is what this export has always emitted.
+        row_buffer = io.StringIO()
+        writer = csv.writer(row_buffer, lineterminator="\n")
+
+        # The entries are read in rounds of _CSV_EXPORT_CHUNK_SIZE rather than all at once. The
+        # endpoint streams the response, so reading everything first would hold the whole audit
+        # log in memory and send nothing until the last entry had been read - on an audit log of
+        # any size that is the difference between an export that starts immediately and one that
+        # appears to hang. Each round asks for the entries after the last one already written,
+        # which is a range scan on the indexed date column, and no cursor stays open while the
+        # neighbour ids of the round are looked up, which is what a server-side cursor would not
+        # survive on every dialect.
+        # An upper bound taken before the first round, so the export is a snapshot of the log as
+        # it was when it started. Without it every round would also pick up the entries written
+        # while the export runs - every request writes one - and on a server that produces them
+        # faster than the client reads, the export would never reach an empty round.
+        last_entry_id = self.session.execute(
+            select(func.max(LogEntry.id)).where(filter_condition)).scalar()
+        if last_entry_id is None:
+            return
+        filter_condition = and_(filter_condition, LogEntry.id <= last_entry_id)
+
+        last_date = None
+        last_id = None
+        while True:
+            stmt = select(LogEntry).where(filter_condition)
+            if last_date is not None:
+                # The date is not unique, so the id breaks the tie and makes the order total.
+                # Written out rather than as a row-value comparison, which Oracle does not have.
+                stmt = stmt.where(or_(LogEntry.date > last_date,
+                                      and_(LogEntry.date == last_date, LogEntry.id > last_id)))
+            stmt = stmt.order_by(LogEntry.date, LogEntry.id).limit(_CSV_EXPORT_CHUNK_SIZE)
+            entries = self.session.scalars(stmt).all()
+            if not entries:
+                break
+            last_date = entries[-1].date
+            last_id = entries[-1].id
+            existing_neighbour_ids = self._existing_neighbour_ids([entry.id for entry in entries])
+            for entry in entries:
+                audit_dict = self.audit_entry_to_dict(entry, existing_neighbour_ids)
+                writer.writerow([_csv_cell(value) for value in audit_dict.values()])
+                yield row_buffer.getvalue()
+                row_buffer.seek(0)
+                row_buffer.truncate(0)
+                # Detach the entry, so that the session does not accumulate every entry of the
+                # export and undo the point of reading it in rounds.
+                self.session.expunge(entry)
 
     def get_count(self, search_dict, timedelta=None, success=None):
         # create filter condition
@@ -779,7 +895,8 @@ class Audit(AuditBase):
         self.session.execute(stmt)
         self.session.commit()
 
-    def audit_entry_to_dict(self, audit_entry):
+    def audit_entry_to_dict(self, audit_entry: LogEntry,
+                            existing_neighbour_ids: set[int] | None = None) -> OrderedDict:
         sig = None
         if self.sign_data:
             try:
@@ -793,7 +910,7 @@ class Audit(AuditBase):
                             'from the database, please check the encoding.')
                 log.debug(f'{traceback.format_exc()!s}')
 
-        is_not_missing = self._check_missing(int(audit_entry.id))
+        is_not_missing = self._check_missing(int(audit_entry.id), existing_neighbour_ids)
         # is_not_missing = True
         audit_dict = OrderedDict()
         audit_dict['number'] = audit_entry.id

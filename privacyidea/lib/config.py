@@ -48,7 +48,7 @@ from sqlalchemy import select, delete
 
 from privacyidea.config import DefaultConfigValues, ConfigKey
 from privacyidea.lib.framework import get_request_local_store, get_app_config_value, get_app_local_store
-from privacyidea.lib.utils import to_list
+from privacyidea.lib.utils import to_list, censor_connect_string
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .caconnectors.baseca import BaseCAConnector
 from .crypto import decryptPassword
@@ -536,6 +536,10 @@ def get_enrollable_token_types() -> list[str]:
     deprecation use case where a type stays functional but can no longer be
     freshly enrolled.
 
+    The ``deprecated`` sentinel type itself is never enrollable and cannot be
+    re-enabled via pi.cfg, because ``DeprecatedTokenClass`` refuses every
+    enrollment anyway.
+
     :return: list of enrollable token types
     """
     token_types = get_token_types()
@@ -544,7 +548,7 @@ def get_enrollable_token_types() -> list[str]:
     effectively_disabled = set(disabled_token_types) - set(enable_token_types)
 
     # Remove the disabled token types
-    enrollable_token_types = list(set(token_types) - effectively_disabled)
+    enrollable_token_types = list(set(token_types) - effectively_disabled - {"deprecated"})
 
     return enrollable_token_types
 
@@ -966,11 +970,81 @@ def get_machine_resolver_module_list():
     return modules
 
 
+# Fragments in the name of a pi.cfg key that say its value is a secret. Matched as
+# case-insensitive substrings rather than against a list of known keys, because the pi.cfg key
+# space is open-ended: an installation and a plugin may define their own keys, and a key named
+# after what it holds is then covered without privacyIDEA having to know about it.
+#
+# Only fragments that no harmless key contains are listed. "KEY" for instance is deliberately
+# absent: it appears in PI_AUDIT_KEY_PRIVATE and PI_AUDIT_KEY_PUBLIC, which hold file paths, and
+# in the PI_AUDIT_NO_PRIVATE_KEY_CHECK flag, none of which is a secret.
+SENSITIVE_APP_CONFIG_FRAGMENTS = ("PASSWORD", "SECRET", "PEPPER", "PASSPHRASE", "CREDENTIAL")
+
+# Keys whose value is a secret although their name does not say so. A new key that the fragments
+# above do not catch belongs here.
+SENSITIVE_APP_CONFIG_KEYS = frozenset({"PI_HSM_MODULE_KEY"})
+
+# Keys whose value is a database connect string. The credential sits inside the value rather
+# than being the whole of it, so these are shortened with censor_connect_string() instead of
+# being replaced: the host and the driver are what the report is read for.
+CONNECT_STRING_APP_CONFIG_KEYS = frozenset({"PI_AUDIT_SQL_URI"})
+
+
+def censor_app_config(app_config: dict) -> dict:
+    """
+    Return a copy of the app configuration with the secret values replaced by ``__CENSORED__``.
+
+    This is for rendering the configuration into a report that is read by somebody other than
+    the person who wrote ``pi.cfg`` - the value of a key that holds a credential must not be
+    part of it.
+
+    The decision is made on the name of the key, which cannot be complete: a custom key that is
+    named after neither its content nor anything in SENSITIVE_APP_CONFIG_FRAGMENTS still has its
+    value rendered. It is a denylist because the alternative, rendering only the values of keys
+    privacyIDEA knows, would hide most of what the report is read for.
+
+    :param app_config: the application configuration
+    :return: a dict with the same keys, and the secret values replaced
+    """
+    censored = {}
+    for key, value in app_config.items():
+        upper_key = str(key).upper()
+        if upper_key in CONNECT_STRING_APP_CONFIG_KEYS:
+            censored[key] = censor_connect_string(value) if value else value
+        elif (upper_key in SENSITIVE_APP_CONFIG_KEYS
+                or any(fragment in upper_key for fragment in SENSITIVE_APP_CONFIG_FRAGMENTS)):
+            censored[key] = CENSORED
+        else:
+            censored[key] = value
+    return censored
+
+
+def get_stored_config_type(key: str) -> str:
+    """
+    Return the type a config entry is stored under, or "" when there is no such entry.
+
+    Read from the database rather than from the config object, because the config object is a
+    request-local snapshot that is only refreshed every ``PI_CHECK_RELOAD_CONFIG`` seconds - an
+    entry written moments ago may not be in it yet, and the type decides whether a value may be
+    written to a log in clear.
+
+    :param key: the name of the config entry
+    :return: the type of the entry, or "" if it does not exist
+    """
+    stmt = select(Config).where(Config.Key == key)
+    pi_config = db.session.scalars(stmt).first()
+    return (pi_config.Type or "") if pi_config else ""
+
+
 def set_privacyidea_config(key, value, typ="", desc=""):
     """
     Set a config value and writes it to the Config database table.
     Can be of type "password" or "public". "password" gets encrypted.
     """
+    # We need to check, if the value already exist
+    stmt = select(Config).where(Config.Key == key)
+    pi_config = db.session.scalars(stmt).first()
+
     if not typ:
         # check if this is a token specific config and if it should be public
         try:
@@ -980,12 +1054,15 @@ def set_privacyidea_config(key, value, typ="", desc=""):
         except Exception:
             log.debug("This seems to be no token specific setting")
 
+    if not typ and pi_config:
+        # An update that names no type keeps the type of the existing entry, so that the stored
+        # type and the stored value stay consistent: a "password" entry is written the way it is
+        # read back, whether or not the caller repeats the type on every update.
+        typ = pi_config.Type
+
     if typ == "password":
         # store value in encrypted way
         value = encryptPassword(value)
-    # We need to check, if the value already exist
-    stmt = select(Config).where(Config.Key == key)
-    pi_config = db.session.scalars(stmt).first()
     if pi_config:
         # The value already exist, we need to update
         pi_config.Value = value

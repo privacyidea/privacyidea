@@ -80,8 +80,8 @@ export interface RestrictionKind {
 }
 
 export const RESTRICTION_KINDS: readonly RestrictionKind[] = [
-  { id: "users", label: $localize`Users`, actions: ["LOCK_USER", "PERMANENT_LOCK_USER"] },
-  { id: "ips", label: $localize`IPs`, actions: ["BLOCK_IP", "PERMANENT_BLOCK_IP"] }
+  { id: "users", label: $localize`:@@nav.users:Users`, actions: ["LOCK_USER", "PERMANENT_LOCK_USER"] },
+  { id: "ips", label: $localize`:@@common.ips:IPs`, actions: ["BLOCK_IP", "PERMANENT_BLOCK_IP"] }
 ];
 
 // Every kind is asked for, whatever is on the chart: the response carries one series per action type, so hiding a
@@ -167,7 +167,7 @@ function isExpired(entry: BlocklistEntry): boolean {
 export class ConditionalAccessWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly type = "conditional-access";
   static override readonly requiredAction = [POLICY_READ, USER_LOCK_READ, BLOCKLIST_READ];
-  static override readonly title = $localize`Conditional Access Enforcements`;
+  static override readonly title = $localize`:@@common.conditionalAccessEnforcements:Conditional Access Enforcements`;
   static override readonly icon = "security";
   static override readonly titleLink = ROUTE_PATHS.POLICIES_CONDITIONAL_ACCESS;
   static override readonly titleLinkAction = POLICY_READ;
@@ -439,7 +439,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   // happened to carry.
   readonly rangeSummaryFrom = computed(() => this.summaryFormat(this.selectedFromMs()));
   readonly rangeSummaryTo = computed(() =>
-    this.selectionAtWindowEnd() ? $localize`now` : this.summaryFormat(this.selectedToMs())
+    this.selectionAtWindowEnd() ? $localize`:@@common.now:now` : this.summaryFormat(this.selectedToMs())
   );
 
   // The last kind stays on the chart: an empty plot with a live brush under it is not a view of anything. Material's
@@ -647,13 +647,13 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
 
   highlightTooltip(entry: RestrictionHighlight): string {
     if (entry.kind === "ip") {
-      return $localize`Blocked ${formatLocalDateTime(entry.at)} - show this IP's authentication log`;
+      return $localize`:@@common.blockedShowIpS:Blocked ${formatLocalDateTime(entry.at)} - show this IP's authentication log`;
     }
-    return $localize`Locked ${formatLocalDateTime(entry.at)} - show the locked users`;
+    return $localize`:@@common.lockedShowLockedUsers:Locked ${formatLocalDateTime(entry.at)} - show the locked users`;
   }
 
   expiresTooltip(entry: RestrictionHighlight): string {
-    return $localize`In force until ${formatLocalDateTime(entry.expiresAt)}`;
+    return $localize`:@@common.forceUntil:In force until ${formatLocalDateTime(entry.expiresAt)}`;
   }
 
   // A restriction in force is what an admin needs to notice, so any non-zero count is flagged, while zero reads as

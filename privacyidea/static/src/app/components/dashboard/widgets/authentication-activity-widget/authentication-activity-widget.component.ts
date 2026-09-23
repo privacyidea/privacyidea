@@ -106,7 +106,7 @@ export interface ActivitySummary {
 export class AuthenticationActivityWidgetComponent extends DashboardWidget {
   static override readonly type = "authentication-activity";
   static override readonly requiredAction = LOG_READ;
-  static override readonly title = $localize`Authentication Activity`;
+  static override readonly title = $localize`:@@dashboard.authenticationActivity:Authentication Activity`;
   static override readonly icon = "lock";
   static override readonly titleLink = ROUTE_PATHS.AUTHENTICATION_LOG;
   static override readonly titleLinkAction = LOG_READ;
@@ -119,7 +119,7 @@ export class AuthenticationActivityWidgetComponent extends DashboardWidget {
 
   protected readonly routePaths = ROUTE_PATHS;
   protected readonly ranges = ACTIVITY_RANGES;
-  protected readonly info = $localize`Authentication attempts, not single requests: the several log entries of one \
+  protected readonly info = $localize`:@@dashboard.authenticationAttemptsNotSingle:Authentication attempts, not single requests: the several log entries of one \
 challenge-response login count once, classified by how the attempt ended.`;
 
   private readonly authService: AuthServiceInterface = inject(AuthService);
@@ -260,7 +260,7 @@ challenge-response login count once, classified by how the attempt ended.`;
         {
           // Every attempt in a bucket, whatever it ended as, so this row is the activity itself rather than the sum
           // of the three below it: an event type the endpoint could not classify counts here and in none of them.
-          label: $localize`Overall`,
+          label: $localize`:@@dashboard.overall:Overall`,
           key: "overall",
           counts: this.binsOf(series, binCount),
           total: series.reduce((sum, entry) => sum + this.selectedSum(entry), 0),
@@ -269,14 +269,14 @@ challenge-response login count once, classified by how the attempt ended.`;
           share: null
         },
         {
-          label: $localize`Successful`,
+          label: $localize`:@@dashboard.successful:Successful`,
           key: "success",
           counts: this.binsOf(seriesOf("success"), binCount),
           total: success,
           share: share(success)
         },
         {
-          label: $localize`Failed`,
+          label: $localize`:@@dashboard.failed:Failed`,
           key: "failure",
           counts: this.binsOf(seriesOf("failure"), binCount),
           total: failure,
@@ -285,7 +285,7 @@ challenge-response login count once, classified by how the attempt ended.`;
         {
           // An attempt counts here when its latest event is a challenge or enrolment with no answer logged after
           // it, so a bucket dates when the attempt *started*.
-          label: $localize`Pending`,
+          label: $localize`:@@valueLabelPending:Pending`,
           key: "pending",
           counts: this.binsOf(seriesOf("pending"), binCount),
           total: pending,
@@ -372,7 +372,7 @@ challenge-response login count once, classified by how the attempt ended.`;
   // edge there falls at something like 08:37, and the day on its own would name a day the span only partly covers.
   private edgeLabel(edge: number): string {
     if (edge >= this.binCount()) {
-      return $localize`now`;
+      return $localize`:@@common.now:now`;
     }
     const iso = this.binStarts()[edge] ?? this.statistics()?.window?.start_time;
     if (!iso) {

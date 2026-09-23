@@ -535,11 +535,13 @@ class TokenModelTestCase(MyTestCase):
         self.assertFalse(find_user)
 
     def test_25_eventcounter(self):
-        counter = EventCounter("test_counter", 10)
+        # A node name rather than the empty default: node is NOT NULL, and Oracle stores
+        # an empty string as NULL, so an empty node cannot be written there at all
+        counter = EventCounter("test_counter", 10, "Node1")
         counter.save()
         counter2 = EventCounter.query.filter_by(counter_name="test_counter").first()
         self.assertEqual(counter2.counter_value, 10)
-        self.assertEqual(counter2.node, "")
+        self.assertEqual(counter2.node, "Node1")
 
         counter2.increase()
         counter2.increase()

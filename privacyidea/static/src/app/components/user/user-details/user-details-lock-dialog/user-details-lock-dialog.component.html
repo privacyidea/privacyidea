@@ -20,12 +20,14 @@
   (actionTriggered)="onAction($event)"
   (wrapperClose)="close()"
   [actions]="dialogActions()"
-  i18n-title
+  i18n-title="@@user.lockUser"
   title="Lock User">
   <p class="lock-dialog-intro">
-    <span i18n>Locking</span>
+    <span i18n="@@user.locking">Locking</span>
     <strong>{{ data.username }}&#64;{{ data.realm }}</strong>
-    <span i18n>rejects every authentication attempt until the lock is lifted or expires.</span>
+    <span i18n="@@user.rejectsEveryAuthenticationAttempt"
+      >rejects every authentication attempt until the lock is lifted or expires.</span
+    >
   </p>
 
   <mat-radio-group
@@ -34,12 +36,12 @@
     (change)="mode.set($event.value)">
     <mat-radio-button
       value="permanent"
-      i18n>
+      i18n="@@user.untilAdministratorUnlocksUser">
       Until an administrator unlocks the user
     </mat-radio-button>
     <mat-radio-button
       value="timed"
-      i18n>
+      i18n="@@common.limitedTime">
       For a limited time
     </mat-radio-button>
   </mat-radio-group>
@@ -49,7 +51,7 @@
       appearance="fill"
       subscriptSizing="dynamic"
       class="input-width-s">
-      <mat-label i18n>Duration</mat-label>
+      <mat-label i18n="@@audit.duration">Duration</mat-label>
       <input
         matInput
         type="number"
@@ -63,7 +65,7 @@
       appearance="fill"
       subscriptSizing="dynamic"
       class="input-width-s">
-      <mat-label i18n>Unit</mat-label>
+      <mat-label i18n="@@common.unit">Unit</mat-label>
       <mat-select
         [disabled]="durationDisabled()"
         [value]="durationUnit()"

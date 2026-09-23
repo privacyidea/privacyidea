@@ -117,7 +117,13 @@ export class PeriodicTaskEditComponent implements OnDestroy {
   );
 
   private originalTask: PeriodicTaskEdit = { ...EMPTY_PERIODIC_TASK };
-  private editName: string | null = null;
+  private editName = signal<string | null>(null);
+
+  readonly taskExists = computed(() => {
+    const name = this.editName();
+    if (this.isNewTask() || !name) return false;
+    return this.findTaskByName(name) !== undefined;
+  });
 
   editTaskForm = form(this.editTask, (f) => {
     required(f.name);
@@ -146,14 +152,14 @@ export class PeriodicTaskEditComponent implements OnDestroy {
       const name = params.get("name");
       if (name) {
         this.isNewTask.set(false);
-        this.editName = name;
+        this.editName.set(name);
         const found = this.findTaskByName(name);
         if (found) {
           this.loadTask(found);
         }
       } else {
         this.isNewTask.set(true);
-        this.editName = null;
+        this.editName.set(null);
         this.loadTask({ ...EMPTY_PERIODIC_TASK });
       }
     });
@@ -162,8 +168,9 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     effect(() => {
       const resource = this.periodicTaskService.periodicTasksResource;
       if (resource.hasValue && !resource.hasValue()) return;
-      if (this.isNewTask() || !this.editName) return;
-      const found = this.findTaskByName(this.editName);
+      const editName = this.editName();
+      if (this.isNewTask() || !editName) return;
+      const found = this.findTaskByName(editName);
       if (found && untracked(() => !this.hasChanges())) {
         this.loadTask(found);
       }
@@ -254,6 +261,21 @@ export class PeriodicTaskEditComponent implements OnDestroy {
     } catch {
       return false;
     }
+  }
+
+  async deleteTask(): Promise<void> {
+    const name = this.editName();
+    const task = name ? this.findTaskByName(name) : undefined;
+    if (!task || task.id === null) {
+      return;
+    }
+    const result = await this.periodicTaskService.deleteWithConfirmDialog({ ...task, id: task.id });
+    if (!result) {
+      return;
+    }
+    this.periodicTaskService.periodicTasksResource.reload();
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
   }
 
   onCancel(): void {
