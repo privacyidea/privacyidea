@@ -93,6 +93,14 @@ class ConfigKey:
     AUDIT_SQL_COLUMN_LENGTH = "PI_AUDIT_SQL_COLUMN_LENGTH"
     CHECK_OLD_SIGNATURES = "PI_CHECK_OLD_SIGNATURES"
 
+    # A parameter that names a python class for the server to import is checked against the
+    # classes that ship with privacyIDEA plus the ones named here, so that an installation
+    # running its own class keeps working by naming it. MODULE_ALLOWLIST_MODE decides what
+    # happens to a class that is on neither list.
+    SMS_PROVIDER_MODULES = "PI_SMS_PROVIDER_MODULES"
+    PIN_HANDLER_MODULES = "PI_PIN_HANDLER_MODULES"
+    MODULE_ALLOWLIST_MODE = "PI_MODULE_ALLOWLIST_MODE"
+
     LOGLEVEL = "PI_LOGLEVEL"
     LOGCONFIG = "PI_LOGCONFIG"
     LOGFILE = "PI_LOGFILE"

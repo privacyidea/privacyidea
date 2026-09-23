@@ -80,7 +80,9 @@ from .lib.utils import (getLowerParams,
 from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action, check_admin_base_action
 from ..lib.caconnector import get_caconnector_list
-from ..lib.config import (get_token_class,
+from ..lib.config import (censor_app_config,
+                          get_stored_config_type,
+                          get_token_class,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config,
@@ -126,7 +128,9 @@ def get_config_documentation():
     context = {"system": socket.getfqdn(socket.gethostname()),
                "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                "systemconfig": config,
-               "appconfig": current_app.config,
+               # Censored here rather than in the template, so the report cannot carry a
+               # credential out of pi.cfg no matter which template renders it.
+               "appconfig": censor_app_config(current_app.config),
                "resolverconfig": resolvers,
                "realmconfig": realms,
                "policyconfig": policies,
@@ -308,10 +312,14 @@ def set_config():
             value = get_optional(param, key)
             typ = get_optional(param, key + ".type")
             desc = get_optional(param, key + ".desc")
+            # A request that names no type updates the entry under the type it already has, so
+            # the stored type says as much about the value as a given one does. Read before the
+            # write, because the write is what may set the type in the first place.
+            stored_type = get_stored_config_type(key)
             res = set_privacyidea_config(key, value, typ, desc)
             result[key] = res
             # Do not write password-typed values to the audit log in cleartext
-            audit_value = CENSORED if typ == "password" else value
+            audit_value = CENSORED if "password" in (typ, stored_type) else value
             g.audit_object.add_to_log({"info": f"{key!s}={audit_value!s}, "})
     g.audit_object.log({"success": True})
     return send_result(result)

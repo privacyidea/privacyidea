@@ -959,6 +959,33 @@ class API000TokenAdminRealmList(MyApiTestCase):
             remove_token(serial)
 
 
+class APIEnrollmentCacheHeaderTestCase(MyApiTestCase):
+    """
+    The response of an enrollment carries the token seed, so it is marked "no-store" rather
+    than the "no-cache" every other response gets.
+    """
+
+    def test_01_token_init_is_no_store(self):
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp", "genkey": 1,
+                                                 "serial": "NOSTORE01"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
+            # The seed really is in this response, which is what the header is about
+            self.assertIn("googleurl", res.json.get("detail"), res.json.get("detail"))
+            self.assertEqual("no-store", res.headers.get("Cache-Control"), res.headers)
+
+    def test_02_other_endpoints_stay_no_cache(self):
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
+            self.assertEqual("no-cache", res.headers.get("Cache-Control"), res.headers)
+
+
 class APIAttestationTestCase(MyApiTestCase):
     @pytest.mark.usefixtures("setup_local_ca")
     def test_01_enroll_certificate(self):
