@@ -194,7 +194,7 @@
       [userRealm]="userRealm"
       [isAnyEditingOrRevoked]="isAnyEditingOrRevoked()" />
 
-    @if (tokenType() === "sshkey" || tokenType() === "hotp") {
+    @if ((tokenType() === "sshkey" || tokenType() === "hotp") && machineService.canListTokenApplications()) {
       <app-token-details-machine class="details-card--machine" />
     }
 

@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { RemoteServer } from "@services/privacyidea-server/privacyidea-server.service";
 import { TokenDetails } from "@services/token/token.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import {
@@ -29,7 +28,7 @@ import {
 
 export interface RemoteEnrollmentData extends TokenEnrollmentData {
   type: "remote";
-  remoteServer: RemoteServer | null;
+  remoteServerId: string;
   remoteSerial: string;
   remoteUser: string;
   remoteRealm: string;
@@ -53,7 +52,7 @@ export class RemoteApiPayloadMapper
   override toApiPayload(data: RemoteEnrollmentData): RemoteEnrollmentPayload {
     const payload: RemoteEnrollmentPayload = {
       ...super.toApiPayload(data),
-      "remote.server_id": data.remoteServer?.id ?? null,
+      "remote.server_id": data.remoteServerId || null,
       "remote.serial": data.remoteSerial,
       "remote.user": data.remoteUser,
       "remote.realm": data.remoteRealm,
@@ -74,7 +73,7 @@ export class RemoteApiPayloadMapper
     return {
       ...baseData,
       type: "remote",
-      remoteServer: payload["remote.server_id"] ? ({ id: payload["remote.server_id"] } as RemoteServer) : null,
+      remoteServerId: payload["remote.server_id"] ?? "",
       remoteSerial: payload["remote.serial"] ?? "",
       remoteUser: payload["remote.user"] ?? "",
       remoteRealm: payload["remote.realm"] ?? "",
@@ -87,9 +86,7 @@ export class RemoteApiPayloadMapper
     const enrollData: RemoteEnrollmentData = {
       ...super.fromTokenDetailsToEnrollmentData(details),
       type: "remote",
-      remoteServer: details.info?.["remote.server_id"]
-        ? ({ id: details.info?.["remote.server_id"] } as RemoteServer)
-        : null,
+      remoteServerId: details.info?.["remote.server_id"] ?? "",
       remoteSerial: details.info?.["remote.serial"] ?? "",
       remoteUser: details.info?.["remote.user"] ?? "",
       remoteRealm: details.info?.["remote.realm"] ?? "",

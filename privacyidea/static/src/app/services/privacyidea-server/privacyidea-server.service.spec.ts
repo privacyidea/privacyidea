@@ -52,7 +52,8 @@ describe("PrivacyideaServerService", () => {
     notificationService = TestBed.inject(NotificationService);
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    // The servers are only requested by an admin who may read them; on enrollment only if remote tokens may be enrolled.
+    // The servers are only requested by an admin who may read them;
+    // on enrollment only if remote tokens may be enrolled.
     authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["privacyideaserver_read", "enrollREMOTE"] });
   });
 
@@ -233,6 +234,22 @@ describe("PrivacyideaServerService", () => {
     expect(service.remoteServerOptions()).toEqual([]);
   });
 
+  it("remoteServerOptions should keep the database id that remote.server_id expects", async () => {
+    contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
+    TestBed.tick();
+
+    httpMock
+      .expectOne(service.privacyideaServerBaseUrl)
+      .flush(
+        MockPiResponse.fromValue({ "pi-remote": { id: 2, url: "https://pi.example", tls: false, description: "" } })
+      );
+    await lastValueFrom(of({}));
+
+    expect(service.remoteServerOptions()).toEqual([
+      { id: "2", identifier: "pi-remote", name: "pi-remote", url: "https://pi.example", tls: false, description: "" }
+    ]);
+  });
+
   it("privacyideaServerResource should not request the servers without privacyideaserver_read", () => {
     authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["enrollREMOTE"] });
     contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
@@ -240,6 +257,19 @@ describe("PrivacyideaServerService", () => {
 
     httpMock.expectNone(service.privacyideaServerBaseUrl);
     expect(service.remoteServerOptions()).toEqual([]);
+  });
+
+  it("privacyideaServerResource should not request the servers for a self-service user", () => {
+    authService.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      role: "user",
+      rights: ["privacyideaserver_read", "enrollREMOTE"]
+    });
+    contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
+    TestBed.tick();
+
+    httpMock.expectNone(service.privacyideaServerBaseUrl);
+    expect(service.canListRemoteServers()).toBe(false);
   });
 
   // Only the remote token type uses the list during enrollment.

@@ -20,14 +20,13 @@ import { Component, computed, forwardRef, inject, input, OnInit, signal } from "
 import { disabled, form, FormField, required } from "@angular/forms/signals";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
-import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { MatTooltip } from "@angular/material/tooltip";
 import {
   PrivacyideaServerService,
-  PrivacyideaServerServiceInterface,
-  RemoteServer
+  PrivacyideaServerServiceInterface
 } from "@services/privacyidea-server/privacyidea-server.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
@@ -41,7 +40,7 @@ import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollm
 @Component({
   selector: "app-enroll-remote",
   standalone: true,
-  imports: [MatFormField, MatInput, MatLabel, MatOption, MatSelect, MatCheckbox, MatError, MatHint, FormField],
+  imports: [MatFormField, MatInput, MatLabel, MatOption, MatSelect, MatCheckbox, MatError, MatTooltip, FormField],
   templateUrl: "./enroll-remote.component.html",
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollRemoteComponent) }]
 })
@@ -49,17 +48,20 @@ export class EnrollRemoteComponent extends EnrollTokenBase<RemoteEnrollmentData>
   protected readonly enrollmentMapper: RemoteApiPayloadMapper = inject(RemoteApiPayloadMapper);
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  private readonly authService: AuthServiceInterface = inject(AuthService);
   enrollmentData = input<RemoteEnrollmentData>();
   disabled = input<boolean>(false);
 
   checkPinLocally = signal<boolean>(false);
-  remoteServer = signal<RemoteServer | null>(null);
+  remoteServerId = signal<string>("");
   remoteSerial = signal<string>("");
   remoteUser = signal<string>("");
   remoteRealm = signal<string>("");
   remoteResolver = signal<string>("");
 
+  remoteServerIdForm = form(this.remoteServerId, (f) => {
+    required(f);
+    disabled(f, () => this.disabled() || !this.privacyideaServerService.canListRemoteServers());
+  });
   remoteSerialForm = form(this.remoteSerial, (f) => {
     required(f);
     disabled(f, () => this.disabled());
@@ -77,19 +79,18 @@ export class EnrollRemoteComponent extends EnrollTokenBase<RemoteEnrollmentData>
   });
 
   remoteServerOptions = this.privacyideaServerService.remoteServerOptions;
-  // Mirrors the fetch condition of remoteServerResource: without it the identifier becomes a free-text input.
-  readonly remoteServersListable = computed<boolean>(
-    () => this.authService.actionAllowed("privacyideaserver_read") && this.authService.actionAllowed("enrollREMOTE")
-  );
 
-  onRemoteServerInput(identifier: string): void {
-    this.remoteServer.set(identifier ? ({ id: identifier } as RemoteServer) : null);
-  }
+  // A server id handed in via enrollmentData (e.g. a rollover) still allows enrolling without the list.
+  override readonly enrollmentBlockedReason = computed<string | null>(() =>
+    !this.privacyideaServerService.canListRemoteServers() && !this.remoteServerId()
+      ? $localize`:@@token.remoteServerNeedsReadRight:Remote tokens cannot be enrolled: selecting the remote server needs the privacyideaserver_read right.`
+      : null
+  );
 
   ngOnInit(): void {
     if (this.enrollmentData()) {
       this.checkPinLocally.set(this.enrollmentData()?.checkPinLocally ?? false);
-      this.remoteServer.set(this.enrollmentData()?.remoteServer ?? null);
+      this.remoteServerId.set(this.enrollmentData()?.remoteServerId ?? "");
       this.remoteSerial.set(this.enrollmentData()?.remoteSerial ?? "");
       this.remoteUser.set(this.enrollmentData()?.remoteUser ?? "");
       this.remoteRealm.set(this.enrollmentData()?.remoteRealm ?? "");
@@ -98,10 +99,17 @@ export class EnrollRemoteComponent extends EnrollTokenBase<RemoteEnrollmentData>
   }
 
   buildEnrollmentArgs(basicOptions: TokenEnrollmentData): EnrollmentArgs<RemoteEnrollmentData> | null {
-    if (!this.remoteServer()) {
+    // A disabled field counts as valid, so the required check below would let an empty server through.
+    if (this.enrollmentBlockedReason()) {
       return null;
     }
-    if (!this.remoteSerialForm().valid() || !this.remoteUserForm().valid() || !this.remoteResolverForm().valid()) {
+    if (
+      !this.remoteServerIdForm().valid() ||
+      !this.remoteSerialForm().valid() ||
+      !this.remoteUserForm().valid() ||
+      !this.remoteResolverForm().valid()
+    ) {
+      this.remoteServerIdForm().markAsTouched();
       this.remoteSerialForm().markAsTouched();
       this.remoteUserForm().markAsTouched();
       this.remoteResolverForm().markAsTouched();
@@ -112,7 +120,7 @@ export class EnrollRemoteComponent extends EnrollTokenBase<RemoteEnrollmentData>
       ...basicOptions,
       type: "remote",
       checkPinLocally: this.checkPinLocally(),
-      remoteServer: this.remoteServer(),
+      remoteServerId: this.remoteServerId(),
       remoteSerial: this.remoteSerial(),
       remoteUser: this.remoteUser(),
       remoteRealm: this.remoteRealm(),

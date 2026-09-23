@@ -65,6 +65,7 @@ export interface SmsGatewayServiceInterface {
   smsGatewayResource: HttpResourceRef<PiResponse<SmsGateway[]> | undefined>;
   smsProvidersResource: HttpResourceRef<PiResponse<SmsProviders> | undefined>;
   readonly smsGateways: Signal<SmsGateway[]>;
+  readonly canListSmsGateways: Signal<boolean>;
 
   postSmsGateway(gateway: SmsGatewayPayload): Promise<void>;
 
@@ -82,9 +83,11 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
 
   private readonly baseUrl = environment.proxyUrl + "/smsgateway";
 
+  readonly canListSmsGateways = computed<boolean>(() => this.authService.actionAllowed("smsgateway_read"));
+
   readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => {
     const onPageUsingTheList = this.contentService.onExternalSms() || this.contentService.onConfigurationTokenTypes();
-    if (!onPageUsingTheList || !this.authService.actionAllowed("smsgateway_read")) {
+    if (!onPageUsingTheList || !this.canListSmsGateways()) {
       return undefined;
     }
     return {
@@ -95,7 +98,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   });
 
   readonly smsProvidersResource = httpResource<PiResponse<SmsProviders>>(() => {
-    if (!this.contentService.onExternalSms() || !this.authService.actionAllowed("smsgateway_read")) {
+    if (!this.contentService.onExternalSms() || !this.canListSmsGateways()) {
       return undefined;
     }
     return {

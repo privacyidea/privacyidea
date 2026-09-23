@@ -20,6 +20,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MatSelect } from "@angular/material/select";
+import { MatTooltip } from "@angular/material/tooltip";
+import { By } from "@angular/platform-browser";
+import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { EnrollApplspecComponent } from "./enroll-applspec.component";
 import { ServiceIdService } from "@services/service-id/service-id.service";
 import { MockServiceIdService, MockTokenService } from "@testing/mock-services";
@@ -30,7 +34,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 describe("EnrollAspComponent", () => {
   let component: EnrollApplspecComponent;
   let fixture: ComponentFixture<EnrollApplspecComponent>;
-  let authService: MockAuthService;
+  let serviceIdService: MockServiceIdService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -44,8 +48,7 @@ describe("EnrollAspComponent", () => {
       ]
     }).compileComponents();
 
-    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["serviceid_list", "enrollAPPLSPEC"] });
+    serviceIdService = TestBed.inject(ServiceIdService) as unknown as MockServiceIdService;
     fixture = TestBed.createComponent(EnrollApplspecComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -55,38 +58,56 @@ describe("EnrollAspComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should offer the configured service IDs in a select with serviceid_list and enrollAPPLSPEC", () => {
-    const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelector("mat-select")).not.toBeNull();
-    expect(element.textContent).not.toContain("serviceid_list");
-  });
-
-  it("should fall back to a text input with serviceid_list but without enrollAPPLSPEC", () => {
-    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["serviceid_list"] });
+  it("should offer the configured service IDs in a select when they can be listed", () => {
+    serviceIdService.serviceIds.set([
+      { servicename: "mail", description: "" },
+      { servicename: "vpn", description: "" }
+    ]);
     fixture.detectChanges();
-    const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelector("mat-select")).toBeNull();
-    expect(element.querySelector("mat-hint")?.textContent).toContain("enrollAPPLSPEC");
+
+    const select: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+    expect(select.options.map((option) => option.value)).toEqual(["mail", "vpn"]);
   });
 
-  describe("without serviceid_list", () => {
+  it("should show the required error for an empty service ID on enrollment", () => {
+    expect(component.buildEnrollmentArgs({ type: "applspec" } as TokenEnrollmentData)).toBeNull();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Service ID is required");
+  });
+
+  it("should not block the enrollment when the service IDs can be listed", () => {
+    expect(component.enrollmentBlockedReason()).toBeNull();
+    const select: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+    expect(select.disabled).toBe(false);
+  });
+
+  describe("when the service IDs cannot be listed", () => {
     beforeEach(() => {
-      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      serviceIdService.canListServiceIds.set(false);
+      serviceIdService.serviceIdsUnavailableReason.set("needs serviceid_list");
       fixture.detectChanges();
     });
 
-    it("should replace the select by a text input naming the missing right", () => {
-      const element: HTMLElement = fixture.nativeElement;
-      expect(element.querySelector("mat-select")).toBeNull();
-      expect(element.querySelector("mat-hint")?.textContent).toContain("serviceid_list");
+    it("should disable the service ID select and give the reason in its tooltip", () => {
+      const select: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+      expect(select.disabled).toBe(true);
+
+      const tooltip: MatTooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+      expect(tooltip.disabled).toBe(false);
+      expect(tooltip.message).toBe("needs serviceid_list");
     });
 
-    it("should use the typed name as the service ID", () => {
-      const hint: HTMLElement = fixture.nativeElement.querySelector("mat-hint");
-      const input = hint.closest("mat-form-field")!.querySelector("input") as HTMLInputElement;
-      input.value = "mail";
-      input.dispatchEvent(new Event("input"));
-      expect(component.serviceId()).toBe("mail");
+    it("should report the enrollment as blocked and build no enrollment data", () => {
+      expect(component.enrollmentBlockedReason()).toBe("needs serviceid_list");
+      expect(component.buildEnrollmentArgs({ type: "applspec" } as TokenEnrollmentData)).toBeNull();
+    });
+
+    it("should not block the enrollment when enrollmentData already names the service ID", () => {
+      fixture.componentRef.setInput("enrollmentData", { type: "applspec", serviceId: "mail" });
+      component.ngOnInit();
+
+      expect(component.enrollmentBlockedReason()).toBeNull();
     });
   });
 

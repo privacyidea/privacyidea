@@ -31,6 +31,7 @@
     <app-token-enrollment-type-selector
       [canReopenDialog]="canReopenEnrollmentDialog()"
       [formInvalid]="isFormInvalid()"
+      [enrollBlockedReason]="enrollmentBlockedReason()"
       [scrollContainer]="scrollContainer"
       (reopenDialog)="reopenEnrollmentDialog()" />
     <div class="responsive-margin-left-1310">

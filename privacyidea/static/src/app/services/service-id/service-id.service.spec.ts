@@ -51,7 +51,8 @@ describe("ServiceIdService", () => {
     notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    // The service IDs are only requested by an admin who may list them; on enrollment only if ASP tokens may be enrolled.
+    // The service IDs are only requested by an admin who may list them;
+    // on enrollment only if ASP tokens may be enrolled.
     authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["serviceid_list", "enrollAPPLSPEC"] });
   });
 
@@ -178,6 +179,41 @@ describe("ServiceIdService", () => {
     await lastValueFrom(of({}));
 
     expect(service.serviceIds()).toEqual([]);
+  });
+
+  describe("serviceIdsUnavailableReason", () => {
+    it("should be null for an admin with serviceid_list", () => {
+      expect(service.serviceIdsUnavailableReason()).toBeNull();
+    });
+
+    it("should name the missing right for an admin without serviceid_list", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["enrollAPPLSPEC"] });
+      expect(service.serviceIdsUnavailableReason()).toContain("serviceid_list");
+    });
+
+    // serviceid_list is granted as well, so only the self-service exclusion can make the list unavailable.
+    it("should not name an admin right for a self-service user", () => {
+      authService.authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        role: "user",
+        rights: ["serviceid_list", "enrollAPPLSPEC"]
+      });
+      expect(service.canListServiceIds()).toBe(false);
+      expect(service.serviceIdsUnavailableReason()).toContain("self-service");
+      expect(service.serviceIdsUnavailableReason()).not.toContain("serviceid_list");
+    });
+  });
+
+  it("serviceIdResource should not request the service IDs for a self-service user", () => {
+    authService.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      role: "user",
+      rights: ["serviceid_list", "enrollAPPLSPEC"]
+    });
+    contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
+    TestBed.tick();
+
+    httpMock.expectNone(`${environment.proxyUrl}/serviceid/`);
   });
 
   it("serviceIdResource should not request the service IDs without serviceid_list", () => {

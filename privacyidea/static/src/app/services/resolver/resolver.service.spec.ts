@@ -254,7 +254,7 @@ describe("ResolverService", () => {
   });
 
   it("should not request a single resolver without resolverread", () => {
-    (authService.actionAllowed as jest.Mock).mockReturnValue(false);
+    (authService.actionAllowed as jest.Mock).mockImplementation((action: string) => action !== "resolverread");
     resolverService.selectedResolverName.set("ldap/1");
     TestBed.tick();
 

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -41,6 +41,8 @@ export interface ServiceId {
 export interface ServiceIdServiceInterface {
   serviceIdResource: HttpResourceRef<PiResponse<ServiceIds> | undefined>;
   serviceIds: WritableSignal<ServiceId[]>;
+  readonly canListServiceIds: Signal<boolean>;
+  readonly serviceIdsUnavailableReason: Signal<string | null>;
 
   postServiceId(serviceId: ServiceId): Promise<void>;
 
@@ -56,13 +58,23 @@ export class ServiceIdService implements ServiceIdServiceInterface {
 
   private readonly serviceIdBaseUrl = environment.proxyUrl + "/serviceid/";
 
+  // serviceid_list exists only in the admin scope, so a self-service user can never list the service IDs.
+  readonly canListServiceIds = computed<boolean>(
+    () => !this.authService.isSelfServiceUser() && this.authService.actionAllowed("serviceid_list")
+  );
+  readonly serviceIdsUnavailableReason = computed<string | null>(() => {
+    if (this.canListServiceIds()) return null;
+    return this.authService.isSelfServiceUser()
+      ? $localize`:@@serviceId.unavailableSelfService:Application specific password tokens cannot be enrolled in self-service: the service IDs are only available to administrators.`
+      : $localize`:@@serviceId.unavailableNeedsListRight:Application specific password tokens cannot be enrolled: selecting the service ID needs the serviceid_list right.`;
+  });
+
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => {
-    if (this.authService.isSelfServiceUser()) return undefined;
     // On the enrollment pages only the application specific password token uses the list.
     const onPageUsingTheList =
       this.contentService.onExternalServiceIds() ||
       (this.contentService.onTokenEnrollmentLikely() && this.authService.actionAllowed("enrollAPPLSPEC"));
-    if (!onPageUsingTheList || !this.authService.actionAllowed("serviceid_list")) {
+    if (!onPageUsingTheList || !this.canListServiceIds()) {
       return undefined;
     }
     return {

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, input, output } from "@angular/core";
+import { Component, input, output } from "@angular/core";
 
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -26,7 +26,6 @@ import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 
 @Component({
   selector: "app-sms-config",
@@ -42,11 +41,8 @@ export class SmsConfigComponent {
   formData = input.required<Record<string, string | number | undefined>>();
   formDataChange = output<Record<string, string | number | undefined>>();
   smsGateways = input.required<string[]>();
+  smsGatewaysListable = input.required<boolean>();
   expanded = input<boolean>(false);
-
-  private readonly authService: AuthServiceInterface = inject(AuthService);
-  // Without smsgateway_read the gateways are never fetched, so the field becomes a free-text input.
-  readonly smsGatewaysListable = computed<boolean>(() => this.authService.actionAllowed("smsgateway_read"));
 
   updateFormData(fieldName: string, value: string | number): void {
     const newValue = { ...this.formData(), [fieldName]: value };

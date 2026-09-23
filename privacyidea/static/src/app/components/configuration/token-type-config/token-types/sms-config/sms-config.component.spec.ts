@@ -20,26 +20,22 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideRouter } from "@angular/router";
 import { SmsConfigComponent } from "@components/configuration/token-type-config/token-types/sms-config/sms-config.component";
 import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "@constants/token.constants";
-import { AuthService } from "@services/auth/auth.service";
-import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 const mockSmsGateways = ["gateway1", "gateway2", "gateway3"];
 
 describe("SmsConfigComponent", () => {
   let fixture: ComponentFixture<SmsConfigComponent>;
   let component: SmsConfigComponent;
-  let authService: MockAuthService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SmsConfigComponent],
-      providers: [provideRouter([]), { provide: AuthService, useClass: MockAuthService }]
+      providers: [provideRouter([])]
     }).compileComponents();
-    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
-    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["smsgateway_read"] });
     fixture = TestBed.createComponent(SmsConfigComponent);
     fixture.componentRef.setInput("formData", {});
     fixture.componentRef.setInput("smsGateways", mockSmsGateways);
+    fixture.componentRef.setInput("smsGatewaysListable", true);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -48,15 +44,16 @@ describe("SmsConfigComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should offer the configured gateways in a select with smsgateway_read", () => {
+  it("should offer the configured gateways in a select when the gateways can be listed", () => {
     const element: HTMLElement = fixture.nativeElement;
     expect(element.querySelector("mat-select")).not.toBeNull();
+    expect(element.querySelector("mat-hint")?.textContent).toContain("Select a predefined");
     expect(element.textContent).not.toContain("smsgateway_read");
   });
 
-  describe("without smsgateway_read", () => {
+  describe("when the gateways cannot be listed", () => {
     beforeEach(() => {
-      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      fixture.componentRef.setInput("smsGatewaysListable", false);
       fixture.componentRef.setInput("formData", { [SMS_GATEWAY]: "gateway1" });
       fixture.detectChanges();
     });

@@ -127,6 +127,7 @@ export interface SystemServiceInterface {
   systemConfigInit: Signal<SystemConfigInit>;
   nodes: Signal<NodeInfo[]>;
   radiusServers: Signal<string[]>;
+  canListRadiusServers: Signal<boolean>;
 
   saveSystemConfig(config: Record<string, unknown>): Observable<PiResponse<Record<string, "insert" | "update">>>;
 
@@ -173,9 +174,11 @@ export class SystemService implements SystemServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
+  canListRadiusServers = computed<boolean>(() => this.authService.actionAllowed("enrollRADIUS"));
+
   radiusServerResource = httpResource<PiResponse<string[]>>(() => {
     // Do not load RADIUS server details if the action is not allowed.
-    if (!this.authService.actionAllowed("enrollRADIUS")) {
+    if (!this.canListRadiusServers()) {
       return undefined;
     }
     // Only load RADIUS server details on enrollment or token wizard routes.

@@ -35,12 +35,45 @@ describe("RadiusConfigComponent", () => {
     fixture = TestBed.createComponent(RadiusConfigComponent);
     fixture.componentRef.setInput("formData", {});
     fixture.componentRef.setInput("radiusServers", mockRadiusServers);
+    fixture.componentRef.setInput("radiusServersListable", true);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should offer the configured RADIUS servers in a select when they can be listed", () => {
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector("mat-select")).not.toBeNull();
+    expect(element.querySelector("mat-hint")?.textContent).toContain("Select a predefined");
+    expect(element.textContent).not.toContain("enrollRADIUS");
+  });
+
+  describe("when the RADIUS servers cannot be listed", () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput("radiusServersListable", false);
+      fixture.componentRef.setInput("formData", { [RADIUS_SERVER]: "radius-server-1" });
+      fixture.detectChanges();
+    });
+
+    it("should replace the select by a text input naming the missing right", () => {
+      const element: HTMLElement = fixture.nativeElement;
+      expect(element.querySelector("mat-select")).toBeNull();
+      expect(element.querySelector("mat-hint")?.textContent).toContain("enrollRADIUS");
+    });
+
+    it("should show the configured value and emit the typed one", () => {
+      const hint: HTMLElement = fixture.nativeElement.querySelector("mat-hint.red");
+      const input = hint.closest("mat-form-field")!.querySelector("input") as HTMLInputElement;
+      expect(input.value).toBe("radius-server-1");
+
+      jest.spyOn(component.formDataChange, "emit");
+      input.value = "radius-server-9";
+      input.dispatchEvent(new Event("input"));
+      expect(component.formDataChange.emit).toHaveBeenCalledWith({ [RADIUS_SERVER]: "radius-server-9" });
+    });
   });
 
   it("should emit formDataChange when updateFormData is called", () => {

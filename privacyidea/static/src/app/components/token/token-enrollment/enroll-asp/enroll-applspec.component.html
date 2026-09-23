@@ -40,30 +40,16 @@
       </mat-form-field>
     }
 
-    <mat-form-field class="input-width-l">
+    <mat-form-field
+      class="input-width-l"
+      [matTooltip]="enrollmentBlockedReason() ?? ''"
+      [matTooltipDisabled]="!enrollmentBlockedReason()">
       <mat-label i18n="@@common.serviceId">Service ID</mat-label>
-      @if (serviceIdsListable()) {
-        <mat-select
-          [value]="serviceId()"
-          (selectionChange)="serviceId.set($event.value)"
-          [disabled]="disabled()"
-          required>
-          @for (option of serviceIdOptions(); track option) {
-            <mat-option [value]="option">{{ option }}</mat-option>
-          }
-        </mat-select>
-      } @else {
-        <input
-          matInput
-          [formField]="serviceIdForm" />
-      }
-      @if (!serviceIdsListable()) {
-        <mat-hint
-          class="red"
-          i18n="@@token.serviceIdNeedsListRight"
-          >Type the name: listing the service IDs needs the serviceid_list and enrollAPPLSPEC rights.</mat-hint
-        >
-      }
+      <mat-select [formField]="serviceIdForm">
+        @for (option of serviceIdOptions(); track option) {
+          <mat-option [value]="option">{{ option }}</mat-option>
+        }
+      </mat-select>
       <mat-error i18n="@@token.serviceIdRequired">Service ID is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
