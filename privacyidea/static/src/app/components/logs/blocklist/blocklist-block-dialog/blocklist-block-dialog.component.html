@@ -20,11 +20,11 @@
   (actionTriggered)="onAction($event)"
   (wrapperClose)="close()"
   [actions]="dialogActions()"
-  i18n-title
+  i18n-title="@@blocklist.blockIpAddress"
   title="Block IP Address">
   <p
     class="block-dialog-intro"
-    i18n>
+    i18n="@@blocklist.blockedIpRejectedBefore">
     A blocked IP is rejected before any credential is checked. Loopback and any address covered by
     PI_CONDITIONAL_ACCESS_NEVER_BLOCK cannot be blocked.
   </p>
@@ -33,7 +33,7 @@
     appearance="fill"
     subscriptSizing="dynamic"
     class="block-dialog-ip input-width-l">
-    <mat-label i18n>IP address</mat-label>
+    <mat-label i18n="@@blocklist.ipAddress">IP address</mat-label>
     <input
       matInput
       [value]="ip()"
@@ -46,12 +46,12 @@
     (change)="mode.set($event.value)">
     <mat-radio-button
       value="permanent"
-      i18n>
+      i18n="@@blocklist.untilAdministratorUnblocks">
       Until an administrator unblocks it
     </mat-radio-button>
     <mat-radio-button
       value="timed"
-      i18n>
+      i18n="@@common.limitedTime">
       For a limited time
     </mat-radio-button>
   </mat-radio-group>
@@ -61,7 +61,7 @@
       appearance="fill"
       subscriptSizing="dynamic"
       class="input-width-s">
-      <mat-label i18n>Duration</mat-label>
+      <mat-label i18n="@@audit.duration">Duration</mat-label>
       <input
         matInput
         type="number"
@@ -75,7 +75,7 @@
       appearance="fill"
       subscriptSizing="dynamic"
       class="input-width-s">
-      <mat-label i18n>Unit</mat-label>
+      <mat-label i18n="@@common.unit">Unit</mat-label>
       <mat-select
         [disabled]="durationDisabled()"
         [value]="durationUnit()"

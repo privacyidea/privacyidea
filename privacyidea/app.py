@@ -87,7 +87,7 @@ from privacyidea.api.validate import validate_blueprint
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
 from privacyidea.lib import queue
 from privacyidea.lib.conditional_access.session import init_ca_session
-from privacyidea.lib.crypto import init_hsm
+from privacyidea.lib.crypto import build_pass_context, init_hsm
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.models import db, NodeName
@@ -546,6 +546,8 @@ def create_app(config_name="development",
             DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = app.config.get(ConfigKey.LOGFILE)
         _setup_logging(app, DEFAULT_LOGGING_CONFIG)
 
+    with app.app_context():
+        build_pass_context()
     _warn_if_base_url_missing(app)
 
     _resolve_ui_folders(app)
@@ -672,6 +674,8 @@ def create_docker_app():
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = app.config.get(ConfigKey.LOGLEVEL)
     _setup_logging(app, DOCKER_LOGGING_CONFIG)
 
+    with app.app_context():
+        build_pass_context()
     _warn_if_base_url_missing(app)
 
     _resolve_ui_folders(app)

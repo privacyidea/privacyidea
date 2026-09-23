@@ -52,7 +52,9 @@ export type AuthEventType =
   | "CHALLENGE_CANCELLED"
   | "ENROLLMENT_TRIGGERED"
   | "ENROLLMENT_CANCELED_FAIL"
-  | "UNKNOWN_FAIL_REASON";
+  | "UNKNOWN_FAIL_REASON"
+  | "DEVICE_TOKEN_REUSED"
+  | "SUSPENDED_API_KEY_USED";
 
 export type ConditionalAccessActionType =
   | "LOCK_USER"
@@ -89,7 +91,10 @@ export interface DefaultErrorMessage {
 // from "any timed action plus any permanent one", which would only be equivalent while a stage's actions are
 // confined to a single target - true today (_ACTIONS_BY_TARGET on the server), but it would silently mis-flag a
 // timed user lock beside a permanent IP block if that ever changes.
-export const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [ConditionalAccessActionType, ConditionalAccessActionType])[] = [
+export const REDUNDANT_RESTRICTION_PAIRS: readonly (readonly [
+  ConditionalAccessActionType,
+  ConditionalAccessActionType
+])[] = [
   ["LOCK_USER", "PERMANENT_LOCK_USER"],
   ["BLOCK_IP", "PERMANENT_BLOCK_IP"]
 ];
@@ -214,7 +219,10 @@ export type ConditionalAccessPolicySaveParams = Omit<ConditionalAccessPolicy, "i
 // What a shipped template carries: a create payload without priority, which the catalog omits so
 // the admin picks a unique one. Optional, not just nullable, because the key is absent from the
 // response altogether.
-export type ConditionalAccessPolicyTemplateParams = Omit<ConditionalAccessPolicySaveParams, "priority" | "reset_on_success"> & {
+export type ConditionalAccessPolicyTemplateParams = Omit<
+  ConditionalAccessPolicySaveParams,
+  "priority" | "reset_on_success"
+> & {
   priority?: number | null;
   // Optional so a template that states no choice still type-checks; every shipped template does state one,
   // because the value decides what its thresholds mean.
@@ -265,19 +273,23 @@ export function actionValueError(action: ConditionalAccessStageAction): string |
     case "LOCK_USER":
     case "BLOCK_IP":
       return parseActionDurationSeconds(value) === null
-        ? $localize`Enter how long the restriction lasts; without a duration this action never runs.`
+        ? $localize`:@@conditionalAccess.enterHowLongRestriction:Enter how long the restriction lasts; without a duration this action never runs.`
         : null;
     case "EMAIL_ADMIN":
     case "EMAIL_USER": {
       const email =
         value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
       const missing = ["subject", "body"].filter((key) => !String(email[key] ?? "").trim());
-      return missing.length > 0 ? $localize`Fill in the subject and body; without them no email is sent.` : null;
+      return missing.length > 0
+        ? $localize`:@@conditionalAccess.fillSubjectBodyWithout:Fill in the subject and body; without them no email is sent.`
+        : null;
     }
     default:
       // The PERMANENT_* restrictions and the DENY decision never read a value, and the backend rejects
       // one rather than ignoring it: a duration on a permanent lock reads as an expiry that never comes.
-      return value == null ? null : $localize`This action takes no value. Clear it before saving.`;
+      return value == null
+        ? null
+        : $localize`:@@conditionalAccess.actionTakesNoValue:This action takes no value. Clear it before saving.`;
   }
 }
 
@@ -462,35 +474,29 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
       ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
   );
 
-  readonly repeatableActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>> =
-    computed(
-      () =>
-        Object.fromEntries(
-          Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.repeatable_actions ?? []])
-        ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
-    );
+  readonly repeatableActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>> = computed(
+    () =>
+      Object.fromEntries(
+        Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.repeatable_actions ?? []])
+      ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
+  );
 
-  readonly exclusiveGroupsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>> =
-    computed(
-      () =>
-        Object.fromEntries(
-          Object.entries(this.targetConstraints()).map(([target, entry]) => [
-            target,
-            entry.exclusive_action_groups ?? []
-          ])
-        ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>
-    );
+  readonly exclusiveGroupsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>> = computed(
+    () =>
+      Object.fromEntries(
+        Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.exclusive_action_groups ?? []])
+      ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[][]>
+  );
 
   // Which of a target's actions a request can ever be told about: a restriction in force, or a denial. Served
   // rather than derived from the suggested wording, because "has a default sentence" is a different question
   // from "can report at all" - see get_target_constraints in lib/conditional_access/policy.py.
-  readonly reportingActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>> =
-    computed(
-      () =>
-        Object.fromEntries(
-          Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.reporting_actions ?? []])
-        ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
-    );
+  readonly reportingActionsByTarget: Signal<Record<ConditionalAccessTarget, ConditionalAccessActionType[]>> = computed(
+    () =>
+      Object.fromEntries(
+        Object.entries(this.targetConstraints()).map(([target, entry]) => [target, entry.reporting_actions ?? []])
+      ) as Record<ConditionalAccessTarget, ConditionalAccessActionType[]>
+  );
 
   readonly countModesByTarget: Signal<Record<ConditionalAccessTarget, CountMode[]>> = computed(
     () =>
@@ -502,7 +508,10 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   // Suggested error-message wording per stage action, most severe first. Fetched rather than hard-coded so the
   // suggestions stay translated by the server and in step with the actions the engine actually supports.
   readonly defaultErrorMessagesResource = httpResource<PiResponse<DefaultErrorMessage[]>>(() => {
-    if (!this.authService.actionAllowed("conditional_access_policy_read") || !this.contentService.onConditionalAccess()) {
+    if (
+      !this.authService.actionAllowed("conditional_access_policy_read") ||
+      !this.contentService.onConditionalAccess()
+    ) {
       return undefined;
     }
     return {
@@ -683,8 +692,8 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
       const response = await lastValueFrom(request);
       this.notificationService.success(
         isUpdate
-          ? $localize`Successfully updated conditional-access policy.`
-          : $localize`Successfully created conditional-access policy.`
+          ? $localize`:@@conditionalAccess.successfullyUpdatedConditionalAccess:Successfully updated conditional-access policy.`
+          : $localize`:@@conditionalAccess.successfullyCreatedConditionalAccess:Successfully created conditional-access policy.`
       );
       this.policiesResource.reload();
       return response?.result?.value;
@@ -692,7 +701,9 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
       const httpError = error as HttpErrorResponse;
       const body = httpError.error as PiResponse<number> | undefined;
       const message = body?.result?.error?.message || "";
-      this.notificationService.error($localize`Failed to save conditional-access policy. ` + message);
+      this.notificationService.error(
+        $localize`:@@conditionalAccess.failedSaveConditionalAccess:Failed to save conditional-access policy. ` + message
+      );
       return undefined;
     }
   }
@@ -703,21 +714,26 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
 
     try {
       await lastValueFrom(request);
-      this.notificationService.success($localize`Successfully deleted conditional-access policy.`);
+      this.notificationService.success(
+        $localize`:@@conditionalAccess.successfullyDeletedConditionalAccess:Successfully deleted conditional-access policy.`
+      );
       this.policiesResource.reload();
     } catch (error) {
       const httpError = error as HttpErrorResponse;
       const body = httpError.error as PiResponse<number> | undefined;
       const message = body?.result?.error?.message || "";
-      this.notificationService.error($localize`Failed to delete conditional-access policy. ` + message);
+      this.notificationService.error(
+        $localize`:@@conditionalAccess.failedDeleteConditionalAccess:Failed to delete conditional-access policy. ` +
+          message
+      );
     }
   }
 
   async deleteWithConfirmDialog(policy: { id: number; name: string }): Promise<void> {
     const confirmed = await this.dialogService.confirm({
-      title: $localize`Delete Conditional-Access Policy`,
-      message: $localize`Do you really want to delete the policy "${policy.name}"?`,
-      confirmButtonText: $localize`Delete`
+      title: $localize`:@@conditionalAccess.deleteConditionalAccessPolicy:Delete Conditional-Access Policy`,
+      message: $localize`:@@conditionalAccess.doYouReallyWant2:Do you really want to delete the policy "${policy.name}"?`,
+      confirmButtonText: $localize`:@@common.delete:Delete`
     });
     if (!confirmed) {
       return;
@@ -730,9 +746,9 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
       return false;
     }
     const confirmed = await this.dialogService.confirm({
-      title: $localize`Delete Conditional-Access Policies`,
-      message: $localize`Do you really want to delete ${policies.length} selected policies?`,
-      confirmButtonText: $localize`Delete`
+      title: $localize`:@@conditionalAccess.deleteConditionalAccessPolicies:Delete Conditional-Access Policies`,
+      message: $localize`:@@conditionalAccess.doYouReallyWant:Do you really want to delete ${policies.length} selected policies?`,
+      confirmButtonText: $localize`:@@common.delete:Delete`
     });
     if (!confirmed) {
       return false;
@@ -744,14 +760,19 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
           lastValueFrom(this.http.delete<PiResponse<number>>(`${this.baseUrl}/${policy.id}`, { headers }))
         )
       );
-      this.notificationService.success($localize`Successfully deleted ${policies.length} conditional-access policies.`);
+      this.notificationService.success(
+        $localize`:@@conditionalAccess.successfullyDeletedConditionalAccess2:Successfully deleted ${policies.length} conditional-access policies.`
+      );
       this.policiesResource.reload();
       return true;
     } catch (error) {
       const httpError = error as HttpErrorResponse;
       const body = httpError.error as PiResponse<number> | undefined;
       const message = body?.result?.error?.message || "";
-      this.notificationService.error($localize`Failed to delete conditional-access policies. ` + message);
+      this.notificationService.error(
+        $localize`:@@conditionalAccess.failedDeleteConditionalAccess2:Failed to delete conditional-access policies. ` +
+          message
+      );
       this.policiesResource.reload();
       return false;
     }
@@ -776,11 +797,19 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
   }
 
   async enablePolicy(id: number): Promise<void> {
-    await this.patchFlag(id, { enabled: true }, $localize`Failed to enable conditional-access policy.`);
+    await this.patchFlag(
+      id,
+      { enabled: true },
+      $localize`:@@conditionalAccess.failedEnableConditionalAccess:Failed to enable conditional-access policy.`
+    );
   }
 
   async disablePolicy(id: number): Promise<void> {
-    await this.patchFlag(id, { enabled: false }, $localize`Failed to disable conditional-access policy.`);
+    await this.patchFlag(
+      id,
+      { enabled: false },
+      $localize`:@@conditionalAccess.failedDisableConditionalAccess:Failed to disable conditional-access policy.`
+    );
   }
 
   async setDryRun(id: number, dryRun: boolean, resetCountersOnEnforce?: boolean): Promise<void> {
@@ -788,8 +817,8 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
       id,
       dryRun ? { dry_run: dryRun } : { dry_run: dryRun, reset_counters_on_enforce: resetCountersOnEnforce },
       dryRun
-        ? $localize`Failed to switch the conditional-access policy to dry-run mode.`
-        : $localize`Failed to switch the conditional-access policy to enforcing mode.`
+        ? $localize`:@@conditionalAccess.failedSwitchConditionalAccess:Failed to switch the conditional-access policy to dry-run mode.`
+        : $localize`:@@conditionalAccess.failedSwitchConditionalAccess2:Failed to switch the conditional-access policy to enforcing mode.`
     );
   }
 
@@ -809,7 +838,9 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
           { headers }
         )
       );
-      this.notificationService.success($localize`Successfully saved the new conditional-access policy order.`);
+      this.notificationService.success(
+        $localize`:@@conditionalAccess.successfullySavedNewConditional:Successfully saved the new conditional-access policy order.`
+      );
       this.policiesResource.reload();
       return true;
     } catch (error) {
@@ -822,8 +853,9 @@ export class ConditionalAccessPolicyService implements ConditionalAccessPolicySe
       // reseed effect in ConditionalAccessComponent).
       this.notificationService.error(
         httpError.status === 409
-          ? $localize`Someone else changed priorities while you were rearranging them. The list has been refreshed - please redo your changes. `
-          : $localize`Failed to reorder conditional-access policies. ` + message
+          ? $localize`:@@conditionalAccess.someoneElseChangedPriorities:Someone else changed priorities while you were rearranging them. The list has been refreshed - please redo your changes. `
+          : $localize`:@@conditionalAccess.failedReorderConditionalAccess:Failed to reorder conditional-access policies. ` +
+              message
       );
       this.policiesResource.reload();
       return false;

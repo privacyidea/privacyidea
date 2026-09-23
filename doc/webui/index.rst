@@ -218,6 +218,12 @@ saves or deletes a resolver, and can be bypassed manually via the refresh
 button on the panel. Hit the panel data via ``GET /system/health/certificates``;
 add ``?refresh=1`` to skip the cache.
 
+Because of that cache, the panel does not report a time window the way the
+metric panels do, but the moment the endpoints were last reached: the line
+below the table, and the ``checked_at`` field on every entry, name when the
+certificates were probed rather than when the response was served. Use the
+refresh button after replacing a certificate to see it right away.
+
 Resolver timing
 ~~~~~~~~~~~~~~~
 
@@ -239,9 +245,15 @@ bucket boundaries are ``50 ms``, ``100 ms``, ``150 ms``, ``200 ms``,
 is reported in the ``+inf`` tail. The same boundaries are listed in the
 panel's tooltip.
 
-The data is read from ``GET /system/health/resolver_timing`` (default
-window ``since_seconds=3600``) and aggregates across all privacyIDEA
-nodes.
+The window the panel is read over is chosen in its header: ``1 h`` (the
+default), ``6 h`` or ``24 h``. The choice is stored with the
+administrator's dashboard layout, so it survives a reload and is that
+administrator's alone. A day is the widest window offered because the
+metric store holds a day's rows; see `Storage and cleanup`_.
+
+The data is read from ``GET /system/health/resolver_timing``
+(``since_seconds``, default ``3600``) and aggregates across all
+privacyIDEA nodes.
 
 Notification delivery
 ~~~~~~~~~~~~~~~~~~~~~
@@ -251,7 +263,7 @@ Notification delivery
 The *Notification Delivery* panel summarises outbound message delivery
 across the three notification channels:
 
-* **Push** - per Firebase provider.
+* **Push** - per configured push gateway identifier.
 * **SMS** - per configured SMS gateway identifier (HTTP, SMPP, Sipgate,
   SMTP-to-SMS, script).
 * **Email** - per configured SMTP server identifier.
@@ -260,7 +272,9 @@ Each row shows the OK count, the failed count (transient send-failures
 plus exceptions), and the p95 send duration. The failed cell is
 color-coded green below 1%, yellow below 5%, and red above 5%, computed
 against the channel row's total. Reads ``GET
-/system/health/notification_delivery`` (default ``since_seconds=3600``).
+/system/health/notification_delivery`` (``since_seconds``, default
+``3600``). The panel carries the same window picker in its header as
+*Resolver Timing*, with the same three choices and the same storage.
 
 .. note::
 

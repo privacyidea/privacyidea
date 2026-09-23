@@ -697,4 +697,48 @@ describe("NewSmsGatewayComponent", () => {
       expect(component.optionSecrets).toEqual({});
     });
   });
+
+  describe("deleteGateway", () => {
+    let dialog: MockDialogService;
+    let pending: MockPendingChangesService;
+    let service: MockSmsGatewayService;
+    let navigateSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      dialog = TestBed.inject(DialogService) as unknown as MockDialogService;
+      pending = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      service = TestBed.inject(SmsGatewayService) as unknown as MockSmsGatewayService;
+      navigateSpy = jest.spyOn(TestBed.inject(Router), "navigateByUrl").mockResolvedValue(true);
+      component["gatewayName"] = "sms-gateway";
+    });
+
+    it("does nothing without an identifier", async () => {
+      component["gatewayName"] = null;
+      await component.deleteGateway();
+      expect(dialog.confirmDelete).not.toHaveBeenCalled();
+      expect(service.deleteSmsGateway).not.toHaveBeenCalled();
+    });
+
+    it("does not delete when the confirmation is cancelled", async () => {
+      dialog.confirmDelete.mockResolvedValue(false);
+      await component.deleteGateway();
+      expect(service.deleteSmsGateway).not.toHaveBeenCalled();
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it("deletes after confirmation and navigates back to the list", async () => {
+      await component.deleteGateway();
+      expect(dialog.confirmDelete).toHaveBeenCalledWith(expect.objectContaining({ items: ["sms-gateway"] }));
+      expect(service.deleteSmsGateway).toHaveBeenCalledWith("sms-gateway");
+      expect(pending.clearAllRegistrations).toHaveBeenCalled();
+      expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
+    });
+
+    it("stays on the page when the deletion fails", async () => {
+      service.deleteSmsGateway.mockRejectedValue(new Error("delete failed"));
+      await component.deleteGateway();
+      expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+  });
 });

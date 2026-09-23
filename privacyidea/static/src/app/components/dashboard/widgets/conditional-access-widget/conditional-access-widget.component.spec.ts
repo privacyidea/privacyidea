@@ -35,7 +35,9 @@ import {
   ConditionalAccessPolicy
 } from "@services/conditional-access/conditional-access-policy.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 import { MockAuthenticationLogService } from "@testing/mock-services/mock-authentication-log-service";
 import { toFilterDisplay } from "@utils/date-format.utils";
 import { MockConditionalAccessPolicyService } from "@testing/mock-services/mock-conditional-access-policy-service";
@@ -154,6 +156,10 @@ describe("ConditionalAccessWidgetComponent", () => {
       imports: [ConditionalAccessWidgetComponent],
       providers: [
         provideZonelessChangeDetection(),
+        // The widget keeps its window in the stored dashboard layout, so the layout service - and with it the
+        // user settings document - is built as soon as the widget is. Mocked, or the settings request goes out
+        // over the wire.
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
         // A catch-all route so the test router always finds a match when a widget link is clicked.
         provideRouter([{ path: "**", children: [] }]),
         { provide: AuthService, useClass: MockAuthService },

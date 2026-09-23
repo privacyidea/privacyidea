@@ -34,6 +34,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
@@ -89,6 +90,7 @@ export class NewSmsGatewayComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected data: SmsGateway | null = null;
   private gatewayName: string | null = null;
@@ -426,6 +428,28 @@ export class NewSmsGatewayComponent implements OnDestroy {
     } catch {
       return false;
     }
+  }
+
+  async deleteGateway(): Promise<void> {
+    const identifier = this.gatewayName;
+    if (!identifier) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@smsGateway.deleteSmsGateway:Delete SMS Gateway`,
+      items: [identifier],
+      itemType: $localize`:@@smsGateway.smsGateway:SMS gateway`
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.smsGatewayService.deleteSmsGateway(identifier);
+    } catch {
+      return;
+    }
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
   }
 
   onCancel(): void {

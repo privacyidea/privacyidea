@@ -59,7 +59,7 @@ from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
                                        get_all_containers, delete_container_template)
 from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
-from privacyidea.lib.error import PolicyError, RegistrationError, ValidateError
+from privacyidea.lib.error import ParameterError, PolicyError, RegistrationError, ValidateError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.machineresolver import save_resolver
@@ -726,6 +726,44 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("pinsize")
         delete_policy("pincontent")
         delete_policy("pinhandling")
+
+    def test_07a2_pinhandling_class_allowlist(self):
+        # Writing an own pin handler is supported, so the class the policy names is allowed when
+        # it ships with privacyIDEA or when the installation declares it in pi.cfg.
+        g.logged_in_user = {"username": "admin1", "realm": "", "role": "admin"}
+        builder = EnvironBuilder(method="POST", data={}, headers={})
+        env = builder.get_environ()
+        env["REMOTE_ADDR"] = "10.0.0.1"
+        g.client_ip = env["REMOTE_ADDR"]
+        req = Request(env)
+        req.User = User("cornelius", self.realm1)
+        req.all_data = {"user": "cornelius", "realm": "realm1"}
+
+        set_policy(name="pinsize", scope=SCOPE.ENROLL,
+                   action=f"{PolicyAction.OTPPINRANDOM}=12")
+        # An importable class that is not the shipped pin handler
+        custom = "privacyidea.lib.pinhandling.base.PinHandler2"
+        set_policy(name="pinhandling", scope=SCOPE.ENROLL,
+                   action=f"{PolicyAction.PINHANDLING}={custom}")
+        g.policy_object = PolicyClass()
+
+        try:
+            self.app.config["PI_MODULE_ALLOWLIST_MODE"] = "enforce"
+            with self.assertRaises(ParameterError) as context:
+                init_random_pin(req)
+            self.assertIn(custom, f"{context.exception}")
+            self.assertIn("PI_PIN_HANDLER_MODULES", f"{context.exception}")
+
+            # Declaring the class makes it usable. It is never imported here, because the
+            # allowlist is consulted before the import.
+            self.app.config["PI_PIN_HANDLER_MODULES"] = [custom]
+            with self.assertRaises(ImportError):
+                init_random_pin(req)
+        finally:
+            self.app.config.pop("PI_MODULE_ALLOWLIST_MODE", None)
+            self.app.config.pop("PI_PIN_HANDLER_MODULES", None)
+            delete_policy("pinsize")
+            delete_policy("pinhandling")
 
     def test_07b_set_random_pin(self):
         g.logged_in_user = {"username": "admin1",

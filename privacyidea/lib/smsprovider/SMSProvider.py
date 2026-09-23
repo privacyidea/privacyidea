@@ -38,7 +38,9 @@ import time
 from sqlalchemy import select, update
 
 from privacyidea.lib import lazy_gettext
+from privacyidea.config import ConfigKey
 from privacyidea.lib.crypto import is_censored, censor_dict, encryptPassword, decryptPassword
+from privacyidea.lib.utils import check_module_allowed
 from privacyidea.lib.error import ConfigAdminError
 from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.utils import fetch_one_resource, get_module_class
@@ -58,6 +60,7 @@ SMS_PROVIDERS = [
 # Keywords in option keys that indicate the value is sensitive and must be
 # stored encrypted in the database (case-insensitive substring match).
 SENSITIVE_OPTION_KEYWORDS = ("PASSWORD", "SECRET")
+ALLOW_PUSH = "ALLOW_PUSH"
 
 
 def _is_sensitive_key(key):
@@ -82,7 +85,36 @@ class SMSError(Exception):
 
 
 class ISMSProvider:
-    """ the SMS Provider Interface - BaseClass """
+    """
+    The SMS provider interface.
+
+    Providers that accept structured push payloads set ``supports_push_messages``
+    to ``True``. Individual gateways require ``ALLOW_PUSH=yes`` unless the
+    provider enables PUSH by default.
+    """
+
+    supports_push_messages = False
+    push_messages_enabled_by_default = False
+
+    @classmethod
+    def allows_push_messages(cls, smsgateway):
+        if not cls.supports_push_messages:
+            return False
+        configured = smsgateway.option_dict.get(ALLOW_PUSH)
+        if configured in (None, ""):
+            return cls.push_messages_enabled_by_default
+        return str(configured).lower() == "yes"
+
+    @staticmethod
+    def allow_push_parameter():
+        return {
+            "required": False,
+            "description": lazy_gettext(
+                "Allow this gateway to deliver PUSH messages. Defaults to yes for Firebase and no for all other "
+                "providers."
+            ),
+            "values": ["yes", "no"]
+        }
 
     regexp_description = lazy_gettext("Regular expression to modify the phone number to make it compatible with"
                                       " the provider. For example to remove pluses and slashes"
@@ -402,7 +434,13 @@ def create_sms_instance(identifier):
     if not gateway_definition:
         raise ConfigAdminError('Could not find gateway definition with '
                                f'identifier "{identifier!s}"')
-    package_name, class_name = gateway_definition[0].providermodule.rsplit(".", 1)
+    provider_module = gateway_definition[0].providermodule
+    # Also here and not only where a gateway is written: a definition can reach the database
+    # through a configuration import or predate the check, and this is where the class is
+    # actually imported.
+    check_module_allowed(provider_module, SMS_PROVIDERS, ConfigKey.SMS_PROVIDER_MODULES,
+                         "SMS provider class")
+    package_name, class_name = provider_module.rsplit(".", 1)
     sms_klass = get_sms_provider_class(package_name, class_name)
     sms_object = sms_klass(smsgateway=gateway_definition[0])
     return sms_object

@@ -44,11 +44,16 @@ export class ConditionalAccessDryRunOffDialogComponent extends AbstractDialogCom
   ConditionalAccessDryRunOffDialogData,
   ConditionalAccessDryRunOffDialogResult
 > {
-  title = $localize`Disable Dry Run`;
+  title = $localize`:@@conditionalAccess.disableDryRun:Disable Dry Run`;
   countPastEvents = signal(false);
 
   actions: DialogAction<void>[] = [
-    { label: $localize`Disable Dry Run`, value: undefined, type: "confirm", primary: true }
+    {
+      label: $localize`:@@conditionalAccess.disableDryRun:Disable Dry Run`,
+      value: undefined,
+      type: "confirm",
+      primary: true
+    }
   ];
 
   confirm(): void {

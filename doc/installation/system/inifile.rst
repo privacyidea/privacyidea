@@ -115,10 +115,19 @@ Further information can be found in the FAQ (:ref:`faq_crypto_pin_hashing`).
 ``PI_HASH_ALGO_PARAMS`` is a user-defined dictionary where various parameters for the hash algorithm
 can be set, for example::
 
-   PI_HASH_ALGO_PARAMS = {'argon2__rounds': 5, 'argon2__memory_cost': 768'}
+   PI_HASH_ALGO_PARAMS = {'argon2__rounds': 5, 'argon2__memory_cost': 768}
 
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
+
+.. note:: privacyIDEA checks ``PI_HASH_ALGO_LIST`` and ``PI_HASH_ALGO_PARAMS`` when it starts and
+   refuses to start if they can not be used: an unknown algorithm or parameter, an algorithm that
+   can not hash on this system (for instance ``argon2`` without the ``argon2-cffi`` package), a
+   parameter value that PassLib would reject or silently adjust, or a parameter for an algorithm
+   that is not in ``PI_HASH_ALGO_LIST``. This applies to the server and to the command line tools
+   such as ``pi-manage`` alike, so a mistake in either entry stops all of them with an error like::
+
+      RuntimeError: 'PI_HASH_ALGO_PARAMS' is not usable: argon2id__rounds names a hash algorithm that is not in 'PI_HASH_ALGO_LIST'
 
 Both entries apply wherever privacyIDEA hashes a password or a PIN: token PINs,
 administrator passwords, password reset codes and the entries of the authentication
@@ -483,6 +492,36 @@ reduces the amount of possible serials. To generate completely random serials us
 .. note::
     See :py:func:`~privacyidea.lib.token.gen_serial` for more information on
     the generation of a token serial.
+
+.. _picfg_module_allowlist:
+
+Classes privacyIDEA may import
+..............................
+
+.. versionadded:: 3.14
+
+Two pieces of configuration name a python class for privacyIDEA to import: the ``module`` of an
+SMS gateway definition and the value of the :ref:`policy_pinhandling` policy action. Since both
+are written through the API rather than through this file, the class is checked against the
+classes that ship with privacyIDEA before it is imported.
+
+Writing an own class is supported, so the check is extensible. Name your own classes here::
+
+    PI_SMS_PROVIDER_MODULES = ["mycompany.smsprovider.MyProvider"]
+    PI_PIN_HANDLER_MODULES = ["mycompany.pinhandler.LetterPinHandler"]
+
+What happens to a class that is on neither list is decided by::
+
+    PI_MODULE_ALLOWLIST_MODE = "warn"
+
+``warn`` is the default. The class is used, and a warning is written to the log naming the class
+and the setting to declare it in, so nothing stops working on an upgrade and you can see what
+your installation actually uses. Setting it to ``enforce`` refuses such a class instead.
+
+.. note::
+    Declare the classes you use before switching to ``enforce``, otherwise an SMS gateway or a
+    pin handler that relies on an own class stops working. The classes that ship with
+    privacyIDEA never need declaring.
 
 .. _picfg_3rd_party_tokens:
 

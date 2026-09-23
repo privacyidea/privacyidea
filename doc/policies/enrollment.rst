@@ -173,6 +173,10 @@ The action value take the class of a PinHandler like
 The base PinHandler just logs the PIN to the log file. You can add classes to
 send the PIN via email or print it in a letter.
 
+A class of your own is declared in ``PI_PIN_HANDLER_MODULES``, see
+:ref:`picfg_module_allowlist`. Without the declaration it is still used, and privacyIDEA writes
+a warning to the log naming it.
+
 For more information see the base class :ref:`code_pinhandler`.
 
 .. _policy_change_pin_first_use:
@@ -396,16 +400,16 @@ push_firebase_configuration
 
 type: ``string``
 
-The Firebase configuration which should be used when enrolling a
-:ref:`push_token`. The administrator can create several connections to the
-Firebase service (see :ref:`firebase_provider`).
-This way even different Firebase configurations could be
-used depending on the user's realm or the IP address.
+The push-capable SMS gateway which should be used when enrolling a
+:ref:`push_token`. Firebase providers support PUSH messages by default. HTTP and
+Script gateways must have ``ALLOW_PUSH`` set to ``yes``.
+The policy name is retained for backwards compatibility. The administrator can
+create several gateway configurations (see :ref:`sms_gateway_config`), which can
+be selected depending on the user's realm or the IP address.
 
 Starting with version 3.6, if the push token is supposed to run in poll-only mode,
-then the entry "poll only" can be selected instead of a firebase configuration.
-In this mode, neither the privacyIDEA server nor the smartphone app will connect to Google
-Firebase during enrollment or authentication.
+then the entry "poll only" can be selected instead of a push gateway configuration.
+In this mode, no push gateway is used during enrollment or authentication.
 Note that you also need to set the authentication policy
 :ref:`policy_auth_push_allow_poll` to allow the push token to poll for challenges.
 

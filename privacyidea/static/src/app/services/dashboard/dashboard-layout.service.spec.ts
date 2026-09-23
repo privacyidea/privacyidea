@@ -326,6 +326,44 @@ describe("DashboardLayoutService", () => {
     });
   });
 
+  describe("setWidgetOptions", () => {
+    beforeEach(() => build());
+
+    it("should merge into the options the widget already has", () => {
+      const id = service.widgets()[0].id;
+      service.setWidgetOptions(id, { range: "24h" });
+      service.setWidgetOptions(id, {});
+
+      expect(service.widgets()[0].options).toEqual({ range: "24h" });
+    });
+
+    it("should persist the options", () => {
+      const id = service.widgets()[0].id;
+      service.setWidgetOptions(id, { range: "6h" });
+
+      expect(stored()?.find((widget) => widget.id === id)?.options).toEqual({ range: "6h" });
+    });
+
+    it("should leave every other widget alone", () => {
+      const [first, second] = service.widgets();
+      service.setWidgetOptions(first.id, { range: "24h" });
+
+      expect(service.widgets().find((widget) => widget.id === second.id)?.options).toBeUndefined();
+    });
+
+    it("should survive a cancelled arrangement, the window being a way of reading the widget and not a layout", () => {
+      const { id, x, y } = service.widgets()[0];
+      service.beginEdit();
+      service.setWidgetOptions(id, { range: "24h" });
+      service.moveWidgetTo(id, x + 2, y + 2);
+      service.cancelEdit();
+
+      const widget = service.widgets().find((candidate) => candidate.id === id);
+      expect(widget?.options).toEqual({ range: "24h" });
+      expect(widget).toMatchObject({ x, y });
+    });
+  });
+
   describe("resetLayout", () => {
     beforeEach(() => build());
 
