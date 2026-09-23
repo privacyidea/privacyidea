@@ -546,7 +546,6 @@ def create_app(config_name="development",
             DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = app.config.get(ConfigKey.LOGFILE)
         _setup_logging(app, DEFAULT_LOGGING_CONFIG)
 
-    _check_config(app)
     with app.app_context():
         build_pass_context()
     _warn_if_base_url_missing(app)
