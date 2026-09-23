@@ -115,10 +115,19 @@ Further information can be found in the FAQ (:ref:`faq_crypto_pin_hashing`).
 ``PI_HASH_ALGO_PARAMS`` is a user-defined dictionary where various parameters for the hash algorithm
 can be set, for example::
 
-   PI_HASH_ALGO_PARAMS = {'argon2__rounds': 5, 'argon2__memory_cost': 768'}
+   PI_HASH_ALGO_PARAMS = {'argon2__rounds': 5, 'argon2__memory_cost': 768}
 
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
+
+.. note:: privacyIDEA checks ``PI_HASH_ALGO_LIST`` and ``PI_HASH_ALGO_PARAMS`` when it starts and
+   refuses to start if they can not be used: an unknown algorithm or parameter, an algorithm that
+   can not hash on this system (for instance ``argon2`` without the ``argon2-cffi`` package), a
+   parameter value that PassLib would reject or silently adjust, or a parameter for an algorithm
+   that is not in ``PI_HASH_ALGO_LIST``. This applies to the server and to the command line tools
+   such as ``pi-manage`` alike, so a mistake in either entry stops all of them with an error like::
+
+      RuntimeError: 'PI_HASH_ALGO_PARAMS' is not usable: argon2id__rounds names a hash algorithm that is not in 'PI_HASH_ALGO_LIST'
 
 Both entries apply wherever privacyIDEA hashes a password or a PIN: token PINs,
 administrator passwords, password reset codes and the entries of the authentication
