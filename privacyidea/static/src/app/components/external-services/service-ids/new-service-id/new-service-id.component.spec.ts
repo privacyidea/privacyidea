@@ -234,4 +234,48 @@ describe("NewServiceIdComponent", () => {
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
   });
+
+  describe("deleteServiceId", () => {
+    let dialog: MockDialogService;
+    let pending: MockPendingChangesService;
+    let service: MockServiceIdService;
+    let navigateSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      dialog = TestBed.inject(DialogService) as unknown as MockDialogService;
+      pending = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+      service = TestBed.inject(ServiceIdService) as unknown as MockServiceIdService;
+      navigateSpy = jest.spyOn(TestBed.inject(Router), "navigateByUrl").mockResolvedValue(true);
+      component["editServiceName"] = "service-id";
+    });
+
+    it("does nothing without an identifier", async () => {
+      component["editServiceName"] = null;
+      await component.deleteServiceId();
+      expect(dialog.confirmDelete).not.toHaveBeenCalled();
+      expect(service.deleteServiceId).not.toHaveBeenCalled();
+    });
+
+    it("does not delete when the confirmation is cancelled", async () => {
+      dialog.confirmDelete.mockResolvedValue(false);
+      await component.deleteServiceId();
+      expect(service.deleteServiceId).not.toHaveBeenCalled();
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+
+    it("deletes after confirmation and navigates back to the list", async () => {
+      await component.deleteServiceId();
+      expect(dialog.confirmDelete).toHaveBeenCalledWith(expect.objectContaining({ items: ["service-id"] }));
+      expect(service.deleteServiceId).toHaveBeenCalledWith("service-id");
+      expect(pending.clearAllRegistrations).toHaveBeenCalled();
+      expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
+    });
+
+    it("stays on the page when the deletion fails", async () => {
+      service.deleteServiceId.mockRejectedValue(new Error("delete failed"));
+      await component.deleteServiceId();
+      expect(pending.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(navigateSpy).not.toHaveBeenCalled();
+    });
+  });
 });

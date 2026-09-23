@@ -29,32 +29,32 @@ import { AuthenticationLogEntry } from "@services/authentication-log/authenticat
 // guess, and "direct" would be exactly that.
 const IP_SOURCE_META: Record<string, { label: string; tooltip: string; modifier: string }> = {
   REMOTE_ADDR: {
-    label: $localize`direct`,
-    tooltip: $localize`The address privacyIDEA saw the connection come from. No client override is configured, so no forwarded address is honoured.`,
+    label: $localize`:@@authLog.direct:direct`,
+    tooltip: $localize`:@@authLog.addressPrivacyideaSawConnection:The address privacyIDEA saw the connection come from. No client override is configured, so no forwarded address is honoured.`,
     modifier: "ip-source-badge--direct"
   },
   REMOTE_ADDR_UNMAPPED: {
-    label: $localize`unmapped`,
-    tooltip: $localize`A client override is configured, but this peer is not allowed to map the client any further, so the address it connected from was used.`,
+    label: $localize`:@@authLog.unmapped:unmapped`,
+    tooltip: $localize`:@@authLog.clientOverrideConfiguredBut:A client override is configured, but this peer is not allowed to map the client any further, so the address it connected from was used.`,
     modifier: "ip-source-badge--unmapped"
   },
   X_FORWARDED_FOR: {
-    label: $localize`proxy`,
-    tooltip: $localize`Taken from the X-Forwarded-For header, from a proxy the client override permits.`,
+    label: $localize`:@@authLog.proxy:proxy`,
+    tooltip: $localize`:@@authLog.takenXForwardedHeader:Taken from the X-Forwarded-For header, from a proxy the client override permits.`,
     modifier: "ip-source-badge--proxy"
   },
   CLIENT_PARAM: {
-    label: $localize`client parameter`,
-    tooltip: $localize`Taken from the request's own client parameter, which the client override permits for this proxy path.`,
+    label: $localize`:@@authLog.clientParameter:client parameter`,
+    tooltip: $localize`:@@authLog.takenRequestSOwn:Taken from the request's own client parameter, which the client override permits for this proxy path.`,
     modifier: "ip-source-badge--param"
   }
 };
 
 // What each hop of the recorded path is called in the expanded view.
 const HOP_SOURCE_LABELS: Record<string, string> = {
-  REMOTE_ADDR: $localize`connection`,
-  X_FORWARDED_FOR: $localize`X-Forwarded-For`,
-  CLIENT_PARAM: $localize`client parameter`
+  REMOTE_ADDR: $localize`:@@authLog.connection:connection`,
+  X_FORWARDED_FOR: $localize`:@@authLog.xForwarded:X-Forwarded-For`,
+  CLIENT_PARAM: $localize`:@@authLog.clientParameter:client parameter`
 };
 
 /**

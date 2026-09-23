@@ -131,8 +131,8 @@ export class ConditionalAccessCell {
   // and mails) shows two rows under one name, and the action is what tells those two buttons apart.
   toggleLabel(outcome: OutcomeView): string {
     return this.isExpanded(outcome.key)
-      ? $localize`Hide the details of ${outcome.action} by ${outcome.policy}`
-      : $localize`Show the details of ${outcome.action} by ${outcome.policy}`;
+      ? $localize`:@@common.hideDetails:Hide the details of ${outcome.action} by ${outcome.policy}`
+      : $localize`:@@common.showDetails:Show the details of ${outcome.action} by ${outcome.policy}`;
   }
 
   // The expiry an action recorded in its `info`, or undefined when it created no timed restriction; validated here

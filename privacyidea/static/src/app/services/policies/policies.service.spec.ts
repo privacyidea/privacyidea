@@ -134,6 +134,18 @@ describe("PolicyService", () => {
       const response = await deletePromise;
       expect(response.result?.value).toBe(1);
     });
+    it("should restore the policy signal when the delete request fails", async () => {
+      const policy = { ...service.getEmptyPolicy(), name: "to/delete" };
+      service.allPolicies.set([policy]);
+      const deletePromise = service.deletePolicy("to/delete");
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent("to/delete")}`);
+      req.flush(
+        { result: { status: false, error: { code: 905, message: "policy is in use" } } },
+        { status: 400, statusText: "Bad Request" }
+      );
+      await expect(deletePromise).rejects.toBeDefined();
+      expect(service.allPolicies()).toEqual([policy]);
+    });
   });
   describe("Validation Logic", () => {
     it("should validate action values correctly", () => {

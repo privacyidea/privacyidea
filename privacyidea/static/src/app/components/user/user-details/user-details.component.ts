@@ -230,21 +230,21 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       return "";
     }
     return status.lock_cause === "MANUAL"
-      ? $localize`Locked by an administrator`
-      : $localize`Locked by a conditional-access policy`;
+      ? $localize`:@@user.lockedAdministrator:Locked by an administrator`
+      : $localize`:@@user.lockedConditionalAccessPolicy:Locked by a conditional-access policy`;
   });
   lockStatusText = computed(() => {
     const status = this.lockStatus();
     if (!status) {
-      return $localize`Unlocked`;
+      return $localize`:@@user.unlocked:Unlocked`;
     }
     if (status.permanent) {
-      return $localize`Locked permanently`;
+      return $localize`:@@user.lockedPermanently:Locked permanently`;
     }
     if (status.lock_expires_at) {
-      return $localize`Locked until ${formatLocalDateTime(status.lock_expires_at)}`;
+      return $localize`:@@user.lockedUntil:Locked until ${formatLocalDateTime(status.lock_expires_at)}`;
     }
-    return $localize`Locked`;
+    return $localize`:@@valueLabelLocked:Locked`;
   });
 
   ngOnInit(): void {
@@ -434,10 +434,10 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
       .openDialog({
         component: SimpleConfirmationDialogComponent,
         data: {
-          title: $localize`Reset User Lock`,
+          title: $localize`:@@common.resetUserLock:Reset User Lock`,
           items: [`${lockStatus.username}@${lockStatus.realm}`],
           itemType: "user",
-          confirmAction: { label: $localize`Reset lock`, value: true, type: "confirm" }
+          confirmAction: { label: $localize`:@@user.resetLock:Reset lock`, value: true, type: "confirm" }
         }
       })
       .afterClosed()
@@ -461,7 +461,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
                 // The request succeeded but removed nothing, because the lock was already gone or sits outside this
                 // admin's visibility scope; the service only reports transport errors, so without this the button would
                 // look like it did nothing.
-                this.notificationService.error($localize`No lock was reset for this user.`);
+                this.notificationService.error($localize`:@@user.noLockResetUser:No lock was reset for this user.`);
                 this.conditionalAccessStateService.userLockResource.reload();
               }
             });

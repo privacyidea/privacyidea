@@ -474,9 +474,16 @@ export class PolicyService implements PolicyServiceInterface {
 
     // Do request
     const headers = this.authService.getHeaders();
-    const result = await lastValueFrom(
-      this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${encodeURIComponent(name)}`, { headers })
-    );
+    let result: PiResponse<number>;
+    try {
+      result = await lastValueFrom(
+        this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${encodeURIComponent(name)}`, { headers })
+      );
+    } catch (error) {
+      // Rollback optimistic update
+      this.allPolicies.set(allPolicies);
+      throw error;
+    }
     // Reload policies to ensure state is correct
     if (result && !result.result?.error) {
       this.allPoliciesResource.reload();

@@ -2,6 +2,7 @@ from .base import MyApiTestCase
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.crypto import CENSORED
+from privacyidea.lib.smsprovider.SMSProvider import ALLOW_PUSH
 
 
 class APISmsGatewayTestCase(MyApiTestCase):
@@ -226,6 +227,11 @@ class APISmsGatewayTestCase(MyApiTestCase):
             self.assertTrue("URL" in http_parameters.get("parameters"))
             self.assertTrue("PROXY" in http_parameters.get("parameters"))
             self.assertTrue("HTTP_METHOD" in http_parameters.get("parameters"))
+            self.assertIn(ALLOW_PUSH, http_parameters.get("parameters"))
+            self.assertIn(ALLOW_PUSH, value['privacyidea.lib.smsprovider.'
+                                            'FirebaseProvider.FirebaseProvider']["parameters"])
+            self.assertIn(ALLOW_PUSH, value['privacyidea.lib.smsprovider.'
+                                            'ScriptSMSProvider.ScriptSMSProvider']["parameters"])
 
     def test_05_read_write_policies(self):
         set_policy(name="pol_read", scope=SCOPE.ADMIN,

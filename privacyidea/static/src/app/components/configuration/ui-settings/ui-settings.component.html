@@ -82,7 +82,7 @@
         <mat-select
           (selectionChange)="selectLandingPage($event.value)"
           [value]="selectedLandingPage()"
-          aria-label="Landing page"
+          aria-label="Landing Page"
           i18n-aria-label="@@uiSettings.landingPage">
           @for (page of availableLandingPages(); track page) {
             <mat-option [value]="page">

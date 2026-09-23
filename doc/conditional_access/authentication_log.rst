@@ -123,6 +123,12 @@ Failure
    ``UNKNOWN_FAIL_REASON``
      the authentication failed and nothing more specific was determined. This is only used as fallback and should
      usually not be seen.
+   ``DEVICE_TOKEN_REUSED``
+     a "remember this device" cookie was replayed with a stale counter - a sign the cookie was stolen. The whole
+     device series, and every other remembered device of this user, is revoked.
+   ``SUSPENDED_API_KEY_USED``
+     a request carried a valid API key whose client is suspended. The request is not identified by it and proceeds
+     unauthenticated by that key.
 
 Three further types are written by conditional access itself, when it refuses a
 request before any credentials are checked: ``USER_LOCKED`` (a user lock was in
@@ -253,6 +259,12 @@ request path:
   a challenge triggered by an administrator.
 ``/validate/initialize``
   the anonymous bootstrap of a FIDO2/passkey challenge before login.
+``/validate/remember_device``
+  an application asking whether a device is remembered, so that it may skip the
+  second factor. This is not an authentication and writes no entry of its own
+  when it succeeds; it appears here when a replayed device cookie was detected
+  (``DEVICE_TOKEN_REUSED``) and when a lock, a block or a *deny* action turned
+  the request away.
 ``/ttype/push``
   a push challenge answered on the smartphone, which reaches the server out of
   band.

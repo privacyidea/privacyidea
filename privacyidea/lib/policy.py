@@ -178,7 +178,7 @@ from operator import itemgetter
 
 from configobj import ConfigObj
 from netaddr import AddrFormatError
-from sqlalchemy import select, exists
+from sqlalchemy import Text, select
 from werkzeug.datastructures.headers import EnvironHeaders
 
 from privacyidea.lib import _, lazy_gettext
@@ -196,7 +196,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams, parse_string_to_dict,
-                                   SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like)
+                                   SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like)
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .log import log_with
@@ -1284,8 +1284,10 @@ def rename_policy(name: str, new_name: str) -> int:
     policy = db.session.scalars(stmt).first()
     if not policy:
         raise ParameterError(_("Policy does not exist:") + f" {name}")
-    new_name_stmt = select(exists().where(Policy.name == new_name))
-    if db.session.scalar(new_name_stmt):
+    # A probe for one row rather than SELECT EXISTS(...): Oracle has no boolean type and
+    # rejects EXISTS in the select list (ORA-00936).
+    new_name_stmt = select(Policy.id).where(Policy.name == new_name).limit(1)
+    if db.session.scalar(new_name_stmt) is not None:
         raise ParameterError(_("Policy already exists:") + f" {new_name}")
 
     policy.name = new_name
@@ -1329,15 +1331,22 @@ def get_policies(active: bool | None = None, name: str | None = None, scope: str
 
     for attribute, value in filter_options.items():
         if value is not None:
+            column = getattr(Policy, attribute)
             if "*" in value:
-                stmt = stmt.filter(getattr(Policy, attribute).ilike(
-                    convert_wildcard_to_sql_like(value), escape=SQL_LIKE_ESCAPE))
+                stmt = stmt.filter(column.ilike(convert_wildcard_to_sql_like(value), escape=SQL_LIKE_ESCAPE))
+            elif isinstance(column.type, Text):
+                # Policy.action is a CLOB on Oracle, and a CLOB cannot be compared with
+                # "=" there (ORA-00932). LIKE works on every dialect, and escaping the
+                # wildcards keeps the comparison exact.
+                stmt = stmt.filter(column.like(escape_sql_like(value), escape=SQL_LIKE_ESCAPE))
             else:
-                stmt = stmt.filter(getattr(Policy, attribute) == value)
+                stmt = stmt.filter(column == value)
 
     # Other data types
     if active is not None:
-        stmt = stmt.filter(Policy.active.is_(active))
+        # ``== active`` rather than ``.is_(active)``: Oracle has no boolean type and
+        # "IS 1" is not valid SQL there (ORA-00908).
+        stmt = stmt.filter(Policy.active == active)
 
     if priority is not None:
         stmt = stmt.filter(Policy.priority == priority)
