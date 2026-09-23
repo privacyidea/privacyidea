@@ -62,6 +62,7 @@ from privacyidea.lib.params import (  # noqa: F401
     get_required_one_of,
     get_optional,
     get_optional_one_of,
+    require_in,
     attestation_certificate_allowed,
 )
 from privacyidea.lib.policy import PolicyClass

@@ -21,6 +21,8 @@ import datetime as dt
 import json
 import os
 import pathlib
+import subprocess
+import sys
 import tempfile
 import tarfile
 from collections.abc import Callable
@@ -30,7 +32,7 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy.orm.session import close_all_sessions
 
-from privacyidea.app import create_app
+from privacyidea.app import ENV_KEY, create_app
 from privacyidea.cli.pimanage import cli as pi_manage
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
@@ -936,6 +938,35 @@ class TestPIManageSetupClass:
         with app.app_context():
             inspector = sa.inspect(db.engine)
             assert inspector.get_table_names() == []
+
+    def test_03_pimanage_setup_create_enckey_on_fresh_install(self, tmp_path):
+        # On a fresh installation pi.cfg exists but the enckey does not yet, and pi-manage builds
+        # its app from pi.cfg before the command runs. A separate process runs the real pi-manage
+        # app factory, which the test app of the other tests bypasses.
+        enckey = tmp_path / "enckey"
+        config_file = tmp_path / "pi.cfg"
+        config_file.write_text(f"PI_ENCFILE = {str(enckey)!r}\n"
+                               f"PI_LOGFILE = {str(tmp_path / 'privacyidea.log')!r}\n"
+                               "SQLALCHEMY_DATABASE_URI = 'sqlite://'\n")
+        env = {**os.environ, ENV_KEY: str(config_file)}
+
+        def create_enckey() -> subprocess.CompletedProcess:
+            return subprocess.run([sys.executable, "-c", "from privacyidea.cli.pimanage import cli; cli()",
+                                   "setup", "create_enckey"],
+                                  env=env, cwd=pathlib.Path(__file__).parents[2], capture_output=True, text=True,
+                                  timeout=120)
+
+        result = create_enckey()
+        assert result.returncode == 0, result.stderr
+        assert f"Encryption key written to {enckey}" in result.stdout
+        key = enckey.read_bytes()
+        assert len(key) == 96
+        assert enckey.stat().st_mode & 0o777 == 0o400
+
+        result = create_enckey()
+        assert result.returncode == 1, result.stderr
+        assert "We do not overwrite it!" in result.stdout
+        assert enckey.read_bytes() == key
 
 
 class TestPIManageConfigExport:

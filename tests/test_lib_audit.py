@@ -3,13 +3,15 @@ This tests the files
   lib/audit.py and
   lib/auditmodules/sqlaudit.py
 """
+import csv
 import datetime
+import io
 import os
 import types
 import unittest
 
 from mock import mock
-from sqlalchemy import text
+from sqlalchemy import event, text
 from sqlalchemy.pool import NullPool
 
 from privacyidea.config import TestingConfig
@@ -341,6 +343,86 @@ class AuditTestCase(MyTestCase):
                             type(audit_entry).__name__)
             count += 1
         self.assertEqual(count, 5)
+
+    def test_04a_download_is_valid_csv(self):
+        # Values that carry a comma, a double quote or a line break are quoted and escaped by the
+        # csv module, so that a reader gets back exactly the value that was written.
+        awkward = 'a,b "quoted" c\nsecond line'
+        self.Audit.log({"serial": "CSV001", "info": awkward})
+        self.Audit.finalize_log()
+
+        rows = list(csv.reader(io.StringIO("".join(self.Audit.csv_generator()))))
+        self.assertEqual(1, len(rows), rows)
+        columns = list(self.Audit.audit_entry_to_dict(
+            self.Audit.session.query(LogEntry).one()).keys())
+        self.assertEqual(awkward, rows[0][columns.index("info")], rows[0])
+
+    def test_04b_download_marks_formula_cells_as_text(self):
+        # A value a spreadsheet would read as a formula is prefixed with an apostrophe, the
+        # conventional marker for a text cell. Numbers keep their own leading sign.
+        self.Audit.log({"serial": "CSV002", "info": "=1+1", "action": "-cmd", "user": "@here"})
+        self.Audit.finalize_log()
+
+        rows = list(csv.reader(io.StringIO("".join(self.Audit.csv_generator()))))
+        columns = list(self.Audit.audit_entry_to_dict(
+            self.Audit.session.query(LogEntry).one()).keys())
+        row = rows[0]
+        self.assertEqual("'=1+1", row[columns.index("info")], row)
+        self.assertEqual("'-cmd", row[columns.index("action")], row)
+        self.assertEqual("'@here", row[columns.index("user")], row)
+        # The entry number is a plain number and stays one
+        self.assertEqual(str(self.Audit.session.query(LogEntry).one().id), row[columns.index("number")], row)
+
+    def test_04c_download_spans_read_rounds(self):
+        # More entries than one round holds, all sharing a date, so the export has to page
+        # through them on the id alone. Every entry must appear exactly once.
+        entry_count = sqlaudit._CSV_EXPORT_CHUNK_SIZE * 2 + 7
+        same_date = datetime.datetime(2026, 3, 1, 12, 0, 0)
+        self.Audit.session.bulk_insert_mappings(
+            LogEntry, [{"date": same_date, "serial": f"ROUND{index:05d}", "signature": ""}
+                       for index in range(entry_count)])
+        self.Audit.session.commit()
+
+        rows = list(csv.reader(io.StringIO("".join(self.Audit.csv_generator()))))
+        self.assertEqual(entry_count, len(rows))
+        columns = list(self.Audit.audit_entry_to_dict(
+            self.Audit.session.query(LogEntry).first()).keys())
+        serials = [row[columns.index("serial")] for row in rows]
+        self.assertEqual(entry_count, len(set(serials)), "an entry was exported twice or skipped")
+        self.assertEqual(sorted(serials), serials, "the export lost its order")
+
+    def test_04d_download_does_not_query_per_entry(self):
+        # The number of queries an export costs must not grow with the number of entries, or a
+        # large audit log cannot be exported at all.
+        entry_count = sqlaudit._CSV_EXPORT_CHUNK_SIZE + 20
+        self.Audit.session.bulk_insert_mappings(
+            LogEntry, [{"date": datetime.datetime(2026, 3, 2, 12, 0, index % 60),
+                        "serial": f"COUNT{index:05d}", "signature": ""}
+                       for index in range(entry_count)])
+        self.Audit.session.commit()
+
+        statements = []
+
+        def record(conn, cursor, statement, parameters, context, executemany):
+            statements.append(statement)
+
+        bind = self.Audit.session.get_bind()
+        event.listen(bind, "before_cursor_execute", record)
+        try:
+            generator = self.Audit.csv_generator()
+            first_row = next(generator)
+            queries_before_first_row = len(statements)
+            rows = 1 + sum(1 for _ in generator)
+        finally:
+            event.remove(bind, "before_cursor_execute", record)
+
+        self.assertTrue(first_row)
+        self.assertEqual(entry_count, rows)
+        # A handful of queries per round, not one per entry
+        self.assertLess(len(statements), entry_count / 10,
+                        f"{len(statements)} queries for {entry_count} entries")
+        # The first row is produced from the first round alone, not after reading everything
+        self.assertLessEqual(queries_before_first_row, 5, statements[:10])
 
     def test_06_truncate_data(self):
         long_serial = "S" * (column_length.get("serial") + 1)

@@ -30,12 +30,12 @@ import { InfoHintComponent } from "@components/shared/info-hint/info-hint.compon
 import {
   ACTIVITY_RANGES,
   ActivityRange,
-  activityRangeById,
   ALL_RANGE_ID,
   bucketsAreCalendarDays,
   DEFAULT_ACTIVITY_RANGE,
   inclusiveBucketEnd
 } from "@components/dashboard/widgets/activity-range";
+import { WidgetRangeSetting } from "@components/dashboard/widgets/widget-range-setting";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { toFilterDisplay } from "@utils/date-format.utils";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
@@ -187,7 +187,12 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   readonly shownKinds = signal<readonly string[]>(RESTRICTION_KINDS.map((kind) => kind.id));
   // Which window the history is read over. The same four presets the authentication-activity widget offers, from the
   // same table, so the two charts are read the same way and mean the same thing by "7 d".
-  readonly selectedRange = signal<ActivityRange>(DEFAULT_ACTIVITY_RANGE);
+  private readonly rangeSetting = new WidgetRangeSetting<ActivityRange>(
+    this.instance,
+    ACTIVITY_RANGES,
+    DEFAULT_ACTIVITY_RANGE
+  );
+  readonly selectedRange = this.rangeSetting.selected.asReadonly();
 
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly policyService: ConditionalAccessPolicyServiceInterface = inject(ConditionalAccessPolicyService);
@@ -447,10 +452,7 @@ export class ConditionalAccessWidgetComponent extends DashboardWidget implements
   }
 
   selectRange(id: string): void {
-    const range = activityRangeById(id);
-    if (range) {
-      this.selectedRange.set(range);
-    }
+    this.rangeSetting.select(id);
   }
 
   // The thumbs keep one bucket between them rather than being allowed to meet. A closed brush would select nothing:
