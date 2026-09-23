@@ -32,6 +32,16 @@ by a set of policies in scope ``register`` — a destination
 ``resolver`` is required, plus ``smtpconfig`` for sending the email,
 optionally ``realm``, ``registration_body`` and ``requiredemail``. See
 :ref:`register_policy` for the full list.
+
+.. deprecated:: 3.14
+    Self-registration is deprecated and will be removed in a future
+    release, together with the ``register`` policy scope. Its only user
+    interface is the registration page of the old WebUI, which is being
+    removed, and the new WebUI does not call these endpoints. Both
+    endpoints log a warning when they are used on an installation that has
+    the feature configured, so that one relying on it can be recognised
+    before it goes. Probing them where registration was never enabled
+    leaves no warning.
 """
 from flask_babel import _
 from flask import (Blueprint, request, g)
@@ -57,6 +67,24 @@ log = logging.getLogger(__name__)
 
 register_blueprint = Blueprint('register_blueprint', __name__)
 
+# Endpoints whose deprecation has already been logged in this process.
+_deprecation_warned = set()
+
+
+def _warn_register_deprecated(endpoint: str) -> None:
+    """
+    Log the deprecation of a self-registration endpoint once per process.
+
+    Once per process rather than once per request: an anonymous endpoint must not let a caller
+    fill the log, and one line is enough to tell an administrator reading it that this
+    installation still uses a feature that is going away.
+    """
+    if endpoint not in _deprecation_warned:
+        _deprecation_warned.add(endpoint)
+        log.warning(f"The endpoint '{endpoint}' is deprecated and will be removed in a future "
+                    f"release, together with the 'register' policy scope. If this installation "
+                    f"relies on self-registration, please say so before it goes.")
+
 
 # The before and after methods are the same as in the validate endpoint
 
@@ -70,12 +98,22 @@ def register_status():
 
     This endpoint is anonymous — no authentication header is required.
 
+    .. deprecated:: 3.14
+        See the note on the module. Self-registration is going away; this
+        endpoint only tells the old WebUI whether to show its registration
+        button.
+
     :status 200: ``result.value`` is ``True`` if registration is configured,
         ``False`` otherwise.
     """
     resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.RESOLVER)\
         .action_values(unique=True)
     result = bool(resolvername)
+    if result:
+        # Only when the feature is configured. Warning on every call would make a probe of this
+        # endpoint look like an installation that uses self-registration, and the point of the
+        # line is to be evidence of the opposite.
+        _warn_register_deprecated("GET /register")
     g.audit_object.log({"info": result,
                         "success": True})
     return send_result(result)
@@ -123,6 +161,10 @@ def register_post():
     :status 400: registration prerequisites not met (no resolver
         configured, SMTP not configured, username already registered,
         email rejected by ``requiredemail``, send failure).
+
+    .. deprecated:: 3.14
+        See the note on the module. Self-registration is going away, so this
+        endpoint is not being extended.
     """
     username = get_required(request.all_data, "username")
     surname = get_required(request.all_data, "surname")
@@ -159,6 +201,10 @@ def register_post():
     if not resolvername:
         raise RegistrationError(_("No resolver specified to register in!"))
     resolvername = list(resolvername)[0]
+    # Past the configuration checks, so this installation really does offer self-registration.
+    # A request that only probes the endpoint of an installation that never enabled it fails
+    # above and leaves no warning behind.
+    _warn_register_deprecated("POST /register")
 
     try:
         # Check if the user exists
