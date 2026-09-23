@@ -335,6 +335,11 @@ describe("AuthService", () => {
     expect(console.error).toHaveBeenCalled();
   });
 
+  it("decodeJwtPayload returns null without logging when there is no token", () => {
+    expect(authService.decodeJwtPayload("")).toBeNull();
+    expect(console.error).not.toHaveBeenCalled();
+  });
+
   it("authenticate(): saves token, decodes jwt, sets isAuthenticated", () => {
     const payload: JwtData = {
       username: "alice",
@@ -681,6 +686,13 @@ describe("AuthService", () => {
       login("tab");
 
       expect(mockLocal.clearInactiveSession).not.toHaveBeenCalled();
+    });
+
+    it("logs nothing and keeps the other storage alone when it holds no session", () => {
+      login("tab");
+
+      expect(mockLocal.clearInactiveSession).not.toHaveBeenCalled();
+      expect(console.error).not.toHaveBeenCalled();
     });
 
     it("keeps a leftover session of the same name in another role", () => {

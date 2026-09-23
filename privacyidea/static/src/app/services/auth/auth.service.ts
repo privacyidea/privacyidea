@@ -488,6 +488,9 @@ export class AuthService implements AuthServiceInterface {
   private readonly injector = inject(Injector);
 
   decodeJwtPayload(token: string): JwtData | null {
+    if (!token) {
+      return null;
+    }
     try {
       const parts = token.split(".");
       if (parts.length !== 3) {
