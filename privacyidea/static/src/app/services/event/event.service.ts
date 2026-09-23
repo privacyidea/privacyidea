@@ -166,7 +166,7 @@ export interface EventServiceInterface {
 
   deleteEvent(eventId: number): Observable<PiResponse<number>>;
 
-  deleteWithConfirmDialog(event: EventHandler): void;
+  deleteWithConfirmDialog(event: EventHandler): Promise<PiResponse<number> | undefined>;
 }
 
 @Injectable()

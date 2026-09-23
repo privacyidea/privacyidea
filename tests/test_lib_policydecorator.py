@@ -963,6 +963,25 @@ class LibPolicyTestCase(MyTestCase):
         user.delete()
         remove_token(token.token.serial)
 
+    def test_17a_force_challenge_response_resolved_from_policy(self):
+        # The options key holds the value resolved from the policy, so a value that is already
+        # in options when check_user_pass is called does not decide the behaviour. A spass token
+        # has no challenge mode, so a stale True would fail the authentication outright.
+        self.setUp_user_realms()
+        user = User(login="cornelius", realm=self.realm1)
+        pin = "1234"
+        init_token({"serial": "FORCECR01", "type": "spass", "pin": pin}, user=user)
+        fake_g = FakeFlaskG()
+        fake_g.policy_object = PolicyClass()
+        fake_g.audit_object = FakeAudit()
+
+        options = {"g": fake_g, PolicyAction.FORCE_CHALLENGE_RESPONSE: True}
+        res, reply_dict = check_user_pass(user, pin, options=options)
+        self.assertTrue(res, reply_dict)
+        self.assertFalse(options[PolicyAction.FORCE_CHALLENGE_RESPONSE], options)
+
+        remove_token("FORCECR01")
+
     def test_18_auth_user_timelimit_max_fail(self):
         self.setUp_user_realm2()
         user = User("timelimituser", realm=self.realm2)

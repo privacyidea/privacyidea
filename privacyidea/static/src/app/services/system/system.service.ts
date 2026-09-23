@@ -50,6 +50,9 @@ export interface CertificateHealthEntry {
   days_remaining: number | null;
   error: string | null;
   status: CertificateStatus;
+  // When the endpoints were probed, which is not when the response was served: the whole list is cached for
+  // PI_CERT_CHECK_CACHE_SECONDS. One stamp for every entry, since they are probed together.
+  checked_at?: string | null;
 }
 
 export interface ResolverTimingEntry {

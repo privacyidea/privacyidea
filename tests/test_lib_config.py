@@ -314,3 +314,27 @@ class ConfigTestCase(MyTestCase):
         import_config({"ExpSecret": {"Value": CENSORED, "Type": "password"}})
         self.assertEqual(get_from_config("ExpSecret"), "topsecret")
         delete_privacyidea_config("ExpSecret")
+
+    def test_13_update_password_entry_without_type(self):
+        from privacyidea.lib.crypto import decryptPassword
+        set_privacyidea_config("SecretToUpdate", "first", typ="password")
+        # The update names no type, so the entry keeps the password type it already has and the
+        # new value is stored the same way the first one was.
+        set_privacyidea_config("SecretToUpdate", "second")
+
+        stored = db.session.query(Config).filter_by(Key="SecretToUpdate").one()
+        self.assertEqual("password", stored.Type)
+        self.assertNotEqual("second", stored.Value)
+        self.assertEqual("second", decryptPassword(stored.Value))
+        self.assertEqual("second", get_from_config("SecretToUpdate"))
+        delete_privacyidea_config("SecretToUpdate")
+
+    def test_14_update_entry_without_type_keeps_plain_type(self):
+        # The type fallback carries over whatever type is there, so a public entry stays plain.
+        set_privacyidea_config("PlainToUpdate", "first", typ="public")
+        set_privacyidea_config("PlainToUpdate", "second")
+
+        stored = db.session.query(Config).filter_by(Key="PlainToUpdate").one()
+        self.assertEqual("public", stored.Type)
+        self.assertEqual("second", stored.Value)
+        delete_privacyidea_config("PlainToUpdate")
