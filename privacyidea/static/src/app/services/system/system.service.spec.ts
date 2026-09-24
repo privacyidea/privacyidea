@@ -133,6 +133,11 @@ describe("SystemService", () => {
   });
 
   describe("systemConfigResource", () => {
+    // An admin only gets the configuration with configread.
+    beforeEach(() => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["configread"] });
+    });
+
     it("systemConfig and systemConfigInit fall back to default when resource empty", () => {
       expect(service.systemConfig()).toEqual({});
       expect(service.systemConfigInit()).toEqual({});
@@ -169,6 +174,24 @@ describe("SystemService", () => {
       expect(service.systemConfigResource.hasValue()).toEqual(false);
       expect(service.systemConfig()).toEqual({});
       expect(service.systemConfigInit()).toEqual({});
+    });
+
+    it("should not request the configuration for an admin without configread", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      contentService.onConfigurationSystem = signal(true);
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/system/");
+      expect(service.systemConfig()).toEqual({});
+    });
+
+    // The backend checks configread for admins only, so a user still gets the configuration.
+    it("should request the configuration for a user without configread", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user", rights: [] });
+      contentService.onTokenEnrollmentLikely.set(true);
+      TestBed.tick();
+
+      httpMock.expectOne((r) => r.url === "/system/").flush(MockPiResponse.fromValue({}));
     });
   });
 

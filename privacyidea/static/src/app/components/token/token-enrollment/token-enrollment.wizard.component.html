@@ -38,14 +38,19 @@
     class="margin-left-16"
     (submit)="$event.preventDefault(); enrollToken()">
     <div class="enroll-button-container margin-top-16 margin-bottom-16">
-      <button
-        [disabled]="isFormInvalid()"
-        class="action-button-primary button-width-m"
-        mat-stroked-button
-        type="submit">
-        <mat-icon>add_moderator</mat-icon>
-        <span i18n="@@common.enrollToken">Enroll Token</span>
-      </button>
+      <!-- A disabled button fires no hover events, so the wrapper carries the tooltip. -->
+      <span
+        [matTooltip]="enrollmentBlockedReason() ?? ''"
+        [matTooltipDisabled]="!enrollmentBlockedReason()">
+        <button
+          [disabled]="isFormInvalid()"
+          class="action-button-primary button-width-m"
+          mat-stroked-button
+          type="submit">
+          <mat-icon>add_moderator</mat-icon>
+          <span i18n="@@common.enrollToken">Enroll Token</span>
+        </button>
+      </span>
       <button
         (click)="reopenEnrollmentDialog()"
         matTooltip="Reopen enrollment dialog"

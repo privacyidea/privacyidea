@@ -56,7 +56,7 @@ export class TokengroupService implements TokengroupServiceInterface {
 
   private readonly tokengroupBaseUrl = environment.proxyUrl + "/tokengroup/";
   tokengroupResource = httpResource<PiResponse<Tokengroups>>(() => {
-    if (!this.contentService.onExternalTokenGroups()) {
+    if (!this.contentService.onExternalTokenGroups() || !this.authService.actionAllowed("tokengroup_list")) {
       return undefined;
     }
     return {

@@ -65,6 +65,7 @@ export interface MachineServiceInterface extends FilterableTableServiceInterface
   offlineApiFilterKeys: string[];
   machines: WritableSignal<Machines | undefined>;
   tokenApplications: Signal<TokenApplications | undefined>;
+  readonly canListTokenApplications: Signal<boolean>;
   selectedApplicationType: WritableSignal<"ssh" | "offline">;
   machinesResource: HttpResourceRef<PiResponse<Machines> | undefined>;
   tokenApplicationResource: HttpResourceRef<PiResponse<TokenApplications> | undefined>;
@@ -244,9 +245,10 @@ export class MachineService extends FilterableTableService implements MachineSer
     };
   });
 
+  readonly canListTokenApplications = computed<boolean>(() => this.authService.actionAllowed("manage_machine_tokens"));
+
   tokenApplicationResource = httpResource<PiResponse<TokenApplications>>(() => {
-    // Do not load applications if the action is not allowed.
-    if (!this.authService.actionAllowed("tokenlist")) {
+    if (!this.canListTokenApplications()) {
       return undefined;
     }
     // Only load token applications on the token applications or token details routes.
