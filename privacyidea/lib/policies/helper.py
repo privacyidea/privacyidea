@@ -220,8 +220,8 @@ def admin_granted_realms(action: str) -> list[str] | None:
       "this policy grants every realm"; the first is "nothing is restricted here yet".
     * a non-empty list - restricted to exactly these realms, deduplicated in the order the policies name
       them, because a caller that has to reduce them to a single realm picks the first.
-    * an **empty list - restricted, but not to anything this function can name.** An applicable policy is
-      scoped by ``user`` or ``resolver`` and carries no realm, so the admin is restricted while the
+    * an **empty list - restricted, but not to anything this function can name.** No applicable policy
+      names a realm: each is scoped by ``user`` or ``resolver`` only, so the admin is restricted while the
       restriction has no realm to express it with. **Every caller must refuse.** Reading this as
       unrestricted is precisely the defect this function was written with: a policy granting
       ``remembered_device_revoke`` for one named user matched a request that named no user at all - a
@@ -249,9 +249,9 @@ def admin_granted_realms(action: str) -> list[str] | None:
             return None
         if not policy_realms:
             if policy.get("resolver") or policy.get("user"):
-                # Scoped, but along a dimension a realm list cannot carry. Say "refuse" rather than
-                # silently widening it to every realm.
-                return []
+                # Scoped along a dimension a realm list cannot carry, so it contributes no realm. If no
+                # other policy names one either, the empty result refuses rather than widening to every realm.
+                continue
             return None
         granted_realms.update(dict.fromkeys(policy_realms))
     return list(granted_realms)
