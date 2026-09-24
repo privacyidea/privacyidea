@@ -188,6 +188,16 @@ describe("AuthService", () => {
       authService.jwtData.set(jwtData as JwtData);
       expect(authService.tokenEnrollmentAllowed()).toBe(true);
     });
+
+    it("adminDashboard should be true for an admin without the admin_dashboard policy", () => {
+      authService.jwtData.set({ ...jwtData, role: "admin" } as JwtData);
+      expect(authService.adminDashboard()).toBe(true);
+    });
+
+    it("adminDashboard should be false for a user", () => {
+      authService.jwtData.set(jwtData as JwtData);
+      expect(authService.adminDashboard()).toBe(false);
+    });
   });
 
   describe("checkForceServerGenerateOTPKey", () => {

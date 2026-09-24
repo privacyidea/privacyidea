@@ -185,7 +185,7 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   public resetLayout(): void {
-    this.widgets.set(this.reconcilePinned(this.defaultWidgets()));
+    this.widgets.set(this.allowedDefaultLayout());
     this.persistIfLive();
   }
 
@@ -202,10 +202,35 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
         this.persist();
         return;
       }
-      if (stored) {
-        this.widgets.set(this.reconcilePinned(stored));
-      }
+      this.widgets.set(stored ? this.reconcilePinned(stored) : this.allowedDefaultLayout());
     });
+  }
+
+  private allowedDefaultLayout(): WidgetInstance[] {
+    const current = new Map(this.widgets().map((widget) => [widget.type, widget]));
+    const defaults = this.defaultWidgets()
+      .filter((widget) => this.isWidgetTypeAllowed(widget.type))
+      .map((widget) => {
+        const existing = current.get(widget.type);
+        return existing ? { ...widget, id: existing.id, options: existing.options } : widget;
+      });
+    return this.compactUpwards(this.reconcilePinned(defaults));
+  }
+
+  // Closes the gaps left by widgets the admin may not see without shuffling the columns around.
+  private compactUpwards(widgets: WidgetInstance[]): WidgetInstance[] {
+    const placed = widgets.filter((widget) => this.registry.get(widget.type)?.pinned);
+    const movable = widgets
+      .filter((widget) => !this.registry.get(widget.type)?.pinned)
+      .sort((a, b) => a.y - b.y || a.x - b.x);
+    for (const widget of movable) {
+      let y = widget.y;
+      while (y > 0 && !placed.some((other) => this.overlaps({ ...widget, y: y - 1 }, other))) {
+        y--;
+      }
+      placed.push({ ...widget, y });
+    }
+    return placed;
   }
 
   private persistIfLive(): void {
@@ -239,18 +264,24 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
   }
 
   private reconcilePinned(widgets: WidgetInstance[]): WidgetInstance[] {
-    const result = widgets.filter((widget) => {
-      const widgetType = this.registry.get(widget.type);
-      return !!widgetType && !widgetType.pinned;
-    });
+    const result: WidgetInstance[] = [];
     for (const widgetType of this.registry.widgetTypes) {
-      if (!widgetType.pinned) {
+      if (!widgetType.pinned || !this.isWidgetTypeAllowed(widgetType.type)) {
         continue;
       }
       const existing = widgets.find((widget) => widget.type === widgetType.type);
       const { x, y } = widgetType.fixedPosition ?? { x: 0, y: 0 };
       const { cols, rows } = widgetType.defaultSize;
       result.push({ id: existing?.id ?? `pinned-${widgetType.type}`, type: widgetType.type, x, y, cols, rows });
+    }
+    for (const widget of widgets) {
+      const widgetType = this.registry.get(widget.type);
+      if (!widgetType || widgetType.pinned) {
+        continue;
+      }
+      if (!result.some((other) => this.overlaps(widget, other))) {
+        result.push(widget);
+      }
     }
     return result;
   }
@@ -260,35 +291,42 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     const maxX = Math.max(0, DASHBOARD_COLUMNS - cols);
     for (let y = Math.max(0, this.insertRow()); ; y++) {
       for (let x = 0; x <= maxX; x++) {
-        const overlaps = widgets.some(
-          (other) => x < other.x + other.cols && x + cols > other.x && y < other.y + other.rows && y + rows > other.y
-        );
-        if (!overlaps) {
+        if (!widgets.some((other) => this.overlaps({ x, y, cols, rows }, other))) {
           return { x, y };
         }
       }
     }
   }
 
+  private overlaps(
+    a: Pick<WidgetInstance, "x" | "y" | "cols" | "rows">,
+    b: Pick<WidgetInstance, "x" | "y" | "cols" | "rows">
+  ): boolean {
+    return a.x < b.x + b.cols && a.x + a.cols > b.x && a.y < b.y + b.rows && a.y + a.rows > b.y;
+  }
+
   private defaultWidgets(): WidgetInstance[] {
-    // The subscription overview opens the layout in the top left corner (8 columns,
-    // 11 rows), so the widgets next to it start to its right and continue below it.
-    // News and events are widened past their default size to give the feed and the
-    // event list a bit more breathing room than their minimum column count.
-    const positions: { type: WidgetTypeId; x: number; y: number; cols?: number }[] = [
-      { type: "subscriptions", x: 0, y: 0 },
-      { type: "policies", x: 8, y: 0 },
-      { type: "tokens", x: 18, y: 0 },
-      { type: "news", x: 8, y: 5, cols: 9 },
-      { type: "events", x: 17, y: 5, cols: 7 },
-      { type: "token-types", x: 8, y: 8 },
-      { type: "authentication-activity", x: 14, y: 8 },
-      { type: "administration", x: 0, y: 14 }
+    const positions: { type: WidgetTypeId; x: number; y: number; cols?: number; rows?: number }[] = [
+      { type: "authentication-activity", x: 0, y: 0 },
+      { type: "tokens", x: 6, y: 0, rows: 4 },
+      { type: "token-types", x: 12, y: 0, cols: 4, rows: 4 },
+      { type: "certificate-health", x: 6, y: 4, cols: 10, rows: 4 },
+      { type: "resolver-timing", x: 0, y: 8, cols: 16 },
+      { type: "notification-delivery", x: 16, y: 11 },
+      { type: "conditional-access", x: 0, y: 14 },
+      { type: "policies", x: 7, y: 14, cols: 9, rows: 8 }
     ];
-    return positions.reduce<WidgetInstance[]>((result, { type, x, y, cols }) => {
+    return positions.reduce<WidgetInstance[]>((result, { type, x, y, cols, rows }) => {
       const widgetType = this.registry.get(type);
       if (widgetType) {
-        result.push({ id: uuid(), type, x, y, ...widgetType.defaultSize, cols: cols ?? widgetType.defaultSize.cols });
+        result.push({
+          id: uuid(),
+          type,
+          x,
+          y,
+          cols: cols ?? widgetType.defaultSize.cols,
+          rows: rows ?? widgetType.defaultSize.rows
+        });
       }
       return result;
     }, []);

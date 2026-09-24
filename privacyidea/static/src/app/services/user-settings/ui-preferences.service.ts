@@ -102,7 +102,7 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
 
   /**
    * The page the principal is sent to right after login. Falls back to the
-   * dashboard when the ADMIN_DASHBOARD policy allows it, otherwise the token
+   * dashboard for administrators, otherwise the token
    * list -- a stored choice that is no longer available (policy withdrawn,
    * right revoked) falls back the same way rather than routing to a page the
    * principal cannot see.
@@ -166,7 +166,7 @@ export class UiPreferencesService implements UiPreferencesServiceInterface {
     return write$;
   }
 
-  /** Reverts to the policy-driven default (dashboard, or the token list). */
+  /** Reverts to the default (dashboard for administrators, or the token list). */
   public resetLandingPage(): Observable<unknown> {
     return this.userSettingsService.deleteSetting("starting_page").pipe(catchError(() => of(null)));
   }

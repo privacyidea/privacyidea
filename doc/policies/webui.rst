@@ -508,6 +508,10 @@ event handlers and subscriptions.
 
 .. versionadded:: 3.4
 
+.. deprecated:: 3.14
+   The new WebUI ignores this policy and always shows the dashboard to administrators.
+   It only affects the old WebUI and will be removed in a future release.
+
 dialog_no_token
 ~~~~~~~~~~~~~~~
 
