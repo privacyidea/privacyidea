@@ -34,6 +34,7 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { ErrorStateDirective } from "@components/shared/directives/error-state.directive";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
@@ -63,7 +64,8 @@ import { lastValueFrom } from "rxjs";
     ScrollToTopDirective,
     MachineResolverHostsTabComponent,
     MachineResolverLdapTabComponent,
-    MatProgressSpinner
+    MatProgressSpinner,
+    ErrorStateDirective
   ]
 })
 export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
@@ -89,8 +91,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
   readonly selectedName = signal<string>("");
   readonly isEditMode = computed(() => this.selectedName() !== "");
 
-  readonly canEditTab = computed(() => this.isEditMode() && this.authService.actionAllowed("mresolverwrite"));
-  readonly canMakeChanges = computed(() => !this.isEditMode() || this.canEditTab());
+  readonly canMakeChanges = computed(() => !this.isEditMode() || this.authService.actionAllowed("mresolverwrite"));
   readonly canDeleteMachineResolver = computed(
     () => this.isEditMode() && this.authService.actionAllowed("mresolverdelete")
   );
@@ -111,6 +112,10 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
     return name.length > 0 && !/^[a-zA-Z0-9._-]*$/.test(name);
   });
 
+  // There is an endpoint, "/machineresolver/test", that can be used to test the machine resolver.
+  // Naming a machineresolver "test" will only test the configuration instead of saving it.
+  readonly resolverNamedTest = computed(() => this.currentMachineResolver().resolvername === "test");
+
   // True only for the first fetch, before the resource has ever resolved: a reload keeps the
   // previous value in place instead, so the page does not blank out under the user's own change.
   protected readonly showInitialLoading = computed(
@@ -122,6 +127,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
   readonly canSaveMachineResolver = computed(() => {
     const current = this.currentMachineResolver();
     if (!current.resolvername.trim() || !/^[a-zA-Z0-9._-]*$/.test(current.resolvername)) return false;
+    if (this.resolverNamedTest()) return false;
     return this.dataValidatorSignal()(current.data);
   });
 

@@ -71,6 +71,9 @@
             and hyphens are allowed.</mat-error
           >
         }
+        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'reservedName')) {
+          <mat-error i18n="@@resolver.resolverNamedTest">Cannot be named "test".</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field class="input-width-l resolver-type-select">

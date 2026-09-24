@@ -30,10 +30,9 @@ import { HostsMachineResolverData, MachineResolverData } from "@services/machine
   standalone: true
 })
 export class MachineResolverHostsTabComponent implements OnInit {
-  readonly isCreateMode = input<boolean>(false);
   readonly canEdit = input<boolean>(false);
   readonly machineResolverData = input.required<MachineResolverData>();
-  readonly fieldsEnabled = computed(() => this.isCreateMode() || this.canEdit());
+  readonly fieldsEnabled = computed(() => this.canEdit());
   readonly hostsData = linkedSignal<HostsMachineResolverData>(
     () => this.machineResolverData() as HostsMachineResolverData
   );

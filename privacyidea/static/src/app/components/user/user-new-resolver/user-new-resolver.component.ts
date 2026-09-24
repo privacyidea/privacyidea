@@ -20,7 +20,7 @@
 import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, effect, inject, OnDestroy, signal, viewChild } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { form, FormField, pattern, required } from "@angular/forms/signals";
+import { form, FormField, pattern, required, validate } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -122,6 +122,8 @@ export class UserNewResolverComponent implements OnDestroy {
   resolverNameForm = form(this.resolverNameModel, (f) => {
     required(f.resolverName);
     pattern(f.resolverName, /^[a-zA-Z0-9._-]*$/);
+    // POST /resolver/test is the connection test endpoint, so a resolver named "test" is never saved.
+    validate(f.resolverName, (ctx) => (ctx.value() === "test" ? [{ kind: "reservedName" }] : []));
   });
 
   constructor() {
@@ -180,7 +182,7 @@ export class UserNewResolverComponent implements OnDestroy {
 
   get canSave(): boolean {
     const name = this.resolverNameModel().resolverName;
-    const nameValid = name.trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(name);
+    const nameValid = name.trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(name) && name !== "test";
     return nameValid && !!this.resolverType() && !this.isAdditionalFieldsInvalid && !this.isSaving();
   }
 

@@ -35,10 +35,9 @@ import { MatIcon } from "@angular/material/icon";
   standalone: true
 })
 export class MachineResolverLdapTabComponent implements OnInit {
-  readonly isCreateMode = input<boolean>(false);
   readonly canEdit = input<boolean>(false);
   readonly machineResolverData = input.required<MachineResolverData>();
-  readonly fieldsEnabled = computed(() => this.isCreateMode() || this.canEdit());
+  readonly fieldsEnabled = computed(() => this.canEdit());
   readonly hostsData = linkedSignal<LdapMachineResolverData>(() => {
     let data = this.machineResolverData() as LdapMachineResolverData;
     data = { ...data, type: "ldap", TIMEOUT: data.TIMEOUT ?? "5" };
