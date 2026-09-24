@@ -61,6 +61,8 @@ describe("AuditService (signals & helpers)", () => {
     auditService = TestBed.inject(AuditService);
     content = TestBed.inject(ContentService) as unknown as MockContentService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // The audit log is only requested by someone who may read it.
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["auditlog"] });
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     httpMock = TestBed.inject(HttpTestingController);
   });
@@ -96,6 +98,14 @@ describe("AuditService (signals & helpers)", () => {
     req.flush(response);
     await Promise.resolve();
     TestBed.tick();
+  });
+
+  it("auditResource does not request the audit log without auditlog", () => {
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+    content.routeUrl.set("/logs/audit");
+    TestBed.tick();
+
+    httpMock.expectNone((req) => req.url.includes("/audit"));
   });
 
   it("auditResource becomes active and derived params update", () => {

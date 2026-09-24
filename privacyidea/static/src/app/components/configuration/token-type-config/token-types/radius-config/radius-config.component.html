@@ -32,22 +32,37 @@
         appearance="fill"
         class="input-width-m">
         <mat-label i18n="@@tokenTypeConfig.radiusServerConfiguration">RADIUS Server Configuration</mat-label>
-        <mat-select
-          [value]="formData()[RADIUS_SERVER]"
-          (valueChange)="updateFormData(RADIUS_SERVER, $event)">
-          @for (id of radiusServers(); track id) {
-            <mat-option [value]="id">{{ id }}</mat-option>
-          }
-        </mat-select>
+        @if (radiusServersListable()) {
+          <mat-select
+            [value]="formData()[RADIUS_SERVER]"
+            (valueChange)="updateFormData(RADIUS_SERVER, $event)">
+            @for (id of radiusServers(); track id) {
+              <mat-option [value]="id">{{ id }}</mat-option>
+            }
+          </mat-select>
+        } @else {
+          <input
+            matInput
+            [value]="formData()[RADIUS_SERVER] ?? ''"
+            (input)="updateFormData(RADIUS_SERVER, $event.target.value)" />
+        }
         <app-clear-button
           matSuffix
           (clearButtonClick)="clearField(RADIUS_SERVER); $event.stopPropagation()"></app-clear-button>
-        <mat-hint i18n="@@tokenTypeConfig.selectPredefined"
-          >Select a predefined
-          <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]"
-            ><strong>RADIUS server configuration</strong>.
-          </a></mat-hint
-        >
+        @if (radiusServersListable()) {
+          <mat-hint i18n="@@tokenTypeConfig.selectPredefined"
+            >Select a predefined
+            <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]"
+              ><strong>RADIUS server configuration</strong>.
+            </a></mat-hint
+          >
+        } @else {
+          <mat-hint
+            class="red"
+            i18n="@@tokenTypeConfig.radiusServerNeedsEnrollRight"
+            >Type the identifier: listing the RADIUS servers needs the enrollRADIUS right.</mat-hint
+          >
+        }
       </mat-form-field>
     </div>
   </div>

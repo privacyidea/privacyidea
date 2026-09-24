@@ -24,16 +24,15 @@
     i18n="@@token.checkPinLocally"
     >Check the PIN locally</mat-checkbox
   >
-  <div class="flex-row gap-16">
-    <mat-form-field class="input-width-l margin-bottom-16">
+  <div class="flex-row gap-16 margin-bottom-16">
+    <mat-form-field
+      class="input-width-l"
+      [matTooltip]="enrollmentBlockedReason() ?? ''"
+      [matTooltipDisabled]="!enrollmentBlockedReason()">
       <mat-label i18n="@@token.remoteServer">Remote Server</mat-label>
-      <mat-select
-        [value]="remoteServer()"
-        (selectionChange)="remoteServer.set($event.value)"
-        required>
-        @for (option of remoteServerOptions(); track option) {
-          <mat-option [value]="option">{{ option.name }}</mat-option
-          ><!-- Assuming option is the RemoteServer object -->
+      <mat-select [formField]="remoteServerIdForm">
+        @for (option of remoteServerOptions(); track option.id) {
+          <mat-option [value]="option.id">{{ option.name }}</mat-option>
         }
       </mat-select>
       <mat-error

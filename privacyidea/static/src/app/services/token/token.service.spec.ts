@@ -1389,6 +1389,52 @@ describe("TokenService", () => {
     });
   });
 
+  describe("GET /token/ without tokenlist", () => {
+    beforeEach(() => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist", "tokeninfo"] });
+    });
+
+    it("should not request the tokens of the user on the user details page", () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
+      contentServiceMock.detailsUser.set({ username: "alice", realm: "realm1" });
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === environment.proxyUrl + "/token/");
+    });
+
+    it("should not request the token on the token details page", () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS + "S1");
+      contentServiceMock.tokenSerial.set("S1");
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === environment.proxyUrl + "/token/");
+    });
+
+    it("should not request the token list on the tokens page", () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === environment.proxyUrl + "/token/");
+    });
+
+    it("should not search tokens by serial", () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === environment.proxyUrl + "/token/");
+    });
+
+    it("should still search tokens by serial for a self-service user", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user", rights: [] });
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      mockBackend.expectOne(
+        (r) => r.url === environment.proxyUrl + "/token/" && r.params.get("serial") === "*OATH123*"
+      );
+    });
+  });
+
   describe("userTokenResource", () => {
     it("should return undefined if route is not USER_DETAILS", async () => {
       contentServiceMock.routeUrl.update(() => ROUTE_PATHS.TOKENS);
