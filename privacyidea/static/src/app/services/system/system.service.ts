@@ -184,7 +184,7 @@ export class SystemService implements SystemServiceInterface {
     if (!this.canListRadiusServers()) {
       return undefined;
     }
-    // Only load RADIUS server details on enrollment or token wizard routes.
+    // Only load RADIUS server details on the enrollment, wizard and system/token type configuration routes.
     if (!this.onAllowedRoutes()) {
       return undefined;
     }
@@ -200,7 +200,7 @@ export class SystemService implements SystemServiceInterface {
     if (!this.authService.actionAllowed("enrollCERTIFICATE")) {
       return undefined;
     }
-    // Only load CA connectors on enrollment or token wizard routes.
+    // Only load CA connectors on the enrollment, wizard and system/token type configuration routes.
     if (!this.onAllowedRoutes()) {
       return undefined;
     }
