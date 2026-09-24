@@ -742,9 +742,12 @@ def force_challenge_response(wrapped_function, user_object, passw, options=None)
     if options:
         g = options.get("g")
         if g:
-            if Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.FORCE_CHALLENGE_RESPONSE,
-                          user_object=user_object).any(write_to_audit_log=False):
-                options[PolicyAction.FORCE_CHALLENGE_RESPONSE] = True
+            # Write the resolved value in both directions, as increase_failcounter_on_challenge
+            # and disabled_token_types do, so the key always reflects the current policy state
+            # rather than only being present when it matched.
+            options[PolicyAction.FORCE_CHALLENGE_RESPONSE] = Match.user(
+                g, scope=SCOPE.AUTH, action=PolicyAction.FORCE_CHALLENGE_RESPONSE,
+                user_object=user_object).any(write_to_audit_log=False)
     else:
         log.warning("force_challenge_response can not work without options!")
     return wrapped_function(user_object, passw, options)

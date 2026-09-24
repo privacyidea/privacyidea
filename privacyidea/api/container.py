@@ -20,6 +20,7 @@
 from flask_babel import _
 import json
 import logging
+import re
 
 from flask import Blueprint, request, g
 
@@ -31,7 +32,8 @@ from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_u
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
                                            check_client_container_disabled_action, hide_container_info)
 from privacyidea.api.lib.utils import map_error_to_code, send_error, send_result, to_list_param
-from privacyidea.lib.params import get_optional, get_optional_int, get_required, get_required_one_of
+from privacyidea.lib.params import (get_optional, get_optional_int, get_required,
+                                    get_required_one_of, require_in)
 from privacyidea.lib.container import (find_container_by_serial, init_container, get_container_classes_descriptions,
                                        get_container_token_types, get_all_containers, add_container_info,
                                        set_container_description, set_container_states, set_container_realms,
@@ -59,8 +61,43 @@ from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.token import regenerate_enroll_url
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import is_true
+from urllib.parse import urlparse
 
 container_blueprint = Blueprint('container_blueprint', __name__)
+
+# The container operations a client may obtain a challenge for. A challenge is bound to the
+# endpoint the client will contact, and the endpoints that consume one build that scope
+# themselves from the container's stored server url before they validate it - so these are the
+# only scopes a challenge can ever be used with.
+#
+# "container/register/finalize" is not in the list: its challenge is minted by
+# init_registration() on the registration path, not requested by the client.
+CLIENT_CHALLENGE_SCOPES = ["container/synchronize",
+                           "container/register/terminate/client",
+                           "container/rollover"]
+
+
+def _challenge_scope_operation(scope: str) -> str:
+    """
+    Return the container operation a requested challenge scope names.
+
+    The scope is the full URL the client will contact, e.g.
+    ``https://pi.example.com/container/synchronize``. What matters is the operation at the end
+    of it, so the path is reduced to its last "container/..." part and compared against
+    CLIENT_CHALLENGE_SCOPES. A scope that names no container operation yields the path
+    unchanged, which then fails the check.
+
+    :param scope: the scope as the client sent it
+    :return: the operation the scope names, or the path if it names none
+    """
+    path = urlparse(scope).path.strip("/")
+    # The last occurrence, not the first: privacyIDEA can be mounted under a base path that
+    # itself ends in "container", and the operation is what the path ends with. Anchored on a
+    # segment boundary, so a path segment merely ending in "container" names no operation.
+    match = re.match(r"(?:.*/)?(container/.*)$", path)
+    return match.group(1) if match else path
+
+
 log = logging.getLogger(__name__)
 
 __doc__ = """
@@ -1074,6 +1111,11 @@ def create_challenge():
     params = request.all_data
     scope = get_required(params, "scope")
     container_serial = get_required(params, "container_serial")
+    # Only the operations a client performs itself. The scope is a full URL, and the server url
+    # in it is not checked here: a rollover is scoped to the url of the registration policy,
+    # which can differ from the one stored on the container, and the url is not what decides
+    # what the challenge may do - the operation is.
+    require_in(_challenge_scope_operation(scope), CLIENT_CHALLENGE_SCOPES, "scope")
 
     try:
         container = find_container_by_serial(container_serial)

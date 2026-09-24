@@ -70,7 +70,11 @@ if [[ "${ENCRYPT}" == "true" ]] && ! command -v age &>/dev/null; then
     exit 1
 fi
 
-if ! docker compose -f "${COMPOSE_FILE}" ps --services --filter "status=running" 2>/dev/null | grep -q "^db$"; then
+# Read the list first and match on it: "grep -q" would exit on the first match and,
+# with "pipefail" set above, the writer failing on the closed pipe would take the
+# whole pipeline down. Wrapped in newlines so "db" matches a whole service name.
+running_services=$'\n'"$(docker compose -f "${COMPOSE_FILE}" ps --services --filter "status=running" 2>/dev/null)"$'\n'
+if [[ "${running_services}" != *$'\ndb\n'* ]]; then
     echo "ERROR: the db service is not running. Start the stack before taking a backup."
     exit 1
 fi

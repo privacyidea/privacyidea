@@ -89,6 +89,56 @@
   your admin policies that reference `getchallenges`
   and decide whether each admin should also get `cancelchallenge`.
 
+* **Self-registration is deprecated.** The `register` policy scope and the anonymous
+  `GET`/`POST /register` endpoints — which let a visitor create their own account in an editable
+  resolver and have the registration key mailed to them — are deprecated and will be removed in a
+  future release. Its only user interface is the "Register" link of the old WebUI, which is being
+  removed, and the new WebUI does not offer registration at all.
+
+  Nothing stops working in this release: if you have a `register` policy, registration keeps
+  behaving exactly as before. Both endpoints now write one warning to the log per process when
+  they are used **and the feature is configured** — probing the endpoint of an installation that
+  never enabled registration leaves no line, so the warning really does mean "this installation
+  uses self-registration". Grep your logs for `is deprecated` if you are unsure. **If your installation relies on self-registration, tell us before it is removed** —
+  we have had no reports about it, which is the reason for retiring it rather than extending it.
+
+  These endpoints are anonymous by design. For the remainder of their life, treat them like any
+  other anonymous endpoint you expose, and set the `requiredemail` action so that the
+  registration mail can only go to addresses you accept.
+
+* **A python class named by configuration is checked against an allowlist, which only warns by
+  default.** Two pieces of configuration name a python class for privacyIDEA to import: the
+  `module` of an SMS gateway definition and the value of the `pinhandling` policy action. Both are
+  now checked against the classes that ship with privacyIDEA before the class is imported.
+
+  **Nothing changes for you on this upgrade.** The default mode is `warn`: a class that is on
+  neither list is used exactly as before, and a line is written to the log naming it and the
+  setting to declare it in. So an installation that runs its own SMS provider or its own pin
+  handler — which is a supported thing to do — keeps working without any configuration change.
+
+  If you want the check to actually refuse an undeclared class, declare the classes you use and
+  then switch the mode on::
+
+      PI_SMS_PROVIDER_MODULES = ["mycompany.smsprovider.MyProvider"]
+      PI_PIN_HANDLER_MODULES = ["mycompany.pinhandler.LetterPinHandler"]
+      PI_MODULE_ALLOWLIST_MODE = "enforce"
+
+  The recommended order is to leave the default in place for a while first, read the log for the
+  warnings, declare what appears there, and only then set `enforce` — that way the strict mode
+  cannot take a working gateway or pin handler out of service. Note that the classes privacyIDEA
+  ships never need declaring, and that `privacyidea.lib.smsprovider.SMSProvider.ISMSProvider` is
+  the abstract base class rather than a usable provider, so a gateway pointing at it needs
+  declaring like any other non-shipped class.
+
+* **The action and the position of an event handler definition are now checked when it is
+  saved.** `POST /event` previously accepted any string for `action` and `position` and stored
+  the binding, which then failed when its event occurred. Both are now checked against the
+  actions and positions the chosen handler module defines, and a definition naming something else
+  is refused with an error that lists the valid values. The WebUI only ever offers valid values,
+  so this is only visible to a script or an integration that posts event definitions itself.
+  Importing an event configuration (`pi-manage config import`) is **not** affected — it does not
+  go through this endpoint.
+
 * **A new policy action `token_rollover` is required to roll a token over.** `POST /token/init` updates a token when it
   is called with the serial of a token that already exists. While the enrollment of that token is still under way — the
   second request of a two-step or a FIDO2 enrollment, a token waiting to be verified — that is part of the enrollment

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
-import { DASHBOARD_COLUMNS, WidgetInstance, WidgetTypeId } from "@models/dashboard";
+import { DASHBOARD_COLUMNS, WidgetInstance, WidgetOptions, WidgetTypeId } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   DashboardPersistenceService,
@@ -52,6 +52,8 @@ export interface DashboardLayoutServiceInterface {
   moveWidgetTo(id: string, x: number, y: number): void;
 
   resizeWidget(id: string, cols: number, rows: number): void;
+
+  setWidgetOptions(id: string, options: Partial<WidgetOptions>): void;
 
   persist(): void;
 
@@ -159,6 +161,22 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
 
   public resizeWidget(id: string, cols: number, rows: number): void {
     this.widgets.update((widgets) => widgets.map((widget) => (widget.id === id ? { ...widget, cols, rows } : widget)));
+    this.persistIfLive();
+  }
+
+  /**
+   * Merges *options* into what the widget already keeps, so a widget that later offers a second choice does not have
+   * to resend the first. The pending snapshot is written through as well: the options are how the widget is read
+   * rather than where it sits, and cancelling an arrangement should not also undo the window someone picked while
+   * looking at it.
+   */
+  public setWidgetOptions(id: string, options: Partial<WidgetOptions>): void {
+    const merge = (widget: WidgetInstance): WidgetInstance =>
+      widget.id === id ? { ...widget, options: { ...widget.options, ...options } } : widget;
+    this.widgets.update((widgets) => widgets.map(merge));
+    if (this.snapshot) {
+      this.snapshot = this.snapshot.map(merge);
+    }
     this.persistIfLive();
   }
 
