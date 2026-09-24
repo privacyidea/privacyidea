@@ -538,6 +538,14 @@ registration, and the `check_base_action` prepolicy the endpoints will be decora
   dict (as `set_gateway()` does) would make a one-field update drop every header. Since "no `header.*` parameters"
   therefore means "keep", removing the last header needs an explicit
   `clear_headers` flag.
+- **Only a `header.*` counts as "the header set was sent".** A `secret.header.*` is a property of a header, not a
+  header, so it cannot express "these are all of them" — and while it also set that flag, a request carrying only
+  encryption flags read as "headers were sent, here are none" and **deleted the whole stored set**. It failed loudly
+  only for an `auth_type=header` webhook, where `_validate()` rejects an empty header set; for every other auth type
+  the credentials headers were silently gone and the call returned 200. A `secret.header.<name>` without a
+  `header.<name>` is now a `ParameterError` (400) rather than a request the server tries to honour — including
+  `secret.header.X=0`, which names a header just as much, and a flag sent alongside `clear_headers`, which
+  contradicts itself.
 - **No validation is re-implemented in the API.** URL scheme, known method / auth type, positive timeout and the
   auth-type specific requirements are all left to `set_webhook()`, which is the single place that knows them. A
   `ParameterError` surfaces as a 400.

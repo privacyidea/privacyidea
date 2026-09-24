@@ -241,6 +241,56 @@ class WebhookAPITestCase(MyApiTestCase):
         self.assertEqual("abc", stored["headers"]["X-Api-Key"])
         self.assertEqual(["X-Api-Key"], stored["secret_headers"])
 
+    def test_19b_a_secret_flag_without_its_header_is_refused(self):
+        """
+        A ``secret.header.*`` is a property of a header of the set being sent, so it needs a
+        ``header.*`` of the same name. Without one the request describes no state the server could
+        produce - and read as "headers were sent, here are none" it deleted the whole stored set,
+        which is what a client flipping only the encryption flag used to do.
+        """
+        self._create("hook1", **{"header.X-Api-Key": "abc",
+                                 "secret.header.X-Api-Key": "1",
+                                 "header.X-Trace": "on"})
+
+        response = self._request("/webhook/hook1", "POST",
+                                 {"secret.header.X-Api-Key": "1"})
+
+        self.assertEqual(400, response.status_code, response.data)
+        self.assertIn("secret.header.X-Api-Key", response.json["result"]["error"]["message"])
+        # And nothing was written: both headers are still there.
+        stored = get_webhook("hook1")
+        self.assertEqual({"X-Api-Key": "abc", "X-Trace": "on"}, stored["headers"])
+        self.assertEqual(["X-Api-Key"], stored["secret_headers"])
+
+    def test_19c_a_flag_set_to_zero_needs_its_header_too(self):
+        # "Not secret" is as much a property of a header being sent as "secret" is; a flag for a
+        # header that is not in the request names nothing either way.
+        self._create("hook1", **{"header.A": "1"})
+
+        response = self._request("/webhook/hook1", "POST", {"secret.header.A": "0"})
+
+        self.assertEqual(400, response.status_code, response.data)
+        self.assertEqual({"A": "1"}, get_webhook("hook1")["headers"])
+
+    def test_19d_a_flag_cannot_accompany_clear_headers(self):
+        # Flagging a header while asking for every header to be removed contradicts itself.
+        self._create("hook1", **{"header.A": "1", "secret.header.A": "1"})
+
+        response = self._request("/webhook/hook1", "POST",
+                                 {"clear_headers": "1", "secret.header.A": "1"})
+
+        self.assertEqual(400, response.status_code, response.data)
+        self.assertEqual(["A"], get_webhook("hook1")["secret_headers"])
+
+    def test_19e_flags_with_their_headers_are_unaffected(self):
+        # The rule only refuses a flag standing alone; the normal round-trip is untouched.
+        self._create("hook1", **{"header.A": "1", "header.B": "2",
+                                 "secret.header.A": "1", "secret.header.B": "0"})
+
+        stored = get_webhook("hook1")
+        self.assertEqual({"A": "1", "B": "2"}, stored["headers"])
+        self.assertEqual(["A"], stored["secret_headers"])
+
     # ------------------------------------------------------------------
     # verify_tls
     # ------------------------------------------------------------------

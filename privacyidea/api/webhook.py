@@ -40,6 +40,7 @@ from flask import Blueprint, g, request
 
 from .lib.utils import send_result
 from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..lib.error import ParameterError
 from ..lib.log import log_with
 from ..lib.params import get_optional
 from ..lib.policies.actions import PolicyAction
@@ -65,12 +66,22 @@ def _parse_headers(param):
     ``secret.header.X-Api-Key=1`` marks its value as secret so it is stored
     encrypted.
 
+    A ``secret.header.*`` names a header of the set the request is sending, so it needs a
+    ``header.*`` of the same name. Without one the request describes no state the server could
+    produce, and read as "headers were sent, here are none" it would delete the stored set --
+    which is what a client flipping only the encryption flag used to do.
+
     :param param: the request parameters
-    :return: a ``(headers, secret_headers, given)`` tuple. ``given`` is True
-        if the request carried any header parameter at all, which is what
-        distinguishes "replace the headers" from "leave them alone".
+    :return: a ``(headers, secret_headers, given)`` tuple. ``given`` is True if the request
+        carried the header set, which is what distinguishes "replace the headers" from "leave
+        them alone". Only a ``header.*`` sets it: a flag is a property of a header, not a header,
+        so it cannot express "these are all of them".
+    :raises ParameterError: if a ``secret.header.*`` has no ``header.*`` of the same name
     """
     headers = {}
+    # Every name seen with the secret prefix, whether it was flagged on or off: a
+    # ``secret.header.X=0`` for a header that is not being sent is as meaningless as one set to 1.
+    secret_flags = set()
     secret_headers = set()
     given = False
 
@@ -79,12 +90,21 @@ def _parse_headers(param):
             # Check the longer prefix first: "secret.header.X" also starts
             # with neither "header." nor anything else we care about, but
             # being explicit keeps the two branches independent.
-            given = True
+            name = key[len(SECRET_HEADER_PREFIX):]
+            secret_flags.add(name)
             if is_true(value):
-                secret_headers.add(key[len(SECRET_HEADER_PREFIX):])
+                secret_headers.add(name)
         elif key.startswith(HEADER_PREFIX):
             given = True
             headers[key[len(HEADER_PREFIX):]] = value
+
+    orphaned = sorted(secret_flags - set(headers))
+    if orphaned:
+        raise ParameterError(
+            f"Secret header flag(s) without a header of the same name: "
+            f"{', '.join(f'{SECRET_HEADER_PREFIX}{name}' for name in orphaned)}. "
+            f"Sending any '{HEADER_PREFIX}*' parameter replaces the whole header set, so send "
+            f"every header you want to keep, each with its own flag.")
 
     return headers, secret_headers, given
 
@@ -188,7 +208,9 @@ def set_webhook_api(identifier=None):
         sets the ``X-Api-Key`` header. Sending any ``header.*`` parameter
         replaces the stored header set entirely, so send them all.
     :jsonparam secret.header.*: mark a header as secret so its value is
-        stored encrypted, e.g. ``secret.header.X-Api-Key=1``.
+        stored encrypted, e.g. ``secret.header.X-Api-Key=1``. It is a
+        property of a header of the set being sent, so it requires a
+        ``header.*`` of the same name; a flag on its own results in a 400.
     :jsonparam clear_headers: set to true to remove all headers. Needed
         because "no ``header.*`` parameters" means "leave the headers
         alone", so there would otherwise be no way to delete the last one.
