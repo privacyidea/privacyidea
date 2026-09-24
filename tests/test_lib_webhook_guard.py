@@ -460,3 +460,35 @@ class FireWebhookGuardTestCase(MyTestCase):
         self.assertFalse(result["success"])
         self.assertIn("outbound request guard", result["error"])
         self.assertEqual(len(responses.calls), 0)
+
+    @responses.activate
+    def test_the_guard_is_off_unless_an_installation_opts_in(self):
+        # the default has to be provable, not merely intended. With no PI_OUTBOUND_GUARD in
+        # the config at all, a webhook pointing into blocked space is still delivered - an upgrade
+        # must not start refusing requests that worked before.
+        self.app.config.pop("PI_OUTBOUND_GUARD", None)
+        responses.add(responses.POST, self.URL, json={"ok": True}, status=200)
+        set_webhook("hook", url=self.URL)
+
+        with patch("socket.getaddrinfo",
+                   _fake_getaddrinfo({"internal.example": ["127.0.0.1"]})):
+            result = fire_webhook("hook")
+
+        self.assertTrue(result["success"])
+        self.assertEqual(len(responses.calls), 1)
+
+    @responses.activate
+    def test_a_guard_rejection_does_not_leak_the_url(self):
+        # The rejection names the target it judged, and in enforce mode it is returned to the API
+        # and written to the audit log by the event handler - so it gets the same redaction as a
+        # transport error.
+        self.app.config["PI_OUTBOUND_GUARD"] = GuardMode.ENFORCE
+        set_webhook("hook", url="http://internal.example:abc/t/SUPERSECRETTOKEN")
+
+        with self.assertLogs("privacyidea.lib.webhook", level="DEBUG") as logs:
+            result = fire_webhook("hook")
+
+        self.assertFalse(result["success"])
+        self.assertNotIn("SUPERSECRETTOKEN", result["error"])
+        self.assertNotIn("SUPERSECRETTOKEN", "\n".join(logs.output))
+        self.assertIn("outbound request guard", result["error"])

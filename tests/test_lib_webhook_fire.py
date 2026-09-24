@@ -11,6 +11,7 @@ import json
 import ssl
 from unittest.mock import patch
 
+import requests
 import responses
 
 from privacyidea.lib.webhook import (
@@ -398,6 +399,45 @@ class FireWebhookTestCase(MyTestCase):
         # The identifier and status code are what we do want to see.
         self.assertIn("'hook'", everything)
         self.assertIn("200", everything)
+
+    @responses.activate
+    def test_a_failed_delivery_does_not_leak_the_url_either(self):
+        """
+        The failure path is where the URL gets out on its own: a transport error quotes the
+        endpoint it could not reach, and that message is logged, returned to the API *and*
+        written to the audit log by the event handler.
+        """
+        secret_url = "https://hook.example.com/t/SUPERSECRETTOKEN"
+        responses.add(responses.POST, secret_url,
+                      body=requests.exceptions.ConnectionError(
+                          "HTTPSConnectionPool(host='hook.example.com', port=443): "
+                          "Max retries exceeded with url: /t/SUPERSECRETTOKEN"))
+        set_webhook("hook", url=secret_url)
+
+        with self.assertLogs("privacyidea.lib.webhook", level="DEBUG") as logs:
+            result = fire_webhook("hook")
+
+        self.assertFalse(result["success"])
+        self.assertNotIn("SUPERSECRETTOKEN", result["error"])
+        self.assertNotIn("SUPERSECRETTOKEN", "\n".join(logs.output))
+        # The host is kept on purpose: it is what makes a broken integration diagnosable, and the
+        # token an admin embeds sits in the path.
+        self.assertIn("hook.example.com", result["error"])
+        self.assertIn("ConnectionError", result["error"])
+
+    @responses.activate
+    def test_the_response_body_is_logged_at_debug_only(self):
+        """A webhook endpoint may answer with user data, so the body belongs below INFO."""
+        responses.add(responses.POST, URL, body="ACCOUNT-OF-cornelius", status=200)
+        set_webhook("hook", url=URL)
+
+        with self.assertLogs("privacyidea.lib.webhook", level="INFO") as info_logs:
+            fire_webhook("hook")
+        self.assertNotIn("ACCOUNT-OF-cornelius", "\n".join(info_logs.output))
+
+        with self.assertLogs("privacyidea.lib.webhook", level="DEBUG") as debug_logs:
+            fire_webhook("hook")
+        self.assertIn("ACCOUNT-OF-cornelius", "\n".join(debug_logs.output))
 
 
 class TestWebhookHelperTestCase(MyTestCase):

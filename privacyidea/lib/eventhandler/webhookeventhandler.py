@@ -262,6 +262,7 @@ class WebHookHandler(BaseEventHandler):
             content_type = get_webhook(identifier)["content_type"]
         except ResourceNotFoundError:
             log.warning(f"The webhook {identifier!r} configured in this event handler does not exist.")
+            self.run_details = f"webhook {identifier!r} is not configured"
             return False
 
         if replace and webhook_text:
@@ -273,7 +274,17 @@ class WebHookHandler(BaseEventHandler):
         # An empty payload means this event handler contributes none, which
         # lets the webhook's own default_payload apply.
         # fire_webhook() never raises: a dead endpoint is reported, not propagated.
-        return fire_webhook(identifier, payload=webhook_text or None)["success"]
+        result = fire_webhook(identifier, payload=webhook_text or None)
+
+        # What this handler run did, for the audit "info" column: lib.event copies run_details
+        # there once the action returns (see EventConfiguration._run_handler). The identifier and
+        # what the endpoint answered, never the URL - fire_webhook() has already redacted it out
+        # of the error message for the same reason.
+        if result["success"]:
+            self.run_details = f"webhook {identifier!r}: HTTP {result['status_code']}"
+        else:
+            self.run_details = f"webhook {identifier!r} failed: {result['error']}"
+        return result["success"]
 
     def _post_inline(self, handler_options, webhook_text, replace, g, request):
         """
@@ -299,6 +310,7 @@ class WebHookHandler(BaseEventHandler):
 
         if content_type not in (ContentType.JSON, ContentType.URLENCODED):
             log.warning(f'Unknown content type value: {handler_options.get("content_type")}')
+            self.run_details = f'unknown content type {handler_options.get("content_type")!r}'
             return False
 
         if replace:
@@ -308,11 +320,16 @@ class WebHookHandler(BaseEventHandler):
             log.info(f"A webhook is called at '{webhook_url}' with data: '{webhook_text}'")
             response = requests.post(webhook_url, data=webhook_text,
                                      headers={'Content-Type': content_type}, timeout=TIMEOUT)
-            # Responses will be logged when running debug. The HTTP response code will be shown in the audit too
             log.info(response.status_code)
             log.debug(response)
         except (HTTPError, ConnectionError, RequestException, Timeout) as err:
             log.warning(err)
+            # The inline URL is part of the handler definition, which the audit entry already
+            # carries in its action_detail, so naming it here reveals nothing new. A webhook
+            # object's URL is different - it is not in the definition - which is why the branch
+            # above reports the identifier instead.
+            self.run_details = f"{webhook_url} failed: {err.__class__.__name__}"
             return False
 
+        self.run_details = f"{webhook_url}: HTTP {response.status_code}"
         return True

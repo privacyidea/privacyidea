@@ -774,21 +774,46 @@ remain visible but are superseded once a webhook is picked — which the option'
 
 > Goal: Webhook activity is properly audited and secrets are protected in logs.
 
-### 8.1 — Audit logging
+### 8.1 — Audit logging ✅
 
-- [ ] Log that a webhook fired: identifier + response status code
-- [ ] Log the **identifier**, not the URL (URL may contain embedded tokens)
-- [ ] Ensure headers are **never** logged
-- [ ] Body logged at **DEBUG** level only (may contain user data)
+- [x] **A fired webhook reaches the audit log**, not only the Python log. `WebHookHandler` sets `run_details`,
+  which `lib.event` copies into the audit `info` column of that handler's entry (`EventConfiguration._run_handler`):
+  `webhook 'siem': HTTP 200`, or the reason on a failure. The inline (pre-3.15) path reports the same way — its comment
+  already promised "the HTTP response code will be shown in
+  the audit too", but nothing had set `run_details`. `POST /webhook/<id>/test` already audited identifier +
+  outcome.
+- [x] Log the **identifier**, not the URL — and this is where a real leak sat: on the **failure** path a
+  transport error quotes the endpoint it could not reach (`Max retries exceeded with url: /t/TOKEN`), and that
+  string was logged, returned to the API *and* about to be written into the audit entry. `_redact_url()` now
+  removes the path and query from the message. The **host is kept on purpose**: it is what makes a broken
+  integration diagnosable, and what an admin embeds is a token, which sits in the path. The guard's rejection
+  gets the same treatment, for the same reason.
+- [x] Headers are never logged — already true, now pinned on the failure path as well
+- [x] Body logged at **DEBUG** only — pinned by a test that asserts it is absent at INFO and present at DEBUG
+
+**Tests:** `tests/test_lib_webhook_fire.py` (failure path leaks nothing, body only at DEBUG),
+`tests/test_lib_webhook_guard.py` (a rejection leaks nothing), `tests/test_lib_events.py`
+(`WebhookObjectHandlerTestCase` 11–15: identifier + status audited, reason on failure, no URL, dangling
+reference, inline path).
 
 ### 8.2 — Security review
 
-- [ ] Verify `encryptPassword()` is used for: password, client_key_password, encrypted header values
-- [ ] Verify `censor_dict()` / `__CENSORED__` round-trip works in export/import
-- [ ] Verify SSRF documentation is in place (admin-configured URL = admin responsibility, document `webhook_write` as a
-  sensitive right)
-- [ ] Verify the outbound guard (2.4) defaults to `off` and that `warn`/`enforce` are covered by tests before being
-  recommended in the docs
+- [x] `encryptPassword()` is used for `password`, `client_key_password` and encrypted header values —
+  covered by `test_lib_webhook.py::test_password_is_encrypted_at_rest`,
+  `::test_client_key_password_is_encrypted_at_rest`, `::test_secret_header_is_encrypted_at_rest` and
+  `test_model_webhook.py::test_header_encrypted_round_trip`
+- [x] `__CENSORED__` round-trip in export/import — covered by the `test_lib_webhook.py` export/import block
+  (`test_export_censors_all_secrets`, `test_uncensored_export_roundtrips`,
+  `test_censored_import_preserves_existing_secrets`, `test_censored_import_on_a_fresh_instance_leaves_secrets_empty`)
+  and by `test_api_webhook.py` tests 10–19
+- [x] The outbound guard defaults to `off` — pinned by
+  `test_lib_webhook_guard.py::test_the_guard_is_off_unless_an_installation_opts_in`, which asserts the default
+  with **no** `PI_OUTBOUND_GUARD` in the config at all, not merely with it set to `off`. `warn` and `enforce`
+  are covered by that module throughout (38 tests).
+- [ ] **SSRF documentation is not in place** — `PI_OUTBOUND_GUARD` and `PI_OUTBOUND_GUARD_ALLOW` appear nowhere
+  outside `lib/webhook.py` and its tests, and `doc/policies/admin.rst` describes the SSRF surface without naming
+  the control that limits it. An opt-in security feature nobody is told about is off everywhere. This is the one
+  bullet of 8.2 that is not a verification but work, and it belongs to **9.5** — 8.2 stays open until 9.5 lands.
 
 ---
 
@@ -828,6 +853,9 @@ remain visible but are superseded once a webhook is picked — which the option'
 - [ ] Document secret handling (encrypted at rest, censored in export)
 - [ ] Document that the outbound guard (2.4) narrows this right's blast radius when enabled, but does not replace it as
   a sensitive right to hand out carefully
+- [ ] Document `PI_OUTBOUND_GUARD` and `PI_OUTBOUND_GUARD_ALLOW` themselves — the modes, the default (`off`), the
+  blocked ranges and the allowlist syntax. They appear nowhere outside `lib/webhook.py` and its tests today, and
+  an opt-in security control nobody is told about is off everywhere. **8.2 stays open until this lands.**
 
 ---
 

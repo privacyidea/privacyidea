@@ -5060,3 +5060,75 @@ class WebhookObjectHandlerTestCase(MyTestCase):
         # supply the endpoint instead.
         self.assertFalse(options["URL"]["required"])
         self.assertFalse(options["content_type"]["required"])
+
+    # --- audit (run_details lands in the audit "info" column, see lib.event) ---
+
+    def _run(self, options, action=WHEH_ACTION_TYPE.POST_WEBHOOK):
+        """Run the handler and hand back the object, so its run_details can be read."""
+        handler = WebHookHandler()
+        return handler.do(action, options=options), handler
+
+    @responses.activate
+    def test_11_a_fired_webhook_is_audited_by_identifier_and_status(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual("webhook 'siem': HTTP 200", handler.run_details)
+
+    @responses.activate
+    def test_12_a_failing_webhook_is_audited_with_the_reason(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"no": True}, status=500)
+        set_webhook("siem", url=self.WEBHOOK_URL)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertFalse(result)
+        self.assertIn("siem", handler.run_details)
+        self.assertIn("500", handler.run_details)
+
+    @responses.activate
+    def test_13_the_audit_entry_never_carries_the_webhook_url(self):
+        """
+        The URL is a property of the webhook object, not of the handler definition, so it appears
+        nowhere else in the audit entry - and it may embed a token. A transport error quotes the
+        endpoint it failed on, which is the way it would otherwise get in.
+        """
+        secret_url = "https://siem.example.com/t/SUPERSECRETTOKEN"
+        responses.add(responses.POST, secret_url,
+                      body=requests.exceptions.ConnectionError(
+                          "HTTPSConnectionPool(host='siem.example.com', port=443): "
+                          "Max retries exceeded with url: /t/SUPERSECRETTOKEN"))
+        set_webhook("siem", url=secret_url)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "siem", "data": '{"a": 1}'}))
+
+        self.assertFalse(result)
+        self.assertNotIn("SUPERSECRETTOKEN", handler.run_details)
+        self.assertIn("siem", handler.run_details)
+
+    @responses.activate
+    def test_14_a_dangling_reference_is_audited(self):
+        _, handler = self._run(self._make_options(
+            self._make_g(), {"webhook": "does-not-exist", "data": "x"}))
+
+        self.assertEqual("webhook 'does-not-exist' is not configured", handler.run_details)
+
+    @responses.activate
+    def test_15_the_inline_path_is_audited_too(self):
+        # The pre-3.15 shape. Its URL is part of the handler definition, which the audit entry
+        # already carries in action_detail, so naming it here reveals nothing new.
+        responses.add(responses.POST, self.INLINE_URL, json={"ok": True}, status=200)
+
+        result, handler = self._run(self._make_options(
+            self._make_g(), {"URL": self.INLINE_URL,
+                             "content_type": ContentType.JSON,
+                             "data": '{"a": 1}'}))
+
+        self.assertTrue(result)
+        self.assertEqual(f"{self.INLINE_URL}: HTTP 200", handler.run_details)

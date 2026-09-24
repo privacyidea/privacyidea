@@ -628,6 +628,45 @@ def _resolve_body(config, payload):
     return payload
 
 
+#: Stands in for the part of a webhook URL that must not reach a log line, an audit entry or an
+#: API response.
+REDACTED = "<redacted>"
+
+
+def _redact_url(text, url):
+    """
+    Remove the sensitive part of a webhook's URL from a message about it.
+
+    A transport error quotes the URL it failed on, and ``requests`` splits it across the message:
+    the host appears as ``host='...'`` and the path separately as ``url: /t/SECRET``. Replacing the
+    URL as one string therefore catches neither half, which is why the parts are replaced
+    individually, longest first so a shorter one cannot match inside a replacement already made.
+
+    The **host is deliberately kept**. What an admin embeds in a webhook URL is a token, and a
+    token sits in the path or the query; the host is what makes a delivery failure diagnosable at
+    all, and redacting it would leave "ConnectionError: HTTPSConnectionPool(host='<redacted>')" as
+    the entire record of a broken integration. A host that is itself the secret (a token used as a
+    subdomain) is not covered - the endpoint should carry it in the path.
+
+    :param text: the message to sanitise
+    :param url: the webhook's configured URL
+    :return: the message with the path and query of *url* replaced
+    """
+    if not text or not url:
+        return text
+    try:
+        split = urlsplit(url)
+    except ValueError:
+        # An unparsable URL has no parts to remove individually, so the whole string is.
+        return text.replace(url, REDACTED)
+    query = f"?{split.query}" if split.query else ""
+    parts = {url, f"{split.path}{query}", split.path, query}
+    # "/" is every path's prefix and carries nothing; replacing it would shred the message.
+    for part in sorted((p for p in parts if p and p != "/"), key=len, reverse=True):
+        text = text.replace(part, REDACTED)
+    return text
+
+
 def _truncate(text):
     """Shorten a response body for logging and for the returned result."""
     if text is None:
@@ -921,6 +960,8 @@ def fire_webhook(identifier, payload=None):
         rejection = check_outbound_target(_guard_target(config), mode=mode,
                                           allowlist=allowlist)
         if rejection:
+            # The rejection names the target it judged, so it can carry the URL.
+            rejection = _redact_url(rejection, config["url"])
             log.warning(f"Webhook {identifier!r}: outbound request guard "
                         f"({mode}) rejected the target: {rejection}")
             if mode == GuardMode.ENFORCE:
@@ -1018,11 +1059,15 @@ def fire_webhook(identifier, payload=None):
     except Exception as ex:
         # Deliberately broad: a webhook must never break its caller, so even a
         # programming error in the TLS setup is downgraded to a logged failure.
-        log.warning(f"Webhook {identifier!r} could not be delivered: "
-                    f"{ex.__class__.__name__}: {ex}")
+        #
+        # A transport error quotes the URL it failed on, so the message is redacted before it goes
+        # anywhere: this string is logged, returned to the API, and written to the audit log by the
+        # event handler, while the URL it would otherwise carry may embed a token.
+        message = _redact_url(f"{ex.__class__.__name__}: {ex}", config["url"])
+        log.warning(f"Webhook {identifier!r} could not be delivered: {message}")
         _record_webhook_call(identifier, start, False, error=True)
         return {"success": False, "status_code": None, "response": "",
-                "error": f"{ex.__class__.__name__}: {ex}"}
+                "error": message}
     finally:
         if session is not None:
             session.close()
