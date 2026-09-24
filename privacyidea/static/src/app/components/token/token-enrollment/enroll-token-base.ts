@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { signal, WritableSignal } from "@angular/core";
+import { Signal, signal, WritableSignal } from "@angular/core";
 import {
   EnrollmentResponse,
   TokenApiPayloadMapper,
@@ -43,6 +43,10 @@ export abstract class EnrollTokenBase<T extends TokenEnrollmentData = TokenEnrol
   onEnrollmentResponse?(response: EnrollmentResponse, data: TokenEnrollmentData): Promise<EnrollmentStepResult>;
 
   readonly showEnrollDataInLastStep: boolean = true;
+
+  // Set while the token type cannot be enrolled at all with the admin's rights; the parent disables Enroll and shows
+  // the reason on it.
+  readonly enrollmentBlockedReason: Signal<string | null> = signal(null);
 
   readonly reopenDialog: WritableSignal<ReopenDialogAction | undefined> = signal<ReopenDialogAction | undefined>(
     undefined

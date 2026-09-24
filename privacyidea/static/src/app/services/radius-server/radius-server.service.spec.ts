@@ -33,6 +33,7 @@ describe("RadiusServerService", () => {
   let httpMock: HttpTestingController;
   let notificationServiceMock: MockNotificationService;
   let contentServiceMock: MockContentService;
+  let authService: MockAuthService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -49,6 +50,9 @@ describe("RadiusServerService", () => {
     httpMock = TestBed.inject(HttpTestingController);
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // The servers are only requested by an admin who may read them.
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["radiusserver_read"] });
   });
 
   afterEach(() => {
@@ -258,6 +262,15 @@ describe("RadiusServerService", () => {
       });
       await Promise.resolve();
 
+      expect(service.radiusServers()).toEqual([]);
+    });
+
+    it("should not request the servers without radiusserver_read", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      contentServiceMock.onExternalRadius = signal(true);
+      TestBed.tick();
+
+      httpMock.expectNone(`${environment.proxyUrl}/radiusserver/`);
       expect(service.radiusServers()).toEqual([]);
     });
 

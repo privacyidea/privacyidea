@@ -93,8 +93,7 @@ export class ChallengesService extends FilterableTableService implements Challen
   );
 
   challengesResource = httpResource<PiResponse<Challenges>>(() => {
-    // Only load challenges on the challenges route.
-    if (!this.contentService.onTokensChallenges()) {
+    if (!this.contentService.onTokensChallenges() || !this.authService.actionAllowed("getchallenges")) {
       return undefined;
     }
 
