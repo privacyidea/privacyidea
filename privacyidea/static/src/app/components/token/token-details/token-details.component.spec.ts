@@ -395,6 +395,21 @@ describe("TokenDetailsComponent", () => {
     expect(component["tokenTypeKey"]()).toBe("daypassword" as TokenTypeKey);
   });
 
+  describe("machine card", () => {
+    it("should show the machines of a hotp token with manage_machine_tokens", () => {
+      component.tokenType.set("hotp");
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector("app-token-details-machine")).not.toBeNull();
+    });
+
+    it("should hide the machines of a hotp token without manage_machine_tokens", () => {
+      machineSvc.canListTokenApplications.set(false);
+      component.tokenType.set("hotp");
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector("app-token-details-machine")).toBeNull();
+    });
+  });
+
   describe("testPasskey", () => {
     it("reports success when the credential_id hash matches the current token", async () => {
       const credentialId = "AAA"; // any base64url string

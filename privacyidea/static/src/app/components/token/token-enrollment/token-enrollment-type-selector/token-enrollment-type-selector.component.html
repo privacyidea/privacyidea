@@ -41,14 +41,19 @@
       </mat-select>
     </mat-form-field>
     <div class="enroll-button-container margin-left-auto">
-      <button
-        [disabled]="formInvalid() || !tokenService.selectedTokenType()"
-        class="action-button-primary button-width-m"
-        mat-stroked-button
-        type="submit">
-        <mat-icon>add_moderator</mat-icon>
-        <span i18n="@@common.enrollToken">Enroll Token</span>
-      </button>
+      <!-- A disabled button fires no hover events, so the wrapper carries the tooltip. -->
+      <span
+        [matTooltip]="enrollBlockedReason() ?? ''"
+        [matTooltipDisabled]="!enrollBlockedReason()">
+        <button
+          [disabled]="formInvalid() || !tokenService.selectedTokenType()"
+          class="action-button-primary button-width-m"
+          mat-stroked-button
+          type="submit">
+          <mat-icon>add_moderator</mat-icon>
+          <span i18n="@@common.enrollToken">Enroll Token</span>
+        </button>
+      </span>
       <button
         (click)="reopenDialog.emit()"
         matTooltip="Reopen enrollment dialog"

@@ -103,7 +103,7 @@ export class ApiClientService implements ApiClientServiceInterface {
 
   apiClientResource = httpResource<PiResponse<ApiClient[]>>(() => {
     if (this.authService.isSelfServiceUser()) return undefined;
-    if (!this.contentService.onApiClients()) return undefined;
+    if (!this.contentService.onApiClients() || !this.authService.actionAllowed("api_client_list")) return undefined;
     return {
       url: this.clientsBaseUrl,
       method: "GET",

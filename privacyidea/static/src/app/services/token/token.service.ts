@@ -617,7 +617,16 @@ export class TokenService extends FilterableTableService implements TokenService
 
   readonly detailsUser = this.contentService.detailsUser;
 
+  // GET /token/ requires tokenlist from admins; tokenlist only exists in the admin policy scope, so self-service
+  // users must not be gated on it.
+  private readonly canListTokens = computed<boolean>(
+    () => this.authService.role() !== "admin" || this.authService.actionAllowed("tokenlist")
+  );
+
   tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
+    if (!this.canListTokens()) {
+      return undefined;
+    }
     const filter = this.selectedToken();
     if (!filter || filter.length < 1) {
       return undefined;
@@ -653,7 +662,7 @@ export class TokenService extends FilterableTableService implements TokenService
 
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
     // Only load token details on the token details page.
-    if (!this.contentService.onTokenDetails()) {
+    if (!this.contentService.onTokenDetails() || !this.canListTokens()) {
       return undefined;
     }
 
@@ -693,7 +702,7 @@ export class TokenService extends FilterableTableService implements TokenService
 
   userTokenResource = httpResource<PiResponse<Tokens> | undefined>(() => {
     // Only load user tokens on the user details page.
-    if (!this.contentService.onUserDetails()) {
+    if (!this.contentService.onUserDetails() || !this.canListTokens()) {
       return undefined;
     }
 
@@ -731,9 +740,7 @@ export class TokenService extends FilterableTableService implements TokenService
   readonly defaultSizeOptions = [5, 10, 25, 50];
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
-    // Do not load tokens if the action is not allowed. tokenlist only exists in the admin
-    // policy scope, so self-service users must not be gated on it.
-    if (this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist")) {
+    if (!this.canListTokens()) {
       return undefined;
     }
 
