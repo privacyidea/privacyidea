@@ -61,7 +61,8 @@ from privacyidea.lib.conditional_access.state import (list_locked_users_paginate
                                                               remove_blocklist_entry)
 from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.params import get_optional, get_required, get_required_one_of, get_required_timestamp
+from privacyidea.lib.params import (get_optional, get_required, get_required_one_of,
+                                    get_required_timestamp, MAX_PAGE_SIZE)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import get_policy_visibility_scopes
 from privacyidea.lib.user import User
@@ -116,6 +117,18 @@ def _int_param(value, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _page_size_param(value, default: int) -> int:
+    """
+    Parse a ``page_size``, capped at :data:`~privacyidea.lib.params.MAX_PAGE_SIZE`.
+
+    The cap is the point of paginating at all: without it one request asks the database and the serializer for
+    every row there is, however many that has grown to. The same ceiling
+    :func:`~privacyidea.lib.params.get_pagination_params` applies to the rest of the API, which this listing
+    cannot use directly - it spells the parameter ``page_size`` rather than ``pagesize``.
+    """
+    return min(MAX_PAGE_SIZE, max(1, _int_param(value, default)))
 
 
 def _unlocks_internal_admin(params: dict) -> bool:
@@ -615,7 +628,7 @@ def get_locked_users():
         case_insensitive=is_true(get_optional(params, "case_insensitive")),
         visibility_scopes=visibility_scopes,
         page=_int_param(get_optional(params, "page"), 1),
-        page_size=_int_param(get_optional(params, "page_size"), DEFAULT_PAGE_SIZE),
+        page_size=_page_size_param(get_optional(params, "page_size"), DEFAULT_PAGE_SIZE),
         sort_column=get_optional(params, "sort_column") or "locked_at",
         sort_order=get_optional(params, "sort_order") or "desc")
     g.audit_object.log({"success": True, "info": f"{page['count']} locked user(s)"})

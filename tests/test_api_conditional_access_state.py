@@ -25,9 +25,11 @@ Each endpoint x case has its own test method so a failure names exactly the
 endpoint and case that broke.
 """
 from datetime import timedelta
+from unittest import mock
 
 from werkzeug.test import TestResponse
 
+from privacyidea.lib.params import MAX_PAGE_SIZE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthLogUserRole,
@@ -486,6 +488,15 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
     def test_add_blocklist_entry_rejects_an_invalid_ip(self):
         res = self._request("blocklist", method="POST", json_data={"ip": "not-an-ip"})
         self.assertEqual(400, res.status_code, res.json)
+
+    def test_the_lock_listing_caps_the_page_size(self):
+        # Pagination is what keeps one request from asking the database and the serializer for every row there
+        # is, and the locked-user table grows with exactly the incident a lock policy responds to.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        with mock.patch("privacyidea.api.conditional_access.list_locked_users_paginate") as paginate:
+            paginate.return_value = {"locked_users": [], "count": 0, "current": 1, "prev": None, "next": None}
+            self._request("lock/users", query_string={"page_size": "100000000"})
+        self.assertEqual(MAX_PAGE_SIZE, paginate.call_args.kwargs["page_size"])
 
     def test_a_target_scoped_permission_does_not_reach_the_blocklist(self):
         # A blocklist entry is a source IP and carries none of the three terms an admin policy scopes a target
