@@ -55,50 +55,57 @@
 
     <div class="webhook-dialog-content">
       <div class="webhook-form">
-        <mat-form-field
-          appearance="fill"
-          class="input-width-l margin-bottom-16">
-          <mat-label i18n="@@common.identifier">Identifier</mat-label>
-          <app-clearable-input
-            (clearButtonClick)="webhookModel.update((m) => ({ ...m, identifier: '' }))"
-            [showClearButton]="!isEditMode() && !!webhookModel().identifier">
-            <input
-              [formField]="webhookForm.identifier"
-              matInput
-              placeholder="siem" />
-          </app-clearable-input>
-          <mat-hint
-            i18n="@@webhook.uniqueIdentifying">The unique name event handlers and conditional access policies refer to.
-          </mat-hint>
-          @if (webhookForm
-            .identifier()
-            .errors()
-            .some((e) => e.kind === "required")) {
-            <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong></mat-error>
-          }
-          @if (webhookForm
-            .identifier()
-            .errors()
-            .some((e) => e.kind === "pattern")) {
-            <mat-error
-              i18n="@@common.identifierContains">Identifier contains <strong>invalid characters</strong>. Only
-                                                 alphanumeric characters, dots, underscores and hyphens are allowed.
-            </mat-error>
-          }
-        </mat-form-field>
+        <!-- Both fields are input-width-l, and two of those fit the form width, so mat-form-field's
+          inline-block flow puts them side by side on its own - touching, because inline flow has no
+          gap. The row makes that layout deliberate and spaces it like every other pair here. -->
+        <div class="flex-row gap-16 margin-bottom-32">
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l"
+            subscriptSizing="dynamic">
+            <mat-label i18n="@@common.identifier">Identifier</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="webhookModel.update((m) => ({ ...m, identifier: '' }))"
+              [showClearButton]="!isEditMode() && !!webhookModel().identifier">
+              <input
+                [formField]="webhookForm.identifier"
+                matInput
+                placeholder="siem" />
+            </app-clearable-input>
+            <mat-hint
+              i18n="@@webhook.uniqueIdentifying">The name event handlers and conditional access policies use.
+            </mat-hint>
+            @if (webhookForm
+              .identifier()
+              .errors()
+              .some((e) => e.kind === "required")) {
+              <mat-error i18n="@@common.identifierRequired">Identifier is <strong>required</strong></mat-error>
+            }
+            @if (webhookForm
+              .identifier()
+              .errors()
+              .some((e) => e.kind === "pattern")) {
+              <mat-error
+                i18n="@@common.identifierContains">Identifier contains <strong>invalid characters</strong>. Only
+                                                   alphanumeric characters, dots, underscores and hyphens are allowed.
+              </mat-error>
+            }
+          </mat-form-field>
 
-        <mat-form-field
-          appearance="fill"
-          class="input-width-l margin-bottom-32">
-          <mat-label i18n="@@common.description">Description</mat-label>
-          <app-clearable-input
-            (clearButtonClick)="webhookModel.update((m) => ({ ...m, description: '' }))"
-            [showClearButton]="!!webhookModel().description">
-            <input
-              [formField]="webhookForm.description"
-              matInput />
-          </app-clearable-input>
-        </mat-form-field>
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l"
+            subscriptSizing="dynamic">
+            <mat-label i18n="@@common.description">Description</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="webhookModel.update((m) => ({ ...m, description: '' }))"
+              [showClearButton]="!!webhookModel().description">
+              <input
+                [formField]="webhookForm.description"
+                matInput />
+            </app-clearable-input>
+          </mat-form-field>
+        </div>
 
         <mat-divider />
 
@@ -109,6 +116,7 @@
 
         <mat-form-field
           appearance="fill"
+          subscriptSizing="dynamic"
           class="input-width-l margin-bottom-16">
           <mat-label i18n="@@webhook.url">URL</mat-label>
           <app-clearable-input
@@ -139,6 +147,7 @@
         <div class="flex-row gap-16 margin-bottom-16">
           <mat-form-field
             appearance="fill"
+            subscriptSizing="dynamic"
             class="input-width-s">
             <mat-label i18n="@@webhook.httpMethod">Method</mat-label>
             <mat-select [formField]="webhookForm.http_method">
@@ -150,13 +159,14 @@
 
           <mat-form-field
             appearance="fill"
-            class="input-width-s">
+            class="input-width-m"
+            subscriptSizing="dynamic">
             <mat-label i18n="@@webhook.timeout">Timeout (seconds)</mat-label>
             <input
               [formField]="webhookForm.timeout"
               matInput
               type="number" />
-            <mat-hint i18n="@@webhook.timeoutHint">Delivery is synchronous, so this bounds the wait.</mat-hint>
+            <mat-hint i18n="@@webhook.timeoutHint">Synchronous delivery; bounds the wait.</mat-hint>
             @if (webhookForm
               .timeout()
               .errors()
@@ -166,30 +176,37 @@
           </mat-form-field>
         </div>
 
-        <mat-form-field
-          appearance="fill"
-          class="input-width-l margin-bottom-16">
-          <mat-label i18n="@@webhook.contentType">Content type</mat-label>
-          <app-clearable-input
-            (clearButtonClick)="webhookModel.update((m) => ({ ...m, content_type: '' }))"
-            [showClearButton]="!!webhookModel().content_type">
-            <input
-              [attr.list]="'webhook-content-types'"
-              [formField]="webhookForm.content_type"
-              matInput
-              placeholder="application/json" />
-          </app-clearable-input>
-          <datalist id="webhook-content-types">
-            @for (type of contentTypes; track type) {
-              <option [value]="type"></option>
-            }
-          </datalist>
-          <mat-hint i18n="@@webhook.contentTypeHint">Any valid MIME type; a JSON body is dumped as JSON.</mat-hint>
-        </mat-form-field>
+        <!-- A row of its own: without it the payload below flows up beside the content type, since
+          both are inline-block and two input-width-l fields fit the form width. -->
+        <div class="flex-row gap-16 margin-bottom-16">
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l"
+            subscriptSizing="dynamic">
+            <mat-label i18n="@@webhook.contentType">Content type</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="webhookModel.update((m) => ({ ...m, content_type: '' }))"
+              [showClearButton]="!!webhookModel().content_type">
+              <input
+                [attr.list]="'webhook-content-types'"
+                [formField]="webhookForm.content_type"
+                matInput
+                placeholder="application/json" />
+            </app-clearable-input>
+            <datalist id="webhook-content-types">
+              @for (type of contentTypes; track type) {
+                <option [value]="type"></option>
+              }
+            </datalist>
+            <mat-hint i18n="@@webhook.contentTypeHint">Any valid MIME type; a JSON body is dumped as JSON.</mat-hint>
+          </mat-form-field>
+        </div>
 
+        <!-- The payload is a template, so it gets the full form width and a line to itself. -->
         <mat-form-field
           appearance="fill"
-          class="input-width-l margin-bottom-16">
+          class="input-width-xl margin-bottom-16"
+          subscriptSizing="dynamic">
           <mat-label i18n="@@webhook.defaultPayload">Default payload</mat-label>
           <textarea
             [formField]="webhookForm.default_payload"
@@ -209,6 +226,7 @@
 
         <mat-form-field
           appearance="fill"
+          subscriptSizing="dynamic"
           class="input-width-l margin-bottom-16">
           <mat-label i18n="@@webhook.authType">Authentication</mat-label>
           <mat-select [formField]="webhookForm.auth_type">
@@ -222,6 +240,7 @@
           <div class="flex-row gap-16 margin-bottom-16">
             <mat-form-field
               appearance="fill"
+              subscriptSizing="dynamic"
               class="input-width-l">
               <mat-label i18n="@@common.username">Username</mat-label>
               <app-clearable-input
@@ -241,15 +260,14 @@
 
             <mat-form-field
               appearance="fill"
+              subscriptSizing="dynamic"
               class="input-width-l">
               <mat-label i18n="@@common.password">Password</mat-label>
               <input
                 [formField]="webhookForm.password"
                 matInput
                 type="password" />
-              <mat-hint
-                i18n="@@webhook.secretKept">Leave the placeholder to keep the stored secret; clear it to remove it.
-              </mat-hint>
+              <mat-hint i18n="@@webhook.secretKept">Placeholder keeps the stored secret; empty clears it.</mat-hint>
             </mat-form-field>
           </div>
         }
@@ -266,6 +284,7 @@
           <div class="flex-row gap-16 margin-bottom-16">
             <mat-form-field
               appearance="fill"
+              subscriptSizing="dynamic"
               class="input-width-l">
               <mat-label i18n="@@webhook.clientCertificate">Client certificate</mat-label>
               <app-clearable-input
@@ -281,6 +300,7 @@
 
             <mat-form-field
               appearance="fill"
+              subscriptSizing="dynamic"
               class="input-width-l">
               <mat-label i18n="@@webhook.clientKey">Client key</mat-label>
               <app-clearable-input
@@ -295,15 +315,14 @@
 
             <mat-form-field
               appearance="fill"
+              subscriptSizing="dynamic"
               class="input-width-l">
               <mat-label i18n="@@webhook.clientKeyPassword">Client key password</mat-label>
               <input
                 [formField]="webhookForm.client_key_password"
                 matInput
                 type="password" />
-              <mat-hint
-                i18n="@@webhook.secretKept">Leave the placeholder to keep the stored secret; clear it to remove it.
-              </mat-hint>
+              <mat-hint i18n="@@webhook.secretKept">Placeholder keeps the stored secret; empty clears it.</mat-hint>
             </mat-form-field>
           </div>
         }
@@ -319,6 +338,7 @@
           <div class="header-row margin-bottom-16">
             <mat-form-field
               appearance="fill"
+              subscriptSizing="dynamic"
               class="input-width-l">
               <mat-label i18n="@@webhook.headerName">Name</mat-label>
               <input
@@ -329,6 +349,7 @@
             </mat-form-field>
             <mat-form-field
               appearance="fill"
+              subscriptSizing="dynamic"
               class="input-width-l">
               <mat-label i18n="@@webhook.headerValue">Value</mat-label>
               <input
@@ -378,6 +399,7 @@
 
         <mat-form-field
           appearance="fill"
+          subscriptSizing="dynamic"
           class="input-width-l margin-bottom-16">
           <mat-label i18n="@@webhook.caBundle">CA bundle</mat-label>
           <app-clearable-input
@@ -394,6 +416,7 @@
         <div class="flex-row gap-16 margin-bottom-16">
           <mat-form-field
             appearance="fill"
+            subscriptSizing="dynamic"
             class="input-width-l">
             <mat-label i18n="@@webhook.httpProxy">HTTP proxy</mat-label>
             <app-clearable-input
@@ -407,6 +430,7 @@
 
           <mat-form-field
             appearance="fill"
+            subscriptSizing="dynamic"
             class="input-width-l">
             <mat-label i18n="@@webhook.httpsProxy">HTTPS proxy</mat-label>
             <app-clearable-input

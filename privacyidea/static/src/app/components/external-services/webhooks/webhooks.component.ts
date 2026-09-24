@@ -63,24 +63,12 @@ import { Webhook, WebhookService, WebhookServiceInterface } from "@services/webh
   styleUrl: "./webhooks.component.scss"
 })
 export class WebhooksComponent {
-  filterString = signal<string>("");
-  readonly paginator = viewChild(MatPaginator);
-  @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-  displayedColumns: string[] = ["select", "identifier", "url", "http_method", "auth_type", "description"];
   selector = new RowSelector<Webhook>({
     keyGetter: (webhook) => webhook.identifier,
     visibleRows: renderedRows(this.webhookDataSource)
   });
   protected readonly webhookService: WebhookServiceInterface = inject(WebhookService);
   totalLength: WritableSignal<number> = computed(() => this.webhookService.webhooks().length) as WritableSignal<number>;
-  webhookDataSource = computed(() => {
-    const webhooks = this.webhookService.webhooks();
-    const dataSource = new MatTableDataSource(webhooks);
-    dataSource.paginator = this.paginator() ?? null;
-    dataSource.sort = this.sort;
-    return dataSource;
-  });
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly tableState = new TableState({
     resource: this.webhookService.webhookResource,
@@ -89,9 +77,25 @@ export class WebhooksComponent {
     resetFilter: () => this.resetFilter()
   });
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+
+  filterString = signal<string>("");
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  readonly paginator = viewChild(MatPaginator);
+  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
+
+  displayedColumns: string[] = ["select", "identifier", "url", "http_method", "auth_type", "description"];
+
+  webhookDataSource = computed(() => {
+    const webhooks = this.webhookService.webhooks();
+    const dataSource = new MatTableDataSource(webhooks);
+    dataSource.paginator = this.paginator() ?? null;
+    dataSource.sort = this.sort;
+    return dataSource;
+  });
   private readonly router = inject(Router);
 
   onCreateNewWebhook(): void {

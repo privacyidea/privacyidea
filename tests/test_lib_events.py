@@ -4999,6 +4999,50 @@ class WebhookObjectHandlerTestCase(MyTestCase):
         self.assertEqual(posted["serial"], "SPASS01")
 
     @responses.activate
+    def test_05b_a_plain_text_payload_is_replaced_under_a_json_webhook(self):
+        """
+        The payload decides how it is substituted, not only the content type. Substituting a JSON
+        body key by key exists so a tag carrying a quote cannot break the document - a reason that
+        does not apply to a payload which is not a document. Before, json.loads() simply raised and
+        the text was returned untouched, which in the UI is indistinguishable from `replace` being
+        switched off: the admin sees the placeholders arrive verbatim at the endpoint.
+        """
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type="application/json")
+
+        builder = EnvironBuilder(method="POST", data={"serial": "SPASS01"}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": "SPASS01"}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True,
+             "data": "this is the handler {token_serial}, {logged_in_user}"},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual("this is the handler SPASS01, hans", responses.calls[0].request.body)
+
+    @responses.activate
+    def test_05c_a_json_payload_is_still_substituted_key_by_key(self):
+        # The fallback must not cost the document-safe path: a value carrying a quote still has to
+        # be escaped into the JSON rather than pasted into the text.
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, content_type="application/json")
+
+        builder = EnvironBuilder(method="POST", data={"serial": 'SP"01'}, headers={})
+        req = Request(builder.get_environ())
+        req.all_data = {"serial": 'SP"01'}
+
+        opts = self._make_options(
+            self._make_g(),
+            {"webhook": "siem", "replace": True, "data": '{"serial": "{token_serial}"}'},
+            request=req)
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual({"serial": 'SP"01'}, json.loads(responses.calls[0].request.body))
+
+    @responses.activate
     def test_06_tags_are_replaced_as_plain_text(self):
         """A non-JSON webhook substitutes the payload as plain text."""
         responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
@@ -5060,6 +5104,33 @@ class WebhookObjectHandlerTestCase(MyTestCase):
         # supply the endpoint instead.
         self.assertFalse(options["URL"]["required"])
         self.assertFalse(options["content_type"]["required"])
+
+    def test_10b_no_option_of_this_action_is_mandatory(self):
+        """
+        Every option here has a meaningful empty state, so requiring any of them only blocks a
+        valid configuration:
+
+        * `data` empty is what makes the selected webhook's own default_payload apply - the reason
+          the payload lives on the webhook object at all
+        * `replace` off is a plain choice, and the editor counts an untouched checkbox as empty, so
+          a required one cannot be saved until it has been switched on once
+        * `URL` / `content_type` belong to the inline shape, which a selected webhook supersedes
+        * `webhook` is empty for a definition that stays on the inline shape
+        """
+        options = WebHookHandler().actions[WHEH_ACTION_TYPE.POST_WEBHOOK]
+
+        required = sorted(name for name, option in options.items() if option.get("required"))
+        self.assertListEqual([], required)
+
+    @responses.activate
+    def test_10c_an_empty_payload_sends_the_webhooks_own_default(self):
+        responses.add(responses.POST, self.WEBHOOK_URL, json={"ok": True}, status=200)
+        set_webhook("siem", url=self.WEBHOOK_URL, default_payload='{"source": "privacyidea"}')
+
+        opts = self._make_options(self._make_g(), {"webhook": "siem"})
+        self.assertTrue(self._do_webhook(opts))
+
+        self.assertEqual({"source": "privacyidea"}, json.loads(responses.calls[0].request.body))
 
     # --- audit (run_details lands in the audit "info" column, see lib.event) ---
 

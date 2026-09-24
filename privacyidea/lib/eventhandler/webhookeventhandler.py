@@ -115,7 +115,7 @@ class WebHookHandler(BaseEventHandler):
             },
             "replace": {
                 "type": "bool",
-                "required": True,
+                "required": False,
                 "description": _("You can use the following placeholders: "
                                  "{admin}, {realm}, {action}, {serial}, {url}, {user}, {surname}, "
                                  "{givenname}, {username}, {userrealm}, {tokentype}, {tokendescription}, "
@@ -127,8 +127,9 @@ class WebHookHandler(BaseEventHandler):
             },
             "data": {
                 "type": "str",
-                "required": True,
-                "description": _("The data posted in the WebHook")
+                "required": False,
+                "description": _("The body posted to the WebHook. Leave it empty to send the "
+                                 "selected webhook's own default payload.")
             }
         }}
         return actions
@@ -187,30 +188,42 @@ class WebHookHandler(BaseEventHandler):
             # Replace None values with empty strings so .format() doesn't insert 'None'
             tags = {k: (v if v is not None else "") for k, v in tags.items()}
 
-            if content_type == ContentType.JSON:
-                def replace_recursive(val):
-                    if isinstance(val, dict):
-                        return {
-                            k.format(**tags): replace_recursive(v)
-                            for k, v in val.items()
-                        }
-                    elif isinstance(val, list):
-                        return [replace_recursive(item) for item in val]
-                    elif isinstance(val, str):
-                        return val.format(**tags)
-                    else:
-                        # numbers, booleans, None – pass through unchanged
-                        return val
+            def replace_recursive(val):
+                if isinstance(val, dict):
+                    return {
+                        k.format(**tags): replace_recursive(v)
+                        for k, v in val.items()
+                    }
+                elif isinstance(val, list):
+                    return [replace_recursive(item) for item in val]
+                elif isinstance(val, str):
+                    return val.format(**tags)
+                else:
+                    # numbers, booleans, None – pass through unchanged
+                    return val
 
-                new_json = replace_recursive(json.loads(webhook_text))
-                webhook_text = json.dumps(new_json)
+            document = None
+            if content_type == ContentType.JSON:
+                try:
+                    document = json.loads(webhook_text)
+                except (ValueError, TypeError) as err:
+                    # Declared as JSON, but not a JSON document. Substituting key by key exists so
+                    # that a tag carrying a quote cannot break the document -- a reason that does
+                    # not apply to a payload which is not one. So it is substituted as plain text
+                    # rather than returned untouched: untouched is what this did before, and in the
+                    # UI it is indistinguishable from replacement being switched off.
+                    log.info(f"The payload is not valid JSON ({err}); substituting it as plain "
+                             f"text instead.")
+
+            if isinstance(document, (dict, list)):
+                webhook_text = json.dumps(replace_recursive(document))
             else:
-                # Content Type URLENCODED, simple format
+                # Plain text: a urlencoded body, or a JSON-typed payload that is not a document.
                 webhook_text = webhook_text.format(**tags)
         except (KeyError, AttributeError, IndexError) as err:
             log.warning(f"Unable to replace placeholder: ({err})! Please check the webhooks data option.")
         except (ValueError, TypeError) as err:
-            log.warning(f"Unable to parse JSON string '{webhook_text}': {err}")
+            log.warning(f"Unable to substitute the payload: {err}")
 
         return webhook_text
 

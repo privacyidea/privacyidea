@@ -857,6 +857,10 @@ reference, inline path).
   blocked ranges and the allowlist syntax. They appear nowhere outside `lib/webhook.py` and its tests today, and
   an opt-in security control nobody is told about is off everywhere. **8.2 stays open until this lands.**
 
+### ToDo:
+
+- [ ]Add new policy to templates (superuser, admin, etc.) and document it in `doc/policies/admin.rst`
+
 ---
 
 ## Open Questions (to decide before / during implementation)
