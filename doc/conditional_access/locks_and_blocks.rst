@@ -164,13 +164,13 @@ identified differently, though, and it shows in a few places:
   to be theirs.
 
   .. warning:: That is the only part the exemption settles. The **count** is
-     still shared: the administrator's own failed passwords are counted against
-     the user, the request being a user's as soon as the administrator password
-     does not match, so anybody who can reach the login screen can lock that user
-     out under the administrator's name. Which account a bare name means is
-     unknown until a credential matches, and nothing in the request decides it.
-     **Give the local administrator a login name no realm will ever hold** - that
-     is what makes this section mean what it says.
+     still shared: failed logins under the bare name are counted against the
+     user, the request being a user's as soon as the administrator password does
+     not match, so the user can end up locked by logins meant for the
+     administrator. Which account a bare name means is unknown until a credential
+     matches, and nothing in the request decides it. **Give the local
+     administrator a login name no realm will ever hold** - that is what makes
+     this section mean what it says.
 
 Since a lock applies to them like anyone else, a policy can lock out the account
 you would use to undo it. Two things guard against that: a timed lock lifts

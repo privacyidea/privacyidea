@@ -1004,6 +1004,15 @@ def _effective_window_seconds(policy: ConditionalAccessPolicy, window_end: datet
     window_seconds = policy.time_window_seconds
     if policy.enforced_since is not None:
         elapsed = (window_end - policy.enforced_since).total_seconds()
+        if elapsed < 0:
+            # An empty window counts nothing, so every stage of this policy stays below its threshold and the
+            # policy enforces nothing until the clock passes its floor. The arithmetic is right and the outcome
+            # is not what the administrator configured, and the only way it arises is a clock that went backwards
+            # or a node whose clock disagrees with the one that wrote the floor - neither of which announces
+            # itself anywhere else.
+            log.warning(f"Policy {policy.name!r} is enforced from {policy.enforced_since}, which is in the future "
+                        f"relative to this node's clock ({window_end}): it counts nothing and so enforces nothing "
+                        f"until the clock passes that point. Check the clocks of the nodes writing this table.")
         window_seconds = max(0.0, min(window_seconds, elapsed))
     return window_seconds
 
@@ -2134,11 +2143,10 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
     # report; evaluate_conditional_access_policies then checks it against the restriction actually in force, which
     # decides whether the outcomes claiming it are recorded at all.
     #
-    # A write *declined as weakening* wrote nothing either, and its target still belongs here: only a stronger
-    # restriction in force declines one, and that one was written either by an earlier action here or by another
-    # policy in this same evaluation. (It cannot have been in force beforehand: the pre-check would have refused
-    # the request, and a refused request is never evaluated.) So a row a later request will be refused by does
-    # stand on that target, and the outcome describing the declined write is a thing that happened.
+    # A write *declined as weakening* is left out, and consistently so: record() runs only where the upsert
+    # reports it wrote (``write.succeeded and not declined``), so a declined action records no outcome either,
+    # and there is nothing about that target left to verify. A restriction does stand on it - only a stronger one
+    # in force declines a write - but it is the write that put it there that is listed here, not this one.
     enforced: set[ConditionalAccessTarget] = set()
 
     user = context.user

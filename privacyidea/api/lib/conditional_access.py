@@ -211,10 +211,10 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
             #
             # Only while this admin is a principal some policy can lock, though. An operator who excluded them -
             # a USER_ROLE condition is how a local admin is kept out of a user-target policy - has said this
-            # account is not to be locked, and a namesake's row must not lock it by the back door: it is the
-            # account an operator recovers a locked-out deployment with, and the name it carries is often one
-            # a directory holds a user of as well. The row is looked for first because it is almost never there,
-            # and the applicability question costs a scan of every policy.
+            # account is not to be locked, and a row written for somebody who merely shares the name does not
+            # change that: it is the account an operator recovers a locked-out deployment with, and the name it
+            # carries is often one a directory holds a user of as well. The row is looked for first because it is
+            # almost never there, and the applicability question costs a scan of every policy.
             namesake_lock = get_user_lock_by_login(principal.username, clear_expired=True)
             if namesake_lock is not None and can_be_locked(ca_context):
                 user_lock = namesake_lock
