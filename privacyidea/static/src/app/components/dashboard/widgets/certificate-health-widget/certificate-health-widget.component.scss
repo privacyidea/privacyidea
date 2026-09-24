@@ -28,8 +28,21 @@
 .table-container {
   box-sizing: border-box;
   overflow: auto;
-  height: 100%;
+  // Takes the height the "checked at" line below it leaves, rather than the whole of it: min-height lets a flex item
+  // be shorter than its content, which is what makes the table scroll instead of pushing the line out of the widget.
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
+}
+
+// Under the table rather than in a row of its own: it is context for the dates above it, and the widget is four rows
+// tall at its smallest.
+.checked-at {
+  flex: none;
+  margin: 0;
+  padding: 4px 16px 8px;
+  font-size: 12px;
+  opacity: 0.7;
 }
 
 .cert-health-table {

@@ -33,12 +33,12 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   ACTIVITY_RANGES,
   ActivityRange,
-  activityRangeById,
   ALL_RANGE_ID,
   bucketsAreCalendarDays,
   DEFAULT_ACTIVITY_RANGE,
   inclusiveBucketEnd
 } from "@components/dashboard/widgets/activity-range";
+import { WidgetRangeSetting } from "@components/dashboard/widgets/widget-range-setting";
 import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import {
   AuthenticationEventSeries,
@@ -127,7 +127,12 @@ challenge-response login count once, classified by how the attempt ended.`;
   private readonly store = inject(DashboardDataStore);
   private readonly router = inject(Router);
 
-  readonly selectedRange = signal<ActivityRange>(DEFAULT_ACTIVITY_RANGE);
+  private readonly rangeSetting = new WidgetRangeSetting<ActivityRange>(
+    this.instance,
+    ACTIVITY_RANGES,
+    DEFAULT_ACTIVITY_RANGE
+  );
+  readonly selectedRange = this.rangeSetting.selected.asReadonly();
 
   private readonly dataRef = signal<DashboardDataRef<PiResponse<AuthenticationLogStatistics>> | null>(null);
   // The store key currently in use, so the previous range's entry can be dropped when the range changes.
@@ -321,10 +326,7 @@ challenge-response login count once, classified by how the attempt ended.`;
   }
 
   selectRange(id: string): void {
-    const range = activityRangeById(id);
-    if (range) {
-      this.selectedRange.set(range);
-    }
+    this.rangeSetting.select(id);
   }
 
   // The thumbs keep one bucket between them rather than being allowed to meet. A closed brush would select nothing:

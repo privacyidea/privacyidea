@@ -470,6 +470,13 @@ def get_certificate_status(refresh: bool = False) -> list:
     results.extend(_check_entraid_client_certs())
     results.extend(_server_cert_entries())
 
+    # Stamped before caching rather than on the way out, so a reader is told when the endpoints were probed and not
+    # when the cached answer was handed over. The whole list is probed together, so one stamp answers for all of it,
+    # and it is the same moment the TTL is counted from.
+    checked_at = now.isoformat()
+    for entry in results:
+        entry["checked_at"] = checked_at
+
     with _CACHE_LOCK:
         _CACHE[cache_key] = (now, results)
     if client is not None:
