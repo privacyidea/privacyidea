@@ -133,6 +133,15 @@ describe("DashboardLayoutService", () => {
       expect(service.hasWidgetOfType("policies")).toBe(true);
     });
 
+    it("should keep only the first of two stored widgets that overlap each other", () => {
+      build([
+        { id: "policies-1", type: "policies", x: 0, y: 0, cols: 10, rows: 5 },
+        { id: "tokens-1", type: "tokens", x: 2, y: 2, cols: 6, rows: 4 }
+      ]);
+      expect(service.hasWidgetOfType("policies")).toBe(true);
+      expect(service.hasWidgetOfType("tokens")).toBe(false);
+    });
+
     it("should start in view mode", () => {
       build();
       expect(service.editMode()).toBe(false);
