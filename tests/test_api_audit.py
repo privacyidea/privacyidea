@@ -667,3 +667,18 @@ class APIAuditTestCase(MyApiTestCase):
             for name in ("audit_realms", "audit_every_realm", "audit_one_user"):
                 with suppress(ResourceNotFoundError):
                     delete_policy(name)
+
+    def test_09_search_by_day_matches_that_day_only(self):
+        Audit.query.delete()
+        for day, hour in ((24, 23), (25, 0), (25, 23), (26, 0)):
+            Audit(action="enroll", success=1, date=datetime(2026, 9, day, hour, 30)).save()
+
+        for day, expected in (("2026-09-25", ["2026-09-25", "2026-09-25"]),):
+            with self.app.test_request_context('/audit/',
+                                               method='GET',
+                                               query_string={"action": "enroll", "date": f"*{day}*"},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                value = res.json.get("result").get("value")
+                self.assertEqual(expected, sorted(entry.get("date")[:10] for entry in value.get("auditdata")), day)
