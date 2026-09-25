@@ -40,6 +40,9 @@ if [[ $(id -u) != 0 ]]; then
 	exit 1
 fi
 
+# The diagnostics file contains configuration and logs, only root may read it
+umask 077
+
 PICFG="/etc/privacyidea/pi.cfg"
 
 if [ "$#" -gt 0 ]; then
@@ -91,14 +94,126 @@ get_os() {
 	cat /etc/*-release >> "$tempfile"
 }
 
+pi_python() {
+	# The interpreter of pi-manage has the Python version privacyIDEA needs
+	local pi_manage interpreter
+	pi_manage=$(command -v pi-manage) && interpreter=$(head -n 1 "$pi_manage" | sed -e 's/^#!//')
+	case "$interpreter" in
+		*python*) echo "$interpreter" ;;
+		*) echo python3 ;;
+	esac
+}
+
+censor_pi_cfg() {
+	# Print the statements of the pi.cfg file given as first argument without comments.
+	# Assignments to names that look like secrets are censored. Of URIs and URLs only the
+	# scheme is kept, so we see if e.g. pymysql, mysql or any other dialect is used.
+	# shellcheck disable=SC2046
+	$(pi_python) - "$1" <<'EOF'
+import ast
+import re
+import sys
+from typing import Optional
+
+SECRET_NAME = re.compile(r"SECRET|PASSWORD|PASSWD|PEPPER|CREDENTIAL|_KEY$|_URI$|_URL$|_OPTIONS$|EXTRA_PARAMS$")
+URL_NAME = re.compile(r"_URI$|_URL$")
+URL_SCHEME = re.compile(r"^([A-Za-z][A-Za-z0-9+.-]*):")
+PUBLIC_NAMES = {"PI_BASE_URL"}
+
+
+def is_secret(name: str) -> bool:
+    return name not in PUBLIC_NAMES and bool(SECRET_NAME.search(name))
+
+
+def assigned_names(statement: ast.stmt) -> list:
+    return [node.id for node in ast.walk(statement) if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)]
+
+
+def url_scheme(value: ast.expr) -> Optional[str]:
+    for node in ast.walk(value):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            scheme_match = URL_SCHEME.match(node.value)
+            return scheme_match.group(1) if scheme_match else None
+    return None
+
+
+def censor_statement(statement: ast.stmt, source: str) -> str:
+    names = assigned_names(statement)
+    if not any(is_secret(name) for name in names):
+        return ast.get_source_segment(source, statement)
+    if isinstance(statement, ast.Assign) and len(names) == 1 and URL_NAME.search(names[0]):
+        scheme = url_scheme(statement.value)
+        if scheme:
+            return f"{names[0]} = '{scheme}:<censored>'"
+    return "\n".join(f"{name} = <censored>" for name in names)
+
+
+def main(config_file_name: str) -> None:
+    with open(config_file_name) as config_file:
+        source = config_file.read()
+    try:
+        module = ast.parse(source)
+    except SyntaxError:
+        print(f"{config_file_name} could not be parsed and is not included.")
+        return
+    for statement in module.body:
+        print(censor_statement(statement, source))
+
+
+main(sys.argv[1])
+EOF
+}
+
+censor_json() {
+	# Read a configuration export from stdin and replace the string values of keys that look like
+	# secrets. JSON objects inside string values, e.g. HTTP headers, are censored as well.
+	local program
+	program=$(cat <<'EOF'
+import json
+import re
+import sys
+from typing import Any
+
+SECRET_KEY = re.compile(r"secret|passw|bindpw|authorization|credential|(^|[-_ ])token$|api[-_]?key|private[-_]?key",
+                        re.IGNORECASE)
+CENSORED = "__CENSORED__"
+
+
+def censor(value: Any, secret: bool = False) -> Any:
+    if isinstance(value, dict):
+        return {key: censor(item, bool(SECRET_KEY.search(str(key)))) for key, item in value.items()}
+    if isinstance(value, list):
+        return [censor(item, secret) for item in value]
+    if isinstance(value, str) and value:
+        if secret:
+            return CENSORED
+        if value.lstrip().startswith("{"):
+            try:
+                nested_value = json.loads(value)
+            except ValueError:
+                return value
+            if isinstance(nested_value, dict):
+                return json.dumps(censor(nested_value))
+    return value
+
+
+try:
+    exported = json.load(sys.stdin)
+except ValueError:
+    print("The export could not be parsed and is not included.")
+else:
+    print(json.dumps(censor(exported), indent=2))
+EOF
+)
+	# shellcheck disable=SC2046
+	$(pi_python) -c "$program"
+}
+
 get_pi_cfg() {
 	log_pi_config
-	log_pi_config "SECTION: pi.cfg file"
-	log_pi_config "===================="
-	grep -v -e 'SECRET_KEY\|PI_PEPPER\|SQLALCHEMY_DATABASE_URI' "$PICFG" >> "$pi_config"
-	# only write the driver part of the URI to the logfile.
-	# So we see if eg. pymysql, mysql or any other dialect is used.
-	grep ^SQLALCHEMY_DATABASE_URI "$PICFG" | cut -d':' -f 1 >> "$pi_config"
+	log_pi_config "SECTION: pi.cfg file (without comments, secrets censored)"
+	log_pi_config "========================================================="
+	censor_pi_cfg "$PICFG" >> "$pi_config"
 }
 
 current_db_revision() {
@@ -139,21 +254,22 @@ pi_config() {
 	log_pi_config "=================================="
 	log_pi_config "Resolvers"
 	log_pi_config "---------"
-	call_pi_manage config resolver list -v >> "$pi_config"
+	call_pi_manage config export -t resolver -f json --censor | censor_json >> "$pi_config"
 	log_pi_config "Realms"
 	log_pi_config "------"
 	call_pi_manage config realm list >> "$pi_config"
 	log_pi_config "Events"
 	log_pi_config "------"
-	call_pi_manage config export -t event -f json >> "$pi_config"
+	call_pi_manage config export -t event -f json | censor_json >> "$pi_config"
 	log_pi_config "Policies"
 	log_pi_config "--------"
-	call_pi_manage config export -t policy -f json >> "$pi_config"
+	call_pi_manage config export -t policy -f json | censor_json >> "$pi_config"
 }
 
 server_config() {
 	# Extract configurations for smtp, privacyIDEA and RADIUS server
-	server_config=$(call_pi_manage config export -t smtpserver -t privacyideaserver -t radiusserver -f json)
+	server_config=$(call_pi_manage config export -t smtpserver -t privacyideaserver -t radiusserver -f json --censor |
+		censor_json)
 
 	log_pi_config
 	log_pi_config "SECTION: SMTP|privacyIDEA|RADIUS Server Configuration"
@@ -282,5 +398,6 @@ pi_logfile
 pi_auditlog
 
 tar -zcf "$diag_file" -C /tmp "$(basename "$diag_info")"
+rm -rf "$diag_info"
 
 upload_info

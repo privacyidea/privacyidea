@@ -55,7 +55,7 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
     """
     Clean the SQL audit log.
 
-    You can either clean the audit log based on the number of entries of
+    You can either clean the audit log based on the number of entries or
     based on the age of the entries.
 
     Cleaning based on number of entries:
@@ -192,9 +192,9 @@ def _validate_timelimit(_ctx, _param, value):
 @audit_cli.command("dump")
 @click.option('-t', '--timelimit', callback=_validate_timelimit,
               help="Limit the dumped audit entries to a certain period "
-                   "(i.e. '5d' or '3h' for the entries from the last five days "
-                   "or three hours. By default all audit entries will be dumped.")
-@click.option('-f', '--filename', type=click.File('w'), default=sys.stdout,
+                   "(e.g. '5d' or '3h' for the entries from the last five days "
+                   "or three hours). By default all audit entries will be dumped.")
+@click.option('-f', '--filename', type=click.File('w'), default=sys.stdout, show_default=False,
               help="Name of the file to dump the audit entries into. "
                    "By default write to stdout.")
 def dump_audit(filename, timelimit):

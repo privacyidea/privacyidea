@@ -3,15 +3,16 @@
 #             init
 
 __doc__ = """
-You can use this script to update counter values of tokens in the privacyIDEA
-database. This is helpful after database migrations. Counters in the old
-instance may have been updated, since users still authenticate against this
-old instance. You would simply fetch these updated counters and use this
-script to update them in the new privacyIDEA database.
+You can use this script to update counter values of tokens in a LinOTP
+database, e.g. while LinOTP and privacyIDEA run side by side during a migration.
+The file given with -c needs a SQLALCHEMY_DATABASE_URI line that points to the
+LinOTP database.
 
 You can update counters like
 
-privacyidea-export-linotp-counter.py -c MIGRATION/linotp.ini  | ./tools/privacyidea-update-counter.py -c /etc/privacyidea/pi.cfg -i -
+privacyidea-update-linotp-counter.py -c linotp.cfg -i counters.csv
+
+The file contains one serial and counter per line, separated by a comma.
 """
 from sqlalchemy.orm import sessionmaker
 
@@ -81,7 +82,7 @@ def read_counter_file(import_file):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("-c", "--config", help="privacyIDEA config file. We only need the SQLALCHEMY_DATABASE_URI.",
+    parser.add_argument("-c", "--config", help="Config file with the SQLALCHEMY_DATABASE_URI of the LinOTP database.",
                         required=True)
     parser.add_argument('file', help='The CSV file with the updated counters. The file should contain one serial and '
                                      'counter per line split by a comma. You can specify "-" to read from stdin.',

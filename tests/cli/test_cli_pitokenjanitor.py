@@ -17,21 +17,25 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <https://www.gnu.org/licenses/>.
 import datetime
+import json
+import re
 
 import pytest
+import yaml
+from cryptography.fernet import Fernet
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.cli.pitokenjanitor.main import cli, findcontainer
-from privacyidea.lib.container import find_container_by_serial, init_container, create_container_template, \
-    ResourceNotFoundError
-from privacyidea.lib.containers.container_info import TokenContainerInfoData
+from privacyidea.lib.container import (find_container_by_serial, init_container, create_container_template,
+                                       ResourceNotFoundError, get_all_containers)
+from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.realm import set_realm, get_realms
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token, get_one_token
 from privacyidea.lib.user import User
-from privacyidea.models import db
+from privacyidea.models import db, TokenContainerOwner
 from privacyidea.models.token import TokenOwner
 from ..base import _reset_database
 
@@ -498,6 +502,32 @@ class TestPiTokenJanitorFind:
         assert "ERROR0001" in result.output
         assert "ORPHAN0001" not in result.output
 
+    def test_find_boolean_options(self, app, tokens, orphaned_token):
+        """
+        Tests that --orphaned, --active and --assigned accept the usual spellings of true and false, and reject
+        any other value instead of taking it as false.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "--orphaned", "yes", "list"])
+        assert result.exit_code == 0, result.output
+        assert "ORPHAN0001" in result.output
+        assert "HOTP0001" not in result.output
+
+        result = runner.invoke(cli, ["find", "--active", "no", "list"])
+        assert result.exit_code == 0, result.output
+        assert "TOTP0001" in result.output
+        assert "HOTP0001" not in result.output
+
+        result = runner.invoke(cli, ["find", "--assigned", "0", "list"])
+        assert result.exit_code == 0, result.output
+        assert "HOTP0002" in result.output
+        assert "HOTP0001" not in result.output
+
+        for option in ("--orphaned", "--active", "--assigned"):
+            result = runner.invoke(cli, ["find", option, "maybe", "list"])
+            assert result.exit_code == 2, result.output
+            assert "Invalid value" in result.output
+
 
 class TestPiTokenJanitorActions:
     def test_list_token_attributes(self, app, tokens):
@@ -692,6 +722,109 @@ class TestPiTokenJanitorActions:
         assert result.exit_code == 0
         assert "Successfully exported 3 tokens." in result.output
         assert "The key to import the tokens is:" in result.output
+
+    def test_export_pi_format_to_stdout_can_be_imported(self, app, tokens, tmp_path):
+        """
+        Tests that an export in the 'pi' format to stdout contains nothing but the export, so that the redirected
+        output can be imported. The key, the messages and the question whether to save the key go to stderr.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "export"], input='n\n')
+        assert result.exit_code == 0, result.output
+        assert "Successfully exported 3 tokens." in result.stderr
+        assert "Do you want to save the key to a file?" in result.stderr
+        key = re.search(r"The key to import the tokens is:\s+(\S+)", result.stderr).group(1)
+        exported_tokens = json.loads(Fernet(key).decrypt(result.stdout.strip()))
+        assert sorted(token["serial"] for token in exported_tokens) == ["HOTP0001", "HOTP0002", "TOTP0001"]
+
+        export_file = tmp_path / "tokens.pi"
+        export_file.write_text(result.stdout)
+        result = runner.invoke(cli, ["import", "privacyidea", str(export_file), "--key", key])
+        assert result.exit_code == 0, result.output
+        assert "3 tokens updated." in result.output
+
+    def test_export_yaml_format(self, app, tokens):
+        """
+        Tests exporting tokens in the 'yaml' format with their OTP key and owner.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "export", "--format", "yaml"])
+        assert result.exit_code == 0, result.output
+        exported_tokens = {token["serial"]: token for token in yaml.safe_load(result.stdout)}
+        assert sorted(exported_tokens) == ["HOTP0001", "HOTP0002", "TOTP0001"]
+        assert exported_tokens["HOTP0001"]["owner"] == "cornelius@realm1"
+        assert exported_tokens["HOTP0002"]["owner"] == "n/a"
+        otp_key = get_one_token(serial="HOTP0001").token.get_otpkey().getKey().decode()
+        assert exported_tokens["HOTP0001"]["otpkey"] == otp_key
+        assert exported_tokens["HOTP0001"]["info_list"]["info1"] == "value1"
+
+    def test_update_keeps_the_counters(self, app, tokens, tmp_path):
+        """
+        Tests that updating tokens from their own YAML export keeps the OTP key, the OTP counter, the fail
+        counter and the token kind, so that OTP values which were already used do not become valid again.
+        """
+        token = get_one_token(serial="HOTP0001")
+        otp_key = token.token.get_otpkey().getKey()
+        token.token.count = 50
+        token.save()
+        token.write_tokeninfo("tokenkind", "hardware")
+        export_file = tmp_path / "tokens.yaml"
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "--tokenattribute", "serial=^HOTP0001$", "export", "--format", "yaml",
+                                     "--file", str(export_file)])
+        assert result.exit_code == 0, result.output
+
+        result = runner.invoke(cli, ["update", str(export_file)])
+        assert result.exit_code == 0, result.output
+        assert "Updating token HOTP0001." in result.output
+
+        token = get_one_token(serial="HOTP0001")
+        assert token.token.get_otpkey().getKey() == otp_key
+        assert token.token.count == 50
+        assert token.token.failcount == 5
+        assert token.get_tokeninfo("tokenkind") == "hardware"
+
+    def test_update_counter_of_the_entry_and_entries_without_owner(self, app, tokens, tmp_path):
+        """
+        Tests that an entry without owner and counter keeps the counters of the token, that a higher counter in
+        the entry raises the OTP counter, and that a lower counter does not lower it.
+        """
+        for serial, count in (("HOTP0001", 50), ("HOTP0002", 20), ("TOTP0001", 30)):
+            token = get_one_token(serial=serial)
+            token.token.count = count
+            token.save()
+        entries = []
+        for serial, exported_count in (("HOTP0001", None), ("HOTP0002", 70), ("TOTP0001", 10)):
+            entry = get_one_token(serial=serial)._to_dict()
+            del entry["counter"]
+            if exported_count is not None:
+                entry["counter"] = exported_count
+            entries.append(entry)
+        entries.append({"description": "an entry without serial"})
+        yaml_file = tmp_path / "tokens.yaml"
+        yaml_file.write_text(yaml.safe_dump(entries))
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["update", str(yaml_file)])
+        assert result.exit_code == 0, result.output
+        assert "Skipping an entry without a serial." in result.output
+
+        assert get_one_token(serial="HOTP0001").token.count == 50
+        assert get_one_token(serial="HOTP0001").token.failcount == 5
+        assert get_one_token(serial="HOTP0002").token.count == 70
+        assert get_one_token(serial="TOTP0001").token.count == 30
+        assert get_one_token(serial="TOTP0001").token.failcount == 10
+
+    def test_delete_more_tokens_than_chunksize(self, app, tokens):
+        """
+        Tests that deleting the found tokens chunk by chunk does not skip any token.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "--chunksize", "1", "delete"])
+        assert result.exit_code == 0, result.output
+        for serial in ("HOTP0001", "HOTP0002", "TOTP0001"):
+            assert f"Deleted token {serial}" in result.output
+            assert get_one_token(serial=serial, silent_fail=True) is None
 
 
 class TestPiTokenJanitorContainer:
@@ -943,3 +1076,86 @@ class TestPiTokenJanitorContainer:
         assert "C2" not in result.output
         assert "C3" not in result.output
         assert "C4" not in result.output
+
+    def test_findcontainer_orphaned(self, app, containers):
+        """
+        Tests that a container assigned to a user who no longer exists in the user store is orphaned, while the
+        containers of existing users and the unassigned containers are not.
+        """
+        init_container({"type": "generic", "container_serial": "CORPHAN"})
+        db.session.add(TokenContainerOwner(container_serial="CORPHAN", user_id="999999", resolver="testresolver",
+                                           realm_name="realm1"))
+        db.session.commit()
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["--orphaned", "True", "list"])
+        assert result.exit_code == 0, result.output
+        assert "Serial: CORPHAN," in result.output
+        for serial in ("C1", "C2", "C3", "C4"):
+            assert f"Serial: {serial}," not in result.output
+
+        result = runner.invoke(findcontainer, ["--orphaned", "False", "list"])
+        assert result.exit_code == 0, result.output
+        assert "Serial: CORPHAN," not in result.output
+        for serial in ("C1", "C2", "C3", "C4"):
+            assert f"Serial: {serial}," in result.output
+
+    def test_findcontainer_orphaned_skips_container_on_resolver_error(self, app, containers):
+        """
+        Tests that a container whose user can not be looked up because of an error of the user store is neither
+        listed as orphaned nor as not orphaned, and that this is reported.
+        """
+        save_resolver({
+            "resolver": "httperrorresolver",
+            "type": "httpresolver",
+            "endpoint": "http://localhost:12345/nonexistent",
+            "method": "GET",
+            "requestMapping": '{"id": "{userid}"}',
+            "responseMapping": '{"username": "{data.the_username}"}',
+            "hasSpecialErrorHandler": False,
+        })
+        set_realm("httperrorrealm", [{"name": "httperrorresolver"}])
+        init_container({"type": "generic", "container_serial": "CERROR"})
+        db.session.add(TokenContainerOwner(container_serial="CERROR", user_id="999999", resolver="httperrorresolver",
+                                           realm_name="httperrorrealm"))
+        db.session.commit()
+
+        runner = app.test_cli_runner()
+        for orphaned in ("True", "False"):
+            result = runner.invoke(findcontainer, ["--orphaned", orphaned, "list"])
+            assert result.exit_code == 0, result.output
+            assert "Serial: CERROR," not in result.stdout
+            assert "Can not check whether container CERROR is orphaned, the container is skipped" in result.stderr
+
+    def test_container_delete_more_containers_than_chunksize(self, app, containers):
+        """
+        Tests that deleting the found containers page by page does not skip any container.
+        """
+        for index in range(5):
+            init_container({"type": "generic", "container_serial": f"PAGE{index}", "description": "page test"})
+        db.session.commit()
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["--description", "page test", "--chunksize", "2", "delete"])
+        assert result.exit_code == 0, result.output
+        for index in range(5):
+            assert f"Deleted container PAGE{index}" in result.output
+        assert get_all_containers(description="page test")["containers"] == []
+        assert find_container_by_serial("C1") is not None
+
+    def test_container_update_info_skips_internal_entries(self, app, containers):
+        """
+        Tests that update_info does not overwrite an info entry which privacyIDEA maintains itself.
+        """
+        container = find_container_by_serial("C1")
+        container.update_container_info([TokenContainerInfoData(key="public_key_client", value="client key",
+                                                                info_type=PI_INTERNAL)])
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["--serial", "C1", "update_info", "public_key_client", "other key"])
+        assert result.exit_code == 0, result.output
+        assert "Skipped container C1" in result.output
+
+        container = find_container_by_serial("C1")
+        assert container.get_container_info_dict()["public_key_client"] == "client key"
+        assert "public_key_client" in container.get_internal_info_keys()

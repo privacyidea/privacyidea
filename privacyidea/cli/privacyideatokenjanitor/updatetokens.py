@@ -44,10 +44,32 @@ import click
 from flask.cli import AppGroup
 from yaml import safe_load as yaml_safe_load
 from privacyidea.lib.token import get_tokens
+from privacyidea.lib.tokenclass import TokenClass
 import sys
 
 
 updatetokens_cli = AppGroup("update")
+
+
+def _keep_token_state(token_object: TokenClass, token_data: dict, count: int, failcount: int,
+                      tokenkind: str | None) -> None:
+    """
+    Storing the OTP key of a token resets its OTP counter and its fail counter and marks it as a software token. The
+    OTP key of an export entry is the key the token already has, so put the rest back: the fail counter and the token
+    kind keep their values, and the OTP counter keeps its value or takes the counter of the export, if that is higher.
+    A lower OTP counter would make OTP values the token has already used valid again.
+
+    :param token_object: the updated token
+    :param token_data: the entry of the token in the YAML export
+    :param count: the OTP counter of the token before the update
+    :param failcount: the fail counter of the token before the update
+    :param tokenkind: the token kind of the token before the update
+    """
+    token_object.token.count = max(count or 0, int(token_data.get("counter") or 0))
+    token_object.token.failcount = failcount
+    if tokenkind:
+        token_object.write_tokeninfo("tokenkind", tokenkind)
+    token_object.token.save()
 
 
 @updatetokens_cli.command("update")
@@ -68,7 +90,12 @@ def updatetokens(yaml):
             sys.stderr.write(f"\nCan not find token {serial}. Not updating.\n")
         else:
             click.echo(f"Updating token {serial}.")
+            token_object = tok_objects[0]
+            count = token_object.token.count
+            failcount = token_object.token.failcount
+            tokenkind = token_object.get_tokeninfo("tokenkind")
             try:
-                tok_objects[0].update(tok)
+                token_object.update(tok)
+                _keep_token_state(token_object, tok, count, failcount, tokenkind)
             except Exception as e:
                 click.echo(f"\nFailed to update token {serial} ({e}).", err=True)

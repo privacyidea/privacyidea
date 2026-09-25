@@ -24,6 +24,7 @@ import sys
 import ast
 import inspect
 from functools import partial
+from typing import TextIO
 import click
 from flask import current_app
 from flask.cli import AppGroup
@@ -268,13 +269,13 @@ def resolver_create(name, rtype, conf_file):
     """
     Create a new resolver with the specified name and type.
 
-    The necessary resolver parameters are read from the file given with FILENAME.
+    The necessary resolver parameters are read from the file given with CONF_FILE.
     The file should contain a python dictionary.
 
     \b
     NAME:     The name of the resolver
-    RTYPE:    The type of the resolver (can be ldapresolver, sqlresolver,
-              httpresolver, passwdresolver or scimresolver)
+    RTYPE:    The type of the resolver (ldapresolver, sqlresolver, passwdresolver,
+              scimresolver, httpresolver, entraidresolver or keycloakresolver)
     CONF_FILE: The name of the config file with the resolver parameters.
 
     \b
@@ -298,7 +299,7 @@ def resolver_create_internal(ctx, name):
     This creates a new internal, editable sqlresolver. The users will be
     stored in the token database in a table called 'users_<NAME>'. You can then
     add this resolver to a new realm using the command
-    'pi-manage config realm add <realm-name> <NAME>'.
+    'pi-manage config realm create <realm-name> <NAME>'.
     """
     sqluri = current_app.config.get("SQLALCHEMY_DATABASE_URI")
     sqlelements = sqluri.split("/")
@@ -495,7 +496,8 @@ def policy_delete(name):
 @click.argument("action")
 @click.option("-f", "--file", type=click.File(),
               help="The file to import the policy configuration from.")
-def policy_create(name, scope, action, file):
+@click.pass_context
+def policy_create(ctx: click.Context, name: str, scope: str, action: str, file: TextIO | None) -> int:
     """
     Create a new policy.
 
@@ -552,8 +554,9 @@ def policy_create(name, scope, action, file):
                                "check_all_resolvers", False))
             return r
 
-        except Exception as _e:
-            print(f"Unexpected error: {sys.exc_info()[1]!s}")
+        except Exception as e:
+            click.secho(f"Could not create the policy from the file {file.name}: {e!r}", fg="red", err=True)
+            ctx.exit(1)
 
     else:
         r = set_policy(name, scope, action)

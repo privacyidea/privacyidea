@@ -417,6 +417,27 @@ class TokenContainerClass:
 
         return users
 
+    def is_orphaned(self) -> bool:
+        """
+        Return True if the container is orphaned: it is assigned to users, but none of them exists in the user store
+        any more. As for TokenClass.is_orphaned(), a user does not exist if the user store returns no login name for
+        the user id, or if the realm of the user is gone.
+
+        Unlike get_users(), an error of the user store is not hidden: it is raised, e.g. if the user store can not
+        be reached, since the container can then neither be called orphaned nor not orphaned.
+
+        :return: True if the container has owners and none of them exists
+        """
+        db_container_owners = self._db_container.owners.all()
+        if not db_container_owners:
+            return False
+        for owner in db_container_owners:
+            realm_name = owner.realm.name if owner.realm else None
+            user = User(uid=owner.user_id, realm=realm_name, resolver=owner.resolver)
+            if user.login and user.realm:
+                return False
+        return True
+
     def get_states(self) -> list[str]:
         """
         Returns the states of the container as a list of strings.

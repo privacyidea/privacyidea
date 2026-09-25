@@ -63,7 +63,6 @@ def api_createtoken(ctx, role, days, realm, username):
     if role not in ["admin", "validate"]:
         click.secho("ERROR: The role must be 'admin' or 'validate'!", fg="red")
         ctx.exit(1)
-    username = username or geturandom(hex=True)
     secret = current_app.config.get("SECRET_KEY")
     authtype = "API"
     validity = datetime.timedelta(days=int(days))

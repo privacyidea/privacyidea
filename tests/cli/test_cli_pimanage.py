@@ -18,6 +18,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import contextlib
 import datetime as dt
+import io
 import json
 import os
 import pathlib
@@ -104,7 +105,11 @@ class PIManageBackupTestCase(CliTestCase):
            is controlled by ``include_cfg`` / ``include_sql`` /
            ``include_enckey`` so tests can exercise the missing-file branches.
 
-        2. ``extractall`` – writes the backup content (``backup_uri``) into
+        2. ``extractfile`` – returns the archived pi.cfg (with ``backup_uri``)
+           for the pi.cfg member, which the restore reads before it extracts
+           anything.
+
+        3. ``extractall`` – writes the backup content (``backup_uri``) into
            ``live_pi_cfg`` and creates a placeholder SQL file, mimicking a
            real extraction.
 
@@ -127,6 +132,10 @@ class PIManageBackupTestCase(CliTestCase):
             m.name = name
             return m
 
+        archived_config = (
+            f'SQLALCHEMY_DATABASE_URI = {repr(backup_uri)}\n' if backup_uri else ''
+        ) + 'SECRET_KEY = "secret"\n'
+
         members = []
         if include_cfg:
             members.append(make_member(cfg_rel))
@@ -142,13 +151,14 @@ class PIManageBackupTestCase(CliTestCase):
             # extraction pass both see the same members.
             tf.__iter__.return_value = iter(list(members))
 
+            def fake_extractfile(member: mock.MagicMock) -> io.BytesIO | None:
+                return io.BytesIO(archived_config.encode()) if member.name == cfg_rel else None
+
             def fake_extractall(path="/", **kw):
-                live_pi_cfg.write_text(
-                    f'SQLALCHEMY_DATABASE_URI = {repr(backup_uri)}\n'
-                    'SECRET_KEY = "secret"\n'
-                )
+                live_pi_cfg.write_text(archived_config)
                 sql_file_path.write_text("-- sql dump placeholder\n")
 
+            tf.extractfile = fake_extractfile
             tf.extractall = fake_extractall
             yield tf
 
@@ -163,8 +173,8 @@ class PIManageBackupTestCase(CliTestCase):
           fakes archive listing (iteration) and extraction.
         - ``shutil.copyfile`` is patched out because for SQLite URIs the
           restore command would try to copy the dump to the database path
-          which does not exist in the test environment.
-        - ``os.unlink`` is patched out for the same reason.
+          which does not exist in the test environment. The extracted dump
+          itself lies in the temporary directory and is removed for real.
 
         Before invoking the command, ``live_pi_cfg`` is written with
         ``live_uri`` so that ``--keep-db-uri`` has an existing config to read.
@@ -185,11 +195,10 @@ class PIManageBackupTestCase(CliTestCase):
         with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
                         side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri)):
             with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile"):
-                with mock.patch("privacyidea.cli.pimanage.backup.os.unlink"):
-                    return runner.invoke(
-                        pi_manage,
-                        ["backup", "restore", "--keep-db-uri", "fake.tgz"],
-                    )
+                return runner.invoke(
+                    pi_manage,
+                    ["backup", "restore", "--keep-db-uri", "fake.tgz"],
+                )
 
     def test_02_keep_db_uri_replaces_backup_uri_in_config(self):
         """
@@ -244,11 +253,10 @@ class PIManageBackupTestCase(CliTestCase):
             with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
                             side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri)):
                 with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile"):
-                    with mock.patch("privacyidea.cli.pimanage.backup.os.unlink"):
-                        result = runner.invoke(
-                            pi_manage,
-                            ["backup", "restore", "--keep-db-uri", "fake.tgz"],
-                        )
+                    result = runner.invoke(
+                        pi_manage,
+                        ["backup", "restore", "--keep-db-uri", "fake.tgz"],
+                    )
 
             # Assert the command completed successfully.
             self.assertEqual(result.exit_code, 0, result.output)
@@ -468,10 +476,11 @@ class PIManageBackupTestCase(CliTestCase):
             with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
                             side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri,
                                                                 dump_suffix=".sql")):
-                with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
-                                side_effect=failing_mysql):
-                    result = runner.invoke(pi_manage, [
-                        "backup", "restore", "ignored.tgz"])
+                with mock.patch("privacyidea.cli.pimanage.backup.shutil.which", return_value="/usr/bin/mysql"):
+                    with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                                    side_effect=failing_mysql):
+                        result = runner.invoke(pi_manage, [
+                            "backup", "restore", "ignored.tgz"])
 
             self.assertNotEqual(result.exit_code, 0, result.output)
             self.assertIn("Database restore failed", result.output, result.output)
@@ -690,7 +699,8 @@ class PIManageBackupTestCase(CliTestCase):
         """
         A dump can only be replayed by the engine that wrote it. Restoring a
         MySQL dump onto a PostgreSQL URI has to abort before any client command
-        runs, so the target database is left untouched.
+        runs and before any file of the archive is extracted, so neither the
+        target database nor the configuration on disk is changed.
         """
         import unittest.mock as mock
 
@@ -709,7 +719,83 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertEqual(2, result.exit_code, result.output)
             self.assertIn("MySQL/MariaDB dump", result.output, result.output)
             self.assertIn("PostgreSQL", result.output, result.output)
+            self.assertIn("Nothing was restored", result.output, result.output)
             run_mock.assert_not_called()
+            # The fake extraction would have written both files.
+            self.assertFalse(live_pi_cfg.exists(), "the configuration was extracted despite the refusal")
+            self.assertFalse((tmp / "dbdump-20240101-1200.sql").exists(),
+                             "the dump was extracted despite the refusal")
+
+    def test_16b_keep_db_uri_refuses_another_engine_without_touching_the_config(self):
+        """
+        With --keep-db-uri the engine of the live URI is the one the dump has to
+        match. A mismatch aborts with the live pi.cfg left exactly as it was.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            live_pi_cfg = tmp / "pi.cfg"
+            live_config = 'SQLALCHEMY_DATABASE_URI = "postgresql+psycopg2://u:p@localhost/pi_live"\n'
+            live_pi_cfg.write_text(live_config)
+
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, "sqlite:////backup/data.sqlite")):
+                result = runner.invoke(pi_manage, ["backup", "restore", "--keep-db-uri", "ignored.tgz"])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("SQLite dump", result.output, result.output)
+            self.assertEqual(live_config, live_pi_cfg.read_text())
+            self.assertFalse((tmp / "dbdump-20240101-1200.sqlite").exists())
+
+    def test_16c_restore_needs_the_client_command_before_extracting(self):
+        """
+        Without the client command that replays the dump, the restore names the
+        package to install and aborts before any file of the archive is
+        extracted.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            live_pi_cfg = tmp / "pi.cfg"
+
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, "postgresql://u:p@localhost/pi_test",
+                                                                dump_suffix=".pgsql")):
+                with mock.patch("privacyidea.cli.pimanage.backup.shutil.which", return_value=None):
+                    with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run") as run_mock:
+                        result = runner.invoke(pi_manage, ["backup", "restore", "ignored.tgz"])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("Could not find the 'psql' command", result.output, result.output)
+            self.assertIn("postgresql-client", result.output, result.output)
+            run_mock.assert_not_called()
+            self.assertFalse(live_pi_cfg.exists())
+            self.assertFalse((tmp / "dbdump-20240101-1200.pgsql").exists())
+
+    def test_16d_archived_config_without_database_uri_is_refused(self):
+        """
+        A pi.cfg in the archive that names no database is reported before any
+        file of the archive is extracted.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            live_pi_cfg = tmp / "pi.cfg"
+
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, "")):
+                result = runner.invoke(pi_manage, ["backup", "restore", "ignored.tgz"])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn("No SQLALCHEMY_DATABASE_URI found", result.output, result.output)
+            self.assertFalse(live_pi_cfg.exists())
+            self.assertFalse((tmp / "dbdump-20240101-1200.sqlite").exists())
 
     def test_16a_mysql_defaults_file_stays_out_of_the_config_directory(self):
         """
@@ -1220,6 +1306,29 @@ class PIManageChallengeTestCase(CliTestCase):
         self.assertEqual(Challenge.query.count(), 0, "table should be empty after --age")
         self.assertIn("entries deleted", res.output, res)
 
+    def test_05_age_zero_deletes_all_challenges_and_says_so(self):
+        """
+        ``--age 0`` selects every challenge, including the still valid one, and
+        the output describes that instead of claiming to delete only expired
+        challenges - in the dry run as well as in the cleanup.
+        """
+        self._init_challenges()
+        runner = self.app.test_cli_runner()
+
+        res = runner.invoke(pi_manage, ["config", "challenge", "cleanup", "--age", "0", "--dryrun"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Deleting challenges older than", res.output, res.output)
+        self.assertNotIn("Deleting expired challenges", res.output, res.output)
+        self.assertIn("Would delete 3 challenge entries", res.output, res.output)
+        self.assertEqual(3, Challenge.query.count())
+
+        res = runner.invoke(pi_manage, ["config", "challenge", "cleanup", "--age", "0"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Deleting challenges older than", res.output, res.output)
+        self.assertNotIn("Deleting expired challenges", res.output, res.output)
+        self.assertIn("3 entries deleted", res.output, res.output)
+        self.assertEqual(0, Challenge.query.count())
+
 
 class PIManageAuthCacheTestCase(CliTestCase):
     """
@@ -1476,6 +1585,27 @@ class PIManageConfigCRUDTestCase(CliTestCase):
         finally:
             from privacyidea.lib.policy import delete_policy
             delete_policy("clifilepol")
+            os.unlink(pol_path)
+
+    def test_09_policy_create_from_file_failure_exits_nonzero(self):
+        """
+        A policy from a file that cannot be created - here because its action
+        does not exist in its scope - is reported on stderr, the command exits
+        with a non-zero status and no policy is written.
+        """
+        runner = self.app.test_cli_runner()
+        with tempfile.NamedTemporaryFile("w", suffix=".pol", delete=False) as pol_file:
+            pol_file.write("{'name': 'clibadpol', 'scope': 'admin', 'action': 'nosuchaction'}")
+            pol_path = pol_file.name
+        try:
+            result = runner.invoke(pi_manage, ["config", "policy", "create",
+                                               "clibadpol", "admin", "enable", "-f", pol_path])
+            self.assertEqual(1, result.exit_code, result.output)
+            self.assertIn("Could not create the policy from the file", result.stderr, result.output)
+            self.assertIn("nosuchaction", result.stderr, result.output)
+            result = runner.invoke(pi_manage, ["config", "policy", "list"])
+            self.assertNotIn("clibadpol", result.output)
+        finally:
             os.unlink(pol_path)
 
 

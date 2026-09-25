@@ -93,8 +93,10 @@ def run_task_on_node(ptask, node):
     else:
         print_stderr('Task {!r} on node {!r} did not run '
                      'successfully.'.format(ptask["name"], node))
-        print_stderr('This unsuccessful run is not recorded in the database.')
-        if not ptask.get("retry_if_failed"):
+        if ptask.get("retry_if_failed"):
+            print_stderr("This unsuccessful run is not recorded in the database, so the task stays due.")
+        else:
+            print_stderr("This unsuccessful run is recorded in the database as the last run of the task.")
             current_time = datetime.now(tz.tzlocal())
             set_periodic_task_last_run(ptask["id"], node, current_time)
     return result
@@ -129,10 +131,12 @@ def run_manually(node_string, task_name):
     Manually run a periodic task.
     BEWARE: This does not check whether the task is active, or whether it should
     run on the given node at all.
+    Exits with status 1 if the task fails.
     """
     node = get_node_name(node_string)
     ptask = get_periodic_task_by_name(task_name)
-    run_task_on_node(ptask, node)
+    if not run_task_on_node(ptask, node):
+        sys.exit(1)
 
 
 @cli.command("list")

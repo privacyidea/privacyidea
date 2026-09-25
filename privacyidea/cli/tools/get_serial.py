@@ -27,8 +27,8 @@ The serial number of the token is returned.
 
 You can call the script like this:
 
-    privacyidea-get-serial byotp --otp <otp> --type <type> --serial <serial>
-        --unassigned --assigned --window <window>
+    privacyidea-get-serial --type <type> --serial <serial> --assigned|--unassigned
+        --window <window> <otp>
 
 """
 __version__ = "0.1"

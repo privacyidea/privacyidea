@@ -155,9 +155,9 @@ def create(ctx, instance):
             ))
 
         # create an enckey
-        invoke_pi_manage(['create_enckey'], pi_cfg)
-        invoke_pi_manage(['create_audit_keys'], pi_cfg)
-        invoke_pi_manage(['create_tables'], pi_cfg)
+        invoke_pi_manage(['setup', 'create_enckey'], pi_cfg)
+        invoke_pi_manage(['setup', 'create_audit_keys'], pi_cfg)
+        invoke_pi_manage(['setup', 'create_tables'], pi_cfg)
 
         click.secho('Please enter a password for the new admin `super`.', fg='blue')
         invoke_pi_manage(['admin', 'add', 'super'], pi_cfg)
@@ -170,18 +170,18 @@ There are two possibilities to create a resolver:
     You can add users via the privacyIDEA Web UI.
  2) We can create a resolver that contains the users from /etc/passwd
     """)
-            create_sql_resolver = click.prompt('Please choose (default=1): ',
-                                               default=1, type=click.Choice(['1', '2']),
-                                               show_choices=False, show_default=False)
-            if create_sql_resolver == 1:
-                invoke_pi_manage(['resolver', 'create_internal', 'defresolver'], pi_cfg)
+            resolver_choice = click.prompt('Please choose (default=1): ',
+                                           default='1', type=click.Choice(['1', '2']),
+                                           show_choices=False, show_default=False)
+            if resolver_choice == '1':
+                invoke_pi_manage(['config', 'resolver', 'create_internal', 'defresolver'], pi_cfg)
             else:
                 with NamedTemporaryFile(mode='w', delete=False) as f:
                     f.write('{"fileName": "/etc/passwd"}')
-                invoke_pi_manage(['resolver', 'create', 'defresolver', 'passwdresolver',
+                invoke_pi_manage(['config', 'resolver', 'create', 'defresolver', 'passwdresolver',
                                   f.name], pi_cfg)
                 os.unlink(f.name)
-            invoke_pi_manage(['realm', 'create', 'defrealm', 'defresolver'], pi_cfg)
+            invoke_pi_manage(['config', 'realm', 'create', 'defrealm', 'defresolver'], pi_cfg)
 
         click.secho('Configuration is complete. You can now configure privacyIDEA in '
                     'the web browser by running', fg='blue')
@@ -205,12 +205,13 @@ There are two possibilities to create a resolver:
 def check(ctx, instance, show_response, username, password):
     """
     Check the given username and password against privacyIDEA.
-    This command reads two lines from standard input: The first line is
-    the username, the second line is the password (which consists of a
-    static part and the OTP).
+    The password consists of a static part and the OTP. If the username or
+    the password is not given as an option, the command asks for it. Without
+    a terminal, it reads them from standard input, one per line: first the
+    username, then the password.
 
-    This commands exits with return code 0 if the user could be authenticated
-    successfully.
+    This command exits with return code 0 if the user could be authenticated
+    successfully and with return code 1 if the authentication failed.
     """
     exitcode = -1
     instance = Path(instance)

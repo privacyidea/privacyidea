@@ -51,7 +51,7 @@ from privacyidea.lib.error import PolicyError, ResolverError
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator, export_tokens
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import parse_legacy_time, is_true
+from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.models import Token, TokenContainer
 
 allowed_tokenattributes = [col.key for col in Token.__table__.columns]
@@ -335,11 +335,6 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                     tokenowner_filter, tokencontainer_filter, tokentype, realm, resolver, rollout_state,
                     orphaned: bool | None, chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
                     orphaned_on_error: bool = False) -> Generator[TokenClass, None, None]:
-    if assigned is not None:
-        assigned = is_true(assigned)
-    if active is not None:
-        active = is_true(active)
-
     iterable = get_tokens_paginated_generator(tokentype=tokentype,
                                               realm=realm,
                                               resolver=resolver,
@@ -408,7 +403,7 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                     else:
                         add = False
             if orphaned is not None:
-                if token_obj.is_orphaned(orphaned_on_error) != is_true(orphaned):
+                if token_obj.is_orphaned(orphaned_on_error) != orphaned:
                     add = False
 
 
@@ -437,11 +432,11 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                    'Example: user_id=642cf598-d9cf-1037-8083-a1df7d38c897.')
 @click.option('--tokencontainer', 'tokencontainers', multiple=True,
               help='Match for certain information of tokencontainer from the database. Example: type=smartphone.')
-@click.option('--assigned',
+@click.option('--assigned', type=click.BOOL,
               help='Whether the token is assigned to a user. Can be "True" or "False"')
-@click.option('--active',
-              help='Whether to token is active/enabled. Can be "True" or "False"')
-@click.option('--orphaned',
+@click.option('--active', type=click.BOOL,
+              help='Whether the token is active/enabled. Can be "True" or "False"')
+@click.option('--orphaned', type=click.BOOL,
               help='Whether the token is an orphaned token. Can be "True" or "False"')
 @click.option('--orphaned-on-error', is_flag=True, default=False,
               help="Mark token as orphaned if an error occurred when resolving user.")
@@ -530,7 +525,7 @@ def list_cmd(ctx, user_attributes, token_attributes, sum_tokens):
 @click.option('--b32', is_flag=True,
               help="In case of exporting tokens to CSV or YAML, the seed is "
                    "written as base32 encoded instead of hex.")
-@click.option('--file', required=False, type=click.File('w'), default=sys.stdout,
+@click.option('--file', required=False, type=click.File('w'), default="-",
               show_default="<stdout>",
               help='The file to export the tokens to.')
 @click.option('--user/--no-user', default=True,
@@ -569,17 +564,17 @@ def export(ctx, export_format, b32, file, user):
         file.write('\n'.join(exported_tokens))
 
     elif export_format == "yaml":
-        token_list = []
+        exported_tokens = []
         for token_list in ctx.obj['tokens']:
             for token in token_list:
                 try:
                     token_dict = token._to_dict(b32=b32)
                     token_dict["owner"] = f"{token.user.login}@{token.user.realm}" if (
                             token.user and user) else "n/a"
-                    token_list.append(token_dict)
+                    exported_tokens.append(token_dict)
                 except Exception as e:
                     sys.stderr.write(f"\nFailed to export token {token.get_serial()} ({e}).\n")
-        file.write(yaml_safe_dump(token_list))
+        file.write(yaml_safe_dump(exported_tokens))
 
     elif export_format == "pi":
         key = Fernet.generate_key().decode()
@@ -592,14 +587,15 @@ def export(ctx, export_format, b32, file, user):
         list_of_exported_tokens = json.dumps(exported_tokens, default=repr, indent=2)
         f = Fernet(key)
         file.write(f.encrypt(list_of_exported_tokens.encode()).decode())
+        # Only the export goes to stdout, so that it can be redirected to a file and imported from there
         if file == sys.stdout:
-            click.echo("\n\n")
-        click.echo(f"Successfully exported {len(exported_tokens)} tokens.")
+            click.echo("\n\n", err=True)
+        click.echo(f"Successfully exported {len(exported_tokens)} tokens.", err=True)
         if failed_exports:
-            click.echo(f"Failed to export {len(failed_exports)} tokens:")
+            click.echo(f"Failed to export {len(failed_exports)} tokens:", err=True)
             for serial in failed_exports:
-                click.echo(f"{serial}")
-            click.echo("Check the logfile for the cause of the failures.")
+                click.echo(f"{serial}", err=True)
+            click.echo("Check the logfile for the cause of the failures.", err=True)
 
         click.secho(f'\nThe key to import the tokens is:\n\n\t{key}\n\n', fg='red', err=True)
         if file != sys.stdout:

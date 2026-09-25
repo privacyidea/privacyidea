@@ -255,25 +255,17 @@ def build_tokenvalue_filter(key,
 def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                    tokeninfo_value_filter, tokenattribute, tokenattribute_filter,
                    orphaned, tokentype, serial, description, chunksize, has_not_tokeninfo_key,
-                   has_tokeninfo_key, orphaned_on_error=True):
-    filter_active = None
-    filter_assigned = None
-    orphaned = orphaned or ""
-
-    if assigned is not None:
-        filter_assigned = assigned.lower() == "true"
-    if active is not None:
-        filter_active = active.lower() == "true"
-
+                   has_tokeninfo_key, orphaned_on_error=False):
+    # assigned, active and orphaned are True, False or None, None does not filter
     if chunksize is not None:
         iterable = get_tokens_paginated_generator(tokentype=tokentype,
-                                                  active=filter_active,
-                                                  assigned=filter_assigned,
+                                                  active=active,
+                                                  assigned=assigned,
                                                   psize=chunksize)
     else:
         iterable = [get_tokens(tokentype=tokentype,
-                               active=filter_active,
-                               assigned=filter_assigned)]
+                               active=active,
+                               assigned=assigned)]
     for tokenobj_list in iterable:
         filtered_list = []
         sys.stderr.write("++ Creating token object list.\n")
@@ -313,9 +305,7 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
                     continue
                 if not all(comparator(value) for comparator in tokenattribute_filter):
                     continue
-            if orphaned.upper() in ["1", "TRUE"] and not token_obj.is_orphaned(orphaned_on_error):
-                continue
-            if orphaned.upper() in ["0", "FALSE"] and token_obj.is_orphaned(orphaned_on_error):
+            if orphaned is not None and token_obj.is_orphaned(orphaned_on_error) != orphaned:
                 continue
 
             tok_found += 1
@@ -451,11 +441,10 @@ def export_user_data(token_list, attributes=None):
               help='In case of a simple find, the output is written as YAML instead of the '
                    'formatted output.')
 @click.option('--last_auth', help='Can be something like 10h, 7d, or 2y')
-@click.option('--assigned', help='True|False|None')
-@click.option('--active', help='True|False|None')
-@click.option('--orphaned',
-              help='Whether the token is an orphaned token. Set to 1')
-@click.option('--orphaned-on-error', default=True, type=bool, show_default=True,
+@click.option('--assigned', type=click.BOOL, help='Whether the token is assigned to a user: true or false')
+@click.option('--active', type=click.BOOL, help='Whether the token is active: true or false')
+@click.option('--orphaned', type=click.BOOL, help='Whether the token is an orphaned token: true or false')
+@click.option('--orphaned-on-error', default=False, type=bool, show_default=True,
               help='If orphaned is set, this specifies if a token should be listed as orphaned when there is an error.')
 @click.option('--b32', is_flag=True,
               help='In case of exporting found tokens to CSV the seed is written base32 encoded instead of hex.')
@@ -543,7 +532,7 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                             token_dict.get("otpkey"),
                             token_dict.get("type"),
                             token_dict.get("otplen"),
-                            token_dict.get("info_list", {}).get("timStep")))
+                            token_dict.get("info_list", {}).get("timeStep")))
                     else:
                         print("{!s}, {!s}, {!s}, {!s}, {!s}".format(
                             owner, token_dict.get("serial"),
