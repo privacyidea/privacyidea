@@ -80,12 +80,12 @@ msgstr "ໂນດ: ຄາດຫວັງຢ່າງໜ້ອຍໜຶ່ງໂ�
 
 #: api/periodictask.py:208
 #, python-brace-format
-msgid "Unknown task module: {!r}"
+msgid "Unknown task module: {0!r}"
 msgstr "ບໍ່ຮູ້ຈັກໂມດູນໜ້າວຽກ:"
 
 #: api/periodictask.py:216
 #, python-brace-format
-msgid "options: expected dictionary, got {!r}"
+msgid "options: expected dictionary, got {0!r}"
 msgstr "ຕົວເລືອກ: ຕ້ອງການ ດິກຊັນນາຣີ, ແຕ່ໄດ້ຮັບ"
 
 #: api/policy.py:479 api/token.py:1484
