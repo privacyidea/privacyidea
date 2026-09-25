@@ -1942,6 +1942,52 @@ class PasskeyAPITest(PasskeyAPITestBase):
             db.session.commit()
             remove_token(serial)
 
+    def test_36_validate_check_rejects_user_that_does_not_resolve(self):
+        """
+        A request that names a user who cannot be found, for example the user label of the passkey instead of the
+        login name, is rejected. The passkey owner is not authenticated in place of the named user.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = dict(self.authentication_response_no_uv)
+        data.update({"transaction_id": transaction_id, "user": "Hans Meier", "realm": self.realm1})
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+            self.assertNotIn("username", res.json["detail"], res.json)
+        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_TOKEN],
+                                  transaction_id=transaction_id)
+        remove_token(serial)
+
+    def test_37_auth_with_username_of_other_realm(self):
+        """
+        /auth builds the named user from the username and the realm parameter, the way the WebUI sends them. For a user
+        outside the default realm, the passkey only belongs to the named user when the realm is given.
+        """
+        self.setUp_user_realm2()
+        self.user = User(login="hans", realm=self.realm2, resolver=self.resolvername1)
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = dict(self.authentication_response_uv)
+        data.update({"transaction_id": passkey_challenge["transaction_id"], "username": self.user.login})
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._verify_auth_fail_with_error(res, 4031)
+
+        data["realm"] = self.realm2
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
+            self.assertEqual(self.realm2, res.json["result"]["value"]["realm"], res.json)
+        remove_token(serial)
+
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """
     Test if the feature switch for passkey usage with /auth works.

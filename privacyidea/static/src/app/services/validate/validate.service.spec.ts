@@ -441,6 +441,39 @@ describe("ValidateService", () => {
         expect(final).toEqual({ ok: 1 });
       });
 
+      it("sends the realm with the WebAuthn response when one is given", async () => {
+        setWebAuthn(() =>
+          Promise.resolve({
+            id: "cred-id",
+            response: {
+              authenticatorData: new ArrayBuffer(1),
+              clientDataJSON: new ArrayBuffer(1),
+              signature: new ArrayBuffer(1),
+              userHandle: null
+            }
+          })
+        );
+
+        const authSpy = jest
+          .spyOn(auth, "authenticate")
+          .mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
+
+        await new Promise<void>((resolve) => {
+          validateService
+            .authenticateWebAuthn({
+              signRequest: okSignRequest as unknown as WebAuthnSignRequest,
+              transaction_id: "T-3",
+              username: "bob",
+              realm: "realm2"
+            })
+            .subscribe(() => resolve());
+        });
+
+        expect(authSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ transaction_id: "T-3", username: "bob", realm: "realm2" })
+        );
+      });
+
       it("handles navigator.credentials.get rejection (catchError path)", async () => {
         setWebAuthn(() => Promise.reject({ error: { result: { error: { message: "nope" } } } }));
 

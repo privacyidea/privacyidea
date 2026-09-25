@@ -30,7 +30,8 @@ from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFo
 from privacyidea.lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
-from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_token_by_credential_id, hash_credential_id
+from privacyidea.lib.fido2.util import (get_credential_ids_for_user, get_fido2_token_by_credential_id,
+                                        hash_credential_id, save_credential_id_hash)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.token import (init_token, remove_token, unassign_token, import_tokens, get_tokens)
@@ -855,3 +856,23 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(token.get_serial(), get_fido2_token_by_credential_id(self.credential_id).get_serial())
         remove_token(serial=token.get_serial())
         remove_token(serial=registration_request.token.get_serial())
+
+    def test_25_save_credential_id_hash_keeps_mapping_of_other_token(self):
+        """
+        save_credential_id_hash does not map a credential that is registered to one token to another token. Saving
+        it again for the same token changes nothing.
+        """
+        token = self._create_token()
+        other_token = init_token({"type": "passkey"}, user=self.user)
+        credential_id_hash = hash_credential_id(self.credential_id)
+
+        save_credential_id_hash(credential_id_hash, token.token.id)
+        with self.assertRaises(EnrollmentError):
+            save_credential_id_hash(credential_id_hash, other_token.token.id)
+
+        entries = TokenCredentialIdHash.query.filter(
+            TokenCredentialIdHash.credential_id_hash == credential_id_hash).all()
+        self.assertEqual([token.token.id], [entry.token_id for entry in entries])
+        self.assertEqual(token.get_serial(), get_fido2_token_by_credential_id(self.credential_id).get_serial())
+        remove_token(serial=token.get_serial())
+        remove_token(serial=other_token.get_serial())
