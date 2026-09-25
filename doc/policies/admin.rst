@@ -975,8 +975,9 @@ type: ``bool``
 
 The administrators are allowed to read the :ref:`authentication_log`. If the
 policy is scoped to realms, resolvers or users, the administrator only sees
-entries matching that scope. An administrator always also sees their own
-entries.
+entries matching that scope. Exclusions count as well: with the user
+``*, !alice`` the administrator sees the entries of every user but *alice*. An
+administrator always also sees their own entries.
 
 .. versionadded:: 3.14
 
@@ -1014,7 +1015,7 @@ type: ``bool``
 
 The administrators are allowed to see whether a user is locked and to list the
 locked users. If the policy is scoped to realms, resolvers or users, only
-matching users are shown.
+matching users are shown, exclusions such as ``*, !alice`` included.
 
 .. versionadded:: 3.14
 

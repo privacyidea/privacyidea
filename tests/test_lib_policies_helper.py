@@ -120,8 +120,8 @@ class AdminGrantedRealmsTestCase(MyTestCase):
             self.assertNotIn(self.realm3, granted, target_scope)
 
 
-class VisibilityScopeRealmsTestCase(MyTestCase):
-    """The realms of an admin's visibility boundary, with the realm field read the way the policy engine matches it."""
+class VisibilityScopeTargetsTestCase(MyTestCase):
+    """An admin's visibility boundary, with every target field read the way the policy engine matches it."""
 
     def setUp(self) -> None:
         self.setUp_user_realms()
@@ -131,8 +131,8 @@ class VisibilityScopeRealmsTestCase(MyTestCase):
         g.client_ip = None
         g.serial = None
 
-    def _scopes(self, realm: str) -> list | None:
-        set_policy("visible", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=realm)
+    def _scopes(self, **policy_scope: str | bool) -> list | None:
+        set_policy("visible", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, **policy_scope)
         g.policy_object = PolicyClass()
         try:
             return get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
@@ -140,14 +140,37 @@ class VisibilityScopeRealmsTestCase(MyTestCase):
             delete_policy("visible")
 
     def test_realms_of_the_boundary(self):
-        self.assertIsNone(self._scopes("*"))
-        self.assertEqual([self.realm1], self._scopes(self.realm1)[0].realms)
-        scopes = self._scopes(f"*,!{self.realm3}")
+        self.assertIsNone(self._scopes(realm="*"))
+        self.assertEqual([self.realm1], self._scopes(realm=self.realm1)[0].realms)
+        scopes = self._scopes(realm=f"*,!{self.realm3}")
         self.assertEqual(1, len(scopes))
         self.assertIn(self.realm1, scopes[0].realms)
         self.assertNotIn(self.realm3, scopes[0].realms)
         # A realm field that matches no realm admits no record. None would admit every record.
-        self.assertEqual([], self._scopes(f"!{self.realm3}"))
+        self.assertEqual([], self._scopes(realm=f"!{self.realm3}"))
+
+    def test_resolvers_of_the_boundary(self):
+        self.assertIsNone(self._scopes(resolver="*"))
+        scopes = self._scopes(resolver=f"*,!{self.resolvername3}")
+        self.assertEqual(1, len(scopes))
+        self.assertIn(self.resolvername1, scopes[0].resolvers)
+        self.assertNotIn(self.resolvername3, scopes[0].resolvers)
+        self.assertEqual([], self._scopes(resolver=f"!{self.resolvername3}"))
+
+    def test_users_of_the_boundary(self):
+        self.assertIsNone(self._scopes(user="*"))
+        scope = self._scopes(user="alice")[0]
+        self.assertEqual((["alice"], []), (scope.usernames, scope.excluded_usernames))
+        # Every user but some can not be listed, so it is carried as the excluded users.
+        scope = self._scopes(user="*,!alice,-bob")[0]
+        self.assertEqual(([], ["alice", "bob"]), (scope.usernames, scope.excluded_usernames))
+        # A user field that matches no user admits no record.
+        self.assertEqual([], self._scopes(user="!alice"))
+        self.assertEqual([], self._scopes(user="alice,!alice"))
+        # With user_case_insensitive an exclusion also takes away a name that differs only in case.
+        self.assertEqual(["Alice"], self._scopes(user="Alice,!alice")[0].usernames)
+        self.assertEqual([], self._scopes(user="Alice,!alice", user_case_insensitive=True))
+        self.assertTrue(self._scopes(user="*,!alice", user_case_insensitive=True)[0].username_case_insensitive)
 
 
 class PolicyRealmNamesTestCase(MyTestCase):

@@ -85,7 +85,12 @@ class AuthenticationLogVisibilityScope:
     mean "no restriction on that dimension".
 
     *username_case_insensitive* mirrors the originating policy's ``user_case_insensitive`` option and forces a
-    case-insensitive match on the ``usernames`` dimension only; realm and resolver always match case-sensitively.
+    case-insensitive match on the ``usernames`` and ``excluded_usernames`` dimensions only; realm and resolver always
+    match case-sensitively.
+
+    *excluded_usernames* leaves these logins out. It is how a policy for every user but some (``"*"`` with
+    ``"!name"``) is expressed, since the users can not be listed the way realms and resolvers are. Like every other
+    dimension it restricts: an entry without a username is not admitted by it.
 
     *user_roles* restricts to entries of those
     :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`
@@ -106,6 +111,7 @@ class AuthenticationLogVisibilityScope:
     uids: list[str] = field(default_factory=list)
     username_case_insensitive: bool = False
     user_roles: list[str] = field(default_factory=list)
+    excluded_usernames: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -674,8 +680,8 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
     restricted dimension are excluded.
 
     The visibility scope is an authorization boundary (which entries a principal may see). Each dimension matches by
-    equality via a plain ``IN`` (which keeps the column index). The boundary columns (realm, resolver, uid, username)
-    are pinned to a **case-sensitive collation** at the schema level
+    equality via a plain ``IN`` (which keeps the column index), and the excluded usernames via ``NOT IN``. The
+    boundary columns (realm, resolver, uid, username) are pinned to a **case-sensitive collation** at the schema level
     (:func:`~privacyidea.models.utils.case_sensitive_unicode`: ``utf8mb4_bin`` on MySQL/MariaDB; SQLite,
     PostgreSQL and Oracle compare case-sensitively by default), so the match is case-sensitive on every backend rather
     than depending on the server-default collation. This fails closed: an admin scoped to resolver ``res`` or user
@@ -715,6 +721,13 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
                                                                               for name in scope.usernames]))
             else:
                 dimensions.append(AuthenticationLog.username.in_(scope.usernames))
+        if scope.excluded_usernames:
+            # NOT IN is not true for a NULL username either, so such an entry stays out, as with every dimension.
+            if scope.username_case_insensitive:
+                dimensions.append(func.lower(AuthenticationLog.username).not_in(
+                    [name.lower() for name in scope.excluded_usernames]))
+            else:
+                dimensions.append(AuthenticationLog.username.not_in(scope.excluded_usernames))
         if scope.user_roles:
             dimensions.append(AuthenticationLog.user_role.in_([str(role) for role in scope.user_roles]))
         elif dimensions:

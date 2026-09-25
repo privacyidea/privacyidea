@@ -17,6 +17,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 import logging
+from collections.abc import Callable, Iterable
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
@@ -25,6 +26,7 @@ from flask import g, request
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import get_realms
+from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, AUTH_RESPONSE
 
@@ -279,24 +281,45 @@ def policy_realm_names(policy_realms: list[str] | None) -> list[str] | None:
         excluded realm is never among them. An **empty list** is a field that matches no realm at all - nothing but
         exclusions, or every realm excluded - and every caller must read it as granting nothing.
     """
-    policy_realms = policy_realms or []
-    excluded_realms = {realm[1:] for realm in policy_realms if realm[:1] in ("!", "-")}
-    if not policy_realms or "*" in policy_realms:
-        if not excluded_realms:
+    return _policy_field_names(policy_realms, get_realms)
+
+
+def _policy_field_names(policy_values: list[str] | None,
+                        existing_names: Callable[[], Iterable[str]]) -> list[str] | None:
+    """
+    The names a realm or resolver field of a policy matches, see :func:`policy_realm_names`. *existing_names* lists
+    every realm or resolver there is, which ``"*"`` with exclusions is resolved against.
+    """
+    policy_values = policy_values or []
+    excluded_names = {value[1:] for value in policy_values if value[:1] in ("!", "-")}
+    if not policy_values or "*" in policy_values:
+        if not excluded_names:
             return None
-        return [realm for realm in get_realms() if realm not in excluded_realms]
-    return [realm for realm in dict.fromkeys(policy_realms)
-            if realm[:1] not in ("!", "-") and realm not in excluded_realms]
+        return [name for name in existing_names() if name not in excluded_names]
+    return [value for value in dict.fromkeys(policy_values)
+            if value[:1] not in ("!", "-") and value not in excluded_names]
 
 
-def _named_targets(policy_values: list[str] | None) -> list[str]:
+def _policy_usernames(policy_users: list[str] | None, case_insensitive: bool) -> tuple[list[str], list[str]] | None:
     """
-    The entries of one target dimension of a policy that name something, dropping the wildcard.
-
-    ``"*"`` is not a name the dimension can be matched against: the policy engine reads it as every value, so a
-    dimension carrying it restricts nothing and contributes no names to a boundary.
+    The users the user field of a policy matches, read the way the policy engine matches it, as a pair of the names
+    and the excluded names. The users can not be listed like realms, so ``"*"`` with exclusions yields no names and
+    the excluded ones: every user but these. Both are empty if the field restricts nothing, and the result is None if
+    it matches no user at all - nothing but exclusions. With *case_insensitive* an exclusion also removes a name
+    that differs only in case, as the policy engine compares them then.
     """
-    return [value for value in (policy_values or []) if value != "*"]
+    policy_users = policy_users or []
+
+    def fold(name: str) -> str:
+        return name.lower() if case_insensitive else name
+
+    excluded_users = list(dict.fromkeys(user[1:] for user in policy_users if user[:1] in ("!", "-")))
+    if not policy_users or "*" in policy_users:
+        return [], excluded_users
+    excluded_folded = {fold(user) for user in excluded_users}
+    named_users = [user for user in dict.fromkeys(policy_users)
+                   if user[:1] not in ("!", "-") and fold(user) not in excluded_folded]
+    return (named_users, []) if named_users else None
 
 
 def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibilityScope"] | None:
@@ -342,25 +365,24 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
     scopes = []
     policies = Match.admin(g, action=action).policies()
     for policy in policies:
-        # A dimension holding "*" is matched by the policy engine's own comparison as every value, so it
-        # restricts nothing and is dropped here. Kept as a literal it would be looked up as the name of a realm,
-        # a resolver or a user, match none of them, and turn a grant over everything into a boundary that admits
-        # nothing - the opposite of what it says. The realm field is read with its exclusions, see
-        # policy_realm_names(); an exclusion in the resolver or user field still names nothing, so such a
-        # dimension admits no record rather than every other one.
+        # Every dimension is read the way the policy engine matches it: "*" is every value, and "!name" leaves
+        # the name out, also of "*". Taken literally, both would be looked up as names, match none, and turn a
+        # grant over everything, or over everything but one, into a boundary that admits nothing. Realms and
+        # resolvers are listed out; users can not be, so every user but some is carried as excluded usernames.
+        case_insensitive = bool(policy.get("user_case_insensitive"))
         realms = policy_realm_names(policy.get("realm"))
-        if realms == []:
-            # The realm field matches no realm at all, so this policy grants no entries.
+        resolvers = _policy_field_names(policy.get("resolver"), get_resolver_list)
+        users = _policy_usernames(policy.get("user"), case_insensitive)
+        if realms == [] or resolvers == [] or users is None:
+            # A dimension matches nothing at all, so this policy grants no entries.
             continue
-        realms = realms or []
-        resolvers = _named_targets(policy.get("resolver"))
-        usernames = _named_targets(policy.get("user"))
-        if not (realms or resolvers or usernames):
+        usernames, excluded_usernames = users
+        if not (realms or resolvers or usernames or excluded_usernames):
             # An applicable policy with no target scope grants access to all entries.
             return None
         scopes.append(AuthenticationLogVisibilityScope(
-            realms=realms, resolvers=resolvers, usernames=usernames,
-            username_case_insensitive=bool(policy.get("user_case_insensitive"))))
+            realms=realms or [], resolvers=resolvers or [], usernames=usernames,
+            excluded_usernames=excluded_usernames, username_case_insensitive=case_insensitive))
     if policies and not scopes:
         # Every applicable policy grants nothing. None would read as unrestricted.
         return []
