@@ -1,6 +1,10 @@
+import uuid
+
 from mock.mock import patch
 from webauthn.helpers import bytes_to_base64url
 
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.util import hash_credential_id
 from privacyidea.lib.machine import attach_token, detach_token
@@ -13,6 +17,7 @@ from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from privacyidea.models import TokenCredentialIdHash, TokenInfo
+from tests.authlog_utils import assert_authentication_log
 from .base import MyApiTestCase
 
 
@@ -726,6 +731,55 @@ class WebAuthn(MyApiTestCase):
         delete_policies(["wan1", "wan2", "wan3"])
         remove_token(serial=serial)
 
+    def test_34_authz_policy_of_owner_realm_on_usernameless_login(self):
+        """
+        A WebAuthn token that answers a passkey challenge names no user in the request. An AUTHZ webauthn_req policy
+        for the realm of the token owner still applies, and the token has no attestation certificate to match it.
+        """
+        delete_policies(["wan1", "wan2"])
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
+        set_policy("wan3", scope=SCOPE.ENROLL,
+                   action="webauthn_authenticator_attestation_level=none, webauthn_authenticator_attestation_form=none")
+        serial = "WAN00037300"
+        mock_nonce = hexlify_and_unicode(webauthn_b64_decode("u2UUrVcqwF4tlKaZH7nfLM2V0wWZ-1-RPCF1rwsmhEo"))
+        reg_data = ("o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViY1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1pdAAAAAAAAAAAAAA"
+                    "AAAAAAAAAAAAAAFKyhLhHxRLvrqQY8OFUfwMDp5x5rpQECAyYgASFYIJohLFYLJp3Gk7h8oy5M9rjaGsyiffu1HU9plGWySuv-"
+                    "Ilgg4bJtPzLqiwWEZWIKIrNFkIoYT8SRwa4bCxUB2OFlba4")
+        client_data = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoidTJVVXJWY3F3RjR0bEthWkg3bmZMTTJWMHdXWi0xLVJ"
+                       "QQ0YxcndzbWhFbyIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9")
+        self.addCleanup(delete_policies, ["wan1", "wan2", "wan3", "authz_req"])
+        self._enroll_webauthn(serial, client_data, reg_data, mock_nonce)
+        self.addCleanup(remove_token, serial=serial)
+        set_policy("authz_req", scope=SCOPE.AUTHZ, realm=self.realm1,
+                   action=f"{FIDO2PolicyAction.REQ}=issuer/.*Yubico.*/")
+
+        with self.app.test_request_context('/validate/initialize', method='POST', data={"type": "passkey"},
+                                           headers={"Origin": "https://kc.fritz.box:8443"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            transaction_id = res.json["detail"]["transaction_id"]
+        self._change_challenge_nonce(transaction_id, "0Bw6Kfs-i5-rqYvgykgQFpVD8jXYshoDeqKjOn_4x1c")
+        data = {
+            "userHandle": "V0FOMDAwMzczMDA=",
+            "transaction_id": transaction_id,
+            "credential_id": "rKEuEfFEu-upBjw4VR_AwOnnHms",
+            "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiTUVKM05rdG1jeTFwTlMxeWNWbDJaM2xyWjFGR2NG"
+                              "WkVPR3BZV1hOb2IwUmxjVXRxVDI1Zk5IZ3hZdyIsIm9yaWdpbiI6Imh0dHBzOi8va2MuZnJpdHouYm94Ojg0NDMi"
+                              "LCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+            "signature": "MEYCIQCxSkkSc0wMwUdyfZq2sRnBQa2AuBbgz8I/B51wN0TiNQIhAIZplnq87VrRfHcJZBZvk0xuR5nVfg2YGVKoabiuH"
+                         "Vcm",
+            "authenticatorData": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ+1odAAAAAA=="
+        }
+        self.assertNotIn("user", data)
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": "https://kc.fritz.box:8443"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+
+        delete_policy("authz_req")
+        self._authenticate_webauthn(data)
+
     # Shared enrollment data used across policy tests
     _policy_test_client_data = (
         "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoibmgwaUJ6MFNNbmRsVnNQUkdM"
@@ -1076,6 +1130,213 @@ class WebAuthn(MyApiTestCase):
             remove_token(webauthn_serial)
         except:
             pass
+
+
+class WebAuthnAuthorizationTestCase(MyApiTestCase):
+    """
+    Authentication with a WebAuthn token, answered with the credential id the way current clients do. The AUTHZ
+    policies webauthn_req and webauthn_authenticator_selection_list apply on /validate/check and on /auth, and the
+    answer is only accepted for the token owner.
+    """
+    pin = "12"
+    headers = {"Host": "pi.fritz.box:5000", "Origin": "https://pi.fritz.box:5000"}
+    credential_id = "jCStGer33emjgdsqdTNC6r3RuDrAV_zDS6XHyRLHD_miwVSkObkK3gHgl4sXUHiul3cLLiIBlPSaxPGHBdWsBg"
+    # Yubico U2F EE Serial 2109467376, issued by the Yubico U2F Root CA Serial 457200631
+    registration_client_data = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiUmpDSzZRbHptT3BXTjRCd0U2eEQ1dHg1"
+                                "UDBjektDRmVtZnFNQm5BaGNoMCIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAifQ")
+    registration_data = (
+        "o2NmbXRmcGFja2VkZ2F0dFN0bXSjY2FsZyZjc2lnWEcwRQIga75EjPA16t5Tck2dwpAE-PoalJVtpqVCauYvZz_FU3cCIQCrR-KSlaLQhuuA"
+        "Vkmx0KYkoQIgHDYeZX4Dxi98BW4itGN4NWOBWQLdMIIC2TCCAcGgAwIBAgIJAPDqu31oBEyKMA0GCSqGSIb3DQEBCwUAMC4xLDAqBgNVBAMT"
+        "I1l1YmljbyBVMkYgUm9vdCBDQSBTZXJpYWwgNDU3MjAwNjMxMCAXDTE0MDgwMTAwMDAwMFoYDzIwNTAwOTA0MDAwMDAwWjBvMQswCQYDVQQG"
+        "EwJTRTESMBAGA1UECgwJWXViaWNvIEFCMSIwIAYDVQQLDBlBdXRoZW50aWNhdG9yIEF0dGVzdGF0aW9uMSgwJgYDVQQDDB9ZdWJpY28gVTJG"
+        "IEVFIFNlcmlhbCAyMTA5NDY3Mzc2MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE5mfTO7qcRZuAnvzLaguuLFz8S9eB1XNIPZb96SUfZCzN"
+        "5sIGVRTzM4JGrJlSgAAq0jivvANxttf6w7_LnnnSMKOBgTB_MBMGCisGAQQBgsQKDQEEBQQDBQQDMCIGCSsGAQQBgsQKAgQVMS4zLjYuMS40"
+        "LjEuNDE0ODIuMS43MBMGCysGAQQBguUcAgEBBAQDAgQwMCEGCysGAQQBguUcAQEEBBIEEC_AV5-BE0fqsRa7Wo25ICowDAYDVR0TAQH_BAIw"
+        "ADANBgkqhkiG9w0BAQsFAAOCAQEAtjGoKNeTOK0pAIoNf3mjoD3PLgybH2L6z7SKnlWVd6dRbJWbZCsY8AxMdyKNGfnUQiJcEmi9IxigjGoX"
+        "cwZPApnJm7JDike7Z7HQ2yUrlJZ-EgFamivp5C3UVCaIkGH-HyJW_vh23XOZMkaDcRqwbeq8b0Voavnu4YF5bCM7PtnsPcCsvfL5DahPGSfp"
+        "c9YyANG49OQBOZolNF3MBKKrspOAI7RfW0JSQY0NUnWFYx9hxFbNuYsKFN4NblJ_Zz9tMk1YYSkTJ6VfxHTo5tfIcaLfZ1dIrMeY12-WevjM"
+        "ufFW_qB4ErY5Gjft3cbiZBELmbQ9QLUyLX78lHiLC9pJImhhdXRoRGF0YVjE1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1pFAAAA"
+        "BC_AV5-BE0fqsRa7Wo25ICoAQIwkrRnq993po4HbKnUzQuq90bg6wFf8w0ulx8kSxw_5osFUpDm5Ct4B4JeLF1B4rpd3Cy4iAZT0msTxhwXV"
+        "rAalAQIDJiABIVggwD4LMXnu6jGwvc-PwbT46HLfUFAp6flASQh4CuEsACIiWCDKyZPLKFfXGZa--6Gjbp0dmq_fDIYWYVapphWk6WodBA")
+    # The assertion does not have the user verification flag set
+    authenticator_data = "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1oBAAAACA"
+    client_data = ("eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWjFvc0hYVl9rYm1FMEpnNVMyemtCV1VLSTNaTzZVWU8taGt6QnY"
+                   "tWXlwQSIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAifQ")
+    signature = "MEYCIQDl9geJO2uBLoedFxpGLhOyxKIhp9CJXdFO0gAp56HgcQIhAO5MRvXN_ZOEl-M_fhIsVJCq4xeVrbME-Mw2CAVK_1kh"
+
+    def setUp(self):
+        super().setUp()
+        self.setUp_user_realms()
+        self.user = User("hans", self.realm1)
+        self._set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        self._set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz.box")
+        self.serial = self._enroll()
+        self.addCleanup(remove_token, self.serial)
+
+    def _set_policy(self, name, **kwargs):
+        set_policy(name, **kwargs)
+        self.addCleanup(self._delete_policy, name)
+
+    @staticmethod
+    def _delete_policy(name):
+        try:
+            delete_policy(name)
+        except ResourceNotFoundError:
+            pass
+
+    def _enroll(self) -> str:
+        data = {"genkey": True, "type": "webauthn", "user": self.user.login, "realm": self.realm1, "pin": self.pin}
+        headers = dict(self.headers, authorization=self.at)
+        with patch("privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce") as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode("RjCK6QlzmOpWN4BwE6xD5tx5P0czKCFemfqMBnAhch0")
+            with self.app.test_request_context("/token/init", method="POST", data=data, headers=headers):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                serial = res.json["detail"]["serial"]
+                transaction_id = res.json["detail"]["webAuthnRegisterRequest"]["transaction_id"]
+        data = {"user": self.user.login, "realm": self.realm1, "serial": serial, "type": "webauthn",
+                "transaction_id": transaction_id, "clientdata": self.registration_client_data,
+                "regdata": self.registration_data}
+        with self.app.test_request_context("/token/init", method="POST", data=data, headers=headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        return serial
+
+    def _trigger_challenge(self) -> str:
+        with patch("privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce") as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode("Z1osHXV_kbmE0Jg5S2zkBWUKI3ZO6UYO-hkzBv-YypA")
+            with self.app.test_request_context("/validate/check", method="POST", headers=self.headers,
+                                               data={"user": self.user.login, "pass": self.pin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual("CHALLENGE", res.json["result"]["authentication"], res.json)
+                return res.json["detail"]["transaction_id"]
+
+    def _validate_check(self, transaction_id: str, **extra_data):
+        data = {"authenticatordata": self.authenticator_data, "clientdata": self.client_data,
+                "credentialid": self.credential_id, "signaturedata": self.signature,
+                "transaction_id": transaction_id, "user": self.user.login}
+        data.update(extra_data)
+        with self.app.test_request_context("/validate/check", method="POST", data=data, headers=self.headers):
+            return self.app.full_dispatch_request()
+
+    def _auth(self, transaction_id: str, username: str, **extra_data):
+        # The parameter names of the WebUI
+        data = {"authenticatorData": self.authenticator_data, "clientDataJSON": self.client_data,
+                "credential_id": self.credential_id, "signature": self.signature,
+                "transaction_id": transaction_id, "username": username}
+        data.update(extra_data)
+        with self.app.test_request_context("/auth", method="POST", data=data, headers=self.headers):
+            return self.app.full_dispatch_request()
+
+    def _aaguid(self) -> str:
+        return str(uuid.UUID(hex=get_one_token(serial=self.serial).get_tokeninfo("aaguid")))
+
+    def test_01_attestation_certificate_requirement(self):
+        transaction_id = self._trigger_challenge()
+        self._set_policy("authz_req", scope=SCOPE.AUTHZ,
+                         action=f"{FIDO2PolicyAction.REQ}=issuer/.*NonExistentVendor.*/")
+        res = self._validate_check(transaction_id)
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(303, res.json["result"]["error"]["code"], res.json)
+        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
+                                  transaction_id=transaction_id)
+
+        set_policy("authz_req", scope=SCOPE.AUTHZ, action=f"{FIDO2PolicyAction.REQ}=issuer/.*Yubico.*/")
+        res = self._validate_check(transaction_id)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("ACCEPT", res.json["result"]["authentication"], res.json)
+
+    def test_02_authenticator_selection_list(self):
+        transaction_id = self._trigger_challenge()
+        self._set_policy("authz_aaguid", scope=SCOPE.AUTHZ,
+                         action=f"{FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST}=00000000-0000-0000-0000-000000000000")
+        res = self._validate_check(transaction_id)
+        self.assertEqual(403, res.status_code, res.json)
+
+        # The AAGUID is accepted in the form with dashes, as the enrollment policy uses it
+        set_policy("authz_aaguid", scope=SCOPE.AUTHZ,
+                   action=f"{FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST}=00000000-0000-0000-0000-000000000000 "
+                          f"{self._aaguid()}")
+        res = self._validate_check(transaction_id)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("ACCEPT", res.json["result"]["authentication"], res.json)
+
+    def test_03_authorization_policies_on_auth(self):
+        """
+        The WebUI sends the WebAuthn second factor with its own parameter names to /auth. The challenge was
+        triggered with the PIN, so the policy value for user verification applies, and an assertion without user
+        verification is accepted.
+        """
+        transaction_id = self._trigger_challenge()
+        self._set_policy("authz_req", scope=SCOPE.AUTHZ,
+                         action=f"{FIDO2PolicyAction.REQ}=issuer/.*NonExistentVendor.*/")
+        res = self._auth(transaction_id, self.user.login)
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual("REJECT", self.find_most_recent_audit_entry(action="POST /auth").get("authentication"))
+
+        delete_policy("authz_req")
+        self._set_policy("authz_aaguid", scope=SCOPE.AUTHZ,
+                         action=f"{FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST}=00000000-0000-0000-0000-000000000000")
+        res = self._auth(transaction_id, self.user.login)
+        self.assertEqual(403, res.status_code, res.json)
+
+        delete_policy("authz_aaguid")
+        res = self._auth(transaction_id, self.user.login)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
+
+    def test_04_answer_for_other_user(self):
+        transaction_id = self._trigger_challenge()
+        res = self._validate_check(transaction_id, user="cornelius")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+
+        res = self._auth(transaction_id, "cornelius")
+        self.assertEqual(401, res.status_code, res.json)
+
+        res = self._validate_check(transaction_id)
+        self.assertEqual("ACCEPT", res.json["result"]["authentication"], res.json)
+
+    def test_05_credential_id_of_other_token(self):
+        """
+        An answer that names a credential id other than the one of the token is rejected, and that credential id is
+        not recorded for the token.
+        """
+        transaction_id = self._trigger_challenge()
+        other_credential_id = bytes_to_base64url(b"the credential of another token")
+        res = self._validate_check(transaction_id, serial=self.serial, credentialid=other_credential_id)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+        self.assertIsNone(TokenCredentialIdHash.query.filter_by(
+            credential_id_hash=hash_credential_id(other_credential_id)).first())
+
+        res = self._validate_check(transaction_id, serial=self.serial)
+        self.assertEqual("ACCEPT", res.json["result"]["authentication"], res.json)
+    def test_06_invalid_signature_with_authorization_policy(self):
+        """
+        The authorization policies are checked for a valid assertion only. An invalid signature is a failed
+        authentication, whatever the policies say.
+        """
+        transaction_id = self._trigger_challenge()
+        self._set_policy("authz_req", scope=SCOPE.AUTHZ,
+                         action=f"{FIDO2PolicyAction.REQ}=issuer/.*NonExistentVendor.*/")
+        invalid_signature = self.signature[:-4] + ("AAAA" if not self.signature.endswith("AAAA") else "BBBB")
+        res = self._validate_check(transaction_id, signaturedata=invalid_signature)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+
+        res = self._validate_check(transaction_id)
+        self.assertEqual(403, res.status_code, res.json)
+
+    def test_07_authenticator_selection_list_from_request(self):
+        """
+        Only a policy restricts the authenticators; a request parameter of the same name has no effect.
+        """
+        transaction_id = self._trigger_challenge()
+        res = self._auth(transaction_id, self.user.login, **{
+            FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST: "00000000-0000-0000-0000-000000000000"})
+        self.assertEqual(200, res.status_code, res.json)
 
 
 class WebAuthnOfflineTestCase(MyApiTestCase):

@@ -154,8 +154,10 @@ export class ValidateService implements ValidateServiceInterface {
       }),
       switchMap((initResponse) => {
         const data = initResponse.detail.passkey;
-        const userVerification: UserVerificationRequirement =
-          (data.user_verification as UserVerificationRequirement) ?? "preferred";
+        // The server requires user verification for a login with a passkey; testing a token uses the policy value
+        const userVerification: UserVerificationRequirement = args?.isTest
+          ? ((data.user_verification as UserVerificationRequirement) ?? "preferred")
+          : "required";
         return from(
           navigator.credentials.get({
             publicKey: {
@@ -196,6 +198,7 @@ export class ValidateService implements ValidateServiceInterface {
     signRequest: WebAuthnSignRequest;
     transaction_id: string;
     username: string;
+    realm?: string;
     isTest?: boolean;
   }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
@@ -227,6 +230,7 @@ export class ValidateService implements ValidateServiceInterface {
           const finalParams = {
             transaction_id: args.transaction_id,
             username: args.username,
+            ...(args.realm && { realm: args.realm }),
             credential_id: pkCredential.id, // This is already base64url encoded
             authenticatorData: this.base64Service.webAuthnBase64EncArr(response.authenticatorData),
             clientDataJSON: this.base64Service.webAuthnBase64EncArr(response.clientDataJSON),

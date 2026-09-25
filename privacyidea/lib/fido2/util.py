@@ -4,6 +4,8 @@ from sqlalchemy import select
 from webauthn import base64url_to_bytes
 
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.error import EnrollmentError
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.token import create_tokenclass_object, log, get_tokens
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
@@ -77,6 +79,25 @@ def get_fido2_token_by_transaction_id(transaction_id: str, credential_id: str) -
     return token
 
 
+def token_belongs_to_user(token: TokenClass, user: User) -> bool:
+    """
+    Check whether the user is one of the owners of the token, by user id, resolver and realm, like the lookup of the
+    tokens of a user.
+
+    :param token: The token object
+    :param user: The user object
+    :return: True if the user owns the token
+    """
+    if not user or not user.uid:
+        return False
+    for owner in token.token.all_owners:
+        owner_realm = owner.realm.name if owner.realm else ""
+        if (owner.user_id == str(user.uid) and (owner.resolver or "").lower() == (user.resolver or "").lower()
+                and owner_realm.lower() == (user.realm or "").lower()):
+            return True
+    return False
+
+
 def get_credential_ids_for_user(user: User) -> list:
     """
     Get a list of credential ids of passkey or webauthn token for a user.
@@ -116,23 +137,45 @@ def hash_credential_id(credential_id: str | bytes) -> str:
     return hashlib.sha256(credential_id).hexdigest()
 
 
+def credential_id_is_registered_to_other_token(credential_id: bytes, token_id: int) -> bool:
+    """
+    Check whether a credential is already registered to a token other than the one with the given id.
+
+    The credential is looked up in the TokenCredentialIdHash table and in the token info, which also holds the hash for
+    tokens that are not in that table yet, for example imported ones.
+
+    :param credential_id: The raw credential_id
+    :param token_id: The id of the token the credential is being registered to
+    :return: True if another token already has this credential
+    """
+    credential_id_hash = hash_credential_id(credential_id)
+    stmt = select(TokenCredentialIdHash.token_id).where(TokenCredentialIdHash.credential_id_hash == credential_id_hash)
+    registered_token_id = db.session.scalar(stmt)
+    if registered_token_id is not None:
+        return registered_token_id != token_id
+    # TokenInfo.Value is a CLOB on Oracle, which cannot be compared with "=", see get_fido2_token_by_credential_id
+    stmt = select(TokenInfo.token_id).where(TokenInfo.Key == FIDO2TokenInfo.CREDENTIAL_ID_HASH,
+                                            TokenInfo.Value.like(credential_id_hash),
+                                            TokenInfo.token_id != token_id).limit(1)
+    return db.session.scalar(stmt) is not None
+
+
 def save_credential_id_hash(credentials_id_hash: str, token_id: int) -> None:
     """
     Save a credential_id hash for a token in the database.
 
+    A credential belongs to a single token. If the hash is already registered to another token, that entry is kept
+    and an EnrollmentError is raised.
+
     :param credentials_id_hash: The hash of the credential_id
     :param token_id: The id of the token
     """
-    # Check if an entry with that hash already exists
     stmt = select(TokenCredentialIdHash).where(TokenCredentialIdHash.credential_id_hash == credentials_id_hash)
     tcih = db.session.scalar(stmt)
     if tcih:
-        token = db.session.get(Token, tcih.token_id)
-        if token.id == token_id:
+        if tcih.token_id == token_id:
             return
-        else:
-            # if the token is different, we need to delete the old entry
-            log.warning(f"Existing entry in TokenCredentialIdHash for credential_id_hash {credentials_id_hash} and "
-                        f"token_id {token.id}. Overwriting it with token_id {token_id}.")
-            tcih.delete()
+        log.warning(f"The credential_id_hash {credentials_id_hash} is already registered to the token with id "
+                    f"{tcih.token_id}. Refusing to register it to the token with id {token_id}.")
+        raise EnrollmentError("The credential is already registered to another token.")
     TokenCredentialIdHash(token_id=token_id, credential_id_hash=credentials_id_hash).save()
