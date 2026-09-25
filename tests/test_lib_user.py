@@ -4,6 +4,7 @@ This test file tests the lib.user
 The lib.user.py only depends on the database model
 """
 import logging
+from typing import Any
 
 import mock
 from testfixtures import log_capture, LogCapture
@@ -385,6 +386,39 @@ class UserTestCase(PristineSqliteFixtures, MyTestCase):
         with patch_resolver_to_raise(self.resolvername1, ResolverError("down")):
             self.assertEqual({"count": 0, "with_tokens": 0}, count_users({"realm": self.realm1}, failures=failures))
         self.assertEqual([self.resolvername1], failures)
+
+    def test_get_user_list_allowed_resolvers_and_user_filter(self):
+        self.setUp_user_realm4_with_2_resolvers()
+
+        def listed(**kwargs: Any) -> set[tuple[str, str]]:
+            return {(user["username"], user["resolver"]) for user in get_user_list({"realm": self.realm4}, **kwargs)}
+
+        # cornelius is served by both resolvers of the realm, the one of higher priority wins.
+        everyone = listed()
+        self.assertIn(("cornelius", self.resolvername1), everyone)
+        self.assertNotIn(("cornelius", self.resolvername3), everyone)
+
+        # A resolver that may not be listed is not queried at all, so its cornelius hides nobody.
+        only_reso3 = listed(allowed_resolvers={self.realm4: [self.resolvername3]})
+        self.assertEqual({self.resolvername3}, {resolver for _, resolver in only_reso3})
+        self.assertIn(("cornelius", self.resolvername3), only_reso3)
+        self.assertEqual(set(), listed(allowed_resolvers={}))
+        self.assertEqual(len(only_reso3), count_users({"realm": self.realm4},
+                                                      allowed_resolvers={self.realm4: [self.resolvername3]})["count"])
+
+        # Nor is it reported as a resolver that could not be queried.
+        failures = []
+        with patch_resolver_to_raise(self.resolvername1, ResolverError("down")):
+            listed(allowed_resolvers={self.realm4: [self.resolvername3]}, failures=failures)
+        self.assertEqual([], failures)
+
+        # The filter runs before the users are deduplicated, so a user it leaves out hides nobody either.
+        def only_cornelius_of_reso3(realm: str, resolver: str, username: str | None) -> bool:
+            return realm == self.realm4 and resolver == self.resolvername3 and username == "cornelius"
+
+        self.assertEqual({("cornelius", self.resolvername3)}, listed(user_filter=only_cornelius_of_reso3))
+        self.assertEqual({"count": 1, "with_tokens": 0},
+                         count_users({"realm": self.realm4}, user_filter=only_cornelius_of_reso3))
 
     def test_get_user_list_has_tokens_values(self):
         with_tokens = get_user_list({"realm": self.realm1, "has_tokens": "True"})

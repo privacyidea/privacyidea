@@ -1,5 +1,6 @@
 """ API testcases for the "/user/" endpoint """
 
+from typing import Any
 from urllib.parse import urlencode, quote
 
 from privacyidea.lib.error import ResolverError
@@ -1145,3 +1146,150 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual({"count": 0, "with_tokens": 0}, res.json["result"]["value"])
         self.assertEqual([self.resolvername1], res.json["detail"]["skipped_resolvers"])
+
+
+class UserListScopeTestCase(MyApiTestCase):
+    """
+    Which users an administrator may list, and whether they may learn which of them own a token.
+    """
+
+    def _get(self, path: str, query: dict | None = None, json: dict | None = None) -> tuple[int, Any]:
+        """GET as the administrator, with the query string and, if given, the parameters as a JSON body."""
+        with self.app.test_request_context(path, method='GET', query_string=urlencode(query or {}), json=json,
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        return res.status_code, (res.json.get("result") or {}).get("value")
+
+    def _realms_listed(self, query: dict | None = None, json: dict | None = None) -> set[str]:
+        status, users = self._get('/user/', query, json)
+        self.assertEqual(200, status, users)
+        return {user["realm"] for user in users}
+
+    def test_01_several_realms_are_checked_one_by_one(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_policy("pol-userlist", scope=SCOPE.ADMIN, action=PolicyAction.USERLIST, realm=self.realm1)
+        set_policy("pol-tokenlist", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST)
+        try:
+            # A realm that is not granted is refused however the realms are given, and does not
+            # come along with one that is.
+            for path in ('/user/', '/user/count'):
+                self.assertEqual(403, self._get(path, {"realm": f"{self.realm1},{self.realm3}"})[0], path)
+                self.assertEqual(403, self._get(path, json={"realm": [self.realm1, self.realm3]})[0], path)
+                self.assertEqual(403, self._get(path, json={"realm": [self.realm3]})[0], path)
+                self.assertEqual(200, self._get(path, json={"realm": [self.realm1]})[0], path)
+            # Realm names are lowercase, so the case a realm is given in does not matter.
+            self.assertEqual({self.realm1}, self._realms_listed({"realm": self.realm1.upper()}))
+            self.assertEqual(403, self._get('/user/', {"realm": self.realm3.upper()})[0])
+
+            # Several granted realms may be asked for at once.
+            set_policy("pol-userlist", scope=SCOPE.ADMIN, action=PolicyAction.USERLIST,
+                       realm=[self.realm1, self.realm3])
+            self.assertEqual({self.realm1, self.realm3},
+                             self._realms_listed({"realm": f"{self.realm1},{self.realm3}"}))
+        finally:
+            delete_policy("pol-userlist")
+            delete_policy("pol-tokenlist")
+
+    def test_02_a_realm_excluded_by_the_policy_stays_excluded(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        set_policy("pol-userlist", scope=SCOPE.ADMIN, action=PolicyAction.USERLIST, realm=f"*,!{self.realm3}")
+        try:
+            for query in ({"realm": self.realm3}, {"realm": self.realm3.upper()},
+                          {"realm": f"{self.realm1},{self.realm3}"}):
+                self.assertEqual(403, self._get('/user/', query)[0], query)
+            self.assertEqual(403, self._get('/user/', json={"realm": [self.realm1, self.realm3]})[0])
+            # Without a realm, the realms that are not excluded are listed.
+            realms = self._realms_listed()
+            self.assertIn(self.realm1, realms)
+            self.assertNotIn(self.realm3, realms)
+        finally:
+            delete_policy("pol-userlist")
+
+    def test_03_the_resolvers_of_the_policy_restrict_the_list(self):
+        self.setUp_user_realm4_with_2_resolvers()
+        serial = init_token({"type": "spass"}, user=User("cornelius", self.realm4, self.resolvername3)).get_serial()
+        set_policy("pol-userlist", scope=SCOPE.ADMIN, action=PolicyAction.USERLIST, realm=self.realm4,
+                   resolver=self.resolvername3)
+        set_policy("pol-tokenlist", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST)
+        try:
+            status, users = self._get('/user/', {"realm": self.realm4})
+            self.assertEqual(200, status, users)
+            self.assertEqual({self.resolvername3}, {user["resolver"] for user in users})
+            # The resolver of higher priority is not queried, so its cornelius does not hide this one.
+            self.assertIn(("cornelius", self.resolvername3), {(user["username"], user["resolver"]) for user in users})
+            self.assertEqual((200, {"count": len(users), "with_tokens": 1}),
+                             self._get('/user/count', {"realm": self.realm4}))
+            status, owners = self._get('/user/', {"realm": self.realm4, "has_tokens": "True"})
+            self.assertEqual((200, [("cornelius", self.resolvername3)]),
+                             (status, [(user["username"], user["resolver"]) for user in owners]))
+            # Asking for a resolver the policy does not name is refused.
+            self.assertEqual(403, self._get('/user/', {"realm": self.realm4, "resolver": self.resolvername1})[0])
+        finally:
+            remove_token(serial)
+            delete_policy("pol-userlist")
+            delete_policy("pol-tokenlist")
+
+    def test_04_the_users_of_the_policy_restrict_the_list(self):
+        self.setUp_user_realms()
+        set_policy("pol-userlist", scope=SCOPE.ADMIN, action=PolicyAction.USERLIST, realm=self.realm1,
+                   user="cornelius")
+        set_policy("pol-tokenlist", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST)
+        try:
+            status, users = self._get('/user/', {"realm": self.realm1})
+            self.assertEqual((200, ["cornelius"]), (status, [user["username"] for user in users]))
+            self.assertEqual((200, {"count": 1, "with_tokens": 0}), self._get('/user/count', {"realm": self.realm1}))
+            self.assertEqual(403, self._get('/user/', {"realm": self.realm1, "user": "selfservice"})[0])
+
+            # A policy that names no user grants every user.
+            set_policy("pol-userlist-all", scope=SCOPE.ADMIN, action=PolicyAction.USERLIST, realm=self.realm1)
+            status, users = self._get('/user/', {"realm": self.realm1})
+            self.assertEqual(200, status, users)
+            self.assertIn("selfservice", {user["username"] for user in users})
+        finally:
+            delete_policy("pol-userlist")
+            delete_policy("pol-userlist-all")
+            delete_policy("pol-tokenlist")
+
+    def test_05_telling_who_owns_a_token_requires_the_tokenlist_action(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        serial = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        set_policy("pol-userlist", scope=SCOPE.ADMIN, action=PolicyAction.USERLIST)
+        try:
+            # Without tokenlist the users are listed, but not by whether they own a token.
+            self.assertEqual(200, self._get('/user/', {"realm": self.realm1})[0])
+            for has_tokens in ("True", "False"):
+                self.assertEqual(403, self._get('/user/', {"realm": self.realm1, "has_tokens": has_tokens})[0])
+            self.assertEqual(403, self._get('/user/count', {"realm": self.realm1})[0])
+
+            # With tokenlist in one realm, in that realm only.
+            set_policy("pol-tokenlist", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm=self.realm1)
+            status, owners = self._get('/user/', {"realm": self.realm1, "has_tokens": "True"})
+            self.assertEqual((200, ["cornelius"]), (status, [user["username"] for user in owners]))
+            self.assertEqual(1, self._get('/user/count', {"realm": self.realm1})[1]["with_tokens"])
+            self.assertEqual(403, self._get('/user/count', {"realm": self.realm3})[0])
+            self.assertEqual(403, self._get('/user/count', {"realm": f"{self.realm1},{self.realm3}"})[0])
+            # Without a realm every realm is listed, so it is needed in every realm.
+            self.assertEqual(403, self._get('/user/count')[0])
+
+            # Ownership is told exactly where the token list shows the tokens of the realm, however the
+            # realms of the tokenlist policy are written.
+            for token_realms in ("*", f"*,!{self.realm3}", f"{self.realm1},{self.realm3}"):
+                set_policy("pol-tokenlist", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm=token_realms)
+                token_listed = self._get('/token/', {"serial": serial})[1]["count"] == 1
+                self.assertEqual(200 if token_listed else 403, self._get('/user/count', {"realm": self.realm1})[0],
+                                 token_realms)
+            self.assertEqual(200, self._get('/user/count', {"realm": self.realm1})[0])
+            self.assertEqual(200, self._get('/user/count', {"realm": f"{self.realm1},{self.realm3}"})[0])
+        finally:
+            remove_token(serial)
+            delete_policy("pol-userlist")
+            delete_policy("pol-tokenlist")
+
+    def test_06_the_audit_records_the_has_tokens_filter(self):
+        self.setUp_user_realms()
+        self.assertEqual(200, self._get('/user/', {"realm": self.realm1, "has_tokens": "False"})[0])
+        audit_entry = self.find_most_recent_audit_entry(action="GET /user/")
+        self.assertIn("has_tokens: False", audit_entry.get("info", ""), audit_entry)

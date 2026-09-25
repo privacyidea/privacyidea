@@ -998,7 +998,8 @@ def get_token_owner_keys(resolvers: list[str] | None = None,
 
     A user of a resolver shared by several realms only owns a token in the realm it was assigned in,
     so a caller holding the user records of one realm can tell which of them own a token there.
-    Tokens that are not assigned do not contribute, and neither does the token being active. An
+    Tokens that are not assigned do not contribute, and neither do revoked ones, which can never be
+    used again. A disabled token does, as it can be enabled again, and so does every token type. An
     assignment without a realm - a token given to a user that has none - yields the empty realm and
     therefore matches no user of any realm.
 
@@ -1011,8 +1012,13 @@ def get_token_owner_keys(resolvers: list[str] | None = None,
         triples of every user, an empty list returns nothing.
     :return: A set of (lowercase realm name, resolver name, user id) triples
     """
-    owners = select(Realm.name, TokenOwner.resolver, TokenOwner.user_id).select_from(TokenOwner).outerjoin(
-        Realm, Realm.id == TokenOwner.realm_id).distinct()
+    # Compared with false() rather than negated, so that it also reads on Oracle, which has no boolean type.
+    # The column is nullable, and a token that was never revoked may hold NULL.
+    owners = (select(Realm.name, TokenOwner.resolver, TokenOwner.user_id).select_from(TokenOwner)
+              .join(Token, Token.id == TokenOwner.token_id)
+              .outerjoin(Realm, Realm.id == TokenOwner.realm_id)
+              .where(or_(Token.revoked == false(), Token.revoked.is_(None)))
+              .distinct())
     if resolvers is not None:
         owners = owners.where(TokenOwner.resolver.in_(resolvers))
     queries = [owners] if user_ids is None else [owners.where(TokenOwner.user_id.in_(chunk))

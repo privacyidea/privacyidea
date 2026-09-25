@@ -32,9 +32,10 @@ an administrator may have many rights concerning one user realm and only a few
 rights concerning another.
 
 Creating a policy with ``scope:admin``, ``admin-realm:helpdesk``,
-``user:frank``, ``action:enable`` and ``realm:sales``
+``adminuser:frank``, ``action:enable`` and ``realm:sales``
 means that the administrator *frank* in the admin-realm *helpdesk* is allowed
-to enable tokens in the user-realm *sales*.
+to enable tokens in the user-realm *sales*. The fields ``user`` and ``resolver``
+do not name the administrator, but the users the administrator may act on.
 
 .. note:: As long as no admin policy is defined all administrators
    are allowed to do everything.
@@ -43,6 +44,8 @@ to enable tokens in the user-realm *sales*.
 
 The following actions are available in the scope
 *admin*:
+
+.. _policy_tokenlist:
 
 tokenlist
 ~~~~~~~~~
@@ -416,8 +419,12 @@ allowed to view the user list in a realm.
 An administrator might not be allowed to list the users, if
 they should only work with tokens, but not see all users at once.
 
-.. note:: If an administrator has any right in a realm, the administrator
-   is also allowed to view the token list.
+If the policy names resolvers, the administrator only sees the users of these resolvers,
+and if it names users, only these users. Without a realm, it grants the user list of every realm.
+
+Listing or counting the users by whether they own a token additionally requires the
+:ref:`policy_tokenlist` action in every realm the users are listed from, since it tells
+who owns a token.
 
 .. _policy_getchallenges:
 

@@ -58,7 +58,7 @@
             <input
               #filterHTMLInputElement
               [appRefocusAfterReload]="userService.usersResource.isLoading()"
-              [appFilterAutocomplete]="filterKeywords"
+              [appFilterAutocomplete]="filterKeywords()"
               (input)="userService.handleFilterInput($event)"
               [value]="userService.filterDraft().filterString"
               aria-label="Filter Input"

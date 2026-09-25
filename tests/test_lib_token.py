@@ -49,7 +49,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    set_realms, set_defaults, assign_token,
                                    unassign_token, resync_token,
                                    reset_token, set_pin, set_pin_user,
-                                   set_pin_so, enable_token,
+                                   set_pin_so, enable_token, revoke_token,
                                    is_token_active, set_hashlib, set_otplen,
                                    set_count_auth, add_tokeninfo,
                                    set_sync_window, set_count_window,
@@ -411,14 +411,42 @@ class TokenTestCase(MyTestCase):
             user_ids = [cornelius_uid, "does-not-exist", shadow_uid]
             in_one_query = get_token_owner_keys(user_ids=user_ids)
             chunked = token_query._chunked
-            with mock.patch.object(token_query, "_chunked", lambda items: chunked(items, size=1)), \
-                    mock.patch.object(db.session, "execute", wraps=db.session.execute) as execute:
+            with (mock.patch.object(token_query, "_chunked", lambda items: chunked(items, size=1)),
+                  mock.patch.object(db.session, "execute", wraps=db.session.execute) as execute):
                 self.assertEqual(in_one_query, get_token_owner_keys(user_ids=user_ids))
             self.assertEqual(3, execute.call_count)
             self.assertTrue({(realm, self.resolvername1, cornelius_uid),
                              (realm, self.resolvername1, shadow_uid)} <= in_one_query, in_one_query)
         finally:
             for serial in serials:
+                remove_token(serial)
+            delete_realm(self.owner_count_realm)
+
+    def test_05g_a_revoked_token_does_not_count_as_owned(self):
+        # A revoked token can never be used again, a disabled one can be enabled again.
+        self.setUp_user_realms()
+        set_realm(self.owner_count_realm, [{"name": self.resolvername1}])
+        cornelius_uid = User("cornelius", self.realm1, self.resolvername1).uid
+        cornelius_key = (self.owner_count_realm.lower(), self.resolvername1, cornelius_uid)
+        serial = None
+        try:
+            token = init_token({"otpkey": self.otpkey}, user=User("cornelius", self.owner_count_realm))
+            serial = token.get_serial()
+            self.assertIn(cornelius_key, get_token_owner_keys(user_ids=[cornelius_uid]))
+
+            # A token that was never revoked may hold NULL instead of False.
+            token.token.revoked = None
+            db.session.commit()
+            self.assertIn(cornelius_key, get_token_owner_keys(user_ids=[cornelius_uid]))
+
+            enable_token(serial, enable=False)
+            self.assertIn(cornelius_key, get_token_owner_keys(user_ids=[cornelius_uid]))
+
+            revoke_token(serial)
+            self.assertNotIn(cornelius_key, get_token_owner_keys(user_ids=[cornelius_uid]))
+            self.assertNotIn(cornelius_key, get_token_owner_keys())
+        finally:
+            if serial:
                 remove_token(serial)
             delete_realm(self.owner_count_realm)
 

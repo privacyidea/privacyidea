@@ -145,7 +145,7 @@ class APIAuthTestCase(MyApiTestCase):
         self.setUp_user_realm3()
         # testadmin is only allowed to view users in realm2
         set_policy(name="realmadmin", scope=SCOPE.ADMIN,
-                   action=PolicyAction.USERLIST, realm=self.realm3, user="testadmin")
+                   action=PolicyAction.USERLIST, realm=self.realm3, adminuser="testadmin")
 
         with self.app.test_request_context('/user/',
                                            method='GET',
@@ -172,7 +172,7 @@ class APIAuthTestCase(MyApiTestCase):
         set_policy(name="realmadmin_multi", scope=SCOPE.ADMIN,
                    action=PolicyAction.USERLIST,
                    realm=[self.realm1, self.realm3],
-                   user="testadmin")
+                   adminuser="testadmin")
 
         with self.app.test_request_context('/user/',
                                            method='GET',
@@ -201,11 +201,11 @@ class APIAuthTestCase(MyApiTestCase):
         set_policy(name="realmadmin_pol1", scope=SCOPE.ADMIN,
                    action=PolicyAction.USERLIST,
                    realm=self.realm1,
-                   user="testadmin")
+                   adminuser="testadmin")
         set_policy(name="realmadmin_pol2", scope=SCOPE.ADMIN,
                    action=PolicyAction.USERLIST,
                    realm=self.realm3,
-                   user="testadmin")
+                   adminuser="testadmin")
 
         with self.app.test_request_context('/user/',
                                            method='GET',
@@ -240,7 +240,7 @@ class APIAuthTestCase(MyApiTestCase):
         # Policy with no realm → all realms
         set_policy(name="realmadmin_all", scope=SCOPE.ADMIN,
                    action=PolicyAction.USERLIST,
-                   user="testadmin")
+                   adminuser="testadmin")
 
         with self.app.test_request_context('/user/',
                                            method='GET',
@@ -265,7 +265,7 @@ class APIAuthTestCase(MyApiTestCase):
         self.setUp_user_realms()
         self.setUp_user_realm3()
         set_policy(name="realmadmin_empty", scope=SCOPE.ADMIN,
-                   action=PolicyAction.USERLIST, realm=self.realm3, user="testadmin")
+                   action=PolicyAction.USERLIST, realm=self.realm3, adminuser="testadmin")
 
         with self.app.test_request_context('/user/',
                                            method='GET',

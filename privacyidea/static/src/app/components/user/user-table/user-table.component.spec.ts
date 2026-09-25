@@ -199,12 +199,23 @@ describe("UserTableComponent", () => {
     expect(mockUserService.detailsUser().realm).toBe("themis");
   });
 
-  it("offers every advanced keyword alongside the plain column filters", () => {
-    expect(component.filterKeywords).toEqual([
+  it("offers every advanced keyword alongside the plain column filters to an admin who may list tokens", () => {
+    const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist", "tokenlist"] });
+
+    expect(component.filterKeywords()).toEqual([
       ...mockUserService.apiFilterKeys,
       ...mockUserService.advancedApiFilterKeys
     ]);
-    expect(component.filterKeywords).toContain("has_tokens");
+    expect(component.filterKeywords()).toContain("has_tokens");
+  });
+
+  it("does not offer has_tokens to an admin who may not list tokens, as the backend would refuse it", () => {
+    const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist"] });
+
+    expect(component.filterKeywords()).not.toContain("has_tokens");
+    expect(component.filterKeywords()).toEqual(expect.arrayContaining(mockUserService.apiFilterKeys));
   });
 
   describe("a preset filter handed over by another view", () => {

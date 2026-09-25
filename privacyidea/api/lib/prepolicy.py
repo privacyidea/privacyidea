@@ -95,6 +95,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
+from privacyidea.lib.realm import get_realms, split_realms
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
                                    get_token_owner)
@@ -300,54 +301,88 @@ def init_random_pin(request=None, action=None):
 
 def realmadmin(request=None, action=None):
     """
-    This decorator adds the realm(s) to the parameters if the administrator
-    calling this API is a realm admin.
-    This way, if the admin calls e.g. GET /user without a realm parameter
-    (or with an empty one), he will not see all users, but only users in
-    the realms granted by matching policies.
+    This decorator narrows what an administrator reads to what the matching admin policies grant.
 
-    All realms from all matching policies are collected (union).
-    If any matching policy lists no realms (i.e. "all realms"), the realm
-    parameter is left unset so that the downstream function queries all
-    realms.
+    Without a realm parameter (or with an empty one), the realms in which the administrator is granted the
+    action are added to the parameters. This way, if the admin calls e.g. GET /user without a realm, they do
+    not see all users, but only the users of these realms. Every realm is matched on its own, so a policy
+    without a realm grants every realm and a realm excluded by ``!realm`` is left out. If every realm is
+    granted, the realm parameter is left unset so that the downstream function queries all realms; if none
+    is, the request is refused.
 
     For the user-list action, several granted realms are injected as a list;
     a single granted realm, or any other action, injects a single realm
     string (endpoints other than the user list expect a scalar realm).
 
+    For the user-list action the resolver and user conditions of the policies are honoured as well, whether a
+    realm was given or not. ``request.pi_allowed_resolvers`` holds the resolvers the administrator may list in
+    each realm, and ``request.pi_user_filter`` checks each user of a resolver for which every matching policy
+    names the users. Both are None when they restrict nothing, and the user list applies them.
+
     :param request: The HTTP request
     :param action: The action like ACTION.USERLIST
     """
-    # This decorator is only valid for admins
-    if g.logged_in_user.get("role") == ROLE.ADMIN:
-        params = request.all_data
-        if not params.get("realm"):
-            # An empty realm (e.g. "?realm=") is treated the same as an absent one:
-            # otherwise a realm-restricted admin would be evaluated against an
-            # empty realm instead of falling back to their granted realm(s).
-            # Collect the union of realms from every matching policy.
-            matching_policies = Match.admin(g, action=action).policies()
-            if matching_policies:
-                all_realms = []
-                for pol in matching_policies:
-                    pol_realms = pol.get("realm")
-                    if not pol_realms:
-                        # A policy with no realm restriction means
-                        # "all realms" — leave request.all_data without
-                        # a realm filter so the downstream function
-                        # queries every realm.
-                        all_realms = []
-                        break
-                    all_realms.extend(pol_realms)
-                if all_realms:
-                    # Deduplicate while preserving order
-                    unique_realms = list(dict.fromkeys(all_realms))
-                    if len(unique_realms) == 1 or action != PolicyAction.USERLIST:
-                        request.all_data["realm"] = unique_realms[0]
-                    else:
-                        request.all_data["realm"] = unique_realms
-
+    request.pi_allowed_resolvers = None
+    request.pi_user_filter = None
+    # This decorator is only valid for admins, and without any admin policy an administrator may do everything.
+    if (g.logged_in_user.get("role") != ROLE.ADMIN
+            or not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True)):
+        return True
+    realms = list(get_realms())
+    granted = [realm for realm in realms if _admin_policies(action, realm)]
+    # An empty realm (e.g. "?realm=") is treated the same as an absent one: otherwise a realm-restricted admin
+    # would be evaluated against an empty realm instead of falling back to their granted realm(s).
+    if not request.all_data.get("realm") and len(granted) < len(realms):
+        if not granted:
+            raise PolicyError(f"Admin actions are defined, but the action {action} is not allowed!")
+        if len(granted) == 1 or action != PolicyAction.USERLIST:
+            request.all_data["realm"] = granted[0]
+        else:
+            request.all_data["realm"] = granted
+    if action == PolicyAction.USERLIST:
+        _restrict_user_list(request)
     return True
+
+
+def _admin_policies(action: str, realm: str, resolver: str | None = None, user: str | None = None) -> list[dict]:
+    """
+    The admin policies of the logged-in administrator that grant the action for this realm, and for the resolver
+    and user if given. Only meaningful when the admin scope holds any policy: without one, everything is allowed.
+    """
+    return Match.generic(g, scope=SCOPE.ADMIN, action=action, realm=realm, resolver=resolver, user=user,
+                         adminrealm=g.logged_in_user.get("realm"),
+                         adminuser=g.logged_in_user.get("username")).policies(write_to_audit_log=False)
+
+
+def _restrict_user_list(request: Request) -> None:
+    """
+    Keep the resolvers the administrator may list in each realm, and a check of the users of those resolvers for
+    which every matching policy names the users, see :func:`realmadmin`.
+    """
+    allowed_resolvers = {}
+    user_restricted = set()
+    everything_allowed = True
+    for realm, realm_config in get_realms().items():
+        allowed_resolvers[realm] = []
+        for resolver in [entry.get("name") for entry in realm_config.get("resolver", [])]:
+            policies = _admin_policies(PolicyAction.USERLIST, realm, resolver=resolver)
+            if not policies:
+                everything_allowed = False
+                continue
+            allowed_resolvers[realm].append(resolver)
+            if all(policy.get("user") for policy in policies):
+                user_restricted.add((realm, resolver))
+    if not everything_allowed:
+        request.pi_allowed_resolvers = allowed_resolvers
+    if user_restricted:
+        def user_allowed(realm: str, resolver: str, username: str | None) -> bool:
+            if (realm, resolver) not in user_restricted:
+                return True
+            # A user without a login name can not match a policy that names the users.
+            return bool(username) and bool(_admin_policies(PolicyAction.USERLIST, realm, resolver=resolver,
+                                                           user=username))
+
+        request.pi_user_filter = user_allowed
 
 
 def check_otp_pin(request=None, action=None):
@@ -1341,8 +1376,6 @@ def check_base_action(request=None, action=None, anonymous=False):
         pass
     else:
         realm = params.get("realm")
-        if isinstance(realm, list) and len(realm) == 1:
-            realm = realm[0]
         resolver = resolver or params.get("resolver")
         # get the realm by the token serial:
         if not realm and params.get("serial"):
@@ -1351,15 +1384,18 @@ def check_base_action(request=None, action=None, anonymous=False):
 
     # In this case we do not pass the user_object, since the realm is also determined
     # by the pure serial number given.
-    action_allowed = Match.generic(g, scope=role,
-                                   action=action,
-                                   user=username,
-                                   resolver=resolver,
-                                   realm=realm,
-                                   adminrealm=adminrealm,
-                                   adminuser=adminuser).allowed()
-    if not action_allowed:
-        raise PolicyError(ERROR.get(role))
+    # Several realms, as a list or comma-separated, are matched one by one: matched as a single value, a policy
+    # granting any one of them would grant all of them, and a "!realm" exclusion would not apply at all. An empty
+    # value keeps its meaning for the match.
+    for single_realm in split_realms(realm) or [realm]:
+        if not Match.generic(g, scope=role,
+                             action=action,
+                             user=username,
+                             resolver=resolver,
+                             realm=single_realm,
+                             adminrealm=adminrealm,
+                             adminuser=adminuser).allowed():
+            raise PolicyError(ERROR.get(role))
     return True
 
 

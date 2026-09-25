@@ -50,6 +50,7 @@ import hashlib
 import logging
 import traceback
 
+from collections.abc import Callable
 from typing import Any
 
 from sqlalchemy import select, delete
@@ -64,7 +65,8 @@ from .realm import (get_realms, realm_is_defined,
                     get_default_realm,
                     get_ordered_resolvers,
                     get_realm_id,
-                    get_realms_of_resolver)
+                    get_realms_of_resolver,
+                    split_realms)
 from .resolver import (get_resolver_object,
                        get_resolver_type)
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
@@ -823,7 +825,9 @@ def get_user_from_param(param: dict, optional_or_required: bool = True) -> User:
 def get_user_list(param: dict | None = None, user: User | None = None,
                   include_custom_attributes: bool = False,
                   requested_attributes: list[str] | None = None,
-                  failures: list[str] | None = None) -> list[dict]:
+                  failures: list[str] | None = None,
+                  allowed_resolvers: dict[str, list[str]] | None = None,
+                  user_filter: Callable[[str, str, str | None], bool] | None = None) -> list[dict]:
     """
     This function returns a list of user dictionaries. The user dict contains the resolver and custom user attributes,
     if requested.
@@ -848,7 +852,8 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     returned user dictionaries when ``requested_attributes`` is None/empty or explicitly lists them.
 
     A ``has_tokens`` entry in ``param`` keeps only the users that own a token, or only those that do not;
-    an empty value does not filter. A token counts for the realm its owner was assigned in, not for the realms
+    an empty value does not filter. A revoked token does not count, as it can never be used again; a disabled
+    one does. A token counts for the realm its owner was assigned in, not for the realms
     the token itself belongs to, so a user of a resolver shared by several realms can own a token in one of
     them and none in another. It is applied after the
     resolvers answered, because token ownership is privacyIDEA's own record and no resolver knows about it.
@@ -867,6 +872,13 @@ def get_user_list(param: dict | None = None, user: User | None = None,
         or ``ParameterError`` as well as resolvers that are assigned to a realm in scope but pinned to
         a different node and could therefore not be queried here. Callers that want to surface partial
         failures can pass an empty list and inspect it after the call.
+    :param allowed_resolvers: optional, the resolvers that may be listed in each realm, by realm name. A realm
+        that is missing lists no user. The resolvers left out are not queried at all, so a user of one of them
+        does not hide a user of the same login name in a resolver of lower priority, and they are not reported
+        in ``failures`` either. None lists every resolver.
+    :param user_filter: optional, called with the realm, the resolver and the login name of each user a resolver
+        returned, before the users are deduplicated. A user it returns False for is left out. None keeps every
+        user.
     :return: list of user info as dictionaries
     """
     # The user dictionary, what we use to avoid duplicates in realms, while searching for users. The key will be the
@@ -910,19 +922,9 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     # determine which scope we want to show
     param_resolver = get_optional(param, "resolver")
     param_realm_raw = get_optional(param, "realm")
-    # param_realm_raw may be a single string, a comma-separated string of
-    # multiple realms, or a list.  Normalise to a list of individual realm
-    # names (or an empty list when unset).
-    if isinstance(param_realm_raw, list):
-        param_realms = [r.strip() for r in param_realm_raw if r and r.strip()]
-    elif isinstance(param_realm_raw, str) and "," in param_realm_raw:
-        param_realms = [r.strip() for r in param_realm_raw.split(",") if r.strip()]
-    elif isinstance(param_realm_raw, str) and param_realm_raw.strip():
-        param_realms = [param_realm_raw.strip()]
-    elif param_realm_raw:
-        param_realms = [param_realm_raw]
-    else:
-        param_realms = []
+    # A single string, a comma-separated string of several realms, or a list, read the same way as
+    # the policy check of the request reads it.
+    param_realms = split_realms(param_realm_raw)
     user_resolver = None
     user_realm = None
     if user is not None:
@@ -970,8 +972,8 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     # so the caller's list is never mutated as a side effect of this call.
     requested_attributes = list(requested_attributes) if requested_attributes is not None else None
     remove_user_id = False
-    if (include_custom_attributes or has_tokens is not None) and requested_attributes \
-            and "userid" not in requested_attributes:
+    if ((include_custom_attributes or has_tokens is not None) and requested_attributes
+            and "userid" not in requested_attributes):
         # The user id is required to look up the custom attributes of a user and to tell their
         # tokens from another user's. Not every resolver returns it unasked, the passwd one does not.
         requested_attributes.append("userid")
@@ -994,6 +996,8 @@ def get_user_list(param: dict | None = None, user: User | None = None,
     for realm, resolver_filter in realm_filters.items():
         realm_config = get_realms(realm)
         resolvers = get_ordered_resolvers(realm, realm_config=realm_config)
+        if allowed_resolvers is not None:
+            resolvers = [name for name in resolvers if name in allowed_resolvers.get(realm, [])]
         # A resolver assigned to this realm but pinned to a different node is filtered
         # out of get_ordered_resolvers() before we ever see it, whether or not the
         # caller asked for a specific resolver. Record it here so a plain realm (or
@@ -1001,6 +1005,9 @@ def get_user_list(param: dict | None = None, user: User | None = None,
         if failures is not None:
             assigned_resolvers = {entry.get("name")
                                   for entry in realm_config.get(realm, {}).get("resolver", [])}
+            if allowed_resolvers is not None:
+                # One the caller may not list is left out by intent, and its name is not the caller's business.
+                assigned_resolvers &= set(allowed_resolvers.get(realm, []))
             for missing_name in assigned_resolvers - set(resolvers):
                 if missing_name not in failures:
                     failures.append(missing_name)
@@ -1024,6 +1031,8 @@ def get_user_list(param: dict | None = None, user: User | None = None,
                 user_list = resolver.getUserList(search_dict, list(requested_user_store_attributes))
                 succeeded_resolvers.add(resolver_name)
                 for user_info in user_list:
+                    if user_filter and not user_filter(realm, resolver_name, user_info.get("username")):
+                        continue
                     # Read before the attribute stripping below, which may drop it from the record.
                     owner_key = _owner_key(realm, resolver_name, user_info.get("userid"))
                     if not requested_attributes or "realm" in requested_pi_user_attributes:
@@ -1106,7 +1115,9 @@ def _token_owners(owner_keys) -> set[tuple[str, str, str]]:
 
 
 @log_with(log)
-def count_users(param: dict | None = None, failures: list[str] | None = None) -> dict[str, int]:
+def count_users(param: dict | None = None, failures: list[str] | None = None,
+                allowed_resolvers: dict[str, list[str]] | None = None,
+                user_filter: Callable[[str, str, str | None], bool] | None = None) -> dict[str, int]:
     """
     Count the users :func:`get_user_list` lists for ``param``, and how many of them own a token.
 
@@ -1117,11 +1128,14 @@ def count_users(param: dict | None = None, failures: list[str] | None = None) ->
     :param param: search parameters, as for :func:`get_user_list`
     :param failures: optional list, receives the resolvers that could not be queried, as for
         :func:`get_user_list`
+    :param allowed_resolvers: optional, the resolvers that may be counted in each realm, as for
+        :func:`get_user_list`
+    :param user_filter: optional, which users may be counted, as for :func:`get_user_list`
     :return: ``{"count": <number of users>, "with_tokens": <number of those that own a token>}``
     """
     param = {key: value for key, value in (param or {}).items() if key != "has_tokens"}
     users = get_user_list(param, requested_attributes=["username", "userid", "realm", "resolver"],
-                          failures=failures)
+                          failures=failures, allowed_resolvers=allowed_resolvers, user_filter=user_filter)
     owner_keys = [_owner_key(user.get("realm"), user.get("resolver"), user.get("userid")) for user in users]
     owners = _token_owners(owner_keys)
     return {"count": len(users), "with_tokens": sum(1 for owner_key in owner_keys if owner_key in owners)}
