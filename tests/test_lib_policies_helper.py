@@ -172,6 +172,18 @@ class VisibilityScopeTargetsTestCase(MyTestCase):
         self.assertEqual([], self._scopes(user="Alice,!alice", user_case_insensitive=True))
         self.assertTrue(self._scopes(user="*,!alice", user_case_insensitive=True)[0].username_case_insensitive)
 
+    def test_excluded_users_carry_their_accounts(self):
+        cornelius = User("cornelius", self.realm1)
+        scope = self._scopes(user="*,!cornelius,!nobody-by-this-name")[0]
+        self.assertIn((cornelius.resolver, cornelius.uid), scope.excluded_accounts)
+        # Only in the realms of the policy.
+        scope = self._scopes(user="*,!cornelius", realm=self.realm3)[0]
+        self.assertNotIn((cornelius.resolver, cornelius.uid), scope.excluded_accounts)
+        # Excluding the logins without their accounts would admit too much, so a policy whose excluded users can not
+        # be resolved grants nothing.
+        with mock.patch("privacyidea.lib.policies.helper.User", side_effect=ResolverError("unreachable")):
+            self.assertEqual([], self._scopes(user="*,!cornelius"))
+
 
 class PolicyRealmNamesTestCase(MyTestCase):
     """A policy's realm field, read the way the policy engine matches it."""

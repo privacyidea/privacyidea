@@ -254,6 +254,17 @@
   administrator only sees the user with that name. Such a policy never applied to that administrator alone: with
   `adminuser` left empty, it gave the user list to every administrator.
 
+* **Admin policies with `auditlog` that name users or resolvers now grant no realm** — The audit log can only be
+  restricted by realm, so such a policy showed every entry of its realms, or of every realm. Now the administrator
+  only sees their own entries, unless another policy grants realms. To keep the previous visibility, grant the
+  realms in a policy without users or resolvers. If `user` holds the administrator's own login name, move it to
+  `adminuser`, as above.
+
+* **Excluded resolvers in policies are enforced** — A resolver written with a leading `!` or `-`, for example
+  `*, !ldap`, was ignored when policies were matched, so the policy still applied to that resolver. It is now left
+  out, as an excluded realm or user always was. Check your policies with such resolver exclusions: they now apply to
+  fewer users.
+
 * **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
   first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the
   metering of plugin traffic showed when each client was *first* seen rather than last. This is fixed. Expect the

@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from flask import g, request
 
 from privacyidea.lib.policy import Match, SCOPE
+from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -162,12 +163,13 @@ def get_admin_audit_params() -> dict:
             allowed_audit_realms = {}
             restricted_to_realms = False
             for pol in pols:
+                if pol.get("resolver") or pol.get("user"):
+                    # The audit log is only restricted by realm and can not show just these users or resolvers,
+                    # so such a policy grants no realm - rather than every entry of its realms.
+                    restricted_to_realms = True
+                    continue
                 realm_names = policy_realm_names(pol.get("realm"))
                 if realm_names is None:
-                    if pol.get("resolver") or pol.get("user"):
-                        # The audit log is only restricted by realm, so a policy scoped by user or resolver alone
-                        # neither restricts nor widens it.
-                        continue
                     # A policy with no target scope at all grants every realm, whatever the others name.
                     return {}
                 restricted_to_realms = True
@@ -322,6 +324,22 @@ def _policy_usernames(policy_users: list[str] | None, case_insensitive: bool) ->
     return (named_users, []) if named_users else None
 
 
+def _accounts_of(logins: list[str], realms: list[str]) -> list[tuple[str, str]]:
+    """
+    The accounts, as ``(resolver, uid)``, that these logins resolve to in these realms. A login that does not resolve
+    in a realm has no account there.
+
+    :raises ResolverError, UserError: if a user store can not be read
+    """
+    accounts = {}
+    for realm in realms:
+        for login in logins:
+            user = User(login, realm)
+            if user.exist():
+                accounts[(user.resolver, user.uid)] = None
+    return list(accounts)
+
+
 def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibilityScope"] | None:
     """
     Determine the visibility boundary for *action*: which records the logged-in principal may act on, expressed as
@@ -380,9 +398,18 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
         if not (realms or resolvers or usernames or excluded_usernames):
             # An applicable policy with no target scope grants access to all entries.
             return None
+        try:
+            excluded_accounts = _accounts_of(excluded_usernames, realms or list(get_realms()))
+        except (ResolverError, UserError) as error:
+            # Excluding the logins without their accounts would admit the entries an excluded account recorded
+            # under another login, so the policy grants nothing rather than too much.
+            log.warning(f"The users excluded by the policy {policy.get('name')!r} could not be resolved, so it grants "
+                        f"no {action} entries: {error!s}")
+            continue
         scopes.append(AuthenticationLogVisibilityScope(
             realms=realms or [], resolvers=resolvers or [], usernames=usernames,
-            excluded_usernames=excluded_usernames, username_case_insensitive=case_insensitive))
+            excluded_usernames=excluded_usernames, excluded_accounts=excluded_accounts,
+            username_case_insensitive=case_insensitive))
     if policies and not scopes:
         # Every applicable policy grants nothing. None would read as unrestricted.
         return []

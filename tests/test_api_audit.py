@@ -247,7 +247,7 @@ class APIAuditTestCase(MyApiTestCase):
         set_policy("audit01", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, adminrealm="adminrealm",
                    realm=self.realm1a)
         # Test admin is allowed to view unrestricted logs!
-        set_policy("audit02", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, user="testadmin")
+        set_policy("audit02", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, adminuser="testadmin")
 
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
@@ -645,9 +645,19 @@ class APIAuditTestCase(MyApiTestCase):
             self.assertEqual(every_entry, enroll_realms())
             delete_policy("audit_every_realm")
 
-            # A policy scoped by user alone neither widens nor narrows it.
+            # A policy scoped by user grants no realm, since the audit log can not show just that user: next to
+            # another policy it adds nothing, and on its own it leaves the admin's own entries only.
             set_policy("audit_one_user", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, user="cornelius")
             self.assertEqual([self.realm1a, self.realm1a], enroll_realms())
+            for realm in ("*", self.realm2b):
+                set_policy("audit_one_user", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, user="cornelius",
+                           realm=realm)
+                self.assertEqual([self.realm1a, self.realm1a], enroll_realms(), realm)
+            delete_policy("audit_realms")
+            for realm in (None, "*", self.realm2b):
+                set_policy("audit_one_user", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, user="cornelius",
+                           realm=realm)
+                self.assertEqual([], enroll_realms(), realm)
             delete_policy("audit_one_user")
 
             # A realm field that matches no realm grants no realm.

@@ -917,9 +917,10 @@ a user realm, then the administrator is only allowed to see entries which
 contain this very user realm. A list of user realms may be defined. The realm
 ``*`` stands for every realm, and a realm excluded with ``!realm`` is left out.
 
-Several matching policies add up, so a policy without a realm lets the
-administrator see every entry. The user and resolver of such a policy do not
-restrict the audit log. The administrator always sees their own entries.
+Several matching policies add up, so a policy without any restriction lets the
+administrator see every entry. The audit log can only be restricted by realm,
+so a policy that also names users or resolvers grants no realm at all, rather
+than every entry of its realms. The administrator always sees their own entries.
 
 To learn more about the audit log, see :ref:`audit`.
 

@@ -92,6 +92,11 @@ class AuthenticationLogVisibilityScope:
     ``"!name"``) is expressed, since the users can not be listed the way realms and resolvers are. Like every other
     dimension it restricts: an entry without a username is not admitted by it.
 
+    *excluded_accounts* leaves the entries of these accounts out as well, as ``(resolver, uid)`` pairs: the accounts
+    the excluded logins resolve to. A login is not an identity, so an entry recorded under another login of an
+    excluded account - before a rename, or spelled differently in a case-insensitive user store - would otherwise
+    slip past *excluded_usernames*. An entry without a uid is only held to *excluded_usernames*.
+
     *user_roles* restricts to entries of those
     :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`
     values. It is not derived from policy scoping
@@ -112,6 +117,7 @@ class AuthenticationLogVisibilityScope:
     username_case_insensitive: bool = False
     user_roles: list[str] = field(default_factory=list)
     excluded_usernames: list[str] = field(default_factory=list)
+    excluded_accounts: list[tuple[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -673,6 +679,16 @@ def _outcome_condition(ca_action_types: str | list[str] | None = None,
             .exists())
 
 
+def excluded_accounts_condition(resolver_column: ColumnElement, uid_column: ColumnElement,
+                                accounts: list[tuple[str, str]]) -> ColumnElement[bool]:
+    """
+    The condition leaving out the rows of these ``(resolver, uid)`` accounts, see
+    :attr:`AuthenticationLogVisibilityScope.excluded_accounts`. A row without a uid names no account and is admitted.
+    """
+    return or_(uid_column.is_(None),
+               ~or_(*[and_(resolver_column == resolver, uid_column == uid) for resolver, uid in accounts]))
+
+
 def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> ColumnElement[bool]:
     """
     Build a single ``where`` condition restricting the visible entries to the given scopes: an entry must match all
@@ -728,6 +744,9 @@ def visibility_condition(scopes: list[AuthenticationLogVisibilityScope]) -> Colu
                     [name.lower() for name in scope.excluded_usernames]))
             else:
                 dimensions.append(AuthenticationLog.username.not_in(scope.excluded_usernames))
+        if scope.excluded_accounts:
+            dimensions.append(excluded_accounts_condition(AuthenticationLog.resolver, AuthenticationLog.uid,
+                                                          scope.excluded_accounts))
         if scope.user_roles:
             dimensions.append(AuthenticationLog.user_role.in_([str(role) for role in scope.user_roles]))
         elif dimensions:

@@ -585,6 +585,11 @@ class UserLockStateTestCase(MyTestCase):
                                                                    excluded_usernames=["CORNELIUS"],
                                                                    username_case_insensitive=True)]
         self.assertListEqual([], list_locked_users(visibility_scopes=excluded_in_other_case))
+        # The lock of an excluded account is left out whatever login it was recorded under.
+        excluded_account = [AuthenticationLogVisibilityScope(
+            realms=[], resolvers=[], usernames=[], excluded_usernames=["cornelius-renamed"],
+            excluded_accounts=[(self.user.resolver, str(self.user.uid))])]
+        self.assertListEqual([], list_locked_users(visibility_scopes=excluded_account))
 
     def test_visibility_scope_uid_enforced(self):
         # A lock row is keyed by the same (resolver, uid, realm) identity as an auth-log entry, so the uid dimension
@@ -625,6 +630,11 @@ class UserLockStateTestCase(MyTestCase):
         self.assertTrue(user_matches_scopes(
             self.user, [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
                                                          excluded_usernames=["CORNELIUS"])]))
+        self.assertFalse(user_matches_scopes(
+            self.user, [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
+                                                         excluded_usernames=["cornelius-renamed"],
+                                                         excluded_accounts=[(self.user.resolver,
+                                                                             str(self.user.uid))])]))
         # The uid dimension names the account, so a scope carrying another uid must not match on the realm alone.
         self.assertTrue(user_matches_scopes(
             self.user, [AuthenticationLogVisibilityScope(realms=[self.user.realm], resolvers=[], usernames=[],
