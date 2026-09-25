@@ -25,6 +25,11 @@ import socket
 import tempfile
 from collections.abc import Iterator
 
+# Flask's CLI loads a .env or .flaskenv from the working directory or any parent into os.environ.
+# The CLI tests run pi-manage inside the test process, so a developer's dotenv file would stay in the
+# environment and configure every app created afterwards through the PRIVACYIDEA_* variables.
+os.environ.setdefault("FLASK_SKIP_DOTENV", "1")
+
 # Per-worker DB isolation for pytest-xdist. Must run before any `privacyidea`
 # import, because TestingConfig.SQLALCHEMY_DATABASE_URI is evaluated at class
 # definition (i.e. import) time.
