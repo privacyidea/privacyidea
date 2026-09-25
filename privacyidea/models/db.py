@@ -207,7 +207,7 @@ def restart_sequence_past_max(op, table_name, sequence_name):  # pragma: no cove
     """
     bind = op.get_bind()
     if bind.dialect.supports_sequences:
-        max_id = bind.execute(text(f"SELECT COALESCE(MAX(id), 0) FROM {table_name}")).scalar() or 0
+        max_id = bind.execute(text(f"SELECT COALESCE(MAX(id), 0) FROM {table_name}")).scalar() or 0  # nosec B608
         op.execute(build_restart_sequence_sql(sequence_name, max_id + 1, bind.dialect.name))
 
 
