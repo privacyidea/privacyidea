@@ -72,4 +72,7 @@ user
 Add ``--user <username>`` as script parameter. If no username is given,
 *none* will be passed.
 
-.. note:: A possible script you could call is the :ref:`get_unused_tokens`.
+.. note:: The script handler only runs scripts from its script directory and only
+   passes the parameters above. To call a tool like :ref:`get_unused_tokens`, which
+   expects its own command and arguments, put a small wrapper script into the script
+   directory that ignores the parameters and calls the tool.

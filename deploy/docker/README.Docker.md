@@ -60,7 +60,7 @@ runs a single `pi-manage` command and then removes itself:
 
 ```
 make pimanage ARGS="admin list"
-make pimanage ARGS="config exporter"
+make pimanage ARGS="config export"
 ```
 
 The command goes in `ARGS="..."` rather than directly after the target because

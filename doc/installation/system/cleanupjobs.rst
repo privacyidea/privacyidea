@@ -166,14 +166,20 @@ attributes, and the tokens and containers still assigned to them.
    pi-tokenjanitor container --orphaned True
 
 Each command lists what it found. Append ``delete`` to remove it, e.g.
-``pi-tokenjanitor user-settings delete``, which asks for confirmation unless
-you also pass ``--yes``.
+``pi-tokenjanitor user-settings delete``. The ``user-settings``,
+``custom-attributes`` and ``internal-attributes`` deletes ask for confirmation
+unless you pass ``--yes``. ``find ... delete`` and ``container ... delete``
+delete right away, without asking. The ``container`` delete keeps the tokens of
+the containers unless you add ``--tokens``.
 
 These commands are deliberately not scheduled. They consider a user gone when
 the user store does not return them, and a misconfigured resolver - a wrong base
 DN, a broken search filter - returns no user without reporting an error, so an
-unattended ``delete`` would remove the data of every user. A user store that
-cannot be reached at all is skipped, unless you pass ``--orphaned-on-error``.
+unattended ``delete`` would remove the data of every user. A user whose user
+store cannot be reached is skipped. To count such users as gone anyway, pass
+``--orphaned-on-error`` before the subcommand, e.g.
+``pi-tokenjanitor user-settings --orphaned-on-error list``; ``container`` has no
+such option.
 The commands also ask the user store about every single entry, which takes a
 while with many users. The leftovers only appear when users are deleted and
 cost little, so run the commands by hand from time to time and check the list
