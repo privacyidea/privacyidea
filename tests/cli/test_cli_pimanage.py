@@ -17,20 +17,25 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import contextlib
+import csv
 import datetime as dt
 import io
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
 import tarfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 import sqlalchemy as sa
+from click.testing import Result
+from flask import Flask
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import ENV_KEY, create_app
@@ -45,7 +50,9 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
-from privacyidea.models import db, AuthCache, Challenge, AuthenticationLog, ConditionalAccessOutcome
+from privacyidea.lib.clients import create_client
+from privacyidea.models import (db, Audit, AuthCache, Challenge, AuthenticationLog, Client, ConditionalAccessOutcome,
+                                Realm, RememberedDevice)
 from privacyidea.models.metric_aggregate import MetricAggregate
 from privacyidea.models.conditional_access_policy import (BlockList, ConditionalAccessPolicy,
                                                           ConditionalAccessPolicyStage, UserLockState)
@@ -53,6 +60,26 @@ from privacyidea.models.utils import utc_now
 from .base import CliTestCase
 from ..base import _reset_database
 from ..base import PWFILE
+
+
+@contextlib.contextmanager
+def _deleted_row_counts(table_name: str) -> Iterator[list[int]]:
+    """
+    Record how many rows each DELETE statement on ``table_name`` removes, on every engine,
+    including the ones a command creates for itself.
+    """
+    deleted_row_counts = []
+
+    def record(connection: sa.engine.Connection, cursor: Any, statement: str, parameters: Any, context: Any,
+               executemany: bool) -> None:
+        if statement.lstrip().upper().startswith(f"DELETE FROM {table_name.upper()}"):
+            deleted_row_counts.append(cursor.rowcount)
+
+    sa.event.listen(sa.engine.Engine, "after_cursor_execute", record)
+    try:
+        yield deleted_row_counts
+    finally:
+        sa.event.remove(sa.engine.Engine, "after_cursor_execute", record)
 
 
 class PIManageAdminTestCase(CliTestCase):
@@ -71,12 +98,314 @@ class PIManageAdminTestCase(CliTestCase):
 
 
 class PIManageAuditTestCase(CliTestCase):
-    # TODO: test audit rotate/dump with a given test config
+    """
+    Tests for ``pi-manage audit rotate`` and ``pi-manage audit dump``.
+    """
+
+    # The first matching rule decides: monitoring checks go at once, token enrollments are kept for ten years and
+    # everything else for 30 days.
+    ROTATE_CONFIG = ("- rotate: 0\n"
+                     "  user: nagios\n"
+                     "  action: /validate/check\n"
+                     "- rotate: 3650\n"
+                     "  action: ^POST /token/init\n"
+                     "- rotate: 30\n"
+                     "  action: .*\n")
+
+    def tearDown(self) -> None:
+        Audit.query.delete()
+        db.session.commit()
+        super().tearDown()
+
+    def _insert(self, action: str = "GET /token/", age_days: float = 0, user: str = "") -> int:
+        # One audit entry written age_days days ago. The id is read before the commit, so that no read transaction
+        # stays open while the command changes the table through an engine of its own.
+        entry = Audit(action=action, user=user, date=dt.datetime.now() - dt.timedelta(days=age_days))
+        db.session.add(entry)
+        db.session.flush()
+        entry_id = entry.id
+        db.session.commit()
+        return entry_id
+
+    def _insert_config_entries(self) -> dict[str, int]:
+        # One entry for each case the rules of ROTATE_CONFIG tell apart, by the name of the case.
+        return {"monitoring check": self._insert("POST /validate/check", age_days=0.01, user="nagios"),
+                "user check": self._insert("POST /validate/check", age_days=1, user="alice"),
+                "monitoring token list": self._insert("GET /token/", age_days=1, user="nagios"),
+                "old enrollment": self._insert("POST /token/init", age_days=100, user="bob"),
+                "old token list": self._insert("GET /token/", age_days=100, user="bob")}
+
+    def _remaining_ids(self) -> set[int]:
+        entry_ids = {entry_id for (entry_id,) in db.session.query(Audit.id)}
+        # End the read transaction, so that a later read sees what a command deleted in the meantime.
+        db.session.commit()
+        return entry_ids
+
+    def _rotate(self, *arguments: str) -> Result:
+        return self.app.test_cli_runner().invoke(pi_manage, ["audit", "rotate", *arguments])
+
+    def _rotate_with_config(self, *arguments: str) -> Result:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_file = pathlib.Path(tmp_dir) / "audit.yaml"
+            config_file.write_text(self.ROTATE_CONFIG)
+            return self._rotate("--config", str(config_file), *arguments)
+
+    def _dump(self, *arguments: str) -> tuple[Result, list[list[str]]]:
+        # Run audit dump into a file and return the result together with the rows of the file.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            dump_file = pathlib.Path(tmp_dir) / "audit.csv"
+            result = self.app.test_cli_runner().invoke(pi_manage, ["audit", "dump", "-f", str(dump_file),
+                                                                   *arguments])
+            if not dump_file.exists():
+                # The file is only created when there is something to write.
+                return result, []
+            with dump_file.open(newline="") as dump:
+                return result, list(csv.reader(dump))
+
+    @contextlib.contextmanager
+    def _separate_audit_database(self) -> Iterator[sa.engine.Engine]:
+        # An audit table in a database of its own, configured as PI_AUDIT_SQL_URI.
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            audit_uri = f"sqlite:///{tmp_dir}/audit.sqlite"
+            audit_engine = sa.create_engine(audit_uri)
+            Audit.__table__.create(audit_engine)
+            try:
+                with mock.patch.dict(self.app.config, {"PI_AUDIT_SQL_URI": audit_uri}):
+                    yield audit_engine
+            finally:
+                audit_engine.dispose()
+
+    @staticmethod
+    def _insert_into(audit_engine: sa.engine.Engine, action: str, age_days: float) -> None:
+        with audit_engine.begin() as connection:
+            connection.execute(Audit.__table__.insert().values(
+                action=action, date=dt.datetime.now() - dt.timedelta(days=age_days)))
+
+    @staticmethod
+    def _actions_in(audit_engine: sa.engine.Engine) -> list[str]:
+        with audit_engine.connect() as connection:
+            return sorted(connection.execute(sa.select(Audit.__table__.c.action)).scalars())
+
     def test_01_pimanage_audit_help(self):
         runner = self.app.test_cli_runner()
         result = runner.invoke(pi_manage, ["audit"])
         self.assertIn("Dump the audit log in csv format.", result.output, result)
         self.assertIn("Clean the SQL audit log.", result.output, result)
+
+    def test_02_rotate_above_the_high_watermark_deletes_the_oldest_entries(self):
+        entry_ids = [self._insert() for _ in range(10)]
+
+        res = self._rotate("--highwatermark", "8", "--lowwatermark", "3")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("More than 8 entries, deleting...", res.output)
+        remaining_ids = self._remaining_ids()
+        self.assertEqual(set(), remaining_ids & set(entry_ids[:6]), "the oldest entries must be deleted")
+        self.assertEqual(set(entry_ids[-3:]), remaining_ids & set(entry_ids[-3:]), "the newest entries must stay")
+
+    def test_03_rotate_above_the_high_watermark_keeps_low_watermark_entries(self):
+        entry_ids = [self._insert() for _ in range(10)]
+
+        res = self._rotate("--highwatermark", "8", "--lowwatermark", "3")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(set(entry_ids[-3:]), self._remaining_ids())
+
+    def test_03b_rotate_keeps_low_watermark_entries_when_the_ids_have_gaps(self):
+        # Every second entry is gone, as after a deletion or with the id increment of Galera
+        entry_ids = [self._insert() for _ in range(12)]
+        Audit.query.filter(Audit.id.in_(entry_ids[1::2])).delete()
+        db.session.commit()
+        kept_ids = entry_ids[::2]
+
+        res = self._rotate("--highwatermark", "4", "--lowwatermark", "3")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("3 entries deleted.", res.output)
+        self.assertEqual(set(kept_ids[-3:]), self._remaining_ids())
+
+        # A low watermark of 0 deletes all entries, one above the number of entries deletes none
+        res = self._rotate("--highwatermark", "2", "--lowwatermark", "4", "--dryrun")
+        self.assertIn("Would delete 0 entries.", res.output)
+        res = self._rotate("--highwatermark", "2", "--lowwatermark", "0")
+        self.assertIn("3 entries deleted.", res.output)
+        self.assertEqual(set(), self._remaining_ids())
+
+        res = self._rotate("--lowwatermark", "-1")
+        self.assertEqual(2, res.exit_code, res.output)
+
+    def test_04_rotate_up_to_the_high_watermark_leaves_the_log_untouched(self):
+        # The rotation only starts when the log holds more entries than the high watermark.
+        entry_ids = {self._insert() for _ in range(8)}
+
+        res = self._rotate("--highwatermark", "8", "--lowwatermark", "3")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertNotIn("deleting", res.output)
+        self.assertEqual(entry_ids, self._remaining_ids())
+
+    def test_05_rotate_by_watermarks_dryrun_announces_what_the_rotation_deletes(self):
+        entry_ids = {self._insert() for _ in range(10)}
+
+        res = self._rotate("--highwatermark", "8", "--lowwatermark", "3", "--dryrun")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(entry_ids, self._remaining_ids(), "--dryrun must not delete anything")
+        announced = re.search(r"Would delete (\d+) entries\.", res.output)
+        self.assertIsNotNone(announced, res.output)
+
+        res = self._rotate("--highwatermark", "8", "--lowwatermark", "3")
+
+        self.assertIn(f"{announced.group(1)} entries deleted.", res.output)
+        self.assertEqual(len(entry_ids) - int(announced.group(1)), len(self._remaining_ids()))
+
+    def test_06_rotate_by_age(self):
+        self._insert(age_days=10)
+        recent_id = self._insert(age_days=1)
+
+        res = self._rotate("--age", "5")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("1 entries deleted.", res.output)
+        self.assertEqual({recent_id}, self._remaining_ids())
+
+    def test_07_rotate_by_age_dryrun(self):
+        entry_ids = {self._insert(age_days=10), self._insert(age_days=1)}
+
+        res = self._rotate("--age", "5", "--dryrun")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Would delete 1 entries.", res.output)
+        self.assertEqual(entry_ids, self._remaining_ids(), "--dryrun must not delete anything")
+
+    def test_08_rotate_by_age_in_chunks(self):
+        # Five old entries in chunks of two take two full and one partial DELETE.
+        for _ in range(5):
+            self._insert(age_days=10)
+        recent_id = self._insert(age_days=1)
+
+        with _deleted_row_counts(Audit.__tablename__) as deleted_row_counts:
+            res = self._rotate("--age", "5", "--chunksize", "2")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("5 entries deleted.", res.output)
+        self.assertEqual([2, 2, 1], deleted_row_counts)
+        self.assertEqual({recent_id}, self._remaining_ids())
+
+    def test_09_rotate_by_config_applies_the_first_matching_rule(self):
+        # An entry is kept by the first rule whose conditions it all meets, even if a later rule would delete it.
+        entry_ids = self._insert_config_entries()
+
+        res = self._rotate_with_config()
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Cleaning up 2 entries.", res.output)
+        self.assertEqual({entry_ids["user check"], entry_ids["monitoring token list"], entry_ids["old enrollment"]},
+                         self._remaining_ids())
+
+    def test_10_rotate_by_config_dryrun(self):
+        entry_ids = self._insert_config_entries()
+
+        res = self._rotate_with_config("--dryrun")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("I would clean up 2 entries!", res.output)
+        self.assertEqual(set(entry_ids.values()), self._remaining_ids(), "--dryrun must not delete anything")
+
+    def test_11_rotate_by_config_in_chunks(self):
+        entry_ids = self._insert_config_entries()
+
+        with _deleted_row_counts(Audit.__tablename__) as deleted_row_counts:
+            res = self._rotate_with_config("--chunksize", "1")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(2, sum(deleted_row_counts), deleted_row_counts)
+        self.assertEqual(1, max(deleted_row_counts), deleted_row_counts)
+        self.assertEqual({entry_ids["user check"], entry_ids["monitoring token list"], entry_ids["old enrollment"]},
+                         self._remaining_ids())
+
+    def test_11b_rotate_by_config_deletes_at_most_1000_entries_per_statement(self):
+        # Oracle refuses a list of more than 1000 values in one IN condition
+        old_date = dt.datetime.now() - dt.timedelta(days=100)
+        db.session.execute(Audit.__table__.insert(), [{"action": "GET /token/", "date": old_date}] * 1001)
+        db.session.commit()
+
+        with _deleted_row_counts(Audit.__tablename__) as deleted_row_counts:
+            res = self._rotate_with_config()
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Cleaning up 1001 entries.", res.output)
+        self.assertEqual([1000, 1], deleted_row_counts)
+        self.assertEqual(set(), self._remaining_ids())
+
+    def test_12_rotate_by_config_debug_names_the_rule_that_deletes_an_entry(self):
+        entry_ids = self._insert_config_entries()
+
+        res = self._rotate_with_config("--debug", "--dryrun")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn(f"investigating log entry {entry_ids['old enrollment']}", res.output)
+        self.assertIn(f"Deleting {entry_ids['monitoring check']} due to rule "
+                      "{'rotate': 0, 'user': 'nagios', 'action': '/validate/check'}", res.output)
+        self.assertNotIn(f"Deleting {entry_ids['old enrollment']} ", res.output)
+
+    def test_13_rotate_works_on_the_audit_database(self):
+        # With PI_AUDIT_SQL_URI the audit log lives in a database of its own, and that is the one that is rotated.
+        main_database_id = self._insert(age_days=10)
+        with self._separate_audit_database() as audit_engine:
+            self._insert_into(audit_engine, "GET /old", age_days=10)
+            self._insert_into(audit_engine, "GET /recent", age_days=1)
+
+            res = self._rotate("--age", "5")
+
+            self.assertEqual(0, res.exit_code, res.output)
+            self.assertEqual(["GET /recent"], self._actions_in(audit_engine))
+        self.assertEqual({main_database_id}, self._remaining_ids())
+
+    def test_14_dryrun_counts_the_entries_of_the_audit_database(self):
+        # All entries are in the audit database, none in the main database.
+        with self._separate_audit_database() as audit_engine:
+            for _ in range(3):
+                self._insert_into(audit_engine, "GET /old", age_days=10)
+
+            res = self._rotate("--age", "5", "--dryrun")
+            self.assertEqual(0, res.exit_code, res.output)
+            self.assertIn("Would delete 3 entries.", res.output)
+
+            res = self._rotate("--highwatermark", "2", "--lowwatermark", "1", "--dryrun")
+            self.assertEqual(0, res.exit_code, res.output)
+            announced = re.search(r"Would delete (\d+) entries\.", res.output)
+            self.assertIsNotNone(announced, res.output)
+            res = self._rotate("--highwatermark", "2", "--lowwatermark", "1")
+            self.assertIn(f"{announced.group(1)} entries deleted.", res.output)
+
+    def test_15_dump_writes_the_entries_as_csv(self):
+        old_id = self._insert("POST /token/init", age_days=10)
+        recent_id = self._insert("GET /token/", age_days=0.01)
+
+        res, rows = self._dump()
+
+        self.assertEqual(0, res.exit_code, res.output)
+        # The first column holds the id of the entry, the fifth one the action.
+        self.assertEqual([[str(old_id), "POST /token/init"], [str(recent_id), "GET /token/"]],
+                         [[row[0], row[4]] for row in rows])
+
+    def test_16_dump_with_timelimit_leaves_out_older_entries(self):
+        self._insert("POST /token/init", age_days=10)
+        recent_id = self._insert("GET /token/", age_days=0.01)
+
+        res, rows = self._dump("-t", "5d")
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual([str(recent_id)], [row[0] for row in rows])
+
+    def test_17_dump_rejects_an_unparsable_timelimit(self):
+        res = self.app.test_cli_runner().invoke(pi_manage, ["audit", "dump", "-t", "five days"])
+
+        self.assertEqual(2, res.exit_code, res.output)
+        self.assertIn("Could not parse timelimit (five days)", res.output)
 
 
 class PIManageBackupTestCase(CliTestCase):
@@ -95,7 +424,7 @@ class PIManageBackupTestCase(CliTestCase):
     @staticmethod
     def _make_fake_tarfile(live_pi_cfg: pathlib.Path, backup_uri: str, include_cfg: bool = True,
                            include_sql: bool = True, include_enckey: bool = False,
-                           dump_suffix: str = ".sqlite") -> Callable:
+                           dump_suffix: str = ".sqlite", archived_config: str | None = None) -> Callable:
         """
         Return a context manager that replaces ``tarfile.open`` with a fake
         that simulates:
@@ -119,6 +448,9 @@ class PIManageBackupTestCase(CliTestCase):
         ``dump_suffix`` selects the database engine the archive claims to come
         from, which has to match the engine of ``backup_uri``: ".sqlite" for
         SQLite, ".sql" for MySQL/MariaDB, ".pgsql" for PostgreSQL.
+
+        ``archived_config`` replaces the content of the archived pi.cfg, which
+        is otherwise built from ``backup_uri``.
         """
         import unittest.mock as mock
 
@@ -132,9 +464,10 @@ class PIManageBackupTestCase(CliTestCase):
             m.name = name
             return m
 
-        archived_config = (
-            f'SQLALCHEMY_DATABASE_URI = {repr(backup_uri)}\n' if backup_uri else ''
-        ) + 'SECRET_KEY = "secret"\n'
+        if archived_config is None:
+            archived_config = (
+                f'SQLALCHEMY_DATABASE_URI = {repr(backup_uri)}\n' if backup_uri else ''
+            ) + 'SECRET_KEY = "secret"\n'
 
         members = []
         if include_cfg:
@@ -797,6 +1130,68 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertFalse(live_pi_cfg.exists())
             self.assertFalse((tmp / "dbdump-20240101-1200.sqlite").exists())
 
+    def test_16e_archived_config_linking_out_of_the_archive_is_refused(self):
+        """
+        A pi.cfg in the archive that is a symbolic link to a file outside the
+        archive is reported as unreadable before any file of the archive is
+        extracted. The link is not followed to the file it names on the
+        restoring machine, even though that file exists and is a valid
+        configuration.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            restore_dir = tmp / "restore"
+            outside_config = tmp / "outside" / "pi.cfg"
+            outside_config.parent.mkdir()
+            outside_config.write_text(f"SQLALCHEMY_DATABASE_URI = {f'sqlite:///{tmp}/outside/data.sqlite'!r}\n")
+            dump_file = restore_dir / "dbdump-20240101-1200.sqlite"
+            dump_content = b"-- sql dump placeholder\n"
+            archive_file = tmp / "backup.tgz"
+            with tarfile.open(archive_file, "w:gz") as archive:
+                config_link = tarfile.TarInfo(str(restore_dir / "pi.cfg").lstrip("/"))
+                config_link.type = tarfile.SYMTYPE
+                config_link.linkname = "../outside/pi.cfg"
+                archive.addfile(config_link)
+                dump_member = tarfile.TarInfo(str(dump_file).lstrip("/"))
+                dump_member.size = len(dump_content)
+                archive.addfile(dump_member, io.BytesIO(dump_content))
+
+            runner = self.app.test_cli_runner()
+            result = runner.invoke(pi_manage, ["backup", "restore", str(archive_file)])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn(f"The config file {restore_dir / 'pi.cfg'} in the backup file cannot be read.",
+                          result.output, result.output)
+            self.assertFalse(os.path.lexists(restore_dir / "pi.cfg"), "the link was extracted despite the refusal")
+            self.assertFalse(dump_file.exists(), "the dump was extracted despite the refusal")
+            self.assertFalse((tmp / "outside" / "data.sqlite").exists())
+
+    def test_16f_archived_config_that_is_no_python_is_refused(self):
+        """
+        A pi.cfg in the archive that cannot be parsed is reported together with
+        the parse error before any file of the archive is extracted, and the
+        live pi.cfg stays exactly as it was.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            live_pi_cfg = tmp / "pi.cfg"
+            live_config = 'SQLALCHEMY_DATABASE_URI = "sqlite:////live/data.sqlite"\n'
+            live_pi_cfg.write_text(live_config)
+            broken_config = 'SQLALCHEMY_DATABASE_URI = "sqlite:////backup/data.sqlite"\nSECRET_KEY = "unterminated\n'
+
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, "", archived_config=broken_config)):
+                result = runner.invoke(pi_manage, ["backup", "restore", "ignored.tgz"])
+
+            self.assertEqual(2, result.exit_code, result.output)
+            self.assertIn(f"The config file {live_pi_cfg} in the backup file cannot be read: ",
+                          result.output, result.output)
+            self.assertEqual(live_config, live_pi_cfg.read_text())
+            self.assertFalse((tmp / "dbdump-20240101-1200.sqlite").exists())
+
     def test_16a_mysql_defaults_file_stays_out_of_the_config_directory(self):
         """
         The option file holding the database password is written to a temporary
@@ -1006,6 +1401,13 @@ def app():
 
 
 class TestPIManageSetupClass:
+    # What python-gnupg's gen_key_input() returns for a 3072 bit key of create_pgp_keys: the key parameters, closed
+    # by %commit.
+    GPG_KEY_INPUT = ("Key-Type: RSA\nKey-Length: 3072\nName-Real: privacyIDEA Server\n"
+                     "Name-Comment: Import\nName-Email: privacyidea@localhost\n%commit\n")
+    EXISTING_PGP_KEY = {"uids": ["privacyIDEA Server (Import)"],
+                        "fingerprint": "0123456789ABCDEF0123456789ABCDEF01234567"}
+
     def test_01_pimanage_setup_help(self, app):
         runner = app.test_cli_runner()
         result = runner.invoke(pi_manage, ["setup"])
@@ -1057,6 +1459,55 @@ class TestPIManageSetupClass:
         assert result.returncode == 1, result.stderr
         assert "We do not overwrite it!" in result.stdout
         assert enckey.read_bytes() == key
+
+    def _create_pgp_keys(self, app: Flask, gpg_home: pathlib.Path, existing_keys: list[dict],
+                         arguments: list[str]) -> tuple[Result, MagicMock]:
+        """
+        Run ``setup create_pgp_keys`` with ``PI_GNUPG_HOME`` pointing to ``gpg_home`` and
+        python-gnupg replaced by a mock whose keyring holds ``existing_keys``. Return the result
+        of the command and the mocked GPG object, which records the key generation.
+        """
+        import unittest.mock as mock
+
+        runner = app.test_cli_runner()
+        with mock.patch.dict(app.config, {"PI_GNUPG_HOME": str(gpg_home)}):
+            with mock.patch("privacyidea.cli.pimanage.pi_setup.gnupg.GPG", autospec=True) as gpg_class:
+                gpg = gpg_class.return_value
+                gpg.list_keys.return_value = existing_keys
+                gpg.gen_key_input.return_value = self.GPG_KEY_INPUT
+                result = runner.invoke(pi_manage, ["setup", "create_pgp_keys", *arguments])
+        gpg_class.assert_called_once_with(gnupghome=str(gpg_home))
+        return result, gpg
+
+    def test_04_create_pgp_keys_generates_a_key_without_passphrase(self, app, tmp_path):
+        # The key directory does not exist yet and is created. The generated key has no passphrase, since the
+        # server has to use it unattended to decrypt token import files.
+        gpg_home = tmp_path / "gpg"
+        result, gpg = self._create_pgp_keys(app, gpg_home, [], ["--keysize", "3072"])
+
+        assert result.exit_code == 0, result.output
+        assert gpg_home.is_dir()
+        assert "existing keys" not in result.output
+        gpg.list_keys.assert_called_once_with(True)
+        assert gpg.gen_key_input.call_args.kwargs["key_length"] == 3072
+        gpg.gen_key.assert_called_once_with(self.GPG_KEY_INPUT.replace("%commit\n", "%no-protection\n%commit\n"))
+
+    def test_05_create_pgp_keys_refuses_to_add_a_key_without_force(self, app, tmp_path):
+        result, gpg = self._create_pgp_keys(app, tmp_path, [self.EXISTING_PGP_KEY], [])
+
+        assert result.exit_code == 1, result.output
+        assert "There are already private keys" in result.output
+        assert "use the parameter --force" in result.output
+        assert self.EXISTING_PGP_KEY["fingerprint"] in result.output
+        gpg.gen_key.assert_not_called()
+
+    def test_06_create_pgp_keys_with_force_adds_a_key_and_keeps_the_existing_ones(self, app, tmp_path):
+        result, gpg = self._create_pgp_keys(app, tmp_path, [self.EXISTING_PGP_KEY], ["--force"])
+
+        assert result.exit_code == 0, result.output
+        assert "Generating a new PGP key, the existing keys are kept." in result.output
+        gpg.gen_key.assert_called_once()
+        gpg.delete_keys.assert_not_called()
 
 
 class TestPIManageConfigExport:
@@ -1437,7 +1888,7 @@ class PIManageMetricsTestCase(CliTestCase):
 
     def _insert(self, age_hours: float) -> None:
         # One metric row whose window started age_hours hours ago.
-        db.session.add(MetricAggregate(metric_name="cli_cleanup_test", labels_key="", node="n1",
+        db.session.add(MetricAggregate(metric_name="cli_cleanup_test", labels_key='{"resolver":"test"}', node="n1",
                                        window_start=utc_now() - dt.timedelta(hours=age_hours)))
         db.session.commit()
 
@@ -1494,6 +1945,91 @@ class PIManageMetricsTestCase(CliTestCase):
         self.assertNotEqual(0, res.exit_code, res.output)
         self.assertIn("--older-than-hours", res.output)
         self.assertEqual(1, MetricAggregate.query.count())
+
+
+class PIManageRememberedDeviceTestCase(CliTestCase):
+    """
+    Tests for ``pi-manage config remembered_device cleanup``.
+    """
+
+    def setUp(self) -> None:
+        realm = Realm("cli_device_realm")
+        realm.save()
+        self.realm_id = realm.id
+        client, _api_key = create_client("cli device client", "privacyidea-cp")
+        self.client_id = client.id
+
+    def tearDown(self) -> None:
+        RememberedDevice.query.delete()
+        Client.query.delete()
+        Realm.query.filter_by(name="cli_device_realm").delete()
+        db.session.commit()
+        super().tearDown()
+
+    def _insert(self, series_id: str, expires_in: dt.timedelta) -> None:
+        # One remembered device that expires expires_in from now (in the past for a negative value).
+        db.session.add(RememberedDevice(series_id, f"device-{series_id}", self.client_id, "resolver1", series_id,
+                                        self.realm_id, expires_at=utc_now() + expires_in))
+        db.session.commit()
+
+    def _remaining(self) -> set[str]:
+        return {device.series_id for device in RememberedDevice.query.all()}
+
+    def test_01_help(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "remembered_device", "cleanup", "-h"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Delete all expired remembered devices", res.output)
+
+    def test_02_dryrun_counts_the_expired_devices_and_deletes_nothing(self):
+        self._insert("expired1", -dt.timedelta(days=1))
+        self._insert("expired2", -dt.timedelta(seconds=10))
+        self._insert("valid", dt.timedelta(days=1))
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "remembered_device", "cleanup", "--dryrun"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Would delete 2 expired remembered-device entries.", res.output)
+        self.assertEqual({"expired1", "expired2", "valid"}, self._remaining())
+
+    def test_03_cleanup_deletes_only_the_expired_devices(self):
+        self._insert("expired1", -dt.timedelta(days=1))
+        self._insert("expired2", -dt.timedelta(seconds=10))
+        self._insert("valid", dt.timedelta(minutes=5))
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "remembered_device", "cleanup"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("2 entries deleted.", res.output)
+        self.assertEqual({"valid"}, self._remaining())
+
+    def test_04_cleanup_in_chunks(self):
+        # Three expired devices in chunks of two take one full and one partial DELETE. The primary key of the table
+        # is not named id.
+        for number in range(3):
+            self._insert(f"expired{number}", -dt.timedelta(days=1))
+        self._insert("valid", dt.timedelta(days=1))
+
+        runner = self.app.test_cli_runner()
+        with _deleted_row_counts("remembered_devices") as deleted_row_counts:
+            res = runner.invoke(pi_manage, ["config", "remembered_device", "cleanup", "--chunksize", "2"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("3 entries deleted.", res.output)
+        self.assertEqual([2, 1], deleted_row_counts)
+        self.assertEqual({"valid"}, self._remaining())
+
+    def test_05_chunksize_below_one_is_rejected(self):
+        self._insert("expired", -dt.timedelta(days=1))
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "remembered_device", "cleanup", "--chunksize", "0"])
+
+        self.assertNotEqual(0, res.exit_code, res.output)
+        self.assertIn("--chunksize", res.output)
+        self.assertEqual({"expired"}, self._remaining())
 
 
 class PIManageConfigCRUDTestCase(CliTestCase):

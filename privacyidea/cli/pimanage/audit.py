@@ -38,7 +38,7 @@ audit_cli = AppGroup("audit", help="Manage Audit log")
 @audit_cli.command("rotate")
 @click.option('-hw', '--highwatermark', default=10000, show_default=True,
               help="If entries exceed this value, old entries are deleted.")
-@click.option('-lw', '--lowwatermark', default=5000, show_default=True,
+@click.option('-lw', '--lowwatermark', default=5000, show_default=True, type=click.IntRange(min=0),
               help="Keep this number of entries.")
 @click.option('--age', default=0,
               help="Delete audit entries older than these number of days.")
@@ -146,14 +146,18 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
             click.echo(f"If you only would let me I would clean up {len(delete_list)} entries!")
         else:
             click.echo(f"Cleaning up {len(delete_list)} entries.")
-            delete_matching_rows(session, LogEntry.__table__,
-                                 LogEntry.id.in_(delete_list), chunksize)
+            # The entries are deleted by their ids in slices, which also keeps the list of ids in one statement
+            # below the limits of the databases, e.g. 1000 on Oracle
+            slice_size = chunksize or 1000
+            for start in range(0, len(delete_list), slice_size):
+                delete_matching_rows(session, LogEntry.__table__,
+                                     LogEntry.id.in_(delete_list[start:start + slice_size]))
     elif age:
         now = datetime.datetime.now() - datetime.timedelta(days=age)
         click.echo(f"Deleting entries older than {now!s}")
         criterion = LogEntry.date < now
         if dryrun:
-            r = LogEntry.query.filter(criterion).count()
+            r = session.query(LogEntry).filter(criterion).count()
             click.echo(f"Would delete {r!s} entries.")
         else:
             r = delete_matching_rows(session, LogEntry.__table__, criterion, chunksize)
@@ -167,12 +171,21 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
         # deleting old entries
         if count > highwatermark:
             click.echo(f"More than {highwatermark} entries, deleting...")
-            cut_id = last_id - lowwatermark
+            if lowwatermark:
+                # The id of the oldest entry to keep. The ids have gaps, e.g. after deletions or on Galera, which
+                # increments them by more than one, so it can not be computed from the last id.
+                newest_ids = session.query(LogEntry.id).order_by(desc(LogEntry.id))
+                cut_id = newest_ids.offset(lowwatermark - 1).limit(1).scalar()
+            else:
+                cut_id = last_id + 1
+            if cut_id is None:
+                # The low watermark is higher than the number of entries
+                cut_id = 0
             # delete all entries less than cut_id
             click.echo(f"Deleting entries smaller than {cut_id}")
             criterion = LogEntry.id < cut_id
             if dryrun:
-                r = LogEntry.query.filter(criterion).count()
+                r = session.query(LogEntry).filter(criterion).count()
                 click.echo(f"Would delete {r!s} entries.")
             else:
                 r = delete_matching_rows(session, LogEntry.__table__, criterion, chunksize)

@@ -135,7 +135,8 @@ privacyIDEA iterates over *all* audit entries. The first matching rule for an en
 If the rule matches, the audit entry is deleted if the entry is older than the days
 specified in "rotate".
 
-If is a good idea to have a *catch-all* rule at the end.
+It is a good idea to have a *catch-all* rule at the end. A rule needs at least one condition besides
+"rotate", a rule without one matches no entry. The catch-all rule above uses ``action: .*``.
 
 .. note:: The keys "user", "action"... correspond to the column names of the audit table.
    You can use any column name here like "date", "action", "action_detail", "success", "serial", "administrator",
@@ -148,9 +149,10 @@ You can then add a call like::
 
 in your crontab.
 
-.. note:: The cleaning based on a config file currently does **not** work with
-    the ``--chunksize`` parameter. If the audit-table is too big, consider
-    cleaning based on the age or number of entries first.
+With a config file, the matching entries are deleted in slices of ``--chunksize`` entries, or
+of 1000 entries without it. The command reads all audit entries to match them against the
+rules, so if the audit table is very big, consider cleaning based on the age or number of
+entries first.
 
 
 Access rights

@@ -540,6 +540,11 @@
   `true`/`false`, `1`/`0`, `yes`/`no` and `on`/`off` and reject any other value instead of reading it as false.
   `update` keeps the OTP counter, the fail counter and the token kind of each token.
 
+* **`pi-manage audit rotate`** with watermarks now keeps exactly `--lowwatermark` entries. It used to count back from
+  the id of the newest entry, which kept one entry more, and on Galera, which increments the ids by more than one,
+  only a fraction of them, e.g. a third with an increment of 3: there the audit table keeps more entries after the
+  update. A negative `--lowwatermark` is rejected.
+
 * **`privacyidea-pip-update -f`** only skips the confirmation question and runs the database schema upgrade as well;
   pass `-n` to skip the schema upgrade.
 
