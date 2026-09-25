@@ -324,6 +324,8 @@ order to improve performance. This checkbox is deactivated by default
 and should only be activated after having ensured that schema information
 are unnecessary.
 
+.. _ldap_expired_users:
+
 Expired Users
 ~~~~~~~~~~~~~
 
@@ -337,7 +339,8 @@ in the attribute mapping for Microsoft Active Directories. You can then call
 the user listing API with the parameter ``accountExpires=1`` and you will only
 see expired accounts.
 
-This functionality is used with the script *privacyidea-expired-users*.
+The script :ref:`privacyidea-expired-users <privacyidea_expired_users>` uses
+this to unassign or delete the tokens of expired accounts.
 
 .. _sql_resolver:
 
@@ -945,8 +948,9 @@ tokens, the user will still be able to authenticate during the expiration timeou
 user ID will not be noticed by privacyIDEA until the corresponding cache entry expires.
 
 Expired cache entries are *not* deleted from the user cache table automatically. Instead, the tool
-``privacyidea-usercache-cleanup`` should be used to delete expired cache entries from the database,
-e.g. in a cronjob.
+:ref:`privacyidea-usercache-cleanup <privacyidea_usercache_cleanup>` should be used to delete
+expired cache entries from the database, e.g. in a cronjob. The Ubuntu packages and the Docker
+image run it daily, see :ref:`cleanup_jobs`.
 
 However, cache entries are removed at some defined events:
 

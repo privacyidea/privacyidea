@@ -22,7 +22,7 @@
   <mat-label i18n="@@machine.resolverFilename">Resolver Filename</mat-label>
   <input
     matInput
-    [disabled]="!fieldsEnabled()"
+    [disabled]="!canEdit()"
     placeholder="/etc/hosts"
     [value]="hostsData().filename ?? ''"
     (input)="updateData({ filename: $event.target['value'] })" />

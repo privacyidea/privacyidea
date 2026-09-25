@@ -30,15 +30,16 @@ mapping. For Microsoft Active Directory add
 to the attribute mapping.
 
 The script then checks if the account actually is expired. If the account is
-expired, it deletes tokens of the account with the serial number matching
-DELETE_SERIAL and unassigns tokens with the serial number matching
-UNASSIGN_SERIAL.
+expired, it unassigns the tokens of the account with a serial number matching
+the regular expression given with '--unassign_serial' (default: all tokens)
+and deletes the tokens with a serial number matching the regular expression
+given with '--delete_serial' (default: none).
 
 You can call the script like this:
 
-    privacyidea-expired-users expire --realm ad -d '^T.*'
+    privacyidea-expired-users --realm ad -d '^T.*'
 
-This would check for all expired users in the realm "AD" and then unassign
+This would check for all expired users in the realm "ad" and then unassign
 all tokens and delete all the user's tokens, that start with a 'T',
 which is indicated by the '-d' switch.
 

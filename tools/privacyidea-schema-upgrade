@@ -36,6 +36,10 @@ while [ "$#" -gt 0 ]; do
       echo "Unknown option $1"
       usage 1
       ;;
+    *)
+      echo "Unknown argument $1"
+      usage 1
+      ;;
   esac
 done
 

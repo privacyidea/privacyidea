@@ -3,11 +3,9 @@ from collections.abc import Generator
 import click
 from flask.cli import AppGroup
 
-from privacyidea.lib.container import get_container_generator
+from privacyidea.lib.container import add_container_info, get_container_generator
 from privacyidea.lib.containerclass import TokenContainerClass
-from privacyidea.lib.containers.container_info import TokenContainerInfoData
-from privacyidea.lib.error import PolicyError, ResolverError
-from privacyidea.lib.utils import is_true
+from privacyidea.lib.error import PolicyError
 
 
 def _get_container_list(serial: str = None, ctype: str = None, token_serial: str = None,
@@ -33,27 +31,17 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
     for containers in container_page:
         ret = []
         for container in containers:
-            add = True
             if orphaned is not None:
                 try:
-                    users = container.get_users()
-                    if is_true(orphaned):
-                        if not users or any(user.exist() for user in users):
-                            # Either the container has no user assigned or at least one assigned user exists in the
-                            # resolver
-                            add = False
-                    else:
-                        if users and all(not user.exist() for user in users):
-                            # The container has assigned users, but none of them exists in the resolver
-                            add = False
-                except ResolverError:
-                    click.secho(
-                        f"ResolverError. Can't check for orphaned container. "
-                        f"It will be ignored for container {container.serial}",
-                        fg="red", bold=True, nl=False)
-
-            if add:
-                ret.append(container)
+                    container_is_orphaned = container.is_orphaned()
+                except Exception as error:
+                    # Without an answer of the user store the container is neither orphaned nor not orphaned
+                    click.secho(f"Can not check whether container {container.serial} is orphaned, the container is "
+                                f"skipped: {error}", fg="red", bold=True, err=True)
+                    continue
+                if container_is_orphaned != orphaned:
+                    continue
+            ret.append(container)
         yield ret
 
 
@@ -77,7 +65,8 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
 @click.option('--chunksize', '-c', type=int, default=100,
               help='The number of containers to return per page.')
 @click.option('--orphaned', '-o', type=bool, default=None,
-              help='Whether the token is an orphaned container. Can be "True" or "False"')
+              help='Whether the container is orphaned: assigned to users that no longer exist in the user store. '
+                   'Can be "True" or "False"')
 @click.pass_context
 def findcontainer(ctx, serial, ctype, token_serial, realm, template, description,
                   assigned, resolver, info, last_auth_delta, last_sync_delta, chunksize, orphaned):
@@ -145,14 +134,19 @@ def delete_containers(ctx, delete_token):
 def update_info(ctx, key, value):
     """
     Update information for the containers. A non-existing key is added and the value for an existing key is
-    overwritten. All other entries remain unchanged.
+    overwritten. All other entries remain unchanged. An entry privacyIDEA maintains itself is skipped.
 
     KEY is the key of the information to update.
     VALUE is the value of the information to update.
     """
     for clist in ctx.obj['containers']:
         for container in clist:
-            container.update_container_info([TokenContainerInfoData(key=key, value=value)])
+            try:
+                # Refuses the entries privacyIDEA maintains itself, like the endpoints of the API do
+                add_container_info(container.serial, key, value)
+            except PolicyError as error:
+                click.echo(f"Skipped container {container.serial}: {error!s}")
+                continue
             click.echo(f"Updated info {key}={value} for container {container.serial}")
 
 

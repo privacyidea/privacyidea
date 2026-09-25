@@ -55,22 +55,41 @@ authorized keys command
 To facilitate this, the SSH server fetches the managed SSH keys from the privacyIDEA server on demand.
 The SSH server uses the ``AuthorizedKeysCommand`` in the ``sshd_config`` to do this.
 
-There is an Python script `privacyidea-authorizedkey` in the privacyideaadm repository. Note, that this
-script currently does not support the ``service_id``.
-The `tools/` directory of the privacyIDEA Server ships a shell script `privacyidea-authorizedkeys` that
-supports the ``service_id``.
+privacyIDEA ships the shell script ``privacyidea-authorizedkeys`` for this. It
+is located in the ``tools/`` directory of the source tree, and an installation
+from PyPI puts it into the ``bin`` directory of the virtual environment. The
+script only needs ``curl`` and ``jq``, not privacyIDEA itself, so copy it to
+every SSH server.
 
-In the ``sshd_config`` file you need to configure the ``AuthorizedKeysCommand`` accordingly.
-Set it to e.g.::
+Set the privacyIDEA server (``server``), the service account (``serviceaccount``
+and ``password``) and the ``service_id`` at the top of the script. The script
+authenticates as this administrator and fetches the SSH keys that are attached
+to the ``service_id`` for the user who logs in. If admin policies are defined,
+the service account needs the admin right
+:ref:`policy_fetch_authentication_items`.
 
-   privacyidea-authorizedkeys
+In the ``sshd_config`` file configure the script as ``AuthorizedKeysCommand``,
+e.g.::
 
-This will fetch the SSH public keys for the requesting machine and the given user.
+   AuthorizedKeysCommand /usr/local/sbin/privacyidea-authorizedkeys %u
+   AuthorizedKeysCommandUser pi-authkeys
 
-If you are using the shell script you need to configure the privacyIDEA Server and
-the service account at the top of the script.
+``sshd`` requires an absolute path and refuses to start if
+``AuthorizedKeysCommandUser`` is not set. Use a dedicated unprivileged user for
+it. The script has to be owned by root and must not be writable by group or
+others. As it contains the password of the service account, only root and the
+``AuthorizedKeysCommandUser`` should be able to read it, e.g.::
 
-The Python script however expects a configuration file
+   install -o root -g pi-authkeys -m 0750 privacyidea-authorizedkeys /usr/local/sbin/
+
+The script writes the keys of the user to stdout, one per line, and nothing if
+the user has no key. It writes its error messages to stderr and then exits with
+a non-zero status, so that ``sshd`` logs them instead of reading them as keys.
+A token whose key fails its integrity check is left out, the keys of the other
+tokens are still returned, see :ref:`sshkey_token`.
+
+The privacyideaadm repository contains an alternative Python script
+``privacyidea-authorizedkey``. It expects a configuration file
 */etc/privacyidea/authorizedkeyscommand* which looks like this::
 
    [Default]
@@ -80,8 +99,13 @@ The Python script however expects a configuration file
    nosslcheck=False
    service_id=webservers
 
-In this example the SSH keys that are attached to the service_id "webservers" are fetched from the
-privacyIDEA server.
+Check the documentation of privacyideaadm whether your version of the script
+supports the ``service_id`` setting.
+
+.. warning:: In a productive environment do not disable the check of the TLS
+    certificate (``insecure="-k"`` in the shell script, ``nosslcheck=True``
+    in the Python script), otherwise you are vulnerable to man in the middle
+    attacks.
 
 Managing in the WebUI
 .....................
@@ -91,9 +115,6 @@ administrator can filter for service_ids., to find all SSH keys that are attache
 
 .. note:: To disable a SSH key for all servers, you simply can disable the
     distinct SSH token in privacyIDEA.
-
-.. warning:: In a productive environment you should not set **nosslcheck** to
-    true, otherwise you are vulnerable to man in the middle attacks.
 
 .. _application_luks:
 

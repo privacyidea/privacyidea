@@ -167,6 +167,13 @@ Some example configuration can be found in the NetKnights GitHub
 repositories [#nkgh]_. More on the WSGI setup for privacyIDEA can be found in
 :ref:`wsgiscript`.
 
+Cleanup jobs
+............
+
+An installation from PyPI does not schedule any jobs. Set up the cron jobs
+described in :ref:`cleanup_jobs`, otherwise several database tables grow
+without limit.
+
 
 .. rubric:: Footnotes
 

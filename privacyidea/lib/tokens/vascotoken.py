@@ -186,7 +186,7 @@ class VascoTokenClass(TokenClass):
                 log.warning(f"VASCO token failed to authenticate, result: {result!r}")
             return -1
 
-    def export_token(self) -> dict:
+    def export_token(self, export_user: bool = False) -> dict:
         """
         Export for this token is not supported.
         """

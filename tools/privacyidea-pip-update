@@ -12,7 +12,7 @@ def usage():
     print("""
 privacyidea-pip-update
 
-    -f, --force      force the update
+    -f, --force      do not ask for confirmation
     -s, --skipstamp  skip the stamping of the database. Use this, if you know
                      your DB has the correct version.
     -n, --noschema   do not run the schema update.
@@ -64,9 +64,7 @@ def main():
             usage()
             sys.exit(2)
 
-    if force:
-        update(environment)
-    else:
+    if not force:
         answer = False
         res = 'n'
         while not answer:
@@ -74,12 +72,13 @@ def main():
                         "python environment and the DB schema? (y/N)")
             answer = res.lower() in ['y', 'n', '']
 
-        if res.lower() == 'y':
-            update(environment)
-            if not no_schema:
-                update_db_schema(environment, skip_stamp)
-        else:
+        if res.lower() != 'y':
             print("You canceled the update process.")
+            return
+
+    update(environment)
+    if not no_schema:
+        update_db_schema(environment, skip_stamp)
 
 
 if __name__ == "__main__":

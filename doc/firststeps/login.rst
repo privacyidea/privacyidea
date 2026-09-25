@@ -25,7 +25,7 @@ with the tool::
 
    pi-manage admin
 
-The administrator just logs in with his username.
+See :ref:`pimanage_admin`. The administrator just logs in with his username.
 
 .. note:: You can configure privacyIDEA to authenticate administrators
    against privacyIDEA itself, so that administrators

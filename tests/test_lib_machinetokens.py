@@ -1,7 +1,11 @@
 """
 This test file tests the lib/machine.py for attaching and detaching tokens
 """
+from sqlalchemy import update
+
+from privacyidea.lib.crypto import encryptPassword
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError
+from privacyidea.models import TokenInfo, db
 
 HOSTSFILE = "tests/testdata/hosts"
 from .base import MyTestCase
@@ -26,6 +30,9 @@ sshkey = "ssh-rsa " \
          "afLE9AtAL4nnMPuubC87L0wJ88un9teza/N02KJMHy01Yz3iJKt3Ou9eV6kqO" \
          "ei3kvLs5dXmriTHp6g9whtnN6/Liv9SzZPJTs8YfThi34Wccrw== " \
          "NetKnights GmbH"
+
+
+SECOND_SSHKEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGveDylH198g7J0Tkp85LaCsaAj5HjK3n4qK8dcv0a+H second@example"
 
 
 class MachineTokenTestCase(MyTestCase):
@@ -232,3 +239,29 @@ class MachineTokenTestCase(MyTestCase):
         detach_token(self.serial2, "ssh")
         mt = list_token_machines(self.serial2)
         self.assertEqual(0, len(mt))
+
+    def test_16_auth_items_skip_a_token_that_fails(self):
+        # One token whose SSH key fails its integrity check is left out, the keys of the other tokens are still
+        # handed out
+        intact = init_token({"serial": "SSHINTACT", "type": "sshkey", "sshkey": sshkey})
+        broken = init_token({"serial": "SSHBROKEN", "type": "sshkey", "sshkey": SECOND_SSHKEY})
+        for token in (intact, broken):
+            attach_token(serial=token.token.serial, application="ssh",
+                         options={"user": "root", "service_id": "integrity"})
+        # Replace the stored key in the database without updating the checksum
+        db.session.execute(update(TokenInfo)
+                           .where(TokenInfo.token_id == broken.token.id, TokenInfo.Key == "ssh_key")
+                           .values(Value=encryptPassword("AAAAC3NzaC1lZDI1NTE5AAAAIManipulatedKeyData")))
+        db.session.commit()
+
+        with self.assertLogs("privacyidea.lib.machine", level="ERROR") as logs:
+            auth_items = get_auth_items(application="ssh", filter_param={"user": "root", "service_id": "integrity"})
+        ssh_keys = [item["sshkey"] for item in auth_items["ssh"]]
+        self.assertEqual(1, len(ssh_keys), ssh_keys)
+        self.assertTrue(ssh_keys[0].startswith("ssh-rsa "), ssh_keys)
+        self.assertIn("SSHBROKEN", "\n".join(logs.output))
+
+        for token in (intact, broken):
+            detach_token(token.token.serial, "ssh")
+            remove_token(token.token.serial)
+

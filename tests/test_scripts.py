@@ -4,18 +4,11 @@ from importlib.machinery import SourceFileLoader
 from importlib.util import spec_from_loader, module_from_spec
 
 SCRIPTS = [
-    'creategoogleauthenticator-file',
-    'getgooglecodes',
     'privacyidea-create-ad-users',
-    'privacyidea-create-certificate',
     'privacyidea-create-pwidresolver-user',
-    'privacyidea-export-linotp-counter.py',
-    'privacyidea-export-privacyidea-counter.py',
     'privacyidea-fix-access-rights',
-    'privacyidea-migrate-linotp.py',
     'privacyidea-pip-update',
 #    'privacyidea-queue-huey',
-    'privacyidea-sync-owncloud.py',
     'privacyidea-update-counter.py',
     'privacyidea-update-linotp-counter.py',
     'privacyidea-user-action',

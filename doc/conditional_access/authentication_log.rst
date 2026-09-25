@@ -410,6 +410,10 @@ outcomes recorded on them. Add ``--chunksize`` to delete in batches on a large
 table, and ``--dryrun`` to see how many entries would be removed without
 deleting anything.
 
+The retention period is yours to choose, so this job is not scheduled by
+default: the Ubuntu packages ship it commented out, and the Docker image runs it
+only once ``PI_CRON_AUTHLOG_AGE`` is set, see :ref:`cleanup_jobs`.
+
 .. note:: Deleting entries also removes them from the counts a conditional
    access policy makes. Keep the retention period comfortably longer than the
    longest time window you use in a policy.

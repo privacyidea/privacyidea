@@ -41,7 +41,7 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    get_num_tokens_in_realm,
                                    get_token_owner_keys,
                                    get_realms_of_token,
-                                   token_exist, get_token_owner, is_token_owner,
+                                   token_exist, get_token_owner, get_token_owner_without_lookup, is_token_owner,
                                    get_tokenclass_info,
                                    get_tokens_in_resolver, get_otp,
                                    get_token_by_otp, get_serial_by_otp,
@@ -494,6 +494,18 @@ class TokenTestCase(MyTestCase):
                          get_token_owner("hotptoken"))
         self.assertFalse(is_token_owner(self.serials[1], user),
                          get_token_owner(self.serials[1]))
+
+    def test_08b_token_owner_without_lookup(self):
+        # The owner as the database knows it: realm and resolver of the owner row, no login from the user store.
+        # A token without an owner gives an empty user.
+        owner = get_token_owner_without_lookup("hotptoken")
+        self.assertEqual(self.realm1, owner.realm)
+        self.assertEqual(self.resolvername1, owner.resolver)
+        self.assertEqual("", owner.login)
+        self.assertIsNone(owner.uid)
+        self.assertTrue(get_token_owner_without_lookup(self.serials[0]).is_empty())
+        with self.assertRaises(ResourceNotFoundError):
+            get_token_owner_without_lookup("does not exist")
 
     def test_08a_get_owner_by_token_id_retries_once_after_a_transient_failure(self):
         # A page-wide owner query that fails once (e.g. a lock-wait timeout) is retried

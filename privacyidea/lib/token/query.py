@@ -282,27 +282,32 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
             )
             sql_query = sql_query.where(Token.id.in_(subquery))
 
-    # Node-specific resolver and realm configuration.
+    # Node-specific resolver and realm configuration: the tokens of owners that another node serves are left out.
+    # A token belongs to no node if the resolver of its owner is in no realm at all, e.g. because the resolver was
+    # deleted, or if the realm of its owner has no resolver. Such a token is shown on every node, as it could
+    # otherwise neither be found nor deleted anywhere.
     if not all_nodes:
         local_node_uuid = get_app_config_value("PI_NODE_UUID")
         realms = get_realms()
         resolvers = []
+        resolvers_of_any_node = set()
         realms_to_filter = []
 
         for realm_name, realm_data in realms.items():
-            added = False
-            for res in realm_data.get("resolver", []):
-                if res.get("name"):
-                    if not res.get("node") or res["node"] == local_node_uuid:
-                        resolvers.append(res["name"])
-                        added = True
-            if not added:
+            realm_resolvers = [res for res in realm_data.get("resolver", []) if res.get("name")]
+            resolvers_on_this_node = [res["name"] for res in realm_resolvers
+                                      if not res.get("node") or res["node"] == local_node_uuid]
+            resolvers.extend(resolvers_on_this_node)
+            resolvers_of_any_node.update(res["name"] for res in realm_resolvers)
+            if realm_resolvers and not resolvers_on_this_node:
+                # Only other nodes serve this realm
                 realms_to_filter.append(realm_name)
 
         # Build the resolver filter condition
         resolver_filter = or_(
             TokenOwner.id.is_(None),
             TokenOwner.resolver.in_(resolvers),
+            TokenOwner.resolver.not_in(sorted(resolvers_of_any_node)),
         )
 
         # Re-join realm and explicitly include the join conditions in the filter to handle unassigned tokens
@@ -1095,6 +1100,22 @@ def get_token_owner(serial: str) -> User | None:
     """
     token = get_one_token(serial=serial)
     return token.user
+
+
+def get_token_owner_without_lookup(serial: str) -> User:
+    """
+    The owner of a token as far as the database knows it, without asking the user store: a user object with the
+    realm and the resolver of the owner, but without a login name or user ID. For an owner that can not be looked
+    up, e.g. because the resolver of the owner was deleted, while the realm of the owner is still what the policies
+    are matched against. An empty user object if the token has no owner.
+
+    :param serial: serial number of the token
+    :return: the owner without the information of the user store
+    """
+    owner = get_one_token(serial=serial).token.first_owner
+    if not owner:
+        return User()
+    return User(realm=owner.realm.name if owner.realm else "", resolver=owner.resolver)
 
 
 @log_with(log)

@@ -85,13 +85,13 @@ msgstr "nodes: mindestens ein Knoten erforderlich"
 
 #: api/periodictask.py:208
 #, python-brace-format
-msgid "Unknown task module: {!r}"
-msgstr "Unbekanntes Task-Modul: {!r}"
+msgid "Unknown task module: {0!r}"
+msgstr "Unbekanntes Task-Modul: {0!r}"
 
 #: api/periodictask.py:216
 #, python-brace-format
-msgid "options: expected dictionary, got {!r}"
-msgstr "options: dict erwartet, {!r} erhalten"
+msgid "options: expected dictionary, got {0!r}"
+msgstr "options: dict erwartet, {0!r} erhalten"
 
 #: api/policy.py:479 api/token.py:1484
 msgid "Unable to convert file contents. Binary data is not supported"
