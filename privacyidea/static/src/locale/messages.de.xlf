@@ -1188,7 +1188,7 @@
       </trans-unit>
       <trans-unit id="periodicTask.selectNodesWhich" datatype="html">
         <source>Select the nodes on which the periodic task should be executed.</source>
-        <target>Wählen Sie die Nodes aus, auf denen die periodische Aufgabe ausgeführt werden soll.</target>
+        <target>Wählen Sie die Knoten aus, auf denen die periodische Aufgabe ausgeführt werden soll.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
           <context context-type="linenumber">207</context>
@@ -1196,7 +1196,7 @@
       </trans-unit>
       <trans-unit id="periodicTask.leastOneNodeRequired" datatype="html">
         <source>At least one node is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
-        <target>Mindestens ein Node ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
+        <target>Mindestens ein Knoten ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
           <context context-type="linenumber">209</context>
@@ -1496,7 +1496,7 @@
       </trans-unit>
       <trans-unit id="periodicTask.nodes" datatype="html">
         <source>Nodes</source>
-        <target>Nodes</target>
+        <target>Knoten</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
           <context context-type="linenumber">194</context>
@@ -2244,7 +2244,7 @@
       </trans-unit>
       <trans-unit id="systemConfig.maxFailcount" datatype="html">
         <source>Max Failcount</source>
-        <target>Max. Fehleranzahl</target>
+        <target>Max. Fehlerzähler</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
           <context context-type="linenumber">216</context>
@@ -2440,7 +2440,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.failedGenerate" datatype="html">
         <source>Failed to generate API key.</source>
-        <target>API-Schlüssel konnte nicht generiert werden.</target>
+        <target>API-Key konnte nicht generiert werden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
           <context context-type="linenumber">323</context>
@@ -2448,7 +2448,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tokenConfiguration" datatype="html">
         <source>Token configuration saved successfully.</source>
-        <target>Token-Konfiguration erfolgreich gespeichert.</target>
+        <target>Tokenkonfiguration erfolgreich gespeichert.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
           <context context-type="linenumber">371</context>
@@ -2456,7 +2456,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.failedSaveToken" datatype="html">
         <source>Failed to save token configuration.</source>
-        <target>Token-Konfiguration konnte nicht gespeichert werden.</target>
+        <target>Tokenkonfiguration konnte nicht gespeichert werden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
           <context context-type="linenumber">378</context>
@@ -2464,7 +2464,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.errorSavingToken" datatype="html">
         <source>Error saving token configuration.</source>
-        <target>Fehler beim Speichern der Token-Konfiguration.</target>
+        <target>Fehler beim Speichern der Tokenkonfiguration.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
           <context context-type="linenumber">383</context>
@@ -2504,7 +2504,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.noteUserAdminPolicies" datatype="html">
         <source>Note that the user/admin policies <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>daypassword_hashlib<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> and <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>daypassword_timestep<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> always have precedence over these default values.</source>
-        <target>Beachten Sie, dass die Benutzer-/Admin-Richtlinien <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>daypassword_hashlib<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> und <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>daypassword_timestep<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> stets Vorrang vor diesen Standardwerten haben.</target>
+        <target>Beachten Sie, dass die Benutzer-/Administrator-Richtlinien <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>daypassword_hashlib<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> und <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>daypassword_timestep<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> stets Vorrang vor diesen Standardwerten haben.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/daypassword-config/daypassword-config.component.html</context>
           <context context-type="linenumber">30</context>
@@ -2636,7 +2636,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.noteUserAdmin" datatype="html">
         <source>Note that the user/admin policy <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>hotp_hashlib<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> always have precedence over this default value.</source>
-        <target>Beachten Sie, dass die Benutzer-/Admin-Richtlinie <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>hotp_hashlib<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> stets Vorrang vor diesem Standardwert hat.</target>
+        <target>Beachten Sie, dass die Benutzer-/Administrator-Richtlinie <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>hotp_hashlib<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> stets Vorrang vor diesem Standardwert hat.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/hotp-config/hotp-config.component.html</context>
           <context context-type="linenumber">36</context>
@@ -2896,7 +2896,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tiqrServiceDisplayname" datatype="html">
         <source>TiQR Service Displayname</source>
-        <target>TiQR-Dienst-Anzeigename</target>
+        <target>TiQR-Service-Anzeigename</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component.html</context>
           <context context-type="linenumber">72</context>
@@ -2912,7 +2912,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tiqrServiceIdentifier" datatype="html">
         <source>TiQR Service Identifier</source>
-        <target>TiQR-Dienst-Identifier</target>
+        <target>TiQR-Service-Identifier</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component.html</context>
           <context context-type="linenumber">87</context>
@@ -3016,7 +3016,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.noteUserAdminPoliciesTotp" datatype="html">
         <source>Note that the user/admin policies <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>totp_hashlib<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> and <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>totp_timestep<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> always have precedence over these default values.</source>
-        <target>Beachten Sie, dass die Benutzer-/Admin-Richtlinien <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>totp_hashlib<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> und <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>totp_timestep<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> stets Vorrang vor diesen Standardwerten haben.</target>
+        <target>Beachten Sie, dass die Benutzer-/Administrator-Richtlinien <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>totp_hashlib<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> und <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span class=&quot;policy-highlight&quot;&gt;"/>totp_timestep<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/> stets Vorrang vor diesen Standardwerten haben.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/totp-config/totp-config.component.html</context>
           <context context-type="linenumber">36</context>
@@ -3124,7 +3124,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.youMaySetTrust" datatype="html">
         <source>You may set a trust anchor directory, which is a path to a directory containing certificates to trust for WebAuthn authenticator attestation.</source>
-        <target>Sie können ein Trust-Anchor-Verzeichnis festlegen, das ein Pfad zu einem Verzeichnis mit Zertifikaten ist, denen bei der WebAuthn-Authenticator-Attestierung vertraut werden soll.</target>
+        <target>Sie können ein Vertrauensanker-Verzeichnis festlegen, das ein Pfad zu einem Verzeichnis mit Zertifikaten ist, denen bei der WebAuthn-Authenticator-Attestation vertraut werden soll.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component.html</context>
           <context context-type="linenumber">28</context>
@@ -3140,7 +3140,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.pathDirectory" datatype="html">
         <source>The path to the directory containing the trust anchors.</source>
-        <target>Der Pfad zum Verzeichnis, das die Trust-Anchors enthält.</target>
+        <target>Der Pfad zum Verzeichnis, das die Vertrauensanker enthält.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component.html</context>
           <context context-type="linenumber">43</context>
@@ -3172,7 +3172,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.doesNotNeedSet" datatype="html">
         <source>This does not need to be set for WebAuthn to work, however without this, privacyIDEA can not check, whether an attestation certificate is actually trusted (it will still be checked for validity).</source>
-        <target>Dies muss nicht gesetzt werden, damit WebAuthn funktioniert; ohne diese Einstellung kann privacyIDEA jedoch nicht prüfen, ob einem Attestierungszertifikat tatsächlich vertraut wird (es wird weiterhin auf Gültigkeit geprüft).</target>
+        <target>Dies muss nicht gesetzt werden, damit WebAuthn funktioniert; ohne diese Einstellung kann privacyIDEA jedoch nicht prüfen, ob einem Attestation-Zertifikat tatsächlich vertraut wird (es wird weiterhin auf Gültigkeit geprüft).</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component.html</context>
           <context context-type="linenumber">56</context>
@@ -3244,7 +3244,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.accessingYubicloud" datatype="html">
         <source>For accessing the YubiCloud you need to enter an API Client ID and an API Key, which you can request <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://upgrade.yubico.com/getapikey/&quot; target=&quot;_blank&quot; &gt;"/>here <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
-        <target>Für den Zugriff auf die YubiCloud müssen Sie eine API-Client-ID und einen API-Schlüssel eingeben, die Sie <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://upgrade.yubico.com/getapikey/&quot; target=&quot;_blank&quot; &gt;"/>hier <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> anfordern können.</target>
+        <target>Für den Zugriff auf die YubiCloud müssen Sie eine API-Client-ID und einen API-Key eingeben, die Sie <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://upgrade.yubico.com/getapikey/&quot; target=&quot;_blank&quot; &gt;"/>hier <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> anfordern können.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubico-config/yubico-config.component.html</context>
           <context context-type="linenumber">35</context>
@@ -3252,7 +3252,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.apiKey" datatype="html">
         <source>API Key</source>
-        <target>API-Schlüssel</target>
+        <target>API-Key</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubico-config/yubico-config.component.html</context>
           <context context-type="linenumber">47</context>
@@ -3272,7 +3272,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.apiKeyRequired" datatype="html">
         <source>API Key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target>API-Schlüssel ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <target>API-Key ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubico-config/yubico-config.component.html</context>
           <context context-type="linenumber">57</context>
@@ -3344,7 +3344,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.clientIdApiKey" datatype="html">
         <source>Client ID API Key</source>
-        <target>Client-ID API-Schlüssel</target>
+        <target>Client-ID und API-Key</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component.html</context>
           <context context-type="linenumber">46</context>
@@ -3384,7 +3384,7 @@
       </trans-unit>
       <trans-unit id="tokenTypeConfig.generateApiKey" datatype="html">
         <source>Generate API Key</source>
-        <target>API-Schlüssel generieren</target>
+        <target>API-Key generieren</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/yubikey-config/yubikey-config.component.html</context>
           <context context-type="linenumber">113</context>
@@ -3456,7 +3456,7 @@
       </trans-unit>
       <trans-unit id="container.createNewContainer" datatype="html">
         <source>Create a New Container</source>
-        <target>Einen neuen Container erstellen</target>
+        <target>Neuen Container erstellen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-create.component.html</context>
           <context context-type="linenumber">28</context>
@@ -3464,7 +3464,7 @@
       </trans-unit>
       <trans-unit id="common.reopenEnrollment" datatype="html">
         <source>Reopen enrollment dialog</source>
-        <target>Ausrollungsdialog erneut öffnen</target>
+        <target>Ausroll-Dialog erneut öffnen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-create.component.html</context>
           <context context-type="linenumber">61</context>
@@ -3592,7 +3592,7 @@
       </trans-unit>
       <trans-unit id="container.containerRegistration" datatype="html">
         <source>Container Registration Completed</source>
-        <target>Containerregistrierung abgeschlossen</target>
+        <target>Container-Registrierung abgeschlossen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component.html</context>
           <context context-type="linenumber">23</context>
@@ -3764,7 +3764,7 @@
       </trans-unit>
       <trans-unit id="container.tokenActions" datatype="html">
         <source>Token Actions</source>
-        <target>Token-Aktionen</target>
+        <target>Tokenaktionen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details-token-actions/container-details-token-actions.component.html</context>
           <context context-type="linenumber">24</context>
@@ -4160,7 +4160,7 @@
       </trans-unit>
       <trans-unit id="common.userRealm" datatype="html">
         <source>User Realm</source>
-        <target>Benutzerrealm</target>
+        <target>Benutzer-Realm</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-details/container-details.component.ts</context>
           <context context-type="linenumber">98</context>
@@ -4204,7 +4204,7 @@
       </trans-unit>
       <trans-unit id="container.validatePassphrase" datatype="html">
         <source>Validate the passphrase against the user store.</source>
-        <target>Die Passphrase gegen den Benutzerspeicher validieren.</target>
+        <target>Die Passphrase gegen die Benutzerquelle validieren.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-config/container-registration-config.component.html</context>
           <context context-type="linenumber">24</context>
@@ -4212,7 +4212,7 @@
       </trans-unit>
       <trans-unit id="container.passphrasePrompt" datatype="html">
         <source>Passphrase Prompt</source>
-        <target>Passwort-Abfrage</target>
+        <target>Passphrase-Abfrage</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-config/container-registration-config.component.html</context>
           <context context-type="linenumber">27</context>
@@ -4220,7 +4220,7 @@
       </trans-unit>
       <trans-unit id="container.enterPassphrase" datatype="html">
         <source>Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user should enter.</source>
-        <target>Geben Sie eine Passworteingabeaufforderung ein, die dem Benutzer angezeigt wird. Dies sollte angeben, welche Passphrase der Benutzer eingeben soll.</target>
+        <target>Geben Sie eine Passphrase-Abfrage ein, die dem Benutzer angezeigt wird. Sie sollte angeben, welche Passphrase der Benutzer eingeben soll.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-config/container-registration-config.component.html</context>
           <context context-type="linenumber">37</context>
@@ -4228,7 +4228,7 @@
       </trans-unit>
       <trans-unit id="container.passphraseResponse" datatype="html">
         <source>Passphrase Response</source>
-        <target>Passworteingabe</target>
+        <target>Passphrase-Antwort</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-config/container-registration-config.component.html</context>
           <context context-type="linenumber">42</context>
@@ -4248,7 +4248,7 @@
       </trans-unit>
       <trans-unit id="container.correctAnswer" datatype="html">
         <source>This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.</source>
-        <target>Dies ist die richtige Antwort auf die Passworteingabeaufforderung, die der Benutzer eingeben muss, um den Container erfolgreich zu registrieren.</target>
+        <target>Dies ist die richtige Antwort auf die Passphrase-Abfrage, die der Benutzer eingeben muss, um den Container erfolgreich zu registrieren.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-registration/container-registration-config/container-registration-config.component.html</context>
           <context context-type="linenumber">60</context>
@@ -4488,7 +4488,7 @@
       </trans-unit>
       <trans-unit id="container.thereInvalidToken" datatype="html">
         <source>There are invalid token configurations.</source>
-        <target>Es gibt ungültige Token-Konfigurationen.</target>
+        <target>Es gibt ungültige Tokenkonfigurationen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-templates/container-template-edit-page/container-template-edit-page.component.ts</context>
           <context context-type="linenumber">181</context>
@@ -5360,7 +5360,7 @@
       </trans-unit>
       <trans-unit id="caConnector.certificateSigning" datatype="html">
         <source>Certificate Signing Request Directory</source>
-        <target>Verzeichnis für Certificate Signing Requests</target>
+        <target>Verzeichnis für Zertifikatsanforderungen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">213</context>
@@ -5968,7 +5968,7 @@
       </trans-unit>
       <trans-unit id="common.secret" datatype="html">
         <source>Secret</source>
-        <target>Geheimnis</target>
+        <target>Secret</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
           <context context-type="linenumber">129</context>
@@ -6136,7 +6136,7 @@
       </trans-unit>
       <trans-unit id="serviceId.uniqueIdentifying" datatype="html">
         <source>This is the unique identifying name for this service definition.</source>
-        <target>Dies ist der eindeutige Name für diese Dienstdefinition.</target>
+        <target>Dies ist der eindeutige Name dieser Service-Definition.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/new-service-id/new-service-id.component.html</context>
           <context context-type="linenumber">78</context>
@@ -6176,7 +6176,7 @@
       </trans-unit>
       <trans-unit id="serviceId.serviceIdsUsed" datatype="html">
         <source>Service IDs can be used to attach e.g. SSH keys to certain machines and services. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> To view attached tokens go to <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.TOKENS_APPLICATIONS]&quot;&gt;"/>token applications.<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
-        <target>Service-IDs können verwendet werden, um z. B. SSH-Schlüssel an bestimmte Maschinen und Dienste anzuhängen. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Um angehängte Token anzuzeigen, gehen Sie zu <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.TOKENS_APPLICATIONS]&quot;&gt;"/>Token-Anwendungen.<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+        <target>Service-IDs können verwendet werden, um z. B. SSH-Schlüssel an bestimmte Maschinen und Dienste anzuhängen. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Um angehängte Token anzuzeigen, gehen Sie zu <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.TOKENS_APPLICATIONS]&quot;&gt;"/>Tokenanwendungen.<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.html</context>
           <context context-type="linenumber">73</context>
@@ -6576,7 +6576,7 @@
       </trans-unit>
       <trans-unit id="nav.tokenOverview" datatype="html">
         <source>Token Overview</source>
-        <target>Token-Übersicht</target>
+        <target>Tokenübersicht</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation-self-service/navigation-self-service.component.html</context>
           <context context-type="linenumber">43</context>
@@ -6584,7 +6584,7 @@
       </trans-unit>
       <trans-unit id="common.tokenEnrollment" datatype="html">
         <source>Token Enrollment</source>
-        <target>Token-Registrierung</target>
+        <target>Token ausrollen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation-self-service/navigation-self-service.component.html</context>
           <context context-type="linenumber">49</context>
@@ -6640,7 +6640,7 @@
       </trans-unit>
       <trans-unit id="nav.auditLog" datatype="html">
         <source>Audit Log</source>
-        <target>Audit-Protokoll</target>
+        <target>Audit-Log</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation-self-service/navigation-self-service.component.html</context>
           <context context-type="linenumber">93</context>
@@ -6824,7 +6824,7 @@
       </trans-unit>
       <trans-unit id="common.createUser" datatype="html">
         <source>Create User</source>
-        <target>Benutzer anlegen</target>
+        <target>Benutzer erstellen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">409</context>
@@ -6928,7 +6928,7 @@
       </trans-unit>
       <trans-unit id="nav.eventDetails" datatype="html">
         <source>Event Details</source>
-        <target>Ereignisdetails</target>
+        <target>Event-Handler-Details</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">545</context>
@@ -6936,7 +6936,7 @@
       </trans-unit>
       <trans-unit id="nav.createEvent" datatype="html">
         <source>Create Event</source>
-        <target>Ereignis erstellen</target>
+        <target>Event-Handler erstellen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">556</context>
@@ -7312,7 +7312,7 @@
       </trans-unit>
       <trans-unit id="login.loginCredentialsButton" datatype="html">
         <source>Login with credentials Button</source>
-        <target>Anmelden-mit-Anmeldedaten-Schaltfläche</target>
+        <target>Schaltfläche für die Anmeldung mit Anmeldedaten</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">81</context>
@@ -7345,7 +7345,7 @@
       </trans-unit>
       <trans-unit id="login.loginButton" datatype="html">
         <source>Login Button</source>
-        <target>Anmelde-Button</target>
+        <target>Anmelde-Schaltfläche</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">188</context>
@@ -7390,7 +7390,7 @@
       </trans-unit>
       <trans-unit id="login.passkeyButton" datatype="html">
         <source>Passkey Button</source>
-        <target>Passkey-Button</target>
+        <target>Passkey-Schaltfläche</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">231</context>
@@ -8087,7 +8087,7 @@
       </trans-unit>
       <trans-unit id="policy.adminConditions" datatype="html">
         <source>Admin Conditions</source>
-        <target>Admin-Bedingungen</target>
+        <target>Administrator-Bedingungen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-admin-conditions/edit-admin-conditions.component.html</context>
           <context context-type="linenumber">24</context>
@@ -8095,7 +8095,7 @@
       </trans-unit>
       <trans-unit id="policy.adminName" datatype="html">
         <source>Admin Name</source>
-        <target>Admin-Name</target>
+        <target>Administratorname</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-admin-conditions/edit-admin-conditions.component.html</context>
           <context context-type="linenumber">57</context>
@@ -8103,7 +8103,7 @@
       </trans-unit>
       <trans-unit id="policy.adminMustNotContain" datatype="html">
         <source>Admin must not contain commas.</source>
-        <target>Admin darf keine Kommas enthalten.</target>
+        <target>Der Administratorname darf keine Kommas enthalten.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-admin-conditions/edit-admin-conditions.component.html</context>
           <context context-type="linenumber">64</context>
@@ -8119,7 +8119,7 @@
       </trans-unit>
       <trans-unit id="policy.validTime" datatype="html">
         <source>Valid time</source>
-        <target>Gültige Zeit</target>
+        <target>Gültigkeitszeitraum</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/view-conditions-column/view-conditions-column.component.ts</context>
           <context context-type="linenumber">56</context>
@@ -8359,7 +8359,7 @@
       </trans-unit>
       <trans-unit id="container.supportedToken" datatype="html">
         <source>Supported Token Types: <x id="START_BLOCK_IF" equiv-text="@if ( (containerService().selectedContainerType()?.token_types?.length ?? 0) &gt;= tokenService().tokenTypeOptions().length ) {"/> All <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService().selectedContainerType()?.token_types?.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService().selectedContainerType()?.token_types?.[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></source>
-        <target>Unterstützte Token-Typen: <x id="START_BLOCK_IF" equiv-text="@if ( (containerService().selectedContainerType()?.token_types?.length ?? 0) &gt;= tokenService().tokenTypeOptions().length ) {"/> Alle <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService().selectedContainerType()?.token_types?.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService().selectedContainerType()?.token_types?.[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></target>
+        <target>Unterstützte Tokentypen: <x id="START_BLOCK_IF" equiv-text="@if ( (containerService().selectedContainerType()?.token_types?.length ?? 0) &gt;= tokenService().tokenTypeOptions().length ) {"/> Alle <x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE_IF" equiv-text="@else if ((containerService().selectedContainerType()?.token_types?.length ?? 0) &gt; 1) {"/> <x id="INTERPOLATION" equiv-text="{{ containerService().selectedContainerType()?.token_types?.join(&quot;, &quot;) }}"/> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/> <x id="INTERPOLATION_1" equiv-text="{{ containerService().selectedContainerType()?.token_types?.[0] }}"/> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/container-create-form/container-create-form.component.html</context>
           <context context-type="linenumber">22</context>
@@ -8859,7 +8859,7 @@
       </trans-unit>
       <trans-unit id="token.tokenApplicationsOffline" datatype="html">
         <source>Token Applications Offline</source>
-        <target>Token-Anwendungen Offline</target>
+        <target>Tokenanwendungen Offline</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-offline/token-applications-offline.component.html</context>
           <context context-type="linenumber">20</context>
@@ -8891,7 +8891,7 @@
       </trans-unit>
       <trans-unit id="token.tokenApplicationsTable" datatype="html">
         <source>Token Applications Table</source>
-        <target>Token-Anwendungen-Tabelle</target>
+        <target>Tabelle der Tokenanwendungen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-offline/token-applications-offline.component.html</context>
           <context context-type="linenumber">68</context>
@@ -8903,7 +8903,7 @@
       </trans-unit>
       <trans-unit id="token.tokenApplicationsSsh" datatype="html">
         <source>Token Applications SSH</source>
-        <target>Token-Anwendungen SSH</target>
+        <target>Tokenanwendungen SSH</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-ssh/token-applications-ssh.component.html</context>
           <context context-type="linenumber">20</context>
@@ -8911,7 +8911,7 @@
       </trans-unit>
       <trans-unit id="token.sshTokensAttached" datatype="html">
         <source>SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH server and may differ from the token owner. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> To attach the token to a service ID go to the token details.</source>
-        <target>SSH-Token können an eine Service-ID mit einem Benutzer angehängt werden. Der Benutzer ist der Benutzer auf dem SSH-Server und kann sich vom Token-Besitzer unterscheiden. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Um den Token an eine Service-ID anzuhängen, gehen Sie zu den Token-Details.</target>
+        <target>SSH-Token können an eine Service-ID mit einem Benutzer angehängt werden. Der Benutzer ist der Benutzer auf dem SSH-Server und kann sich vom Tokenbesitzer unterscheiden. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> Um den Token an eine Service-ID anzuhängen, gehen Sie zu den Tokendetails.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-ssh/token-applications-ssh.component.html</context>
           <context context-type="linenumber">25</context>
@@ -8935,7 +8935,7 @@
       </trans-unit>
       <trans-unit id="token.tokenApplications" datatype="html">
         <source>Token Applications</source>
-        <target>Token-Anwendungen</target>
+        <target>Tokenanwendungen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications.component.html</context>
           <context context-type="linenumber">21</context>
@@ -8979,7 +8979,7 @@
       </trans-unit>
       <trans-unit id="token.ifTokenLostYou" datatype="html">
         <source>If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP PIN of the old token is still the same.</source>
-        <target>Wenn der Token verloren geht, können Sie einen temporären passwortbasierten Token registrieren und dem Benutzer das Passwort geben. Die OTP-PIN des alten Tokens bleibt gleich.</target>
+        <target>Wenn der Token verloren geht, können Sie einen temporären passwortbasierten Token ausrollen und dem Benutzer das Passwort geben. Die OTP-PIN des alten Tokens bleibt gleich.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">26</context>
@@ -9203,7 +9203,7 @@
       </trans-unit>
       <trans-unit id="token.verifyEnrollment" datatype="html">
         <source>Verify Enrollment</source>
-        <target>Ausrollung verifizieren</target>
+        <target>Ausrollen verifizieren</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/verify-enrollment/verify-enrollment.component.html</context>
           <context context-type="linenumber">33</context>
@@ -9319,7 +9319,7 @@
       </trans-unit>
       <trans-unit id="token.filterByToken" datatype="html">
         <source>Filter by token owner</source>
-        <target>Nach Token-Besitzer filtern</target>
+        <target>Nach Tokenbesitzer filtern</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-assignments/token-details-assignments.component.html</context>
           <context context-type="linenumber">119</context>
@@ -9335,7 +9335,7 @@
       </trans-unit>
       <trans-unit id="token.rolloutState" datatype="html">
         <source>Rollout State</source>
-        <target>Rollout-Status</target>
+        <target>Ausroll-Zustand</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-status/token-details-status.component.html</context>
           <context context-type="linenumber">69</context>
@@ -9351,7 +9351,7 @@
       </trans-unit>
       <trans-unit id="token.failCount" datatype="html">
         <source>Fail Count</source>
-        <target>Fehleranzahl</target>
+        <target>Fehlerzähler</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-status/token-details-status.component.html</context>
           <context context-type="linenumber">73</context>
@@ -9691,7 +9691,7 @@
       </trans-unit>
       <trans-unit id="token.generateRequest" datatype="html">
         <source>Generate Request</source>
-        <target>Anfrage generieren</target>
+        <target>Zertifikatsanforderung generieren</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.ts</context>
           <context context-type="linenumber">77</context>
@@ -9699,7 +9699,7 @@
       </trans-unit>
       <trans-unit id="token.uploadRequest" datatype="html">
         <source>Upload Request</source>
-        <target>Anfrage hochladen</target>
+        <target>Zertifikatsanforderung hochladen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.ts</context>
           <context context-type="linenumber">78</context>
@@ -9747,7 +9747,7 @@
       </trans-unit>
       <trans-unit id="token.certificateSigning" datatype="html">
         <source>Certificate Signing Request (PEM)</source>
-        <target>Certificate Signing Request (PEM)</target>
+        <target>Zertifikatsanforderung (PEM)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">77</context>
@@ -9755,7 +9755,7 @@
       </trans-unit>
       <trans-unit id="token.pasteCertificateSigning" datatype="html">
         <source>Paste the Certificate Signing Request here</source>
-        <target>Fügen Sie hier den Certificate Signing Request ein</target>
+        <target>Fügen Sie hier die Zertifikatsanforderung ein</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">82</context>
@@ -9763,7 +9763,7 @@
       </trans-unit>
       <trans-unit id="token.certificateSigningRequest" datatype="html">
         <source>Certificate Signing Request is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target>Certificate Signing Request ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
+        <target>Zertifikatsanforderung ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">85</context>
@@ -9999,7 +9999,7 @@
       </trans-unit>
       <trans-unit id="token.eMailTokenEnrollment" datatype="html">
         <source>The E-Mail token enrollment is not completely configured. Please contact your administrator.</source>
-        <target>Die E-Mail-Token-Ausrollung ist nicht vollständig konfiguriert. Bitte wenden Sie sich an Ihren Administrator.</target>
+        <target>Das Ausrollen von E-Mail-Token ist nicht vollständig konfiguriert. Bitte wenden Sie sich an Ihren Administrator.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-email/enroll-email.component.html</context>
           <context context-type="linenumber">40</context>
@@ -10079,7 +10079,7 @@
       </trans-unit>
       <trans-unit id="token.useTwoStepEnrollment" datatype="html">
         <source>Use two-step enrollment with the privacyIDEA Authenticator App.</source>
-        <target>Zwei-Schritt-Ausrollung mit der privacyIDEA Authenticator App verwenden.</target>
+        <target>Ausrollen in zwei Schritten mit der privacyIDEA Authenticator App verwenden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-hotp/enroll-hotp.component.html</context>
           <context context-type="linenumber">28</context>
@@ -10143,7 +10143,7 @@
       </trans-unit>
       <trans-unit id="token.secretRequired" datatype="html">
         <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (min 16 chars)</source>
-        <target>Geheimnis ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (min. 16 Zeichen)</target>
+        <target>Secret ist <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>erforderlich<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> (min. 16 Zeichen)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component.html</context>
           <context context-type="linenumber">28</context>
@@ -10279,7 +10279,7 @@
       </trans-unit>
       <trans-unit id="token.questionnaireToken" datatype="html">
         <source>The questionnaire token enrollment is not completely configured. Please contact your administrator.</source>
-        <target>Die Fragebogen-Token-Ausrollung ist nicht vollständig konfiguriert. Bitte wenden Sie sich an Ihren Administrator.</target>
+        <target>Das Ausrollen von Fragebogen-Token ist nicht vollständig konfiguriert. Bitte wenden Sie sich an Ihren Administrator.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-questionnaire/enroll-question.component.html</context>
           <context context-type="linenumber">40</context>
@@ -10635,7 +10635,7 @@
       </trans-unit>
       <trans-unit id="token.enrollmentResponse" datatype="html">
         <source>Enrollment response or its detail is missing for finalization.</source>
-        <target>Die Ausrollungsantwort oder deren Detail fehlt für den Abschluss.</target>
+        <target>Für den Abschluss fehlt die Antwort des Ausrollens oder deren Detail.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component.ts</context>
           <context context-type="linenumber">247</context>
@@ -10643,7 +10643,7 @@
       </trans-unit>
       <trans-unit id="token.invalidTransaction" datatype="html">
         <source>Invalid transaction ID or serial number in enrollment detail for finalization.</source>
-        <target>Ungültige Transaktions-ID oder Seriennummer im Ausrollungsdetail für den Abschluss.</target>
+        <target>Ungültige Transaktions-ID oder Seriennummer im Detail des Ausrollens für den Abschluss.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component.ts</context>
           <context context-type="linenumber">111</context>
@@ -10679,7 +10679,7 @@
       </trans-unit>
       <trans-unit id="token.yubicoTokenEnrollment" datatype="html">
         <source>The Yubico token enrollment is not completely configured. Please contact your administrator.</source>
-        <target>Die Yubico-Token-Ausrollung ist nicht vollständig konfiguriert. Bitte wenden Sie sich an Ihren Administrator.</target>
+        <target>Das Ausrollen von Yubico-Token ist nicht vollständig konfiguriert. Bitte wenden Sie sich an Ihren Administrator.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubico/enroll-yubico.component.html</context>
           <context context-type="linenumber">40</context>
@@ -10735,7 +10735,7 @@
       </trans-unit>
       <trans-unit id="token.completeToken" datatype="html">
         <source>Complete Token Enrollment</source>
-        <target>Token-Ausrollung abschließen</target>
+        <target>Ausrollen des Tokens abschließen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component.html</context>
           <context context-type="linenumber">22</context>
@@ -10883,7 +10883,7 @@
       </trans-unit>
       <trans-unit id="token.enrollmentUrl" datatype="html">
         <source>Enrollment URL</source>
-        <target>Ausrollungs-URL</target>
+        <target>Ausroll-URL</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/tiqr-enroll-url/tiqr-enroll-url.component.html</context>
           <context context-type="linenumber">22</context>
@@ -10927,7 +10927,7 @@
       </trans-unit>
       <trans-unit id="token.youNeedConfirm" datatype="html">
         <source>You need to confirm the registration with your token either by pushing the blinking button or by replugging your token. This depends on the actual token model.</source>
-        <target>Sie müssen die Registrierung mit Ihrem Token bestätigen, indem Sie entweder die blinkende Taste drücken oder Ihren Token erneut einstecken. Dies hängt vom jeweiligen Token-Modell ab.</target>
+        <target>Sie müssen die Registrierung mit Ihrem Token bestätigen, indem Sie entweder die blinkende Taste drücken oder Ihren Token erneut einstecken. Dies hängt vom jeweiligen Tokenmodell ab.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
           <context context-type="linenumber">51</context>
@@ -11023,7 +11023,7 @@
       </trans-unit>
       <trans-unit id="token.enrollNewToken" datatype="html">
         <source>Enroll a New Token</source>
-        <target>Einen neuen Token ausrollen</target>
+        <target>Neuen Token ausrollen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
           <context context-type="linenumber">28</context>
@@ -11035,7 +11035,7 @@
       </trans-unit>
       <trans-unit id="token.tokenConfiguration" datatype="html">
         <source>Token Configuration</source>
-        <target>Token-Konfiguration</target>
+        <target>Tokenkonfiguration</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
           <context context-type="linenumber">41</context>
@@ -11179,7 +11179,7 @@
       </trans-unit>
       <trans-unit id="token.enrollmentAction" datatype="html">
         <source>Enrollment action is not available for the selected token type.</source>
-        <target>Die Ausrollungsaktion ist für den ausgewählten Tokentyp nicht verfügbar.</target>
+        <target>Die Ausroll-Aktion ist für den ausgewählten Tokentyp nicht verfügbar.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.ts</context>
           <context context-type="linenumber">360</context>
@@ -11187,7 +11187,7 @@
       </trans-unit>
       <trans-unit id="token.noEnrollmentResponse" datatype="html">
         <source>No enrollment response available.</source>
-        <target>Keine Ausrollungsantwort verfügbar.</target>
+        <target>Keine Antwort des Ausrollens verfügbar.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.ts</context>
           <context context-type="linenumber">527</context>
@@ -11227,7 +11227,7 @@
       </trans-unit>
       <trans-unit id="token.verifyTokenEnrollment" datatype="html">
         <source>Verify Token Enrollment</source>
-        <target>Token-Ausrollung verifizieren</target>
+        <target>Ausrollen des Tokens verifizieren</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component.html</context>
           <context context-type="linenumber">22</context>
@@ -11235,7 +11235,7 @@
       </trans-unit>
       <trans-unit id="token.howeverActivate" datatype="html">
         <source>However, to activate your token you still need to verify the enrollment.</source>
-        <target>Um Ihren Token zu aktivieren, müssen Sie jedoch noch die Ausrollung verifizieren.</target>
+        <target>Um Ihren Token zu aktivieren, müssen Sie jedoch noch das Ausrollen verifizieren.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component.html</context>
           <context context-type="linenumber">40</context>
@@ -11927,7 +11927,7 @@
       </trans-unit>
       <trans-unit id="token.errorOccurredWhileUnassigning" datatype="html">
         <source>An error occurred while unassigning tokens.</source>
-        <target>Beim Aufheben der Token-Zuweisung ist ein Fehler aufgetreten.</target>
+        <target>Beim Aufheben der Tokenzuweisung ist ein Fehler aufgetreten.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
           <context context-type="linenumber">327</context>
@@ -12167,7 +12167,7 @@
       </trans-unit>
       <trans-unit id="realm.node" datatype="html">
         <source>Node</source>
-        <target>Node</target>
+        <target>Knoten</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.html</context>
           <context context-type="linenumber">37</context>
@@ -12239,7 +12239,7 @@
       </trans-unit>
       <trans-unit id="realm.allNodes" datatype="html">
         <source>All nodes</source>
-        <target>Alle Nodes</target>
+        <target>Alle Knoten</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">191</context>
@@ -12343,7 +12343,7 @@
       </trans-unit>
       <trans-unit id="user.createNewUser" datatype="html">
         <source>Create New User</source>
-        <target>Neuen Benutzer anlegen</target>
+        <target>Neuen Benutzer erstellen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-create/user-create.component.html</context>
           <context context-type="linenumber">22</context>
@@ -12419,7 +12419,7 @@
       </trans-unit>
       <trans-unit id="user.tokenAssignment" datatype="html">
         <source>Token Assignment</source>
-        <target>Token-Zuweisung</target>
+        <target>Tokenzuweisung</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-pin-dialog/user-details-pin-dialog.component.html</context>
           <context context-type="linenumber">25</context>
@@ -12463,7 +12463,7 @@
       </trans-unit>
       <trans-unit id="user.tokenTableUser" datatype="html">
         <source>Token Table of the User</source>
-        <target>Token-Tabelle des Benutzers</target>
+        <target>Tokentabelle des Benutzers</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details-token-table/user-details-token-table.component.html</context>
           <context context-type="linenumber">80</context>
@@ -12737,7 +12737,7 @@
       </trans-unit>
       <trans-unit id="resolver.userStoreAttribute" datatype="html">
         <source>User Store Attribute</source>
-        <target>Benutzerspeicher-Attribut</target>
+        <target>Attribut der Benutzerquelle</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-groups-attribute/http-groups-attribute.component.html</context>
           <context context-type="linenumber">45</context>
@@ -12757,7 +12757,7 @@
       </trans-unit>
       <trans-unit id="resolver.keyGroupSName" datatype="html">
         <source>Key of the group&apos;s name in the user store response.</source>
-        <target>Schlüssel des Gruppennamens in der Antwort des Benutzerspeichers.</target>
+        <target>Schlüssel des Gruppennamens in der Antwort der Benutzerquelle.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-groups-attribute/http-groups-attribute.component.html</context>
           <context context-type="linenumber">57</context>
@@ -12945,7 +12945,7 @@
       </trans-unit>
       <trans-unit id="resolver.baseUrlApiUser" datatype="html">
         <source>The base URL of the API of the user store which will be concatenated with the user endpoints defined below.</source>
-        <target>Die Basis-URL der API des Benutzerspeichers, die mit den unten definierten Benutzer-Endpunkten verkettet wird.</target>
+        <target>Die Basis-URL der API der Benutzerquelle, die mit den unten definierten Benutzer-Endpunkten verkettet wird.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">165</context>
@@ -13013,7 +13013,7 @@
       </trans-unit>
       <trans-unit id="resolver.leftColumnDefines" datatype="html">
         <source>The left column defines the user attributes used in privacyIDEA and the right column the equivalent attribute in the user store.</source>
-        <target>Die linke Spalte definiert die in privacyIDEA verwendeten Benutzerattribute und die rechte Spalte das entsprechende Attribut im Benutzerspeicher.</target>
+        <target>Die linke Spalte definiert die in privacyIDEA verwendeten Benutzerattribute und die rechte Spalte das entsprechende Attribut in der Benutzerquelle.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">306</context>
@@ -13029,7 +13029,7 @@
       </trans-unit>
       <trans-unit id="resolver.editUserStore" datatype="html">
         <source>Edit User Store</source>
-        <target>Benutzerspeicher bearbeiten</target>
+        <target>Benutzerquelle bearbeitbar</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">332</context>
@@ -13041,7 +13041,7 @@
       </trans-unit>
       <trans-unit id="resolver.userDataUserStore" datatype="html">
         <source>The user data in this user store can be modified from within privacyIDEA.</source>
-        <target>Die Benutzerdaten in diesem Benutzerspeicher können innerhalb von privacyIDEA geändert werden.</target>
+        <target>Die Benutzerdaten in dieser Benutzerquelle können innerhalb von privacyIDEA geändert werden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">337</context>
@@ -13049,7 +13049,7 @@
       </trans-unit>
       <trans-unit id="resolver.timeSecondsPrivacyidea" datatype="html">
         <source>Time in seconds privacyIDEA tries <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> to reach the user store server.</source>
-        <target>Zeit in Sekunden, die privacyIDEA versucht, <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> den Benutzerspeicher-Server zu erreichen.</target>
+        <target>Zeit in Sekunden, die privacyIDEA versucht, <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> den Server der Benutzerquelle zu erreichen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">353</context>
@@ -13089,7 +13089,7 @@
       </trans-unit>
       <trans-unit id="resolver.sectionAllowsConfigure" datatype="html">
         <source>This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order to receive an access token. This token can then be used to access the user store API. You can find most of these settings in the app registration in the Entra Admin Center or you also have to add them there.</source>
-        <target>Dieser Abschnitt ermöglicht die Konfiguration eines Endpunkts, gegenüber dem sich der privacyIDEA-Server authentifizieren muss, um ein Access-Token zu erhalten. Dieses Token kann dann für den Zugriff auf die Benutzerspeicher-API verwendet werden. Die meisten dieser Einstellungen finden Sie in der App-Registrierung im Entra Admin Center, oder Sie müssen sie dort ebenfalls hinzufügen.</target>
+        <target>Dieser Abschnitt ermöglicht die Konfiguration eines Endpunkts, gegenüber dem sich der privacyIDEA-Server authentifizieren muss, um ein Access-Token zu erhalten. Dieses Token kann dann für den Zugriff auf die API der Benutzerquelle verwendet werden. Die meisten dieser Einstellungen finden Sie in der App-Registrierung im Entra Admin Center, oder Sie müssen sie dort ebenfalls hinzufügen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">398</context>
@@ -13177,7 +13177,7 @@
       </trans-unit>
       <trans-unit id="resolver.sectionAllows" datatype="html">
         <source>This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order to receive an access token. This token can then be used to access the user store API.</source>
-        <target>Dieser Abschnitt ermöglicht die Konfiguration eines Endpunkts, gegenüber dem sich der privacyIDEA-Server authentifizieren muss, um ein Access-Token zu erhalten. Dieses Token kann dann für den Zugriff auf die Benutzerspeicher-API verwendet werden.</target>
+        <target>Dieser Abschnitt ermöglicht die Konfiguration eines Endpunkts, gegenüber dem sich der privacyIDEA-Server authentifizieren muss, um ein Access-Token zu erhalten. Dieses Token kann dann für den Zugriff auf die API der Benutzerquelle verwendet werden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">541</context>
@@ -13813,7 +13813,7 @@
       </trans-unit>
       <trans-unit id="resolver.editUserStoreSql" datatype="html">
         <source>Edit user store</source>
-        <target>Benutzerspeicher bearbeiten</target>
+        <target>Benutzerquelle bearbeitbar</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
           <context context-type="linenumber">114</context>
@@ -14649,7 +14649,7 @@
       </trans-unit>
       <trans-unit id="policy.tokenInfo" datatype="html">
         <source>Token Info</source>
-        <target>Token-Info</target>
+        <target>Tokeninfo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
           <context context-type="linenumber">114</context>
@@ -15389,7 +15389,7 @@
       </trans-unit>
       <trans-unit id="token.showAudit" datatype="html">
         <source>Show in Audit</source>
-        <target>Im Audit anzeigen</target>
+        <target>Im Audit-Log anzeigen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
           <context context-type="linenumber">128</context>
@@ -15613,7 +15613,7 @@
       </trans-unit>
       <trans-unit id="token.pushTokenWorks" datatype="html">
         <source>The PUSH token works with the privacyIDEA Authenticator App. It will send an authentication request to the app, which can be accepted by just tapping a button. Optionally, it can require users to use the configured unlock mechanism (PIN/Biometric) on their smartphone to accept. The smartphone needs to be able to reach privacyIDEA for this token to work.</source>
-        <target>Der PUSH-Token funktioniert mit der privacyIDEA Authenticator App. Er sendet eine Authentifizierungsanfrage an die App, die durch einfaches Tippen auf eine Schaltfläche bestätigt werden kann. Optional kann verlangt werden, dass Benutzer zum Bestätigen den konfigurierten Entsperrmechanismus (PIN/Biometrie) auf ihrem Smartphone verwenden. Das Smartphone muss privacyIDEA erreichen können, damit dieser Token funktioniert.</target>
+        <target>Der Push-Token funktioniert mit der privacyIDEA Authenticator App. Er sendet eine Authentifizierungsanfrage an die App, die durch einfaches Tippen auf eine Schaltfläche bestätigt werden kann. Optional kann verlangt werden, dass Benutzer zum Bestätigen den konfigurierten Entsperrmechanismus (PIN/Biometrie) auf ihrem Smartphone verwenden. Das Smartphone muss privacyIDEA erreichen können, damit dieser Token funktioniert.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
           <context context-type="linenumber">145</context>
@@ -16165,7 +16165,7 @@
       </trans-unit>
       <trans-unit id="dashboard.tokenUsage" datatype="html">
         <source>Token Usage</source>
-        <target>Token-Nutzung</target>
+        <target>Tokennutzung</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.ts</context>
           <context context-type="linenumber">58</context>
@@ -17861,7 +17861,7 @@
       </trans-unit>
       <trans-unit id="audit.yourAuthenticationsToken" datatype="html">
         <source>Your authentications and token actions are recorded in the audit log.</source>
-        <target>Ihre Authentifizierungen und Token-Aktionen werden im Audit-Log aufgezeichnet.</target>
+        <target>Ihre Authentifizierungen und Tokenaktionen werden im Audit-Log aufgezeichnet.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.self-service.component.html</context>
           <context context-type="linenumber">196</context>
@@ -22429,7 +22429,7 @@
       </trans-unit>
       <trans-unit id="authLog.link" datatype="html">
         <source><x id="INTERPOLATION" equiv-text="{{ column.label }}"/> Link</source>
-        <target>Link <x id="INTERPOLATION" equiv-text="{{ column.label }}"/></target>
+        <target><x id="INTERPOLATION" equiv-text="{{ column.label }}"/>-Link</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.html</context>
           <context context-type="linenumber">353</context>
@@ -23573,7 +23573,7 @@
       </trans-unit>
       <trans-unit id="token.certificatePending" datatype="html">
         <source>The certificate request has been submitted and is waiting for approval by the certificate authority. The certificate appears in the token details as soon as it has been issued.</source>
-        <target>Die Zertifikatsanforderung wurde eingereicht und wartet auf die Genehmigung durch die Zertifizierungsstelle. Das Zertifikat erscheint in den Token-Details, sobald es ausgestellt wurde.</target>
+        <target>Die Zertifikatsanforderung wurde eingereicht und wartet auf die Genehmigung durch die Zertifizierungsstelle. Das Zertifikat erscheint in den Tokendetails, sobald es ausgestellt wurde.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.html</context>
           <context context-type="linenumber">24</context>
@@ -23613,7 +23613,7 @@
       </trans-unit>
       <trans-unit id="token.pkcs12ContainsKeyOnly" datatype="html">
         <source>The PKCS#12 container holds the private key. It stays available for download in the token details, where the certificate appears separately once the certificate authority has issued it.</source>
-        <target>Der PKCS#12-Container enthält den privaten Schlüssel. Er bleibt in den Token-Details zum Herunterladen verfügbar; das Zertifikat erscheint dort separat, sobald die Zertifizierungsstelle es ausgestellt hat.</target>
+        <target>Der PKCS#12-Container enthält den privaten Schlüssel. Er bleibt in den Tokendetails zum Herunterladen verfügbar; das Zertifikat erscheint dort separat, sobald die Zertifizierungsstelle es ausgestellt hat.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.html</context>
           <context context-type="linenumber">67</context>
@@ -23621,7 +23621,7 @@
       </trans-unit>
       <trans-unit id="token.pkcs12Contains" datatype="html">
         <source>The PKCS#12 container holds the private key and the certificate. It stays available for download in the token details.</source>
-        <target>Der PKCS#12-Container enthält den privaten Schlüssel und das Zertifikat. Er bleibt in den Token-Details zum Herunterladen verfügbar.</target>
+        <target>Der PKCS#12-Container enthält den privaten Schlüssel und das Zertifikat. Er bleibt in den Tokendetails zum Herunterladen verfügbar.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/certificate-data/certificate-data.component.html</context>
           <context context-type="linenumber">72</context>
