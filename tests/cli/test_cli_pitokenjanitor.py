@@ -23,10 +23,12 @@ import re
 import pytest
 import yaml
 from cryptography.fernet import Fernet
+from dateutil.tz import tzlocal
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.cli.pitokenjanitor.main import cli, findcontainer
+from privacyidea.cli.pitokenjanitor.utils import findtokens
 from privacyidea.lib.container import (find_container_by_serial, init_container, create_container_template,
                                        ResourceNotFoundError, get_all_containers)
 from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL
@@ -34,6 +36,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.realm import set_realm, get_realms
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token, get_one_token
+from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.lib.user import User
 from privacyidea.models import db, TokenContainerOwner
 from privacyidea.models.token import TokenOwner
@@ -529,6 +532,31 @@ class TestPiTokenJanitorFind:
             assert "Invalid value" in result.output
 
 
+    def test_find_tokeninfo_relative_time(self, app, tokens):
+        """
+        Tests that a signed time span in a < or > comparison of the tokeninfo is a point in time relative to now,
+        and that tokens without the entry match neither comparison.
+        """
+        now = datetime.datetime.now(tzlocal())
+        get_one_token(serial="HOTP0001").write_tokeninfo(
+            "last_auth", (now - datetime.timedelta(days=10)).strftime(AUTH_DATE_FORMAT))
+        get_one_token(serial="TOTP0001").write_tokeninfo(
+            "last_auth", (now - datetime.timedelta(days=400)).strftime(AUTH_DATE_FORMAT))
+        runner = app.test_cli_runner()
+
+        result = runner.invoke(cli, ["find", "--tokeninfo", "last_auth<-180d", "list"])
+        assert result.exit_code == 0, result.output
+        assert "TOTP0001" in result.output
+        assert "HOTP0001" not in result.output
+        assert "HOTP0002" not in result.output
+
+        result = runner.invoke(cli, ["find", "--tokeninfo", "last_auth>-180d", "list"])
+        assert result.exit_code == 0, result.output
+        assert "HOTP0001" in result.output
+        assert "TOTP0001" not in result.output
+        assert "HOTP0002" not in result.output
+
+
 class TestPiTokenJanitorActions:
     def test_list_token_attributes(self, app, tokens):
         """
@@ -668,6 +696,48 @@ class TestPiTokenJanitorActions:
             token = get_one_token(serial="HOTP0001")
             assert token.get_tokeninfo("new_info") == "new_value"
 
+    def test_set_tokeninfo_value_with_any_characters(self, app, tokens):
+        """
+        Tests that the value of set_tokeninfo is everything after the first "=", including spaces, dashes and
+        further "=" characters, and that a missing value is refused.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "--tokenattribute", "serial=^HOTP0001$", "set_tokeninfo", "--tokeninfo",
+                                     "marked = to-delete 2026-09-25"])
+        assert result.exit_code == 0, result.output
+        assert get_one_token(serial="HOTP0001").get_tokeninfo("marked") == "to-delete 2026-09-25"
+
+        result = runner.invoke(cli, ["find", "--tokenattribute", "serial=^HOTP0001$", "set_tokeninfo", "--tokeninfo",
+                                     "note=a=b"])
+        assert result.exit_code == 0, result.output
+        assert get_one_token(serial="HOTP0001").get_tokeninfo("note") == "a=b"
+
+        result = runner.invoke(cli, ["find", "--tokenattribute", "serial=^HOTP0001$", "set_tokeninfo", "--tokeninfo",
+                                     "note="])
+        assert result.exit_code != 0
+        assert "Can not parse tokeninfo" in result.output
+
+    def test_list_json(self, app, tokens):
+        """
+        Tests that list --format json writes one JSON object per token, and with --summarize one per owner, the
+        unassigned tokens under the owner null.
+        """
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "--tokenattribute", "serial=^HOTP0001$", "list", "--format", "json"])
+        assert result.exit_code == 0, result.output
+        token = json.loads(result.stdout)
+        assert token["serial"] == "HOTP0001"
+        assert token["tokentype"] == "hotp"
+        assert token["realms"] == ["realm1"]
+        assert token["info"]["info1"] == "value1"
+
+        result = runner.invoke(cli, ["find", "list", "--summarize", "--format", "json"])
+        assert result.exit_code == 0, result.output
+        owners = [json.loads(line) for line in result.stdout.splitlines()]
+        assert sorted(owner["user"]["username"] for owner in owners if owner["user"]) == ["cornelius", "hans"]
+        assert {"user": None, "tokens": 1} in owners
+        assert all(owner["tokens"] == 1 for owner in owners)
+
     def test_remove_tokeninfo(self, app, tokens):
         """
         Tests removing tokeninfo from a token.
@@ -729,10 +799,11 @@ class TestPiTokenJanitorActions:
         output can be imported. The key, the messages and the question whether to save the key go to stderr.
         """
         runner = app.test_cli_runner()
-        result = runner.invoke(cli, ["find", "export"], input='n\n')
+        result = runner.invoke(cli, ["find", "export"])
         assert result.exit_code == 0, result.output
         assert "Successfully exported 3 tokens." in result.stderr
-        assert "Do you want to save the key to a file?" in result.stderr
+        # Without a terminal nobody could answer, so the question whether to save the key is not asked
+        assert "Do you want to save the key to a file?" not in result.output
         key = re.search(r"The key to import the tokens is:\s+(\S+)", result.stderr).group(1)
         exported_tokens = json.loads(Fernet(key).decrypt(result.stdout.strip()))
         assert sorted(token["serial"] for token in exported_tokens) == ["HOTP0001", "HOTP0002", "TOTP0001"]
@@ -742,6 +813,20 @@ class TestPiTokenJanitorActions:
         result = runner.invoke(cli, ["import", "privacyidea", str(export_file), "--key", key])
         assert result.exit_code == 0, result.output
         assert "3 tokens updated." in result.output
+
+    def test_export_pi_format_asks_to_save_the_key_on_a_terminal(self, app, tokens, tmp_path, monkeypatch):
+        """
+        Tests that on a terminal the export asks whether to save the key and writes it to the given file.
+        """
+        monkeypatch.setattr(findtokens, "_is_interactive", lambda: True)
+        key_file = tmp_path / "export.key"
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "export", "--file", str(tmp_path / "tokens.pi")],
+                               input=f"y\n{key_file}\n")
+        assert result.exit_code == 0, result.output
+        assert "Do you want to save the key to a file?" in result.stderr
+        key = re.search(r"The key to import the tokens is:\s+(\S+)", result.stderr).group(1)
+        assert key_file.read_text() == key
 
     def test_export_yaml_format(self, app, tokens):
         """

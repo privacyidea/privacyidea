@@ -778,9 +778,16 @@ the form ``<key><operator><value>``. Quote the filter on the shell, otherwise ``
     The opposite of ``=``: the regular expression does not occur in the stored value.
 ``<``, ``>``
     With an integer the stored value is compared as a number, e.g. ``failcount>3``. Except for
-    ``--tokenattribute``, the value can also be a date: ``--tokeninfo 'last_auth<2025-01-01'``
-    finds the tokens whose last successful authentication was before 2025. A date without a time
-    zone is taken as local time. A stored value that is not a number or a date does not match.
+    ``--tokenattribute``, the value can also be a point in time:
+
+    * a date, e.g. ``--tokeninfo 'last_auth<2025-01-01'`` finds the tokens whose last successful
+      authentication was before 2025. A date without a time zone is taken as local time.
+    * a time relative to now, given as a signed time span with the unit ``s``, ``m``, ``h``,
+      ``d`` or ``y`` (365 days): ``--tokeninfo 'last_auth<-180d'`` finds the tokens whose last
+      successful authentication was more than 180 days ago, ``--tokeninfo 'last_auth>-180d'``
+      those that authenticated within the last 180 days.
+
+    A stored value that is not a number or a date does not match.
 
 The integer and boolean columns of the token table, e.g. ``failcount``, ``active`` or
 ``locked``, are always compared as integers: use ``active=1`` or ``locked=0``, not
@@ -826,6 +833,17 @@ Example::
 
         pi-tokenjanitor find --assigned true list --summarize -u email
 
+``--format``
+    ``text`` (default) writes one line per token, or per owner with ``--summarize``, meant to be
+    read. ``json`` writes one JSON object per line, meant for scripts: per token its ``serial``,
+    ``tokentype``, the list of ``realms``, the tokeninfo in ``info`` and, with ``-u``, the owner
+    in ``user``; with ``--summarize`` per owner ``{"user": {...}, "tokens": <number>}``, where
+    ``user`` is ``null`` for the unassigned tokens.
+
+    Example::
+
+        pi-tokenjanitor find --tokeninfo 'last_auth<-180d' list --format json
+
 .. _pi-tokenjanitor_export:
 
 export
@@ -839,8 +857,8 @@ delete it when it is no longer needed.
 
     ``pi`` (default)
         The tokens with their tokeninfo and, with ``--user``, their owner. The export is encrypted.
-        The key to decrypt it is printed to stderr, then the script asks whether to save the key to
-        a file as well. Tokens that can not be exported, e.g. mOTP, remote, RADIUS, Yubico and VASCO
+        The key to decrypt it is printed to stderr. On a terminal the script then asks whether to
+        save the key to a file as well; without a terminal, e.g. in a cron job, it does not ask. Tokens that can not be exported, e.g. mOTP, remote, RADIUS, Yubico and VASCO
         tokens, are listed as failed. Import the export with
         :ref:`import privacyidea <pi-tokenjanitor_import_privacyidea>`.
     ``csv``
@@ -934,8 +952,9 @@ set_tokeninfo
 Adds a tokeninfo entry to the selected tokens or overwrites an existing entry with the same key.
 
 ``--tokeninfo``
-    The entry to set, given as ``<key>=<value>``. Required. The key and the value may only contain
-    letters, digits and ``_``, so a date or a value with spaces can not be set.
+    The entry to set, given as ``<key>=<value>``. Required. The key may only contain letters,
+    digits and ``_``. The value is everything after the first ``=``, without the spaces around
+    it, and may contain any character, e.g. ``'marked=to delete 2026-10-01'``.
 
 Only free-form entries can be set. An entry that the token type maintains itself, e.g. the public
 key of a passkey, is skipped with a message. Such entries can be set at enrollment or with the
@@ -1319,7 +1338,9 @@ The table lists the commands and options of :ref:`token_janitor` and how to do t
    * - ``--tokeninfo-value-before DATE``, ``--tokeninfo-value-after DATE``
      - ``--tokeninfo 'K<DATE'``, ``--tokeninfo 'K>DATE'``
    * - ``find --last_auth 90d``
-     - ``find --tokeninfo "last_auth<$(date -d '90 days ago' +%F)"``
+     - ``find --tokeninfo 'last_auth<-90d'``
+   * - ``find`` (without an action), ``find --csv``
+     - ``list``, ``list --format json``
    * - ``--has-tokeninfo-key``, ``--has-not-tokeninfo-key``, ``--assigned``, ``--active``,
        ``--orphaned``
      - the same options
