@@ -21,8 +21,8 @@ nothing, so you have to set the jobs up yourself.
 
    * - What
      - Command
-     - Ubuntu packages
-     - Docker (``pi-cron``)
+     - Ubuntu packages (server's local time)
+     - Docker ``pi-cron`` (UTC)
    * - :ref:`Periodic tasks <periodic_tasks>`
      - ``privacyidea-cron run_scheduled -c``
      - every 5 minutes
@@ -60,6 +60,10 @@ nothing, so you have to set the jobs up yourself.
      - ``pi-manage authlog cleanup --age <days>``
      - commented-out example
      - only if ``PI_CRON_AUTHLOG_AGE`` is set
+
+The times of the Ubuntu packages are the local time of the server: the crontab
+follows the time zone the server is set to. The ``pi-cron`` container always
+runs on UTC, whatever time zone the host uses.
 
 What the jobs delete
 --------------------
@@ -101,9 +105,10 @@ Ubuntu packages
 ---------------
 
 The packages ``privacyidea-apache2`` and ``privacyidea-nginx`` install the file
-``/etc/cron.d/privacyidea``, which runs the jobs of the table above as the user
-``privacyidea``. The jobs discard their normal output, but not their errors, so
-cron mails the errors of a failing job, if the system can send mail.
+``/etc/cron.d/privacyidea``, which runs the jobs of the table above at the local
+time of the server, as the user ``privacyidea``. The jobs discard their normal
+output, but not their errors, so cron mails the errors of a failing job, if the
+system can send mail.
 
 The audit log and authentication log jobs are commented out. Choose a retention
 period and remove the ``#`` to enable them.
@@ -147,7 +152,8 @@ The ``pi-cron`` container runs the jobs. Each can be switched off with a
 ``PI_CRON_*`` environment variable, and the authentication log cleanup only runs
 once ``PI_CRON_AUTHLOG_AGE`` sets a retention period in days. The variables are
 listed in ``deploy/docker/README.Docker.md`` in the source tree. The times are
-in UTC.
+in UTC, as the image contains no time zone data: setting ``TZ`` does not change
+them.
 
 Manual cleanups
 ---------------
