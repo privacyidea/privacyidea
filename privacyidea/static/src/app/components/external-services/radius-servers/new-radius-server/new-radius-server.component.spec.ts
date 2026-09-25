@@ -100,6 +100,13 @@ describe("NewRadiusServerComponent", () => {
     expect(component.radiusForm.identifier().disabled()).toBe(true);
   });
 
+  it.each(["test_request", ".", ".."])("rejects the reserved identifier %p", (identifier) => {
+    component.radiusModel.update((m) => ({ ...m, identifier, server: "1.2.3.4", secret: "s" }));
+    expect(component.radiusForm.identifier().errors().some((e) => e.kind === "reservedName")).toBe(true);
+    expect(component.radiusForm().valid()).toBe(false);
+    expect(component.canSave).toBe(false);
+  });
+
   it("should call save when form is valid", async () => {
     component.radiusModel.update((m) => ({
       ...m,

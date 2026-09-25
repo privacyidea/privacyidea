@@ -95,18 +95,19 @@
                 [showClearButton]="!!currentMachineResolver().resolvername">
                 <input
                   matInput
-                  [appErrorState]="nameHasPatternError() || resolverNamedTest()"
+                  [appErrorState]="nameHasPatternError() || nameIsReserved()"
                   [value]="currentMachineResolver().resolvername"
                   (input)="onResolvernameChange($any($event.target).value)" />
               </app-clearable-input>
               @if (nameHasPatternError()) {
                 <mat-error i18n="@@machine.machineResolverNameContains"
-                  >Machine resolver name contains <strong>invalid characters</strong>. Only alphanumeric characters,
-                  dots, underscores and hyphens are allowed.</mat-error
+                  >Only <strong>letters, digits and . _ -</strong> are allowed.</mat-error
                 >
               }
-              @if (resolverNamedTest()) {
-                <mat-error i18n="@@resolver.resolverNamedTest">Cannot be named "test".</mat-error>
+              @if (nameIsReserved()) {
+                <mat-error i18n="@@common.cannotBeNamed"
+                  >Cannot be named "{{ currentMachineResolver().resolvername }}".</mat-error
+                >
               }
             </mat-form-field>
 

@@ -20,7 +20,7 @@
 import { HttpErrorResponse } from "@angular/common/http";
 import { Component, computed, effect, inject, OnDestroy, signal, viewChild } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { form, FormField, pattern, required, validate } from "@angular/forms/signals";
+import { form, FormField, pattern, required } from "@angular/forms/signals";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -39,6 +39,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { ResolverData, ResolverService, ResolverType } from "@services/resolver/resolver.service";
+import { reservedNames } from "@utils/reserved-names.utils";
 import { finalize } from "rxjs";
 import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.component";
 import { HttpResolverComponent } from "./http-resolver/http-resolver.component";
@@ -122,8 +123,9 @@ export class UserNewResolverComponent implements OnDestroy {
   resolverNameForm = form(this.resolverNameModel, (f) => {
     required(f.resolverName);
     pattern(f.resolverName, /^[a-zA-Z0-9._-]*$/);
-    // POST /resolver/test is the connection test endpoint, so a resolver named "test" is never saved.
-    validate(f.resolverName, (ctx) => (ctx.value() === "test" ? [{ kind: "reservedName" }] : []));
+    // POST /resolver/test is the connection test endpoint, and browsers drop "." and ".." from the URL,
+    // so a resolver with one of these names is never saved.
+    reservedNames(f.resolverName, ["test", ".", ".."]);
   });
 
   constructor() {
@@ -181,8 +183,7 @@ export class UserNewResolverComponent implements OnDestroy {
   }
 
   get canSave(): boolean {
-    const name = this.resolverNameModel().resolverName;
-    const nameValid = name.trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(name) && name !== "test";
+    const nameValid = this.resolverNameForm.resolverName().valid();
     return nameValid && !!this.resolverType() && !this.isAdditionalFieldsInvalid && !this.isSaving();
   }
 

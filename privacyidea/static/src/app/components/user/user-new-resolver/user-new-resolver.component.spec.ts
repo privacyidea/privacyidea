@@ -378,9 +378,9 @@ describe("UserNewResolverComponent", () => {
     expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
   });
 
-  it("rejects the reserved name \"test\"", () => {
+  it.each(["test", ".", ".."])("rejects the reserved name %p", (name) => {
     component.resolverType.set("passwdresolver");
-    component.resolverNameModel.set({ resolverName: "test" });
+    component.resolverNameModel.set({ resolverName: name });
     expect(component.resolverNameForm.resolverName().errors().some((e) => e.kind === "reservedName")).toBe(true);
     expect(component.canSave).toBe(false);
   });

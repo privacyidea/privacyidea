@@ -112,9 +112,9 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
     return name.length > 0 && !/^[a-zA-Z0-9._-]*$/.test(name);
   });
 
-  // There is an endpoint, "/machineresolver/test", that can be used to test the machine resolver.
-  // Naming a machineresolver "test" will only test the configuration instead of saving it.
-  readonly resolverNamedTest = computed(() => this.currentMachineResolver().resolvername === "test");
+  // POST /machineresolver/test is the connection test endpoint, and browsers drop "." and ".." from the URL,
+  // so a machine resolver with one of these names is never saved.
+  readonly nameIsReserved = computed(() => ["test", ".", ".."].includes(this.currentMachineResolver().resolvername));
 
   // True only for the first fetch, before the resource has ever resolved: a reload keeps the
   // previous value in place instead, so the page does not blank out under the user's own change.
@@ -126,8 +126,7 @@ export class MachineResolverDetailsComponent implements OnInit, OnDestroy {
 
   readonly canSaveMachineResolver = computed(() => {
     const current = this.currentMachineResolver();
-    if (!current.resolvername.trim() || !/^[a-zA-Z0-9._-]*$/.test(current.resolvername)) return false;
-    if (this.resolverNamedTest()) return false;
+    if (!current.resolvername.trim() || this.nameHasPatternError() || this.nameIsReserved()) return false;
     return this.dataValidatorSignal()(current.data);
   });
 

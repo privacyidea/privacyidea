@@ -58,21 +58,17 @@
             matInput
             placeholder="resolver1" />
         </app-clearable-input>
-        @if (
-          resolverNameForm.resolverName().errors().some(e => e.kind === 'required') && resolverNameForm.resolverName().touched()
-        ) {
+        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'required')) {
           <mat-error i18n="@@resolver.resolverNameRequired">Resolver name is <strong>required</strong>.</mat-error>
         }
-        @if (
-          resolverNameForm.resolverName().errors().some(e => e.kind === 'pattern') && resolverNameForm.resolverName().touched()
-        ) {
+        @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'pattern')) {
           <mat-error i18n="@@resolver.resolverNameContains"
             >Resolver name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
             and hyphens are allowed.</mat-error
           >
         }
         @if (resolverNameForm.resolverName().errors().some(e => e.kind === 'reservedName')) {
-          <mat-error i18n="@@resolver.resolverNamedTest">Cannot be named "test".</mat-error>
+          <mat-error i18n="@@common.cannotBeNamed">Cannot be named "{{ resolverNameForm.resolverName().value() }}".</mat-error>
         }
       </mat-form-field>
 

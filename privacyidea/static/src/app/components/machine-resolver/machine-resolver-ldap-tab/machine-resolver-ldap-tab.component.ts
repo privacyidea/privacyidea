@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, input, linkedSignal, OnInit, output } from "@angular/core";
+import { Component, input, linkedSignal, OnInit, output } from "@angular/core";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -37,7 +37,6 @@ import { MatIcon } from "@angular/material/icon";
 export class MachineResolverLdapTabComponent implements OnInit {
   readonly canEdit = input<boolean>(false);
   readonly machineResolverData = input.required<MachineResolverData>();
-  readonly fieldsEnabled = computed(() => this.canEdit());
   readonly hostsData = linkedSignal<LdapMachineResolverData>(() => {
     let data = this.machineResolverData() as LdapMachineResolverData;
     data = { ...data, type: "ldap", TIMEOUT: data.TIMEOUT ?? "5" };

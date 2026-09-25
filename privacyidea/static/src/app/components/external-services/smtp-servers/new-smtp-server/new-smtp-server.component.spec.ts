@@ -145,6 +145,13 @@ describe("NewSmtpServerComponent", () => {
       expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 
+    it.each(["send_test_email", ".", ".."])("rejects the reserved identifier %p", (identifier) => {
+      component.smtpModel.update((m) => ({ ...m, identifier, server: "smtp.test.com", sender: "test@test.com" }));
+      expect(component.smtpForm.identifier().errors().some((e) => e.kind === "reservedName")).toBe(true);
+      expect(component.smtpForm().valid()).toBe(false);
+      expect(component.canSave).toBe(false);
+    });
+
     it("should call test when form is valid", async () => {
       component.smtpModel.update((m) => ({
         ...m,

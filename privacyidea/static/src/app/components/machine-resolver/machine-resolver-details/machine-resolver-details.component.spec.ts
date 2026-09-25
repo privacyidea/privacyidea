@@ -120,9 +120,9 @@ describe("MachineResolverDetailsComponent", () => {
       expect(component.canSaveMachineResolver()).toBe(false);
     });
 
-    it("rejects the reserved name \"test\"", () => {
-      component.onResolvernameChange("test");
-      expect(component.resolverNamedTest()).toBe(true);
+    it.each(["test", ".", ".."])("rejects the reserved name %p", (name) => {
+      component.onResolvernameChange(name);
+      expect(component.nameIsReserved()).toBe(true);
       expect(component.canSaveMachineResolver()).toBe(false);
     });
 
