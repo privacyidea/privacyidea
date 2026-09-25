@@ -112,6 +112,13 @@ Version 3.14dev1
   * Replaced the remaining usages of PyOpenSSL with the cryptography package (#1991)
   * `GET /user/` accepts the parameter `include_custom_attributes`, so a user list can be fetched without looking up
     the custom attributes of every user (#5185)
+  * Application specific password tokens can be enrolled in self-service. Listing the defined service IDs with
+    `GET /serviceid/`, which the enrollment needs to offer a choice, is available to users through the new
+    `serviceid_list` action in the user scope; on an installation without any user policy it is allowed like every
+    other action of that scope. Defining, changing and deleting a service ID stays with the administrator (#5611)
+  * The service ID of an application specific password token is checked against the defined service IDs when the
+    token is enrolled. An undefined service ID was accepted and stored, and the token then never matched an
+    authentication request (#5611)
   * Updated the pinned dependencies for the backend.
 
   Fixes:

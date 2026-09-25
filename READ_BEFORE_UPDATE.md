@@ -156,6 +156,31 @@
   the WebUI offers a rollover button; the new one decides whether the request is carried out. The WebUI now checks both,
   so an administrator who does not hold the new action no longer sees a button that would fail.
 
+* **Application specific password tokens can be enrolled in self-service, which needs the new user policy action
+  `serviceid_list`.** The enrollment offers the service IDs defined on the server as a choice, and reading them through
+  `GET /serviceid/` was reserved for administrators — a user who held `enrollAPPLSPEC` got an empty choice and could
+  never submit the enrollment. The endpoint now answers users as well, gated by `serviceid_list` in the `user` scope.
+  Defining, changing and deleting a service ID stays with the administrator.
+
+  **If you have any user policies defined**, grant `serviceid_list` alongside `enrollAPPLSPEC` to the users who should
+  enroll such a token; without it the WebUI keeps reporting that the service IDs are unavailable. Installations without
+  any policy in the `user` scope need no configuration: an unconfigured scope allows every action, so the enrollment
+  works right away — and there, as with every other user-scope action, the names and descriptions of your service IDs
+  are readable by every self-service user.
+
+* **An application specific password token is only enrolled with a service ID that is defined.** `POST /token/init`
+  with `type=applspec` stored whatever `service_id` was sent, including a name that no service ID definition carries.
+  Such a token could never authenticate, because a service sends the service ID it belongs to and only a token with
+  the same one answers for it. The service ID is now looked up among the defined ones — case-insensitively, the way
+  the authentication compares it — and the request is refused with a 400 if it does not exist. **If you enroll these
+  tokens through a script**, make sure the service IDs it passes are defined under *Config -> Service IDs*. Rolling
+  such a token over needs a defined service ID as well. Existing tokens keep the service ID they were enrolled with.
+
+  **Review your container templates** under *Config -> Container Templates* for an application specific password
+  token: a container is created without any token that could not be initialized, and the reason is only written to
+  the log, so a template naming a service ID that is no longer defined silently produces a container with one token
+  missing.
+
 * **Token info that a token type maintains itself is no longer writable through the generic token info endpoints.** A
   token info entry can hold what a token authenticates with — the public key of a passkey, the server a RADIUS token
   forwards to, the answers of a questionnaire token — next to the free-form metadata an administrator keeps there.
