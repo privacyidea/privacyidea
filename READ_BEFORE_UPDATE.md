@@ -251,7 +251,8 @@
 * **Admin policies with `userlist`: `user` and `resolver` now limit the user list** — An administrator only sees
   the users and resolvers named in these fields. They name the users, not the administrator, who is set with
   `adminuser`. If you entered an administrator's own login name in `user`, move it to `adminuser`, otherwise that
-  administrator only sees the user with that name.
+  administrator only sees the user with that name. Such a policy never applied to that administrator alone: with
+  `adminuser` left empty, it gave the user list to every administrator.
 
 * **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
   first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the
