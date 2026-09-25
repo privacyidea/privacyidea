@@ -35,12 +35,45 @@ describe("EmailConfigComponent", () => {
     fixture = TestBed.createComponent(EmailConfigComponent);
     fixture.componentRef.setInput("formData", {});
     fixture.componentRef.setInput("smtpServers", mockSmtpServers);
+    fixture.componentRef.setInput("smtpServersListable", true);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should offer the configured SMTP servers in a select when they can be listed", () => {
+    const element: HTMLElement = fixture.nativeElement;
+    expect(element.querySelector("mat-select")).not.toBeNull();
+    expect(element.querySelector("mat-hint")?.textContent).toContain("Select a predefined");
+    expect(element.textContent).not.toContain("smtpserver_read");
+  });
+
+  describe("when the SMTP servers cannot be listed", () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput("smtpServersListable", false);
+      fixture.componentRef.setInput("formData", { [EMAIL_SMTP_SERVER_KEY]: "server1" });
+      fixture.detectChanges();
+    });
+
+    it("should replace the select by a text input naming the missing right", () => {
+      const element: HTMLElement = fixture.nativeElement;
+      expect(element.querySelector("mat-select")).toBeNull();
+      expect(element.querySelector("mat-hint")?.textContent).toContain("smtpserver_read");
+    });
+
+    it("should show the configured value and emit the typed one", () => {
+      const hint: HTMLElement = fixture.nativeElement.querySelector("mat-hint.red");
+      const input = hint.closest("mat-form-field")!.querySelector("input") as HTMLInputElement;
+      expect(input.value).toBe("server1");
+
+      jest.spyOn(component.formDataChange, "emit");
+      input.value = "server9";
+      input.dispatchEvent(new Event("input"));
+      expect(component.formDataChange.emit).toHaveBeenCalledWith({ [EMAIL_SMTP_SERVER_KEY]: "server9" });
+    });
   });
 
   it("should emit formDataChange when updateFormData is called", () => {

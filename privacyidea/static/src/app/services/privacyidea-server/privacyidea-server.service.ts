@@ -44,6 +44,7 @@ export type PrivacyideaServers = Record<string, PrivacyideaServer>;
 export interface PrivacyideaServerServiceInterface {
   remoteServerResource: HttpResourceRef<PiResponse<PrivacyideaServers> | undefined>;
   readonly remoteServerOptions: Signal<PrivacyideaServer[]>;
+  readonly canListRemoteServers: Signal<boolean>;
 
   postPrivacyideaServer(server: PrivacyideaServer): Promise<void>;
 
@@ -60,9 +61,17 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   private readonly http = inject(HttpClient);
 
   readonly privacyideaServerBaseUrl = environment.proxyUrl + "/privacyideaserver/";
+  readonly canListRemoteServers = computed<boolean>(
+    () => !this.authService.isSelfServiceUser() && this.authService.actionAllowed("privacyideaserver_read")
+  );
+
   remoteServerResource = httpResource<PiResponse<PrivacyideaServers>>(() => {
-    if (this.authService.isSelfServiceUser()) return undefined;
-    if (!this.contentService.onExternalPrivacyIdea() && !this.contentService.onTokenEnrollmentLikely()) {
+    // On the enrollment pages only the remote token type uses the list, and /privacyideaserver/ answers 403
+    // without privacyideaserver_read.
+    const onPageUsingTheList =
+      this.contentService.onExternalPrivacyIdea() ||
+      (this.contentService.onTokenEnrollmentLikely() && this.authService.actionAllowed("enrollREMOTE"));
+    if (!onPageUsingTheList || !this.canListRemoteServers()) {
       return undefined;
     }
     return {
@@ -76,10 +85,11 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
     const res = this.remoteServerResource.value();
     const values = res?.result?.value;
     if (values) {
+      // remote.server_id takes the database id, not the identifier.
       return Object.entries(values).map(([identifier, server]) => ({
         ...server,
         identifier,
-        id: identifier,
+        id: String(server.id),
         name: identifier
       }));
     }

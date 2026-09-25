@@ -43,6 +43,9 @@ export interface WidgetSize {
   rows: number;
 }
 
+/** Persisted per-widget configuration, kept JSON-serialisable so it survives the user settings round trip. */
+export type WidgetSettings = Record<string, string | number | boolean | null>;
+
 /**
  * The choices a widget lets its reader make and then keeps. They travel inside the layout document rather than in a
  * setting of their own, so one widget's settings are removed with the widget and restored with it, and so a dashboard
@@ -63,6 +66,7 @@ export interface WidgetInstance extends WidgetSize {
   type: WidgetTypeId;
   x: number;
   y: number;
+  settings?: WidgetSettings;
   options?: WidgetOptions;
 }
 

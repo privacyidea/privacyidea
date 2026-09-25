@@ -29,6 +29,8 @@ export class MockServiceIdService implements ServiceIdServiceInterface {
   );
 
   serviceIds = signal<ServiceId[]>([]);
+  canListServiceIds = signal<boolean>(true);
+  serviceIdsUnavailableReason = signal<string | null>(null);
 
   postServiceId = jest.fn(async (): Promise<void> => {
     return Promise.resolve();

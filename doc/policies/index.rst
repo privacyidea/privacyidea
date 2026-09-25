@@ -101,6 +101,11 @@ Each policy can contain the following attributes:
 Conditions
 ----------
 
+The fields *realm*, *resolver* and *user*, and *admin realm* and *admin user*, each take a list of
+values. ``*`` stands for every value, and a value with a leading ``!`` or ``-`` is excluded, also
+from ``*``: the realm ``*, !sales`` means every realm but *sales*. A field of nothing but exclusions
+matches no value at all.
+
 **realm**
 
   This is the realm, for which this policy is valid.
@@ -132,13 +137,21 @@ Conditions
 
 **user**
 
-  This is the user, for whom this policy is valid. Depending on the scope
-  the user is either an administrator or a normal authenticating user.
+  This is the user, for whom this policy is valid: the user who authenticates or acts on their own tokens, and in
+  the scope *admin* the user an administrator acts on. It never names the administrator, who is matched by the
+  *admin realm* and *admin user* below.
 
   If this field is left blank, this policy is valid for all users.
 
   .. note:: Starting with version 3.10 you can choose if the username and the
     adminname has to match case-sensitive or not.
+
+**admin realm** and **admin user**
+
+  Only in the scope *admin*: the realm and the login name of the administrator for whom this policy is valid,
+  ``adminrealm`` and ``adminuser`` in the API. See :ref:`admin_policies`.
+
+  If these fields are left blank, this policy is valid for all administrators.
 
 **privacyIDEA Node**
 

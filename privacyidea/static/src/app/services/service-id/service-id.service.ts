@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -41,6 +41,8 @@ export interface ServiceId {
 export interface ServiceIdServiceInterface {
   serviceIdResource: HttpResourceRef<PiResponse<ServiceIds> | undefined>;
   serviceIds: WritableSignal<ServiceId[]>;
+  readonly canListServiceIds: Signal<boolean>;
+  readonly serviceIdsUnavailableReason: Signal<string | null>;
 
   postServiceId(serviceId: ServiceId): Promise<void>;
 
@@ -56,9 +58,19 @@ export class ServiceIdService implements ServiceIdServiceInterface {
 
   private readonly serviceIdBaseUrl = environment.proxyUrl + "/serviceid/";
 
+  readonly canListServiceIds = computed<boolean>(() => this.authService.actionAllowed("serviceid_list"));
+  readonly serviceIdsUnavailableReason = computed<string | null>(() =>
+    this.canListServiceIds()
+      ? null
+      : $localize`:@@serviceId.unavailableNeedsListRight:Application specific password tokens cannot be enrolled: selecting the service ID needs the serviceid_list right.`
+  );
+
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => {
-    if (this.authService.isSelfServiceUser()) return undefined;
-    if (!this.contentService.onExternalServiceIds() && !this.contentService.onTokenEnrollmentLikely()) {
+    // On the enrollment pages only the application specific password token uses the list.
+    const onPageUsingTheList =
+      this.contentService.onExternalServiceIds() ||
+      (this.contentService.onTokenEnrollmentLikely() && this.authService.actionAllowed("enrollAPPLSPEC"));
+    if (!onPageUsingTheList || !this.canListServiceIds()) {
       return undefined;
     }
     return {
