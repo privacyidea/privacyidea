@@ -201,10 +201,13 @@ and prints its name. The file contains:
 * In the exported resolvers, event handlers, policies and server definitions,
   the passwords and secrets that the export itself censors are censored, and
   so are all text values of keys that contain ``secret``, ``passw``,
-  ``bindpw``, ``authorization``, ``credential``, ``api_key`` or
-  ``private_key`` (also with ``-`` or without a separator), or that end with
-  ``token`` (like ``access_token``), regardless of case. This also applies to
-  JSON objects inside values, e.g. HTTP headers.
+  ``bindpw``, ``authorization``, ``credential``, ``api_key``,
+  ``private_key`` or ``access_code`` (the last three also with ``-`` or without
+  a separator) or ``motppin``, or that end with ``token`` (like
+  ``access_token`` or ``authtoken``), regardless of case. This covers e.g. the
+  mOTP PIN of the token event handler and the access code of the Yubikey
+  enrollment policy. This also applies to JSON objects inside values, e.g.
+  HTTP headers.
 
 Secrets in free text are not recognised, e.g. in the data of a webhook event
 handler, and the privacyIDEA log file and the audit log are included as they

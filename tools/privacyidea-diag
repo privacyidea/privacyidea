@@ -174,8 +174,8 @@ import re
 import sys
 from typing import Any
 
-SECRET_KEY = re.compile(r"secret|passw|bindpw|authorization|credential|(^|[-_ ])token$|api[-_]?key|private[-_]?key",
-                        re.IGNORECASE)
+SECRET_KEY = re.compile(r"secret|passw|bindpw|authorization|credential|token$|api[-_]?key|private[-_]?key|motppin|"
+                        r"access[-_]?code", re.IGNORECASE)
 CENSORED = "__CENSORED__"
 
 

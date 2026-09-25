@@ -164,14 +164,19 @@ EXPORT_WITH_SECRETS = {
                               "headers": json.dumps({"Authorization": "Bearer headersecret",
                                                      "Content-Type": "application/json"}),
                               "requestMapping": json.dumps({"client_secret": "mappingsecret", "user": "service"})}}}},
-    "policy": {"token": {"action": {"tokenlabel": "<s>", "api_key": ["listsecret"]}}},
+    "policy": {"token": {"action": {"tokenlabel": "<s>", "api_key": ["listsecret"]}},
+               "yubikey": {"action": {"yubikey_access_code": "accesscodesecret", "losttoken": True,
+                                      "passOnNoToken": True}}},
+    "event": {"enroll": {"options": {"motppin": "motppinsecret", "tokentype": "motp",
+                                     "authtoken": "authtokensecret"}}},
 }
 
 
 @pytest.mark.skipif(shutil.which("bash") is None, reason="bash is not available")
 def test_diag_censors_exported_configuration():
     censored = json.loads(run_diag_function("censor_json", [], json.dumps(EXPORT_WITH_SECRETS)))
-    for secret in ("scimsecret", "headersecret", "mappingsecret", "listsecret"):
+    for secret in ("scimsecret", "headersecret", "mappingsecret", "listsecret", "accesscodesecret", "motppinsecret",
+                   "authtokensecret"):
         assert secret not in json.dumps(censored), censored
     scim_data = censored["resolver"]["scim"]["data"]
     assert scim_data == {"authsecret": "__CENSORED__", "authserver": "https://auth.example.com"}
@@ -179,7 +184,11 @@ def test_diag_censors_exported_configuration():
     assert authorization["method"] == "POST"
     assert json.loads(authorization["headers"]) == {"Authorization": "__CENSORED__", "Content-Type": "application/json"}
     assert json.loads(authorization["requestMapping"]) == {"client_secret": "__CENSORED__", "user": "service"}
-    assert censored["policy"] == {"token": {"action": {"tokenlabel": "<s>", "api_key": ["__CENSORED__"]}}}
+    assert censored["policy"] == {"token": {"action": {"tokenlabel": "<s>", "api_key": ["__CENSORED__"]}},
+                                  "yubikey": {"action": {"yubikey_access_code": "__CENSORED__", "losttoken": True,
+                                                         "passOnNoToken": True}}}
+    assert censored["event"] == {"enroll": {"options": {"motppin": "__CENSORED__", "tokentype": "motp",
+                                                        "authtoken": "__CENSORED__"}}}
 
 
 @pytest.mark.skipif(shutil.which("bash") is None, reason="bash is not available")
