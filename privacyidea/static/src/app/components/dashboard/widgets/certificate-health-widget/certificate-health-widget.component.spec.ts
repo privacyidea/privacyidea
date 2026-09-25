@@ -285,6 +285,43 @@ describe("CertificateHealthWidgetComponent", () => {
     expect(systemMock.getCertificateHealth).toHaveBeenCalledTimes(1);
   });
 
+  it("should report when the certificates were probed rather than when the response was served", () => {
+    systemMock.getCertificateHealth.mockReturnValue(
+      of(
+        makeResponse([
+          {
+            source: "ldap-resolver",
+            name: "ldap1",
+            host: "ldap.example.com",
+            tls_mode: "ldaps",
+            subject: "CN=ldap",
+            issuer: "CN=ca",
+            not_after: "2027-01-01T00:00:00Z",
+            days_remaining: 180,
+            error: null,
+            status: "ok",
+            checked_at: "2026-09-18T08:30:00Z"
+          }
+        ])
+      )
+    );
+    TestBed.inject(DashboardDataStore).invalidate();
+
+    const stampedFixture = TestBed.createComponent(CertificateHealthWidgetComponent);
+    stampedFixture.componentRef.setInput("instance", instance);
+    stampedFixture.detectChanges();
+
+    expect(stampedFixture.componentInstance.checkedAt()).toBe("2026-09-18T08:30:00Z");
+    const line = stampedFixture.nativeElement.querySelector(".checked-at") as HTMLElement;
+    expect(line.textContent).toContain("Checked at");
+    stampedFixture.destroy();
+  });
+
+  it("should show no probe time when the backend does not send one", () => {
+    expect(component.checkedAt()).toBeNull();
+    expect(fixture.nativeElement.querySelector(".checked-at")).toBeNull();
+  });
+
   it("should stay in the loading state until the data ref is initialised", () => {
     const initSpy = jest.spyOn(CertificateHealthWidgetComponent.prototype, "ngOnInit").mockReturnValue(undefined);
 

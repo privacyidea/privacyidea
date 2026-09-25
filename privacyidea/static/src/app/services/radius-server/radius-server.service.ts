@@ -61,7 +61,7 @@ export class RadiusServerService implements RadiusServerServiceInterface {
 
   readonly radiusServerBaseUrl = environment.proxyUrl + "/radiusserver/";
   radiusServerResource = httpResource<PiResponse<RadiusServers>>(() => {
-    if (!this.contentService.onExternalRadius()) {
+    if (!this.contentService.onExternalRadius() || !this.authService.actionAllowed("radiusserver_read")) {
       return undefined;
     }
     return {

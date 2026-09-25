@@ -70,7 +70,8 @@ import jwt
 from flask import (Blueprint, request, current_app, g)
 from flask_babel import _
 
-from privacyidea.api.lib.conditional_access import conditional_access_login_gate
+from privacyidea.api.lib.conditional_access import (conditional_access_login_gate,
+                                                    reject_locked_fallback_user)
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
@@ -89,7 +90,7 @@ from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
                                                                           AUTH_EVENT_TYPE_KEY, build_reason_detail,
                                                                           LOG_TRANSACTION_ID_KEY)
-from privacyidea.lib.conditional_access.request_context import continue_attempt
+from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
@@ -319,6 +320,10 @@ def get_auth_token():
         raise AuthError(_("Authentication with passkey disabled."), id=Error.AUTHENTICATE_ILLEGAL_METHOD)
     if credential_id and passkey_login_enabled:
         transaction_id: str = get_required(request.all_data, "transaction_id")
+        # The passkey branch is the only one that consumes the transaction it was given, so it is where the
+        # attempt claimed in before_request is settled. The password branch below never reads it, and echoes
+        # it onto its row regardless, which is why naming a transaction cannot settle an attempt by itself.
+        confirm_attempt(transaction_id)
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
             log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
@@ -509,6 +514,11 @@ def get_auth_token():
                     # expected a local admin
                     request.User = user
                     g.resolved_user["is_local_admin"] = False
+                    # And for the same reason the login gate has to see this user: it judged the request a local
+                    # admin's, which the failed admin password has just settled it is not. It runs before
+                    # auth_timelimit for the reason the gate itself documents - that pre-policy logs a trackable
+                    # row, which a refused login must not be given the chance to write.
+                    reject_locked_fallback_user(user)
                     auth_timelimit(request, None)
                     increase_failcounter_on_challenge(request, None)
                     disabled_token_types(request, None)

@@ -324,6 +324,18 @@ describe("EventService", () => {
       expect(service.eventHandlers()).toEqual([]);
     });
 
+    it("should not fetch the handler modules, available events or module details without eventhandling_read", () => {
+      authServiceMock.actionAllowed.mockImplementation((action) => action !== "eventhandling_read");
+      service.selectedHandlerModule.set("testModule");
+      TestBed.tick();
+
+      httpMock.expectNone(`${service.eventBaseUrl}/handlermodules`);
+      httpMock.expectNone(`${service.eventBaseUrl}/available`);
+      for (const detail of ["positions", "defaults", "actions", "conditions"]) {
+        httpMock.expectNone(`${service.eventBaseUrl}/${detail}/testModule`);
+      }
+    });
+
     it("should load all handler modules", async () => {
       // Setup
       TestBed.tick();

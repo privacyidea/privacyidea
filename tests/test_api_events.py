@@ -776,6 +776,50 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(container_serial_token, container_serial)
 
 
+class EventParameterAllowlistTestCase(MyApiTestCase):
+    """
+    The action and the position of an event binding are names the handler module defines, so a
+    binding that is stored is a binding that can fire.
+    """
+
+    def _post(self, **overrides):
+        param = {"name": "allowlist test", "event": "token_init",
+                 "handlermodule": "UserNotification", "action": "sendmail"}
+        param.update(overrides)
+        with self.app.test_request_context('/event',
+                                           method='POST',
+                                           data=param,
+                                           headers={'Authorization': self.at}):
+            return self.app.full_dispatch_request()
+
+    def test_01_a_known_action_and_position_are_stored(self):
+        res = self._post(position="post")
+        self.assertEqual(200, res.status_code, res.data)
+        event_id = res.json["result"]["value"]
+        with self.app.test_request_context(f'/event/{event_id}',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+    def test_02_an_unknown_action_is_refused(self):
+        res = self._post(action="send_carrier_pigeon")
+        self.assertEqual(400, res.status_code, res.data)
+        message = res.json["result"]["error"]["message"]
+        self.assertIn("send_carrier_pigeon", message)
+        # The message says which actions the handler does define
+        self.assertIn("sendmail", message)
+
+    def test_03_an_unknown_position_is_refused(self):
+        res = self._post(position="during")
+        self.assertEqual(400, res.status_code, res.data)
+        self.assertIn("during", res.json["result"]["error"]["message"])
+
+    def test_04_an_unknown_handlermodule_is_still_refused(self):
+        res = self._post(handlermodule="NoSuchHandler")
+        self.assertEqual(400, res.status_code, res.data)
+        self.assertIn("NoSuchHandler", res.json["result"]["error"]["message"])
+
+
 class CustomUserAttributeHandlerTestCase(MyApiTestCase):
     def setUp(self):
         super(CustomUserAttributeHandlerTestCase, self).setUp()

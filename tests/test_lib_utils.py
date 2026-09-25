@@ -7,6 +7,7 @@ from datetime import timedelta, datetime
 import segno
 from dateutil.tz import tzlocal, tzoffset, gettz
 from netaddr import IPAddress, IPNetwork, AddrFormatError
+from unittest import mock
 from werkzeug.user_agent import UserAgent
 
 from privacyidea.config import TestingConfig
@@ -35,6 +36,9 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    get_useragent_name,
                                    redacted_email, redacted_phone_number,
                                    convert_wildcard_to_sql_like, SQL_LIKE_ESCAPE)
+from privacyidea.lib.params import require_in
+from privacyidea.lib import utils as privacyidea_utils
+from privacyidea.lib.utils import check_module_allowed
 from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from .base import MyTestCase, OverrideConfigTestCase
 
@@ -1188,6 +1192,77 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual("****-******89", redacted_phone_number("01234567890123456789"))
         self.assertEqual("****-******01", redacted_phone_number("01"))
         self.assertEqual("****-********", redacted_phone_number(""))
+
+
+class ModuleAllowlistTestCase(MyTestCase):
+    """
+    A class named by API-written configuration is checked against the classes that ship with
+    privacyIDEA plus the ones an installation declares in pi.cfg.
+    """
+
+    SHIPPED = ["privacyidea.lib.pinhandling.base.PinHandler"]
+    CUSTOM = "mycompany.pinhandler.LetterPinHandler"
+
+    def setUp(self):
+        privacyidea_utils._module_allowlist_warned.clear()
+
+    def tearDown(self):
+        privacyidea_utils._module_allowlist_warned.clear()
+        self.app.config.pop("PI_MODULE_ALLOWLIST_MODE", None)
+        self.app.config.pop("PI_PIN_HANDLER_MODULES", None)
+
+    def test_01_a_shipped_class_is_allowed(self):
+        for mode in ("warn", "enforce"):
+            self.app.config["PI_MODULE_ALLOWLIST_MODE"] = mode
+            check_module_allowed(self.SHIPPED[0], self.SHIPPED, "PI_PIN_HANDLER_MODULES", "pin handler class")
+
+    def test_02_an_undeclared_class_is_used_but_logged_by_default(self):
+        # The default mode keeps an installation that upgrades into this check working
+        self.assertIsNone(self.app.config.get("PI_MODULE_ALLOWLIST_MODE"))
+        with mock.patch("privacyidea.lib.utils.log") as mock_log:
+            check_module_allowed(self.CUSTOM, self.SHIPPED, "PI_PIN_HANDLER_MODULES", "pin handler class")
+        self.assertTrue(mock_log.warning.called)
+        logged = mock_log.warning.call_args[0][0]
+        self.assertIn(self.CUSTOM, logged)
+        self.assertIn("PI_PIN_HANDLER_MODULES", logged)
+
+    def test_03_an_undeclared_class_is_refused_when_enforced(self):
+        self.app.config["PI_MODULE_ALLOWLIST_MODE"] = "enforce"
+        with self.assertRaises(ParameterError) as context:
+            check_module_allowed(self.CUSTOM, self.SHIPPED, "PI_PIN_HANDLER_MODULES", "pin handler class")
+        self.assertIn(self.CUSTOM, f"{context.exception}")
+        self.assertIn("PI_PIN_HANDLER_MODULES", f"{context.exception}")
+
+    def test_04_a_declared_class_is_allowed_when_enforced(self):
+        self.app.config["PI_MODULE_ALLOWLIST_MODE"] = "enforce"
+        self.app.config["PI_PIN_HANDLER_MODULES"] = [self.CUSTOM]
+        check_module_allowed(self.CUSTOM, self.SHIPPED, "PI_PIN_HANDLER_MODULES", "pin handler class")
+
+    def test_04a_a_single_class_may_be_declared_as_a_plain_string(self):
+        # The key name is plural, which invites writing one class without the list around it.
+        self.app.config["PI_MODULE_ALLOWLIST_MODE"] = "enforce"
+        self.app.config["PI_PIN_HANDLER_MODULES"] = self.CUSTOM
+        check_module_allowed(self.CUSTOM, self.SHIPPED, "PI_PIN_HANDLER_MODULES", "pin handler class")
+
+    def test_04b_an_undeclared_class_is_logged_once_per_process(self):
+        # The check runs on every use of the class - for a pin handler that is every enrollment -
+        # so the line must not repeat per request.
+        with mock.patch("privacyidea.lib.utils.log") as mock_log:
+            for _ in range(3):
+                check_module_allowed(self.CUSTOM, self.SHIPPED, "PI_PIN_HANDLER_MODULES", "pin handler class")
+        warnings = [call for call in mock_log.warning.call_args_list if self.CUSTOM in call[0][0]]
+        self.assertEqual(1, len(warnings), warnings)
+
+    def test_05_require_in_names_what_is_allowed(self):
+        self.assertEqual("post", require_in("post", ["pre", "post"], "position"))
+        with self.assertRaises(ParameterError) as context:
+            require_in("during", ["pre", "post"], "position")
+        message = f"{context.exception}"
+        self.assertIn("during", message)
+        # The allowed values are sorted, so the message does not depend on dict or list order
+        self.assertIn("post, pre", message)
+        # A dict is checked against its keys, which is the shape a handler's actions have
+        self.assertEqual("a", require_in("a", {"a": 1, "b": 2}, "action"))
 
 
 class UtilsTestCaseOverrideConfig(OverrideConfigTestCase):

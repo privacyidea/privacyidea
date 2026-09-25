@@ -397,6 +397,31 @@ class APIContainerSynchronization(APIContainerTest):
 
         delete_policy("challenge_ttl")
 
+    def test_09a_challenge_scope_is_limited_to_client_operations(self):
+        registration = self.register_smartphone_success()
+        serial = registration.mock_smph.container_serial
+
+        # The operations a client performs itself all get a challenge
+        for operation in ["container/synchronize", "container/register/terminate/client",
+                          "container/rollover"]:
+            self.request_assert_success('container/challenge',
+                                        {"scope": f"https://pi.net/{operation}",
+                                         "container_serial": serial}, None, 'POST')
+
+        # Finalizing a registration is not a client-initiated operation: its challenge is minted
+        # on the registration path, so it cannot be asked for here.
+        self.request_assert_error(400, "container/challenge",
+                                  {"scope": "https://pi.net/container/register/finalize",
+                                   "container_serial": serial}, None, "POST",
+                                  error_code=905, try_unspecific=False)
+
+        # Neither can anything else
+        for scope in ["https://pi.net/container/", "https://other.example.com/collect",
+                       "https://pi.net/token/init"]:
+            self.request_assert_error(400, "container/challenge",
+                                      {"scope": scope, "container_serial": serial}, None, "POST",
+                                      error_code=905, try_unspecific=False)
+
     def test_10_challenge_fail(self):
         # container does not exists
         scope = "https://pi.net/container/synchronize"
@@ -2565,3 +2590,45 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual([working_token.get_serial()], [token.get_serial() for token in smartphone.get_tokens()])
 
         delete_policy("transfer_policy")
+
+    def _anonymous_synchronize(self, payload: dict):
+        """Send a synchronization request with a json body like a client that has no auth token."""
+        with self.app.test_request_context("/container/synchronize", method="POST", json=payload):
+            response = self.app.full_dispatch_request()
+        self.reset_flask_g()
+        return response
+
+    def test_66_synchronize_container_type_without_challenge_response(self):
+        for container_type in ["generic", "yubikey"]:
+            container_serial = init_container({"type": container_type})["container_serial"]
+            token = init_token({"type": "hotp", "genkey": True})
+            add_token_to_container(container_serial, token.get_serial())
+            secret_before = token.token.key_enc
+
+            response = self._anonymous_synchronize({"container_serial": container_serial, "client_policies": {}})
+
+            self.assertEqual(501, response.status_code, response.json)
+            self.assert_audit_entry('POST /container/synchronize', success=0, info=self.NOT_EMPTY)
+            # The synchronization is rejected before the tokens of the container are rolled over
+            self.assertEqual(secret_before, get_one_token(serial=token.get_serial()).token.key_enc)
+
+            delete_container_by_serial(container_serial)
+
+    def test_67_synchronize_container_type_without_challenge_response_adds_no_token(self):
+        self.setUp_user_realms()
+        container_serial = init_container({"type": "generic", "realm": self.realm1})["container_serial"]
+        token = init_token({"type": "hotp", "genkey": True}, tokenrealms=[self.realm1])
+
+        client_dict = {"serial": container_serial, "type": "generic",
+                       "tokens": [{"serial": token.get_serial(), "tokentype": "hotp"}]}
+        response = self._anonymous_synchronize(
+            {"container_serial": container_serial,
+             "client_policies": {PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER: True},
+             "container_dict_client": json.dumps(client_dict)})
+
+        self.assertEqual(501, response.status_code, response.json)
+        # The synchronization is rejected before the tokens of the client are added to the container
+        self.assertIsNone(find_container_for_token(token.get_serial()))
+        self.assertEqual([], find_container_by_serial(container_serial).get_tokens())
+
+        delete_container_by_serial(container_serial)

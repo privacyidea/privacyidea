@@ -93,6 +93,30 @@ import threading
 
 log = logging.getLogger(__name__)
 
+# Endpoints whose response can contain a token secret - an ``otpkey``, the enrollment URL and
+# QR code built from it, or a batch of usable OTP values. A response from one of these is marked
+# "no-store" rather than "no-cache", and a new endpoint that can return one belongs here.
+#
+# These are endpoint names, not paths, so one entry covers every route that reaches the view:
+# "validate_blueprint.check" is both /validate/check and /validate/radiuscheck. radiuscheck
+# answers with an empty body, so covering it too costs nothing - an authentication response is
+# not something a client should be writing to disk either.
+NO_STORE_ENDPOINTS = frozenset({
+    "token_blueprint.init",
+    # enroll_via_validate returns the enrollment details of the new token inside the challenge
+    "validate_blueprint.check",
+    "validate_blueprint.trigger_challenge",
+    "validate_blueprint.initialize",
+    # returns a batch of OTP values for offline use
+    "validate_blueprint.offlinerefill",
+    # the container registration and synchronisation responses carry enrollment URLs for the
+    # tokens in the container, see regenerate_enroll_url() in api/container.py
+    "container_blueprint.synchronize",
+    "container_blueprint.registration_init",
+    "container_blueprint.registration_finalize",
+    "container_blueprint.rollover",
+})
+
 
 # ``before_app_request`` and ``teardown_app_request`` register the functions
 # at the application, so it's sufficient to call them only for one blueprint.
@@ -581,7 +605,13 @@ def after_request(response):
 
     # No caching! Applied last, to the final response object, so a shaped
     # replacement response still carries the no-cache guarantee.
-    response.headers['Cache-Control'] = 'no-cache'
+    # An enrollment response carries the token seed, as the QR code and as the enrollment URL,
+    # so it gets "no-store": "no-cache" still allows a client to keep the response and revalidate
+    # it, while "no-store" asks it not to write the response to disk at all.
+    if request.endpoint in NO_STORE_ENDPOINTS:
+        response.headers['Cache-Control'] = 'no-store'
+    else:
+        response.headers['Cache-Control'] = 'no-cache'
 
     return response
 
@@ -592,11 +622,12 @@ def record_suspended_api_client(response):
 
     Central, and on the way out rather than on the way in, for three reasons. The middleware that detects it
     (:func:`identify_api_client`) is a ``before_app_request`` and runs before any blueprint has built the audit
-    object or resolved the source IP, so a row written there would name neither. Every blueprint reaches here,
-    so the signal no longer depends on which ``before_request`` happens to look for it - it used to be recorded
-    by ``/validate``'s alone, which meant a suspended key was reported on a password reset and not on ``/auth``
-    or ``/token``. And this also runs for a response an *error handler* built, which is the normal case: the two
-    endpoints that require an identified client answer such a request with a ``401``.
+    object or resolved the source IP, so a row written there would name neither. Every blueprint attached to the
+    shared ``after_request`` below reaches here, so the signal no longer depends on which ``before_request``
+    happens to look for it - it used to be recorded by ``/validate``'s alone, which meant a suspended key was
+    reported on a password reset and not on ``/auth`` or ``/token``. And this also runs for a response an
+    *error handler* built, which is the normal case: the two endpoints that require an identified client
+    answer such a request with a ``401``.
 
     The row names the **client**, never a user. The request was not identified by the key
     (``g.client_id`` stays ``None``), so any user it carries is an unauthenticated claim the caller chose - and
