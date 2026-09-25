@@ -37,8 +37,9 @@ const LOCKED_USERS_DEFAULT_PAGE_SIZE = 15;
 // case-insensitively by the backend). Plural to match the API query parameters (`usernames`, `realms`,
 // `resolvers`), which each accept a list of values. `states` selects the lock state(s)
 // (permanent / temporary / expired) and replaces the former "show expired" toggle; `causes` selects
-// policy vs. manual restrictions, and `error_messages` matches the wording stored on the row.
-const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states", "causes", "error_messages"];
+// policy vs. manual restrictions. `error_message` matches the wording stored on the row and is singular:
+// a message may contain commas, so it is one value, never a list.
+const LOCKED_USERS_FILTER_KEYS = ["usernames", "realms", "resolvers", "states", "causes", "error_message"];
 
 // The lock states a record can be in, as accepted by the `states` query parameter of `lock/users`:
 // permanent (no expiry), temporary (expiry still ahead) and expired (a stale row a purge removes);

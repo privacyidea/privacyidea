@@ -271,6 +271,11 @@ export class LockedUsersComponent {
     }
   }
 
+  // A message may contain commas, so it replaces the message filtered by instead of joining a list of them.
+  filterByErrorMessage(message: string): void {
+    this.casService.lockedUsersFilter.set(this.casService.lockedUsersFilter().addEntry("error_message", message));
+  }
+
   // Header keyword button (e.g. username): one click toggles a `keyword:` term in the main filter input for
   // the admin to type a value into.
   onKeywordClick(keyword: string): void {

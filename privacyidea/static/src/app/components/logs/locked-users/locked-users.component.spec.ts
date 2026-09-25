@@ -318,6 +318,14 @@ describe("LockedUsersComponent", () => {
     expect(component.selectedFilterValues("usernames")).toEqual(["alice", "bob"]);
   });
 
+  it("filterByErrorMessage keeps a message with commas whole and replaces the previous one", () => {
+    component.filterByErrorMessage("Locked.");
+    component.filterByErrorMessage("Your account is locked, please contact the helpdesk.");
+    expect(casService.lockedUsersFilter().getValueOfKey("error_message")).toBe(
+      "Your account is locked, please contact the helpdesk."
+    );
+  });
+
   it("onSortClick delegates to the table-utils sort cycler", () => {
     component.onSortClick("locked_at");
     expect(tableUtilsService.onSortButtonClick).toHaveBeenCalledWith("locked_at", casService.lockedUsersSort, {

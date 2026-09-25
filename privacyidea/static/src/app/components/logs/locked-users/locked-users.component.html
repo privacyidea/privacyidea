@@ -343,7 +343,7 @@
           <span class="header-cell">
             <span i18n="@@common.errorMessage">Error Message</span>
             <button
-              (click)="onKeywordClick('error_messages')"
+              (click)="onKeywordClick('error_message')"
               aria-label="Filter by message"
               class="filter-button"
               i18n-aria-label="@@lockedUsers.filterMessage"
@@ -362,7 +362,7 @@
               class="margin-left-8"
               column="error_message"
               [value]="row.error_message"
-              (filterValue)="addFilterValue('error_messages', $event)" />
+              (filterValue)="filterByErrorMessage($event)" />
           </span>
         </td>
       </ng-container>
