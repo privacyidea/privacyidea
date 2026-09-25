@@ -4,9 +4,11 @@ from sqlalchemy import select
 from webauthn import base64url_to_bytes
 
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.error import EnrollmentError
 from privacyidea.lib.token import create_tokenclass_object, log, get_tokens
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.webauthn import webauthn_b64_encode
 from privacyidea.lib.user import User
 from privacyidea.models import TokenInfo, Token, TokenCredentialIdHash, db
 
@@ -77,6 +79,20 @@ def get_fido2_token_by_transaction_id(transaction_id: str, credential_id: str) -
     return token
 
 
+def token_belongs_to_user(token: TokenClass, user: User) -> bool:
+    """
+    Check whether the user is one of the owners of the token. The owners are matched the same way as when the tokens
+    of a user are looked up for an authentication.
+
+    :param token: The token object
+    :param user: The user object
+    :return: True if the user owns the token
+    """
+    if not user or not user.uid:
+        return False
+    return get_tokens(serial=token.get_serial(), user=user, count=True) > 0
+
+
 def get_credential_ids_for_user(user: User) -> list:
     """
     Get a list of credential ids of passkey or webauthn token for a user.
@@ -116,23 +132,47 @@ def hash_credential_id(credential_id: str | bytes) -> str:
     return hashlib.sha256(credential_id).hexdigest()
 
 
+def credential_id_is_registered_to_other_token(credential_id: bytes, token_id: int) -> bool:
+    """
+    Check whether a credential is already registered to a token other than the one with the given id.
+
+    The TokenCredentialIdHash table has an entry for every passkey and for every WebAuthn token enrolled or used since
+    the table exists. A WebAuthn token enrolled before that is only found by comparing the credential ids of all
+    WebAuthn tokens.
+
+    :param credential_id: The raw credential_id
+    :param token_id: The id of the token the credential is being registered to
+    :return: True if another token already has this credential
+    """
+    stmt = select(TokenCredentialIdHash.token_id).where(
+        TokenCredentialIdHash.credential_id_hash == hash_credential_id(credential_id))
+    registered_token_id = db.session.scalar(stmt)
+    if registered_token_id is not None:
+        return registered_token_id != token_id
+
+    credential_id_b64 = webauthn_b64_encode(credential_id)
+    for token in get_tokens(tokentype="webauthn"):
+        if token.token.id != token_id and token.decrypt_otpkey() == credential_id_b64:
+            return True
+    return False
+
+
 def save_credential_id_hash(credentials_id_hash: str, token_id: int) -> None:
     """
     Save a credential_id hash for a token in the database.
 
+    A credential belongs to a single token. If the hash is already registered to another token, that entry is kept
+    and an EnrollmentError is raised.
+
     :param credentials_id_hash: The hash of the credential_id
     :param token_id: The id of the token
     """
-    # Check if an entry with that hash already exists
     stmt = select(TokenCredentialIdHash).where(TokenCredentialIdHash.credential_id_hash == credentials_id_hash)
     tcih = db.session.scalar(stmt)
     if tcih:
-        token = db.session.get(Token, tcih.token_id)
-        if token.id == token_id:
+        if tcih.token_id == token_id:
             return
-        else:
-            # if the token is different, we need to delete the old entry
-            log.warning(f"Existing entry in TokenCredentialIdHash for credential_id_hash {credentials_id_hash} and "
-                        f"token_id {token.id}. Overwriting it with token_id {token_id}.")
-            tcih.delete()
+        log.warning(f"The credential_id_hash {credentials_id_hash} is already registered to the token with id "
+                    f"{tcih.token_id}. Refusing to register it to the token with id {token_id}.")
+        raise EnrollmentError("The credential is already registered to another token.")
     TokenCredentialIdHash(token_id=token_id, credential_id_hash=credentials_id_hash).save()

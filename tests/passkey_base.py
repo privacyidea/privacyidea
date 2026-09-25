@@ -152,7 +152,7 @@ class PasskeyTestBase(unittest.TestCase):
             "credential_id": self.credential_id_multi_device,
         }
 
-    def validate_default_passkey_registration(self, passkey_registration: dict):
+    def validate_default_passkey_registration(self, passkey_registration: dict, expected_challenge: str | None = None):
         """
         Validates the passkey registration response with the default values and the values set in this class
         Only checks if pubKeyCredParams and excludeCredentials exists not their content
@@ -169,7 +169,7 @@ class PasskeyTestBase(unittest.TestCase):
         self.assertIn("displayName", passkey_registration["user"])
         # Challenge should be the mock_nonce
         self.assertIn("challenge", passkey_registration)
-        self.assertEqual(self.registration_challenge, passkey_registration["challenge"])
+        self.assertEqual(expected_challenge or self.registration_challenge, passkey_registration["challenge"])
         # PubKeyCredParams: Via the API, all three key algorithms are valid by default
         self.assertIn("pubKeyCredParams", passkey_registration)
         self.assertIn("timeout", passkey_registration)

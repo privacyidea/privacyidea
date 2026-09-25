@@ -19,6 +19,9 @@ from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 
 log = logging.getLogger(__name__)
 
+# From the weakest to the strictest requirement
+USER_VERIFICATION_ORDER = ("discouraged", "preferred", "required")
+
 
 def get_fido2_nonce() -> str:
     """
@@ -55,8 +58,7 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
     message = PasskeyTokenClass.get_default_challenge_text_auth()
     validity = int(get_from_config(FIDO2ConfigOptions.CHALLENGE_VALIDITY_TIME,
                                    get_from_config('DefaultChallengeValidityTime', 120)))
-    user_verification_values = ["required", "preferred", "discouraged"]
-    if user_verification not in user_verification_values:
+    if user_verification not in USER_VERIFICATION_ORDER:
         log.warning(f"Invalid user_verification value {user_verification}. Using 'preferred' instead.")
         user_verification = "preferred"
 
@@ -84,7 +86,8 @@ class FIDOVerificationResult:
     challenge: "Challenge | ChallengeDTO"
 
 
-def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> FIDOVerificationResult:
+def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
+                           unbound_challenge_user_verification: str | None = None) -> FIDOVerificationResult:
     """
     Verify the response for a fido2 challenge with the given token.
     Params is required to have the keys:
@@ -98,6 +101,11 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     If the challenge has timed out, an AuthError is raised.
     If the challenge is bound to a token serial and the token serial does not match the input token, an AuthError
     is raised.
+
+    The user verification requirement is taken from the challenge. A challenge that is not bound to a token comes
+    from /validate/initialize and is answered without any other factor, so a caller that must not accept the
+    authenticator alone passes "required" as unbound_challenge_user_verification. The stricter of the two values
+    applies to such a challenge.
     """
     db_challenges = get_challenges(transaction_id=transaction_id)
     if not db_challenges:
@@ -123,11 +131,14 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         raise AuthError(f"Invalid challenge data for transaction_id {transaction_id}.")
     user_verification = (data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
                          or data.get("user_verification"))
-    if user_verification not in ["required", "preferred", "discouraged"]:
+    if user_verification not in USER_VERIFICATION_ORDER:
         log.error(
             f"Invalid user_verification value {user_verification!r} in challenge {transaction_id}."
         )
         raise AuthError(f"Invalid user_verification value in challenge {transaction_id}.")
+    if unbound_challenge_user_verification and not challenge.serial:
+        user_verification = max(user_verification, unbound_challenge_user_verification,
+                                key=USER_VERIFICATION_ORDER.index)
 
     options = {
         "challenge": challenge.challenge,
@@ -140,7 +151,13 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
     }
     # These parameters are required for compatibility with the old WebAuthnToken class
     if token.type == "webauthn":
-        options.update({"credential_id": get_required_one_of(params, ["credential_id", "credentialid"])})
+        options.update({
+            "credential_id": get_required_one_of(params, ["credential_id", "credentialid"]),
+            # Authorization restrictions resolved by the webauthntoken_request and webauthntoken_authz prepolicies
+            FIDO2PolicyAction.REQ: get_optional(params, FIDO2PolicyAction.REQ),
+            FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST: get_optional(
+                params, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST),
+        })
     if token.type == "passkey":
         # Passkey-only policy restrictions resolved by the fido2_auth prepolicy, forwarded here since this
         # function builds its own curated options dict rather than passing params through unchanged.

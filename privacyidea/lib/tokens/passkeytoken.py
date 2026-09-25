@@ -45,7 +45,8 @@ from privacyidea.lib.error import EnrollmentError, ParameterError, Error, Policy
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
-from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
+from privacyidea.lib.fido2.util import (hash_credential_id, save_credential_id_hash,
+                                        credential_id_is_registered_to_other_token)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required, get_required_one_of, get_optional_one_of
 from privacyidea.lib.policies.actions import PolicyAction
@@ -413,6 +414,17 @@ class PasskeyTokenClass(TokenClass):
                 log.error(f"Invalid JSON structure: {ex}")
                 raise EnrollmentError(f"Invalid JSON structure: {ex}")
 
+            # The credential that is registered is the one in the attestation, and the credential_id of the request
+            # has to match it.
+            attested_credential_id = registration_verification.credential_id
+            if credential_id != bytes_to_base64url(attested_credential_id):
+                log.warning(f"The credential_id of the request does not match the attested credential of the "
+                            f"passkey {serial}.")
+                raise EnrollmentError("The credential_id does not match the attested credential.")
+            if credential_id_is_registered_to_other_token(attested_credential_id, self.token.id):
+                log.warning(f"The credential of the passkey {serial} is already registered to another token.")
+                raise EnrollmentError("The credential is already registered to another token.")
+
             # Checking policy scope=SCOPE.ENROLL, action=PasskeyAction.AllowedAuthenticatorDeviceTypes.
             # The device type (single_device/multi_device) is derived from the backup-eligible flag in the
             # signed authenticatorData, it can only be known once the authenticator has responded, not requested
@@ -434,10 +446,10 @@ class PasskeyTokenClass(TokenClass):
             # Verification successful, set the token to enrolled and save information returned by the authenticator
             self.token.rollout_state = RolloutState.ENROLLED
             # Protect the credential_id by setting it as the token secret
-            self.set_otpkey(bytes_to_base64url(registration_verification.credential_id))
+            self.set_otpkey(bytes_to_base64url(attested_credential_id))
 
             # Token Info
-            credential_id_hash = hash_credential_id(credential_id)
+            credential_id_hash = hash_credential_id(attested_credential_id)
             token_info: dict = {
                 FIDO2TokenInfo.DEVICE_TYPE: registration_verification.credential_device_type,
                 FIDO2TokenInfo.BACKED_UP: registration_verification.credential_backed_up,

@@ -93,11 +93,10 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
 from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
-from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError
+from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError
 from privacyidea.lib.event import event, EventConfiguration
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id
+from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, token_belongs_to_user
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
@@ -329,6 +328,15 @@ def get_auth_token():
             log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
             raise AuthError(_("Authentication failure. The passkey is not registered."),
                             id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+        # The WebAuthn second factor sends the username along; it may only be answered with a token of that user.
+        # A passkey login without a username authenticates the token owner.
+        if username and not token_belongs_to_user(token, user):
+            log.warning(f"The token {token.get_serial()} does not belong to the user {username} named in the "
+                        "request.")
+            log_authentication(AuthEventType.NO_TOKEN, request, user=user, serial=token.get_serial(),
+                               transaction_id=transaction_id)
+            raise AuthError(_("Authentication failure using passkey."),
+                            id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         if not token.is_active():
             log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
             g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
@@ -368,17 +376,24 @@ def get_auth_token():
                 _("Authentication failure. Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial()), id=Error.AUTHENTICATE_MISSING_RIGHT)
 
-        # TODO For the WebUI login, always require user_verification so that it is a 2FA
-        request.all_data.update({FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"})
         try:
-            passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+            # A challenge from /validate/initialize is answered with the authenticator alone. For the WebUI, the
+            # authenticator has to verify the user then, so that the login still has two factors. A challenge that
+            # is bound to the token was triggered with the PIN or password, and its policy value applies.
+            passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data,
+                                                          unbound_challenge_user_verification="required")
         except (ResourceNotFoundError, AuthError):
             # A challenge that fails to verify (wrong serial, expired) propagates as a failure response, so log
             # the failed attempt here.
             log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
             raise
+        except PolicyError:
+            # An authorization policy does not allow this authenticator
+            log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user, serial=token.get_serial(),
+                               transaction_id=transaction_id)
+            raise
         if passkey_login_result.success > 0:
-            user = token.user
+            user = user if username else token.user
             login_name = user.login
             realm = user.realm
             username = user.login

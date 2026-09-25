@@ -196,6 +196,7 @@ export class ValidateService implements ValidateServiceInterface {
     signRequest: WebAuthnSignRequest;
     transaction_id: string;
     username: string;
+    realm?: string;
     isTest?: boolean;
   }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
@@ -227,6 +228,7 @@ export class ValidateService implements ValidateServiceInterface {
           const finalParams = {
             transaction_id: args.transaction_id,
             username: args.username,
+            ...(args.realm && { realm: args.realm }),
             credential_id: pkCredential.id, // This is already base64url encoded
             authenticatorData: this.base64Service.webAuthnBase64EncArr(response.authenticatorData),
             clientDataJSON: this.base64Service.webAuthnBase64EncArr(response.clientDataJSON),

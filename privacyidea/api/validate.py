@@ -153,7 +153,8 @@ from ..lib.conditional_access.request_context import continue_attempt, confirm_a
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
-from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
+from ..lib.fido2.util import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
+                              token_belongs_to_user)
 from ..lib.framework import get_app_config_value
 from ..lib.policies.actions import PolicyAction
 from ..lib.realm import get_default_realm
@@ -698,8 +699,21 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
         return  # Result remains False
 
+    # A request that names a user authenticates that user, so the token has to be one of theirs. A request without a
+    # user is a usernameless login, which authenticates the token owner.
+    if request.User and request.User.login:
+        if not token_belongs_to_user(token, request.User):
+            log.warning(f"The token {token.get_serial()} does not belong to the user {request.User} named in the "
+                        "request.")
+            context["details"]["message"] = _("Authentication failed.")
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_TOKEN
+            context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+            return  # Result remains False
+        user = request.User
+    else:
+        user = token.user
+
     # Update User in Context
-    user = token.user
     request.User = user
     context["user"] = user
     context["options"]["user"] = user
@@ -749,6 +763,11 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         # matched unscoped policies. Re-run it now that request.User is set, mirroring fido2_enroll
         # above for the enrollment branch.
         fido2_auth(request, None)
+        # The same applies to the WebAuthn authorization restrictions. A stale list from the first run must not
+        # survive when no policy matches the user.
+        request.all_data.pop(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, None)
+        webauthntoken_request(request, None)
+        webauthntoken_authz(request, None)
 
         last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
         if not last_auth_ok:
@@ -784,12 +803,17 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
             context["serial_list"].append(token.get_serial())
             raise
+        except PolicyError:
+            # An authorization policy does not allow this authenticator
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+            context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+            raise
         context["result"] = fido_verification_result.success > 0
 
     # Success Handling
     if context["result"]:
         context["details"].update({
-            "username": token.user.login,
+            "username": user.login,
             "message": _("Found matching challenge"),
             "serial": token.get_serial()
         })

@@ -440,6 +440,25 @@ describe("LoginComponent", () => {
       });
     });
 
+    it("should send the selected realm with the WebAuthn response", () => {
+      const signRequest = { challenge: "abc" } as unknown as WebAuthnSignRequest;
+      component.webAuthnTriggered.set(signRequest);
+      component.username.set("test-user");
+      component.realm.set("test-realm");
+      (component as unknown as { transactionId: string }).transactionId = "tx-webauthn";
+      const mockResponse = new MockPiResponse<AuthData, AuthDetail>({ detail: new MockAuthDetail() });
+      jest.spyOn(validateService, "authenticateWebAuthn").mockReturnValue(of(mockResponse));
+
+      component.webAuthnLogin();
+
+      expect(validateService.authenticateWebAuthn).toHaveBeenCalledWith({
+        signRequest: signRequest,
+        transaction_id: "tx-webauthn",
+        username: "test-user",
+        realm: "test-realm"
+      });
+    });
+
     it("should do nothing if webAuthn is not triggered", () => {
       const webAuthnSpy = jest.spyOn(validateService, "authenticateWebAuthn");
       component.webAuthnTriggered.set(null);
