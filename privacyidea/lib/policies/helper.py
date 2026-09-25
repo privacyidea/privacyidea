@@ -157,15 +157,24 @@ def get_admin_audit_params() -> dict:
     if g.logged_in_user["role"] == ROLE.ADMIN:
         pols = Match.admin(g, action=PolicyAction.AUDIT).policies()
         if pols:
-            # get all values in realm:
-            allowed_audit_realms = []
+            allowed_audit_realms = {}
+            restricted_to_realms = False
             for pol in pols:
-                if pol.get("realm"):
-                    allowed_audit_realms += pol.get("realm")
-            if allowed_audit_realms:
+                realm_names = policy_realm_names(pol.get("realm"))
+                if realm_names is None:
+                    if pol.get("resolver") or pol.get("user"):
+                        # The audit log is only restricted by realm, so a policy scoped by user or resolver alone
+                        # neither restricts nor widens it.
+                        continue
+                    # A policy with no target scope at all grants every realm, whatever the others name.
+                    return {}
+                restricted_to_realms = True
+                allowed_audit_realms.update(dict.fromkeys(realm_names))
+            if restricted_to_realms:
                 admin_params["admin"] = g.logged_in_user["username"]
                 admin_params["admin_realm"] = g.logged_in_user["realm"]
-                admin_params["allowed_audit_realms"] = list(set(allowed_audit_realms))
+                # Empty if no policy's realm field matches a realm: then only the admin's own entries are shown.
+                admin_params["allowed_audit_realms"] = list(allowed_audit_realms)
     return admin_params
 
 
@@ -230,10 +239,7 @@ def admin_granted_realms(action: str) -> list[str] | None:
       revoked every user's devices in every realm. A caller that needs the user and resolver dimensions
       rather than just a yes/no should use :func:`get_policy_visibility_scopes`, which carries all three.
 
-    The realm field is read the way the policy engine matches it: ``"*"`` stands for every realm, and a
-    realm named with a leading ``"!"`` or ``"-"`` is excluded, also from ``"*"``. A policy granting every
-    realm but some therefore yields every other realm by name, and a realm field that restricts nothing -
-    empty, or ``"*"`` without an exclusion - is read as no realm at all.
+    The realm field is read with :func:`policy_realm_names`, the way the policy engine matches it.
 
     adminrealm, adminuser and policy conditions need no handling here: ``Match.admin(...).policies()``
     already returns only the policies applicable to the current admin and request.
@@ -247,22 +253,40 @@ def admin_granted_realms(action: str) -> list[str] | None:
         return None
     granted_realms = {}
     for policy in Match.admin(g, action=action).policies():
-        policy_realms = policy.get("realm") or []
-        excluded_realms = {realm[1:] for realm in policy_realms if realm[:1] in ("!", "-")}
-        if not policy_realms or "*" in policy_realms:
+        realm_names = policy_realm_names(policy.get("realm"))
+        if realm_names is None:
             if policy.get("resolver") or policy.get("user"):
                 # Scoped along a dimension a realm list cannot carry, so it contributes no realm. If no
                 # other policy names one either, the empty result refuses rather than widening to every realm.
                 continue
-            if not excluded_realms:
-                return None
-            # "*" with exclusions: returning None would widen the grant to the excluded realms as well.
-            granted_realms.update(dict.fromkeys(realm for realm in get_realms() if realm not in excluded_realms))
-            continue
-        # A field of nothing but exclusions matches no realm in the policy engine, and contributes none here.
-        granted_realms.update(dict.fromkeys(realm for realm in policy_realms
-                                            if realm[:1] not in ("!", "-") and realm not in excluded_realms))
+            return None
+        granted_realms.update(dict.fromkeys(realm_names))
     return list(granted_realms)
+
+
+def policy_realm_names(policy_realms: list[str] | None) -> list[str] | None:
+    """
+    The realms a policy's realm field matches, read the way the policy engine matches it.
+
+    ``"*"`` stands for every realm, and a realm written with a leading ``"!"`` or ``"-"`` is excluded, also from
+    ``"*"``. Every caller that turns policies into a boundary of realms reads the field with this function: taken
+    literally, ``"*"`` and ``"!realm"`` are looked up as the names of realms, match none, and a grant over every
+    realm, or over every realm but one, turns into a boundary that admits nothing.
+
+    :param policy_realms: the realm field of a policy
+    :return: ``None`` if the field restricts nothing - it is empty, or ``"*"`` without an exclusion. Otherwise the
+        realm names it matches: ``"*"`` with exclusions yields every existing realm but the excluded ones, and an
+        excluded realm is never among them. An **empty list** is a field that matches no realm at all - nothing but
+        exclusions, or every realm excluded - and every caller must read it as granting nothing.
+    """
+    policy_realms = policy_realms or []
+    excluded_realms = {realm[1:] for realm in policy_realms if realm[:1] in ("!", "-")}
+    if not policy_realms or "*" in policy_realms:
+        if not excluded_realms:
+            return None
+        return [realm for realm in get_realms() if realm not in excluded_realms]
+    return [realm for realm in dict.fromkeys(policy_realms)
+            if realm[:1] not in ("!", "-") and realm not in excluded_realms]
 
 
 def _named_targets(policy_values: list[str] | None) -> list[str]:
@@ -316,12 +340,19 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
                     f"restricting {action} to no records.")
         return []
     scopes = []
-    for policy in Match.admin(g, action=action).policies():
+    policies = Match.admin(g, action=action).policies()
+    for policy in policies:
         # A dimension holding "*" is matched by the policy engine's own comparison as every value, so it
         # restricts nothing and is dropped here. Kept as a literal it would be looked up as the name of a realm,
         # a resolver or a user, match none of them, and turn a grant over everything into a boundary that admits
-        # nothing - the opposite of what it says.
-        realms = _named_targets(policy.get("realm"))
+        # nothing - the opposite of what it says. The realm field is read with its exclusions, see
+        # policy_realm_names(); an exclusion in the resolver or user field still names nothing, so such a
+        # dimension admits no record rather than every other one.
+        realms = policy_realm_names(policy.get("realm"))
+        if realms == []:
+            # The realm field matches no realm at all, so this policy grants no entries.
+            continue
+        realms = realms or []
         resolvers = _named_targets(policy.get("resolver"))
         usernames = _named_targets(policy.get("user"))
         if not (realms or resolvers or usernames):
@@ -330,4 +361,7 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
         scopes.append(AuthenticationLogVisibilityScope(
             realms=realms, resolvers=resolvers, usernames=usernames,
             username_case_insensitive=bool(policy.get("user_case_insensitive"))))
+    if policies and not scopes:
+        # Every applicable policy grants nothing. None would read as unrestricted.
+        return []
     return scopes or None

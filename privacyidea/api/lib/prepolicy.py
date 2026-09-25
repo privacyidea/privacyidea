@@ -93,7 +93,7 @@ from privacyidea.lib.error import (PolicyError, RegistrationError,
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth_success,
-                                             DEFAULT_JWT_VALIDITY, admin_granted_realms)
+                                             DEFAULT_JWT_VALIDITY, admin_granted_realms, policy_realm_names)
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
 from privacyidea.lib.realm import get_realms, split_realms
@@ -1380,14 +1380,16 @@ def check_admin_tokenlist(request=None, action=PolicyAction.TOKENLIST):
     if pols_at_all:
         allowed_realms = []
         for pol in pols:
-            if not pol.get("realm"):
-                # if there is no realm set in a tokenlist/container_list policy, then this is a wildcard!
+            realm_names = policy_realm_names(pol.get("realm"))
+            if realm_names is None:
+                # A tokenlist/container_list policy whose realm field restricts nothing - no realm, or "*" - is a
+                # wildcard, which also shows the tokens that are in no realm.
                 wildcard = True
             else:
-                allowed_realms.extend(pol.get("realm"))
+                # "*" with exclusions names every other realm, and a token in no realm is not among them.
+                allowed_realms.extend(realm_names)
 
-        if wildcard:
-            allowed_realms = None
+        allowed_realms = None if wildcard else list(dict.fromkeys(allowed_realms))
 
     if action == PolicyAction.CONTAINER_LIST:
         request.pi_allowed_container_realms = allowed_realms

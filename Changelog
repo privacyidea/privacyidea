@@ -132,6 +132,10 @@ Version 3.14dev1
   * The resolvers and users named in an admin policy with the `userlist` right restrict the user list as well. Before,
     only its realm did: such an administrator saw every user of the realm, while asking for one of the others by name
     was refused
+  * An admin policy for the realm `*`, or for every realm but some (`*` with `!realm`), grants these realms to the token
+    and container list and to the audit log as well. The realm field was read literally there, so such an
+    administrator saw nothing. Several `auditlog` policies now add up, so one without a target scope grants every
+    realm
   * `GET /user/` no longer returns a single user per realm when the requested `attributes` do not contain the
     username (#5482)
   * The user notification handler no longer mails every user of every realm when it is configured to notify an admin

@@ -56,7 +56,9 @@ This allows the administrator to list existing tokens in the specified user real
 Note that the resolver in this policy is ignored.
 
 If the policy with the action ``tokenlist`` is not bound to any user realm, this acts
-as a wild card and the admin is allowed to list all tokens.
+as a wild card and the admin is allowed to list all tokens. The same holds for the realm ``*``.
+A policy for every realm but some - ``*`` together with ``!realm`` - lists the tokens of the
+other realms, but not the tokens that are in no realm.
 
 If the action ``tokenlist`` is not active, but admin policies exist, then the admin
 is not allowed to list any tokens.
@@ -912,7 +914,12 @@ type: ``bool``
 
 The administrators are allowed to view the audit log. If the policy contains
 a user realm, then the administrator is only allowed to see entries which
-contain this very user realm. A list of user realms may be defined.
+contain this very user realm. A list of user realms may be defined. The realm
+``*`` stands for every realm, and a realm excluded with ``!realm`` is left out.
+
+Several matching policies add up, so a policy without a realm lets the
+administrator see every entry. The user and resolver of such a policy do not
+restrict the audit log. The administrator always sees their own entries.
 
 To learn more about the audit log, see :ref:`audit`.
 

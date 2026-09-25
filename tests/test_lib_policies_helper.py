@@ -26,7 +26,8 @@ from flask import g
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import admin_granted_realms, own_entries_scope
+from privacyidea.lib.policies.helper import (admin_granted_realms, get_policy_visibility_scopes, own_entries_scope,
+                                             policy_realm_names)
 from privacyidea.lib.policy import PolicyClass, SCOPE, delete_policy, set_policy
 from privacyidea.lib.user import User
 from .base import FakeAudit, MyTestCase
@@ -112,5 +113,58 @@ class AdminGrantedRealmsTestCase(MyTestCase):
         for target_scope in ({"user": "cornelius"}, {"resolver": self.resolvername1}):
             self.assertEqual([], self._granted(**target_scope), target_scope)
             self.assertEqual([], self._granted(realm="*", **target_scope), target_scope)
-            self.assertEqual([], self._granted(realm=f"*,!{self.realm3}", **target_scope), target_scope)
             self.assertEqual([self.realm1], self._granted(realm=self.realm1, **target_scope), target_scope)
+            # Every realm but one is named as well, realm by realm.
+            granted = self._granted(realm=f"*,!{self.realm3}", **target_scope)
+            self.assertIn(self.realm1, granted, target_scope)
+            self.assertNotIn(self.realm3, granted, target_scope)
+
+
+class VisibilityScopeRealmsTestCase(MyTestCase):
+    """The realms of an admin's visibility boundary, with the realm field read the way the policy engine matches it."""
+
+    def setUp(self) -> None:
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        g.audit_object = FakeAudit()
+        g.logged_in_user = {"username": "admin1", "realm": "", "role": ROLE.ADMIN}
+        g.client_ip = None
+        g.serial = None
+
+    def _scopes(self, realm: str) -> list | None:
+        set_policy("visible", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ, realm=realm)
+        g.policy_object = PolicyClass()
+        try:
+            return get_policy_visibility_scopes(PolicyAction.AUTHENTICATION_LOG_READ)
+        finally:
+            delete_policy("visible")
+
+    def test_realms_of_the_boundary(self):
+        self.assertIsNone(self._scopes("*"))
+        self.assertEqual([self.realm1], self._scopes(self.realm1)[0].realms)
+        scopes = self._scopes(f"*,!{self.realm3}")
+        self.assertEqual(1, len(scopes))
+        self.assertIn(self.realm1, scopes[0].realms)
+        self.assertNotIn(self.realm3, scopes[0].realms)
+        # A realm field that matches no realm admits no record. None would admit every record.
+        self.assertEqual([], self._scopes(f"!{self.realm3}"))
+
+
+class PolicyRealmNamesTestCase(MyTestCase):
+    """A policy's realm field, read the way the policy engine matches it."""
+
+    def setUp(self) -> None:
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+
+    def test_policy_realm_names(self):
+        for restricts_nothing in (None, [], ["*"]):
+            self.assertIsNone(policy_realm_names(restricts_nothing), restricts_nothing)
+        self.assertEqual([self.realm1], policy_realm_names([self.realm1, self.realm1]))
+        every_other = policy_realm_names(["*", f"!{self.realm3}"])
+        self.assertIn(self.realm1, every_other)
+        self.assertNotIn(self.realm3, every_other)
+        self.assertEqual(every_other, policy_realm_names(["*", f"-{self.realm3}"]))
+        self.assertEqual([self.realm1], policy_realm_names([self.realm1, self.realm3, f"!{self.realm3}"]))
+        # A field that matches no realm names none - which is not the same as restricting nothing.
+        self.assertEqual([], policy_realm_names([f"!{self.realm3}"]))
