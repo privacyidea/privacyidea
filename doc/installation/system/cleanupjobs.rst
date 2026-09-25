@@ -148,3 +148,33 @@ The ``pi-cron`` container runs the jobs. Each can be switched off with a
 once ``PI_CRON_AUTHLOG_AGE`` sets a retention period in days. The variables are
 listed in ``deploy/docker/README.Docker.md`` in the source tree. The times are
 in UTC.
+
+Manual cleanups
+---------------
+
+.. index:: orphaned tokens, orphaned user data
+
+When a user is deleted in the user store, behind privacyIDEA's back, some of
+their data stays in the database: their settings, their custom and internal
+attributes, and the tokens and containers still assigned to them.
+:ref:`pi-tokenjanitor <pi-tokenjanitor>` finds these orphans::
+
+   pi-tokenjanitor user-settings
+   pi-tokenjanitor custom-attributes
+   pi-tokenjanitor internal-attributes
+   pi-tokenjanitor find --orphaned True
+   pi-tokenjanitor container --orphaned True
+
+Each command lists what it found. Append ``delete`` to remove it, e.g.
+``pi-tokenjanitor user-settings delete``, which asks for confirmation unless
+you also pass ``--yes``.
+
+These commands are deliberately not scheduled. They consider a user gone when
+the user store does not return them, and a misconfigured resolver - a wrong base
+DN, a broken search filter - returns no user without reporting an error, so an
+unattended ``delete`` would remove the data of every user. A user store that
+cannot be reached at all is skipped, unless you pass ``--orphaned-on-error``.
+The commands also ask the user store about every single entry, which takes a
+while with many users. The leftovers only appear when users are deleted and
+cost little, so run the commands by hand from time to time and check the list
+before you delete anything.
