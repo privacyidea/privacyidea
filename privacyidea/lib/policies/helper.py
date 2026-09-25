@@ -221,7 +221,7 @@ def own_entries_scope(login: str, realm: str) -> "AuthenticationLogVisibilitySco
     return None
 
 
-def admin_granted_realms(action: str) -> list[str] | None:
+def admin_granted_realms(action: str, whole_realms: bool = False) -> list[str] | None:
     """
     The realms the logged-in admin's policies grant for *action*, as the union over every applicable policy.
 
@@ -245,10 +245,16 @@ def admin_granted_realms(action: str) -> list[str] | None:
 
     The realm field is read with :func:`policy_realm_names`, the way the policy engine matches it.
 
+    A policy that names realms **and** users or resolvers grants its realms here, because most callers check
+    the user or resolver of the request separately (``check_base_action``). A caller that uses the realms as its
+    whole boundary - acting on every user of a realm without such a check - passes *whole_realms*: then such a
+    policy contributes no realm, as it does not grant every user of its realms.
+
     adminrealm, adminuser and policy conditions need no handling here: ``Match.admin(...).policies()``
     already returns only the policies applicable to the current admin and request.
 
     :param action: the policy action whose realm scoping to read
+    :param whole_realms: only count the policies that grant every user of their realms
     :return: the granted realm names, ``None`` for unrestricted, or an empty list for "refuse"
     """
     if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
@@ -257,6 +263,9 @@ def admin_granted_realms(action: str) -> list[str] | None:
         return None
     granted_realms = {}
     for policy in Match.admin(g, action=action).policies():
+        if whole_realms and (policy.get("resolver") or policy.get("user")):
+            # The policy grants some users of its realms, not the realms.
+            continue
         realm_names = policy_realm_names(policy.get("realm"))
         if realm_names is None:
             if policy.get("resolver") or policy.get("user"):

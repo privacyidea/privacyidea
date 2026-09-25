@@ -262,25 +262,22 @@ class APIAuthTestCase(MyApiTestCase):
     def test_03f_realmadmin_user_scoped_policy_does_not_list_every_realm(self):
         """In an admin policy the `user` field names the user acted upon, not the acting admin.
 
-        Such a policy is a restriction, but not one a realm filter can carry, so an unscoped
-        listing cannot be narrowed to it. Answering with every realm hands a user-scoped admin
-        the whole installation; the request is refused instead.
+        Such a policy is a restriction a realm filter can not carry, so the listing is narrowed to the
+        named user instead: with or without a realm, the admin sees that user and nobody else, rather
+        than the whole installation.
         """
         self.setUp_user_realms()
         self.setUp_user_realm2()
         set_policy(name="realmadmin_user_scoped", scope=SCOPE.ADMIN,
-                   action=PolicyAction.USERLIST, user="alice")
+                   action=PolicyAction.USERLIST, user="cornelius")
         try:
-            with self.app.test_request_context('/user/', method='GET', data={},
-                                               headers={'Authorization': self.at}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(403, res.status_code, res)
-            # naming the realm gives the action something to be checked against again
-            with self.app.test_request_context('/user/', method='GET',
-                                               query_string={"realm": self.realm1},
-                                               headers={'Authorization': self.at}):
-                res = self.app.full_dispatch_request()
-                self.assertEqual(200, res.status_code, res)
+            for query in ({}, {"realm": self.realm1}):
+                with self.app.test_request_context('/user/', method='GET', query_string=query,
+                                                   headers={'Authorization': self.at}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(200, res.status_code, res)
+                    listed = {user.get("username") for user in res.json["result"]["value"]}
+                self.assertEqual({"cornelius"}, listed, query)
         finally:
             delete_policy("realmadmin_user_scoped")
 

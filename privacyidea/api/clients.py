@@ -62,13 +62,19 @@ def _allowed_realm_ids(action):
     otherwise see or revoke across realms. This computes the admin's allowed
     realms for the given action (mirroring the tokenlist scoping) so those paths
     can enforce the same restriction. An empty set means "no realms".
+
+    Those paths act on every device of a realm without looking at its user, so
+    only the policies that grant every user of their realms count: a policy for
+    some users or resolvers of a realm does not open all of that realm's devices.
+    Such an admin revokes the devices of their users by naming the user, which
+    ``check_base_action`` checks against the policy.
     """
-    granted_realms = admin_granted_realms(action)
+    granted_realms = admin_granted_realms(action, whole_realms=True)
     if granted_realms is None:
         return None
     # An empty answer means the admin is restricted along a dimension a realm list cannot carry
-    # (a policy scoped by user or resolver and carrying no realm). An empty set of realm ids
-    # matches no row, which is the refusal these paths express.
+    # (a policy scoped by user or resolver). An empty set of realm ids matches no row, which is
+    # the refusal these paths express.
     realm_ids = {get_realm_id(name) for name in granted_realms}
     if None in realm_ids:
         # The policy engine matches the realm field with exclusions ("!realmb") and regular
