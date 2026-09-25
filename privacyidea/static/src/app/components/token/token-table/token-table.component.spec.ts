@@ -478,10 +478,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       expect(tokenService.activeFilter().getValueOfKey("user")).toBe("alice");
       expect(tokenService.activeFilter().hasKey("realm")).toBe(false);
     });
-
-    it("names the column in the filter button tooltip", () => {
-      expect(table.filterTooltip("container_serial")).toBe("Filter by this container");
-    });
   });
 
   it("onKeywordClick toggles the filter, focuses the input, and positions the cursor after 'user:'", async () => {

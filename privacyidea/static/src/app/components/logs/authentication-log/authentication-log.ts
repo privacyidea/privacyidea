@@ -85,7 +85,6 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { toFilterDisplay } from "@utils/date-format.utils";
-import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 import { USER_ROLE_CONFIG, UserRoleBadge, userRoleBadge as roleBadgeFor } from "../user-roles";
 
 // CSS highlight class per event outcome; outcome values come from the backend's AuthEventOutcome (GET
@@ -819,11 +818,6 @@ export class AuthenticationLog {
   // User-Agent is a string any browser sends.
   clientLabelBadge(source: string | null | undefined): { label: string; tooltip: string } | null {
     return source ? (CLIENT_LABEL_SOURCE_META[source] ?? null) : null;
-  }
-
-  // Localized tooltip for a cell's inline filter button, falling back to the generic phrasing.
-  filterTooltip(columnKey: string): string {
-    return filterValueTooltip(columnKey);
   }
 
   // The width class a clipped column's value carries, or null for a column shown in full.

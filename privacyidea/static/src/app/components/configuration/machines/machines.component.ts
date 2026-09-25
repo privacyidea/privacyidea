@@ -33,7 +33,6 @@ import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
-import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -102,10 +101,6 @@ export class MachinesComponent {
     this.router.navigateByUrl(
       ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS + machine.id + "?resolver=" + encodeURIComponent(machine.resolver_name)
     );
-  }
-
-  filterTooltip(columnKey: string): string {
-    return filterValueTooltip(columnKey);
   }
 
   onFilterInput(value: string): void {

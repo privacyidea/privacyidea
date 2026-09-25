@@ -64,7 +64,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
-import { filterValueTooltip } from "@utils/filter-tooltip.utils";
+import { withUser } from "@utils/filter.utils";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -268,16 +268,8 @@ export class ContainerTableComponent implements OnDestroy {
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 
-  filterTooltip(columnKey: string): string {
-    return filterValueTooltip(columnKey);
-  }
-
-  // The backend resolves a user only within a realm, so the row's own realm goes along with the name.
   filterByUser(username: string, realm: string): void {
-    this.containerService.updateFilter((current) => {
-      const filter = current.addEntry("user", username);
-      return realm ? filter.addEntry("realm", realm) : filter;
-    });
+    this.containerService.updateFilter((current) => withUser(current, username, realm));
   }
 
   onKeywordClick(filterKeyword: string): void {

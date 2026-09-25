@@ -127,7 +127,7 @@
                             <span [innerHTML]="event | highlight: filterString()"></span>
                             <app-filter-value-button
                               class="margin-left-8"
-                              [label]="filterTooltip('event')"
+                              column="event"
                               [value]="event"
                               (filterValue)="onFilterInput($event)" />
                           </li>
@@ -141,7 +141,7 @@
                           <span [innerHTML]="event | highlight: filterString()"></span>
                           <app-filter-value-button
                             class="margin-left-8"
-                            [label]="filterTooltip('event')"
+                            column="event"
                             [value]="event"
                             (filterValue)="onFilterInput($event)" />
                           @if (!last) {

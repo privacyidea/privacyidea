@@ -30,7 +30,6 @@ import { MatTabsModule } from "@angular/material/tabs";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
-import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { TokenApplicationsActionsComponent } from "@components/token/token-applications/token-applications-actions/token-applications-actions.component";
@@ -109,10 +108,6 @@ export class TokenApplicationsSshComponent {
 
   getFilterIconName(keyword: string): string {
     return this.machineService.getFilterIconName(keyword);
-  }
-
-  filterTooltip(columnKey: string): string {
-    return filterValueTooltip(columnKey);
   }
 
   addFilterValue(keyword: string, value: string): void {

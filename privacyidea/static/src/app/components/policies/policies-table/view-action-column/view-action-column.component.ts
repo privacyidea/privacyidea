@@ -21,7 +21,6 @@ import { Component, computed, inject, input, output } from "@angular/core";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
-import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 import { POLICY_VOCABULARY_ACTIONS, valueDisplayLabel } from "@utils/value-label.utils";
 
 @Component({
@@ -41,8 +40,6 @@ export class ViewActionColumnComponent {
   readonly scope = input<string | undefined>(undefined);
   readonly highlightTerms = input<string[]>([]);
   readonly filterAction = output<string>();
-
-  protected readonly filterLabel = filterValueTooltip("action");
 
   /**
    * Pre-calculates the display list including the boolean check

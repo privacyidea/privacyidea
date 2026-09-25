@@ -129,10 +129,6 @@ describe("AuditComponent (unit)", () => {
 
       expect(mockAuditService.activeFilter().getValueOfKey("serial")).toBe("HOTP1");
     });
-
-    it("names the column in the filter button tooltip", () => {
-      expect(component.filterTooltip("policies")).toBe("Filter by this policy");
-    });
   });
 
   describe("page‑related derived signals", () => {

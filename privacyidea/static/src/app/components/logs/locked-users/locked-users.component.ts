@@ -57,7 +57,6 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 import { UserRoleBadge, userRoleBadge } from "../user-roles";
 import { from } from "rxjs";
 import { concatMap, reduce } from "rxjs/operators";
@@ -263,11 +262,6 @@ export class LockedUsersComponent {
     const current = this.casService.lockedUsersFilter();
     const next = values.length ? current.addEntry(keyword, values.join(",")) : current.removeKey(keyword);
     this.casService.lockedUsersFilter.set(next);
-  }
-
-  // Localized tooltip for a cell's inline filter button, falling back to the generic phrasing.
-  filterTooltip(columnKey: string): string {
-    return filterValueTooltip(columnKey);
   }
 
   addFilterValue(keyword: string, value: string): void {

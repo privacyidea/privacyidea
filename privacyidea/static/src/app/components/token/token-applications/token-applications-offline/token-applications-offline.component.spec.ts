@@ -136,9 +136,5 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
 
       expect(machineServiceMock.activeFilter().getValueOfKey("serial")).toBe("SSH1");
     });
-
-    it("names the column in the filter button tooltip", () => {
-      expect(component.filterTooltip("serial")).toBe("Filter by this serial");
-    });
   });
 });

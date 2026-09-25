@@ -247,13 +247,11 @@
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
                       </a>
-                      @if (tokenDetails.container_serial) {
-                        <app-filter-value-button
-                          class="margin-left-8"
-                          [label]="filterTooltip('container_serial')"
-                          [value]="tokenDetails.container_serial"
-                          (filterValue)="addFilterValue('container_serial', $event)" />
-                      }
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        column="container_serial"
+                        [value]="tokenDetails.container_serial"
+                        (filterValue)="addFilterValue('container_serial', $event)" />
                     </app-copyable>
                   }
                   @case ("username") {
@@ -272,13 +270,11 @@
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
                       </a>
-                      @if (tokenDetails[column.key]) {
-                        <app-filter-value-button
-                          class="margin-left-8"
-                          [label]="filterTooltip('username')"
-                          [value]="tokenDetails[column.key]"
-                          (filterValue)="filterByUser($event, tokenDetails.user_realm)" />
-                      }
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        column="username"
+                        [value]="tokenDetails[column.key]"
+                        (filterValue)="filterByUser($event, tokenDetails.user_realm)" />
                     </app-copyable>
                   }
                   @default {

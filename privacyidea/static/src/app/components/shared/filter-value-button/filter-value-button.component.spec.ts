@@ -60,4 +60,25 @@ describe("FilterValueButtonComponent", () => {
 
     expect(fixture.nativeElement.querySelector("button")).toBeNull();
   });
+
+  it("hides the whole element without a value, so its spacing leaves no gap", () => {
+    fixture.componentRef.setInput("value", "");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.style.display).toBe("none");
+  });
+
+  it("names the column it filters by", () => {
+    fixture.componentRef.setInput("column", "serial");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("button").getAttribute("aria-label")).toBe("Filter by this serial");
+  });
+
+  it("falls back to the generic label for a column without its own", () => {
+    fixture.componentRef.setInput("column", "endpoint");
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("button").getAttribute("aria-label")).toBe("Filter by this value");
+  });
 });

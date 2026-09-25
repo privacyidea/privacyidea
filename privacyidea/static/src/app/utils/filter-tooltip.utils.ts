@@ -28,6 +28,7 @@ const FILTER_VALUE_TOOLTIPS: Record<string, string> = {
   date: $localize`:@@common.filterByDay:Filter by this day`,
   error_message: $localize`:@@common.filterByErrorMessage:Filter by this error message`,
   event: $localize`:@@common.filterByEvent:Filter by this event`,
+  peer_ip: $localize`:@@common.filterByPeerAddress:Filter by this peer address`,
   policies: $localize`:@@common.filterByPolicy:Filter by this policy`,
   privacyidea_server: $localize`:@@common.filterByServer:Filter by this server`,
   realm: $localize`:@@common.filterByRealm:Filter by this realm`,

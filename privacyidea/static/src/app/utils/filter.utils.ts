@@ -87,3 +87,12 @@ export function withDefaultRealm(filter: FilterValue, defaultRealm: string): Fil
   }
   return filter.addEntry("realm", defaultRealm);
 }
+
+/**
+ * Filters by one user. The backend resolves a user only within a realm, so the user's realm goes
+ * along with the name, and a realm the filter held for an earlier user is dropped when this one has none.
+ */
+export function withUser(filter: FilterValue, username: string, realm: string | undefined): FilterValue {
+  const withName = filter.addEntry("user", username);
+  return realm ? withName.addEntry("realm", realm) : withName.removeKey("realm");
+}

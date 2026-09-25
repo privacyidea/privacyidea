@@ -111,25 +111,21 @@
                         class="flex ali-center">
                         {{ element.serial }}
                       </a>
-                      @if (element.serial) {
-                        <app-filter-value-button
-                          class="margin-left-8"
-                          [label]="filterTooltip('serial')"
-                          [value]="element.serial"
-                          (filterValue)="addFilterValue('serial', $event)" />
-                      }
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        column="serial"
+                        [value]="element.serial"
+                        (filterValue)="addFilterValue('serial', $event)" />
                     </app-copyable>
                   }
                   @case ("transaction_id") {
                     <span class="flex ali-center">
                       <span>{{ element.transaction_id }}</span>
-                      @if (element.transaction_id) {
-                        <app-filter-value-button
-                          class="margin-left-8"
-                          [label]="filterTooltip('transaction_id')"
-                          [value]="element.transaction_id"
-                          (filterValue)="addFilterValue('transaction_id', $event)" />
-                      }
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        column="transaction_id"
+                        [value]="element.transaction_id"
+                        (filterValue)="addFilterValue('transaction_id', $event)" />
                     </span>
                   }
                   @case ("otp_received") {

@@ -254,9 +254,5 @@ describe("ContainerTableComponent (Jest)", () => {
       expect(containerService.activeFilter().getValueOfKey("user")).toBe("alice");
       expect(containerService.activeFilter().hasKey("realm")).toBe(false);
     });
-
-    it("names the column in the filter button tooltip", () => {
-      expect(component.filterTooltip("user")).toBe("Filter by this user");
-    });
   });
 });

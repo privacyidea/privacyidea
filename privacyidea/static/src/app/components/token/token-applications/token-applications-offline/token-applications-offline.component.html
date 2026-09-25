@@ -118,13 +118,11 @@
                       tabindex="0">
                       {{ element[column.key] }}
                     </a>
-                    @if (element.serial) {
-                      <app-filter-value-button
-                        class="margin-left-8"
-                        [label]="filterTooltip('serial')"
-                        [value]="element.serial"
-                        (filterValue)="addFilterValue('serial', $event)" />
-                    }
+                    <app-filter-value-button
+                      class="margin-left-8"
+                      column="serial"
+                      [value]="element.serial"
+                      (filterValue)="addFilterValue('serial', $event)" />
                   </app-copyable>
                 }
                 @default {

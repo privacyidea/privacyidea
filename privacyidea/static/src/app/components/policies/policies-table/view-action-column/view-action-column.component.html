@@ -26,7 +26,7 @@
           [innerHTML]="action.name | highlight: highlightTerms()"></span>
         <app-filter-value-button
           class="margin-left-8"
-          [label]="filterLabel"
+          column="action"
           [value]="action.name"
           (filterValue)="filterAction.emit($event)" />
       </span>

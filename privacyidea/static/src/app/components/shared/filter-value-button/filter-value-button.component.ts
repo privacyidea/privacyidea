@@ -18,24 +18,29 @@
  **/
 import { Component, computed, input, output } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
+import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 
 /**
  * A small inline "filter by this value" button to place next to a cell value. It is deliberately dumb: it emits the
  * value on click and the host decides what to filter. Visibility can be driven by a parent via the inherited
  * `--filter-button-opacity` custom property (e.g. to reveal it only on row hover/focus).
+ *
+ * Without a value the whole element is hidden, so a spacing class set on it leaves no gap behind and a cell needs no
+ * guard of its own.
  */
 @Component({
   selector: "app-filter-value-button",
   standalone: true,
   imports: [MatIcon],
   templateUrl: "./filter-value-button.component.html",
-  styleUrl: "./filter-value-button.component.scss"
+  styleUrl: "./filter-value-button.component.scss",
+  host: { "[style.display]": "hasValue() ? null : 'none'" }
 })
 export class FilterValueButtonComponent {
   readonly value = input.required<string>();
-  // Full tooltip text. Kept as a complete sentence (not noun-interpolated) so per-column variants can later be
-  // supplied as independently-translatable $localize messages without breaking grammar in other languages.
-  readonly label = input<string>($localize`:@@common.filterByValue:Filter by this value`);
+  // The column the value comes from, which names what the button filters by.
+  readonly column = input<string>("");
+  readonly label = computed(() => filterValueTooltip(this.column()));
   readonly filterValue = output<string>();
   // Cell values reach this through untyped row objects, so null/undefined arrive despite the declared type.
   readonly hasValue = computed(() => String(this.value() ?? "").trim() !== "");

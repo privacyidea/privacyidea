@@ -22,7 +22,8 @@ import {
   filterParamsEqual,
   toBooleanParam,
   toWildcardParam,
-  withDefaultRealm
+  withDefaultRealm,
+  withUser
 } from "./filter.utils";
 
 describe("filterParamsEqual", () => {
@@ -155,5 +156,27 @@ describe("withDefaultRealm", () => {
     const filter = new FilterValue({ value: "user: alice" });
 
     expect(withDefaultRealm(filter, "").hasKey("realm")).toBe(false);
+  });
+});
+
+describe("withUser", () => {
+  it("filters by the user together with the user's realm", () => {
+    const filter = withUser(new FilterValue({ value: "user: alice realm: realmA" }), "bob", "realmB");
+
+    expect(filter.getValueOfKey("user")).toBe("bob");
+    expect(filter.getValueOfKey("realm")).toBe("realmB");
+  });
+
+  it("drops the earlier user's realm when the user has none", () => {
+    const filter = withUser(new FilterValue({ value: "user: alice realm: realmA" }), "bob", "");
+
+    expect(filter.getValueOfKey("user")).toBe("bob");
+    expect(filter.hasKey("realm")).toBe(false);
+  });
+
+  it("keeps the rest of the filter", () => {
+    const filter = withUser(new FilterValue({ value: "serial: OATH" }), "bob", "realmB");
+
+    expect(filter.getValueOfKey("serial")).toBe("OATH");
   });
 });

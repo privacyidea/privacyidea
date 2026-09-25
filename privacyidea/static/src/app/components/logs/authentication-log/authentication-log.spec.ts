@@ -114,7 +114,6 @@ describe("AuthenticationLog", () => {
     expect(component.endpointOptions()).toContain("/validate/check");
     // The header offers that picker, so the cells must not offer a second, competing affordance.
     expect(component.showInlineCellFilter("endpoint")).toBe(false);
-    expect(component.filterTooltip("endpoint")).toBe("Filter by this value");
     component.setFilterValues("endpoint", ["/auth", "/validate/check"]);
     expect(component.selectedFilterValues("endpoint")).toEqual(["/auth", "/validate/check"]);
   });

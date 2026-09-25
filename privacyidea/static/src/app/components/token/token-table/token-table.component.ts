@@ -60,8 +60,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterColumnHint, inlineFilterHint } from "@utils/filter-hint.utils";
-import { filterValueTooltip } from "@utils/filter-tooltip.utils";
-import { withDefaultRealm } from "@utils/filter.utils";
+import { withDefaultRealm, withUser } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
 import { ROLLOUT_STATE_VALUES, valueDisplayLabel } from "@utils/value-label.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
@@ -332,21 +331,13 @@ export class TokenTableComponent implements OnDestroy {
     }
   }
 
-  filterTooltip(columnKey: string): string {
-    return filterValueTooltip(columnKey);
-  }
-
   addFilterValue(columnKey: string, value: string): void {
     const keyword = this.apiFilterKeyMap[columnKey] ?? columnKey;
     this.tokenService.updateFilter((current) => current.addEntry(keyword, value));
   }
 
-  // The backend resolves a user only within a realm, so the row's own realm goes along with the name.
   filterByUser(username: string, realm: string): void {
-    this.tokenService.updateFilter((current) => {
-      const filter = current.addEntry("user", username);
-      return realm ? filter.addEntry("realm", realm) : filter;
-    });
+    this.tokenService.updateFilter((current) => withUser(current, username, realm));
   }
 
   onKeywordClick(filterKeyword: string): void {

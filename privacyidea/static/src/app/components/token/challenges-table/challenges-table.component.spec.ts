@@ -81,9 +81,5 @@ describe("ChallengesTableComponent", () => {
 
       expect(challengesService.activeFilter().getValueOfKey("serial")).toBe("HOTP1");
     });
-
-    it("names the column in the filter button tooltip", () => {
-      expect(component.filterTooltip("transaction_id")).toBe("Filter by this transaction ID");
-    });
   });
 });

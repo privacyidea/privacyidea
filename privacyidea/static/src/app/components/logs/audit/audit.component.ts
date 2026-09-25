@@ -56,7 +56,6 @@ import { TableState } from "@core/models/table_state/table-state";
 import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
-import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 
 type AuditCellRenderType =
@@ -264,10 +263,6 @@ export class AuditComponent {
   // info is free prose that practically never repeats, so filtering on one entry's value finds only that entry.
   showInlineCellFilter(columnKey: string): boolean {
     return columnKey !== "info";
-  }
-
-  filterTooltip(columnKey: string): string {
-    return filterValueTooltip(columnKey);
   }
 
   // Inline "filter by this value" action on a cell: replaces whatever the column was filtered by with this value.

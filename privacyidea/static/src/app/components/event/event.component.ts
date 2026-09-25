@@ -50,7 +50,6 @@ import { AuthService } from "@services/auth/auth.service";
 import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { filterValueTooltip } from "@utils/filter-tooltip.utils";
 import { of } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
@@ -175,10 +174,6 @@ export class EventComponent {
     return Object.entries(conditions as Record<string, unknown>)
       .map(([key, value]) => `${key}: ${String(value)}`)
       .join(", ");
-  }
-
-  filterTooltip(columnKey: string): string {
-    return filterValueTooltip(columnKey);
   }
 
   onFilterInput(value: string): void {
