@@ -87,12 +87,12 @@ msgstr ""
 
 #: api/periodictask.py:208
 #, python-brace-format
-msgid "Unknown task module: {!r}"
+msgid "Unknown task module: {0!r}"
 msgstr ""
 
 #: api/periodictask.py:216
 #, python-brace-format
-msgid "options: expected dictionary, got {!r}"
+msgid "options: expected dictionary, got {0!r}"
 msgstr ""
 
 #: api/policy.py:479 api/token.py:1484

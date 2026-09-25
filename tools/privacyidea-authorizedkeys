@@ -25,7 +25,6 @@ user=$1
 
 # some checks for dependencies
 command -v jq >/dev/null 2>&1 || { echo >&2 "script requires jq but it is not installed.  Aborting."; exit 2; }
-command -v sed >/dev/null 2>&1 || { echo >&2 "script requires sed but it is not installed.  Aborting."; exit 2; }
 command -v curl >/dev/null 2>&1 || { echo >&2 "script requires curl but it is not installed.  Aborting."; exit 2; }
 command -v tr >/dev/null 2>&1 || { echo >&2 "script requires tr but it is not installed.  Aborting."; exit 2; }
 
@@ -39,25 +38,30 @@ cpar="-s $insecure"  # add -v to get verbose output if you search for bugs!
 # retrieve authentication token (we need this for all further requests
 # see http://privacyidea.readthedocs.org/en/latest/modules/api/auth.html
 # this is a POST request with data
-json=$(curl $cpar -H "$headersalways1" -H "$headersalways2" -d '{ "username":"'$serviceaccount'", "password":"'$password'" }' $baseurl/auth)
+# The body is built by jq, so that quotes in the credentials can not break the JSON.
+credentials=$(jq -n --arg username "$serviceaccount" --arg password "$password" '{username: $username, password: $password}')
+json=$(curl $cpar -H "$headersalways1" -H "$headersalways2" -d "$credentials" $baseurl/auth)
 jstatus=$(echo "$json"|jq .result.status)
 if [[ "$jstatus" != "true" ]]; then # if request failed .result.status=false
   # TODO: If the SSL cert fails, we also run into this tree
-  echo "Could not get a valid token with the provided credentials"
+  # sshd reads stdout as authorized keys, so messages go to stderr
+  echo "Could not get a valid token with the provided credentials" >&2
   exit 1
 else
-  token=$(echo "$json"|jq .result.value.token|sed 's/"//g') # get token from json and remove double quotes
+  token=$(echo "$json"|jq -r .result.value.token)
 fi
 
 # Fetch the authentication items for a given application 'ssh' and the given service_id.
 # this is a simple GET request with the hostname, user and service_id as parameter
 # The hostname is not important.
-json=$(curl $cpar -G -H "Authorization: $token" -d "service_id=$service_id" -d "user=$user" -d "hostname=$hostname" $baseurl/machine/authitem/$application)
+query=(--data-urlencode "service_id=$service_id" --data-urlencode "user=$user" --data-urlencode "hostname=$hostname")
+json=$(curl $cpar -G -H "Authorization: $token" "${query[@]}" $baseurl/machine/authitem/$application)
 jstatus=$(echo "$json"|jq .result.status)
 
 if [[ "$jstatus" == "true" ]]; then
-   sshs=$(echo "$json"|jq .result.value.ssh)
-   echo "${sshs}" | jq  '.[] | .sshkey' | sed 's/"//g'
+   # One authorized key per line, nothing if the user has no key
+   echo "$json" | jq -r '.result.value.ssh // [] | .[] | .sshkey'
 else
- echo "no successful query!"
+   echo "Could not fetch the SSH keys: $(echo "$json" | jq -r '.result.error.message // "no valid response"')" >&2
+   exit 1
 fi

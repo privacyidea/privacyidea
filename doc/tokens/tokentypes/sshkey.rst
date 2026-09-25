@@ -54,7 +54,10 @@ type, public key and comment) in the encrypted OTP key field of the token.
 The checksum is verified whenever the SSH key is fetched. This way a
 manipulation of the database entries - e.g. a database administrator
 replacing the public key to gain access to SSH servers - is detected and the
-SSH key is not handed out.
+SSH key is not handed out. When an SSH server fetches the keys of several
+tokens, e.g. through ``privacyidea-authorizedkeys``, only the key of such a
+token is left out and the error is written to the log file; the keys of the
+other tokens are still handed out.
 
 The checksum covers the SSH key data wherever it is written, including the
 generic ``POST /token/info/<serial>/<key>`` endpoint. Changing the key type or

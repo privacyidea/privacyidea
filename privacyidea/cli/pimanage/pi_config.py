@@ -18,17 +18,20 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """CLI commands for configuring the privacyIDEA server"""
 import copy
+import datetime
+import math
 import sys
 import ast
 import inspect
 from functools import partial
+from typing import TextIO
 import click
 from flask import current_app
 from flask.cli import AppGroup
 import json
 import yaml
 
-from privacyidea.lib.authcache import cleanup
+from privacyidea.lib.authcache import cleanup, get_idle_limit
 from privacyidea.lib.caconnector import (get_caconnector_list,
                                          get_caconnector_class,
                                          get_caconnector_object,
@@ -37,19 +40,22 @@ from privacyidea.lib.caconnectors.localca import ATTR
 from privacyidea.lib.crypto import create_hsm_object
 from privacyidea.lib.error import Error, ResourceNotFoundError, UserError
 from privacyidea.lib.event import EventConfiguration, enable_event, delete_event
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (PolicyClass, enable_policy, delete_policy,
-                                    set_policy)
+                                    set_policy, SCOPE)
 from privacyidea.lib.realm import (get_realms, delete_realm, set_default_realm,
                                    get_default_realm)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list)
 from privacyidea.lib.utils import get_version_number
 from privacyidea.lib.utils.export import EXPORT_FUNCTIONS, IMPORT_FUNCTIONS
 from privacyidea.cli.pimanage.challenge import challenge_cli
+from privacyidea.cli.pimanage.metrics import metrics_cli
 from privacyidea.cli.pimanage.remembered_device import remembered_device_cli
 
 config_cli = AppGroup("config", help="Manage the privacyIDEA server configuration")
 
 config_cli.add_command(challenge_cli)
+config_cli.add_command(metrics_cli)
 config_cli.add_command(remembered_device_cli)
 
 ca_cli = AppGroup("ca", help="Manage Certificate Authorities")
@@ -263,13 +269,13 @@ def resolver_create(name, rtype, conf_file):
     """
     Create a new resolver with the specified name and type.
 
-    The necessary resolver parameters are read from the file given with FILENAME.
+    The necessary resolver parameters are read from the file given with CONF_FILE.
     The file should contain a python dictionary.
 
     \b
     NAME:     The name of the resolver
-    RTYPE:    The type of the resolver (can be ldapresolver, sqlresolver,
-              httpresolver, passwdresolver or scimresolver)
+    RTYPE:    The type of the resolver (ldapresolver, sqlresolver, passwdresolver,
+              scimresolver, httpresolver, entraidresolver or keycloakresolver)
     CONF_FILE: The name of the config file with the resolver parameters.
 
     \b
@@ -293,7 +299,7 @@ def resolver_create_internal(ctx, name):
     This creates a new internal, editable sqlresolver. The users will be
     stored in the token database in a table called 'users_<NAME>'. You can then
     add this resolver to a new realm using the command
-    'pi-manage config realm add <realm-name> <NAME>'.
+    'pi-manage config realm create <realm-name> <NAME>'.
     """
     sqluri = current_app.config.get("SQLALCHEMY_DATABASE_URI")
     sqlelements = sqluri.split("/")
@@ -490,7 +496,8 @@ def policy_delete(name):
 @click.argument("action")
 @click.option("-f", "--file", type=click.File(),
               help="The file to import the policy configuration from.")
-def policy_create(name, scope, action, file):
+@click.pass_context
+def policy_create(ctx: click.Context, name: str, scope: str, action: str, file: TextIO | None) -> int:
     """
     Create a new policy.
 
@@ -547,8 +554,9 @@ def policy_create(name, scope, action, file):
                                "check_all_resolvers", False))
             return r
 
-        except Exception as _e:
-            print(f"Unexpected error: {sys.exc_info()[1]!s}")
+        except Exception as e:
+            click.secho(f"Could not create the policy from the file {file.name}: {e!r}", fg="red", err=True)
+            ctx.exit(1)
 
     else:
         r = set_policy(name, scope, action)
@@ -736,14 +744,36 @@ config_cli.add_command(exporter_cmd)
 authcache_cli = AppGroup("authcache", help="Manage authentication cache")
 
 
+def _longest_idle_limit() -> datetime.timedelta:
+    """
+    The longest time an active ``auth_cache`` policy accepts an unused authcache entry,
+    or no time at all if there is no such policy. A value that does not parse is left
+    out: the policy can not accept any entry, as reading the value fails before the
+    cache is consulted.
+    """
+    policies = PolicyClass().list_policies(scope=SCOPE.AUTH, action=PolicyAction.AUTH_CACHE, active=True)
+    limits = [datetime.timedelta(0)]
+    for value, policy_names in PolicyClass.extract_action_values(policies, PolicyAction.AUTH_CACHE).items():
+        try:
+            limits.append(get_idle_limit(value))
+        except TypeError:
+            click.secho(f"Ignoring the invalid auth_cache value {value!r} of the policies {', '.join(policy_names)}.",
+                        fg="yellow", err=True)
+    return max(limits)
+
+
 @authcache_cli.command("cleanup")
-@click.option("-m", "--minutes", default=480, show_default=True, type=int,
-              help="Clean up authcache entries older than this number of minutes")
+@click.option("-m", "--minutes", type=click.IntRange(min=0),
+              help="Clean up authcache entries not used for this number of minutes. By default the entries are "
+                   "removed that no active auth_cache policy accepts any more.")
 def authcache_cleanup(minutes):
     """
     Remove entries from the authcache.
-    Remove all entries where the last_auth entry is older than the given number
-    of minutes.
+
+    By default an entry is removed once no active auth_cache policy accepts it any
+    more, i.e. once it has not been used for longer than the most generous policy
+    allows. Without such a policy all entries are removed. With --minutes, all
+    entries are removed that have not been used for the given number of minutes.
 
     With PI_REDIS_CACHE_AUTH enabled, cached authentications live in Redis and
     expire on their own. The table is still cleaned: an entry written while Redis
@@ -751,6 +781,14 @@ def authcache_cleanup(minutes):
     reads or deletes that row, so this is the only thing that reclaims it.
     """
     from privacyidea.lib.cache.auth import cache_enabled
+    if minutes is None:
+        # Rounded up, so that an entry is never removed before the policy stops accepting it
+        minutes = math.ceil(_longest_idle_limit().total_seconds() / 60)
+        if minutes:
+            click.echo(f"Removing authcache entries not used for {minutes} minutes, the longest an active "
+                       f"auth_cache policy accepts an unused entry.")
+        else:
+            click.echo("No active auth_cache policy accepts cached entries, removing all of them.")
     r = cleanup(minutes)
     click.echo(f"{r} entries deleted from authcache")
     if cache_enabled():

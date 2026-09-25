@@ -624,25 +624,28 @@ dependent on the clients IP address and the user agent.
 .. note:: Cache entries are written to the database table ``authcache``. Please note
    that expired entries are automatically deleted only when the user
    attempts to log in with the same expired credentials again. In all other cases,
-   expired entries need to be deleted from this table manually by running::
+   expired entries need to be deleted from this table by running::
 
-      pi-manage config authcache cleanup --minutes MIN
+      pi-manage config authcache cleanup
 
-   which deletes all cache entries whose last authentication has occurred at least
-   ``MIN`` minutes ago. As an example::
+   which deletes the entries no active ``auth_cache`` policy accepts any more: those
+   not used for longer than the most generous policy allows, or all of them if there
+   is no such policy. With ``4h/5m`` that is every entry unused for 5 minutes, with
+   ``2d`` every entry unused for two days. The Ubuntu packages and the Docker image run
+   this daily, see :ref:`cleanup_jobs`.
+
+   To delete by a fixed age instead, pass ``--minutes``::
 
       pi-manage config authcache cleanup --minutes 300
 
-   will delete all authentication cache entries whose last authentication happened more
+   deletes all authentication cache entries whose last authentication happened more
    than 5 hours ago.
-
-   It may make sense to create a cronjob that periodically cleans up old authentication cache entries.
 
 .. note:: With :ref:`redis_auth_cache` enabled, cache entries live in Redis
    instead of the ``authcache`` table. They then carry the lifetime this policy
-   grants and expire on their own, so neither the cleanup command nor a cronjob
-   for it is needed - and the authentication path stops writing to the database
-   altogether.
+   grants and expire on their own, and the authentication path stops writing to
+   the database - except while Redis cannot be reached. The entries written then
+   are only removed by the cleanup command, so keep its cron job.
 
 .. note:: The AuthCache only works for user authentication, not for
    authentication with serials.

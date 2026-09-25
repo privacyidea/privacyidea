@@ -114,6 +114,12 @@ list under 'All Nodes'.
 
    *Realm list of testnode*
 
+A node lists and manages the tokens of the users it serves: the tokens whose owner belongs to a resolver the node
+uses in a realm, and the tokens without an owner. The tokens of users that only other nodes serve are left out. A
+token whose owner belongs to a resolver that is in no realm at all, e.g. because the resolver was deleted, belongs to
+no node and is listed on every node, so that it can still be found and deleted. The token janitor finds such tokens
+as orphaned, see :ref:`cleanup_jobs`.
+
 You can delete or edit an existing realm or create a new realm.
 
 .. _create_realm:

@@ -32,6 +32,7 @@ from privacyidea.lib.token.query import (  # noqa: F401
     get_realms_of_token,
     token_exist,
     get_token_owner,
+    get_token_owner_without_lookup,
     is_token_owner,
     get_tokens_in_resolver,
     get_tokenclass_info,
@@ -105,6 +106,7 @@ from privacyidea.lib.token.importexport import (  # noqa: F401
     TokenExportResult,
     export_tokens,
     import_tokens,
+    update_token_from_export,
 )
 from privacyidea.lib.token.misc import (  # noqa: F401
     get_dynamic_policy_definitions,
@@ -135,6 +137,7 @@ __all__ = [
     "get_realms_of_token",
     "token_exist",
     "get_token_owner",
+    "get_token_owner_without_lookup",
     "is_token_owner",
     "get_tokens_in_resolver",
     "get_tokenclass_info",
@@ -196,6 +199,7 @@ __all__ = [
     "TokenExportResult",
     "export_tokens",
     "import_tokens",
+    "update_token_from_export",
     "get_dynamic_policy_definitions",
     "regenerate_enroll_url",
 ]

@@ -27,9 +27,10 @@ You need to handle this file with care!
 
 .. code-block:: bash
 
-    privacyidea-token-janitor find --action export --yaml my-tokens.yaml
+    privacyidea-token-janitor find --action export --yaml > my-tokens.yaml
 
-Check for error messages written to stderr!
+The tokens are written to stdout, error messages to stderr. Check for error messages!
+Do not add ``--b32``, the update command expects the OTP keys in hex.
 
 Updating tokens
 ~~~~~~~~~~~~~~~
@@ -37,11 +38,15 @@ Updating tokens
 You can then turn to the system with the new security module or encryption key.
 Note, that the new privacyIDEA system actually has to contain the tokens!
 
-Use the update command to to store the secret OTP keys with the new encryption mechanism::
+Use the :ref:`update command <token_janitor_update>` to store the secret OTP keys with the new encryption
+mechanism::
 
-    privacyidea-token-janitor updatetokens --yaml my-tokens.yaml
+    privacyidea-token-janitor update my-tokens.yaml
 
 Check for error messages written to stderr!
+
+The update keeps the OTP counter, the fail counter and the token kind of each token, so OTP values
+that were already used do not become valid again.
 
 What can possibly go wrong
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

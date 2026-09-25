@@ -72,70 +72,28 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
             ptask_id1 = data['result']['value']
 
         # some invalid tasks
-        invalid_task_dicts = [
-            # invalid ordering
-            {
-                'name': 'some other task',
-                'active': False,
-                'nodes': 'a, b',
-                'interval': '0 8 * * *',
-                'taskmodule': 'UnitTest',
-                'ordering': '-3',
-                'options': '{"something": "123", "else": true}',
-            },
-            # no nodes
-            {
-                'name': 'some other task',
-                'active': False,
-                'interval': '0 8 * * *',
-                'taskmodule': 'UnitTest',
-                'options': '{"something": "123", "else": true}',
-            },
-            # empty nodes
-            {
-                'name': 'some other task',
-                'active': False,
-                'interval': '0 8 * * *',
-                'nodes': '    ',
-                'taskmodule': 'UnitTest',
-                'options': '{"something": "123", "else": true}',
-            },
-            # unknown taskmodule
-            {
-                'name': 'some other task',
-                'nodes': 'pinode1, pinode2',
-                'active': False,
-                'interval': '0 8 * * *',
-                'taskmodule': 'Unknown',
-                'options': '{"something": "123"}',
-            },
-            # invalid interval
-            {
-                'name': 'some other task',
-                'nodes': 'pinode1, pinode2',
-                'active': False,
-                'interval': 'every day',
-                'taskmodule': 'UnitTest',
-                'options': '{"something": "123"}',
-            },
-            # invalid options
-            {
-                'name': 'some task',
-                'nodes': 'pinode1, pinode2',
-                'active': False,
-                'interval': '0 8 * * *',
-                'taskmodule': 'UnitTest',
-                'options': '[1, 2]',
-            }
+        # Each invalid task carries every other parameter it needs, so that it is refused for its own reason
+        valid_task = {'name': 'some other task', 'active': False, 'nodes': 'pinode1, pinode2',
+                      'interval': '0 8 * * *', 'taskmodule': 'UnitTest', 'ordering': '0',
+                      'options': '{"something": "123"}'}
+        no_nodes = {key: value for key, value in valid_task.items() if key != 'nodes'}
+        invalid_tasks = [
+            ({**valid_task, 'ordering': '-3'}, "Invalid ordering: -3"),
+            (no_nodes, "nodes"),
+            ({**valid_task, 'nodes': '    '}, "nodes: expected at least one node"),
+            ({**valid_task, 'taskmodule': 'Unknown'}, "Unknown task module: 'Unknown'"),
+            ({**valid_task, 'interval': 'every day'}, "Invalid interval"),
+            ({**valid_task, 'options': '[1, 2]'}, "options: expected dictionary, got [1, 2]"),
         ]
         # all result in ERR905
         with self.mock_task_module():
-            for invalid_task_dict in invalid_task_dicts:
+            for invalid_task_dict, expected_message in invalid_tasks:
                 status_code, data = self.simulate_request('/periodictask/', method='POST',
                                                           data=invalid_task_dict)
                 self.assertEqual(status_code, 400)
                 self.assertFalse(data['result']['status'])
                 self.assertIn('ERR905', data['result']['error']['message'])
+                self.assertIn(expected_message, data['result']['error']['message'])
 
         # create another task
         with self.mock_task_module():

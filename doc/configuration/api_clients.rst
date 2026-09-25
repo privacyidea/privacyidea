@@ -213,4 +213,4 @@ device cookies immediately, and comes in two forms:
 Remembered devices are also removed automatically when they expire, when the user or the
 client is deleted, or on theft detection. Expired rows are reclaimed by a
 periodic cleanup (``pi-manage config remembered_device cleanup``), shipped as a daily
-job in the packaged crontab.
+job in the Ubuntu packages and the Docker image, see :ref:`cleanup_jobs`.

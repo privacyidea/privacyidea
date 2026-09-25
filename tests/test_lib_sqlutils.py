@@ -7,7 +7,7 @@ from mock import MagicMock
 import warnings
 from sqlalchemy.testing import AssertsCompiledSQL
 from privacyidea.lib.sqlutils import DeleteLimit, delete_matching_rows
-from privacyidea.models import Audit as LogEntry
+from privacyidea.models import Audit as LogEntry, RememberedDevice
 from .base import MyTestCase
 
 
@@ -59,6 +59,18 @@ class SQLUtilsCompilationTestCase(MyTestCase, AssertsCompiledSQL):
                                 "DELETE FROM pidea_audit WHERE pidea_audit.id < %s LIMIT 1234",
                                 checkpositional=(1000,),
                                 dialect='mysql')
+
+    def test_02b_compile_delete_limit_on_a_primary_key_not_named_id(self):
+        now = datetime.now()
+        stmt = DeleteLimit(RememberedDevice.__table__, RememberedDevice.expires_at < now, 10)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', category=BytesWarning)
+            self.assert_compile(stmt,
+                                "DELETE FROM remembered_devices WHERE remembered_devices.series_id IN "
+                                "(SELECT remembered_devices.series_id FROM remembered_devices WHERE "
+                                "remembered_devices.expires_at < :expires_at_1 LIMIT :param_1)",
+                                checkparams={"expires_at_1": now, "param_1": 10},
+                                dialect='default')
 
     def test_03_delete(self):
         session = MagicMock()

@@ -374,8 +374,8 @@ information shown on the :ref:`dashboard`.
 pre-aggregated timing and delivery metrics into the ``metric_aggregate`` table,
 which back the *Resolver Timing* and *Notification Delivery* dashboard panels.
 Set this to ``True`` to disable recording entirely; the panels then show no
-data and the table stays empty. Reads remain available and the
-``MetricsCleanup`` task (see :ref:`taskmodule_metricscleanup`) keeps working.
+data and the table stays empty. Reads remain available and
+``pi-manage config metrics cleanup`` (see :ref:`pimanage_metrics`) keeps working.
 
 ``PI_CERT_CHECK_CACHE_SECONDS`` (default ``3600``) sets how long the results of
 the certificate-health checks are cached. The cache is also invalidated
@@ -778,9 +778,10 @@ caller that cannot name a window.
 
 Two consequences worth knowing:
 
-* The ``pi-manage config authcache cleanup`` command has nothing to do, and says
-  so instead of reporting that it deleted no rows. The cronjob that command
-  usually needs is no longer necessary.
+* The ``pi-manage config authcache cleanup`` command only has the entries left
+  to remove that were written to the database while Redis could not be reached:
+  once Redis answers again, nothing reads or deletes them. Keep its cron job
+  (see :ref:`cleanup_jobs`) for those.
 * The database-backed cache never bounded how many entries a user accumulated,
   and every lookup verifies the presented password against each of them with
   the configured key derivation function - so the cache got slower the more it

@@ -49,13 +49,18 @@ Starting with version 2.17 the script ``privacyidea-pip-update`` performs the
 update of the python virtualenv and the DB schema.
 
 Just enter your python virtualenv (you already did so, when running the
-backup) and run the command:
+backup) and run the command::
 
    privacyidea-pip-update
 
+The script refuses to run outside of an activated virtual environment. It
+upgrades the ``privacyidea`` package and its pinned dependencies and then runs
+``privacyidea-schema-upgrade``.
+
 The following parameters are allowed:
 
-``-f`` or ``--force`` skips the safety question, if you really want to update.
+``-f`` or ``--force`` skips the confirmation question. The schema update still
+runs, unless you also pass ``-n``.
 
 ``-s`` or ``--skipstamp`` skips the version stamping during schema update.
 
@@ -79,12 +84,15 @@ Usually you will need to upgrade/migrate the database:
    privacyidea-schema-upgrade
 
 .. note::
-    .. versionchanged:: v3.12 The location of the migration directory has changed and it is usually
-        automatically detected.
-        Therefore the migration directory argument is not necessary anymore (it can be passed as a
-        parameter with ``-d /opt/privacyidea/lib/python3.X/site-packages/privacyidea/migrations``.
-        On previous privacyIDEA versions, the call would be
-        ``privacyidea-schema-upgrade /opt/privacyidea/lib/privacyidea/migrations``
+    .. versionchanged:: v3.12 The migration directory is detected automatically.
+
+    If the migration directory is not found, e.g. in an editable installation,
+    pass it with ``-d``::
+
+        privacyidea-schema-upgrade -d /opt/privacyidea/lib/python3.X/site-packages/privacyidea/migrations
+
+    ``privacyidea-schema-upgrade`` does not accept the directory without ``-d``.
+    ``-s`` skips stamping a database that has no version stamp yet.
 
 Now you need to restart your webserver for the new code to take effect.
 

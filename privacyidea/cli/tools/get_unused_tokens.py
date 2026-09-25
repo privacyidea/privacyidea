@@ -117,6 +117,11 @@ def mark(age, description=None, tokeninfo=None):
 
     AGE can be a value like 10h, 7d or 2y.
     """
+    if tokeninfo:
+        # Checked before any token is touched. The value is everything after the first "=".
+        key, separator, value = tokeninfo.partition("=")
+        if not separator or not key:
+            raise click.BadParameter("expected key=value", param_hint="'-t' / '--tokeninfo'")
     tlist = _get_tokenlist(age)
     for token_obj in tlist:
         if description:
@@ -124,7 +129,6 @@ def mark(age, description=None, tokeninfo=None):
             token_obj.set_description(description)
             token_obj.save()
         if tokeninfo:
-            key, value = tokeninfo.split("=")
             click.echo(f"Setting tokeninfo for token {token_obj.token.serial!s}: {key!s}={value!s}")
             try:
                 token_obj.add_tokeninfo(key, value)

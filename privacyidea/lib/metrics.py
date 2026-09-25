@@ -26,9 +26,10 @@ import logging
 import time
 import traceback
 
-from sqlalchemy import case, select, delete, update
+from sqlalchemy import case, func, select, delete, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.sql import ColumnElement
 
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.framework import get_app_config_value, get_request_local_store, is_request_context
@@ -44,7 +45,7 @@ def _metrics_disabled() -> bool:
     """Operator kill switch. Set ``PI_NO_INTERNAL_METRICS = True`` in pi.cfg to
     short-circuit every ``observe`` / ``inc`` call.
 
-    Reads stay open (the panels just show no data). The cleanup task still works.
+    Reads stay open (the panels just show no data). The cleanup still works.
     """
     return is_true(get_app_config_value("PI_NO_INTERNAL_METRICS", False))
 
@@ -463,10 +464,24 @@ def track_resolver_op(op_name: str):
     return decorator
 
 
+def _older_than_condition(older_than_seconds: int) -> ColumnElement[bool]:
+    cutoff = _utc_now() - datetime.timedelta(seconds=older_than_seconds)
+    return MetricAggregate.window_start < cutoff
+
+
+def count_old_metrics(older_than_seconds: int = RETENTION_SECONDS) -> int:
+    """Count the metric rows :func:`cleanup_old_metrics` would delete."""
+    stmt = select(func.count()).select_from(MetricAggregate).where(_older_than_condition(older_than_seconds))
+    session = _metric_session()
+    try:
+        return session.execute(stmt).scalar_one()
+    finally:
+        session.close()
+
+
 def cleanup_old_metrics(older_than_seconds: int = RETENTION_SECONDS) -> int:
     """Delete metric rows older than ``older_than_seconds``. Returns row count."""
-    cutoff = _utc_now() - datetime.timedelta(seconds=older_than_seconds)
-    stmt = delete(MetricAggregate).where(MetricAggregate.window_start < cutoff)
+    stmt = delete(MetricAggregate).where(_older_than_condition(older_than_seconds))
     # Run on the dedicated metric session so the cleanup commit can't promote
     # unrelated pending writes in the caller's ``db.session``.
     session = _metric_session()

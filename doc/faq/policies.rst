@@ -7,10 +7,15 @@ How to disable policies?
 I create an evil admin policy and locked myself out. How can I disable a
 policy?
 
-You can use :ref:`the pi-manage command line tool <pimanage>` to list, enable and disable
-policies. See::
+You can use :ref:`the pi-manage command line tool <pimanage_policy>` to list,
+enable, disable and delete policies, e.g.::
 
-   pi-manage config policy -h
+   pi-manage config policy list
+   pi-manage config policy disable <name>
+
+A :ref:`conditional access <conditional_access>` policy is disabled with
+``pi-manage conditionalaccess disable-policy <name>``, see
+:ref:`pimanage_conditional_access`.
 
 
 How do policies work anyway?

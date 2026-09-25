@@ -18,9 +18,11 @@ contents (this is done automatically by the Ubuntu package)::
 	 */5 * * * *	privacyidea	privacyidea-cron run_scheduled -c
 
 This tells the system cron daemon to invoke the ``privacyidea-cron`` script every five minutes. At
-each invocation, the ``privacyidea-cron`` script determines which tasks should be executed and
-execute the scheduled tasks. The ``-c`` option tells the script to be quiet and only print to stderr
-in case of an error (see :ref:`privacyidea_cron`).
+each invocation, the ``privacyidea-cron`` script determines which tasks are due and executes
+them. The ``-c`` option tells the script to be quiet and only print to stderr in case of an
+error (see :ref:`privacyidea_cron`).
+
+The Ubuntu package's file also holds the jobs that clean up the database, see :ref:`cleanup_jobs`.
 
 Periodic tasks can be managed in the WebUI by navigating to *Config->Periodic Tasks*:
 
@@ -30,20 +32,29 @@ Periodic tasks can be managed in the WebUI by navigating to *Config->Periodic Ta
 
 Every periodic task has the following attributes:
 
-**description**
-	A human-readable, unique identifier
+**name**
+	A human-readable, unique name of the task. ``privacyidea-cron run_manually -t``
+	expects this name.
 
 **active**
 	A boolean flag determining whether the periodic task should be run or not.
 
-**order**
+**ordering**
 	A number (at least zero) that can be used to rearrange the order of periodic tasks. This is
 	used by ``privacyidea-cron`` to determine the running order of tasks if multiple
 	periodic tasks are scheduled to be run. Tasks with a lower number are run first.
 
+**retry if failed**
+	If set (the default), a failed run is not recorded, so ``privacyidea-cron`` executes the
+	task again at its next invocation, until the task succeeds. With the crontab entry above,
+	a task that keeps failing is retried, and reports its error, every five minutes.
+	If not set, a failed run counts as a run, and the task is next executed at its next
+	scheduled time.
+
 **interval**
 	The periodicity of the task. This uses crontab notation, e.g. ``*/30 * * * *`` runs
-	the task every 30 minutes.
+	the task every 30 minutes. The expression is evaluated in the local time zone of the
+	system that runs ``privacyidea-cron``.
 
 	Keep in mind that the entry in the system crontab determines the minimal resolution
 	of periodic tasks: If you specify a periodic task that should be run every two minutes,
@@ -54,8 +65,10 @@ Every periodic task has the following attributes:
 	The names of the privacyIDEA nodes on which the periodic task should be executed.
 	This is useful in a redundant master-master setup, because database-related tasks should then
 	only be run on *one* of the nodes (because the replication will take care of
-	propagating the database changes to the other node). The name of the local node
-	as well as the names of remote nodes are configured in :ref:`cfgfile`.
+	propagating the database changes to the other node). A node's name is the value of
+	``PI_NODE`` in its :ref:`cfgfile`. Every node adds its name to the database when it
+	starts, so that it can be selected here. ``privacyidea-cron`` only runs the tasks of the
+	node it runs on, see :ref:`privacyidea_cron`.
 
 **taskmodule**
 	The task module determines the actual activity of the task. privacyIDEA comes
@@ -78,7 +91,6 @@ privacyIDEA comes with the following task modules:
 
    simplestats
    eventcounter
-   metricscleanup
 
 
 .. _privacyidea_cron:
@@ -86,11 +98,36 @@ privacyIDEA comes with the following task modules:
 The ``privacyidea-cron`` script
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``privacyidea-cron`` script is used to execute periodic tasks defined in the Web UI. The
-``run_scheduled`` command collects all active jobs that are scheduled to run on the current node
-and executes them. The order is determined by their ``ordering`` values (tasks with low values
-are executed first). The ``-c`` option causes the script to is useful if the script is executed via the system
-crontab, as it causes the script to only print to stderr in case of errors.
+The ``privacyidea-cron`` script executes the periodic tasks defined in the Web UI. It reads
+the configuration file ``/etc/privacyidea/pi.cfg``, or the file given in the environment
+variable ``PRIVACYIDEA_CONFIGFILE``.
 
-The ``list`` command can be used to get an overview of defined jobs, and the ``run_manually``
-command can be used to manually invoke tasks even though they are not scheduled to be run.
+The script works with the name of the node it runs on: ``PI_NODE`` from the configuration
+file, or ``PI_AUDIT_SERVERNAME`` if ``PI_NODE`` is not set, or ``localnode`` if neither is
+set. In a setup with several nodes, give every node its own ``PI_NODE``: nodes that end up
+with the same name all run the tasks assigned to that name. The option ``-n`` overrides the
+node name.
+
+``privacyidea-cron run_scheduled [-c] [-d] [-n NODE]``
+   Executes all active tasks that are assigned to the node and are due. Tasks with a lower
+   ``ordering`` value are executed first. The command exits with status 1 if one of the
+   tasks failed.
+
+   ``-c``, ``--cron``
+      Cron mode: do not write to stdout, only write errors to stderr. Use it in the
+      crontab, so that cron only reports errors.
+
+   ``-d``, ``--dryrun``
+      Only list the tasks that are due, do not execute them.
+
+   ``-n NODE``, ``--node NODE``
+      Use ``NODE`` as the node name.
+
+``privacyidea-cron list``
+   Lists all periodic tasks with their state, interval, task module, nodes and options.
+
+``privacyidea-cron run_manually -t NAME [-n NODE]``
+   Executes the task with the name ``NAME`` at once. The command does not check whether the
+   task is active, due, or assigned to the node. A successful run is recorded as the last
+   run of the task on the node, and the next scheduled run is calculated from it. The
+   command exits with a non-zero status if the task fails.

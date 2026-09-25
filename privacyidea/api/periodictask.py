@@ -205,7 +205,7 @@ def set_periodic_task_api():
         raise ParameterError(_("nodes: expected at least one node"))
     taskmodule = get_required(param, "taskmodule")
     if taskmodule not in get_available_taskmodules():
-        raise ParameterError(_("Unknown task module: {!r}").format(taskmodule))
+        raise ParameterError(_("Unknown task module: {0!r}").format(taskmodule))
     ordering = int(get_required(param, "ordering"))
     options = get_optional(param, "options")
     if options is None:
@@ -213,7 +213,7 @@ def set_periodic_task_api():
     elif not isinstance(options, dict):
         options = json.loads(options)
         if not isinstance(options, dict):
-            raise ParameterError(_("options: expected dictionary, got {!r}").format(options))
+            raise ParameterError(_("options: expected dictionary, got {0!r}").format(options))
     result = set_periodic_task(name, interval, node_list, taskmodule, ordering, options, active, ptask_id,
                                retry_if_failed)
     g.audit_object.log({"success": True, "info": result})
