@@ -2865,6 +2865,18 @@ class ContainerGeneratorAndOrphanTestCase(MyTestCase):
         self.assertListEqual(serials, visited_serials)
         self.assertListEqual([], get_all_containers(description="generator test")["containers"])
 
+    def test_01b_generator_with_a_page_size_below_one(self):
+        # A page size below one is replaced by ten, so the containers are still found, all in one page
+        serials = [init_container({"type": "generic", "description": "page size test"})["container_serial"]
+                   for _ in range(3)]
+
+        pages = list(get_container_generator(pagesize=0, description="page size test"))
+
+        self.assertEqual(1, len(pages))
+        self.assertListEqual(serials, [container.serial for container in pages[0]])
+        for serial in serials:
+            find_container_by_serial(serial).delete()
+
     def test_02_generator_yields_a_container_matched_by_several_rows_once(self):
         self.setUp_user_realms()
         self.setUp_user_realm2()
