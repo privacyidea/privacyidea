@@ -82,6 +82,12 @@ others. As it contains the password of the service account, only root and the
 
    install -o root -g pi-authkeys -m 0750 privacyidea-authorizedkeys /usr/local/sbin/
 
+The script writes the keys of the user to stdout, one per line, and nothing if
+the user has no key. It writes its error messages to stderr and then exits with
+a non-zero status, so that ``sshd`` logs them instead of reading them as keys.
+A token whose key fails its integrity check is left out, the keys of the other
+tokens are still returned, see :ref:`sshkey_token`.
+
 The privacyideaadm repository contains an alternative Python script
 ``privacyidea-authorizedkey``. It expects a configuration file
 */etc/privacyidea/authorizedkeyscommand* which looks like this::
