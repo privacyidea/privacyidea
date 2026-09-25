@@ -88,6 +88,9 @@
               and hyphens are allowed.</mat-error
             >
           }
+          @if (privacyideaForm.identifier().errors().some(e => e.kind === 'reservedName')) {
+            <mat-error i18n="@@common.cannotBeNamed">Cannot be named "{{ privacyideaForm.identifier().value() }}".</mat-error>
+          }
           <mat-hint i18n="@@piServer.uniqueIdentifying"
             >This is the unique identifying name of the privacyIDEA server definition.</mat-hint
           >

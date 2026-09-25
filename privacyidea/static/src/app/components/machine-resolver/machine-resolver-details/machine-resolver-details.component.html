@@ -34,120 +34,117 @@
     </div>
   </div>
 } @else {
-<div
-  aria-label="Machine Resolver Editor"
-  class="machine-resolver-details-layout"
-  i18n-aria-label="@@machine.machineResolverEditor">
   <div
-    appScrollToTop
-    class="machine-resolver-details-container">
-    <h3 class="margin-8 flex-row flex-nowrap ali-center">
-      @if (!isEditMode()) {
-        <span i18n="@@common.createMachine">Create Machine Resolver</span>
-      } @else {
-        <span i18n="@@machine.editMachineResolver">Edit Machine Resolver</span>
-        <span>:&nbsp;</span>
-        <span class="blue-base">{{ currentMachineResolver().resolvername }}</span>
-        <app-copy-button [copyText]="currentMachineResolver().resolvername"></app-copy-button>
-      }
-    </h3>
+    aria-label="Machine Resolver Editor"
+    class="machine-resolver-details-layout"
+    i18n-aria-label="@@machine.machineResolverEditor">
+    <div
+      appScrollToTop
+      class="machine-resolver-details-container">
+      <h3 class="margin-8 flex-row flex-nowrap ali-center">
+        @if (!isEditMode()) {
+          <span i18n="@@common.createMachine">Create Machine Resolver</span>
+        } @else {
+          <span i18n="@@machine.editMachineResolver">Edit Machine Resolver</span>
+          <span>:&nbsp;</span>
+          <span class="blue-base">{{ currentMachineResolver().resolvername }}</span>
+          <app-copy-button [copyText]="currentMachineResolver().resolvername"></app-copy-button>
+        }
+      </h3>
 
-    <div class="machine-resolver-details-body">
-      @if (canMakeChanges() || canDeleteMachineResolver()) {
-        <div class="machine-resolver-details-controls">
-          @if (canDeleteMachineResolver()) {
-            <button
-              (click)="deleteMachineResolver()"
-              class="action-button-delete-secondary button-width-s"
-              mat-stroked-button
-              type="button">
-              <mat-icon>delete</mat-icon>
-              <span i18n="@@common.delete">Delete</span>
-            </button>
-          }
-          @if (canMakeChanges()) {
-            <button
-              (click)="onCancel()"
-              class="action-button-secondary button-width-s"
-              mat-stroked-button
-              type="button">
-              <span i18n="@@common.cancel">Cancel</span>
-            </button>
-            <button
-              (click)="saveMachineResolver()"
-              [disabled]="!canSaveMachineResolver() || !isEdited()"
-              class="action-button-primary button-width-s"
-              mat-stroked-button
-              type="button">
-              <mat-icon>save</mat-icon>
-              <span i18n="@@common.save">Save</span>
-            </button>
-          }
-        </div>
-      }
-
-      @if (!isEditMode()) {
-        <div class="flex-row">
-          <mat-form-field
-            class="input-width-l"
-            subscriptSizing="dynamic">
-            <mat-label i18n="@@machine.machineResolverName">Machine Resolver Name</mat-label>
-            <app-clearable-input
-              (clearButtonClick)="onResolvernameChange('')"
-              [showClearButton]="!isEditMode() && !!currentMachineResolver().resolvername">
-              <input
-                matInput
-                [disabled]="isEditMode()"
-                [value]="currentMachineResolver().resolvername"
-                (input)="onResolvernameChange($any($event.target).value)" />
-            </app-clearable-input>
-            @if (nameHasPatternError()) {
-              <mat-error i18n="@@machine.machineResolverNameContains"
-                >Machine resolver name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots,
-                underscores and hyphens are allowed.</mat-error
-              >
+      <div class="machine-resolver-details-body">
+        @if (canMakeChanges() || canDeleteMachineResolver()) {
+          <div class="machine-resolver-details-controls">
+            @if (canDeleteMachineResolver()) {
+              <button
+                (click)="deleteMachineResolver()"
+                class="action-button-delete-secondary button-width-s"
+                mat-stroked-button
+                type="button">
+                <mat-icon>delete</mat-icon>
+                <span i18n="@@common.delete">Delete</span>
+              </button>
             }
-          </mat-form-field>
+            @if (canMakeChanges()) {
+              <button
+                (click)="onCancel()"
+                class="action-button-secondary button-width-s"
+                mat-stroked-button
+                type="button">
+                <span i18n="@@common.cancel">Cancel</span>
+              </button>
+              <button
+                (click)="saveMachineResolver()"
+                [disabled]="!canSaveMachineResolver() || !isEdited()"
+                class="action-button-primary button-width-s"
+                mat-stroked-button
+                type="button">
+                <mat-icon>save</mat-icon>
+                <span i18n="@@common.save">Save</span>
+              </button>
+            }
+          </div>
+        }
 
-          <mat-form-field
-            class="input-width-l machine-resolver-type-select"
-            subscriptSizing="dynamic">
-            <mat-label i18n="@@common.type">Type</mat-label>
-            <mat-select
-              [value]="currentMachineResolver().type"
-              [disabled]="isEditMode()"
-              (selectionChange)="onMachineResolverTypeChange($event.value)">
-              @for (machineResolverType of machineResolverTypes; track machineResolverType) {
-                <mat-option [value]="machineResolverType">{{ machineResolverType }}</mat-option>
+        @if (!isEditMode()) {
+          <div class="flex-row">
+            <mat-form-field class="input-width-l">
+              <mat-label i18n="@@machine.machineResolverName">Machine Resolver Name</mat-label>
+              <app-clearable-input
+                (clearButtonClick)="onResolvernameChange('')"
+                [showClearButton]="!!currentMachineResolver().resolvername">
+                <input
+                  matInput
+                  [appErrorState]="nameHasPatternError() || nameIsReserved()"
+                  [value]="currentMachineResolver().resolvername"
+                  (input)="onResolvernameChange($any($event.target).value)" />
+              </app-clearable-input>
+              @if (nameHasPatternError()) {
+                <mat-error i18n="@@machine.machineResolverNameContains"
+                  >Only <strong>letters, digits and . _ -</strong> are allowed.</mat-error
+                >
               }
-            </mat-select>
-          </mat-form-field>
-        </div>
-      }
+              @if (nameIsReserved()) {
+                <mat-error i18n="@@common.cannotBeNamed"
+                  >Cannot be named "{{ currentMachineResolver().resolvername }}".</mat-error
+                >
+              }
+            </mat-form-field>
 
-      @switch (currentMachineResolver().type) {
-        @case ("hosts") {
-          <app-machine-resolver-hosts-tab
-            class="input-width-xl"
-            [isCreateMode]="!isEditMode()"
-            [canEdit]="canEditTab()"
-            [machineResolverData]="currentMachineResolver().data"
-            (newData)="onNewData($event)"
-            (newValidator)="onNewValidator($event)" />
+            <mat-form-field class="input-width-l machine-resolver-type-select">
+              <mat-label i18n="@@common.type">Type</mat-label>
+              <mat-select
+                [value]="currentMachineResolver().type"
+                (selectionChange)="onMachineResolverTypeChange($event.value)">
+                @for (machineResolverType of machineResolverTypes; track machineResolverType) {
+                  <mat-option [value]="machineResolverType">{{ machineResolverType }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
         }
-        @case ("ldap") {
-          <app-machine-resolver-ldap-tab
-            [isCreateMode]="!isEditMode()"
-            [canEdit]="canEditTab()"
-            [machineResolverData]="currentMachineResolver().data"
-            (newData)="onNewData($event)"
-            (newValidator)="onNewValidator($event)" />
+
+        @switch (currentMachineResolver().type) {
+          @case ("hosts") {
+            <app-machine-resolver-hosts-tab
+              class="input-width-xl"
+              [canEdit]="canMakeChanges()"
+              [machineResolverData]="currentMachineResolver().data"
+              (newData)="onNewData($event)"
+              (newValidator)="onNewValidator($event)" />
+          }
+          @case ("ldap") {
+            <app-machine-resolver-ldap-tab
+              [canEdit]="canMakeChanges()"
+              [machineResolverData]="currentMachineResolver().data"
+              (newData)="onNewData($event)"
+              (newValidator)="onNewValidator($event)" />
+          }
+          @default {
+            <p i18n="@@machine.unknownMachine">Unknown machine resolver type: {{ currentMachineResolver().type }}</p>
+          }
         }
-        @default {
-          <p i18n="@@machine.unknownMachine">Unknown machine resolver type: {{ currentMachineResolver().type }}</p>
-        }
-      }
+      </div>
     </div>
   </div>
-</div>
 }

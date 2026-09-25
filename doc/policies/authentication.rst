@@ -1164,6 +1164,57 @@ It is advised to use a condition with this policy, for example on the user-agent
     Triggering both types at the same time will probably result in a failed authentication because challenges are
     currently encoded differently for each token of these token types.
 
+.. _policy_passkey_authn_allowed_authenticator_device_types:
+
+passkey_allowed_authenticator_device_types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+Only allow authentication with passkeys that report one of the given device types, as a space-separated list of
+``single_device`` and ``multi_device``. See :ref:`passkey_device_type` for what the two types mean. If several
+policies match, the values of all of them are allowed. Any other value matches no passkey, so every passkey
+authentication fails. If the policy is not set, both types are accepted.
+
+The device type is taken from each authentication response, not from the value stored at enrollment. The policy
+therefore also applies to passkeys that were enrolled before it was set: their users can no longer log in with
+them. To find the passkeys that a policy would refuse, list them with
+``GET /token/?type=passkey&infokey=device_type&infovalue=multi_device`` (or ``single_device``).
+
+This policy is independent of the
+:ref:`enrollment policy of the same name <policy_passkey_enroll_allowed_authenticator_device_types>`. For example,
+you can allow the enrollment of both types but only allow ``single_device`` passkeys for a specific realm.
+
+.. warning:: The device type is reported by the authenticator and is not backed by a verified attestation. The
+    policy keeps out honest synced passkeys, but not an authenticator that reports a wrong device type. See
+    :ref:`passkey_device_type`.
+
+.. versionadded:: 3.14
+
+.. _policy_passkey_enforce_user_handle:
+
+passkey_enforce_user_handle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+When a passkey is enrolled, privacyIDEA passes the FIDO2 user ID of the user to the authenticator. The same ID is
+used for all passkeys of a user. The authenticator stores it with the credential and returns it as ``userHandle``
+on every authentication. By default, privacyIDEA ignores the ``userHandle`` and identifies the user only by the
+credential ID and the user the passkey token is assigned to. If a passkey token is unassigned and then assigned to
+a different user, whoever holds the passkey can log in as that user.
+
+If this policy is set, the ``userHandle`` must match the FIDO2 user ID recorded for the user the passkey token is
+assigned to, otherwise the authentication fails. This detects a passkey that was reassigned to a different user.
+
+.. note:: A passkey can no longer authenticate if no FIDO2 user ID is recorded for its user.
+
+.. note:: Unlike the device type, the ``userHandle`` is not covered by the signature of the authenticator. A
+    client that deliberately sends a forged value is not detected. The policy protects against a passkey being
+    reassigned by mistake, not against a manipulated client.
+
+.. versionadded:: 3.14
+
 .. _policy_hide_specific_error_message:
 
 hide_specific_error_message
