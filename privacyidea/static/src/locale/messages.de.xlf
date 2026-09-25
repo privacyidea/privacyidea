@@ -508,7 +508,7 @@
       </trans-unit>
       <trans-unit id="audit.privacyideaServer" datatype="html">
         <source>PrivacyIDEA Server</source>
-        <target>PrivacyIDEA-Server</target>
+        <target>privacyIDEA-Server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
           <context context-type="linenumber">116</context>
@@ -2076,7 +2076,7 @@
       </trans-unit>
       <trans-unit id="systemConfig.increaseFailcounter" datatype="html">
         <source>Increase the failcounter <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> if the wrong PIN was entered</source>
-        <target>Fehlerzähler erhöhen <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> wenn die falsche PIN eingegeben wurde</target>
+        <target>Fehlerzähler erhöhen, <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> wenn die falsche PIN eingegeben wurde</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.html</context>
           <context context-type="linenumber">69</context>
@@ -5432,7 +5432,7 @@
       </trans-unit>
       <trans-unit id="caConnector.numberDaysNew" datatype="html">
         <source>Number of days a new CRL should be generated before the current CRL expires.</source>
-        <target>Anzahl der Tage, die eine neue CRL vor Ablauf der aktuellen CRL generiert werden soll.</target>
+        <target>Anzahl der Tage vor Ablauf der aktuellen CRL, an denen eine neue CRL generiert werden soll.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/new-ca-connector/new-ca-connector.component.html</context>
           <context context-type="linenumber">291</context>
@@ -6672,7 +6672,7 @@
       </trans-unit>
       <trans-unit id="nav.openSourceProject" datatype="html">
         <source>An open-source project <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/&quot; target=&quot;_blank&quot; &gt;"/>maintained by NetKnights <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
-        <target>Ein Open-Source-Projekt <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/&quot; target=&quot;_blank&quot; &gt;"/>entwickelt von NetKnights <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+        <target>Ein Open-Source-Projekt <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/&quot; target=&quot;_blank&quot; &gt;"/>gepflegt von NetKnights <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">111</context>
@@ -7076,7 +7076,7 @@
       </trans-unit>
       <trans-unit id="nav.privacyideaServers" datatype="html">
         <source>PrivacyIDEA Servers</source>
-        <target>PrivacyIDEA-Server</target>
+        <target>privacyIDEA-Server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">874</context>
@@ -7084,7 +7084,7 @@
       </trans-unit>
       <trans-unit id="nav.privacyideaServer" datatype="html">
         <source>PrivacyIDEA Server Details</source>
-        <target>PrivacyIDEA-Server-Details</target>
+        <target>privacyIDEA-Server-Details</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
           <context context-type="linenumber">885</context>
@@ -7092,7 +7092,7 @@
       </trans-unit>
       <trans-unit id="common.createPrivacyidea" datatype="html">
         <source>Create PrivacyIDEA Server</source>
-        <target>PrivacyIDEA-Server erstellen</target>
+        <target>privacyIDEA-Server erstellen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
           <context context-type="linenumber">59</context>
@@ -8155,7 +8155,7 @@
       </trans-unit>
       <trans-unit id="policy.clearUserAgents" datatype="html">
         <source>Clear User Agents</source>
-        <target>User-Agents löschen</target>
+        <target>User-Agent-Auswahl zurücksetzen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
           <context context-type="linenumber">124</context>
@@ -8163,7 +8163,7 @@
       </trans-unit>
       <trans-unit id="policy.noAgentsFound" datatype="html">
         <source>No agents found</source>
-        <target>Keine Agents gefunden</target>
+        <target>Keine User-Agents gefunden</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-environment-conditions/edit-environment-conditions.component.html</context>
           <context context-type="linenumber">149</context>
@@ -8203,7 +8203,7 @@
       </trans-unit>
       <trans-unit id="policy.clearUsers" datatype="html">
         <source>Clear users</source>
-        <target>Benutzer löschen</target>
+        <target>Benutzerauswahl zurücksetzen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-panels/edit-conditions-tab/edit-user-conditions/edit-user-conditions.component.html</context>
           <context context-type="linenumber">75</context>
@@ -8339,7 +8339,7 @@
       </trans-unit>
       <trans-unit id="common.exampleQueryType" datatype="html">
         <source>Example query: &apos;type: hotp serial: 123&apos;</source>
-        <target>Beispielabfrage: &apos;typ: hotp seriennummer: 123&apos;</target>
+        <target>Beispielabfrage: &apos;type: hotp serial: 123&apos;</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/container-add-token/container-add-token.component.html</context>
           <context context-type="linenumber">48</context>
@@ -8675,7 +8675,7 @@
       </trans-unit>
       <trans-unit id="token.assignTokenSelf" datatype="html">
         <source>Assign Token Self-Service</source>
-        <target>Token-Selbstbedienung zuweisen</target>
+        <target>Token zuweisen (Self-Service)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">22</context>
@@ -8867,7 +8867,7 @@
       </trans-unit>
       <trans-unit id="token.hotpTokensAttached" datatype="html">
         <source>HOTP tokens can be attached with offline to e.g. notebooks.</source>
-        <target>HOTP-Token können offline an z.B. Notebooks angehängt werden.</target>
+        <target>HOTP-Token können offline an z. B. Notebooks angehängt werden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications-offline/token-applications-offline.component.html</context>
           <context context-type="linenumber">25</context>
@@ -12973,7 +12973,7 @@
       </trans-unit>
       <trans-unit id="resolver.privacyideaAttribute" datatype="html">
         <source>PrivacyIDEA Attribute</source>
-        <target>PrivacyIDEA-Attribut</target>
+        <target>privacyIDEA-Attribut</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">191</context>
@@ -12981,7 +12981,7 @@
       </trans-unit>
       <trans-unit id="resolver.selectPrivacyidea" datatype="html">
         <source>Select PrivacyIDEA Attribute</source>
-        <target>PrivacyIDEA-Attribut auswählen</target>
+        <target>privacyIDEA-Attribut auswählen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
           <context context-type="linenumber">205</context>
@@ -20017,7 +20017,7 @@
       </trans-unit>
       <trans-unit id="valueLabelDamaged" datatype="html">
         <source>Damaged</source>
-        <target>beschädigt</target>
+        <target>Beschädigt</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">49</context>
@@ -20121,7 +20121,7 @@
       </trans-unit>
       <trans-unit id="valueLabelLost" datatype="html">
         <source>Lost</source>
-        <target>verloren</target>
+        <target>Verloren</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">61</context>
