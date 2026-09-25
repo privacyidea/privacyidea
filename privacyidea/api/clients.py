@@ -35,7 +35,7 @@ import logging
 from flask import Blueprint, request, g
 
 from .lib.utils import send_result
-from ..lib.error import ParameterError, PolicyError, ResourceNotFoundError
+from ..lib.error import ParameterError, ResourceNotFoundError
 from ..lib.params import get_optional, get_pagination_params, get_required
 from ..lib.log import log_with
 from ..lib.event import event
@@ -45,8 +45,8 @@ from ..lib.clients import (get_client, get_clients, create_client, update_client
                            rotate_client_key, delete_client, client_to_dict)
 from ..lib.remembered_device import (get_client_device, get_client_devices,
                                revoke_client_devices, revoke_devices, devices_to_dicts, user_identity)
+from ..lib.policies.helper import admin_granted_realms
 from ..lib.realm import get_realm_id
-from ..lib.user import User
 
 log = logging.getLogger(__name__)
 
@@ -62,15 +62,31 @@ def _allowed_realm_ids(action):
     otherwise see or revoke across realms. This computes the admin's allowed
     realms for the given action (mirroring the tokenlist scoping) so those paths
     can enforce the same restriction. An empty set means "no realms".
+
+    Those paths act on every device of a realm without looking at its user, so
+    only the policies that grant every user of their realms count: a policy for
+    some users or resolvers of a realm does not open all of that realm's devices.
+    Such an admin revokes the devices of their users by naming the user, which
+    ``check_base_action`` checks against the policy.
     """
-    from ..lib.policy import Match, SCOPE
-    if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
+    granted_realms = admin_granted_realms(action, whole_realms=True)
+    if granted_realms is None:
         return None
-    realm_ids = set()
-    for pol in Match.admin(g, action=action).policies():
-        if not pol.get("realm"):
-            return None
-        realm_ids.update(get_realm_id(name) for name in pol.get("realm"))
+    # An empty answer means the admin is restricted along a dimension a realm list cannot carry
+    # (a policy scoped by user or resolver). An empty set of realm ids matches no row, which is
+    # the refusal these paths express.
+    realm_ids = {get_realm_id(name) for name in granted_realms}
+    if None in realm_ids:
+        # The policy engine matches the realm field with exclusions ("!realmb") and regular
+        # expressions as well as plain names, and a plain name may also belong to a realm that has
+        # since been deleted. None of those resolve to a realm id, so they cannot be part of the
+        # filter and the boundary ends up narrower than the policy describes. Narrower is the safe
+        # direction, but an administrator whose revoke then reports "0 revoked" has no other way to
+        # find out why.
+        unresolved = sorted(name for name in granted_realms if get_realm_id(name) is None)
+        log.warning(f"The {action} policies grant realms that do not resolve to a realm: "
+                    f"{', '.join(unresolved)}. They are left out of the boundary, so this request "
+                    f"acts on fewer realms than the policies describe.")
     realm_ids.discard(None)
     return realm_ids
 
@@ -219,7 +235,12 @@ def revoke_remembered_devices_api():
     user = get_optional(request.all_data, "user")
     resolver = user_id = None
     if user:
-        identity = user_identity(User(login=user, realm=realm))
+        # request.User is the object check_base_action matched the policy against, and it carries the
+        # request's `resolver`. Building a second user from login and realm alone drops it and lets
+        # the realm's resolver priority pick a different one, so the policy would be checked for one
+        # resolver and the rows deleted in another - and a login present in more than one resolver of
+        # the realm would keep the devices held in the others.
+        identity = user_identity(request.User)
         if not identity:
             raise ParameterError(f"The user {user!r} does not resolve in realm {realm!r}.")
         resolver, user_id, realm_id = identity
@@ -321,7 +342,9 @@ def revoke_client_remembered_devices_api(client_id):
         # resolve there is nothing to target by login (its devices, if any, are
         # already unrecognisable and reaped by expiry / realm deletion). This
         # request carries the realm, so check_base_action already realm-scoped it.
-        identity = user_identity(User(login=user, realm=realm))
+        # As in revoke_remembered_devices_api: resolve the user the policy was checked against,
+        # rather than rebuilding one from a subset of the same parameters.
+        identity = user_identity(request.User)
         if not identity:
             raise ParameterError(f"The user {user!r} does not resolve in realm {realm!r}.")
         resolver, user_id, realm_id = identity
@@ -367,17 +390,17 @@ def revoke_client_remembered_device_api(client_id, device_id):
     :param device_id: path component, the public device id (never the cookie's
         secret series id).
     :status 200: ``result.value`` is the device id of the revoked remembered device.
-    :status 403: the acting admin may not revoke in the device's realm.
-    :status 404: no such device exists for this client.
+    :status 404: no such device exists for this client, or it belongs to a realm the acting admin
+        may not revoke in - the two are deliberately indistinguishable.
     """
-    # The request carries no realm, so check_base_action could not realm-scope it:
-    # enforce the admin's realm restriction against the device's own realm.
+    # The request carries no realm, so check_base_action could not realm-scope it: enforce the
+    # admin's realm restriction against the device's own realm. A device outside that restriction
+    # answers as an absent one, because an admin who can tell the two apart can probe device ids of
+    # realms they are not allowed to see.
     device = get_client_device(client_id, device_id)
-    if not device:
-        raise ResourceNotFoundError(f"The device {device_id!r} does not exist for this client.")
     allowed_realm_ids = _allowed_realm_ids(PolicyAction.REMEMBERED_DEVICE_REVOKE)
-    if allowed_realm_ids is not None and device.realm_id not in allowed_realm_ids:
-        raise PolicyError("You are not allowed to revoke remembered devices in this device's realm.")
+    if not device or (allowed_realm_ids is not None and device.realm_id not in allowed_realm_ids):
+        raise ResourceNotFoundError(f"The device {device_id!r} does not exist for this client.")
 
     # Delete the row already fetched above rather than re-querying it.
     device.delete()

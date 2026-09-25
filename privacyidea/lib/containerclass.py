@@ -709,17 +709,17 @@ class TokenContainerClass:
         """
         raise NotImplementedError("Registration is not implemented for this container type.")
 
-    def check_challenge_response(self, params: dict):
+    def check_challenge_response(self, params: dict) -> bool:
         """
         Checks if the response to a challenge is valid.
         """
-        return False
+        raise NotImplementedError("Challenge-response is not implemented for this container type.")
 
     def create_challenge(self, scope, validity_time=2):
         """
         Create a challenge for the container.
         """
-        return {}
+        raise NotImplementedError("Challenge-response is not implemented for this container type.")
 
     def validate_challenge(self, signature: bytes, public_key: EllipticCurvePublicKey, scope: str,
                            transaction_id: str = None, key: str = None, container: str = None, device_brand: str = None,

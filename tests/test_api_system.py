@@ -1019,6 +1019,25 @@ class APIConfigTestCase(MyApiTestCase):
             self.assertTrue(b"privacyIDEA configuration documentation" in
                             res.data)
 
+    def test_15a_documentation_hides_secret_app_config_values(self):
+        # The report renders every PI_* key of pi.cfg, and a deployment may keep a secret in one of
+        # them. A key whose name marks it as a secret is reported with its value replaced; a key
+        # holding a path keeps its value, which is what the report is read for.
+        self.app.config["PI_TESTHSM_MODULE_PASSWORD"] = "a-very-secret-value"
+        self.app.config["PI_TESTHSM_MODULE_PATH"] = "/opt/hsm/module.so"
+        try:
+            with self.app.test_request_context('/system/documentation',
+                                               method='GET',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res)
+                self.assertNotIn(b"a-very-secret-value", res.data)
+                self.assertIn(b"PI_TESTHSM_MODULE_PASSWORD", res.data)
+                self.assertIn(b"/opt/hsm/module.so", res.data)
+        finally:
+            del self.app.config["PI_TESTHSM_MODULE_PASSWORD"]
+            del self.app.config["PI_TESTHSM_MODULE_PATH"]
+
     def test_16_get_hsm(self):
         with self.app.test_request_context('/system/hsm',
                                            method='GET',

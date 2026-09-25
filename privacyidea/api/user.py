@@ -55,14 +55,18 @@ import logging
 from flask import g, Blueprint, request
 
 from privacyidea.api.auth import admin_required
-from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
+from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, realmadmin, check_custom_user_attributes,
+                                           check_admin_tokenlist, resolver_realm_access)
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.event import event
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
-from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all, get_user_from_param
+from privacyidea.lib.realm import get_realms, get_realms_of_resolver, split_realms
+from privacyidea.lib.user import (get_user_list, count_users, create_user, User, is_attribute_at_all,
+                                  get_user_from_param)
 from privacyidea.lib.usersetting import (SettingsSubject, delete_user_settings, get_user_settings,
                                          set_user_settings)
 from privacyidea.lib.utils import is_true
@@ -99,11 +103,14 @@ def get_users():
       within ``R``. The result is empty if ``X`` is not part of ``R``.
     * Neither parameter — queries every resolver in every realm.
 
-    If an admin caller omits ``realm=`` and their matching
-    :ref:`policy_userlist` policy grants one or more realms, every
-    realm granted across their matching policies is used (the union),
-    unless any matching policy grants no realms at all, in which case
-    no realm filter is added and every realm is queried.
+    An admin caller only lists the realms their matching
+    :ref:`policy_userlist` policies grant. Without ``realm=`` these
+    realms are queried; a policy without a realm grants every realm, and
+    a realm excluded with ``!realm`` stays excluded. Every realm the
+    caller names - alone, comma-separated or as a list - has to be
+    granted, otherwise the request is refused. The resolvers and users
+    named in these policies limit the list the same way: the users of
+    other resolvers, and other users, are not listed.
 
     :query realm: realm to list (see scoping rules above).
     :query resolver: resolver to list (see scoping rules above).
@@ -120,6 +127,21 @@ def get_users():
         silently drop an unrecognised key and search without it, so an
         unmapped attribute is never reported as skipped there. The SCIM
         resolver does not apply any of the given search fields at all.
+    :query has_tokens: ``True`` keeps only the users that own at least
+        one token, ``False`` only those that own none. An administrator
+        also needs the :ref:`policy_tokenlist` action in every realm the
+        users are listed from, as it tells who owns a token. A revoked
+        token does not count, as it can never be used again; a disabled
+        one does, and so does every token type. A token counts
+        for the realm its owner was assigned in, not for the realms the
+        token itself belongs to. Ownership is
+        privacyIDEA's own record rather than a user-store attribute, so
+        this filter is applied after the resolvers answered; a resolver
+        reported in ``detail.skipped_resolvers`` therefore contributes
+        no users to either side. The same holds for a resolver whose
+        user listing carries no user id - an HTTP resolver without an
+        attribute mapping - except that its users are all reported as
+        owning no token rather than being left out.
     :query attributes: comma-separated list of attribute names to
         return per user (whitespace around names is stripped). In
         addition to user-store attributes, the privacyIDEA-managed
@@ -179,28 +201,27 @@ def get_users():
     """
     realm = get_optional(request.all_data, "realm")
     resolver = get_optional(request.all_data, "resolver")
+    has_tokens = get_optional(request.all_data, "has_tokens")
     # realmadmin may have injected a list of realms for a multi-realm admin.
     # Normalise to a comma-separated string so the audit info stays scalar.
     if isinstance(realm, list):
-        realm = ",".join(realm)
-    search_parameters = dict(request.all_data)
+        realm = ",".join(str(name) for name in realm)
+    if has_tokens not in (None, ""):
+        _check_token_ownership_right()
+    search_parameters = _search_parameters()
     requested_attributes = request.all_data.get("attributes")
-    if "attributes" in search_parameters:
-        # Never forward "attributes" as a resolver search field, even when its
-        # value is empty and therefore not parsed into a filter list below.
-        del search_parameters["attributes"]
     if requested_attributes:
         requested_attributes = [attr.strip() for attr in requested_attributes.split(",")]
 
     include_custom_attributes = (is_true(request.all_data.get("include_custom_attributes", True))
                                  and is_attribute_at_all())
-    if "include_custom_attributes" in search_parameters:
-        del search_parameters["include_custom_attributes"]
     failures: list[str] = []
     users = get_user_list(search_parameters, include_custom_attributes=include_custom_attributes,
-                          requested_attributes=requested_attributes, failures=failures)
+                          requested_attributes=requested_attributes, failures=failures, **_user_list_scope())
 
     info = f"realm: {realm!s}; resolver: {resolver!s}"
+    if has_tokens not in (None, ""):
+        info += f"; has_tokens: {has_tokens!s}"
     details = None
     if failures:
         skipped_names = sorted(failures)
@@ -210,6 +231,91 @@ def get_users():
                         'info': info})
 
     return send_result(users, details=details)
+
+
+@user_blueprint.route('/count', methods=['GET'])
+@prepolicy(realmadmin, request, PolicyAction.USERLIST)
+@prepolicy(check_base_action, request, PolicyAction.USERLIST)
+@event("user_count", request, g)
+def count_users_api():
+    """
+    Count the users :http:get:`/user/` lists, and how many of them own a token.
+
+    Takes the same parameters, policies and scoping as :http:get:`/user/`,
+    and both numbers come from one listing, deduplicated the same way. So
+    ``count`` is the length of the user list, ``with_tokens`` the length
+    of the list with ``has_tokens=True``, and their difference the length
+    of the list with ``has_tokens=False``. A user whose login name is also
+    served by a resolver of higher priority in the same realm, which the
+    caller may list, is not listed, and neither are their tokens counted. ``has_tokens``,
+    ``attributes`` and ``include_custom_attributes`` are ignored.
+
+    As ``with_tokens`` tells who owns a token, an administrator also needs
+    the :ref:`policy_tokenlist` action in every realm counted, as for the
+    ``has_tokens`` filter of :http:get:`/user/`.
+
+    :status 200: ``result.value`` is ``{"count": <number>, "with_tokens":
+        <number>}``. Resolvers that could not be queried contribute to
+        neither number and are reported in ``detail.skipped_resolvers``,
+        as for :http:get:`/user/`.
+    """
+    realm = get_optional(request.all_data, "realm")
+    if isinstance(realm, list):
+        realm = ",".join(str(name) for name in realm)
+    _check_token_ownership_right()
+    failures: list[str] = []
+    counts = count_users(_search_parameters(), failures=failures, **_user_list_scope())
+
+    info = f"realm: {realm!s}; resolver: {get_optional(request.all_data, 'resolver')!s}"
+    details = None
+    if failures:
+        skipped_names = sorted(failures)
+        info += f"; skipped_resolvers: {','.join(skipped_names)}"
+        details = {"skipped_resolvers": skipped_names}
+    g.audit_object.log({'success': True, 'info': info})
+
+    return send_result(counts, details=details)
+
+
+def _search_parameters() -> dict:
+    """
+    The request parameters that search the user stores. ``attributes`` and ``include_custom_attributes`` shape
+    the answer and are never forwarded as a search field, even when their value is empty.
+    """
+    return {key: value for key, value in request.all_data.items()
+            if key not in ("attributes", "include_custom_attributes")}
+
+
+def _user_list_scope() -> dict:
+    """
+    The resolvers and users :func:`~privacyidea.api.lib.prepolicy.realmadmin` allows the logged-in administrator
+    to list, as the keyword arguments of :func:`~privacyidea.lib.user.get_user_list`.
+    """
+    return {"allowed_resolvers": getattr(request, "pi_allowed_resolvers", None),
+            "user_filter": getattr(request, "pi_user_filter", None)}
+
+
+def _check_token_ownership_right() -> None:
+    """
+    Whether a user owns a token is only told to an administrator whose token list shows the tokens of every realm
+    the users are listed from. The realm of a token's owner is always one of the token's realms - it is added when
+    the token is assigned and can not be removed - so such an administrator can read the owners off the token list
+    anyway. The realms are taken from :func:`~privacyidea.api.lib.prepolicy.check_admin_tokenlist`, which also
+    decides what :http:get:`/token/` shows, so the two can not disagree. A user only ever lists their own record.
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return
+    check_admin_tokenlist(request, PolicyAction.TOKENLIST)
+    token_realms = request.pi_allowed_realms
+    if token_realms is None:
+        return
+    realms = split_realms(request.all_data.get("realm"))
+    if not realms:
+        resolver = get_optional(request.all_data, "resolver")
+        realms = get_realms_of_resolver(resolver) if resolver else list(get_realms())
+    if not set(realms) <= set(split_realms(token_realms)):
+        raise PolicyError(f"Admin actions are defined, but telling which users own a token requires the action "
+                          f"{PolicyAction.TOKENLIST} in every realm the users are listed from!")
 
 
 @user_blueprint.route('/settings', methods=['GET'])
@@ -286,6 +392,7 @@ def delete_user_settings_api(key=None):
 
 
 @user_blueprint.route('/attribute', methods=['POST'])
+@prepolicy(resolver_realm_access, request, PolicyAction.SET_USER_ATTRIBUTES)
 @prepolicy(check_custom_user_attributes, request, "set")
 @event("set_custom_user_attribute", request, g)
 def set_user_attribute():
@@ -460,6 +567,7 @@ def delete_user_attribute(attrkey, username, realm=None):
 
 @user_blueprint.route('/<resolvername>/<username>', methods=['DELETE'])
 @admin_required
+@prepolicy(resolver_realm_access, request, PolicyAction.DELETEUSER)
 @prepolicy(check_base_action, request, PolicyAction.DELETEUSER)
 @event("user_delete", request, g)
 def delete_user(resolvername=None, username=None):
@@ -492,6 +600,7 @@ def delete_user(resolvername=None, username=None):
 @user_blueprint.route('', methods=['POST'])
 @user_blueprint.route('/', methods=['POST'])
 @admin_required
+@prepolicy(resolver_realm_access, request, PolicyAction.ADDUSER)
 @prepolicy(check_base_action, request, PolicyAction.ADDUSER)
 @event("user_add", request, g)
 def create_user_api():
@@ -539,6 +648,7 @@ def create_user_api():
 
 @user_blueprint.route('', methods=['PUT'])
 @user_blueprint.route('/', methods=['PUT'])
+@prepolicy(resolver_realm_access, request, PolicyAction.UPDATEUSER)
 @prepolicy(check_base_action, request, PolicyAction.UPDATEUSER)
 @event("user_update", request, g)
 def update_user():

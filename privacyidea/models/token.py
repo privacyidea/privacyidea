@@ -494,7 +494,7 @@ class TokenOwner(MethodsMixin, db.Model):
     """
     __tablename__ = 'tokenowner'
     id: Mapped[int] = mapped_column(Integer, Sequence("tokenowner_seq"), primary_key=True)
-    token_id: Mapped[int | None] = mapped_column(Integer, db.ForeignKey('token.id'))
+    token_id: Mapped[int | None] = mapped_column(Integer, db.ForeignKey('token.id'), index=True)
     resolver: Mapped[str | None] = mapped_column(Unicode(120), default='', index=True)
     user_id: Mapped[str | None] = mapped_column(Unicode(320), default='', index=True)
     realm_id: Mapped[int | None] = mapped_column(Integer, db.ForeignKey('realm.id'))

@@ -2315,6 +2315,16 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertIn(totp_token.get_serial(), server_serials)
 
 
+    def test_99_container_without_challenge_response_raises(self):
+        # A container type that implements no challenge-response protocol can not authenticate an anonymous
+        # client, so both halves of the protocol have to refuse rather than answer with a falsy value that a
+        # caller may read as "no challenge" and carry on.
+        for container_type in ["generic", "yubikey"]:
+            serial = init_container({"type": container_type})["container_serial"]
+            container = find_container_by_serial(serial)
+            self.assertRaises(NotImplementedError, container.create_challenge, "https://pi.net/container/sync")
+            self.assertRaises(NotImplementedError, container.check_challenge_response, {})
+
 class TokenContainerTemplateTestCase(MyTestCase):
     def test_01_create_delete_template_success(self):
         template_name = "test"

@@ -20,6 +20,7 @@ import {
   afterNextRender,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   linkedSignal,
@@ -144,6 +145,12 @@ export class UserTableComponent implements OnDestroy {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly apiFilterKeys = this.userService.apiFilterKeys;
+  // has_tokens tells who owns a token, so the backend only answers it for an administrator who may list tokens.
+  readonly filterKeywords = computed(() => {
+    const canListTokens = this.authService.actionAllowed("tokenlist");
+    const advancedKeys = this.userService.advancedApiFilterKeys.filter((key) => key !== "has_tokens" || canListTokens);
+    return [...this.userService.apiFilterKeys, ...advancedKeys];
+  });
   readonly filterHint = inlineFilterHint();
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   readonly paginator = viewChild(MatPaginator);
@@ -207,6 +214,18 @@ export class UserTableComponent implements OnDestroy {
   });
 
   constructor() {
+    // A filter handed over by another view, which cannot set it directly because this table only
+    // exists once the navigation it triggered has happened.
+    effect(() => {
+      if (!this.contentService.onUsers()) {
+        return;
+      }
+      const preset = this.userService.presetFilter();
+      if (preset) {
+        this.userService.presetFilter.set(null);
+        this.userService.setFilter(preset);
+      }
+    });
     // Autofocus the filter so the user can type immediately on entering the page.
     afterNextRender(() => this.filterInput?.nativeElement.focus());
   }

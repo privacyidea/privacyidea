@@ -39,7 +39,7 @@ from privacyidea.lib.containers.container_info import (PI_INTERNAL, TokenContain
                                                        SERVER_URL, CHALLENGE_TTL)
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
-                                   ContainerNotRegistered, ContainerError)
+                                   ContainerNotRegistered, ContainerError, ContainerInvalidChallenge)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
@@ -1478,7 +1478,8 @@ def init_container_rollover(container: TokenContainerClass, server_url: str, cha
     # Check challenge if rollover is allowed
     rollover_scope = create_endpoint_url(server_url, "container/rollover")
     params.update({"scope": rollover_scope})
-    container.check_challenge_response(params)
+    if not container.check_challenge_response(params):
+        raise ContainerInvalidChallenge("The container challenge response could not be verified!")
 
     registration_scope = create_endpoint_url(server_url, "container/register/finalize")
     params.update({"scope": registration_scope})

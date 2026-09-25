@@ -26,6 +26,8 @@ from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.params import get_required
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.serviceid import get_serviceids
 
 
 TOKENINFO_KEY = "service_id"
@@ -123,10 +125,38 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
         :type param: dict
         :return: None
         """
+        # The service ID is checked before the parent class generates the password: the parent commits the new
+        # password, and a token that already exists is not removed when the initialization fails, so a rollover
+        # with an unusable service ID would leave the token with a password that was never handed out.
+        service_id = self._check_service_id(get_required(param, TOKENINFO_KEY))
         PasswordTokenClass.update(self, param)
         # In addition to the initialization from the parent class, we also need to set the service_id
-        service_id = get_required(param, TOKENINFO_KEY)
         self.write_tokeninfo(TOKENINFO_KEY, service_id)
+
+    @staticmethod
+    def _check_service_id(service_id) -> str:
+        """
+        Return the given service ID in the spelling it is defined with.
+
+        A token only authenticates if its service ID matches the one the service sends, which is compared
+        case-insensitively. The defined service IDs are therefore looked up the same way, and the name is stored as
+        it is defined, so that the token carries the service ID the administrator defined and not a variation of it.
+
+        A definition whose name matches exactly wins, because two definitions can differ in case alone on a database
+        that compares case-sensitively.
+
+        :param service_id: The service ID from the request, which is not necessarily a string: a JSON request body
+            keeps the type it was sent with
+        :return: The name of the matching service ID definition
+        """
+        service_id = str(service_id)
+        defined_names = [entry.name for entry in get_serviceids()]
+        if service_id in defined_names:
+            return service_id
+        for defined_name in defined_names:
+            if defined_name.lower() == service_id.lower():
+                return defined_name
+        raise ParameterError(f"The service ID {service_id!r} is not defined.")
 
     @property
     def service_id(self):

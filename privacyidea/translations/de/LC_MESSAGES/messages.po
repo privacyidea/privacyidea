@@ -9,9 +9,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2026-09-21 12:02+0200\n"
-"PO-Revision-Date: 2026-03-14 15:09+0000\n"
+"PO-Revision-Date: 2026-09-25 06:49+0000\n"
 "Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -21,6 +21,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "Generated-By: Babel 2.17.0\n"
+"X-Generator: Weblate 2026.10.dev0\n"
 
 #: api/auth.py:319
 msgid "Authentication with passkey disabled."
@@ -70,14 +71,13 @@ msgid "'template_options' must be a dictionary!"
 msgstr "'template_options' muss ein dictionary sein!"
 
 #: api/event.py:259
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Unknown handler module: {0!s}"
-msgstr "Unbekanntes Task-Modul: {!r}"
+msgstr "Unbekanntes Handler-Modul: {0!s}"
 
 #: api/event.py:276 api/event.py:278
-#, fuzzy
 msgid "The 'conditions' parameter must be a dictionary."
-msgstr "'template_options' muss ein dictionary sein!"
+msgstr "Der Parameter 'conditions' muss ein dictionary sein!"
 
 #: api/periodictask.py:205
 msgid "nodes: expected at least one node"
@@ -213,9 +213,8 @@ msgid "Given serial does not belong to given user!"
 msgstr "Angegebene Seriennummer ist dem Benutzer nicht zugeordnet!"
 
 #: api/validate.py:1151 api/validate.py:1207
-#, fuzzy
 msgid "Authentication failure. A valid API key is required."
-msgstr "Authentifizierungsfehler. Der Passkey ist nicht registriert."
+msgstr "Authentifizierungsfehler. Ein valider API key ist erforderlich."
 
 #: api/validate.py:1605
 #, python-brace-format
@@ -311,6 +310,8 @@ msgstr ""
 #, python-brace-format
 msgid "The key '{0!s}' is reserved for internal use and cannot be deleted."
 msgstr ""
+"Der Schlüssel '{0!s}' ist für die interne Verwendung und kann nicht gelöscht "
+"werden."
 
 #: lib/containerclass.py:927
 msgid ""
@@ -443,6 +444,10 @@ msgid ""
 "it a new secret. Enrolling a new token only needs the enrollment action of "
 "its token type."
 msgstr ""
+"Der Administrator kann einen bereits eingerichteten Token erneuern, um ihm "
+"einen neuen Sicherheitsschlüssel zuzuweisen. Um einen neuen Token "
+"einzurichten, muss lediglich die reguläre Einrichtungsaktion des "
+"entsprechenden Tokentyps ausgeführt werden."
 
 #: lib/policy.py:1785
 msgid "Admin is allowed to set the OTP PIN during enrollment."
@@ -483,13 +488,12 @@ msgid "Admin is allowed to view the list of the users."
 msgstr "Der Adminsitrator kann die Benutzerliste anzeigen."
 
 #: lib/policy.py:1834
-#, fuzzy
 msgid ""
 "Admin is allowed to read the privacyIDEA-internal attributes of a user (e.g. "
 "fido2_user_id)."
 msgstr ""
-"Der Administrator darf die Definitionen von Remote privacyIDEA Systemen "
-"lesen."
+"Der Administrator kann die privacyIDEA-internen Benutzerattribute lesen (z. "
+"B. fido2_user_id)."
 
 #: lib/policy.py:1839
 msgid "The Admin is allowed to list the machines."
@@ -522,10 +526,10 @@ msgid "Admin is allowed to retrieve a serial for a given OTP value."
 msgstr "Der Administrator kann die Seriennummer zu einem OTP-Wert bestimmen."
 
 #: lib/policy.py:1870
-#, fuzzy
 msgid "Admin is allowed to read the public SSH key of an SSH key token."
 msgstr ""
-"Der Administrator kann den Fehlerzähler (Failcounter) von Token zurücksetzen."
+"Der Administrator kann den öffentlichen SSH-Schlüssel eines SSH-Tokens "
+"auslesen."
 
 #: lib/policy.py:1875
 msgid "Admin is allowed to retrieve random keys from privacyIDEA."
@@ -656,50 +660,52 @@ msgid ""
 "Admin is allowed to read the authentication log. If the policy is scoped to "
 "realms, resolvers or users, the admin only sees entries matching that scope."
 msgstr ""
+"Der Admin darf den Authentisierungslog lesen. Wenn diese Aktion auf realms, "
+"resolver oder Benutzer beschränkt ist, kann der Admin nur die entsprechenden "
+"Einträge sehen."
 
 #: lib/policy.py:2016
-#, fuzzy
 msgid "Admin is allowed to read the conditional-access policies."
-msgstr "Der Administrator darf Richtlinien lesen."
+msgstr "Der Administrator darf Conditional Access Richtlinien lesen."
 
 #: lib/policy.py:2020
-#, fuzzy
 msgid ""
 "Admin is allowed to create, edit and delete the conditional-access policies."
-msgstr "Der Administrator kann Richtlinien anlegen und bearbeiten."
+msgstr ""
+"Der Administrator kann Conditional Access Richtlinien anlegen, bearbeiten "
+"und löschen."
 
 #: lib/policy.py:2024
 msgid ""
 "Admin is allowed to read the conditional-access user lock state: view a "
 "user's lock and list the locked users."
-msgstr ""
+msgstr "Der Admin darf durch Conditional Access gesperrte Benutzer sehen."
 
 #: lib/policy.py:2029
-#, fuzzy
 msgid "Admin is allowed to reset (unlock) a conditional-access user lock."
 msgstr ""
-"Der Administrator kann Konfigurationen der Zertifizierungsstellen löschen."
+"Der Administrator kann durch Conditional Access gesperrte Benutzer "
+"entsperren."
 
 #: lib/policy.py:2033
 msgid ""
 "Admin is allowed to lock a user manually, independently of the conditional-"
 "access policies."
 msgstr ""
+"Der Admin darf Benutzer manuell sperren, unabhängig von Conditional Access "
+"Richtlinien."
 
 #: lib/policy.py:2037
-#, fuzzy
 msgid "Admin is allowed to read the blocklist."
-msgstr "Der Administrator darf Richtlinien lesen."
+msgstr "Der Administrator kann die Blocklist lesen."
 
 #: lib/policy.py:2040
-#, fuzzy
 msgid "Admin is allowed to remove entries from the blocklist."
-msgstr "Der Administrator kann Token aus der Datenbank löschen."
+msgstr "Der Administrator kann Einträge aus der Blocklist löschen."
 
 #: lib/policy.py:2043
-#, fuzzy
 msgid "Admin is allowed to add an IP address to the blocklist manually."
-msgstr "Der Administrator kann Richtlinien anlegen und bearbeiten."
+msgstr "Der Administrator kann manuell eine IP zur Blocklist hinzufügen."
 
 #: lib/policy.py:2046
 msgid "The admin will only see audit entries of the last 10d, 3m or 2y."
@@ -739,9 +745,8 @@ msgid "Admin is allowed to retrieve the list of active challenges."
 msgstr "Der Administrator kann eine Liste der aktiven Challenges anzeigen."
 
 #: lib/policy.py:2086
-#, fuzzy
 msgid "Admin is allowed to cancel (delete) active challenges."
-msgstr "Der Administrator kann eine Liste der aktiven Challenges anzeigen."
+msgstr "Der Administrator kann noch offene Challenges löschen."
 
 #: lib/policy.py:2091
 msgid "Admin is allowed to write new SMTP server definitions."
@@ -873,41 +878,39 @@ msgid "The Admin is allowed delete a service ID definition."
 msgstr "Der Administrator kann Dienste-Kennzeichnungen löschen."
 
 #: lib/policy.py:2234
-#, fuzzy
 msgid "The Admin is allowed to list API clients."
-msgstr "Der Administrator darf Token auflisten."
+msgstr "Der Administrator kann API Clients auflisten."
 
 #: lib/policy.py:2239
-#, fuzzy
 msgid "The Admin is allowed to create API clients."
-msgstr "Administratoren können Container erstellen."
+msgstr "Administratoren kann API Clients erstellen."
 
 #: lib/policy.py:2244
-#, fuzzy
 msgid ""
 "The Admin is allowed to modify API clients (display name, status, config)."
-msgstr "Der Administrator kann neue Token-Gruppen hinzufügen."
+msgstr ""
+"Der Administrator kann API Clients modifizieren (Anzeigename, Status, "
+"Konfiguration)."
 
 #: lib/policy.py:2249
-#, fuzzy
 msgid "The Admin is allowed to rotate the API key of a client."
-msgstr "Der Administrator kann die Token-Gruppen eines Tokens bearbeiten."
+msgstr "Der Administrator kann den API Key eines Clients rotieren."
 
 #: lib/policy.py:2254
-#, fuzzy
 msgid "The Admin is allowed to delete API clients."
-msgstr "Der Administrator kann Richtlinien löschen."
+msgstr "Der Administrator kann API Clients löschen."
 
 #: lib/policy.py:2259
-#, fuzzy
 msgid "The Admin is allowed to list the remembered devices of API clients."
-msgstr "Der Administrator kann Maschinen auflisten."
+msgstr "Der Administrator kann gemerkte Geräte von API Clients auflisten."
 
 #: lib/policy.py:2264
 msgid ""
 "The Admin is allowed to revoke remembered devices (of a client, or realm-"
 "wide / per user across all clients)."
 msgstr ""
+"Der Admin darf gemerkte Geräte widerrufen, von einem Client, einem Realm "
+"oder einem User."
 
 #: lib/policy.py:2270
 msgid "The Admin is allowed to manage the tokengroups of a token."
@@ -1004,11 +1007,9 @@ msgstr ""
 "Seriennummer zuweisen."
 
 #: lib/policy.py:2360
-#, fuzzy
 msgid ""
 "The user is allowed to read their own entries from the authentication log."
-msgstr ""
-"Benutzer können ihre eigenen Token aus ihren eigenen Containern entfernen."
+msgstr "Der Benutzer kann die eigenen Einträge im Authentication Log lesen."
 
 #: lib/policy.py:2363
 msgid "The user is allowed to disable his own tokens."
@@ -1028,12 +1029,16 @@ msgid ""
 "enrolled, which gives it a new secret. Enrolling a new token only needs the "
 "enrollment action of its token type."
 msgstr ""
+"Der Benutzer kann seine bestehenden Token einfach aktualisieren, um einen "
+"neuen Schlüssel zu generieren. Für das Hinzufügen eines neuen Tokens reicht "
+"der normale Einrichtungsprozess für den gewählten Tokentyp aus."
 
 #: lib/policy.py:2382
-#, fuzzy
 msgid ""
 "The user is allowed to read the public SSH key of his own SSH key token."
-msgstr "Der Benutzer darf seine eigenen Token aktivieren."
+msgstr ""
+"Der Benutzer darf den öffentlichen SSH-Schlüssel seiner eigenen SSH-Tokens "
+"auslesen."
 
 #: lib/policy.py:2387
 msgid "The user is allowed to unassign his own tokens."
@@ -1374,6 +1379,10 @@ msgid ""
 "API client (the X-API-Key header): without one, no cookie is issued and the "
 "recognition endpoint returns 401."
 msgstr ""
+"Erlaubt es API-Clients, nach erfolgreicher Anmeldung ein dauerhaftes Cookie "
+"zur Geräteerkennung zu empfangen. Voraussetzung ist die Identifizierung des "
+"API-Clients über den „X-API-Key“-Header: Fehlt dieser, wird kein Cookie "
+"vergeben und der Erkennungs-Endpunkt gibt den Fehlercode 401 zurück."
 
 #: lib/policy.py:2701
 msgid ""
@@ -1381,6 +1390,11 @@ msgid ""
 "unset). Scope it with a realm/user condition to give different lifetimes, "
 "e.g. a shorter one for admins than for users."
 msgstr ""
+"Gibt an, wie viele Tage ein „Gerät merken“-Cookie gültig bleibt (Standard: "
+"30 Tage, falls nicht festgelegt). Kann über eine Realm- oder "
+"Benutzerbedingung eingeschränkt werden, um unterschiedliche "
+"Gültigkeitsdauern zu definieren – z. B. eine kürzere Lebensdauer für "
+"Administratoren als für Standardbenutzer."
 
 #: lib/policy.py:2706
 msgid ""
@@ -1389,6 +1403,10 @@ msgid ""
 "that client issue no new cookie (the existing devices keep working). Unset "
 "or 0 means unlimited."
 msgstr ""
+"Maximale Anzahl gemerkter Geräte pro Benutzer und API-Client. Wird dieses "
+"Limit erreicht, werden bei erneuter Auswahl von „Gerät merken“ keine "
+"weiteren Cookies vergeben – bereits hinterlegte Geräte funktionieren jedoch "
+"weiterhin. Bleibt das Feld leer oder steht auf 0, gilt kein Limit."
 
 #: lib/policy.py:2714
 msgid ""
@@ -1512,6 +1530,8 @@ msgid ""
 "Ignore tokens in the given rollout state. This will only work if the "
 "passthru policy is active."
 msgstr ""
+"Token im ausgewählten Rollout-Zustand ignorieren. Diese Einstellung wird nur "
+"angewendet, wenn die Passthrough-Richtlinie aktiviert ist."
 
 #: lib/policy.py:2803
 msgid ""
@@ -1539,6 +1559,8 @@ msgid ""
 "Ignore tokens in the given rollout state. This will only work if "
 "passOnNoToken policy is active."
 msgstr ""
+"Token im ausgewählten Rollout-Zustand ignorieren. Diese Einstellung greift "
+"nur, wenn die Richtlinie „passOnNoToken“ aktiviert ist."
 
 #: lib/policy.py:2822
 msgid ""
@@ -1593,15 +1615,14 @@ msgstr ""
 "5m."
 
 #: lib/policy.py:2856
-#, fuzzy
 msgid ""
 "You can set the client modes in the order that you prefer. For example: "
 "\"interactive webauthn poll\". Accepted values are: <code>interactive "
 "webauthn poll u2f</code>"
 msgstr ""
 "Sie können die Client-Modi in der von Ihnen bevorzugten Reihenfolge "
-"festlegen. Zum Beispiel: \"interactive webauthn poll u2f\". Akzeptierte "
-"Werte sind:<code>interactive webauthn poll u2f</code>"
+"festlegen. Beispiel: „interactive webauthn poll“. Zulässige Werte sind: "
+"<code>interactive webauthn poll u2f</code>"
 
 #: lib/policy.py:2862
 msgid ""
@@ -1639,7 +1660,6 @@ msgstr ""
 "gesetzt ist, wird dem Benutzer die Authentifizierung verweigert."
 
 #: lib/policy.py:2887
-#, fuzzy
 msgid ""
 "Allow the application to choose which token types should be used for "
 "authentication. Application may set the parameter 'type' in the request. "
@@ -1744,15 +1764,16 @@ msgstr ""
 "des Benutzers in der API Antwort mit zurückgeliefert."
 
 #: lib/policy.py:2973
-#, fuzzy
 msgid ""
 "DEPRECATED (planned for removal in a future release; the X-API-Key API "
 "clients feature is intended to replace it): The sending of an API Auth Key "
 "is required during authentication. This avoids rogue authenticate requests "
 "against the /validate/check interface."
 msgstr ""
-"Ein API Auth Key muss für die Authentisierung mitgesendet werden. Dies "
-"sichert die Authentisierungsschnittstelle zusätzlich."
+"DEPRECATED (wird in einem zukünftigen Release entfernt; wird durch das "
+"Feature „X-API-Key API Clients“ ersetzt): Das Senden eines API-Auth-Keys ist "
+"bei der Authentifizierung erforderlich. Dies verhindert unberechtigte "
+"Authentifizierungsanfragen gegen die /validate/check-Schnittstelle."
 
 #: lib/policy.py:2982
 msgid ""
@@ -1824,6 +1845,11 @@ msgid ""
 "is closed. With \"browser\" the session is shared by all tabs of the browser "
 "and survives closing it, until the JWT expires. Defaults to \"tab\"."
 msgstr ""
+"Legt fest, wie die WebUI die Sitzung angemeldeter Benutzer speichert. Mit „"
+"tab“ bleibt die Anmeldung nur im aktuellen Browser-Tab aktiv und wird beim "
+"Schließen beendet. Mit „browser“ gilt die Sitzung für alle Tabs und bleibt "
+"auch nach Schließen des Browsers aktiv, bis das JWT abläuft. Standardmäßig "
+"auf „tab“ gesetzt."
 
 #: lib/policy.py:3041
 msgid ""
@@ -2160,6 +2186,11 @@ msgid ""
 "is evaluated without user/realm/resolver/time conditions (client IP and user "
 "agent matching still apply)."
 msgstr ""
+"Wenn aktiv, ist die Versionsnummer nur für angemeldete Benutzer sichtbar. "
+"Dies erhöht die Sicherheit des Systems, indem sensible Versionsdaten vorab "
+"verborgen bleiben. Hinweis: Diese Richtlinie ignoriert Bedingungen für "
+"Benutzer, Realms, Resolver und Zeitfenster (Prüfungen auf Client-IP und User-"
+"Agent bleiben wirksam)."
 
 #: lib/policy.py:3297
 msgid ""
@@ -2173,6 +2204,16 @@ msgid ""
 "integrations. This policy is evaluated without user/realm/resolver/time "
 "conditions (client IP and user agent matching still apply)."
 msgstr ""
+"Sendet bei fehlgeschlagener Anmeldung immer den HTTP-Status 401, damit der "
+"genaue Grund des Fehlers nicht über den Statuscode ausgelesen werden kann. "
+"Für maximalen Schutz empfiehlt sich die Kombination mit „"
+"hide_specific_error_message“, um auch Fehlertexte zu verbergen. WARNUNG: "
+"Ändert die Statuscodes der Endpunkte /auth und /validate (z. B. werden 400/"
+"403/404 durch 401 ersetzt). Dies kann angebundene Clients, Proxys oder "
+"Monitoring-Tools beeinträchtigen, die bestimmte Codes erwarten. Bitte nur "
+"aktivieren, wenn die Folgen für Ihre Infrastruktur geprüft wurden. Diese "
+"Richtlinie ignoriert Benutzer-, Realm-, Resolver- und Zeitbedingungen "
+"(Prüfungen auf Client-IP und User-Agent bleiben aktiv)."
 
 #: lib/policy.py:3311
 msgid ""
@@ -2184,6 +2225,14 @@ msgid ""
 "\"hide_specific_error_message\" (in the authentication scope), which never "
 "applies to conditional-access wording."
 msgstr ""
+"Informiert den Benutzer über den Grund für die Ablehnung durch den bedingten "
+"Zugriff (Conditional Access) anhand des Standard-Wortlauts der auslösenden "
+"Aktion. Ohne diese Option enthält eine Ablehnung lediglich die für die "
+"jeweilige Stage definierte Fehlermeldung bzw. das generische „Authentication "
+"failed.“, falls keine hinterlegt wurde. Eine stage-spezifische Fehlermeldung "
+"hat stets Vorrang. Hinweis: Dies ist unabhängig von „"
+"hide_specific_error_message“ (im Authentication-Scope), da diese Option "
+"nicht auf Formulierungen von Conditional Access angewendet wird."
 
 #: lib/policy.py:3362
 msgid ""
@@ -2252,9 +2301,8 @@ msgid "The RADIUS secret is too long"
 msgstr "Das RADIUS Secret ist zu lang"
 
 #: lib/remembered_device.py:283
-#, fuzzy
 msgid "Authentication failure. Device token reuse detected."
-msgstr "Authentifizierungsfehler. Der Token ist keinem Benutzer zugewiesen."
+msgstr "Authentifizierungsfehler. Wiederverwendung des Device-Tokens erkannt."
 
 #: lib/subscriptions.py:53
 msgid "My subscription has expired."
@@ -2269,9 +2317,9 @@ msgid "The tokengroup does not exist."
 msgstr "Die Token-Gruppe existiert nicht."
 
 #: lib/tokenclass.py:1365
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "Tokengroup {0!s} does not exist."
-msgstr "Die Token-Gruppe existiert nicht."
+msgstr "Die Token-Gruppe {0!s} existiert nicht."
 
 #: lib/tokenclass.py:2061
 msgid "please enter otp: "
@@ -2292,61 +2340,66 @@ msgstr ""
 #: lib/caconnectors/msca.py:154
 msgid "grpc module is not available. Cannot connect to MS CA worker."
 msgstr ""
+"Das gRPC-Modul ist nicht verfügbar. Es konnte keine Verbindung zum MS-CA-"
+"Worker aufgebaut werden."
 
 #: lib/conditional_access/conditions.py:158
 msgid "is one of"
-msgstr ""
+msgstr "ist eines von"
 
 #: lib/conditional_access/conditions.py:165
 msgid "is not one of"
-msgstr ""
+msgstr "ist keines von"
 
 #: lib/conditional_access/conditions.py:281
 msgid "User realm"
-msgstr ""
+msgstr "Benutzer Realm"
 
 #: lib/conditional_access/conditions.py:288
 msgid "User role"
-msgstr ""
+msgstr "Benutzer Rolle"
 
 #: lib/conditional_access/conditions.py:295
 msgid "Endpoint"
-msgstr ""
+msgstr "Endpunkt"
 
 #: lib/conditional_access/engine.py:271
 #, python-brace-format
 msgid "{minutes} minute(s)"
-msgstr ""
+msgstr "{minutes} Minute(n)"
 
 #: lib/conditional_access/engine.py:272
 #, python-brace-format
 msgid "{hours} hour(s)"
-msgstr ""
+msgstr "{hours} Stunde(n)"
 
 #: lib/conditional_access/policy.py:366
 msgid "The error message must be a string."
-msgstr ""
+msgstr "Die Fehlermeldung muss ein Text sein."
 
 #: lib/conditional_access/policy.py:373
 #, python-brace-format
 msgid "The error message must not exceed {length} characters."
-msgstr ""
+msgstr "The Fehlermeldung darf nicht länger als {length} Zeichen sein."
 
 #: lib/conditional_access/policy.py:411
 msgid "Your account has been locked. Please contact your administrator."
-msgstr ""
+msgstr "Ihr Account wurde gesperrt. Bitte kontaktieren Sie den Administrator."
 
 #: lib/conditional_access/policy.py:413
 msgid ""
 "Access from your IP address has been blocked. Please contact your "
 "administrator."
 msgstr ""
+"Der Zugriff von Ihrer IP wurde gesperrt. Bitte kontaktieren Sie den "
+"Administrator."
 
 #: lib/conditional_access/policy.py:415
 #, python-brace-format
 msgid ""
 "Your account is temporarily locked. Please try again in about {duration}."
 msgstr ""
+"Ihr Account wurde temporär gesperrt. Versuchen Sie es in {duration} erneut."
 
 #: lib/conditional_access/policy.py:417
 #, python-brace-format
@@ -2354,22 +2407,28 @@ msgid ""
 "Access from your IP address is temporarily blocked. Please try again in "
 "about {duration}."
 msgstr ""
+"Der Zugriff von Ihrer IP wurde temporär gesperrt. Versuchen Sie es in "
+"{duration} erneut."
 
 #: lib/conditional_access/policy.py:419
 msgid "Access has been denied."
-msgstr ""
+msgstr "Zugriff verweigert."
 
 #: lib/conditional_access/policy_template.py:69
 msgid ""
 "Lock a single user after repeated wrong passwords or PINs (password brute-"
 "force)."
 msgstr ""
+"Einzelnen Benutzer nach mehrfachem falschen Password oder PIN sperren "
+"(Password Brute-Force-Schutz)."
 
 #: lib/conditional_access/policy_template.py:92
 msgid ""
 "Progressively lock a user whose password is correct but whose second factor "
 "keeps failing (MFA brute-force)."
 msgstr ""
+"Sperrt einen Benutzer schrittweise, wenn das Passwort korrekt ist, der "
+"zweite Faktor jedoch wiederholt fehlschlägt (MFA Brute-Force-Schutz)."
 
 #: lib/conditional_access/policy_template.py:167
 msgid ""
@@ -2378,6 +2437,11 @@ msgid ""
 "successful, failed or abandoned - and never locks the account (the denial "
 "lifts as the window drains)."
 msgstr ""
+"Rate-Limiting für die Authentifizierung einzelner Benutzer: Treten innerhalb "
+"eines kurzen Zeitfensters zu viele Versuche auf, werden nachfolgende "
+"Anfragen vorübergehend abgewiesen. Zählt jeden Versuch – erfolgreich, "
+"fehlgeschlagen oder abgebrochen – und sperrt das Konto niemals (die "
+"Blockierung hebt sich auf, sobald das Zeitfenster abläuft)."
 
 #: lib/conditional_access/policy_template.py:192
 msgid ""
@@ -2386,6 +2450,12 @@ msgid ""
 "logins are not counted, so a busy legitimate user is unaffected - only a "
 "guessing burst is throttled."
 msgstr ""
+"Rate-Limiting für fehlgeschlagene Authentifizierungsversuche einzelner "
+"Benutzer: Treten innerhalb eines kurzen Zeitfensters zu viele Fehler auf, "
+"werden nachfolgende Anfragen vorübergehend abgewiesen. Erfolgreiche "
+"Anmeldungen werden nicht gezählt, sodass legitime Benutzer mit hoher "
+"Aktivität unbeeinträchtigt bleiben – lediglich Passwort-Ratesalven (Guessing "
+"Bursts) werden gedrosselt."
 
 #: lib/conditional_access/policy_template.py:214
 msgid ""
@@ -2393,12 +2463,18 @@ msgid ""
 "PIN) against many different users in a short time (password spraying / "
 "credential stuffing)."
 msgstr ""
+"Blockiert eine Quell-IP, bei der die Authentifizierung des ersten Faktors "
+"(falsches Passwort oder falsche PIN) innerhalb kurzer Zeit bei vielen "
+"verschiedenen Benutzern fehlschlägt (Schutz vor Password Spraying und "
+"Credential Stuffing)."
 
 #: lib/conditional_access/policy_template.py:238
 msgid ""
 "Block a source IP that probes many different non-existent usernames in a "
 "short time (user enumeration)."
 msgstr ""
+"Blockiert eine Quell-IP, die innerhalb kurzer Zeit viele verschiedene nicht "
+"existierende Benutzernamen abfragt (Schutz vor User Enumeration)."
 
 #: lib/conditional_access/policy_template.py:261
 msgid ""
@@ -2406,12 +2482,19 @@ msgid ""
 "accounts in a short window (credential stuffing, spraying or user "
 "enumeration): further requests from that IP are briefly denied."
 msgstr ""
+"Rate-Limiting für eine Quell-IP, bei der Authentifizierungen gegen viele "
+"verschiedene Konten innerhalb eines kurzen Zeitfensters fehlschlagen "
+"(Credential Stuffing, Password Spraying oder User Enumeration): Weitere "
+"Anfragen von dieser IP werden vorübergehend abgewiesen."
 
 #: lib/conditional_access/policy_template.py:285
 msgid ""
 "Rate-limit a source IP by how many different accounts it authenticates as in "
 "a short window, regardless of success."
 msgstr ""
+"Rate-Limiting für eine Quell-IP basierend darauf, als wie viele verschiedene "
+"Konten sie sich innerhalb eines kurzen Zeitfensters authentifiziert – "
+"unabhängig vom Erfolg."
 
 #: lib/containers/smartphone.py:125
 msgid "A smartphone that uses an authenticator app."
@@ -2457,16 +2540,17 @@ msgid "The resolver of the user, for which this event should apply."
 msgstr "Der Resolver des Benutzers, für den diese Ereignis-Definition greift."
 
 #: lib/eventhandler/base.py:221
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "This condition can check any arbitrary user info field. You need to enter "
 "something like '<fieldname> == <fieldvalue>', '<fieldname> > <fieldvalue>' "
 "or '<fieldname> < <fieldvalue>'.You can use '{now}' for time-based "
 "comparisons, e.g. 'last_login < {now} - 7d'"
 msgstr ""
-"Diese Bedingung prüft beliebige Werte in der Tokeninfo. Zulässige Vergleiche "
-"sind: '<Feldname> == <Feldinhalt>', '<Feldname> > <Feldinhalt>' oder "
-"'<Feldname> < <Feldinhalt>'."
+"Diese Bedingung kann jedes beliebige Benutzer-Info-Feld prüfen. Sie müssen "
+"einen Ausdruck wie '<fieldname> == <fieldvalue>', '<fieldname> > <fieldvalue>"
+"' oder '<fieldname> < <fieldvalue>' eingeben. Für zeitbasierte Vergleiche "
+"können Sie '{now}' verwenden, z. B. 'last_login < {now} - 7d'."
 
 #: lib/eventhandler/base.py:232
 msgid "The realm of the token, for which this event should apply."
@@ -2760,6 +2844,9 @@ msgid ""
 "such as {now}+5d), {client_ip}, {ua_browser}, {username}, {userrealm} and "
 "{container_serial}."
 msgstr ""
+"Beschreibung des Containers. Kann Platzhalter (Tags) wie {now} (mit Offsets "
+"wie z. B. {now}+5d), {client_ip}, {ua_browser}, {username}, {userrealm} und "
+"{container_serial} enthalten."
 
 #: lib/eventhandler/containerhandler.py:137
 msgid "Set this container info key (deletes all existing keys)."
@@ -2775,6 +2862,9 @@ msgid ""
 "offsets such as {now}+5d), {client_ip}, {ua_browser}, {username}, "
 "{userrealm} and {container_serial}."
 msgstr ""
+"Setzt den Wert für den oben genannten Schlüssel. Kann Platzhalter (Tags) wie "
+"{now} (mit Offsets wie z. B. {now}+5d), {client_ip}, {ua_browser}, {username}"
+", {userrealm} und {container_serial} enthalten."
 
 #: lib/eventhandler/containerhandler.py:150
 msgid "Add this key to the container info."
@@ -2805,6 +2895,10 @@ msgid ""
 "{username}, {userrealm} and {tokentype}. {current_time} is a deprecated "
 "alias for {now}."
 msgstr ""
+"Der Wert des benutzerdefinierten Benutzerattributs. Kann Tags wie {now} (mit "
+"Offsets wie z. B. {now}+2h), {client_ip}, {ua_browser}, {ua_string}, {serial}"
+", {username}, {userrealm} und {tokentype} enthalten. {current_time} ist ein "
+"veralteter Alias für {now}."
 
 #: lib/eventhandler/customuserattributeshandler.py:102
 msgid "The user from which the custom attribute should be deleted."
@@ -3044,6 +3138,9 @@ msgid ""
 "offsets such as {now}+5d), {client_ip}, {ua_browser}, {ua_string}, {serial}, "
 "{tokentype}, {username}, {realm} and {userrealm}."
 msgstr ""
+"Die neue Beschreibung des Tokens. Kann Tags wie {now} (mit Offsets wie z. B. "
+"{now}+5d), {client_ip}, {ua_browser}, {ua_string}, {serial}, {tokentype}, "
+"{username}, {realm} und {userrealm} enthalten."
 
 #: lib/eventhandler/tokenhandler.py:311
 msgid ""
@@ -3094,6 +3191,9 @@ msgid ""
 "offsets such as {now}+5d), {client_ip}, {ua_browser}, {ua_string}, {serial}, "
 "{tokentype}, {username} and {userrealm}."
 msgstr ""
+"Setzt den oben genannten Schlüssel auf diesen Wert. Kann Tags wie {now} (mit "
+"Offsets wie z. B. {now}+5d), {client_ip}, {ua_browser}, {ua_string}, {serial}"
+", {tokentype}, {username} und {userrealm} enthalten."
 
 #: lib/eventhandler/tokenhandler.py:392
 msgid ""
@@ -3285,6 +3385,13 @@ msgid ""
 "{givenname}), {user_realm} (= {userrealm}). Tag availability depends on the "
 "endpoint."
 msgstr ""
+"Sie können die folgenden Platzhalter verwenden: {admin}, {realm}, {action}, "
+"{serial}, {url}, {user}, {surname}, {givenname}, {username}, {userrealm}, "
+"{tokentype}, {tokendescription}, {time}, {date}, {client_ip}, {ua_browser}, "
+"{ua_string}, {challenge}. Aus Gründen der Abwärtskompatibilität "
+"funktionieren auch folgende Aliase: {logged_in_user}, {token_serial} (= "
+"{serial}), {token_owner} (= {givenname}), {user_realm} (= {userrealm}). Die "
+"Verfügbarkeit der Tags hängt vom jeweiligen Endpunkt ab."
 
 #: lib/eventhandler/webhookeventhandler.py:120
 msgid "The data posted in the WebHook"
@@ -3417,6 +3524,8 @@ msgid ""
 "Allow this gateway to deliver PUSH messages. Defaults to yes for Firebase "
 "and no for all other providers."
 msgstr ""
+"Erlaubt diesem Gateway, PUSH-Nachrichten zuzustellen. Standardmäßig „Ja“ für "
+"Firebase und „Nein“ für alle anderen Provider."
 
 #: lib/smsprovider/SMSProvider.py:117
 msgid ""
@@ -3429,7 +3538,6 @@ msgstr ""
 "z.B. '/[\\+/]//' ein, um Plus-Zeichen und Schrägstriche zu entfernen."
 
 #: lib/smsprovider/ScriptSMSProvider.py:115
-#, fuzzy
 msgid ""
 "The script in script directory PI_SCRIPT_SMSPROVIDER_DIRECTORY to call. "
 "Expects phone as the parameter and the message from stdin. Structured push "
@@ -3437,7 +3545,7 @@ msgid ""
 msgstr ""
 "Das Skript, das aus dem Skripte-Verzeichnis PI_SCRIPT_SMSPROVIDER_DIRECTORY "
 "aufgerufen werden soll. Dieses Skript erhält die Telefonnummer als Parameter "
-"und die Nachricht über Stdin."
+"und die Nachricht über Stdin. Push Nachrichten sind als JSON verfügbar."
 
 #: lib/smsprovider/SmppSMSProvider.py:125
 msgid "SMSC Host IP"
@@ -3499,6 +3607,8 @@ msgid ""
 "Delete metric rows whose window_start is older than this many hours. Default "
 "24."
 msgstr ""
+"Löscht Metrik-Zeilen, deren window_start älter als diese Anzahl an Stunden "
+"ist. Standardwert: 24."
 
 #: lib/task/simplestats.py:46
 msgid "Total number of tokens"
@@ -3623,17 +3733,19 @@ msgstr "init_token fehlgeschlagen:"
 #: lib/token/lifecycle.py:363
 #, python-brace-format
 msgid "The token {0!s} has no owner that could be copied."
-msgstr ""
+msgstr "Das Token {0!s} hat keinen Besitzer, der kopiert werden könnte."
 
 #: lib/token/lifecycle.py:449
 #, python-brace-format
 msgid "The serial {0!s} of the replacement token is already taken."
-msgstr ""
+msgstr "Die Seriennummer {0!s} des Ersatz-Tokens ist bereits vergeben."
 
 #: lib/token/lifecycle.py:461
 #, python-brace-format
 msgid "Could not reserve a serial for the replacement of the token {0!s}."
 msgstr ""
+"Es konnte keine Seriennummer für den Ersatz des Tokens {0!s} reserviert "
+"werden."
 
 #: lib/token/lifecycle.py:533
 msgid "You can only define a lost token for an assigned token."
@@ -3832,11 +3944,12 @@ msgstr ""
 #: lib/tokens/deprecated.py:73
 #, python-brace-format
 msgid "This is a deprecated {0} token and is no longer supported."
-msgstr ""
+msgstr "Dies ist ein veraltetes {0}-Token und wird nicht mehr unterstützt."
 
 #: lib/tokens/deprecated.py:119
 msgid "This token type has been removed and has no active API endpoint."
 msgstr ""
+"Dieser Tokentyp wurde entfernt und besitzt keinen aktiven API-Endpunkt mehr."
 
 #: lib/tokens/emailtoken.py:166
 msgid "EMail Token"
@@ -4145,6 +4258,15 @@ msgid ""
 "is verified cryptographically on every authentication, not just at "
 "enrollment. By default both types are accepted."
 msgstr ""
+"Erlaubt die Authentifizierung nur mit Passkeys, die einen bestimmten "
+"Gerätetyp melden; anzugeben als durch Leerzeichen getrennte Liste aus „"
+"single_device“ und/oder „multi_device“. Ein single_device-Credential wird "
+"nicht gesichert (typischerweise ein Hardware-Sicherheitsschlüssel oder ein "
+"nicht-synchronisierender Plattform-Authenticator), ein multi_device-"
+"Credential wird gesichert und kann auf mehreren Geräten verwendet werden "
+"(ein synchronisierter Cloud-Passkey). Dies wird bei jeder Authentifizierung "
+"kryptografisch überprüft, nicht nur bei der Registrierung. Standardmäßig "
+"werden beide Typen akzeptiert."
 
 #: lib/tokens/passkeytoken.py:152
 msgid ""
@@ -4160,6 +4282,19 @@ msgid ""
 "an unintended reassignment, not a defense against a client that deliberately "
 "sends a forged value."
 msgstr ""
+"Erfordert, dass das vom Authenticator zurückgegebene userHandle mit der "
+"FIDO2-Benutzer-ID übereinstimmt, die bei der Registrierung des Passkeys für "
+"den Benutzer hinterlegt wurde. Standardmäßig identifiziert privacyIDEA den "
+"Benutzer ausschließlich anhand der Credential-ID und deren Zuordnung zu "
+"einem Benutzer in privacyIDEA. Wird ein Passkey gelöst und einem anderen "
+"Benutzer zugewiesen, erfolgt die Authentifizierung daher als dieser neue "
+"Benutzer. Die Aktivierung dieser Option erkennt eine solche Neuzuweisung bei "
+"regulären Clients – allerdings schlägt die Authentifizierung bei allen "
+"Passkeys fehl, die vor der Aufzeichnung dieses Attributs registriert wurden. "
+"Hinweis: Anders als der Gerätetyp ist das userHandle nicht durch die "
+"WebAuthn-Assertion-Signatur geschützt; es dient als Schutz gegen "
+"unbeabsichtigte Neuzuweisungen, nicht als Abwehr gegen Clients, die "
+"vorsätzlich gefälschte Werte übermitteln."
 
 #: lib/tokens/passkeytoken.py:168
 msgid ""
@@ -4184,6 +4319,16 @@ msgid ""
 "result is limited to 64 bytes. If the value is empty or the policy is not "
 "set, the login name of the user is used."
 msgstr ""
+"Der Name des Passkeys, den der Authenticator bei der Anmeldedatenauswahl "
+"während der Anmeldung (und bei der Registrierung) anzeigt. Dient zur "
+"Unterscheidung von Passkeys, z. B. wenn derselbe Anmeldename in mehreren "
+"Realms existiert. Sie können die Tags {user} (Anmeldename), {realm}, "
+"{resolver} und {serial} sowie beliebige Attribute aus dem Resolver des "
+"Benutzers (z. B. {givenname}, {surname}, {email}) verwenden, etwa „{user}@"
+"{realm}“. Der aufgelöste Wert wird auch als Anzeigename verwendet. "
+"Unbekannte Tags werden durch eine leere Zeichenkette ersetzt; das Ergebnis "
+"ist auf 64 Bytes begrenzt. Ist der Wert leer oder die Richtlinie nicht "
+"gesetzt, wird der Anmeldename des Benutzers verwendet."
 
 #: lib/tokens/passkeytoken.py:187
 msgid ""
@@ -4196,6 +4341,16 @@ msgid ""
 "authenticator and cannot be requested up front, so enrollment is rejected "
 "afterwards if it does not match. By default both types are accepted."
 msgstr ""
+"Beschränkt die Passkey-Registrierung auf Authenticatoren, die einen "
+"bestimmten Gerätetyp melden; anzugeben als durch Leerzeichen getrennte Liste "
+"aus „single_device“ und/oder „multi_device“. Ein single_device-Credential "
+"wird nicht gesichert (typischerweise ein Hardware-Sicherheitsschlüssel oder "
+"ein nicht-synchronisierender Plattform-Authenticator), ein multi_device-"
+"Credential wird gesichert und kann auf mehreren Geräten verwendet werden "
+"(ein synchronisierter Cloud-Passkey). Da der Gerätetyp vom Browser/"
+"Authenticator übermittelt und nicht vorab angefordert werden kann, wird die "
+"Registrierung nachträglich abgewiesen, falls er nicht übereinstimmt. "
+"Standardmäßig werden beide Typen akzeptiert."
 
 #: lib/tokens/passkeytoken.py:597
 msgid "Please authenticate with your passkey!"
@@ -4257,7 +4412,7 @@ msgstr "PUSH: Sendet eine Push Nachricht an ein Smartphone."
 
 #: lib/tokens/pushtoken.py:629
 msgid "The push gateway configuration."
-msgstr ""
+msgstr "Die Push-Gateway-Konfiguration."
 
 #: lib/tokens/pushtoken.py:637
 msgid ""
