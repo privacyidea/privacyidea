@@ -14,7 +14,7 @@ selected at runtime by `entrypoint.sh` via environment variables:
 |-----------|---------------------|-------------------------------------------------------------------------|
 | `pi-init` | `PI_INIT_ONLY=true` | Create tables, run DB migrations, bootstrap the admin, install the enckey canary, then exit. |
 | `pi`      | *(default)*         | Gunicorn web workers on port 8080.                                      |
-| `pi-cron` | `PI_CRON_MODE=true` | Maintenance scheduler: audit rotation, challenge cleanup, UI-configured periodic tasks. |
+| `pi-cron` | `PI_CRON_MODE=true` | Maintenance scheduler: table cleanups, audit rotation, UI-configured periodic tasks. |
 
 `pi` and `pi-cron` wait for `pi-init` to finish (`service_completed_successfully`),
 so migrations never race against running workers.
@@ -148,6 +148,11 @@ set to `false`/`0`/`no` to disable:
 | `PI_CRON_AUDIT_CHUNKSIZE` | *(unset)* | delete in chunks to avoid long locks |
 | `PI_CRON_USERCACHE_CLEANUP` | `true` | usercache cleanup (no-op unless the cache is on) |
 | `PI_CRON_USERCACHE_HOUR` / `_INTERVAL` | `4` | daily hour (UTC) or interval, like audit |
+| `PI_CRON_REMEMBERED_DEVICE_CLEANUP` | `true` | daily cleanup of expired remembered devices |
+| `PI_CRON_AUTHCACHE_CLEANUP` | `true` | daily cleanup of authentication cache entries no auth_cache policy accepts any more |
+| `PI_CRON_METRICS_CLEANUP` | `true` | daily cleanup of metric rows older than 24 hours |
+| `PI_CRON_CONDITIONAL_ACCESS_PURGE` | `true` | daily removal of expired IP blocks and user locks |
+| `PI_CRON_AUTHLOG_AGE` | *(unset)* | delete authentication log entries older than N days, daily; unset keeps the log forever |
 
 **Arbitrary app config**: any privacyIDEA config key can be set as
 `PRIVACYIDEA_<KEY>` (put these in `example.env`). See the upstream config
@@ -279,7 +284,7 @@ archive — but you must then `make up`/restart so the workers pick them up.)
 
 ### Scheduling backups
 
-`pi-cron` handles in-database maintenance (audit rotation, challenge cleanup,
+`pi-cron` handles in-database maintenance (table cleanups, audit rotation,
 periodic tasks) but deliberately does **not** take backups. `backup.sh` bundles
 the host-side secret files with the dump and writes archives that must then leave
 the host to count as a backup — work that belongs on the host, not in the app
@@ -305,14 +310,19 @@ Maintenance (pi-cron)
   fixed interval instead of a daily hour; it takes precedence if both are set.
 - daily at `PI_CRON_USERCACHE_HOUR` (default 04:00) — `privacyidea-usercache-cleanup`
   (a no-op unless the user cache is enabled). Same `_INTERVAL` override as audit.
+- daily at 03:00 — `pi-manage config remembered_device cleanup`,
+  `pi-manage config authcache cleanup`, `pi-manage config metrics cleanup`,
+  `pi-manage conditionalaccess purge-expired-blocks` and `purge-expired-locks`.
+- daily at 03:00, only once `PI_CRON_AUTHLOG_AGE` is set —
+  `pi-manage authlog cleanup --age <PI_CRON_AUTHLOG_AGE>`. The authentication log
+  needs a retention period of your choice, so it is kept forever by default.
 
 Two lanes of scheduled maintenance run here. The fixed jobs above are wired in
 `cron-runner.py`. Separately, privacyIDEA's **periodic-task modules**
-(EventCounter, SimpleStats, MetricsCleanup, …) are configured in the **web UI**
-and executed by the every-minute `run_scheduled` job whenever they target this
-container's node name (`pi-cron`). So a future table/metrics cleanup that ships
-as a periodic-task module needs **no change to the container** — configure it in
-the UI for node `pi-cron`, not as a `PI_CRON_*` variable.
+(EventCounter, SimpleStats, …) are configured in the **web UI** and executed by
+the every-minute `run_scheduled` job whenever they target this container's node
+name (`pi-cron`). So a periodic-task module needs **no change to the container**
+— configure it in the UI for node `pi-cron`, not as a `PI_CRON_*` variable.
 
 Tune via `PI_CRON_*` environment variables (see the `pi-cron` service in
 `compose.yaml` and the header of `cron-runner.py`). Keep `pi-cron` at a single

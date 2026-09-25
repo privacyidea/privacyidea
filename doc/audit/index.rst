@@ -63,6 +63,9 @@ But you can set up a cron job to clean up old audit entries. Since version
 2.19 audit entries can be either cleaned up based on the number of entries or
 based on on the age. Cleaning based on the age takes precedence.
 
+The Ubuntu packages ship such a job commented out; the Docker image rotates by
+the number of entries, see :ref:`cleanup_jobs`.
+
 .. versionadded:: 2.22 The ``--chunksize`` parameter allows cleaning up audit
     entries in chunks to avoid exzessive memory usage.
 

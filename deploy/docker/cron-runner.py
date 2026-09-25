@@ -12,12 +12,12 @@ a schedule, and the command to run. To add a maintenance task in the future
 (e.g. cleaning up a new table), append one Task(...) entry and read whatever
 PI_CRON_* environment variables it needs — nothing else in this file changes.
 
-NOTE: privacyIDEA's own periodic-task modules (EventCounter, SimpleStats,
-MetricsCleanup, ...) are configured in the web UI, not here. They are executed
-by the "periodic tasks" entry below (privacyidea-cron run_scheduled) whenever
-they target this container's node name (PRIVACYIDEA_PI_NODE, "pi-cron" in the
-bundled compose). So a new metrics/table cleanup that ships as a periodic-task
-module needs no change here — just configure it in the UI for node pi-cron.
+NOTE: privacyIDEA's own periodic-task modules (EventCounter, SimpleStats, ...)
+are configured in the web UI, not here. They are executed by the "periodic
+tasks" entry below (privacyidea-cron run_scheduled) whenever they target this
+container's node name (PRIVACYIDEA_PI_NODE, "pi-cron" in the bundled compose).
+So a periodic-task module needs no change here — just configure it in the UI
+for node pi-cron.
 
 Configuration via environment variables (all optional):
 
@@ -27,6 +27,19 @@ Configuration via environment variables (all optional):
   PI_CRON_PERIODIC_TASKS      Enable/disable privacyidea-cron run_scheduled (default: true)
 
   PI_CRON_CHALLENGE_CLEANUP   Enable/disable challenge cleanup (default: true)
+
+  PI_CRON_REMEMBERED_DEVICE_CLEANUP
+                              Enable/disable the daily cleanup of expired remembered
+                              devices (default: true)
+  PI_CRON_AUTHCACHE_CLEANUP   Enable/disable the daily cleanup of authentication cache
+                              entries no auth_cache policy accepts any more (default: true)
+  PI_CRON_METRICS_CLEANUP     Enable/disable the daily cleanup of metric rows older
+                              than 24 hours (default: true)
+  PI_CRON_CONDITIONAL_ACCESS_PURGE
+                              Enable/disable the daily removal of expired IP blocks
+                              and user locks (default: true)
+  PI_CRON_AUTHLOG_AGE         Delete authentication log entries older than N days,
+                              daily (default: unset, i.e. the log is kept forever)
 
   PI_CRON_USERCACHE_CLEANUP   Enable/disable usercache cleanup (default: true; a
                               no-op unless the user cache is enabled)
@@ -173,11 +186,6 @@ def audit_rotate_cmd() -> list[str]:
 # Schedules: every_minute(), hourly(), daily_at(hour), every(minutes), or
 # scheduled_from_env(interval_var, hour_var, default_hour) to let the operator
 # pick either an interval or a fixed hour with one env var.
-# Example (once a corresponding pi-manage command exists):
-#   Task("metrics cleanup",
-#        _bool("PI_CRON_METRICS_CLEANUP", False),
-#        every(_duration_minutes("PI_CRON_METRICS_INTERVAL", 60)),
-#        lambda: ["pi-manage", "metrics", "cleanup", "--age", os.environ.get("PI_CRON_METRICS_AGE", "365")]),
 TASKS = [
     Task("periodic tasks",
          _bool("PI_CRON_PERIODIC_TASKS", True),
@@ -195,6 +203,30 @@ TASKS = [
          _bool("PI_CRON_USERCACHE_CLEANUP", True),
          scheduled_from_env("PI_CRON_USERCACHE_INTERVAL", "PI_CRON_USERCACHE_HOUR", 4),
          lambda: ["privacyidea-usercache-cleanup"]),
+    Task("remembered device cleanup",
+         _bool("PI_CRON_REMEMBERED_DEVICE_CLEANUP", True),
+         daily_at(3),
+         lambda: ["pi-manage", "config", "remembered_device", "cleanup"]),
+    Task("authcache cleanup",
+         _bool("PI_CRON_AUTHCACHE_CLEANUP", True),
+         daily_at(3),
+         lambda: ["pi-manage", "config", "authcache", "cleanup"]),
+    Task("metrics cleanup",
+         _bool("PI_CRON_METRICS_CLEANUP", True),
+         daily_at(3),
+         lambda: ["pi-manage", "config", "metrics", "cleanup"]),
+    Task("IP block purge",
+         _bool("PI_CRON_CONDITIONAL_ACCESS_PURGE", True),
+         daily_at(3),
+         lambda: ["pi-manage", "conditionalaccess", "purge-expired-blocks"]),
+    Task("user lock purge",
+         _bool("PI_CRON_CONDITIONAL_ACCESS_PURGE", True),
+         daily_at(3),
+         lambda: ["pi-manage", "conditionalaccess", "purge-expired-locks"]),
+    Task("authlog cleanup",
+         bool(os.environ.get("PI_CRON_AUTHLOG_AGE")),
+         daily_at(3),
+         lambda: ["pi-manage", "authlog", "cleanup", "--age", os.environ["PI_CRON_AUTHLOG_AGE"]]),
 ]
 
 
@@ -219,9 +251,10 @@ def run(cmd: list[str]) -> None:
 
 def main() -> None:
     print("[pi-cron] Starting. Scheduled tasks:", flush=True)
+    name_width = max(len(task.name) for task in TASKS)
     for task in TASKS:
         state = "enabled" if task.enabled else "disabled"
-        print(f"[pi-cron]   {task.name:<18} {state:<8} ({task.schedule.description})", flush=True)
+        print(f"[pi-cron]   {task.name:<{name_width}} {state:<8} ({task.schedule.description})", flush=True)
 
     last_minute = -1
     while True:

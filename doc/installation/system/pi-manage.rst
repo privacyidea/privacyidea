@@ -24,7 +24,8 @@ pi-manage always takes a command and sometimes a sub command::
 
 For a complete list of commands and sub commands use the *-h* parameter.
 
-You can do the following tasks.
+You can do the following tasks. The cleanup commands among them have to run
+regularly, see :ref:`cleanup_jobs`.
 
 Encryption Key
 --------------
@@ -146,8 +147,9 @@ Clean up challenges
 
 The challenges of challenge-response tokens are stored in a database table.
 Each challenge has a validity time. Challenges which haven't been answered,
-persist in the database and must be cleaned up manually. To clean up all
-expired challenges use::
+persist in the database until they are cleaned up. The Ubuntu packages and the
+Docker image do this for you, see :ref:`cleanup_jobs`. To clean up all expired
+challenges use::
 
    pi-manage config challenge cleanup
 
@@ -226,7 +228,26 @@ reports how many entries would be removed.
 
 Keep the retention period comfortably longer than the longest time window used
 by a conditional access policy - deleted entries no longer count towards its
-thresholds, see :ref:`authentication_log_cleanup`.
+thresholds, see :ref:`authentication_log_cleanup`. The Ubuntu packages ship this
+job commented out, see :ref:`cleanup_jobs`.
+
+.. _pimanage_metrics:
+
+Clean up metrics
+----------------
+
+.. index:: metrics, metric_aggregate
+
+The ``metric_aggregate`` table behind the *Resolver Timing* and *Notification
+Delivery* panels of the :ref:`dashboard` gains rows every five minutes. To delete
+the rows older than 24 hours use::
+
+   pi-manage config metrics cleanup
+
+``--older-than-hours`` sets a different age, at least ``1`` so that the window
+still being written is kept. ``--dryrun`` only reports how many rows would be
+removed. The Ubuntu packages and the Docker image run this daily, see
+:ref:`cleanup_jobs`.
 
 Conditional Access
 ------------------
@@ -244,6 +265,9 @@ locks and blocks that are in force::
 
 See :ref:`conditional_access_policies_lifting` and
 :ref:`conditional_access_policies_cli` for the complete list.
+``purge-expired-blocks`` and ``purge-expired-locks`` remove the blocks and locks
+that have run out; the Ubuntu packages and the Docker image run them daily, see
+:ref:`cleanup_jobs`.
 
 
 Exporting and Importing the Configuration

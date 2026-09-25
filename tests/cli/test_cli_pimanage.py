@@ -39,9 +39,13 @@ from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, C
 from privacyidea.lib.conditional_access.policy import create_conditional_access_policy
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
 from privacyidea.lib.lifecycle import call_finalizers
+from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
-from privacyidea.models import db, Challenge, AuthenticationLog, ConditionalAccessOutcome
+from privacyidea.models import db, AuthCache, Challenge, AuthenticationLog, ConditionalAccessOutcome
+from privacyidea.models.metric_aggregate import MetricAggregate
 from privacyidea.models.conditional_access_policy import (BlockList, ConditionalAccessPolicy,
                                                           ConditionalAccessPolicyStage, UserLockState)
 from privacyidea.models.utils import utc_now
@@ -1215,6 +1219,172 @@ class PIManageChallengeTestCase(CliTestCase):
         self.assertEqual(res.exit_code, 0, res.output)
         self.assertEqual(Challenge.query.count(), 0, "table should be empty after --age")
         self.assertIn("entries deleted", res.output, res)
+
+
+class PIManageAuthCacheTestCase(CliTestCase):
+    """
+    Tests for ``pi-manage config authcache cleanup``.
+    """
+
+    def _insert(self, username: str, idle: dt.timedelta) -> None:
+        # One authcache entry, first and last used idle ago.
+        used = utc_now() - idle
+        db.session.add(AuthCache(username, "realm1", "resolver1", "hash", first_auth=used, last_auth=used))
+        db.session.commit()
+
+    def _remaining(self) -> set[str]:
+        return {entry.username for entry in AuthCache.query.all()}
+
+    def tearDown(self) -> None:
+        for name in ("authcache_short", "authcache_long", "authcache_invalid"):
+            try:
+                delete_policy(name)
+            except ResourceNotFoundError:
+                pass
+        AuthCache.query.delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_01_without_policy_all_entries_are_removed(self):
+        self._insert("recent", dt.timedelta(minutes=1))
+        self._insert("old", dt.timedelta(days=3))
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "authcache", "cleanup"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("No active auth_cache policy accepts cached entries", res.output)
+        self.assertIn("2 entries deleted from authcache", res.output)
+        self.assertEqual(set(), self._remaining())
+
+    def test_02_idle_limit_of_the_policy(self):
+        # "4h/5m" stops accepting an entry that has not been used for 5 minutes.
+        set_policy("authcache_short", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=4h/5m")
+        self._insert("recent", dt.timedelta(minutes=1))
+        self._insert("idle", dt.timedelta(minutes=10))
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "authcache", "cleanup"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("not used for 5 minutes", res.output)
+        self.assertEqual({"recent"}, self._remaining())
+
+    def test_03_long_policy_keeps_entries_idle_for_hours(self):
+        # "2d" accepts an entry for two days after its first use, however long it has been idle.
+        set_policy("authcache_long", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=2d")
+        self._insert("idle_hours", dt.timedelta(hours=9))
+        self._insert("expired", dt.timedelta(days=3))
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "authcache", "cleanup"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn(f"not used for {2 * 24 * 60} minutes", res.output)
+        self.assertEqual({"idle_hours"}, self._remaining())
+
+    def test_04_the_most_generous_policy_wins(self):
+        # The entries do not say which policy wrote them, so a policy limited to some clients counts as well.
+        set_policy("authcache_short", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=4h/5m")
+        set_policy("authcache_long", scope=SCOPE.AUTH, client="10.0.0.0/8", action=f"{PolicyAction.AUTH_CACHE}=12h/3")
+        self._insert("idle_hours", dt.timedelta(hours=9))
+        self._insert("expired", dt.timedelta(hours=13))
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "authcache", "cleanup"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual({"idle_hours"}, self._remaining())
+
+    def test_05_inactive_and_invalid_policies_are_left_out(self):
+        set_policy("authcache_long", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=2d", active=False)
+        set_policy("authcache_invalid", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=forever")
+        self._insert("idle_hours", dt.timedelta(hours=9))
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "authcache", "cleanup"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Ignoring the invalid auth_cache value 'forever' of the policies authcache_invalid", res.output)
+        self.assertEqual(set(), self._remaining())
+
+    def test_06_minutes_overrides_the_policies(self):
+        set_policy("authcache_long", scope=SCOPE.AUTH, action=f"{PolicyAction.AUTH_CACHE}=2d")
+        self._insert("recent", dt.timedelta(minutes=1))
+        self._insert("idle_hours", dt.timedelta(hours=9))
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "authcache", "cleanup", "--minutes", "480"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertNotIn("auth_cache policy", res.output)
+        self.assertEqual({"recent"}, self._remaining())
+
+
+class PIManageMetricsTestCase(CliTestCase):
+    """
+    Tests for ``pi-manage config metrics cleanup``.
+    """
+
+    def _insert(self, age_hours: float) -> None:
+        # One metric row whose window started age_hours hours ago.
+        db.session.add(MetricAggregate(metric_name="cli_cleanup_test", labels_key="", node="n1",
+                                       window_start=utc_now() - dt.timedelta(hours=age_hours)))
+        db.session.commit()
+
+    def tearDown(self) -> None:
+        MetricAggregate.query.delete()
+        db.session.commit()
+        super().tearDown()
+
+    def test_01_help(self):
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "metrics", "cleanup", "-h"])
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Delete metric rows older than", res.output)
+
+    def test_02_dryrun(self):
+        self._insert(age_hours=48)
+        self._insert(age_hours=0.1)
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "metrics", "cleanup", "--dryrun"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Would delete 1 metric rows older than 24 hours", res.output)
+        self.assertEqual(2, MetricAggregate.query.count(), "--dryrun must not delete anything")
+
+    def test_03_cleanup_default_keeps_the_last_24_hours(self):
+        self._insert(age_hours=48)
+        self._insert(age_hours=0.1)
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "metrics", "cleanup"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertIn("Deleted 1 metric rows older than 24 hours", res.output)
+        self.assertEqual(1, MetricAggregate.query.count(), "only the recent row must remain")
+
+    def test_04_cleanup_older_than_hours(self):
+        self._insert(age_hours=3)
+        self._insert(age_hours=0.1)
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "metrics", "cleanup", "--older-than-hours", "2"])
+
+        self.assertEqual(0, res.exit_code, res.output)
+        self.assertEqual(1, MetricAggregate.query.count(), "only the row younger than 2 hours must remain")
+
+    def test_05_older_than_hours_below_one_is_rejected(self):
+        # Zero hours would delete the 5-minute window that is still being written.
+        self._insert(age_hours=0.1)
+
+        runner = self.app.test_cli_runner()
+        res = runner.invoke(pi_manage, ["config", "metrics", "cleanup", "--older-than-hours", "0"])
+
+        self.assertNotEqual(0, res.exit_code, res.output)
+        self.assertIn("--older-than-hours", res.output)
+        self.assertEqual(1, MetricAggregate.query.count())
 
 
 class PIManageConfigCRUDTestCase(CliTestCase):

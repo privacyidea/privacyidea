@@ -38,8 +38,9 @@ Version 3.14dev1
     used by LDAP, Keycloak and EntraID resolvers, as well as resolver timings and notification delivery, which feed the
     new dashboard panels (#5266, #4202)
   * The server records some internal metrics, e.g. how long a resolver takes to answer or whether a notification was
-    delivered, in a new pre-aggregated table. Schedule the new "MetricsCleanup" task to keep it small, or disable the
-    recording completely with `PI_NO_INTERNAL_METRICS` in `pi.cfg` (#5270)
+    delivered, in a new pre-aggregated table. The new command `pi-manage config metrics cleanup` keeps it small, the
+    Ubuntu packages and the Docker image run it daily. The recording can be disabled completely with
+    `PI_NO_INTERNAL_METRICS` in `pi.cfg` (#5270)
   * Event handler conditions can now check the userinfo of the user, like the additional conditions of a
     policy (#5023, #4201)
   * Rolling a token over, which gives an existing token a new secret, is now a right of its own. `POST

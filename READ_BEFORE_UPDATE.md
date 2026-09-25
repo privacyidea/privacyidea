@@ -298,11 +298,11 @@
   overwritten). To set a new secret, supply the actual new value.
 
 * A new pre-aggregated `metric_aggregate` table backs the *Resolver Timing* and *Notification Delivery*
-  dashboard panels. The schema migration creates the table empty; nothing breaks if you skip the next step, but the
-  table grows unbounded over time. After the upgrade, go to *Config -> Tasks* and schedule the new **MetricsCleanup**
-  periodic task (option `older_than_hours`, default `24`; daily cadence recommended). If you prefer not to record
-  metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` - the dashboard panels will show no data and the table
-  stays empty. The dashboard panels read the last hour by default, so anything older than ~24 h is dead weight.
+  dashboard panels. The schema migration creates the table empty. Without a cleanup the table grows unbounded, so
+  `pi-manage config metrics cleanup` has to run regularly: it deletes the rows older than 24 hours, the most the
+  dashboard panels show. The Ubuntu packages and the Docker image schedule it daily; on an installation from PyPI add
+  it to your crontab. If you prefer not to record metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` - the
+  dashboard panels will show no data and the table stays empty.
 
 * The `/validate/samlcheck` endpoint has been removed (deprecated in 3.11). The
   `ReturnSamlAttributes` and `ReturnSamlAttributesOnFail` system configuration options are removed along with it; the

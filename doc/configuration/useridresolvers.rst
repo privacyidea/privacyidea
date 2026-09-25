@@ -946,7 +946,7 @@ user ID will not be noticed by privacyIDEA until the corresponding cache entry e
 
 Expired cache entries are *not* deleted from the user cache table automatically. Instead, the tool
 ``privacyidea-usercache-cleanup`` should be used to delete expired cache entries from the database,
-e.g. in a cronjob.
+e.g. in a cronjob. The Ubuntu packages and the Docker image run it daily, see :ref:`cleanup_jobs`.
 
 However, cache entries are removed at some defined events:
 

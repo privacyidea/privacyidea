@@ -22,6 +22,8 @@ each invocation, the ``privacyidea-cron`` script determines which tasks should b
 execute the scheduled tasks. The ``-c`` option tells the script to be quiet and only print to stderr
 in case of an error (see :ref:`privacyidea_cron`).
 
+The Ubuntu package's file also holds the jobs that clean up the database, see :ref:`cleanup_jobs`.
+
 Periodic tasks can be managed in the WebUI by navigating to *Config->Periodic Tasks*:
 
 .. figure:: periodictasks.png
@@ -78,7 +80,6 @@ privacyIDEA comes with the following task modules:
 
    simplestats
    eventcounter
-   metricscleanup
 
 
 .. _privacyidea_cron:

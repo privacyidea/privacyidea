@@ -70,7 +70,7 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list, CENSORED
 from privacyidea.lib.health import get_certificate_status
-from privacyidea.lib.metrics import get_metrics, cleanup_old_metrics
+from privacyidea.lib.metrics import get_metrics
 from privacyidea.lib.cache.user import flush_user_cache
 from privacyidea.lib.usercache import delete_user_cache
 from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode, is_true
@@ -800,32 +800,3 @@ def delete_user_cache_api():
     return send_result({"status": True, "deleted": row_count,
                         "flushed_resolvers": flushed_resolvers})
 
-
-@system_blueprint.route("/metricscleanup", methods=['POST'])
-@admin_required
-@log_with(log)
-def metricscleanup_api():
-    """
-    Delete ``metric_aggregate`` rows older than ``older_than_hours`` hours.
-    Mirrors what the ``MetricsCleanup`` periodic task does (see
-    :ref:`taskmodule_metricscleanup`), but on demand. The metrics table backs
-    the resolver-timing and notification-delivery dashboard panels; this keeps
-    it from growing unbounded.
-
-    :jsonparam older_than_hours: retention threshold in hours. Default 24.
-                                 Values < 1 are clamped to 1 to prevent wiping
-                                 the live (in-progress) bucket.
-    :>json dict value: ``{"status": true, "deleted": <n>,
-        "older_than_hours": <hours>}`` where ``n`` is the number of rows removed.
-    :reqheader PI-Authorization: The authorization token
-    """
-    try:
-        hours = int(get_optional(request.all_data, "older_than_hours") or 24)
-    except (TypeError, ValueError):
-        hours = 24
-    if hours < 1:
-        hours = 1
-    deleted = cleanup_old_metrics(older_than_seconds=hours * 3600)
-    g.audit_object.log({"success": True,
-                        "info": f"Deleted {deleted} metric_aggregate row(s) older than {hours}h"})
-    return send_result({"status": True, "deleted": deleted, "older_than_hours": hours})
