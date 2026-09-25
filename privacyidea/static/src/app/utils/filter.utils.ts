@@ -34,19 +34,46 @@ export function filterParamsEqual(a: Record<string, string>, b: Record<string, s
   return keys.every((key) => a[key] === b[key]);
 }
 
+// Written before a filter value, asks for that value in full instead of anywhere in the field, e.g.
+// `serial: =OATH0001`. The inline "filter by this value" buttons write their values this way.
+const EXACT_MATCH_PREFIX = "=";
+
+/** A filter value that matches the given text in full. */
+export function exactMatch(value: string): string {
+  return `${EXACT_MATCH_PREFIX}${value}`;
+}
+
+/** Whether a filter value asks for an exact match, and the text it matches. */
+export function splitExactMatch(value: string): { exact: boolean; text: string } {
+  return value.startsWith(EXACT_MATCH_PREFIX)
+    ? { exact: true, text: value.slice(EXACT_MATCH_PREFIX.length).trim() }
+    : { exact: false, text: value };
+}
+
+/**
+ * Whether a text matches a filter term, ignoring case: in full for a term that asks for an exact match,
+ * anywhere in it otherwise. For the tables that filter in the browser.
+ */
+export function matchesFilterTerm(text: string, term: string): boolean {
+  const { exact, text: wanted } = splitExactMatch(term.trim());
+  const haystack = text.toLowerCase();
+  const needle = wanted.toLowerCase();
+  return exact ? haystack === needle : haystack.includes(needle);
+}
+
 /**
  * A single query parameter, wrapped in wildcards unless the backend matches the key
- * exactly. An empty value yields no parameter at all, because it would filter for
- * everything the key can hold.
+ * exactly or the value asks for an exact match. An empty value yields no parameter at
+ * all, because it would filter for everything the key can hold.
  */
 export function toWildcardParam(
   key: string,
   value: string | null | undefined,
   plainKeys: ReadonlySet<string>
 ): Record<string, string> {
-  const trimmed = (value ?? "").trim();
-  if (!StringUtils.validFilterValue(trimmed)) return {};
-  return { [key]: plainKeys.has(key) ? trimmed : `*${trimmed}*` };
+  const { exact, text } = splitExactMatch((value ?? "").trim());
+  if (!StringUtils.validFilterValue(text)) return {};
+  return { [key]: exact || plainKeys.has(key) ? text : `*${text}*` };
 }
 
 /**

@@ -39,6 +39,7 @@ import { MachineService, MachineServiceInterface, TokenApplication } from "@serv
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 @Component({
@@ -108,8 +109,9 @@ export class TokenApplicationsOfflineComponent {
     return this.machineService.getFilterIconName(keyword);
   }
 
+  // A clicked cell value names one entry, so it is matched in full rather than anywhere in the column.
   addFilterValue(keyword: string, value: string): void {
-    this.machineService.updateFilter((current) => current.addEntry(keyword, value));
+    this.machineService.updateFilter((current) => current.addEntry(keyword, exactMatch(value)));
   }
 
   onKeywordClick(filterKeyword: string): void {

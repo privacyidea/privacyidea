@@ -129,12 +129,12 @@ describe("TokenApplicationsOfflineComponent (Jest)", () => {
   });
 
   describe("inline cell filter", () => {
-    it("replaces the column's filter with the clicked value", () => {
+    it("replaces the column's filter with the clicked value, matched exactly", () => {
       machineServiceMock.activeFilter.set(new FilterValue({ value: "serial: OLD" }));
 
       component.addFilterValue("serial", "SSH1");
 
-      expect(machineServiceMock.activeFilter().getValueOfKey("serial")).toBe("SSH1");
+      expect(machineServiceMock.activeFilter().getValueOfKey("serial")).toBe("=SSH1");
     });
   });
 });

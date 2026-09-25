@@ -44,6 +44,7 @@ import {
 } from "@services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
@@ -160,8 +161,9 @@ export class ChallengesTableComponent {
     return isSelected ? "filter_alt_off" : "filter_alt";
   }
 
+  // A clicked cell value names one entry, so it is matched in full rather than anywhere in the column.
   addFilterValue(keyword: string, value: string): void {
-    this.challengesService.updateFilter((current) => current.addEntry(keyword, value));
+    this.challengesService.updateFilter((current) => current.addEntry(keyword, exactMatch(value)));
   }
 
   onKeywordClick(filterKeyword: string): void {

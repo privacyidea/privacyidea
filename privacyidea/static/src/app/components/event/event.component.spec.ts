@@ -108,6 +108,26 @@ describe("EventComponent", () => {
     expect(ds.filter).toBe("test");
   });
 
+  it("filterByEvent matches the clicked event in full and highlights it without the prefix", () => {
+    const ds = component.eventHandlerDataSource();
+    const handler = {
+      name: "handler",
+      event: ["token_init_done"],
+      handlermodule: "",
+      position: "",
+      action: "",
+      conditions: {},
+      options: {}
+    } as unknown as EventHandler;
+
+    component.filterByEvent("token_init");
+
+    expect(ds.filter).toBe("=token_init");
+    expect(ds.filterPredicate(handler, ds.filter)).toBe(false);
+    expect(ds.filterPredicate({ ...handler, event: ["token_init"] }, ds.filter)).toBe(true);
+    expect(component.highlightTerm()).toBe("token_init");
+  });
+
   it("onEditEventHandler should navigate to edit event handler route", () => {
     const router = TestBed.inject(Router);
     const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);

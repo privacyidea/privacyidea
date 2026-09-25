@@ -118,7 +118,7 @@ describe("AuditComponent (unit)", () => {
 
       component.addFilterValue("realm", "defrealm");
 
-      expect(mockAuditService.activeFilter().getValueOfKey("realm_name")).toBe("defrealm");
+      expect(mockAuditService.activeFilter().getValueOfKey("realm_name")).toBe("=defrealm");
       expect(mockAuditService.activeFilter().hasKey("realm")).toBe(false);
     });
 
@@ -127,7 +127,15 @@ describe("AuditComponent (unit)", () => {
 
       component.addFilterValue("serial", "HOTP1");
 
-      expect(mockAuditService.activeFilter().getValueOfKey("serial")).toBe("HOTP1");
+      expect(mockAuditService.activeFilter().getValueOfKey("serial")).toBe("=HOTP1");
+    });
+
+    it("keeps a day and a policy a partial match", () => {
+      component.addFilterValue("startdate", "2026-09-25");
+      component.addFilterValue("policies", "otp");
+
+      expect(mockAuditService.activeFilter().getValueOfKey("startdate")).toBe("2026-09-25");
+      expect(mockAuditService.activeFilter().getValueOfKey("policies")).toBe("otp");
     });
   });
 

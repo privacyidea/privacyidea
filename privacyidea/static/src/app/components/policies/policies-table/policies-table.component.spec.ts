@@ -404,6 +404,20 @@ describe("PoliciesTableComponent", () => {
       expect(filterBy("actions: totp")).toEqual(["auth-totp"]);
     });
 
+    it("matches a value in full when it asks for an exact match", () => {
+      expect(filterBy("actions: max")).toEqual(["enroll-hotp"]);
+      expect(filterBy("actions: =max")).toEqual([]);
+      expect(filterBy("actions: =max_count")).toEqual(["enroll-hotp"]);
+      expect(filterBy("conditions: =sale")).toEqual([]);
+      expect(filterBy("conditions: =sales")).toEqual(["enroll-hotp"]);
+    });
+
+    it("highlights an exact-match value without its prefix", () => {
+      filterBy("actions: =max_count");
+
+      expect(component.highlightTerms().actions).toEqual(["max_count"]);
+    });
+
     it("matches the display label of an action value as well as its raw value", () => {
       const labeledPolicy = {
         name: "labeled",
@@ -516,7 +530,7 @@ describe("PoliciesTableComponent", () => {
 
     component.filterByAction("rss_age");
 
-    expect(component.filter().getFilterOfKey("actions")).toBe("rss_age");
+    expect(component.filter().getFilterOfKey("actions")).toBe("=rss_age");
     expect(filterComponent.updateFilterManually).toHaveBeenCalledWith(component.filter());
   });
 });

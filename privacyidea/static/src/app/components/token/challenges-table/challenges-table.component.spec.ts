@@ -73,13 +73,13 @@ describe("ChallengesTableComponent", () => {
   });
 
   describe("inline cell filter", () => {
-    it("replaces the column's filter with the clicked value", () => {
+    it("replaces the column's filter with the clicked value, matched exactly", () => {
       const challengesService = TestBed.inject(ChallengesService) as unknown as MockChallengesService;
       challengesService.activeFilter.set(new FilterValue({ value: "serial: OLD" }));
 
       component.addFilterValue("serial", "HOTP1");
 
-      expect(challengesService.activeFilter().getValueOfKey("serial")).toBe("HOTP1");
+      expect(challengesService.activeFilter().getValueOfKey("serial")).toBe("=HOTP1");
     });
   });
 });

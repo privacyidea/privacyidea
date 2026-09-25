@@ -51,7 +51,7 @@ import {
 } from "@services/table-utils/filterable-table-service";
 import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { FilterCaseNote } from "@utils/filter-hint.utils";
-import { filterParamsEqual, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
+import { filterParamsEqual, splitExactMatch, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
 import { formatList, pluralize } from "@utils/i18n.utils";
 import { StringUtils } from "@utils/string.utils";
 import { tokenTypes } from "@utils/token.utils";
@@ -147,19 +147,20 @@ const caseNotes: Record<string, FilterCaseNote> = {
   "infokey & infovalue": "usually-sensitive"
 };
 function toParamValue(key: string, value: string): string {
+  const { exact, text } = splitExactMatch(value);
   if (booleanKeys.has(key)) {
-    return toBooleanParam(value) ?? value;
+    return toBooleanParam(text) ?? text;
   }
-  if (exactMatchKeys.has(key)) {
-    return value;
+  if (exact || exactMatchKeys.has(key)) {
+    return text;
   }
   // The tokenrealm query param accepts a comma-separated list, so every entry is wildcarded on its own.
   if (key === "tokenrealm") {
-    return StringUtils.splitFilterList(value)
+    return StringUtils.splitFilterList(text)
       .map((entry) => `*${entry}*`)
       .join(",");
   }
-  return `*${value}*`;
+  return `*${text}*`;
 }
 
 // A single typed token type maps to the `type` query param, multiple to `type_list`. A hidden
@@ -179,7 +180,8 @@ function toTypeParams(filter: FilterValue): Record<string, string> {
     params["type_list"] = allowedTypes.join(",");
   }
   if (typedTypes.length === 1) {
-    params["type"] = `*${typedTypes[0]}*`;
+    const { exact, text } = splitExactMatch(typedTypes[0]);
+    params["type"] = exact ? text : `*${text}*`;
   } else if (typedTypes.length > 1) {
     const narrowedTypes =
       allowedTypes.length > 0 ? typedTypes.filter((type) => allowedTypes.includes(type)) : typedTypes;
@@ -560,7 +562,9 @@ export class TokenService extends FilterableTableService implements TokenService
         // Normalize values
         .map(([key, value]) => [key, (value ?? "").toString().trim()] as const)
         // Remove empty values
-        .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
+        .filter(([key, v]) =>
+          key === "container_serial" ? true : StringUtils.validFilterValue(splitExactMatch(v).text)
+        )
         // Convert to query param values
         // A value handed over by another view counts exactly what that view counted.
         .map(([key, v]) => [key, activeFilter.isExactKey(key) ? v : toParamValue(key, v)] as const);

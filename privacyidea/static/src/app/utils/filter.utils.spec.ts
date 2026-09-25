@@ -19,7 +19,10 @@
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   buildFilterParams,
+  exactMatch,
   filterParamsEqual,
+  matchesFilterTerm,
+  splitExactMatch,
   toBooleanParam,
   toWildcardParam,
   withDefaultRealm,
@@ -68,6 +71,29 @@ describe("toWildcardParam", () => {
     expect(toWildcardParam("serial", null, new Set())).toEqual({});
     expect(toWildcardParam("serial", undefined, new Set())).toEqual({});
     expect(toWildcardParam("serial", "**", new Set())).toEqual({});
+  });
+
+  it("sends a value that asks for an exact match without wildcards", () => {
+    expect(toWildcardParam("serial", "=OATH0001", new Set())).toEqual({ serial: "OATH0001" });
+    expect(toWildcardParam("type", "=hotp", new Set(["type"]))).toEqual({ type: "hotp" });
+  });
+
+  it("yields no parameter for an exact-match prefix without a value", () => {
+    expect(toWildcardParam("serial", "=", new Set())).toEqual({});
+    expect(toWildcardParam("serial", "= ", new Set())).toEqual({});
+  });
+});
+
+describe("exact-match values", () => {
+  it("round-trips a value through the exact-match prefix", () => {
+    expect(splitExactMatch(exactMatch("OATH0001"))).toEqual({ exact: true, text: "OATH0001" });
+    expect(splitExactMatch("OATH")).toEqual({ exact: false, text: "OATH" });
+  });
+
+  it("matches a term anywhere in the text, or in full when it asks for an exact match", () => {
+    expect(matchesFilterTerm("emailtext", "email")).toBe(true);
+    expect(matchesFilterTerm("emailtext", "=email")).toBe(false);
+    expect(matchesFilterTerm("Email", "=email")).toBe(true);
   });
 });
 
