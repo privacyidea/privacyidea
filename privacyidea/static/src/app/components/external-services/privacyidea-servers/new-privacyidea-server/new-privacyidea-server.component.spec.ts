@@ -104,6 +104,13 @@ describe("NewPrivacyideaServerComponent", () => {
     expect(component.privacyideaForm().valid()).toBe(false);
   });
 
+  it.each(["test_request", ".", ".."])("rejects the reserved identifier %p", (identifier) => {
+    component.privacyideaModel.update((m) => ({ ...m, identifier, url: "http://test" }));
+    expect(component.privacyideaForm.identifier().errors().some((e) => e.kind === "reservedName")).toBe(true);
+    expect(component.privacyideaForm().valid()).toBe(false);
+    expect(component.canSave).toBe(false);
+  });
+
   it("should call save when form is valid", async () => {
     const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     component.privacyideaModel.update((m) => ({ ...m, identifier: "test", url: "http://test" }));
