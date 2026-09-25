@@ -67,6 +67,9 @@ import {
 } from "./token-enrollment.constants";
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
+import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
+import { MatTooltip } from "@angular/material/tooltip";
+import { By } from "@angular/platform-browser";
 
 interface TokenEnrollmentComponentInternals {
   _handleEnrollmentResponse: (response: EnrollmentResponse) => void;
@@ -77,8 +80,9 @@ interface TokenEnrollmentComponentInternals {
 
 // Mock token enroll strategy
 function installStrategy(component: TokenEnrollmentComponent, strategy: unknown): void {
+  const withDefaults = strategy ? { enrollmentBlockedReason: signal(null), ...(strategy as object) } : strategy;
   Object.defineProperty(component, "enrollSwitch", {
-    value: () => ({ currentStrategy: () => strategy }),
+    value: () => ({ currentStrategy: () => withDefaults }),
     configurable: true
   });
 }
@@ -334,6 +338,28 @@ describe("TokenEnrollmentComponent", () => {
       expect(component.isFormInvalid()).toBe(false);
       component.enrollToken();
       expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expect.objectContaining({ pin: "1234" }));
+    });
+
+    it("Treats the form as invalid while the token type reports its enrollment as blocked", () => {
+      // A fresh instance: installStrategy swaps in an untracked function, so it must precede the first evaluation.
+      const blockedComponent = TestBed.createComponent(TokenEnrollmentComponent).componentInstance;
+      installStrategy(blockedComponent, {
+        buildEnrollmentArgs: jest.fn(),
+        enrollmentBlockedReason: signal("no right")
+      });
+
+      expect(blockedComponent.isFormInvalid()).toBe(true);
+      expect(blockedComponent.enrollmentBlockedReason()).toBe("no right");
+    });
+
+    it("Hands the blocking reason to the enroll button of the type selector", () => {
+      const blockedFixture = TestBed.createComponent(TokenEnrollmentComponent);
+      blockedFixture.componentInstance.enrollmentBlockedReason = signal("no right");
+      blockedFixture.detectChanges();
+
+      const selector = blockedFixture.debugElement.query(By.directive(TokenEnrollmentTypeSelectorComponent));
+      expect(selector.componentInstance.enrollBlockedReason()).toBe("no right");
+      expect(selector.componentInstance.formInvalid()).toBe(true);
     });
 
     it("Setting validity dates works", () => {
@@ -924,6 +950,28 @@ describe("TokenEnrollmentComponent", () => {
         environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
       );
       req2.flush("");
+    });
+
+    it("disables the enroll button and shows the blocking reason on it", () => {
+      // Set before the first render so isFormInvalid picks it up.
+      wizardComponent.enrollmentBlockedReason = signal("no right");
+      wizardFixture.detectChanges();
+      httpTestingController
+        .expectOne(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html")
+        .flush("");
+      httpTestingController
+        .expectOne(environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html")
+        .flush("");
+      wizardFixture.detectChanges();
+
+      const button: HTMLButtonElement = wizardFixture.nativeElement.querySelector("button[type='submit']");
+      expect(button.disabled).toBe(true);
+      const tooltip = wizardFixture.debugElement
+        .queryAll(By.directive(MatTooltip))
+        .find((el) => el.nativeElement.contains(button))!
+        .injector.get(MatTooltip);
+      expect(tooltip.disabled).toBe(false);
+      expect(tooltip.message).toBe("no right");
     });
 
     it("show default content if no custom content is defined", () => {

@@ -50,7 +50,7 @@ import re
 import traceback
 from collections import OrderedDict
 
-from sqlalchemy import asc, desc, and_, or_, func, select, delete, text
+from sqlalchemy import asc, desc, and_, false, or_, func, select, delete, text
 from sqlalchemy import inspect as sqlalchemy_inspect
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
@@ -384,8 +384,10 @@ class Audit(AuditBase):
         if admin_params:
             admin = admin_params.get("admin")
             admin_realm = admin_params.get("admin_realm")
-            allowed_audit_realms = admin_params.get("allowed_audit_realms", [])
-            if allowed_audit_realms:
+            # A list, also an empty one, limits the admin to these realms: empty means their policies grant no realm
+            # at all, not that nothing is restricted.
+            allowed_audit_realms = admin_params.get("allowed_audit_realms")
+            if allowed_audit_realms is not None:
                 # search condition
                 realm_conditions = []
                 for realm in allowed_audit_realms:
@@ -395,7 +397,7 @@ class Audit(AuditBase):
                     realm_conditions.append(and_(LogEntry.administrator == admin, LogEntry.realm == admin_realm))
                 elif admin:
                     realm_conditions.append(LogEntry.administrator == admin)
-                filter_realm = or_(*realm_conditions)
+                filter_realm = or_(*realm_conditions) if realm_conditions else false()
 
         for search_key in param.keys():
             search_value = param.get(search_key)

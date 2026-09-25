@@ -86,7 +86,7 @@ export class SubscriptionService {
   private reloadTrigger = signal(0);
   subscriptionsResource = httpResource<PiResponse<Record<string, Subscription>>>(() => {
     this.reloadTrigger();
-    if (!this.contentService.onSubscription()) {
+    if (!this.contentService.onSubscription() || !this.authService.actionAllowed("managesubscription")) {
       return undefined;
     }
     return {

@@ -44,6 +44,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, enable_pol
                                     PolicyClass)
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.smsprovider.SMSProvider import (set_smsgateway,
                                                      delete_smsgateway)
 from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
@@ -4155,7 +4156,8 @@ class APITokenTestCase(MyApiTestCase):
             remove_token(serial)
         delete_policy("motp_genkey")
 
-        # applspec
+        # applspec, which only enrolls with a defined service ID
+        set_serviceid("123", "the service of the token below")
         set_policy("applspec_genkey", scope=SCOPE.ADMIN, action=f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}")
         otpkey = "3132333435363738393031323334353637383930"
         with self.app.test_request_context('/token/init',
@@ -5786,3 +5788,41 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
         self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("mynote"))
         remove_token(serial)
+
+
+class APITokenListRealmPolicyTestCase(MyApiTestCase):
+    """The tokens a tokenlist policy shows, with its realm field read the way the policy engine matches it."""
+
+    def _listed(self) -> set[str]:
+        with self.app.test_request_context('/token/', method='GET', headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return {token["serial"] for token in res.json["result"]["value"]["tokens"]}
+
+    def test_01_wildcard_and_exclusions(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        in_realm1 = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        in_realm3 = init_token({"type": "spass"}, user=User("root", self.realm3)).get_serial()
+        in_no_realm = init_token({"type": "spass"}).get_serial()
+        try:
+            # "*" is a wildcard like no realm at all, and also shows the tokens that are in no realm.
+            set_policy("tokenlist_realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm="*")
+            self.assertEqual({in_realm1, in_realm3, in_no_realm}, self._listed())
+
+            # Every realm but one names the other realms, and a token in no realm is not in any of them.
+            set_policy("tokenlist_realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST,
+                       realm=f"*,!{self.realm3}")
+            self.assertEqual({in_realm1}, self._listed())
+
+            set_policy("tokenlist_realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm=self.realm1)
+            self.assertEqual({in_realm1}, self._listed())
+
+            # A realm field that matches no realm shows no token.
+            set_policy("tokenlist_realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST,
+                       realm=f"!{self.realm3}")
+            self.assertEqual(set(), self._listed())
+        finally:
+            delete_policy("tokenlist_realms")
+            for serial in (in_realm1, in_realm3, in_no_realm):
+                remove_token(serial)

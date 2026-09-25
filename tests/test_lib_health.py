@@ -120,6 +120,18 @@ class CacheTest(MyTestCase):
             self.assertEqual(ldap_mock.call_count, 1)
             self.assertEqual(srv_mock.call_count, 1)
 
+    def test_entries_carry_the_time_they_were_probed(self):
+        with (patch.object(health, "_check_ldap_resolvers",
+                           return_value=[{"source": "ldap-resolver", "name": "r1"}]),
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            first = health.get_certificate_status()
+            checked_at = first[0]["checked_at"]
+            self.assertTrue(checked_at)
+            # A cache hit answers with the stamp of the probe rather than of the moment it was served, which is what
+            # lets a reader tell how old the answer is.
+            second = health.get_certificate_status()
+            self.assertEqual(checked_at, second[0]["checked_at"])
+
     def test_refresh_bypasses_cache(self):
         with (patch.object(health, "_check_ldap_resolvers", return_value=[]) as ldap_mock,
               patch.object(health, "_server_cert_entries", return_value=[]) as srv_mock):

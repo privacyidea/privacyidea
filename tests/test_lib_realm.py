@@ -12,7 +12,8 @@ from privacyidea.lib.realm import (set_realm,
                                    get_default_realm,
                                    realm_is_defined,
                                    set_default_realm,
-                                   delete_realm, export_realms, import_realms, get_realm_delete_warnings)
+                                   delete_realm, export_realms, import_realms, get_realm_delete_warnings,
+                                   split_realms)
 from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver)
 from privacyidea.lib.token import init_token, unassign_token
@@ -82,6 +83,15 @@ class ResolverTestCase(MyTestCase):
         realm = get_realms(self.realm1)
         self.assertTrue(self.realm1 in realm, realm)
         self.assertTrue(len(realm) == 1, realm)
+
+    def test_04_split_realms(self):
+        for empty in (None, "", " , ", [], [None, ""]):
+            self.assertEqual([], split_realms(empty), empty)
+        # Realm names are lowercase and can not hold a comma, so both are safe to apply.
+        self.assertEqual(["realm1"], split_realms(" Realm1 "))
+        self.assertEqual(["realm1", "realm2"], split_realms("realm1, REALM2,realm1"))
+        self.assertEqual(["realm1", "realm2", "realm3"], split_realms(["realm1", " Realm2,realm3", None, "realm1"]))
+        self.assertEqual(["realm1"], split_realms(("realm1",)))
 
     def test_02_set_default_realm(self):
         (added, failed) = set_realm("realm2",

@@ -38,6 +38,7 @@ export class EmailConfigComponent {
   formData = input.required<Record<string, string | number | undefined>>();
   formDataChange = output<Record<string, string | number | undefined>>();
   smtpServers = input.required<string[]>();
+  smtpServersListable = input.required<boolean>();
   expanded = input<boolean>(false);
 
   updateFormData(fieldName: string, value: string | number): void {

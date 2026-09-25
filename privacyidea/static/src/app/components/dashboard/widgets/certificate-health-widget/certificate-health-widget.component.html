@@ -84,4 +84,12 @@
       </tbody>
     </table>
   </div>
+  @if (checkedAt(); as checked) {
+    <p
+      class="checked-at"
+      [matTooltip]="checked | date: 'medium'"
+      i18n="@@dashboard.certificatesCheckedAt">
+      Checked at {{ checked | date: "shortTime" }}
+    </p>
+  }
 </app-widget-state>

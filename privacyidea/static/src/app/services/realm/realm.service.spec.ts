@@ -133,10 +133,7 @@ describe("RealmService", () => {
     realmService.createRealm(realmName, "", [{ name: "res1" }]).subscribe({ error: (err) => errors.push(err) });
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/realm/${encodeURIComponent(realmName)}`);
-    req.flush(
-      { result: { error: { message: "Realm already exists." } } },
-      { status: 400, statusText: "Bad Request" }
-    );
+    req.flush({ result: { error: { message: "Realm already exists." } } }, { status: 400, statusText: "Bad Request" });
 
     expect(errors.length).toBe(1);
   });
@@ -257,6 +254,20 @@ describe("RealmService", () => {
       httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
       httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
     });
+  });
+
+  it("loads the realms on the dashboard, where the token usage widget offers them", async () => {
+    contentService.onDashboard = signal(true);
+    TestBed.tick();
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/realm/`);
+    req.flush(MockPiResponse.fromValue({ realmA: { default: true, id: 1, option: "optA", resolver: [] } }));
+    await Promise.resolve();
+
+    expect(realmService.realmOptions()).toEqual(["realmA"]);
+
+    httpMock.expectOne(`${environment.proxyUrl}/defaultrealm`);
+    httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
   });
 
   describe("adminRealmOptions", () => {

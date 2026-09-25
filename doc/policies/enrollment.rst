@@ -777,6 +777,31 @@ whole template resolves to an empty value, the login name of the user is used as
     byte, so the effective number of characters may be lower than 64. Keep the template short enough that the
     resolved name stays within this limit.
 
+.. _policy_passkey_enroll_allowed_authenticator_device_types:
+
+passkey_allowed_authenticator_device_types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+Only allow the enrollment of passkeys that report one of the given device types, as a space-separated list of
+``single_device`` and ``multi_device``. See :ref:`passkey_device_type` for what the two types mean. If several
+policies match, the values of all of them are allowed. Any other value matches no passkey, so every enrollment is
+rejected. If the policy is not set, both types are accepted.
+
+The device type cannot be requested from the browser in advance. The authenticator creates the credential first,
+and privacyIDEA rejects the registration afterwards if the device type does not match. The credential then remains
+on the authenticator or in the user's passkey manager, but cannot be used to authenticate.
+
+This policy does not affect passkeys that are already enrolled. To also refuse them at login, use the
+:ref:`authentication policy of the same name <policy_passkey_authn_allowed_authenticator_device_types>`.
+
+.. warning:: The device type is reported by the authenticator and is not backed by a verified attestation. The
+    policy keeps out honest synced passkeys, but not an authenticator that reports a wrong device type. See
+    :ref:`passkey_device_type`.
+
+.. versionadded:: 3.14
+
 .. _policy_webauthn_enroll_req:
 
 webauthn_req

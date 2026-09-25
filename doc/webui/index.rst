@@ -155,6 +155,21 @@ access is displayed in the dashboard.
 .. figure:: images/dashboard.png
    :width: 500
 
+Token usage
+~~~~~~~~~~~
+
+.. index:: token usage, users without tokens
+
+The *Token Usage* panel counts the tokens of one realm - hardware and software tokens, and those not assigned to a
+user - and how many of the realm's users own a token and how many do not. The realm is picked in the header of the
+panel and stored with it; without a choice, the default realm is counted. Each number links to the token or user
+list that shows what it counted.
+
+The panel requires the admin action :ref:`policy_tokenlist`. The two user counts also require :ref:`policy_userlist`,
+and ``tokenlist`` in the counted realm, since they tell who owns a token. A revoked token does not count, as it can
+never be used again; a disabled one does. A resolver that does not answer is left out of both user counts and named
+below them.
+
 Certificate health
 ~~~~~~~~~~~~~~~~~~
 
@@ -218,6 +233,12 @@ saves or deletes a resolver, and can be bypassed manually via the refresh
 button on the panel. Hit the panel data via ``GET /system/health/certificates``;
 add ``?refresh=1`` to skip the cache.
 
+Because of that cache, the panel does not report a time window the way the
+metric panels do, but the moment the endpoints were last reached: the line
+below the table, and the ``checked_at`` field on every entry, name when the
+certificates were probed rather than when the response was served. Use the
+refresh button after replacing a certificate to see it right away.
+
 Resolver timing
 ~~~~~~~~~~~~~~~
 
@@ -239,9 +260,15 @@ bucket boundaries are ``50 ms``, ``100 ms``, ``150 ms``, ``200 ms``,
 is reported in the ``+inf`` tail. The same boundaries are listed in the
 panel's tooltip.
 
-The data is read from ``GET /system/health/resolver_timing`` (default
-window ``since_seconds=3600``) and aggregates across all privacyIDEA
-nodes.
+The window the panel is read over is chosen in its header: ``1 h`` (the
+default), ``6 h`` or ``24 h``. The choice is stored with the
+administrator's dashboard layout, so it survives a reload and is that
+administrator's alone. A day is the widest window offered because the
+metric store holds a day's rows; see `Storage and cleanup`_.
+
+The data is read from ``GET /system/health/resolver_timing``
+(``since_seconds``, default ``3600``) and aggregates across all
+privacyIDEA nodes.
 
 Notification delivery
 ~~~~~~~~~~~~~~~~~~~~~
@@ -260,7 +287,9 @@ Each row shows the OK count, the failed count (transient send-failures
 plus exceptions), and the p95 send duration. The failed cell is
 color-coded green below 1%, yellow below 5%, and red above 5%, computed
 against the channel row's total. Reads ``GET
-/system/health/notification_delivery`` (default ``since_seconds=3600``).
+/system/health/notification_delivery`` (``since_seconds``, default
+``3600``). The panel carries the same window picker in its header as
+*Resolver Timing*, with the same three choices and the same storage.
 
 .. note::
 
@@ -531,6 +560,12 @@ Even if a realm contains several useridresolvers, users from all
 resolvers within this realm are displayed. However, if a user with the
 same login name exists in more than one resolver, only the user from the
 highest-priority resolver is shown. See :ref:`resolver_priority` for details.
+If the administrator's :ref:`policy_userlist` policies name resolvers or users,
+only these are listed.
+
+The filter ``has_tokens: true`` lists only the users that own a token, and
+``has_tokens: false`` only those that own none. It is offered to administrators
+with the :ref:`policy_tokenlist` action, which it requires in the listed realm.
 
 Read about the functionality of the users view in the following sections.
 
