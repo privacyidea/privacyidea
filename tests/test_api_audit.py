@@ -672,8 +672,12 @@ class APIAuditTestCase(MyApiTestCase):
         Audit.query.delete()
         for day, hour in ((24, 23), (25, 0), (25, 23), (26, 0)):
             Audit(action="enroll", success=1, date=datetime(2026, 9, day, hour, 30)).save()
+        # 2024-12-30 lies in ISO week 1 of 2025, so the day is only found under its calendar year.
+        Audit(action="enroll", success=1, date=datetime(2024, 12, 30, 12, 0)).save()
 
-        for day, expected in (("2026-09-25", ["2026-09-25", "2026-09-25"]),):
+        for day, expected in (("2026-09-25", ["2026-09-25", "2026-09-25"]),
+                              ("2024-12-30", ["2024-12-30"]),
+                              ("2025-12-30", [])):
             with self.app.test_request_context('/audit/',
                                                method='GET',
                                                query_string={"action": "enroll", "date": f"*{day}*"},
