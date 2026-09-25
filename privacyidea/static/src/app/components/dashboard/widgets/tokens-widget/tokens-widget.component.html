@@ -17,98 +17,169 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
+<!-- Handed to the widget frame, which renders it in the header next to the reload button. -->
+<ng-template #headerActions>
+  @if (realmOptions().length > 0) {
+    <button
+      mat-button
+      class="realm-trigger"
+      [matMenuTriggerFor]="realmMenu"
+      aria-label="Select realm"
+      i18n-aria-label="@@dashboard.selectRealm">
+      <span class="realm-trigger-label">{{ realmLabel() }}</span>
+      <mat-icon
+        iconPositionEnd
+        class="realm-trigger-icon"
+        >arrow_drop_down</mat-icon
+      >
+    </button>
+    <mat-menu #realmMenu="matMenu">
+      @for (realmOption of realmOptions(); track realmOption) {
+        <button
+          mat-menu-item
+          role="menuitemradio"
+          [attr.aria-checked]="realm() === realmOption"
+          [class.selected-realm]="realm() === realmOption"
+          (click)="selectRealm(realmOption)"
+          >{{ realmOption }}</button
+        >
+      }
+    </mat-menu>
+  }
+</ng-template>
+
 <app-widget-state [state]="state()">
-  <table class="tokens-table">
-    <tbody>
-      <tr>
-        <td>
-          @if (counts().total > 0) {
-            <a
-              [routerLink]="routePaths.TOKENS"
-              (click)="showAllTokens()"
-              i18n="@@dashboard.total"
-              >Total</a
-            >
-          } @else {
-            <span i18n="@@dashboard.total">Total</span>
-          }
-        </td>
-        <td>{{ counts().total }}</td>
-      </tr>
-      @if (showHardware()) {
+  @if (noRealm()) {
+    <p
+      class="no-realm"
+      i18n="@@dashboard.noRealms"
+      >There is no realm to count. Create one to see its tokens and users.</p
+    >
+  } @else {
+    <table class="tokens-table">
+      <tbody>
         <tr>
           <td>
-            <a
-              [routerLink]="routePaths.TOKENS"
-              (click)="showKind('hardware')"
-              i18n="@@dashboard.hardware"
-              >Hardware</a
-            >
-          </td>
-          <td>{{ counts().hardware }}</td>
-        </tr>
-      }
-      @if (showSoftware()) {
-        <tr>
-          <td>
-            <a
-              [routerLink]="routePaths.TOKENS"
-              (click)="showKind('software')"
-              i18n="@@dashboard.software"
-              >Software</a
-            >
-          </td>
-          <td>{{ counts().software }}</td>
-        </tr>
-      }
-      @if (distinguishKinds()) {
-        <tr>
-          <td>
-            @if (counts().unassigned_hardware > 0) {
+            @if (counts().total > 0) {
               <a
                 [routerLink]="routePaths.TOKENS"
-                (click)="showKind('hardware', true)"
-                i18n="@@dashboard.unassignedHardware"
-                >Unassigned Hardware</a
+                (click)="showAllTokens()"
+                i18n="@@dashboard.total"
+                >Total</a
               >
             } @else {
-              <span i18n="@@dashboard.unassignedHardware">Unassigned Hardware</span>
+              <span i18n="@@dashboard.total">Total</span>
             }
           </td>
-          <td>{{ counts().unassigned_hardware }}</td>
+          <td>{{ counts().total }}</td>
         </tr>
-        <tr>
-          <td>
-            @if (counts().unassigned_software > 0) {
+        @if (showHardware()) {
+          <tr>
+            <td>
               <a
                 [routerLink]="routePaths.TOKENS"
-                (click)="showKind('software', true)"
-                i18n="@@dashboard.unassignedSoftware"
-                >Unassigned Software</a
+                (click)="showKind('hardware')"
+                i18n="@@dashboard.hardware"
+                >Hardware</a
               >
-            } @else {
-              <span i18n="@@dashboard.unassignedSoftware">Unassigned Software</span>
-            }
-          </td>
-          <td>{{ counts().unassigned_software }}</td>
-        </tr>
-      } @else if (counts().total > 0) {
-        <tr>
-          <td>
-            @if (unassignedTotal() > 0) {
+            </td>
+            <td>{{ counts().hardware }}</td>
+          </tr>
+        }
+        @if (showSoftware()) {
+          <tr>
+            <td>
               <a
                 [routerLink]="routePaths.TOKENS"
-                (click)="showUnassigned()"
-                i18n="@@dashboard.unassigned"
-                >Unassigned</a
+                (click)="showKind('software')"
+                i18n="@@dashboard.software"
+                >Software</a
               >
-            } @else {
-              <span i18n="@@dashboard.unassigned">Unassigned</span>
-            }
-          </td>
-          <td>{{ unassignedTotal() }}</td>
-        </tr>
-      }
-    </tbody>
-  </table>
+            </td>
+            <td>{{ counts().software }}</td>
+          </tr>
+        }
+        @if (distinguishKinds()) {
+          <tr>
+            <td>
+              @if (counts().unassigned_hardware > 0) {
+                <a
+                  [routerLink]="routePaths.TOKENS"
+                  (click)="showKind('hardware', true)"
+                  i18n="@@dashboard.unassignedHardware"
+                  >Unassigned Hardware</a
+                >
+              } @else {
+                <span i18n="@@dashboard.unassignedHardware">Unassigned Hardware</span>
+              }
+            </td>
+            <td>{{ counts().unassigned_hardware }}</td>
+          </tr>
+          <tr>
+            <td>
+              @if (counts().unassigned_software > 0) {
+                <a
+                  [routerLink]="routePaths.TOKENS"
+                  (click)="showKind('software', true)"
+                  i18n="@@dashboard.unassignedSoftware"
+                  >Unassigned Software</a
+                >
+              } @else {
+                <span i18n="@@dashboard.unassignedSoftware">Unassigned Software</span>
+              }
+            </td>
+            <td>{{ counts().unassigned_software }}</td>
+          </tr>
+        } @else if (counts().total > 0) {
+          <tr>
+            <td>
+              @if (unassignedTotal() > 0) {
+                <a
+                  [routerLink]="routePaths.TOKENS"
+                  (click)="showUnassigned()"
+                  i18n="@@dashboard.unassigned"
+                  >Unassigned</a
+                >
+              } @else {
+                <span i18n="@@dashboard.unassigned">Unassigned</span>
+              }
+            </td>
+            <td>{{ unassignedTotal() }}</td>
+          </tr>
+        }
+        @if (canListUsers()) {
+          <tr class="user-counts-start">
+            <td>
+              <a
+                [routerLink]="routePaths.USERS"
+                [queryParams]="{ realm: realm() }"
+                (click)="showUsers(true)"
+                i18n="@@dashboard.usersWithTokens"
+                >Users with tokens</a
+              >
+            </td>
+            <td>{{ withTokensLabel() }}</td>
+          </tr>
+          <tr>
+            <td>
+              <a
+                [routerLink]="routePaths.USERS"
+                [queryParams]="{ realm: realm() }"
+                (click)="showUsers(false)"
+                i18n="@@dashboard.usersWithoutTokens"
+                >Users without tokens</a
+              >
+            </td>
+            <td>{{ withoutTokensLabel() }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    @if (userCounts().skippedResolvers.length > 0) {
+      <p class="incomplete-users">
+        <mat-icon>warning</mat-icon>
+        <span i18n="@@dashboard.userListIncomplete">Excluding {{ skippedResolverNames() }}, which did not answer.</span>
+      </p>
+    }
+  }
 </app-widget-state>

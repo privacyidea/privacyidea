@@ -773,6 +773,35 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         finally:
             delete_policy("clients_wildcard")
 
+    def test_17e_a_policy_for_some_users_of_a_realm_does_not_open_the_realm(self):
+        # The per-client and single-device paths act on every device of a realm without looking at its user, so a
+        # policy for one user of realm1 must not let them reach the devices of realm1's other users. That user's
+        # devices are still revoked by naming the user, which check_base_action holds to the policy.
+        client, _ = create_client("user of a realm client", "privacyidea-cp")
+        mine = self._device(client.id, "cornelius", realm=self.realm1)
+        theirs = self._device(client.id, "hans", realm=self.realm1)
+        mine_series, theirs_series, theirs_device = mine.series_id, theirs.series_id, theirs.device_id
+        try:
+            for realm in (self.realm1, "*"):
+                set_policy("clients_user_of_realm", scope=SCOPE.ADMIN,
+                           action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm=realm, user="cornelius")
+                res = self._revoke_all(client.id)
+                self.assertEqual(200, res.status_code, res)
+                self.assertEqual(0, res.json['result']['value'], (realm, res.json))
+                with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{theirs_device}',
+                                                   method='DELETE', headers={'Authorization': self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(404, res.status_code, (realm, res.json))
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=theirs_series).first())
+
+            # By user the revoke reaches every client, so the count also holds devices of earlier tests.
+            res = self._revoke_devices(user="cornelius", realm=self.realm1)
+            self.assertEqual(200, res.status_code, res)
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=mine_series).first())
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=theirs_series).first())
+        finally:
+            delete_policy("clients_user_of_realm")
+
     def test_18_revoke_single_respects_admin_realm_scope(self):
         set_realm("xcscope", [{"name": self.resolvername1}])
         client, _ = create_client("scoped single client", "privacyidea-cp")

@@ -58,16 +58,12 @@ export class ServiceIdService implements ServiceIdServiceInterface {
 
   private readonly serviceIdBaseUrl = environment.proxyUrl + "/serviceid/";
 
-  // serviceid_list exists only in the admin scope, so a self-service user can never list the service IDs.
-  readonly canListServiceIds = computed<boolean>(
-    () => !this.authService.isSelfServiceUser() && this.authService.actionAllowed("serviceid_list")
+  readonly canListServiceIds = computed<boolean>(() => this.authService.actionAllowed("serviceid_list"));
+  readonly serviceIdsUnavailableReason = computed<string | null>(() =>
+    this.canListServiceIds()
+      ? null
+      : $localize`:@@serviceId.unavailableNeedsListRight:Application specific password tokens cannot be enrolled: selecting the service ID needs the serviceid_list right.`
   );
-  readonly serviceIdsUnavailableReason = computed<string | null>(() => {
-    if (this.canListServiceIds()) return null;
-    return this.authService.isSelfServiceUser()
-      ? $localize`:@@serviceId.unavailableSelfService:Application specific password tokens cannot be enrolled in self-service: the service IDs are only available to administrators.`
-      : $localize`:@@serviceId.unavailableNeedsListRight:Application specific password tokens cannot be enrolled: selecting the service ID needs the serviceid_list right.`;
-  });
 
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => {
     // On the enrollment pages only the application specific password token uses the list.

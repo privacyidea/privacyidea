@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
-import { DASHBOARD_COLUMNS, WidgetInstance, WidgetOptions, WidgetTypeId } from "@models/dashboard";
+import { DASHBOARD_COLUMNS, WidgetInstance, WidgetOptions, WidgetSettings, WidgetTypeId } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
   DashboardPersistenceService,
@@ -52,6 +52,8 @@ export interface DashboardLayoutServiceInterface {
   moveWidgetTo(id: string, x: number, y: number): void;
 
   resizeWidget(id: string, cols: number, rows: number): void;
+
+  updateWidgetSettings(id: string, settings: WidgetSettings): void;
 
   setWidgetOptions(id: string, options: Partial<WidgetOptions>): void;
 
@@ -164,6 +166,15 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
     this.persistIfLive();
   }
 
+  public updateWidgetSettings(id: string, settings: WidgetSettings): void {
+    this.widgets.update((widgets) =>
+      widgets.map((widget) =>
+        widget.id === id ? { ...widget, settings: { ...widget.settings, ...settings } } : widget
+      )
+    );
+    this.persistIfLive();
+  }
+
   /**
    * Merges *options* into what the widget already keeps, so a widget that later offers a second choice does not have
    * to resend the first. The pending snapshot is written through as well: the options are how the widget is read
@@ -233,9 +244,15 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
         other.x === widget.x &&
         other.y === widget.y &&
         other.cols === widget.cols &&
-        other.rows === widget.rows
+        other.rows === widget.rows &&
+        this.sameSettings(other.settings, widget.settings)
       );
     });
+  }
+
+  private sameSettings(a: WidgetSettings | undefined, b: WidgetSettings | undefined): boolean {
+    const keys = new Set([...Object.keys(a ?? {}), ...Object.keys(b ?? {})]);
+    return [...keys].every((key) => a?.[key] === b?.[key]);
   }
 
   private reconcilePinned(widgets: WidgetInstance[]): WidgetInstance[] {
@@ -250,7 +267,15 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
       const existing = widgets.find((widget) => widget.type === widgetType.type);
       const { x, y } = widgetType.fixedPosition ?? { x: 0, y: 0 };
       const { cols, rows } = widgetType.defaultSize;
-      result.push({ id: existing?.id ?? `pinned-${widgetType.type}`, type: widgetType.type, x, y, cols, rows });
+      result.push({
+        id: existing?.id ?? `pinned-${widgetType.type}`,
+        type: widgetType.type,
+        x,
+        y,
+        cols,
+        rows,
+        ...(existing?.settings ? { settings: existing.settings } : {})
+      });
     }
     return result;
   }
@@ -280,9 +305,9 @@ export class DashboardLayoutService implements DashboardLayoutServiceInterface {
       { type: "policies", x: 8, y: 0 },
       { type: "tokens", x: 18, y: 0 },
       { type: "news", x: 8, y: 5, cols: 9 },
-      { type: "events", x: 17, y: 5, cols: 7 },
+      { type: "events", x: 17, y: 7, cols: 7 },
       { type: "token-types", x: 8, y: 8 },
-      { type: "authentication-activity", x: 14, y: 8 },
+      { type: "authentication-activity", x: 14, y: 10 },
       { type: "administration", x: 0, y: 14 }
     ];
     return positions.reduce<WidgetInstance[]>((result, { type, x, y, cols }) => {

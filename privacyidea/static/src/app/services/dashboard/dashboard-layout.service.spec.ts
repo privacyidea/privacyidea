@@ -165,6 +165,24 @@ describe("DashboardLayoutService", () => {
       expect(service.widgets().some((widget) => widget.type === "events")).toBe(false);
       expect((stored() ?? []).some((widget) => widget.type === "events")).toBe(false);
     });
+
+    it("should report pending changes for a settings-only change", () => {
+      service.addWidget("events");
+      const id = service.widgets()[0].id;
+      service.beginEdit();
+      expect(service.hasPendingChanges()).toBe(false);
+      service.updateWidgetSettings(id, { realm: "realm1" });
+      expect(service.hasPendingChanges()).toBe(true);
+    });
+
+    it("should revert a staged settings change on cancelEdit", () => {
+      service.addWidget("events");
+      const id = service.widgets()[0].id;
+      service.beginEdit();
+      service.updateWidgetSettings(id, { realm: "realm1" });
+      service.cancelEdit();
+      expect(service.widgets().find((widget) => widget.id === id)?.settings).toBeUndefined();
+    });
   });
 
   describe("addWidget", () => {
@@ -325,6 +343,51 @@ describe("DashboardLayoutService", () => {
       expect(storedWidget).toMatchObject({ cols: 12, rows: 5 });
     });
   });
+
+  describe("updateWidgetSettings", () => {
+    beforeEach(() => build());
+
+    it("should attach the settings to the matching widget", () => {
+      const id = service.widgets()[0].id;
+      service.updateWidgetSettings(id, { realm: "realm1" });
+
+      expect(service.widgets()[0].settings).toEqual({ realm: "realm1" });
+    });
+
+    it("should merge into, not replace, previously stored settings", () => {
+      const id = service.widgets()[0].id;
+      service.updateWidgetSettings(id, { realm: "realm1", extra: "kept" });
+      service.updateWidgetSettings(id, { realm: "realm2" });
+
+      expect(service.widgets()[0].settings).toEqual({ realm: "realm2", extra: "kept" });
+    });
+
+    it("should not change other widgets", () => {
+      service.addWidget("events");
+      const target = service.widgets()[0];
+      const other = service.widgets()[1];
+      const otherBefore = { ...other };
+
+      service.updateWidgetSettings(target.id, { realm: "realm1" });
+
+      expect(service.widgets()[1]).toEqual(otherBefore);
+    });
+
+    it("should do nothing for an id that does not match any widget", () => {
+      const before = service.widgets();
+      service.updateWidgetSettings("does-not-exist", { realm: "realm1" });
+
+      expect(service.widgets()).toEqual(before);
+    });
+
+    it("should persist after updating settings", () => {
+      const id = service.widgets()[0].id;
+      service.updateWidgetSettings(id, { realm: "realm1" });
+
+      const storedWidget = stored()?.find((widget) => widget.id === id);
+      expect(storedWidget?.settings).toEqual({ realm: "realm1" });
+      });
+    });
 
   describe("setWidgetOptions", () => {
     beforeEach(() => build());

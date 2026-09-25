@@ -191,29 +191,39 @@ describe("ServiceIdService", () => {
       expect(service.serviceIdsUnavailableReason()).toContain("serviceid_list");
     });
 
-    // serviceid_list is granted as well, so only the self-service exclusion can make the list unavailable.
-    it("should not name an admin right for a self-service user", () => {
+    it("should be null for a self-service user with serviceid_list", () => {
       authService.authData.set({
         ...MockAuthService.MOCK_AUTH_DATA,
         role: "user",
         rights: ["serviceid_list", "enrollAPPLSPEC"]
       });
+      expect(service.canListServiceIds()).toBe(true);
+      expect(service.serviceIdsUnavailableReason()).toBeNull();
+    });
+
+    it("should name the missing right for a self-service user without serviceid_list", () => {
+      authService.authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        role: "user",
+        rights: ["enrollAPPLSPEC"]
+      });
       expect(service.canListServiceIds()).toBe(false);
-      expect(service.serviceIdsUnavailableReason()).toContain("self-service");
-      expect(service.serviceIdsUnavailableReason()).not.toContain("serviceid_list");
+      expect(service.serviceIdsUnavailableReason()).toContain("serviceid_list");
     });
   });
 
-  it("serviceIdResource should not request the service IDs for a self-service user", () => {
+  // A self-service user enrolling an application specific password token needs the list as well.
+  it("serviceIdResource should request the service IDs for a self-service user on enrollment", () => {
     authService.authData.set({
       ...MockAuthService.MOCK_AUTH_DATA,
       role: "user",
       rights: ["serviceid_list", "enrollAPPLSPEC"]
     });
-    contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    contentService.onTokenEnrollmentLikely.set(true);
     TestBed.tick();
 
-    httpMock.expectNone(`${environment.proxyUrl}/serviceid/`);
+    httpMock.expectOne(`${environment.proxyUrl}/serviceid/`);
   });
 
   it("serviceIdResource should not request the service IDs without serviceid_list", () => {

@@ -447,6 +447,23 @@ def import_realms(data, name=None):
                  f'failed: {failed!s}')
 
 
+def split_realms(value: str | list | None) -> list[str]:
+    """
+    Return the realm names of a realm parameter, which is a single name, a comma-separated string of names or a
+    list of either. Realm names are lowercase and can not contain a comma (see :func:`set_realm`), so the names
+    are lowercased, and empty and repeated ones are dropped, keeping the order.
+
+    Whatever checks a realm parameter and whatever acts on it should both read it with this function, so the
+    realms that were checked are exactly the realms that are acted on.
+
+    :param value: the realm parameter of a request
+    :return: list of realm names
+    """
+    items = value if isinstance(value, (list, tuple)) else [value]
+    names = (part.strip().lower() for item in items if item is not None for part in str(item).split(","))
+    return list(dict.fromkeys(name for name in names if name))
+
+
 def get_realms_of_resolver(resolver_name: str) -> list[str]:
     """
     Return a list of realm names that contain the given resolver.
