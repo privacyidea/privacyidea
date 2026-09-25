@@ -83,6 +83,41 @@ privacyIDEA currently only archives the attestation certificate; there is no tru
 allow-listing or filtering of passkey tokens based on attestation data. If attestation-based filtering or trust
 validation is required, use the :ref:`webauthn_otp_token` instead.
 
+.. _passkey_device_type:
+
+Device type
+~~~~~~~~~~~
+
+Every passkey reports one of two device types:
+
+* ``single_device``: the private key cannot be backed up and does not leave the authenticator, for example a
+  FIDO2 security key or a platform authenticator that does not sync.
+* ``multi_device``: the private key can be backed up, typically because a passkey manager syncs it to the user's
+  other devices through a cloud account.
+
+The device type is derived from the backup eligibility flag in the authenticator data. This flag is fixed when the
+credential is created and does not change afterwards. privacyIDEA stores the device type in the token info as
+``device_type``. The token info ``backed_up`` records whether the credential had actually been backed up at the
+time of enrollment. That state can change at any time and is not updated later, so it is for information only.
+
+The policy ``passkey_allowed_authenticator_device_types`` restricts passkeys to one of the device types. It exists
+in the :ref:`enrollment scope <policy_passkey_enroll_allowed_authenticator_device_types>` and in the
+:ref:`authentication scope <policy_passkey_authn_allowed_authenticator_device_types>`, and the two are independent
+of each other.
+
+.. warning:: The device type is reported by the authenticator itself. It is part of the signed authenticator data,
+    so neither the browser nor any other party between the authenticator and privacyIDEA can change it. The
+    signature is made with the passkey's own key, however, so it only proves that the authenticator holding the
+    key reported this device type, not that the device type is true. Only a verified attestation could vouch for
+    the authenticator, and privacyIDEA does not validate attestation for passkeys (see above).
+
+    The policy therefore reliably keeps out passkeys whose authenticator honestly reports ``multi_device``, such
+    as passkeys synced by the passkey manager of the operating system. It does not keep out an authenticator that
+    reports ``single_device`` although it can export or sync the key, whether because of a faulty implementation or
+    because it was manipulated on purpose, for example a software authenticator. If you need assurance that the
+    key cannot leave the hardware, use the :ref:`webauthn_otp_token` and set
+    :ref:`policy_webauthn_enroll_authenticator_attestation_level` to ``trusted``.
+
 Avoiding double registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

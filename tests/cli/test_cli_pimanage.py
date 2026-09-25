@@ -27,6 +27,7 @@ import tempfile
 import tarfile
 from collections.abc import Callable
 from typing import Any
+from unittest import mock
 
 import pytest
 import sqlalchemy as sa
@@ -967,6 +968,20 @@ class TestPIManageSetupClass:
         assert result.returncode == 1, result.stderr
         assert "We do not overwrite it!" in result.stdout
         assert enckey.read_bytes() == key
+
+
+class TestPIManageDotenv:
+    def test_01_pimanage_leaves_a_dotenv_file_alone(self, app, tmp_path, monkeypatch):
+        # Flask's CLI loads a .env from the working directory or any parent into os.environ, where it
+        # would stay for the rest of the test process and configure every app created afterwards.
+        # Flask only does so when python-dotenv is installed.
+        pytest.importorskip("dotenv")
+        (tmp_path / ".env").write_text("PRIVACYIDEA_DOTENV_PROBE=loaded\n")
+        monkeypatch.chdir(tmp_path)
+        with mock.patch.dict(os.environ):
+            result = app.test_cli_runner().invoke(pi_manage, ["setup", "--help"])
+            assert result.exit_code == 0, result.output
+            assert "PRIVACYIDEA_DOTENV_PROBE" not in os.environ
 
 
 class TestPIManageConfigExport:
