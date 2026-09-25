@@ -1099,9 +1099,10 @@ supported by the token.
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_user_verification_requirement`.
 
-.. note:: A login to the WebUI with a passkey that starts without a username
-    always requires user verification, whatever this policy says, because the
-    passkey is the only factor of that login.
+.. note:: A login to the WebUI with a passkey always requires user
+    verification, whatever this policy says. So does a login to the WebUI
+    without a username with a WebAuthn token, where the token is the only
+    factor.
 
 .. note:: When this is not set to ``required`` and a user has multiple
     discoverable credentials for the same relying party on a single

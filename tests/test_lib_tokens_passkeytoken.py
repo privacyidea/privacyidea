@@ -38,7 +38,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import TokenCredentialIdHash
+from privacyidea.models import TokenCredentialIdHash, db
 from tests.base import MyTestCase
 from tests.passkey_base import PasskeyTestBase
 
@@ -782,10 +782,10 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
                                 for message in log_capture.output), log_capture.output)
             remove_token(serial=token.get_serial())
 
-    def test_22_unbound_challenge_user_verification(self):
+    def test_22_minimum_user_verification(self):
         """
-        The minimum user verification for an unbound challenge raises the requirement of a challenge from
-        /validate/initialize. A challenge bound to the token keeps its own requirement.
+        A minimum user verification raises the requirement stored in the challenge, and a stricter requirement in the
+        challenge is kept.
         """
         token = self._create_token()
         authentication_response = dict(self.authentication_response_no_uv)
@@ -793,24 +793,19 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
 
         challenge = self._initialize_authentication()
         result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response,
-                                        unbound_challenge_user_verification="required")
+                                        minimum_user_verification="required")
         self.assertEqual(-1, result.success)
 
-        token.write_tokeninfo(FIDO2TokenInfo.SIGN_COUNT, 0)
-        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
-            get_nonce.return_value = self.authentication_challenge_no_uv
-            challenge = create_fido2_challenge(self.rp_id, serial=token.get_serial())
         result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response,
-                                        unbound_challenge_user_verification="required")
+                                        minimum_user_verification="discouraged")
         self.assertEqual(1, result.success)
 
-        # A requirement stricter than the minimum is kept
         token.write_tokeninfo(FIDO2TokenInfo.SIGN_COUNT, 0)
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
             challenge = create_fido2_challenge(self.rp_id, user_verification="required")
         result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response,
-                                        unbound_challenge_user_verification="discouraged")
+                                        minimum_user_verification="discouraged")
         self.assertEqual(-1, result.success)
         remove_token(serial=token.get_serial())
 
@@ -841,4 +836,22 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(registration_request.token.get_serial(),
                          get_fido2_token_by_credential_id(self.credential_id).get_serial())
         remove_token(serial=victim_token.get_serial())
+        remove_token(serial=registration_request.token.get_serial())
+
+    def test_24_registration_of_credential_known_from_token_info(self):
+        """
+        A token that is not in the TokenCredentialIdHash table yet, like an imported one, is found by the credential
+        id hash in its token info. Registering its credential for another token is refused.
+        """
+        token = self._create_token()
+        TokenCredentialIdHash.query.filter(TokenCredentialIdHash.token_id == token.token.id).delete()
+        db.session.commit()
+        self.assertEqual(hash_credential_id(self.credential_id), token.get_tokeninfo(FIDO2TokenInfo.CREDENTIAL_ID_HASH))
+
+        registration_request = self._initialize_registration()
+        with self.assertRaises(EnrollmentError):
+            registration_request.token.update(registration_request.registration_response)
+        self.assertEqual(RolloutState.CLIENTWAIT, registration_request.token.token.rollout_state)
+        self.assertEqual(token.get_serial(), get_fido2_token_by_credential_id(self.credential_id).get_serial())
+        remove_token(serial=token.get_serial())
         remove_token(serial=registration_request.token.get_serial())

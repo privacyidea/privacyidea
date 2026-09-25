@@ -5,10 +5,10 @@ from webauthn import base64url_to_bytes
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.error import EnrollmentError
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.token import create_tokenclass_object, log, get_tokens
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
-from privacyidea.lib.tokens.webauthn import webauthn_b64_encode
 from privacyidea.lib.user import User
 from privacyidea.models import TokenInfo, Token, TokenCredentialIdHash, db
 
@@ -81,8 +81,8 @@ def get_fido2_token_by_transaction_id(transaction_id: str, credential_id: str) -
 
 def token_belongs_to_user(token: TokenClass, user: User) -> bool:
     """
-    Check whether the user is one of the owners of the token. The owners are matched the same way as when the tokens
-    of a user are looked up for an authentication.
+    Check whether the user is one of the owners of the token, by user id, resolver and realm, like the lookup of the
+    tokens of a user.
 
     :param token: The token object
     :param user: The user object
@@ -90,7 +90,12 @@ def token_belongs_to_user(token: TokenClass, user: User) -> bool:
     """
     if not user or not user.uid:
         return False
-    return get_tokens(serial=token.get_serial(), user=user, count=True) > 0
+    for owner in token.token.all_owners:
+        owner_realm = owner.realm.name if owner.realm else ""
+        if (owner.user_id == str(user.uid) and (owner.resolver or "").lower() == (user.resolver or "").lower()
+                and owner_realm.lower() == (user.realm or "").lower()):
+            return True
+    return False
 
 
 def get_credential_ids_for_user(user: User) -> list:
@@ -136,25 +141,23 @@ def credential_id_is_registered_to_other_token(credential_id: bytes, token_id: i
     """
     Check whether a credential is already registered to a token other than the one with the given id.
 
-    The TokenCredentialIdHash table has an entry for every passkey and for every WebAuthn token enrolled or used since
-    the table exists. A WebAuthn token enrolled before that is only found by comparing the credential ids of all
-    WebAuthn tokens.
+    The credential is looked up in the TokenCredentialIdHash table and in the token info, which also holds the hash for
+    tokens that are not in that table yet, for example imported ones.
 
     :param credential_id: The raw credential_id
     :param token_id: The id of the token the credential is being registered to
     :return: True if another token already has this credential
     """
-    stmt = select(TokenCredentialIdHash.token_id).where(
-        TokenCredentialIdHash.credential_id_hash == hash_credential_id(credential_id))
+    credential_id_hash = hash_credential_id(credential_id)
+    stmt = select(TokenCredentialIdHash.token_id).where(TokenCredentialIdHash.credential_id_hash == credential_id_hash)
     registered_token_id = db.session.scalar(stmt)
     if registered_token_id is not None:
         return registered_token_id != token_id
-
-    credential_id_b64 = webauthn_b64_encode(credential_id)
-    for token in get_tokens(tokentype="webauthn"):
-        if token.token.id != token_id and token.decrypt_otpkey() == credential_id_b64:
-            return True
-    return False
+    # TokenInfo.Value is a CLOB on Oracle, which cannot be compared with "=", see get_fido2_token_by_credential_id
+    stmt = select(TokenInfo.token_id).where(TokenInfo.Key == FIDO2TokenInfo.CREDENTIAL_ID_HASH,
+                                            TokenInfo.Value.like(credential_id_hash),
+                                            TokenInfo.token_id != token_id).limit(1)
+    return db.session.scalar(stmt) is not None
 
 
 def save_credential_id_hash(credentials_id_hash: str, token_id: int) -> None:

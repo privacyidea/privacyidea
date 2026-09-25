@@ -179,6 +179,21 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                                             transaction_id=passkey["transaction_id"], endpoint='/validate/initialize')
             return passkey
 
+    def _trigger_passkey_challenge_with_pin(self, mock_nonce: str) -> str:
+        """
+        Triggers a challenge bound to the passkey with the user and the empty PIN, returns the transaction_id
+        """
+        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH,
+                                     action=f"{PasskeyAction.EnableTriggerByPIN}=true")
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = mock_nonce
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": self.user.login, "pass": ""}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual("CHALLENGE", res.json["result"]["authentication"], res.json)
+                return res.json["detail"]["transaction_id"]
+
     def _assert_result_value_true(self, response_json):
         self.assertIn("result", response_json)
         self.assertIn("status", response_json["result"])
@@ -1876,6 +1891,57 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
         remove_token(serial)
 
+    def test_34_auth_requires_uv_for_challenge_bound_to_passkey(self):
+        """
+        A passkey answering a challenge that was triggered with the user and PIN also has to verify the user at /auth.
+        """
+        serial = self._enroll_static_passkey()
+        transaction_id = self._trigger_passkey_challenge_with_pin(self.authentication_challenge_no_uv)
+        data = dict(self.authentication_response_no_uv)
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._verify_auth_fail_with_error(res, 4031)
+
+        transaction_id = self._trigger_passkey_challenge_with_pin(self.authentication_challenge_uv)
+        data = dict(self.authentication_response_uv)
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
+        remove_token(serial)
+
+    def test_35_locked_owner_rejected_when_request_has_only_a_realm(self):
+        """
+        A username-less passkey request that carries a realm is gated on the owner of the passkey, not on a user
+        without a login name.
+        """
+        serial = self._enroll_static_passkey()
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
+                                     realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        db.session.query(AuthenticationLogReason).delete()
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"credential_id": self.credential_id,
+                                                     "transaction_id": "1" * 20,
+                                                     "realm": self.realm1},
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertListEqual([AuthEventType.USER_LOCKED],
+                                 [entry.event_type for entry in get_authentication_logs()])
+        finally:
+            db.session.query(UserLockState).delete()
+            db.session.commit()
+            remove_token(serial)
+
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """
     Test if the feature switch for passkey usage with /auth works.
@@ -1902,4 +1968,20 @@ class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id, endpoint='/validate/initialize')
+        remove_token(serial)
+
+    def test_02_challenge_bound_to_passkey_not_affected(self):
+        """
+        The switch covers the login without a username. A passkey answering a challenge that was triggered with the
+        user and PIN can still log in.
+        """
+        serial = self._enroll_static_passkey()
+        transaction_id = self._trigger_passkey_challenge_with_pin(self.authentication_challenge_uv)
+        data = dict(self.authentication_response_uv)
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
         remove_token(serial)

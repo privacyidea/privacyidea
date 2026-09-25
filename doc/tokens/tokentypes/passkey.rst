@@ -29,8 +29,8 @@ Using passkeys in different browsers and environments can yield different user e
 will not allow enrollment of a passkey to a authenticator which does not have a PIN set, i.e. user verification is
 always required for enrollment. Therefore, :ref:`policy_webauthn_enroll_user_verification_requirement` does not
 affect passkey enrollment. The same policy :ref:`policy_webauthn_authn_user_verification_requirement` is available in
-the scope authentication and that policy does affect passkey authentication. A login to the WebUI with a passkey that
-starts without a username always requires user verification, because the passkey is the only factor of that login.
+the scope authentication and that policy does affect passkey authentication. A login to the WebUI with a passkey always
+requires user verification, and so does a login to the WebUI without a username with a WebAuthn token.
 
 .. note:: If user verification is **not** required on authentication and a user has multiple discoverable credentials
     for the same relying party on one authenticator (typically an external FIDO2 security key with several passkeys

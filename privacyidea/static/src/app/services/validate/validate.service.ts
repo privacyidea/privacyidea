@@ -154,8 +154,10 @@ export class ValidateService implements ValidateServiceInterface {
       }),
       switchMap((initResponse) => {
         const data = initResponse.detail.passkey;
-        const userVerification: UserVerificationRequirement =
-          (data.user_verification as UserVerificationRequirement) ?? "preferred";
+        // The server requires user verification for a login with a passkey; testing a token uses the policy value
+        const userVerification: UserVerificationRequirement = args?.isTest
+          ? ((data.user_verification as UserVerificationRequirement) ?? "preferred")
+          : "required";
         return from(
           navigator.credentials.get({
             publicKey: {

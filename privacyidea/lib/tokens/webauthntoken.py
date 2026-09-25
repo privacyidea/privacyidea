@@ -931,6 +931,17 @@ class WebAuthnTokenClass(TokenClass):
             log.debug(f"Trust anchor directory ({trust_anchor_dir}) not available.")
         return pem_root_certs_bytes
 
+    def _credential_id_is_already_registered(self, credential_id: bytes) -> bool:
+        """
+        Check whether a credential is already registered to another token. WebAuthn tokens enrolled before the
+        TokenCredentialIdHash table existed are only found by comparing their credential ids.
+        """
+        if credential_id_is_registered_to_other_token(credential_id, self.token.id):
+            return True
+        credential_id_b64 = webauthn_b64_encode(credential_id)
+        return any(token.token.id != self.token.id and token.decrypt_otpkey() == credential_id_b64
+                   for token in get_tokens(tokentype=self.type))
+
     def update(self, param, reset_failcount=True):
         """
         Update token state during WebAuthn enrollment.
@@ -1018,7 +1029,7 @@ class WebAuthnTokenClass(TokenClass):
                 reg_data_b64 = bytes_to_base64url(raw_attestation_object)
 
                 # Checking that the credential is not already registered.
-                if credential_id_is_registered_to_other_token(credential_id_bytes, self.token.id):
+                if self._credential_id_is_already_registered(credential_id_bytes):
                     raise ValueError("Credential already exists.")
 
                 # Getting trusted anchors
@@ -1437,8 +1448,8 @@ class WebAuthnTokenClass(TokenClass):
             credential_id_b64 = credential_id.decode("utf-8") if isinstance(credential_id, bytes) else credential_id
             # The assertion has to be made with the credential of this token
             try:
-                credential_id_matches = (base64url_to_bytes(credential_id_b64)
-                                         == binascii.unhexlify(self.token.get_otpkey().getKey()))
+                own_credential_id = base64url_to_bytes(self.decrypt_otpkey())
+                credential_id_matches = base64url_to_bytes(credential_id_b64) == own_credential_id
             except (binascii.Error, ValueError) as ex:
                 log.warning(f"Could not compare the credential_id with the one of token {self.token.serial}: {ex}")
                 credential_id_matches = False
@@ -1446,31 +1457,6 @@ class WebAuthnTokenClass(TokenClass):
                 log.warning(f"The credential_id {credential_id_b64} does not belong to the WebAuthn token "
                             f"{self.token.serial}.")
                 return -1
-
-            # Check if a whitelist for AAGUIDs exists, and if this device is whitelisted. If not raise a
-            # policy exception.
-            allowed_aaguids = get_optional(options, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)
-            if allowed_aaguids and not _aaguid_is_allowed(self.get_tokeninfo(FIDO2TokenInfo.AAGUID), allowed_aaguids):
-                log.warning(
-                    f"The WebAuthn token {self.token.serial} is not allowed to authenticate due to policy "
-                    f"restriction {FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST}"
-                )
-                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
-
-            # Check if the attestation certificate is
-            # authorized. If not, we can raise a policy exception.
-            if not attestation_certificate_allowed(
-                    {
-                        "attestation_issuer": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_ISSUER),
-                        "attestation_serial": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_SERIAL),
-                        "attestation_subject": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_SUBJECT)
-                    },
-                    get_optional(options, FIDO2PolicyAction.REQ)):
-                log.warning(
-                    f"The WebAuthn token {self.token.serial} is not allowed to authenticate "
-                    f"due to policy restriction {FIDO2PolicyAction.REQ}"
-                )
-                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
 
             try:
                 user = self._get_webauthn_user(get_required(options, "user"))
@@ -1533,10 +1519,36 @@ class WebAuthnTokenClass(TokenClass):
                     credential_current_sign_count=int(user.sign_count),
                     require_user_verification=uv_req == UserVerificationLevel.REQUIRED,
                 )
-                self.set_otp_count(verified_authentication.new_sign_count)
             except (InvalidAuthenticationResponse, InvalidJSONStructure, UnicodeDecodeError, ValueError) as ex:
                 log.warning(f"Checking response for token {self.token.serial} failed. {ex}")
                 return -1
+
+            # The authorization policies are checked for a valid assertion only. Check if a whitelist for AAGUIDs
+            # exists, and if this device is whitelisted. If not raise a policy exception.
+            allowed_aaguids = get_optional(options, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)
+            if allowed_aaguids and not _aaguid_is_allowed(self.get_tokeninfo(FIDO2TokenInfo.AAGUID), allowed_aaguids):
+                log.warning(
+                    f"The WebAuthn token {self.token.serial} is not allowed to authenticate due to policy "
+                    f"restriction {FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST}"
+                )
+                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
+
+            # Check if the attestation certificate is
+            # authorized. If not, we can raise a policy exception.
+            if not attestation_certificate_allowed(
+                    {
+                        "attestation_issuer": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_ISSUER),
+                        "attestation_serial": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_SERIAL),
+                        "attestation_subject": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_SUBJECT)
+                    },
+                    get_optional(options, FIDO2PolicyAction.REQ)):
+                log.warning(
+                    f"The WebAuthn token {self.token.serial} is not allowed to authenticate "
+                    f"due to policy restriction {FIDO2PolicyAction.REQ}"
+                )
+                raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
+
+            self.set_otp_count(verified_authentication.new_sign_count)
 
             # Save the credential_id hash to an extra table to be able to find the token faster. Tokens enrolled
             # before that table existed get their entry here, on their first use.

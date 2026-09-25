@@ -16,11 +16,13 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.webauthn import UserVerificationLevel
 
 log = logging.getLogger(__name__)
 
 # From the weakest to the strictest requirement
-USER_VERIFICATION_ORDER = ("discouraged", "preferred", "required")
+USER_VERIFICATION_ORDER = (UserVerificationLevel.DISCOURAGED, UserVerificationLevel.PREFERRED,
+                           UserVerificationLevel.REQUIRED)
 
 
 def get_fido2_nonce() -> str:
@@ -86,8 +88,16 @@ class FIDOVerificationResult:
     challenge: "Challenge | ChallengeDTO"
 
 
+def has_unbound_challenge(transaction_id: str) -> bool:
+    """
+    Check whether the transaction has a challenge that is not bound to a token. Such a challenge comes from
+    /validate/initialize and starts a passkey login without a username.
+    """
+    return any(not challenge.serial for challenge in get_challenges(transaction_id=transaction_id))
+
+
 def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
-                           unbound_challenge_user_verification: str | None = None) -> FIDOVerificationResult:
+                           minimum_user_verification: str | None = None) -> FIDOVerificationResult:
     """
     Verify the response for a fido2 challenge with the given token.
     Params is required to have the keys:
@@ -102,10 +112,8 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
     If the challenge is bound to a token serial and the token serial does not match the input token, an AuthError
     is raised.
 
-    The user verification requirement is taken from the challenge. A challenge that is not bound to a token comes
-    from /validate/initialize and is answered without any other factor, so a caller that must not accept the
-    authenticator alone passes "required" as unbound_challenge_user_verification. The stricter of the two values
-    applies to such a challenge.
+    The user verification requirement is taken from the challenge. If minimum_user_verification is given, the
+    stricter of the two values applies.
     """
     db_challenges = get_challenges(transaction_id=transaction_id)
     if not db_challenges:
@@ -136,9 +144,8 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
             f"Invalid user_verification value {user_verification!r} in challenge {transaction_id}."
         )
         raise AuthError(f"Invalid user_verification value in challenge {transaction_id}.")
-    if unbound_challenge_user_verification and not challenge.serial:
-        user_verification = max(user_verification, unbound_challenge_user_verification,
-                                key=USER_VERIFICATION_ORDER.index)
+    if minimum_user_verification:
+        user_verification = max(user_verification, minimum_user_verification, key=USER_VERIFICATION_ORDER.index)
 
     options = {
         "challenge": challenge.challenge,

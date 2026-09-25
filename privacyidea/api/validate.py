@@ -138,6 +138,7 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
+from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass
 from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
@@ -321,10 +322,10 @@ def _conditional_access_identity():
     instead of a user: ``/validate/check`` and ``/validate/triggerchallenge``.
 
     ``before_request`` builds ``request.User`` from the ``user`` parameter only, so a username-less passkey request
-    (identified by ``credential_id``) or a serial-only request arrives with an empty user — and the user-lock / DENY
-    checks would be silently skipped, letting a locked user authenticate by credential id or serial, or an admin
-    trigger a challenge that pushes a prompt to a locked user's phone. Resolve the token owner in that case so the
-    lock is enforced before any token work runs.
+    (identified by ``credential_id``) or a serial-only request arrives without a login name, at most with a realm —
+    and the user-lock / DENY checks would be silently skipped, letting a locked user authenticate by credential id or
+    serial, or an admin trigger a challenge that pushes a prompt to a locked user's phone. Resolve the token owner in
+    that case so the lock is enforced before any token work runs.
 
     Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
     (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
@@ -335,7 +336,7 @@ def _conditional_access_identity():
     raises there instead of authenticating - and the authentication-log row resolves the owner from the serial
     itself, so an attempt that does reach a token is still counted.
     """
-    if request.User:
+    if request.User and request.User.login:
         return request.User
     credential_id = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
     serial = get_optional(request.all_data, "serial")
@@ -763,11 +764,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         # matched unscoped policies. Re-run it now that request.User is set, mirroring fido2_enroll
         # above for the enrollment branch.
         fido2_auth(request, None)
-        # The same applies to the WebAuthn authorization restrictions. A stale list from the first run must not
-        # survive when no policy matches the user.
-        request.all_data.pop(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, None)
-        webauthntoken_request(request, None)
-        webauthntoken_authz(request, None)
+        # The same applies to the authorization restrictions of WebAuthn tokens
+        if token.get_type() == WebAuthnTokenClass.get_class_type():
+            webauthntoken_request(request, None)
+            webauthntoken_authz(request, None)
 
         last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
         if not last_auth_ok:
@@ -804,7 +804,9 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context["serial_list"].append(token.get_serial())
             raise
         except PolicyError:
-            # An authorization policy does not allow this authenticator
+            # An authorization policy does not allow this authenticator. The refusal counts as a failed login.
+            g.audit_object.log({"authentication": AUTH_RESPONSE.REJECT, "serial": token.get_serial(),
+                                "token_type": token.get_type()})
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
             context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
             raise

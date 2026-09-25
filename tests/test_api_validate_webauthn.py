@@ -748,7 +748,9 @@ class WebAuthn(MyApiTestCase):
                     "Ilgg4bJtPzLqiwWEZWIKIrNFkIoYT8SRwa4bCxUB2OFlba4")
         client_data = ("eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoidTJVVXJWY3F3RjR0bEthWkg3bmZMTTJWMHdXWi0xLVJ"
                        "QQ0YxcndzbWhFbyIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9")
+        self.addCleanup(delete_policies, ["wan1", "wan2", "wan3", "authz_req"])
         self._enroll_webauthn(serial, client_data, reg_data, mock_nonce)
+        self.addCleanup(remove_token, serial=serial)
         set_policy("authz_req", scope=SCOPE.AUTHZ, realm=self.realm1,
                    action=f"{FIDO2PolicyAction.REQ}=issuer/.*Yubico.*/")
 
@@ -777,8 +779,6 @@ class WebAuthn(MyApiTestCase):
 
         delete_policy("authz_req")
         self._authenticate_webauthn(data)
-        delete_policies(["wan1", "wan2", "wan3"])
-        remove_token(serial=serial)
 
     # Shared enrollment data used across policy tests
     _policy_test_client_data = (
@@ -1220,11 +1220,12 @@ class WebAuthnAuthorizationTestCase(MyApiTestCase):
         with self.app.test_request_context("/validate/check", method="POST", data=data, headers=self.headers):
             return self.app.full_dispatch_request()
 
-    def _auth(self, transaction_id: str, username: str):
+    def _auth(self, transaction_id: str, username: str, **extra_data):
         # The parameter names of the WebUI
         data = {"authenticatorData": self.authenticator_data, "clientDataJSON": self.client_data,
                 "credential_id": self.credential_id, "signature": self.signature,
                 "transaction_id": transaction_id, "username": username}
+        data.update(extra_data)
         with self.app.test_request_context("/auth", method="POST", data=data, headers=self.headers):
             return self.app.full_dispatch_request()
 
@@ -1272,6 +1273,7 @@ class WebAuthnAuthorizationTestCase(MyApiTestCase):
                          action=f"{FIDO2PolicyAction.REQ}=issuer/.*NonExistentVendor.*/")
         res = self._auth(transaction_id, self.user.login)
         self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual("REJECT", self.find_most_recent_audit_entry(action="POST /auth").get("authentication"))
 
         delete_policy("authz_req")
         self._set_policy("authz_aaguid", scope=SCOPE.AUTHZ,
@@ -1311,6 +1313,31 @@ class WebAuthnAuthorizationTestCase(MyApiTestCase):
 
         res = self._validate_check(transaction_id, serial=self.serial)
         self.assertEqual("ACCEPT", res.json["result"]["authentication"], res.json)
+    def test_06_invalid_signature_with_authorization_policy(self):
+        """
+        The authorization policies are checked for a valid assertion only. An invalid signature is a failed
+        authentication, whatever the policies say.
+        """
+        transaction_id = self._trigger_challenge()
+        self._set_policy("authz_req", scope=SCOPE.AUTHZ,
+                         action=f"{FIDO2PolicyAction.REQ}=issuer/.*NonExistentVendor.*/")
+        invalid_signature = self.signature[:-4] + ("AAAA" if not self.signature.endswith("AAAA") else "BBBB")
+        res = self._validate_check(transaction_id, signaturedata=invalid_signature)
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual("REJECT", res.json["result"]["authentication"], res.json)
+
+        res = self._validate_check(transaction_id)
+        self.assertEqual(403, res.status_code, res.json)
+
+    def test_07_authenticator_selection_list_from_request(self):
+        """
+        Only a policy restricts the authenticators; a request parameter of the same name has no effect.
+        """
+        transaction_id = self._trigger_challenge()
+        res = self._auth(transaction_id, self.user.login, **{
+            FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST: "00000000-0000-0000-0000-000000000000"})
+        self.assertEqual(200, res.status_code, res.json)
+
 
 class WebAuthnOfflineTestCase(MyApiTestCase):
     """

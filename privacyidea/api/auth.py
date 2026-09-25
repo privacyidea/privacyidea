@@ -95,9 +95,11 @@ from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_ob
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError
 from privacyidea.lib.event import event, EventConfiguration
-from privacyidea.lib.fido2.challenge import verify_fido2_challenge
+from privacyidea.lib.fido2.challenge import verify_fido2_challenge, has_unbound_challenge
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, token_belongs_to_user
 from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.webauthn import UserVerificationLevel
 from privacyidea.lib.policies.helper import get_jwt_validity
 from privacyidea.lib.policy import PolicyClass, REMOTE_USER
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
@@ -310,15 +312,17 @@ def get_auth_token():
     log_serials = None
     # Log-only transaction_id (push_wait success): correlates the terminal row without being exposed in the response.
     log_transaction_id = None
-    # Passkey login
+    # FIDO2 login: a passkey login without a username, or the WebAuthn second factor
     credential_id = get_optional(request.all_data, "credential_id")
-    passkey_login_enabled = get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True)
     passkey_login_success = False
-    if not passkey_login_enabled and credential_id:
-        log.debug("WebUI passkey login disabled in pi.cfg!")
-        raise AuthError(_("Authentication with passkey disabled."), id=Error.AUTHENTICATE_ILLEGAL_METHOD)
-    if credential_id and passkey_login_enabled:
+    if credential_id:
         transaction_id: str = get_required(request.all_data, "transaction_id")
+        # A challenge from /validate/initialize starts a passkey login without a username, which
+        # WEBUI_PASSKEY_LOGIN_ENABLED switches off. Challenges bound to a token were triggered with the PIN or password.
+        usernameless_login = has_unbound_challenge(transaction_id)
+        if usernameless_login and not get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True):
+            log.debug("WebUI passkey login disabled in pi.cfg!")
+            raise AuthError(_("Authentication with passkey disabled."), id=Error.AUTHENTICATE_ILLEGAL_METHOD)
         # The passkey branch is the only one that consumes the transaction it was given, so it is where the
         # attempt claimed in before_request is settled. The password branch below never reads it, and echoes
         # it onto its row regardless, which is why naming a transaction cannot settle an attempt by itself.
@@ -376,19 +380,24 @@ def get_auth_token():
                 _("Authentication failure. Last authentication policy check failed for token {serial}").format(
                     serial=token.get_serial()), id=Error.AUTHENTICATE_MISSING_RIGHT)
 
+        # Without a username, the authenticator is the only factor of the login and has to verify the user. A passkey
+        # always verifies the user. A WebAuthn token answering a challenge that was triggered with the PIN or password
+        # keeps the value of the policy.
+        minimum_user_verification = None
+        if usernameless_login or token.get_type() == PasskeyTokenClass.get_class_type():
+            minimum_user_verification = UserVerificationLevel.REQUIRED
         try:
-            # A challenge from /validate/initialize is answered with the authenticator alone. For the WebUI, the
-            # authenticator has to verify the user then, so that the login still has two factors. A challenge that
-            # is bound to the token was triggered with the PIN or password, and its policy value applies.
             passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data,
-                                                          unbound_challenge_user_verification="required")
+                                                          minimum_user_verification=minimum_user_verification)
         except (ResourceNotFoundError, AuthError):
             # A challenge that fails to verify (wrong serial, expired) propagates as a failure response, so log
             # the failed attempt here.
             log_authentication(AuthEventType.MFA_FAIL, request, user=token.user, transaction_id=transaction_id)
             raise
         except PolicyError:
-            # An authorization policy does not allow this authenticator
+            # An authorization policy does not allow this authenticator. The refusal counts as a failed login.
+            g.audit_object.log({"authentication": AUTH_RESPONSE.REJECT, "serial": token.get_serial(),
+                                "token_type": token.get_type()})
             log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user, serial=token.get_serial(),
                                transaction_id=transaction_id)
             raise

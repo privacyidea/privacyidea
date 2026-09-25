@@ -178,6 +178,9 @@ describe("ValidateService", () => {
       expect(b64.bytesToBase64).toHaveBeenCalled();
       expect(auth.authenticate).not.toHaveBeenCalled();
       expect(final).toEqual({ success: true });
+      expect(credGet).toHaveBeenCalledWith({
+        publicKey: expect.objectContaining({ userVerification: "preferred" })
+      });
     });
 
     describe("testToken (errors)", () => {
@@ -300,6 +303,9 @@ describe("ValidateService", () => {
         expect(postSpy).toHaveBeenCalledTimes(1);
         expect(authSpy).toHaveBeenCalledTimes(1);
         expect(final).toEqual({ success: true });
+        expect(credGet).toHaveBeenCalledWith({
+          publicKey: expect.objectContaining({ userVerification: "required" })
+        });
 
         expect(b64.bytesToBase64).toHaveBeenCalledTimes(4);
       });
