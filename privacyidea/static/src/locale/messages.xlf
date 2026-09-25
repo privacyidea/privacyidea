@@ -294,7 +294,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">91</context>
+          <context context-type="linenumber">92</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.self-service.component.html</context>
@@ -525,7 +525,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
-          <context context-type="linenumber">29</context>
+          <context context-type="linenumber">41</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
@@ -773,7 +773,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-asp/enroll-applspec.component.html</context>
-          <context context-type="linenumber">44</context>
+          <context context-type="linenumber">47</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/table-utils/table-utils.service.ts</context>
@@ -1764,7 +1764,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">842</context>
+          <context context-type="linenumber">849</context>
         </context-group>
       </trans-unit>
       <trans-unit id="periodicTask.successfullyDeleted" datatype="html">
@@ -2435,29 +2435,29 @@
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>SMTP server configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/email-config/email-config.component.html</context>
-          <context context-type="linenumber">47</context>
+          <context context-type="linenumber">55</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.otpValidityTime" datatype="html">
         <source>OTP Validity Time</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/email-config/email-config.component.html</context>
-          <context context-type="linenumber">57</context>
+          <context context-type="linenumber">72</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/sms-config/sms-config.component.html</context>
-          <context context-type="linenumber">61</context>
+          <context context-type="linenumber">76</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.timeSecondsWhich" datatype="html">
         <source>The time in seconds for which the sent OTP value is valid for authentication.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/email-config/email-config.component.html</context>
-          <context context-type="linenumber">64</context>
+          <context context-type="linenumber">79</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/sms-config/sms-config.component.html</context>
-          <context context-type="linenumber">69</context>
+          <context context-type="linenumber">84</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.hotp" datatype="html">
@@ -2577,7 +2577,7 @@
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>RADIUS server configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/radius-config/radius-config.component.html</context>
-          <context context-type="linenumber">46</context>
+          <context context-type="linenumber">54</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.remote" datatype="html">
@@ -2623,7 +2623,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">83</context>
+          <context context-type="linenumber">95</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.smsTokenEvent" datatype="html">
@@ -2658,7 +2658,7 @@
         <source>Select a predefined <x id="START_LINK" ctype="x-a" equiv-text="&lt;a [routerLink]=&quot;[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]&quot; &gt;"/><x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>SMS Gateway configuration<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/sms-config/sms-config.component.html</context>
-          <context context-type="linenumber">51</context>
+          <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tiqr" datatype="html">
@@ -3228,11 +3228,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-type-selector/token-enrollment-type-selector.component.html</context>
-          <context context-type="linenumber">54</context>
+          <context context-type="linenumber">59</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
-          <context context-type="linenumber">51</context>
+          <context context-type="linenumber">56</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.assignContainer" datatype="html">
@@ -3442,11 +3442,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-type-selector/token-enrollment-type-selector.component.html</context>
-          <context context-type="linenumber">50</context>
+          <context context-type="linenumber">54</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
-          <context context-type="linenumber">47</context>
+          <context context-type="linenumber">51</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.html</context>
@@ -3848,7 +3848,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">48</context>
+          <context context-type="linenumber">49</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.self-service.component.html</context>
@@ -3856,7 +3856,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
-          <context context-type="linenumber">69</context>
+          <context context-type="linenumber">74</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.userDetailData" datatype="html">
@@ -5446,7 +5446,7 @@
         <source>Identifier</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">149</context>
+          <context context-type="linenumber">161</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
@@ -5738,7 +5738,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">43</context>
+          <context context-type="linenumber">44</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.self-service.component.html</context>
@@ -5746,7 +5746,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
-          <context context-type="linenumber">64</context>
+          <context context-type="linenumber">69</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.component.ts</context>
@@ -9305,7 +9305,7 @@
         <source>Service ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-asp/enroll-applspec.component.html</context>
-          <context context-type="linenumber">54</context>
+          <context context-type="linenumber">53</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.generateRequest" datatype="html">
@@ -9923,63 +9923,63 @@
         <source>Remote Server</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
-          <context context-type="linenumber">29</context>
+          <context context-type="linenumber">32</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteServerRequired" datatype="html">
         <source>Remote Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
-          <context context-type="linenumber">42</context>
+          <context context-type="linenumber">41</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteSerial" datatype="html">
         <source>Remote Serial</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
-          <context context-type="linenumber">46</context>
+          <context context-type="linenumber">45</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteSerialRequired" datatype="html">
         <source>Remote Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
-          <context context-type="linenumber">50</context>
+          <context context-type="linenumber">49</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteUser" datatype="html">
         <source>Remote User</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
-          <context context-type="linenumber">55</context>
+          <context context-type="linenumber">54</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteUserRequired" datatype="html">
         <source>Remote User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
-          <context context-type="linenumber">59</context>
+          <context context-type="linenumber">58</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteRealm" datatype="html">
         <source>Remote Realm</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
-          <context context-type="linenumber">62</context>
+          <context context-type="linenumber">61</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteResolver" datatype="html">
         <source>Remote Resolver</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
-          <context context-type="linenumber">68</context>
+          <context context-type="linenumber">67</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.remoteResolverRequired" datatype="html">
         <source>Remote Resolver is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
-          <context context-type="linenumber">72</context>
+          <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.easeEnrollment" datatype="html">
@@ -10488,7 +10488,7 @@
         <source>Token Configuration</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">40</context>
+          <context context-type="linenumber">41</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.self-service.component.html</context>
@@ -10499,7 +10499,7 @@
         <source>Description is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">52</context>
+          <context context-type="linenumber">53</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.self-service.component.html</context>
@@ -10507,14 +10507,14 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
-          <context context-type="linenumber">73</context>
+          <context context-type="linenumber">78</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.descriptionMust" datatype="html">
         <source>Description must not exceed <x id="INTERPOLATION" equiv-text="{{ tokenService.maxDescriptionLength }}"/> characters.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">56</context>
+          <context context-type="linenumber">57</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.self-service.component.html</context>
@@ -10525,14 +10525,14 @@
         <source>Assign Token to a User</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">63</context>
+          <context context-type="linenumber">64</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.addTokenContainer" datatype="html">
         <source>Add Token to a Container</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">80</context>
+          <context context-type="linenumber">81</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.self-service.component.html</context>
@@ -10543,60 +10543,60 @@
         <source>Extended Attributes</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">108</context>
+          <context context-type="linenumber">109</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.validityStart" datatype="html">
         <source>Validity Start Date</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">113</context>
+          <context context-type="linenumber">114</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.dateFormatYyyy" datatype="html">
         <source>Date Format: YYYY-MM-DD</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">120</context>
+          <context context-type="linenumber">121</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">158</context>
+          <context context-type="linenumber">159</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.validityStartTime" datatype="html">
         <source>Validity Start Time</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">128</context>
+          <context context-type="linenumber">129</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.timezone" datatype="html">
         <source>Timezone</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">139</context>
+          <context context-type="linenumber">140</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.validityEndDate" datatype="html">
         <source>Validity End Date</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">151</context>
+          <context context-type="linenumber">152</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.validityEndTime" datatype="html">
         <source>Validity End Time</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.html</context>
-          <context context-type="linenumber">166</context>
+          <context context-type="linenumber">167</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pleaseSelectToken" datatype="html">
         <source>Please select a token type.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.ts</context>
-          <context context-type="linenumber">329</context>
+          <context context-type="linenumber">335</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.pleaseFillAll" datatype="html">
@@ -10607,25 +10607,25 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.ts</context>
-          <context context-type="linenumber">346</context>
+          <context context-type="linenumber">352</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.ts</context>
-          <context context-type="linenumber">392</context>
+          <context context-type="linenumber">398</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.enrollmentAction" datatype="html">
         <source>Enrollment action is not available for the selected token type.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.ts</context>
-          <context context-type="linenumber">354</context>
+          <context context-type="linenumber">360</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.noEnrollmentResponse" datatype="html">
         <source>No enrollment response available.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.ts</context>
-          <context context-type="linenumber">521</context>
+          <context context-type="linenumber">527</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.self-service.component.ts</context>
@@ -10640,7 +10640,7 @@
         <source>User is required for this token type, but no user was provided.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.component.ts</context>
-          <context context-type="linenumber">547</context>
+          <context context-type="linenumber">553</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.enrollToken" datatype="html">
@@ -10654,7 +10654,7 @@
         <source>Description cannot exceed <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>80 characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment.wizard.component.html</context>
-          <context context-type="linenumber">76</context>
+          <context context-type="linenumber">81</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.verifyTokenEnrollment" datatype="html">
@@ -10703,15 +10703,15 @@
         <source>OK</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">41</context>
+          <context context-type="linenumber">53</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">100</context>
+          <context context-type="linenumber">112</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">159</context>
+          <context context-type="linenumber">171</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/find-serial-result-dialog/find-serial-result-dialog.component.ts</context>
@@ -13510,7 +13510,7 @@
         <source>Email</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">141</context>
+          <context context-type="linenumber">153</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.ts</context>
@@ -13620,7 +13620,7 @@
         <source>Failed to download audit log.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/audit/audit.service.ts</context>
-          <context context-type="linenumber">233</context>
+          <context context-type="linenumber">232</context>
         </context-group>
       </trans-unit>
       <trans-unit id="caConnector.successfullySaved" datatype="html">
@@ -13946,32 +13946,32 @@
         <source>Policy created successfully.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">598</context>
+          <context context-type="linenumber">597</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.creatingPolicy" datatype="html">
         <source>Creating policy failed: <x id="DETAIL" equiv-text="error"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">602</context>
+          <context context-type="linenumber">601</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">610</context>
+          <context context-type="linenumber">609</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.policyUpdated" datatype="html">
         <source>Policy updated successfully</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">713</context>
+          <context context-type="linenumber">712</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.savingPolicyFailed" datatype="html">
         <source>Saving policy failed<x id="DETAIL" equiv-text="errorMessage"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
-          <context context-type="linenumber">721</context>
+          <context context-type="linenumber">720</context>
         </context-group>
       </trans-unit>
       <trans-unit id="policy.errorFetching" datatype="html">
@@ -13992,49 +13992,49 @@
         <source>Successfully saved privacyIDEA server.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
-          <context context-type="linenumber">102</context>
+          <context context-type="linenumber">112</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.failedSavePrivacyidea" datatype="html">
         <source>Failed to save privacyIDEA server. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
-          <context context-type="linenumber">109</context>
+          <context context-type="linenumber">119</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.successfullyDeleted" datatype="html">
         <source>Successfully deleted privacyIDEA server: <x id="IDENTIFIER" equiv-text="identifier"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
-          <context context-type="linenumber">125</context>
+          <context context-type="linenumber">135</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.failedDeletePrivacyidea" datatype="html">
         <source>Failed to delete privacyIDEA server. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
-          <context context-type="linenumber">132</context>
+          <context context-type="linenumber">142</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.testRequestSuccessful" datatype="html">
         <source>Test request successful.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
-          <context context-type="linenumber">144</context>
+          <context context-type="linenumber">154</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.testRequestFailed" datatype="html">
         <source>Test request failed.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
-          <context context-type="linenumber">147</context>
+          <context context-type="linenumber">157</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.failedSendTest" datatype="html">
         <source>Failed to send test request. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
-          <context context-type="linenumber">153</context>
+          <context context-type="linenumber">163</context>
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.successfullySaved" datatype="html">
@@ -14090,28 +14090,28 @@
         <source>Successfully saved service ID.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
-          <context context-type="linenumber">95</context>
+          <context context-type="linenumber">111</context>
         </context-group>
       </trans-unit>
       <trans-unit id="serviceId.failedSaveService" datatype="html">
         <source>Failed to save service ID. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
-          <context context-type="linenumber">101</context>
+          <context context-type="linenumber">117</context>
         </context-group>
       </trans-unit>
       <trans-unit id="serviceId.successfullyDeleted" datatype="html">
         <source>Successfully deleted service ID: <x id="SERVICE" equiv-text="servicename"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
-          <context context-type="linenumber">114</context>
+          <context context-type="linenumber">130</context>
         </context-group>
       </trans-unit>
       <trans-unit id="serviceId.failedDeleteService" datatype="html">
         <source>Failed to delete service ID. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
-          <context context-type="linenumber">121</context>
+          <context context-type="linenumber">137</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.yourSessionHas" datatype="html">
@@ -14125,70 +14125,70 @@
         <source>Successfully saved SMS gateway.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/sms-gateway/sms-gateway.service.ts</context>
-          <context context-type="linenumber">118</context>
+          <context context-type="linenumber">122</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smsGateway.failedSaveSms" datatype="html">
         <source>Failed to save SMS gateway. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/sms-gateway/sms-gateway.service.ts</context>
-          <context context-type="linenumber">124</context>
+          <context context-type="linenumber">128</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smsGateway.successfullyDeleted" datatype="html">
         <source>Successfully deleted SMS gateway: <x id="NAME" equiv-text="name"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/sms-gateway/sms-gateway.service.ts</context>
-          <context context-type="linenumber">137</context>
+          <context context-type="linenumber">141</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smsGateway.failedDeleteSms" datatype="html">
         <source>Failed to delete SMS gateway. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/sms-gateway/sms-gateway.service.ts</context>
-          <context context-type="linenumber">144</context>
+          <context context-type="linenumber">148</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.successfullySaved" datatype="html">
         <source>Successfully saved SMTP server.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">113</context>
+          <context context-type="linenumber">116</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.failedSaveSmtp" datatype="html">
         <source>Failed to save SMTP server. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">118</context>
+          <context context-type="linenumber">121</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.testEmailSent" datatype="html">
         <source>Test email sent successfully.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">130</context>
+          <context context-type="linenumber">133</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.failedSendTest" datatype="html">
         <source>Failed to send test email. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">137</context>
+          <context context-type="linenumber">140</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.successfullyDeleted" datatype="html">
         <source>Successfully deleted SMTP server: <x id="IDENTIFIER" equiv-text="identifier"/>.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">153</context>
+          <context context-type="linenumber">156</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.failedDeleteSmtp" datatype="html">
         <source>Failed to delete SMTP server. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">159</context>
+          <context context-type="linenumber">162</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenGroup.successfullySaved" datatype="html">
@@ -14642,7 +14642,7 @@
         <source>Avg (ms)</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
-          <context context-type="linenumber">53</context>
+          <context context-type="linenumber">65</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.certificateHealth" datatype="html">
@@ -14670,79 +14670,49 @@
           <context context-type="linenumber">43</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="dashboard.deliveryErrors" datatype="html">
-        <source>Delivery errors within the last hour.</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">55</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">114</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">173</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="dashboard.error" datatype="html">
         <source>Error</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">61</context>
+          <context context-type="linenumber">73</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">120</context>
+          <context context-type="linenumber">132</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">179</context>
+          <context context-type="linenumber">191</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.failed" datatype="html">
         <source>Failed</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/authentication-activity-widget/authentication-activity-widget.component.ts</context>
-          <context context-type="linenumber">274</context>
+          <context context-type="linenumber">279</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">51</context>
+          <context context-type="linenumber">63</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">110</context>
+          <context context-type="linenumber">122</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">169</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="dashboard.failedDeliveries" datatype="html">
-        <source>Failed deliveries within the last hour.</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">45</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">104</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">163</context>
+          <context context-type="linenumber">181</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.gateway" datatype="html">
         <source>Gateway</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">32</context>
+          <context context-type="linenumber">44</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">91</context>
+          <context context-type="linenumber">103</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.loadingWidget" datatype="html">
@@ -14756,7 +14726,7 @@
         <source>Max (ms)</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
-          <context context-type="linenumber">70</context>
+          <context context-type="linenumber">82</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.noCertificates" datatype="html">
@@ -14766,25 +14736,11 @@
           <context context-type="linenumber">80</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="dashboard.noNotification" datatype="html">
-        <source>No notification deliveries in the last hour.</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">200</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="dashboard.noResolverActivity" datatype="html">
-        <source>No resolver activity in the last hour.</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
-          <context context-type="linenumber">98</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="dashboard.notificationDelivery" datatype="html">
         <source>Notification Delivery</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.ts</context>
-          <context context-type="linenumber">64</context>
+          <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.noTokens" datatype="html">
@@ -14794,32 +14750,25 @@
           <context context-type="linenumber">66</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="dashboard.numberRequests" datatype="html">
-        <source>Number of requests within the last hour.</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
-          <context context-type="linenumber">40</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="dashboard.operation" datatype="html">
         <source>Operation</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
-          <context context-type="linenumber">36</context>
+          <context context-type="linenumber">48</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.p95Ms" datatype="html">
         <source>P95 (ms)</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
-          <context context-type="linenumber">62</context>
+          <context context-type="linenumber">74</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.push" datatype="html">
         <source>Push</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">23</context>
+          <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.refreshFailed" datatype="html">
@@ -14844,13 +14793,6 @@
         <source>Requests</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
-          <context context-type="linenumber">45</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="dashboard.requestsWithin" datatype="html">
-        <source>95% of requests within the last hour completed within this time.</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
           <context context-type="linenumber">57</context>
         </context-group>
       </trans-unit>
@@ -14858,7 +14800,7 @@
         <source>Resolver Timing</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.ts</context>
-          <context context-type="linenumber">63</context>
+          <context context-type="linenumber">77</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.source" datatype="html">
@@ -14866,21 +14808,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/certificate-health-widget/certificate-health-widget.component.html</context>
           <context context-type="linenumber">30</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="dashboard.successfulDeliveries" datatype="html">
-        <source>Successful deliveries within the last hour.</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">35</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">94</context>
-        </context-group>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
-          <context context-type="linenumber">153</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.tokensByType" datatype="html">
@@ -15816,133 +15743,133 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1177</context>
+          <context context-type="linenumber">1184</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToAssignUserTo" datatype="html">
         <source>Failed to assign user to all tokens. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1146</context>
+          <context context-type="linenumber">1153</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToDeleteTokenInfo" datatype="html">
         <source>Failed to delete token info. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1081</context>
+          <context context-type="linenumber">1088</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToDeleteTokens" datatype="html">
         <source>Failed to delete tokens. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">825</context>
+          <context context-type="linenumber">832</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToEnrollToken" datatype="html">
         <source>Failed to enroll token. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1285</context>
+          <context context-type="linenumber">1292</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToGetCount" datatype="html">
         <source>Failed to get count. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">979</context>
+          <context context-type="linenumber">986</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToGetTokengroups" datatype="html">
         <source>Failed to get tokengroups. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1382</context>
+          <context context-type="linenumber">1389</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToImportTokens" datatype="html">
         <source>Failed to import tokens. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1424</context>
+          <context context-type="linenumber">1431</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToMarkTokenAs" datatype="html">
         <source>Failed to mark token as lost. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1317</context>
+          <context context-type="linenumber">1324</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToPollTokenState" datatype="html">
         <source>Failed to poll token state. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1344</context>
+          <context context-type="linenumber">1351</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToResetFailCount" datatype="html">
         <source>Failed to reset fail count. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">929</context>
+          <context context-type="linenumber">936</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToResyncOtpToken" datatype="html">
         <source>Failed to resync OTP token. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1244</context>
+          <context context-type="linenumber">1251</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToRevokeToken" datatype="html">
         <source>Failed to revoke token. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1060</context>
+          <context context-type="linenumber">1067</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetPin" datatype="html">
         <source>Failed to set PIN. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1199</context>
+          <context context-type="linenumber">1206</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetRandomPin" datatype="html">
         <source>Failed to set random PIN. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1220</context>
+          <context context-type="linenumber">1227</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenDetail" datatype="html">
         <source>Failed to set token detail. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">958</context>
+          <context context-type="linenumber">965</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenGroup" datatype="html">
         <source>Failed to set token group. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1406</context>
+          <context context-type="linenumber">1413</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenInfo" datatype="html">
         <source>Failed to set token info. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1001</context>
+          <context context-type="linenumber">1008</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenRealm" datatype="html">
         <source>Failed to set token realm. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1368</context>
+          <context context-type="linenumber">1375</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToToggleActive" datatype="html">
@@ -15953,14 +15880,14 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">913</context>
+          <context context-type="linenumber">920</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToUnassignTokens" datatype="html">
         <source>Failed to unassign tokens. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">809</context>
+          <context context-type="linenumber">816</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToUnassignUser" datatype="html">
@@ -15971,28 +15898,28 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1118</context>
+          <context context-type="linenumber">1125</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToUnassignUserFrom" datatype="html">
         <source>Failed to unassign user from all tokens. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1101</context>
+          <context context-type="linenumber">1108</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToVerifyToken" datatype="html">
         <source>Failed to verify token. <x id="MESSAGE" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1301</context>
+          <context context-type="linenumber">1308</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.followingTokensFailedDelete" datatype="html">
         <source>The following tokens failed to delete: <x id="TOKENS" equiv-text="formatList(this.localeId, failedTokens)"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">872</context>
+          <context context-type="linenumber">879</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.inactiveToActive" datatype="html">
@@ -16017,7 +15944,7 @@
         <source>You are not authorized to delete the following tokens: <x id="TOKENS" equiv-text="formatList(this.localeId, unauthorizedTokens)"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">878</context>
+          <context context-type="linenumber">885</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.offline" datatype="html">
@@ -16077,14 +16004,14 @@
         <source>Successfully deleted 1 token.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">862</context>
+          <context context-type="linenumber">869</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedOther" datatype="html">
         <source>Successfully deleted <x id="COUNT" equiv-text="count_success"/> tokens.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">865</context>
+          <context context-type="linenumber">872</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyResetOne" datatype="html">
@@ -17218,7 +17145,7 @@
         <source>Delete Selected Tokens</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">837</context>
+          <context context-type="linenumber">844</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.maxfail" datatype="html">
@@ -17332,14 +17259,14 @@
         <source>Failed to cancel the enrollment. <x id="PH" equiv-text="message"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1046</context>
+          <context context-type="linenumber">1053</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.enrollmentTokenCancelled" datatype="html">
         <source>The enrollment of token <x id="PH" equiv-text="tokenSerial"/> was cancelled.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1039</context>
+          <context context-type="linenumber">1046</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.loadingCancelled" datatype="html">
@@ -17981,14 +17908,14 @@
         <source>Successfully deleted <x id="COUNT" equiv-text="count_success"/> tokens.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">863</context>
+          <context context-type="linenumber">870</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedMany" datatype="html">
         <source>Successfully deleted <x id="COUNT" equiv-text="count_success"/> tokens.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">864</context>
+          <context context-type="linenumber">871</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyResetFew" datatype="html">
@@ -18214,7 +18141,7 @@
         <source>Pending</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/authentication-activity-widget/authentication-activity-widget.component.ts</context>
-          <context context-type="linenumber">283</context>
+          <context context-type="linenumber">288</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
@@ -19288,7 +19215,7 @@
         <source>Successful</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/authentication-activity-widget/authentication-activity-widget.component.ts</context>
-          <context context-type="linenumber">267</context>
+          <context context-type="linenumber">272</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.startCountedSpan" datatype="html">
@@ -20019,7 +19946,7 @@
         <source>In force until <x id="PH" equiv-text="formatLocalDateTime(entry.expiresAt)"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component.ts</context>
-          <context context-type="linenumber">654</context>
+          <context context-type="linenumber">656</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.everyStageNeedsFailure" datatype="html">
@@ -20282,11 +20209,11 @@
         <source>now</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/authentication-activity-widget/authentication-activity-widget.component.ts</context>
-          <context context-type="linenumber">373</context>
+          <context context-type="linenumber">375</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component.ts</context>
-          <context context-type="linenumber">437</context>
+          <context context-type="linenumber">442</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/authentication-log/authentication-log.ts</context>
@@ -20613,7 +20540,7 @@
         <source>Overall</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/authentication-activity-widget/authentication-activity-widget.component.ts</context>
-          <context context-type="linenumber">258</context>
+          <context context-type="linenumber">263</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.administratorExternal" datatype="html">
@@ -20771,7 +20698,7 @@
         <source>Locked <x id="PH" equiv-text="formatLocalDateTime(entry.at)"/> - show the locked users</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component.ts</context>
-          <context context-type="linenumber">650</context>
+          <context context-type="linenumber">652</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.removeAllSelectedValues" datatype="html">
@@ -20995,7 +20922,7 @@
         <source>Blocked <x id="PH" equiv-text="formatLocalDateTime(entry.at)"/> - show this IP&apos;s authentication log</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/conditional-access-widget/conditional-access-widget.component.ts</context>
-          <context context-type="linenumber">648</context>
+          <context context-type="linenumber">650</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.failedSaveConditionalAccess" datatype="html">
@@ -21800,6 +21727,160 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/new-tokengroup/new-tokengroup.component.ts</context>
           <context context-type="linenumber">149</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="1272598752638190101" datatype="html">
+        <source>6 h</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/metrics-time-window.ts</context>
+          <context context-type="linenumber">46</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7324241450799564337" datatype="html">
+        <source>1 h</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/metrics-time-window.ts</context>
+          <context context-type="linenumber">40</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8073962907604601724" datatype="html">
+        <source>24 h</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/metrics-time-window.ts</context>
+          <context context-type="linenumber">47</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.certificatesCheckedAt" datatype="html">
+        <source>Checked at <x id="INTERPOLATION" equiv-text="{{ checked | date: &quot;shortTime&quot; }}"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/certificate-health-widget/certificate-health-widget.component.html</context>
+          <context context-type="linenumber">92</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.chooseTimeWindow" datatype="html">
+        <source>Choose the time window</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">26</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
+          <context context-type="linenumber">26</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.deliveryErrorsInWindow" datatype="html">
+        <source>Delivery errors in the selected time window.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">67</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">126</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">185</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.failedDeliveriesInWindow" datatype="html">
+        <source>Failed deliveries in the selected time window.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">57</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">116</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">175</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.noNotificationInWindow" datatype="html">
+        <source>No notification deliveries in the selected time window.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">212</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.noResolverActivityInWindow" datatype="html">
+        <source>No resolver activity in the selected time window.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
+          <context context-type="linenumber">110</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.numberRequestsInWindow" datatype="html">
+        <source>Number of requests in the selected time window.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
+          <context context-type="linenumber">52</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.requestsWithinWindow" datatype="html">
+        <source>95% of requests in the selected time window completed within this time.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/resolver-timing-widget/resolver-timing-widget.component.html</context>
+          <context context-type="linenumber">69</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.successfulDeliveriesInWindow" datatype="html">
+        <source>Successful deliveries in the selected time window.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">47</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">106</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/notification-delivery-widget/notification-delivery-widget.component.html</context>
+          <context context-type="linenumber">165</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="serviceId.unavailableNeedsListRight" datatype="html">
+        <source>Application specific password tokens cannot be enrolled: selecting the service ID needs the serviceid_list right.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
+          <context context-type="linenumber">69</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="serviceId.unavailableSelfService" datatype="html">
+        <source>Application specific password tokens cannot be enrolled in self-service: the service IDs are only available to administrators.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
+          <context context-type="linenumber">68</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="token.remoteServerNeedsReadRight" datatype="html">
+        <source>Remote tokens cannot be enrolled: selecting the remote server needs the privacyideaserver_read right.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.ts</context>
+          <context context-type="linenumber">86</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="tokenTypeConfig.radiusServerNeedsEnrollRight" datatype="html">
+        <source>Type the identifier: listing the RADIUS servers needs the enrollRADIUS right.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/radius-config/radius-config.component.html</context>
+          <context context-type="linenumber">63</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="tokenTypeConfig.smsGatewayNeedsReadRight" datatype="html">
+        <source>Type the name: listing the SMS gateways needs the smsgateway_read right.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/sms-config/sms-config.component.html</context>
+          <context context-type="linenumber">68</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="tokenTypeConfig.smtpServerNeedsReadRight" datatype="html">
+        <source>Type the identifier: listing the SMTP servers needs the smtpserver_read right.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/email-config/email-config.component.html</context>
+          <context context-type="linenumber">64</context>
         </context-group>
       </trans-unit>
     </body>

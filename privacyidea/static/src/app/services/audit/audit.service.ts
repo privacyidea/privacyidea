@@ -158,8 +158,7 @@ export class AuditService extends FilterableTableService implements AuditService
 
   private auditBaseUrl = environment.proxyUrl + "/audit/";
   auditResource = httpResource<PiResponse<Audit>>(() => {
-    // Only load audit logs on the audit route.
-    if (!this.contentService.onAudit()) {
+    if (!this.contentService.onAudit() || !this.authService.actionAllowed("auditlog")) {
       return undefined;
     }
 

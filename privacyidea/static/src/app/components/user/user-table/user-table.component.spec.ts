@@ -199,6 +199,48 @@ describe("UserTableComponent", () => {
     expect(mockUserService.detailsUser().realm).toBe("themis");
   });
 
+  it("offers every advanced keyword alongside the plain column filters to an admin who may list tokens", () => {
+    const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist", "tokenlist"] });
+
+    expect(component.filterKeywords()).toEqual([
+      ...mockUserService.apiFilterKeys,
+      ...mockUserService.advancedApiFilterKeys
+    ]);
+    expect(component.filterKeywords()).toContain("has_tokens");
+  });
+
+  it("does not offer has_tokens to an admin who may not list tokens, as the backend would refuse it", () => {
+    const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist"] });
+
+    expect(component.filterKeywords()).not.toContain("has_tokens");
+    expect(component.filterKeywords()).toEqual(expect.arrayContaining(mockUserService.apiFilterKeys));
+  });
+
+  describe("a preset filter handed over by another view", () => {
+    const mockContentService = () => TestBed.inject(ContentService) as unknown as MockContentService;
+
+    it("applies it once the user table is on screen, and clears it so it is not reapplied", () => {
+      mockContentService().routeUrl.set(ROUTE_PATHS.USERS);
+      const filter = new FilterValue().addEntry("has_tokens", "True");
+      mockUserService.presetFilter.set(filter);
+      fixture.detectChanges();
+
+      expect(mockUserService.activeFilter()).toBe(filter);
+      expect(mockUserService.presetFilter()).toBeNull();
+    });
+
+    it("is left untouched while some other view is on screen", () => {
+      mockContentService().routeUrl.set(ROUTE_PATHS.TOKENS);
+      const filter = new FilterValue().addEntry("has_tokens", "True");
+      mockUserService.presetFilter.set(filter);
+      fixture.detectChanges();
+
+      expect(mockUserService.presetFilter()).toBe(filter);
+    });
+  });
+
   describe("keyword-less client-side search", () => {
     const users = [
       { username: "alice", email: "alice@acme.test", givenname: "Alice" },

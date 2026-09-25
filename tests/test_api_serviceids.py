@@ -1,3 +1,6 @@
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.serviceid import set_serviceid, delete_serviceid
 from .base import MyApiTestCase
 
 
@@ -93,3 +96,54 @@ class APIServiceIDTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             value = res.json['result']['value']
             self.assertEqual(value, 1)
+
+    def test_02_selfservice_user_can_list_but_not_modify(self):
+        """A self-service user needs the service IDs to enroll an application specific password token. Listing them
+        follows the serviceid_list action of the user scope, while adding and deleting stays with the administrator."""
+        set_serviceid("serviceC", "3rd service")
+        self.addCleanup(delete_serviceid, "serviceC")
+        self.setUp_user_realms()
+        self.authenticate_selfservice_user()
+
+        # Without any policy in the user scope, every action of the scope is allowed
+        with self.app.test_request_context('/serviceid/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertIn("serviceC", res.json['result']['value'])
+
+        # A user scope that is configured without the action denies the listing
+        set_policy("user_pol", scope=SCOPE.USER, action=PolicyAction.DISABLE)
+        self.addCleanup(delete_policy, "user_pol")
+        with self.app.test_request_context('/serviceid/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertIn(PolicyAction.SERVICEID_LIST, res.json['result']['error']['message'])
+
+        # ...and granting the action allows it again
+        set_policy("user_pol", scope=SCOPE.USER,
+                   action=[PolicyAction.DISABLE, PolicyAction.SERVICEID_LIST])
+        with self.app.test_request_context('/serviceid/',
+                                           method='GET',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertIn("serviceC", res.json['result']['value'])
+
+        # The user is not allowed to create a new service ID
+        with self.app.test_request_context('/serviceid/serviceD',
+                                           data={"description": "4th service"},
+                                           method='POST',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+
+        # ...nor to delete an existing one
+        with self.app.test_request_context('/serviceid/serviceC',
+                                           method='DELETE',
+                                           headers={'Authorization': self.at_user}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)

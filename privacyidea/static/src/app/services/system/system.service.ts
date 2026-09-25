@@ -130,6 +130,7 @@ export interface SystemServiceInterface {
   systemConfigInit: Signal<SystemConfigInit>;
   nodes: Signal<NodeInfo[]>;
   radiusServers: Signal<string[]>;
+  canListRadiusServers: Signal<boolean>;
 
   saveSystemConfig(config: Record<string, unknown>): Observable<PiResponse<Record<string, "insert" | "update">>>;
 
@@ -162,8 +163,11 @@ export class SystemService implements SystemServiceInterface {
   });
 
   systemConfigResource = httpResource<SystemConfigResponse>(() => {
-    // Only load system config on enrollment or wizard routes.
     if (!this.onAllowedRoutes()) {
+      return undefined;
+    }
+    // /system/ requires configread from admins only; users always pass.
+    if (!this.authService.isSelfServiceUser() && !this.authService.actionAllowed("configread")) {
       return undefined;
     }
 
@@ -173,12 +177,14 @@ export class SystemService implements SystemServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
+  canListRadiusServers = computed<boolean>(() => this.authService.actionAllowed("enrollRADIUS"));
+
   radiusServerResource = httpResource<PiResponse<string[]>>(() => {
     // Do not load RADIUS server details if the action is not allowed.
-    if (!this.authService.actionAllowed("enrollRADIUS")) {
+    if (!this.canListRadiusServers()) {
       return undefined;
     }
-    // Only load RADIUS server details on enrollment or token wizard routes.
+    // Only load RADIUS server details on the enrollment, wizard and system/token type configuration routes.
     if (!this.onAllowedRoutes()) {
       return undefined;
     }
@@ -194,7 +200,7 @@ export class SystemService implements SystemServiceInterface {
     if (!this.authService.actionAllowed("enrollCERTIFICATE")) {
       return undefined;
     }
-    // Only load CA connectors on enrollment or token wizard routes.
+    // Only load CA connectors on the enrollment, wizard and system/token type configuration routes.
     if (!this.onAllowedRoutes()) {
       return undefined;
     }

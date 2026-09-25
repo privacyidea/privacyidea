@@ -20,9 +20,13 @@ The serviceid REST API manages service ID definitions. Service IDs are
 used to scope SSH key assignments and application-specific passwords;
 see :ref:`serviceids` for the conceptual chapter.
 
-All endpoints require admin authentication. Listing is gated by the
-admin policy action :ref:`policy_serviceid_list`, creation/update by
-:ref:`policy_serviceid_add`, deletion by :ref:`policy_serviceid_delete`.
+Creation, update and deletion require admin authentication and are gated
+by the admin policy actions :ref:`policy_serviceid_add` and
+:ref:`policy_serviceid_delete`. Listing is available to both admins and
+self-service users - the latter need it to populate the service ID
+choice when enrolling an application specific password token - and is
+gated by the policy action ``serviceid_list`` in the scope of the caller,
+see :ref:`policy_serviceid_list` and :ref:`user_policy_serviceid_list`.
 """
 from flask import (Blueprint, request)
 from .lib.utils import (send_result)
@@ -31,6 +35,7 @@ from ..lib.log import log_with
 from privacyidea.lib.serviceid import get_serviceids, delete_serviceid, set_serviceid
 from privacyidea.lib.event import event
 from ..lib.policies.actions import PolicyAction
+from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 
 from flask import g
@@ -44,6 +49,7 @@ serviceid_blueprint = Blueprint('serviceid_blueprint', __name__)
 
 
 @serviceid_blueprint.route('/<name>', methods=['POST'])
+@admin_required
 @prepolicy(check_base_action, request, PolicyAction.SERVICEID_ADD)
 @event("serviceid_add", request, g)
 @log_with(log)
@@ -109,8 +115,11 @@ def get_serviceid_api(name=None):
     The result is a dictionary keyed by service ID name; each value carries
     ``description`` and ``id``.
 
-    Requires admin authentication and the policy action
-    :ref:`policy_serviceid_list`.
+    Requires admin or user authentication and the policy action
+    ``serviceid_list`` in the scope of the caller, see
+    :ref:`policy_serviceid_list` and :ref:`user_policy_serviceid_list`.
+    Self-service users need this to populate the service ID choice when
+    enrolling an application specific password token.
 
     :param name: optional path component selecting a single service ID.
     :status 200: dict of service IDs in ``result.value``.
@@ -154,6 +163,7 @@ def get_serviceid_api(name=None):
 
 
 @serviceid_blueprint.route('/<name>', methods=['DELETE'])
+@admin_required
 @prepolicy(check_base_action, request, PolicyAction.SERVICEID_DELETE)
 @event("serviceid_delete", request, g)
 @log_with(log)

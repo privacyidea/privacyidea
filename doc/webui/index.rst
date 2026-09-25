@@ -155,6 +155,21 @@ access is displayed in the dashboard.
 .. figure:: images/dashboard.png
    :width: 500
 
+Token usage
+~~~~~~~~~~~
+
+.. index:: token usage, users without tokens
+
+The *Token Usage* panel counts the tokens of one realm - hardware and software tokens, and those not assigned to a
+user - and how many of the realm's users own a token and how many do not. The realm is picked in the header of the
+panel and stored with it; without a choice, the default realm is counted. Each number links to the token or user
+list that shows what it counted.
+
+The panel requires the admin action :ref:`policy_tokenlist`. The two user counts also require :ref:`policy_userlist`,
+and ``tokenlist`` in the counted realm, since they tell who owns a token. A revoked token does not count, as it can
+never be used again; a disabled one does. A resolver that does not answer is left out of both user counts and named
+below them.
+
 Certificate health
 ~~~~~~~~~~~~~~~~~~
 
@@ -545,6 +560,12 @@ Even if a realm contains several useridresolvers, users from all
 resolvers within this realm are displayed. However, if a user with the
 same login name exists in more than one resolver, only the user from the
 highest-priority resolver is shown. See :ref:`resolver_priority` for details.
+If the administrator's :ref:`policy_userlist` policies name resolvers or users,
+only these are listed.
+
+The filter ``has_tokens: true`` lists only the users that own a token, and
+``has_tokens: false`` only those that own none. It is offered to administrators
+with the :ref:`policy_tokenlist` action, which it requires in the listed realm.
 
 Read about the functionality of the users view in the following sections.
 

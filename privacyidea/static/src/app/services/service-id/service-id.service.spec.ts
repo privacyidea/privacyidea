@@ -33,6 +33,7 @@ describe("ServiceIdService", () => {
   let httpMock: HttpTestingController;
   let notifyMock: MockNotificationService;
   let contentService: MockContentService;
+  let authService: MockAuthService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -49,6 +50,10 @@ describe("ServiceIdService", () => {
     httpMock = TestBed.inject(HttpTestingController);
     notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // The service IDs are only requested by an admin who may list them;
+    // on enrollment only if ASP tokens may be enrolled.
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["serviceid_list", "enrollAPPLSPEC"] });
   });
 
   afterEach(() => {
@@ -174,5 +179,69 @@ describe("ServiceIdService", () => {
     await lastValueFrom(of({}));
 
     expect(service.serviceIds()).toEqual([]);
+  });
+
+  describe("serviceIdsUnavailableReason", () => {
+    it("should be null for an admin with serviceid_list", () => {
+      expect(service.serviceIdsUnavailableReason()).toBeNull();
+    });
+
+    it("should name the missing right for an admin without serviceid_list", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["enrollAPPLSPEC"] });
+      expect(service.serviceIdsUnavailableReason()).toContain("serviceid_list");
+    });
+
+    it("should be null for a self-service user with serviceid_list", () => {
+      authService.authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        role: "user",
+        rights: ["serviceid_list", "enrollAPPLSPEC"]
+      });
+      expect(service.canListServiceIds()).toBe(true);
+      expect(service.serviceIdsUnavailableReason()).toBeNull();
+    });
+
+    it("should name the missing right for a self-service user without serviceid_list", () => {
+      authService.authData.set({
+        ...MockAuthService.MOCK_AUTH_DATA,
+        role: "user",
+        rights: ["enrollAPPLSPEC"]
+      });
+      expect(service.canListServiceIds()).toBe(false);
+      expect(service.serviceIdsUnavailableReason()).toContain("serviceid_list");
+    });
+  });
+
+  // A self-service user enrolling an application specific password token needs the list as well.
+  it("serviceIdResource should request the service IDs for a self-service user on enrollment", () => {
+    authService.authData.set({
+      ...MockAuthService.MOCK_AUTH_DATA,
+      role: "user",
+      rights: ["serviceid_list", "enrollAPPLSPEC"]
+    });
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    contentService.onTokenEnrollmentLikely.set(true);
+    TestBed.tick();
+
+    httpMock.expectOne(`${environment.proxyUrl}/serviceid/`);
+  });
+
+  it("serviceIdResource should not request the service IDs without serviceid_list", () => {
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["enrollAPPLSPEC"] });
+    contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
+    TestBed.tick();
+
+    httpMock.expectNone(`${environment.proxyUrl}/serviceid/`);
+    expect(service.serviceIds()).toEqual([]);
+  });
+
+  // Only the application specific password token type uses the list during enrollment.
+  it("serviceIdResource should not request the service IDs on enrollment without enrollAPPLSPEC", () => {
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["serviceid_list"] });
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    contentService.onTokenEnrollmentLikely.set(true);
+    TestBed.tick();
+
+    httpMock.expectNone(`${environment.proxyUrl}/serviceid/`);
   });
 });

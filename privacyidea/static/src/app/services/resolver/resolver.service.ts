@@ -239,7 +239,7 @@ export class ResolverService implements ResolverServiceInterface {
   selectedResolverName = signal<string>("");
   selectedResolverResource = httpResource<PiResponse<Resolvers>>(() => {
     const resolverName = this.selectedResolverName();
-    if (resolverName === "") {
+    if (resolverName === "" || !this.authService.actionAllowed("resolverread")) {
       return undefined;
     }
     return {

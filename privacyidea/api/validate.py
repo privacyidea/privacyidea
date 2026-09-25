@@ -149,7 +149,7 @@ from ..lib.conditional_access.authentication_event_types import (AuthEventType, 
                                                                 AUTH_EVENT_REASON_DETAIL_KEY,
                                                                 AUTH_EVENT_SERIALS_KEY, build_reason_detail,
                                                                 LOG_TRANSACTION_ID_KEY)
-from ..lib.conditional_access.request_context import continue_attempt
+from ..lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
@@ -618,6 +618,9 @@ def _handle_enrollment_cancellation(data: dict) -> Response:
     Returns the Flask response object directly.
     """
     transaction_id = get_required(data, "transaction_id")
+    # Cancelling the enrollment step of a chain is a step of that chain: the request acts on this very
+    # transaction, so it settles the attempt claimed for it rather than starting one of its own.
+    confirm_attempt(transaction_id)
 
     # Resolve the user from the open enrollment challenge before cancelling, so the cancellation is logged
     # against the right user.
@@ -670,6 +673,9 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     Updates the context with the result.
     """
     transaction_id = get_required(request.all_data, "transaction_id")
+    # A passkey answer is verified against this very transaction, so it continues that attempt. The token layer's
+    # own settling does not apply here: this path resolves and checks the token itself.
+    confirm_attempt(transaction_id)
     serial = get_optional(request.all_data, "serial")
 
     # Resolve Token

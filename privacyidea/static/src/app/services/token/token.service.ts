@@ -39,7 +39,6 @@ import {
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { formatList, pluralize } from "@utils/i18n.utils";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface, DetailsUser } from "@services/content/content.service";
@@ -53,6 +52,7 @@ import {
 import { loadedRows, RowSelector } from "@services/table-utils/row-selector";
 import { FilterCaseNote } from "@utils/filter-hint.utils";
 import { filterParamsEqual, toBooleanParam, withDefaultRealm } from "@utils/filter.utils";
+import { formatList, pluralize } from "@utils/i18n.utils";
 import { StringUtils } from "@utils/string.utils";
 import { tokenTypes } from "@utils/token.utils";
 import {
@@ -562,7 +562,8 @@ export class TokenService extends FilterableTableService implements TokenService
         // Remove empty values
         .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
         // Convert to query param values
-        .map(([key, v]) => [key, toParamValue(key, v)] as const);
+        // A value handed over by another view counts exactly what that view counted.
+        .map(([key, v]) => [key, activeFilter.isExactKey(key) ? v : toParamValue(key, v)] as const);
       return { ...Object.fromEntries(entries), ...toTypeParams(activeFilter) };
     },
     { equal: filterParamsEqual }
@@ -617,7 +618,16 @@ export class TokenService extends FilterableTableService implements TokenService
 
   readonly detailsUser = this.contentService.detailsUser;
 
+  // GET /token/ requires tokenlist from admins; tokenlist only exists in the admin policy scope, so self-service
+  // users must not be gated on it.
+  private readonly canListTokens = computed<boolean>(
+    () => this.authService.role() !== "admin" || this.authService.actionAllowed("tokenlist")
+  );
+
   tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
+    if (!this.canListTokens()) {
+      return undefined;
+    }
     const filter = this.selectedToken();
     if (!filter || filter.length < 1) {
       return undefined;
@@ -653,7 +663,7 @@ export class TokenService extends FilterableTableService implements TokenService
 
   tokenDetailResource = httpResource<PiResponse<Tokens>>(() => {
     // Only load token details on the token details page.
-    if (!this.contentService.onTokenDetails()) {
+    if (!this.contentService.onTokenDetails() || !this.canListTokens()) {
       return undefined;
     }
 
@@ -693,7 +703,7 @@ export class TokenService extends FilterableTableService implements TokenService
 
   userTokenResource = httpResource<PiResponse<Tokens> | undefined>(() => {
     // Only load user tokens on the user details page.
-    if (!this.contentService.onUserDetails()) {
+    if (!this.contentService.onUserDetails() || !this.canListTokens()) {
       return undefined;
     }
 
@@ -731,9 +741,7 @@ export class TokenService extends FilterableTableService implements TokenService
   readonly defaultSizeOptions = [5, 10, 25, 50];
 
   tokenResource = httpResource<PiResponse<Tokens>>(() => {
-    // Do not load tokens if the action is not allowed. tokenlist only exists in the admin
-    // policy scope, so self-service users must not be gated on it.
-    if (this.authService.role() === "admin" && !this.authService.actionAllowed("tokenlist")) {
+    if (!this.canListTokens()) {
       return undefined;
     }
 
@@ -744,6 +752,11 @@ export class TokenService extends FilterableTableService implements TokenService
       this.contentService.onUserDetails();
 
     if (!onAllowedRoute) {
+      return undefined;
+    }
+    // A filter handed over by another view is applied by the token table once it exists; loading
+    // before that would send one request without it.
+    if (this.contentService.onTokens() && this.presetFilter()) {
       return undefined;
     }
 

@@ -143,9 +143,11 @@ class PasskeyTokenClass(TokenClass):
                                   "as a space-separated list of 'single_device' and/or 'multi_device'. A "
                                   "single_device credential is not backed up (typically a hardware security key or "
                                   "a non-syncing platform authenticator), a multi_device credential is backed up "
-                                  "and can be used on several devices (a synced/cloud passkey). This is verified "
-                                  "cryptographically on every authentication, not just at enrollment. By default "
-                                  "both types are accepted."),
+                                  "and can be used on several devices (a synced/cloud passkey). This is checked on "
+                                  "every authentication, so it also applies to passkeys enrolled before the policy "
+                                  "was set. The device type is reported by the authenticator and not verified by an "
+                                  "attestation, so this does not keep out an authenticator that reports a wrong "
+                                  "device type. By default both types are accepted."),
                     },
                     PasskeyAction.EnforceUserHandle: {
                         'type': 'bool',
@@ -189,9 +191,10 @@ class PasskeyTokenClass(TokenClass):
                                   "single_device credential is not backed up (typically a hardware security key or "
                                   "a non-syncing platform authenticator), a multi_device credential is backed up "
                                   "and can be used on several devices (a synced/cloud passkey). The device type is "
-                                  "reported by the browser/authenticator and cannot be requested up front, so "
-                                  "enrollment is rejected afterwards if it does not match. By default both types "
-                                  "are accepted."),
+                                  "reported by the authenticator and cannot be requested up front, so enrollment is "
+                                  "rejected afterwards if it does not match. It is not verified by an attestation, "
+                                  "so this does not keep out an authenticator that reports a wrong device type. By "
+                                  "default both types are accepted."),
                         'group': 'WebAuthn'
                     }
                 }

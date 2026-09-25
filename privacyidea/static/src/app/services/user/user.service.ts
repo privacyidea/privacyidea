@@ -34,12 +34,18 @@ import {
   FilterableTableService,
   FilterableTableServiceInterface
 } from "@services/table-utils/filterable-table-service";
-import { buildFilterParams, filterParamsEqual } from "@utils/filter.utils";
+import { buildFilterParams, filterParamsEqual, toBooleanParam } from "@utils/filter.utils";
 import { Observable, of } from "rxjs";
 import { catchError, map } from "rxjs/operators";
 
 const apiFilterKeys = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "username"];
-const exactMatchKeys = new Set(["resolver"]);
+
+// Not a user store attribute but privacyIDEA's own record, hence passed through unwrapped: the
+// backend reads it as a boolean, not as a pattern.
+const advancedApiFilterKeys = ["has_tokens"];
+
+const exactMatchKeys = new Set(["resolver", "has_tokens"]);
+const booleanKeys = new Set(["has_tokens"]);
 
 export interface UserData {
   description: string;
@@ -59,6 +65,12 @@ export interface UserData {
 /** Partial-failure report the /user/ endpoint attaches when a resolver of the realm could not be queried. */
 export interface UserListResponseDetail {
   skipped_resolvers?: string[];
+}
+
+/** The users of a listing, and how many of them own a token. */
+export interface UserCount {
+  count: number;
+  with_tokens: number;
 }
 
 export interface EditUserData {
@@ -115,6 +127,7 @@ export interface UserServiceInterface extends FilterableTableServiceInterface {
   usersResource: HttpResourceRef<PiResponse<UserData[], UserListResponseDetail | undefined> | undefined>;
   users: WritableSignal<UserData[]>;
   skippedResolvers: Signal<string[]>;
+  presetFilter: WritableSignal<FilterValue | null>;
 
   detailsUser: WritableSignal<DetailsUser>;
 
@@ -127,6 +140,8 @@ export interface UserServiceInterface extends FilterableTableServiceInterface {
   editUser(resolver: string, userData: EditUserData): Observable<boolean>;
 
   deleteUser(resolver: string, username: string): Observable<boolean>;
+
+  fetchUserCount(realm?: string): Observable<PiResponse<UserCount, UserListResponseDetail | undefined>>;
 
   displayUser(user: UserData | string): string;
 }
@@ -273,7 +288,11 @@ export class UserService extends FilterableTableService implements UserServiceIn
   detailsUser = this.contentService.detailsUser;
 
   readonly apiFilterKeys = apiFilterKeys;
+  override readonly advancedApiFilterKeys = advancedApiFilterKeys;
   override readonly exactMatchKeys = exactMatchKeys;
+
+  /** A filter another view handed over, applied by the user table once it is on screen. */
+  presetFilter: WritableSignal<FilterValue | null> = signal<FilterValue | null>(null);
 
   readonly activeFilter = signal(new FilterValue());
 
@@ -288,7 +307,8 @@ export class UserService extends FilterableTableService implements UserServiceIn
         // the allowed-filter list and the emitted API param key stays canonical. Only the key is
         // normalized. The value is passed through case-preserving, so case matching is the resolver's
         // decision rather than the frontend's.
-        .map((token) => [token.key.toLowerCase(), token.value] as const);
+        .map((token) => [token.key.toLowerCase(), token.value] as const)
+        .map(([key, value]) => [key, booleanKeys.has(key) ? (toBooleanParam(value ?? "") ?? value) : value] as const);
       return buildFilterParams(entries, this.allFilterKeys(), this.exactMatchKeys);
     },
     { equal: filterParamsEqual }
@@ -454,6 +474,11 @@ export class UserService extends FilterableTableService implements UserServiceIn
     if (!onAllowedRoute) {
       return undefined;
     }
+    // A filter handed over by another view is applied by the user table once it exists; loading
+    // before that would fetch the whole unfiltered list just to throw it away.
+    if (this.contentService.onUsers() && this.presetFilter()) {
+      return undefined;
+    }
     // On the tokens route we require at least one selected token before loading users.
     if (this.contentService.onTokens() && !this.tokenService.tokenSelection.hasSelection()) {
       return undefined;
@@ -551,6 +576,18 @@ export class UserService extends FilterableTableService implements UserServiceIn
       return user;
     }
     return user ? user.username : "";
+  }
+
+  /**
+   * The users of one realm, or of every realm when none is given, and how many of them own a token.
+   * Unlike {@link usersResource} this is not bound to the globally selected realm. Unreachable
+   * resolvers are named in the response detail.
+   */
+  fetchUserCount(realm?: string): Observable<PiResponse<UserCount, UserListResponseDetail | undefined>> {
+    return this.http.get<PiResponse<UserCount, UserListResponseDetail | undefined>>(this.baseUrl + "count", {
+      headers: this.authService.getHeaders(),
+      params: realm ? { realm } : {}
+    });
   }
 
   setUserAttribute(key: string, value: string) {
