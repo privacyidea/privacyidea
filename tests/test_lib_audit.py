@@ -127,9 +127,11 @@ class AuditTestCase(MyTestCase):
         # only setting admin and admin realm still gives all entries (no limitations to the realms)
         audit_log = self.Audit.search({}, admin_params={"admin": "local_admin", "admin_realm": "admin_realm"})
         self.assertEqual(6, audit_log.total)
-        audit_log = self.Audit.search({}, admin_params={"admin": "local_admin", "admin_realm": "admin_realm",
+        # An empty list of allowed realms admits no realm, so only the admin's own entries are left
+        audit_log = self.Audit.search({}, admin_params={"admin": "local_admin", "admin_realm": "",
                                                         "allowed_audit_realms": []})
-        self.assertEqual(6, audit_log.total)
+        self.assertEqual(2, audit_log.total)
+        self.assertEqual({"local_admin"}, {audit.get("administrator") for audit in audit_log.auditdata})
 
         # Get audit entries for local_admin who is allowed to only see realm1
         audit_log = self.Audit.search({}, admin_params={"admin": "local_admin", "admin_realm": "",

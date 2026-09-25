@@ -32,9 +32,10 @@ an administrator may have many rights concerning one user realm and only a few
 rights concerning another.
 
 Creating a policy with ``scope:admin``, ``admin-realm:helpdesk``,
-``user:frank``, ``action:enable`` and ``realm:sales``
+``adminuser:frank``, ``action:enable`` and ``realm:sales``
 means that the administrator *frank* in the admin-realm *helpdesk* is allowed
-to enable tokens in the user-realm *sales*.
+to enable tokens in the user-realm *sales*. The fields ``user`` and ``resolver``
+do not name the administrator, but the users the administrator may act on.
 
 .. note:: As long as no admin policy is defined all administrators
    are allowed to do everything.
@@ -43,6 +44,8 @@ to enable tokens in the user-realm *sales*.
 
 The following actions are available in the scope
 *admin*:
+
+.. _policy_tokenlist:
 
 tokenlist
 ~~~~~~~~~
@@ -53,7 +56,9 @@ This allows the administrator to list existing tokens in the specified user real
 Note that the resolver in this policy is ignored.
 
 If the policy with the action ``tokenlist`` is not bound to any user realm, this acts
-as a wild card and the admin is allowed to list all tokens.
+as a wild card and the admin is allowed to list all tokens. The same holds for the realm ``*``.
+A policy for every realm but some - ``*`` together with ``!realm`` - lists the tokens of the
+other realms, but not the tokens that are in no realm.
 
 If the action ``tokenlist`` is not active, but admin policies exist, then the admin
 is not allowed to list any tokens.
@@ -416,8 +421,12 @@ allowed to view the user list in a realm.
 An administrator might not be allowed to list the users, if
 they should only work with tokens, but not see all users at once.
 
-.. note:: If an administrator has any right in a realm, the administrator
-   is also allowed to view the token list.
+If the policy names resolvers, the administrator only sees the users of these resolvers,
+and if it names users, only these users. Without a realm, it grants the user list of every realm.
+
+Listing or counting the users by whether they own a token additionally requires the
+:ref:`policy_tokenlist` action in every realm the users are listed from, since it tells
+who owns a token.
 
 .. _policy_getchallenges:
 
@@ -906,7 +915,13 @@ type: ``bool``
 
 The administrators are allowed to view the audit log. If the policy contains
 a user realm, then the administrator is only allowed to see entries which
-contain this very user realm. A list of user realms may be defined.
+contain this very user realm. A list of user realms may be defined. The realm
+``*`` stands for every realm, and a realm excluded with ``!realm`` is left out.
+
+Several matching policies add up, so a policy without any restriction lets the
+administrator see every entry. The audit log can only be restricted by realm,
+so a policy that also names users or resolvers grants no realm at all, rather
+than every entry of its realms. The administrator always sees their own entries.
 
 To learn more about the audit log, see :ref:`audit`.
 
@@ -962,8 +977,9 @@ type: ``bool``
 
 The administrators are allowed to read the :ref:`authentication_log`. If the
 policy is scoped to realms, resolvers or users, the administrator only sees
-entries matching that scope. An administrator always also sees their own
-entries.
+entries matching that scope. Exclusions count as well: with the user
+``*, !alice`` the administrator sees the entries of every user but *alice*. An
+administrator always also sees their own entries.
 
 .. versionadded:: 3.14
 
@@ -1001,7 +1017,7 @@ type: ``bool``
 
 The administrators are allowed to see whether a user is locked and to list the
 locked users. If the policy is scoped to realms, resolvers or users, only
-matching users are shown.
+matching users are shown, exclusions such as ``*, !alice`` included.
 
 .. versionadded:: 3.14
 
