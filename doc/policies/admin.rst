@@ -539,7 +539,8 @@ serviceid_list
 
 type: ``bool``
 
-This policy allows the administrator to list all defined service IDs.
+This policy allows the administrator to list all defined service IDs. An action of the same name exists in the user
+scope, see :ref:`user_policy_serviceid_list`.
 
 .. _policy_getserial:
 
