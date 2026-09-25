@@ -202,7 +202,7 @@ export class TokensWidgetComponent extends DashboardWidget {
             this.load(realm);
           }
         } else if (this.authService.actionAllowed("tokenlist")) {
-          this.loadedRealm = null;
+          this.dropLoadedRealm();
           this.dataRef.set(null);
           this.usersRef.set(null);
           this.state.set(resolved ? "ready" : "loading");
@@ -288,15 +288,22 @@ export class TokensWidgetComponent extends DashboardWidget {
     return filter.addEntry("tokenrealm", this.realm()).withExactKey("tokenrealm");
   }
 
+  /** Dropped, or the entries of every realm ever loaded would be refetched on each refresh. */
+  private dropLoadedRealm(): void {
+    if (this.loadedRealm) {
+      this.store.invalidate(this.storeKey(this.loadedRealm));
+      this.store.invalidate(this.usersStoreKey(this.loadedRealm));
+    }
+    this.loadedRealm = null;
+  }
+
   private load(realm: string): void {
     if (!this.authService.actionAllowed("tokenlist")) {
       this.state.set("denied");
       return;
     }
-    // Dropped, or the entries of every realm ever loaded would be refetched on each refresh.
-    if (this.loadedRealm && this.loadedRealm !== realm) {
-      this.store.invalidate(this.storeKey(this.loadedRealm));
-      this.store.invalidate(this.usersStoreKey(this.loadedRealm));
+    if (this.loadedRealm !== realm) {
+      this.dropLoadedRealm();
     }
     this.loadedRealm = realm;
     const scope: TokenCountParams = { tokenrealm: realm };

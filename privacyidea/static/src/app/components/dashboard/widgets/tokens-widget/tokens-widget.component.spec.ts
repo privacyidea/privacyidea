@@ -419,6 +419,27 @@ describe("TokensWidgetComponent", () => {
       fixture2.destroy();
     });
 
+    it("drops the cache entries of a stored realm that turns out not to exist, when no realm is left", () => {
+      const store = TestBed.inject(DashboardDataStore);
+      realmMock.realmResource.value.set(undefined);
+      realmMock.defaultRealmResource.set(MockPiResponse.fromValue<Realms>({}));
+      realmMock.realmOptions.set([]);
+      const fixture2 = TestBed.createComponent(TokensWidgetComponent);
+      fixture2.componentRef.setInput("instance", { ...instance, settings: { realm: "oldrealm" } });
+      fixture2.detectChanges();
+      expect(fixture2.componentInstance.realm()).toBe("oldrealm");
+
+      const invalidateSpy = jest.spyOn(store, "invalidate");
+      realmMock.realmResource.value.set(MockPiResponse.fromValue<Realms>({}));
+      fixture2.detectChanges();
+
+      expect(fixture2.componentInstance.realm()).toBe("");
+      expect(fixture2.componentInstance.noRealm()).toBe(true);
+      expect(invalidateSpy).toHaveBeenCalledWith("dashboard:tokens:oldrealm");
+      expect(invalidateSpy).toHaveBeenCalledWith("dashboard:token-users:oldrealm");
+      fixture2.destroy();
+    });
+
     it("does nothing when the picked realm is already selected, or when none is picked", () => {
       const updateSpy = jest.spyOn(layoutService, "updateWidgetSettings");
       component.selectRealm("realm1");
