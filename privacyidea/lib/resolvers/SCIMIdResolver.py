@@ -205,11 +205,11 @@ class IdResolver (UserIdResolver):
         descriptor = {}
         typ = cls.getResolverClassType()
         descriptor['clazz'] = "useridresolver.SCIMIdResolver.IdResolver"
-        descriptor['config'] = {'authserver': 'string',
-                                'resourceserver': 'string',
-                                'authclient': 'string',
-                                'authsecret': 'password',
-                                'mapping': 'string'}
+        descriptor['config'] = {'Authserver': 'string',
+                                'Resourceserver': 'string',
+                                'Client': 'string',
+                                'Secret': 'password',
+                                'Mapping': 'string'}
         return {typ: descriptor}
 
     def loadConfig(self, config):

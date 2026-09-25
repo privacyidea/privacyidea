@@ -207,6 +207,26 @@ class TokenJanitorUpdateTestCase(CliTestCase):
         self.assertEqual(100, token.token.count)
         self.assertEqual(5, token.token.failcount)
 
+    def test_05_update_skips_an_entry_without_serial_and_takes_one_without_owner(self) -> None:
+        self.create_used_token("UPDATEGUARD", count=7, failcount=0)
+        token_list = self.export_yaml("UPDATEGUARD")
+        entry_without_serial = {key: value for key, value in token_list[0].items() if key != "serial"}
+        entry_without_serial["otpkey"] = "00" * 20
+        entry_without_owner = {key: value for key, value in token_list[0].items() if key != "owner"}
+
+        runner = self.app.test_cli_runner()
+        with tempfile.TemporaryDirectory() as directory:
+            file_name = os.path.join(directory, "tokens.yaml")
+            with open(file_name, "w") as yaml_file:
+                yaml_file.write(yaml.safe_dump([entry_without_serial, entry_without_owner]))
+            result = runner.invoke(pi_token_janitor, ["update", file_name])
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn("Skipping an entry without a serial.", result.output)
+        self.assertIn("Updated token UPDATEGUARD.", result.output)
+        token = get_one_token(serial="UPDATEGUARD")
+        self.assertEqual(OTP_KEY, token.token.get_otpkey().getKey().decode())
+        self.assertEqual(7, token.token.count)
+
     def test_04_update_keeps_the_token_kind(self) -> None:
         self.create_used_token("UPDATEKIND", count=1, failcount=0)
         get_one_token(serial="UPDATEKIND").write_tokeninfo("tokenkind", "hardware")

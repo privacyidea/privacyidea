@@ -39,7 +39,8 @@ Configuration via environment variables (all optional):
                               Enable/disable the daily removal of expired IP blocks
                               and user locks (default: true)
   PI_CRON_AUTHLOG_AGE         Delete authentication log entries older than N days,
-                              daily (default: unset, i.e. the log is kept forever)
+                              daily (default: unset, i.e. the log is kept forever;
+                              0 also switches the cleanup off)
 
   PI_CRON_USERCACHE_CLEANUP   Enable/disable usercache cleanup (default: true; a
                               no-op unless the user cache is enabled)
@@ -168,6 +169,29 @@ class Task:
     build: Callable[[], list[str]]
 
 
+def _authlog_age() -> int:
+    """The retention period of the authentication log in days from PI_CRON_AUTHLOG_AGE, 0 if the cleanup is off.
+    Only a positive number of days switches it on: 0, like "false" for the other tasks, switches it off, and
+    anything else is reported and ignored instead of being handed to pi-manage."""
+    val = os.environ.get("PI_CRON_AUTHLOG_AGE", "").strip()
+    if not val:
+        return 0
+    try:
+        age = int(val)
+    except ValueError:
+        print(f"[pi-cron] WARNING: PI_CRON_AUTHLOG_AGE={val!r} is not a number of days, "
+              f"the authentication log cleanup is off", flush=True)
+        return 0
+    if age < 0:
+        print(f"[pi-cron] WARNING: PI_CRON_AUTHLOG_AGE={val!r} is negative, "
+              f"the authentication log cleanup is off", flush=True)
+        return 0
+    return age
+
+
+AUTHLOG_AGE = _authlog_age()
+
+
 def audit_rotate_cmd() -> list[str]:
     cmd = ["pi-manage", "audit", "rotate"]
     age = os.environ.get("PI_CRON_AUDIT_AGE", "")            # days; empty = use watermarks
@@ -224,9 +248,9 @@ TASKS = [
          daily_at(3),
          lambda: ["pi-manage", "conditionalaccess", "purge-expired-locks"]),
     Task("authlog cleanup",
-         bool(os.environ.get("PI_CRON_AUTHLOG_AGE")),
+         AUTHLOG_AGE > 0,
          daily_at(3),
-         lambda: ["pi-manage", "authlog", "cleanup", "--age", os.environ["PI_CRON_AUTHLOG_AGE"]]),
+         lambda: ["pi-manage", "authlog", "cleanup", "--age", str(AUTHLOG_AGE)]),
 ]
 
 

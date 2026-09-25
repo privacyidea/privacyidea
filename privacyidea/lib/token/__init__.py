@@ -105,6 +105,7 @@ from privacyidea.lib.token.importexport import (  # noqa: F401
     TokenExportResult,
     export_tokens,
     import_tokens,
+    update_token_from_export,
 )
 from privacyidea.lib.token.misc import (  # noqa: F401
     get_dynamic_policy_definitions,
@@ -196,6 +197,7 @@ __all__ = [
     "TokenExportResult",
     "export_tokens",
     "import_tokens",
+    "update_token_from_export",
     "get_dynamic_policy_definitions",
     "regenerate_enroll_url",
 ]

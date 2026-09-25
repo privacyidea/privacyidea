@@ -19,6 +19,7 @@
 import datetime
 import json
 import re
+from types import SimpleNamespace
 
 import pytest
 import yaml
@@ -738,6 +739,21 @@ class TestPiTokenJanitorActions:
         assert {"user": None, "tokens": 1} in owners
         assert all(owner["tokens"] == 1 for owner in owners)
 
+    def test_summarize_owner_with_a_multi_valued_attribute(self, app):
+        """
+        Tests that the summary works with a user attribute that has several values, like the mobile numbers an LDAP
+        resolver returns as a list, in the text and in the JSON output.
+        """
+        owner = SimpleNamespace(info={"username": "multi", "givenname": "", "surname": "", "mobile": ["1", "2"]},
+                                uid="42", resolver="ldap", realm="realm1")
+        token_list = [SimpleNamespace(user=owner, token=SimpleNamespace(serial=serial)) for serial in ("M1", "M2")]
+        users = findtokens.export_user_data(token_list, ["mobile"])
+        assert len(users) == 1
+        owner_key, serials = next(iter(users.items()))
+        assert serials == ["M1", "M2"]
+        assert findtokens._format_owner(owner_key) == "'multi','','','42','ldap','realm1','['1', '2']'"
+        assert json.loads(json.dumps(dict(owner_key)))["mobile"] == ["1", "2"]
+
     def test_remove_tokeninfo(self, app, tokens):
         """
         Tests removing tokeninfo from a token.
@@ -828,6 +844,15 @@ class TestPiTokenJanitorActions:
         key = re.search(r"The key to import the tokens is:\s+(\S+)", result.stderr).group(1)
         assert key_file.read_text() == key
 
+    def test_export_recognizes_stdout_by_name(self, app, tmp_path):
+        """
+        Tests that the export recognizes stdout by the name of the stream, also when it is a wrapper and not
+        sys.stdout itself, and does not take a file for stdout.
+        """
+        assert findtokens._is_stdout(SimpleNamespace(name="<stdout>"))
+        with open(tmp_path / "tokens.pi", "w") as export_file:
+            assert not findtokens._is_stdout(export_file)
+
     def test_export_yaml_format(self, app, tokens):
         """
         Tests exporting tokens in the 'yaml' format with their OTP key and owner.
@@ -861,7 +886,7 @@ class TestPiTokenJanitorActions:
 
         result = runner.invoke(cli, ["update", str(export_file)])
         assert result.exit_code == 0, result.output
-        assert "Updating token HOTP0001." in result.output
+        assert "Updated token HOTP0001." in result.output
 
         token = get_one_token(serial="HOTP0001")
         assert token.token.get_otpkey().getKey() == otp_key
@@ -1184,6 +1209,26 @@ class TestPiTokenJanitorContainer:
         assert "Serial: CORPHAN," not in result.output
         for serial in ("C1", "C2", "C3", "C4"):
             assert f"Serial: {serial}," in result.output
+
+    def test_findcontainer_orphaned_owner_of_a_deleted_resolver(self, app, containers):
+        """
+        Tests that a container whose owner belongs to a deleted resolver is orphaned, and deleted by
+        --orphaned True delete.
+        """
+        init_container({"type": "generic", "container_serial": "CRESOLVERGONE"})
+        db.session.add(TokenContainerOwner(container_serial="CRESOLVERGONE", user_id="1000",
+                                           resolver="deletedresolver", realm_name="realm1"))
+        db.session.commit()
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(findcontainer, ["--orphaned", "True", "list"])
+        assert result.exit_code == 0, result.output
+        assert "Serial: CRESOLVERGONE," in result.output
+
+        result = runner.invoke(findcontainer, ["--orphaned", "True", "delete"])
+        assert result.exit_code == 0, result.output
+        with pytest.raises(ResourceNotFoundError):
+            find_container_by_serial("CRESOLVERGONE")
 
     def test_findcontainer_orphaned_skips_container_on_resolver_error(self, app, containers):
         """

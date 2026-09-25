@@ -550,9 +550,9 @@ Update
     privacyidea-token-janitor update my-tokens.yaml
 
 The OTP keys are stored encrypted with the current encryption key, so this can be used to
-re-encrypt the token data, see :ref:`faq_reencryption`. A token that does not exist is skipped
-with a message on stderr. The command does not create tokens and does not change user
-assignments.
+re-encrypt the token data, see :ref:`faq_reencryption`. A token that does not exist, and an entry
+without a serial, are skipped with a message on stderr. The command does not create tokens and
+does not change user assignments, the owner in the file is ignored.
 
 The fail counter and the token kind (hardware or software) of a token are kept, and so is its
 OTP counter, unless the counter in the file is higher: then the token takes that one. So OTP

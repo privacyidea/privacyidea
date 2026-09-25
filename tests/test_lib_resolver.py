@@ -27,7 +27,7 @@ from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 from sqlalchemy import select
 from testfixtures import LogCapture
 
-from privacyidea.lib.crypto import encryptPassword
+from privacyidea.lib.crypto import decryptPassword, encryptPassword
 from privacyidea.lib.error import ParameterError, ResolverError
 from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.resolver import (save_resolver,
@@ -3713,17 +3713,19 @@ class ResolverTestCase(MyTestCase):
 
     def test_14b_censor_scim_client_secret(self):
         # The client secret of a SCIM resolver is stored encrypted and censored like every other password
-        save_resolver({"resolver": "SCIMres", "type": "scimresolver", "authserver": "http://localhost/auth",
-                       "resourceserver": "http://localhost/scim", "authclient": "client",
-                       "authsecret": "scimsecret", "mapping": "{}"})
-        stored = db.session.scalars(select(ResolverConfig).join(Resolver).where(
-            Resolver.name == "SCIMres", ResolverConfig.Key == "authsecret")).one()
+        scim_config = {"resolver": "SCIMres", "type": "scimresolver", "Authserver": "http://localhost/auth",
+                       "Resourceserver": "http://localhost/scim", "Client": "client", "Secret": "scimsecret",
+                       "Mapping": "{}"}
+        save_resolver(scim_config)
+        secret_stmt = select(ResolverConfig).join(Resolver).where(Resolver.name == "SCIMres",
+                                                                  ResolverConfig.Key == "Secret")
+        stored = db.session.scalars(secret_stmt).one()
         self.assertEqual("password", stored.Type)
-        self.assertNotEqual("scimsecret", stored.Value)
+        self.assertEqual("scimsecret", decryptPassword(stored.Value))
         resolvers = get_resolver_list(filter_resolver_name="SCIMres")
-        self.assertEqual("scimsecret", resolvers["SCIMres"]["data"]["authsecret"])
+        self.assertEqual("scimsecret", resolvers["SCIMres"]["data"]["Secret"])
         censored = get_resolver_list(filter_resolver_name="SCIMres", censor=True)
-        self.assertEqual(CENSORED, censored["SCIMres"]["data"]["authsecret"])
+        self.assertEqual(CENSORED, censored["SCIMres"]["data"]["Secret"])
 
         # A secret stored in plain text, before the resolver class declared it a password, is used as it is and
         # censored as well
@@ -3732,9 +3734,17 @@ class ResolverTestCase(MyTestCase):
         db.session.commit()
         save_config_timestamp()
         resolvers = get_resolver_list(filter_resolver_name="SCIMres")
-        self.assertEqual("plainsecret", resolvers["SCIMres"]["data"]["authsecret"])
+        self.assertEqual("plainsecret", resolvers["SCIMres"]["data"]["Secret"])
         censored = get_resolver_list(filter_resolver_name="SCIMres", censor=True)
-        self.assertEqual(CENSORED, censored["SCIMres"]["data"]["authsecret"])
+        self.assertEqual(CENSORED, censored["SCIMres"]["data"]["Secret"])
+
+        # Saving the resolver with the censored value, as the WebUI does, keeps the secret and encrypts it
+        save_resolver({**scim_config, "Secret": CENSORED})
+        stored = db.session.scalars(secret_stmt).one()
+        self.assertEqual("password", stored.Type)
+        self.assertEqual("plainsecret", decryptPassword(stored.Value))
+        resolvers = get_resolver_list(filter_resolver_name="SCIMres")
+        self.assertEqual("plainsecret", resolvers["SCIMres"]["data"]["Secret"])
         delete_resolver("SCIMres")
 
     def test_15_try_to_delete_used_resolver(self):

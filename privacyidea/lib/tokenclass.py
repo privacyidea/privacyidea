@@ -113,6 +113,7 @@ from .error import (TokenAdminError,
 from .log import log_with, redacted_attributes
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
+from .resolver import get_resolver_type
 from .user import (User)
 from ..models import (TokenOwner, TokenTokengroup, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
                       Tokengroup, TokenCredentialIdHash)
@@ -471,7 +472,12 @@ class TokenClass:
         :rtype: bool
         """
         orphaned = False
-        if self.token.first_owner:
+        owner = self.token.first_owner
+        if owner:
+            if owner.resolver and not get_resolver_type(owner.resolver):
+                # The resolver of the owner was deleted, so the user can not exist any more. This is certain, unlike
+                # an error of the user store, which orphaned_on_error decides about.
+                return True
             try:
                 if not self.user or not self.user.login or not self.user.realm:
                     # The token is assigned, but the username does not resolve

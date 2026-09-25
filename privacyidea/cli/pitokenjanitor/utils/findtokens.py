@@ -68,6 +68,14 @@ def _try_convert_to_integer(given_value_string: str) -> int:
         raise click.ClickException(f'Not an integer: {given_value_string}')
 
 
+def _is_stdout(file) -> bool:
+    """
+    Whether the export goes to stdout. click can hand out its own wrapper of stdout instead of sys.stdout itself,
+    e.g. under a C or POSIX locale, so the stream is recognized by its name.
+    """
+    return getattr(file, "name", None) == "<stdout>"
+
+
 def _is_interactive() -> bool:
     """Whether a user can answer questions on the terminal."""
     return sys.stdin.isatty()
@@ -335,6 +343,9 @@ def export_user_data(token_list: list, user_attributes: list = None) -> dict[tup
                      ("surname", user.info.get('surname', '')), ("uid", user.uid), ("resolver", user.resolver),
                      ("realm", user.realm))
             owner += tuple((att, user.info.get(att, '')) for att in user_attributes or [])
+            # The owner is a dictionary key, so an attribute with several values, e.g. the mobile numbers from an
+            # LDAP resolver, is kept as a tuple instead of a list
+            owner = tuple((name, tuple(value) if isinstance(value, list) else value) for name, value in owner)
         else:
             owner = ()
         users.setdefault(owner, []).append(token_obj.token.serial)
@@ -345,7 +356,7 @@ def _format_owner(owner: tuple) -> str:
     """The text form of an owner returned by export_user_data."""
     if not owner:
         return "N/A" + ", " * 5
-    return ",".join(f"'{value}'" for _name, value in owner)
+    return ",".join(f"'{list(value) if isinstance(value, tuple) else value}'" for _name, value in owner)
 
 
 def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial: str,
@@ -611,7 +622,7 @@ def export(ctx, export_format, b32, file, user):
         f = Fernet(key)
         file.write(f.encrypt(list_of_exported_tokens.encode()).decode())
         # Only the export goes to stdout, so that it can be redirected to a file and imported from there
-        if file == sys.stdout:
+        if _is_stdout(file):
             click.echo("\n\n", err=True)
         click.echo(f"Successfully exported {len(exported_tokens)} tokens.", err=True)
         if failed_exports:
@@ -621,7 +632,7 @@ def export(ctx, export_format, b32, file, user):
             click.echo("Check the logfile for the cause of the failures.", err=True)
 
         click.secho(f'\nThe key to import the tokens is:\n\n\t{key}\n\n', fg='red', err=True)
-        if file != sys.stdout:
+        if not _is_stdout(file):
             click.echo(f'You can use this key to import the tokens with the command:\n'
                        f'pi-tokenjanitor import privacyidea {file.name} --key {key}\n', err=True)
         # Without a terminal, e.g. in a cron job, there is nobody to answer the question
@@ -631,7 +642,7 @@ def export(ctx, export_format, b32, file, user):
             key_file.write(key)
             click.echo(f'The export encryption key has been saved to "{key_file.name}"', err=True)
 
-    if file != sys.stdout:
+    if not _is_stdout(file):
         click.echo(f'The tokens have been exported to "{file.name}".\n')
 
 

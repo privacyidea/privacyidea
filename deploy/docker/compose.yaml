@@ -170,8 +170,8 @@ services:
       #PI_CRON_AUTHCACHE_CLEANUP: "true"
       #PI_CRON_METRICS_CLEANUP: "true"
       #PI_CRON_CONDITIONAL_ACCESS_PURGE: "true"
-      # Authentication log retention in days, off by default (the log is kept
-      # forever). Runs daily at 03:00 UTC once set.
+      # Authentication log retention in days, off by default and with 0 (the
+      # log is kept forever). Runs daily at 03:00 UTC once set.
       #PI_CRON_AUTHLOG_AGE: 90
     healthcheck:
       disable: true

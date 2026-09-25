@@ -142,7 +142,13 @@ def save_resolver(params):
             continue
         if types.get(key) == "password":
             if value == CENSORED:
-                continue
+                stored_stmt = select(ResolverConfig).filter_by(resolver_id=resolver_id, Key=key)
+                stored_config = db.session.scalar(stored_stmt)
+                if not stored_config or stored_config.Type == "password":
+                    # Keep the stored secret
+                    continue
+                # Stored in plain text before the resolver class declared the entry a password: encrypt it now
+                value = encryptPassword(stored_config.Value)
             else:
                 value = encryptPassword(value)
         elif types.get(key) == "dict_with_password":

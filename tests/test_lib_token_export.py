@@ -2,7 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Tests for exporting tokens and re-encrypting them with a new key."""
 
-from privacyidea.lib.token import (get_tokens, init_token)
+from unittest import mock
+
+from privacyidea.lib.error import ParameterError, ResourceNotFoundError, TokenAdminError
+from privacyidea.lib.token import (get_one_token, get_tokens, init_token, update_token_from_export)
+from privacyidea.lib.tokenclass import TokenClass
 from .base import MyTestCase
 
 PWFILE = "tests/testdata/passwords"
@@ -56,3 +60,47 @@ class ExportAndReencryptTestCase(MyTestCase):
             if d.get("type") == "totp":
                 tokeninfo = d.get("info_list")
                 self.assertEqual("30", tokeninfo.get("timeStep"), d)
+
+
+class UpdateTokenFromExportTestCase(MyTestCase):
+
+    def test_01_counters_come_back_when_the_update_fails(self):
+        token = init_token({"type": "hotp", "serial": "UPDFAIL", "otpkey": OTPKEY})
+        token.token.count = 42
+        token.token.failcount = 3
+        token.token.save()
+        entry = token._to_dict()
+
+        def reset_and_fail(self, param, reset_failcount=True):
+            # Resetting the counters and then failing, as a real update() can
+            self.token.count = 0
+            self.token.failcount = 0
+            self.token.save()
+            raise TokenAdminError("update failed")
+
+        with mock.patch.object(TokenClass, "update", reset_and_fail):
+            with self.assertRaises(TokenAdminError):
+                update_token_from_export(entry)
+        token = get_one_token(serial="UPDFAIL")
+        self.assertEqual(42, token.token.count)
+        self.assertEqual(3, token.token.failcount)
+        token.delete_token()
+
+    def test_02_entry_without_serial_or_unknown_serial(self):
+        token = init_token({"type": "hotp", "serial": "UPDOTHER", "otpkey": OTPKEY})
+        entry = token._to_dict()
+        # Without a serial no token is touched, although a lookup without a serial would find all of them
+        entry_without_serial = {key: value for key, value in entry.items() if key != "serial"}
+        entry_without_serial["otpkey"] = OTPKE2
+        with self.assertRaises(ParameterError):
+            update_token_from_export(entry_without_serial)
+        self.assertEqual(OTPKEY, get_one_token(serial="UPDOTHER").token.get_otpkey().getKey().decode())
+
+        with self.assertRaises(ResourceNotFoundError):
+            update_token_from_export({**entry, "serial": "DOESNOTEXIST"})
+
+        # An entry without an owner is fine
+        entry.pop("owner", None)
+        self.assertEqual("UPDOTHER", update_token_from_export(entry))
+        token.delete_token()
+

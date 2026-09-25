@@ -397,7 +397,12 @@ ngnix_log
 pi_logfile
 pi_auditlog
 
-tar -zcf "$diag_file" -C /tmp "$(basename "$diag_info")"
-rm -rf "$diag_info"
-
-upload_info
+# mktemp honours TMPDIR, so the collected data is packed from where it actually is. It is only removed once the
+# archive exists.
+if tar -zcf "$diag_file" -C "$(dirname "$diag_info")" "$(basename "$diag_info")"; then
+	rm -rf "$diag_info"
+	upload_info
+else
+	echo "Could not create $diag_file, the collected data is kept in $diag_info." >&2
+	exit 1
+fi

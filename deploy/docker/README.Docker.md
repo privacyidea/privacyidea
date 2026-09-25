@@ -152,7 +152,7 @@ set to `false`/`0`/`no` to disable:
 | `PI_CRON_AUTHCACHE_CLEANUP` | `true` | daily cleanup of authentication cache entries no auth_cache policy accepts any more |
 | `PI_CRON_METRICS_CLEANUP` | `true` | daily cleanup of metric rows older than 24 hours |
 | `PI_CRON_CONDITIONAL_ACCESS_PURGE` | `true` | daily removal of expired IP blocks and user locks |
-| `PI_CRON_AUTHLOG_AGE` | *(unset)* | delete authentication log entries older than N days, daily; unset keeps the log forever |
+| `PI_CRON_AUTHLOG_AGE` | *(unset)* | delete authentication log entries older than N days, daily; unset or `0` keeps the log forever |
 
 **Arbitrary app config**: any privacyIDEA config key can be set as
 `PRIVACYIDEA_<KEY>` (put these in `example.env`). See the upstream config
