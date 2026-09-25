@@ -26,6 +26,7 @@ from flask import Blueprint, request, g
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
+                                           resolver_realm_access,
                                            check_admin_tokenlist, check_container_action,
                                            check_container_register_rollover, container_registration_config,
                                            smartphone_config, check_client_container_action, hide_tokeninfo,
@@ -52,7 +53,7 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
                                                        CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL, SSL_VERIFY)
 from privacyidea.lib.containers.container_states import ContainerStates
-from privacyidea.lib.error import ParameterError, ContainerNotRegistered, Error
+from privacyidea.lib.error import ContainerInvalidChallenge, ParameterError, ContainerNotRegistered, Error
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
@@ -261,6 +262,7 @@ def list_containers():
 
 
 @container_blueprint.route('<string:container_serial>/assign', methods=['POST'])
+@prepolicy(resolver_realm_access, request, action=PolicyAction.CONTAINER_ASSIGN_USER)
 @prepolicy(check_user_params, request, action=PolicyAction.CONTAINER_ASSIGN_USER)
 @prepolicy(check_container_action, request, action=PolicyAction.CONTAINER_ASSIGN_USER)
 @event('container_assign', request, g)
@@ -1051,7 +1053,8 @@ def registration_terminate_client():
             server_url = " "
         scope = create_endpoint_url(server_url, "container/register/terminate/client")
         params.update({'scope': scope})
-        container.check_challenge_response(params)
+        if not container.check_challenge_response(params):
+            raise ContainerInvalidChallenge("The container challenge response could not be verified!")
 
         res = unregister(container)
 
@@ -1243,9 +1246,10 @@ def synchronize():
         params.update({'scope': scope})
 
         # 2nd synchronization step: Validate challenge and get container diff between client and server
-        container.check_challenge_response(params)
-        initially_add_tokens = request.all_data.get("client_policies").get(
-            PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
+        if not container.check_challenge_response(params):
+            raise ContainerInvalidChallenge("The container challenge response could not be verified!")
+        client_policies = request.all_data.get("client_policies") or {}
+        initially_add_tokens = client_policies.get(PolicyAction.INITIALLY_ADD_TOKENS_TO_CONTAINER)
         container_dict = container.synchronize_container_details(container_client, initially_add_tokens)
 
         # Write token serials to audit log

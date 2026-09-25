@@ -207,6 +207,66 @@ def own_entries_scope(login: str, realm: str) -> "AuthenticationLogVisibilitySco
     return None
 
 
+def admin_granted_realms(action: str) -> list[str] | None:
+    """
+    The realms the logged-in admin's policies grant for *action*, as the union over every applicable policy.
+
+    The realm-only counterpart of :func:`get_policy_visibility_scopes`, for the callers that need to answer
+    "may this admin act in realm X" rather than build a query condition. Three answers, and they are not
+    interchangeable:
+
+    * ``None`` - unrestricted, which means one of two things: the installation defines no active admin
+      policy at all, or an applicable policy carries no target scope whatsoever. Only the second is
+      "this policy grants every realm"; the first is "nothing is restricted here yet".
+    * a non-empty list - restricted to exactly these realms, deduplicated in the order the policies name
+      them, because a caller that has to reduce them to a single realm picks the first.
+    * an **empty list - restricted, but not to anything this function can name.** No applicable policy
+      names a realm: each is scoped by ``user`` or ``resolver`` only, so the admin is restricted while the
+      restriction has no realm to express it with. **Every caller must refuse.** Reading this as
+      unrestricted is precisely the defect this function was written with: a policy granting
+      ``remembered_device_revoke`` for one named user matched a request that named no user at all - a
+      dimension whose search value is ``None`` is skipped by ``list_policies`` - and the caller then
+      revoked every user's devices in every realm. A caller that needs the user and resolver dimensions
+      rather than just a yes/no should use :func:`get_policy_visibility_scopes`, which carries all three.
+
+    adminrealm, adminuser and policy conditions need no handling here: ``Match.admin(...).policies()``
+    already returns only the policies applicable to the current admin and request.
+
+    :param action: the policy action whose realm scoping to read
+    :return: the granted realm names, ``None`` for unrestricted, or an empty list for "refuse"
+    """
+    if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
+        # No admin policy anywhere: nothing is restricted, which is not the same as a policy granting
+        # everything, but has the same answer here.
+        return None
+    granted_realms = {}
+    for policy in Match.admin(g, action=action).policies():
+        policy_realms = policy.get("realm")
+        if policy_realms and "*" in policy_realms:
+            # The realm field is matched with the policy engine's own comparison, which reads "*" as
+            # every realm. Returning it as a literal name would have a caller look it up, find no
+            # realm called "*", and quietly end up with an empty boundary.
+            return None
+        if not policy_realms:
+            if policy.get("resolver") or policy.get("user"):
+                # Scoped along a dimension a realm list cannot carry, so it contributes no realm. If no
+                # other policy names one either, the empty result refuses rather than widening to every realm.
+                continue
+            return None
+        granted_realms.update(dict.fromkeys(policy_realms))
+    return list(granted_realms)
+
+
+def _named_targets(policy_values: list[str] | None) -> list[str]:
+    """
+    The entries of one target dimension of a policy that name something, dropping the wildcard.
+
+    ``"*"`` is not a name the dimension can be matched against: the policy engine reads it as every value, so a
+    dimension carrying it restricts nothing and contributes no names to a boundary.
+    """
+    return [value for value in (policy_values or []) if value != "*"]
+
+
 def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibilityScope"] | None:
     """
     Determine the visibility boundary for *action*: which records the logged-in principal may act on, expressed as
@@ -249,9 +309,13 @@ def get_policy_visibility_scopes(action: str) -> list["AuthenticationLogVisibili
         return []
     scopes = []
     for policy in Match.admin(g, action=action).policies():
-        realms = policy.get("realm") or []
-        resolvers = policy.get("resolver") or []
-        usernames = policy.get("user") or []
+        # A dimension holding "*" is matched by the policy engine's own comparison as every value, so it
+        # restricts nothing and is dropped here. Kept as a literal it would be looked up as the name of a realm,
+        # a resolver or a user, match none of them, and turn a grant over everything into a boundary that admits
+        # nothing - the opposite of what it says.
+        realms = _named_targets(policy.get("realm"))
+        resolvers = _named_targets(policy.get("resolver"))
+        usernames = _named_targets(policy.get("user"))
         if not (realms or resolvers or usernames):
             # An applicable policy with no target scope grants access to all entries.
             return None

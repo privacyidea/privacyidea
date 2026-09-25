@@ -1107,11 +1107,16 @@ class ValidateCheckAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
             delete_policy("authlog_cr")
             remove_token(other_serial)
 
-        # Both rows share one attempt_id (the default of assert_authentication_log): the attempt is read off the
-        # challenge the answer names, and that challenge exists - it just belongs to somebody else. So the foreign
-        # answer is correlated into the challenged user's attempt, which is what a PER_ATTEMPT count sees.
+        # The two rows are two attempts. The answer names a transaction whose challenge exists but belongs to
+        # somebody else, and this user's token holds no challenge for it - which is exactly what the row's own
+        # reason says. Correlating it into the challenged user's attempt would mean anyone holding any live
+        # transaction id could have an unlimited number of failures counted as one attempt, and one attempt is
+        # what a PER_ATTEMPT threshold counts.
         entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED,
-                                             AuthEventType.CHALLENGE_ANSWERED_FAIL])
+                                             AuthEventType.CHALLENGE_ANSWERED_FAIL],
+                                            same_attempt=False)
+        self.assertNotEqual(entries[AuthEventType.CHALLENGE_TRIGGERED].attempt_id,
+                            entries[AuthEventType.CHALLENGE_ANSWERED_FAIL].attempt_id)
         assert_authentication_log_entry(entries[AuthEventType.CHALLENGE_TRIGGERED], user=self.user,
                                         serials={self.serial}, transaction_id=transaction_id,
                                         endpoint=self.endpoint_path)
@@ -1309,6 +1314,32 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         return response.json["detail"]["transaction_id"]
 
     # --- /auth-only cases ---
+
+    def test_naming_a_transaction_without_using_it_does_not_join_its_attempt(self):
+        # /auth reads transaction_id only on the passkey branch, and echoes it onto the row either way, so
+        # carrying one is not the same as continuing it. Were the row correlated anyway, anybody holding any live
+        # transaction id could have an unlimited number of password failures reduced to a single attempt - and one
+        # attempt is what a PER_ATTEMPT threshold counts, so the shipped per-user rate limits would never advance.
+        self._enable_challenge_response()
+        try:
+            transaction_id = self._trigger_challenge()
+        finally:
+            delete_policy("authlog_cr")
+        # Deliberately *not* through _authenticate: that turns on LOGINMODE=privacyIDEA, where the password field
+        # is the token layer's input and a wrong value with a transaction id really is a wrong answer to that
+        # challenge - which belongs in its attempt. The default login mode checks the password against the user
+        # store and never looks at the transaction, which is the case this is about.
+        for _ in range(3):
+            self._auth({"username": self.username, "realm": self.realm1,
+                        "password": "definitely-wrong", "transaction_id": transaction_id}, status=401)
+
+        entries = get_authentication_logs(usernames=[self.username])
+        triggered = [entry for entry in entries if entry.event_type == AuthEventType.CHALLENGE_TRIGGERED]
+        failures = [entry for entry in entries if entry.event_type != AuthEventType.CHALLENGE_TRIGGERED]
+        self.assertEqual(3, len(failures), [entry.event_type for entry in entries])
+        self.assertEqual(3, len({entry.attempt_id for entry in failures}),
+                         "password failures carrying a foreign transaction id were counted as one attempt")
+        self.assertNotIn(triggered[0].attempt_id, {entry.attempt_id for entry in failures})
 
     def test_auth_endpoint_logs_failed_local_admin(self):
         # A local admin with a wrong password is recorded as the internal admin failing (PASSWORD_FAIL,
