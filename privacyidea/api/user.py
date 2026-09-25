@@ -55,7 +55,8 @@ import logging
 from flask import g, Blueprint, request
 
 from privacyidea.api.auth import admin_required
-from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
+from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, realmadmin, check_custom_user_attributes,
+                                           resolver_realm_access)
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.error import PolicyError, UserError
@@ -286,6 +287,7 @@ def delete_user_settings_api(key=None):
 
 
 @user_blueprint.route('/attribute', methods=['POST'])
+@prepolicy(resolver_realm_access, request, PolicyAction.SET_USER_ATTRIBUTES)
 @prepolicy(check_custom_user_attributes, request, "set")
 @event("set_custom_user_attribute", request, g)
 def set_user_attribute():
@@ -460,6 +462,7 @@ def delete_user_attribute(attrkey, username, realm=None):
 
 @user_blueprint.route('/<resolvername>/<username>', methods=['DELETE'])
 @admin_required
+@prepolicy(resolver_realm_access, request, PolicyAction.DELETEUSER)
 @prepolicy(check_base_action, request, PolicyAction.DELETEUSER)
 @event("user_delete", request, g)
 def delete_user(resolvername=None, username=None):
@@ -492,6 +495,7 @@ def delete_user(resolvername=None, username=None):
 @user_blueprint.route('', methods=['POST'])
 @user_blueprint.route('/', methods=['POST'])
 @admin_required
+@prepolicy(resolver_realm_access, request, PolicyAction.ADDUSER)
 @prepolicy(check_base_action, request, PolicyAction.ADDUSER)
 @event("user_add", request, g)
 def create_user_api():
@@ -539,6 +543,7 @@ def create_user_api():
 
 @user_blueprint.route('', methods=['PUT'])
 @user_blueprint.route('/', methods=['PUT'])
+@prepolicy(resolver_realm_access, request, PolicyAction.UPDATEUSER)
 @prepolicy(check_base_action, request, PolicyAction.UPDATEUSER)
 @event("user_update", request, g)
 def update_user():

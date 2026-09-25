@@ -92,9 +92,11 @@ from privacyidea.lib.error import (PolicyError, RegistrationError,
                                    TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
+from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth_success,
+                                             DEFAULT_JWT_VALIDITY, admin_granted_realms)
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
+from privacyidea.lib.realm import get_realms
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
                                    get_token_owner)
@@ -325,27 +327,63 @@ def realmadmin(request=None, action=None):
             # An empty realm (e.g. "?realm=") is treated the same as an absent one:
             # otherwise a realm-restricted admin would be evaluated against an
             # empty realm instead of falling back to their granted realm(s).
-            # Collect the union of realms from every matching policy.
-            matching_policies = Match.admin(g, action=action).policies()
-            if matching_policies:
-                all_realms = []
-                for pol in matching_policies:
-                    pol_realms = pol.get("realm")
-                    if not pol_realms:
-                        # A policy with no realm restriction means
-                        # "all realms" — leave request.all_data without
-                        # a realm filter so the downstream function
-                        # queries every realm.
-                        all_realms = []
-                        break
-                    all_realms.extend(pol_realms)
-                if all_realms:
-                    # Deduplicate while preserving order
-                    unique_realms = list(dict.fromkeys(all_realms))
-                    if len(unique_realms) == 1 or action != PolicyAction.USERLIST:
-                        request.all_data["realm"] = unique_realms[0]
-                    else:
-                        request.all_data["realm"] = unique_realms
+            # A policy with no realm restriction means "all realms", and so does no matching policy at
+            # all: both leave request.all_data without a realm filter so the downstream function queries
+            # every realm.
+            granted_realms = admin_granted_realms(action)
+            if granted_realms == []:
+                # The policies that grant this action are scoped by user or by resolver and carry no
+                # realm, so the boundary cannot be written as a realm filter. Leaving the realm unset
+                # would hand back every realm, which is what the request was supposed to be narrowed
+                # away from. If the request names a user, check_base_action has scoped it against
+                # that user and there is nothing unbounded left to refuse; if it names nobody, there
+                # is no boundary left to apply and the request has to be turned away.
+                if not params.get("user"):
+                    raise PolicyError(_("Your permissions for this action are restricted to "
+                                        "individual users or resolvers rather than to realms, so "
+                                        "this request has to name the realm it applies to."))
+            elif granted_realms:
+                if len(granted_realms) == 1 or action != PolicyAction.USERLIST:
+                    request.all_data["realm"] = granted_realms[0]
+                else:
+                    request.all_data["realm"] = granted_realms
+
+    return True
+
+
+def resolver_realm_access(request=None, action=None):
+    """
+    Bind an operation that addresses a user store by resolver to the realms the admin may administer.
+
+    An admin policy grants an action in a realm, while these endpoints take the user store from the
+    resolver in the request. The two are independent: creating and deleting a user carry no realm at all,
+    and where a realm is given nothing ties it to the resolver. The resolver is therefore resolved to the
+    realms containing it, and at least one of them has to be granted by a matching policy.
+
+    :param request: The HTTP request
+    :param action: The action like PolicyAction.ADDUSER
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return True
+
+    params = request.all_data
+    resolver = get_optional(params, "resolver") or get_optional(params, "resolvername")
+    if not resolver:
+        return True
+
+    granted_realms = admin_granted_realms(action)
+    if granted_realms is None:
+        # Nothing restricts this admin: no admin policy at all, or one that carries no target scope
+        return True
+    if not granted_realms:
+        # Restricted along a dimension a realm list cannot carry, so this resolver cannot be shown to
+        # be inside the boundary. Refuse rather than widen it.
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
+
+    resolver_realms = {realm for realm, realm_config in get_realms().items()
+                       if resolver in [entry.get("name") for entry in realm_config.get("resolver", [])]}
+    if not resolver_realms & set(granted_realms):
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
 
     return True
 
@@ -2117,6 +2155,11 @@ def webauthntoken_request(request, action):
     :return:
     :rtype:
     """
+    # The origin is what binds an assertion to the site it was made for, so it may only come from the
+    # request itself. It is set from the environment further down, but only for a request recognised as
+    # a WebAuthn one; dropping a parameter of the same name here means a request that is not recognised
+    # reaches the verifier without an origin, and is refused, rather than with the one the client chose.
+    request.all_data.pop("HTTP_ORIGIN", None)
 
     scope = None
 
@@ -2900,6 +2943,9 @@ def smartphone_config(request, action=None):
                 policies[action] = False
 
         request.all_data["client_policies"] = policies
+    else:
+        # The client policies are derived from the server side policies, they are not taken from the request
+        request.all_data.pop("client_policies", None)
     return is_smartphone
 
 

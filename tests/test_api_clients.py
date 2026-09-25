@@ -1,6 +1,6 @@
 from unittest import mock
 
-from .base import MyApiTestCase
+from .base import MyApiTestCase, PWFILE
 
 from privacyidea.lib.clients import hash_api_key, create_client
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
@@ -9,7 +9,7 @@ from privacyidea.lib.remembered_device import create_remembered_device, user_ide
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.params import MAX_PAGE_SIZE
-from privacyidea.lib.realm import set_realm
+from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.user import User
 from privacyidea.models import Client, RememberedDevice
 
@@ -711,6 +711,68 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         finally:
             delete_policy("clients_scoped")
 
+    def test_17b_revoke_all_for_client_respects_a_user_scoped_policy(self):
+        # An admin policy may be scoped by user or resolver instead of by realm. A realm list cannot
+        # express such a boundary, and reading "no realm on the policy" as "every realm" hands an
+        # admin granted one named user the power to revoke every user's devices: the request carries
+        # no user, and a policy dimension whose search value is None is skipped when matching.
+        client, _ = create_client("user scoped client", "privacyidea-cp")
+        keep_one = self._device(client.id, "cornelius", realm=self.realm1).series_id
+        keep_two = self._device(client.id, "hans", realm=self.realm1).series_id
+        set_policy("clients_user_scoped", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_REVOKE, user="alice")
+        try:
+            res = self._revoke_all(client.id)
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(0, res.json['result']['value'], res.json)
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_one).first())
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_two).first())
+        finally:
+            delete_policy("clients_user_scoped")
+
+    def test_17c_revoke_by_user_acts_on_the_named_resolver(self):
+        # The policy is checked against request.User, which carries the request's `resolver`. If the
+        # revoke rebuilds the user from login and realm alone, the realm's resolver priority picks a
+        # resolver of its own, and the rows deleted are not the rows the check was made about.
+        from privacyidea.lib.resolver import save_resolver, delete_resolver
+        save_resolver({"resolver": "secondres", "type": "passwdresolver", "fileName": PWFILE})
+        set_realm("tworesolvers", [{"name": self.resolvername1, "priority": 1},
+                                   {"name": "secondres", "priority": 2}])
+        client, _ = create_client("two resolver client", "privacyidea-cp")
+        # bound to the LOWER priority resolver, which the priority pick would not choose
+        low = user_identity(User(login="cornelius", realm="tworesolvers", resolver="secondres"))
+        device, _cookie = create_remembered_device(low, client.id)
+        series = device.series_id      # read before the delete detaches the instance
+        try:
+            with self.app.test_request_context(
+                    f'/clients/{client.id}/remembered_devices',
+                    query_string={"realm": "tworesolvers", "user": "cornelius",
+                                  "resolver": "secondres"},
+                    method='DELETE', headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(1, res.json['result']['value'], res.json)
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=series).first())
+        finally:
+            delete_realm("tworesolvers")
+            delete_resolver("secondres")
+
+    def test_17d_wildcard_realm_grant_is_every_realm(self):
+        # The realm field of a policy is matched by the policy engine, which reads "*" as every
+        # realm. Carried out of the policy as a literal name it resolves to no realm at all, so the
+        # boundary collapses and the revoke reports success having done nothing - the worst answer
+        # for the incident-response action it is.
+        client, _ = create_client("wildcard client", "privacyidea-cp")
+        self._device(client.id, "cornelius", realm=self.realm1)
+        set_policy("clients_wildcard", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="*")
+        try:
+            res = self._revoke_all(client.id)
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(1, res.json['result']['value'], res.json)
+        finally:
+            delete_policy("clients_wildcard")
+
     def test_18_revoke_single_respects_admin_realm_scope(self):
         set_realm("xcscope", [{"name": self.resolvername1}])
         client, _ = create_client("scoped single client", "privacyidea-cp")
@@ -721,8 +783,17 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{device.device_id}',
                                                method='DELETE', headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
-                self.assertEqual(403, res.status_code, res)
+                self.assertEqual(404, res.status_code, res)
+                out_of_scope = res.json["result"]["error"]
             self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
+
+            # A device the admin may not revoke in answers exactly as an absent one: an admin who can
+            # tell the two apart can probe the device ids of realms they are not allowed to see.
+            with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/nosuchdevice',
+                                               method='DELETE', headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(404, res.status_code, res)
+                self.assertEqual(out_of_scope["code"], res.json["result"]["error"]["code"])
         finally:
             delete_policy("clients_scoped")
 
