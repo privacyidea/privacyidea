@@ -2383,12 +2383,12 @@ def get_static_policy_definitions(scope=None):
                                                  'of his own SSH key token.'),
                                        'mainmenu': [MAIN_MENU.TOKENS],
                                        'group': GROUP.TOKEN},
-            PolicyAction.SERVICEID_LIST: {
-                'type': 'bool',
-                'desc': _("The user is allowed to list the available service ID definitions. This is "
-                         "required to enroll an application specific password token."),
-                'mainmenu': [MAIN_MENU.TOKENS],
-                'group': GROUP.SERVICEID},
+            PolicyAction.SERVICEID_LIST: {'type': 'bool',
+                                          'desc': _('The user is allowed to list the available service ID '
+                                                    'definitions, which is required to enroll an application '
+                                                    'specific password token.'),
+                                          'mainmenu': [MAIN_MENU.TOKENS],
+                                          'group': GROUP.TOKEN},
             PolicyAction.UNASSIGN: {'type': 'bool',
                                     'desc': _('The user is allowed to unassign his own tokens.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],

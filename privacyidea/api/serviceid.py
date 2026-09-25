@@ -25,8 +25,8 @@ by the admin policy actions :ref:`policy_serviceid_add` and
 :ref:`policy_serviceid_delete`. Listing is available to both admins and
 self-service users - the latter need it to populate the service ID
 choice when enrolling an application specific password token - and is
-gated by the policy action :ref:`policy_serviceid_list` (scope admin or
-user).
+gated by the policy action ``serviceid_list`` in the scope of the caller,
+see :ref:`policy_serviceid_list` and :ref:`user_policy_serviceid_list`.
 """
 from flask import (Blueprint, request)
 from .lib.utils import (send_result)
@@ -116,9 +116,10 @@ def get_serviceid_api(name=None):
     ``description`` and ``id``.
 
     Requires admin or user authentication and the policy action
-    :ref:`policy_serviceid_list` (scope admin or user). Self-service users
-    need this to populate the service ID choice when enrolling an
-    application specific password token.
+    ``serviceid_list`` in the scope of the caller, see
+    :ref:`policy_serviceid_list` and :ref:`user_policy_serviceid_list`.
+    Self-service users need this to populate the service ID choice when
+    enrolling an application specific password token.
 
     :param name: optional path component selecting a single service ID.
     :status 200: dict of service IDs in ``result.value``.

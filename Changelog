@@ -100,6 +100,10 @@ Version 3.14dev1
   * Replaced the remaining usages of PyOpenSSL with the cryptography package (#1991)
   * `GET /user/` accepts the parameter `include_custom_attributes`, so a user list can be fetched without looking up
     the custom attributes of every user (#5185)
+  * Application specific password tokens can be enrolled in self-service. Listing the defined service IDs with
+    `GET /serviceid/`, which the enrollment needs to offer a choice, is available to users through the new
+    `serviceid_list` action in the user scope; on an installation without any user policy it is allowed like every
+    other action of that scope. Defining, changing and deleting a service ID stays with the administrator (#5611)
   * Updated the pinned dependencies for the backend.
 
   Fixes:
@@ -170,9 +174,6 @@ Version 3.14dev1
     policy, which silently ignored failed authentications.
     Such rows count again after the upgrade, so an upgrade can lock out a user until the time window of the policy has
     passed (#5629, #5616)
-  * `GET /serviceid/` is available to self-service users, guarded by the new `serviceid_list` policy action in user
-    scope. Previously the endpoint was admin-only, so a user enrolling an application specific password token could
-    never populate the service ID choice and the enrollment form could not be submitted (#5611)
   * The smartphone's answer to a push challenge is written to the audit log. The entry of the answer names the
     transaction and the recorded outcome - accepted, confirmed (the smartphone step of code_to_phone), declined
     or cancelled - plus the reason the app sent with a refusal; the authentication that fails because of a
