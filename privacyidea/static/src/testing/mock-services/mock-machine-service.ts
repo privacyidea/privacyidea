@@ -48,6 +48,7 @@ export class MockMachineService implements MachineServiceInterface {
   ]);
   machines = signal<Machines>([]);
   tokenApplications = signal<TokenApplication[]>([]);
+  canListTokenApplications = signal<boolean>(true);
   selectedApplicationType = signal<"ssh" | "offline">("ssh");
   pageSize = signal(10);
   activeFilter = signal(new FilterValue());

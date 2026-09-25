@@ -280,8 +280,7 @@ export class PolicyService implements PolicyServiceInterface {
   }
 
   readonly policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => {
-    // Only load policy definitions on the policies route.
-    if (!this.contentService.onPolicies()) {
+    if (!this.contentService.onPolicies() || !this.authService.actionAllowed("policyread")) {
       return undefined;
     }
 

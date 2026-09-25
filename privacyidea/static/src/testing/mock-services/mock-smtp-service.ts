@@ -27,6 +27,7 @@ export class MockSmtpService {
     MockPiResponse.fromValue<SmtpServers>({})
   );
   smtpServers = signal<SmtpServer[]>([]);
+  canListSmtpServers = signal<boolean>(true);
   postSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());
   testSmtpServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));
   deleteSmtpServer = jest.fn(async (): Promise<void> => Promise.resolve());
