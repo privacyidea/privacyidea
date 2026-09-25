@@ -84,6 +84,8 @@ class TestPICronRunManually:
     def test_01_successful_task_is_recorded(self, app):
         create_task(app, "succeeding", "SimpleStats", retry_if_failed=True)
         runner = app.test_cli_runner()
+        # A run_scheduled -c before, in the same process, does not silence run_manually
+        runner.invoke(privacyidea_cron, ["run_scheduled", "-c"])
         result = runner.invoke(privacyidea_cron, ["run_manually", "-t", "succeeding"])
         assert result.exit_code == 0, result.output
         assert "exited successfully" in result.output, result.output

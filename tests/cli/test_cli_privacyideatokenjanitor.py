@@ -32,6 +32,7 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import enable_token, get_one_token, init_token
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
+from privacyidea.models.token import TokenOwner
 
 OTP_KEY = "3132333435363738393031323334353637383930"
 
@@ -132,6 +133,16 @@ class TokenJanitorFindTestCase(CliTestCase):
         result = self.invoke_find("--serial", "^ORPHANERROR$", "--orphaned", "true", "--orphaned-on-error", "True")
         self.assertEqual(0, result.exit_code, result.output)
         self.assertNotIn("ORPHANERROR", result.stdout)
+
+    def test_03b_owner_of_a_deleted_resolver_is_orphaned(self) -> None:
+        # A deleted resolver is certain, unlike an error of the user store, so --orphaned-on-error is not needed
+        token = init_token({"serial": "ORPHANRESOLVER", "type": "hotp", "otpkey": OTP_KEY})
+        TokenOwner(token_id=token.token.id, user_id="1000", resolver="deletedresolver",
+                   realmname="janitorrealm").save()
+
+        result = self.invoke_find("--serial", "^ORPHANRESOLVER$", "--orphaned", "true")
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn("ORPHANRESOLVER", result.stdout)
 
     def test_04_csv_export_contains_totp_time_step(self) -> None:
         init_token({"serial": "TOTPCSV", "type": "totp", "otpkey": OTP_KEY, "timeStep": "60"})

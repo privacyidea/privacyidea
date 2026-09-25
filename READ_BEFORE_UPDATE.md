@@ -543,6 +543,12 @@
 * **`privacyidea-pip-update -f`** only skips the confirmation question and runs the database schema upgrade as well;
   pass `-n` to skip the schema upgrade.
 
+* **Tokens of a deleted resolver** — A token whose owner belongs to a resolver that is in no realm any more, e.g.
+  because the resolver was deleted, was left out of every token list and could neither be found nor deleted through
+  the WebUI, the API or the token janitors, while the subscription still counted it. Such a token belongs to no node
+  and is now listed on every node, so the token lists can show tokens that were not visible before. The token janitors
+  find them as orphaned, e.g. `pi-tokenjanitor find --orphaned true list`.
+
 * **Removed scripts** — `reset-privacyidea`, `privacyidea-create-certificate`, `privacyidea-export-linotp-counter.py`,
   `privacyidea-export-privacyidea-counter.py`, `privacyidea-migrate-linotp.py`, `privacyidea-sync-owncloud.py`,
   `creategoogleauthenticator-file` and `getgooglecodes` are no longer installed. They did not work with the current

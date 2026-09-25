@@ -533,6 +533,23 @@ class TestPiTokenJanitorFind:
             assert "Invalid value" in result.output
 
 
+    def test_find_orphaned_owner_of_a_deleted_resolver(self, app, tokens):
+        """
+        Tests that a token whose owner belongs to a deleted resolver is found as orphaned without
+        --orphaned-on-error, as a deleted resolver is certain, unlike an error of the user store, and can be deleted.
+        """
+        token = init_token(param={"serial": "ORPHANRESOLVER", "type": "hotp"})
+        TokenOwner(token_id=token.token.id, user_id="1000", resolver="deletedresolver", realmname="realm1").save()
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "--orphaned", "true", "list"])
+        assert result.exit_code == 0, result.output
+        assert "ORPHANRESOLVER" in result.output
+        assert "HOTP0001" not in result.output
+
+        result = runner.invoke(cli, ["find", "--orphaned", "true", "delete"])
+        assert result.exit_code == 0, result.output
+        assert get_one_token(serial="ORPHANRESOLVER", silent_fail=True) is None
+
     def test_find_tokeninfo_relative_time(self, app, tokens):
         """
         Tests that a signed time span in a < or > comparison of the tokeninfo is a point in time relative to now,

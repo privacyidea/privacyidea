@@ -133,6 +133,9 @@ def run_manually(node_string, task_name):
     run on the given node at all.
     Exits with status 1 if the task fails.
     """
+    # The mode is kept in the app configuration, so a previous run_scheduled -c in the same process must not
+    # silence this command
+    current_app.config['cron_mode'] = False
     node = get_node_name(node_string)
     ptask = get_periodic_task_by_name(task_name)
     if not run_task_on_node(ptask, node):
