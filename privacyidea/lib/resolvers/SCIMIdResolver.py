@@ -203,7 +203,7 @@ class IdResolver (UserIdResolver):
         descriptor['config'] = {'authserver': 'string',
                                 'resourceserver': 'string',
                                 'authclient': 'string',
-                                'authsecret': 'string',
+                                'authsecret': 'password',
                                 'mapping': 'string'}
         return {typ: descriptor}
 

@@ -486,6 +486,26 @@
   reason is still available where it always was: in `detail.message` (unless the `hide_specific_error_message` policy
   masks it) and, for an admin, in the authentication log's event type.
 
+* **`pi-manage config export`** — The password entries of the global configuration are now exported decrypted, like
+  every other secret in the export, so the importing instance can encrypt them with its own key. `--censor` now also
+  censors the client secret of a SCIM resolver. An export written by an earlier version contains the password entries
+  encrypted with the key of its instance, and importing it stores them unusable: set them again after importing such
+  a file.
+
+* **Token janitors** — `privacyidea-token-janitor find --orphaned-on-error` now defaults to `False`: a token whose
+  user lookup fails with an error, e.g. because the LDAP server cannot be reached, no longer counts as orphaned
+  unless you pass `--orphaned-on-error True`. In both token janitors `--orphaned`, `--active` and `--assigned` accept
+  `true`/`false`, `1`/`0`, `yes`/`no` and `on`/`off` and reject any other value instead of reading it as false.
+  `update` keeps the OTP counter, the fail counter and the token kind of each token.
+
+* **`privacyidea-pip-update -f`** only skips the confirmation question and runs the database schema upgrade as well;
+  pass `-n` to skip the schema upgrade.
+
+* **Removed scripts** — `reset-privacyidea`, `privacyidea-create-certificate`, `privacyidea-export-linotp-counter.py`,
+  `privacyidea-export-privacyidea-counter.py`, `privacyidea-migrate-linotp.py`, `privacyidea-sync-owncloud.py`,
+  `creategoogleauthenticator-file` and `getgooglecodes` are no longer installed. They did not work with the current
+  dependencies, and `reset-privacyidea` deleted the encryption key and dropped the database without asking.
+
 ## Update from 3.12 to 3.13
 
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the the

@@ -47,7 +47,7 @@ from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.utils import to_bytes, to_unicode
-from privacyidea.models import ResolverConfig, Resolver, db
+from privacyidea.models import ResolverConfig, Resolver, db, save_config_timestamp
 from . import ldap3mock
 from .base import MyTestCase
 
@@ -3697,6 +3697,32 @@ class ResolverTestCase(MyTestCase):
         self.assertEqual(1, len(reso_list))
         self.assertEqual(CENSORED, reso_list["EntraID"]["data"][CLIENT_CERTIFICATE][PRIVATE_KEY_PASSWORD])
         delete_resolver("EntraID")
+
+    def test_14b_censor_scim_client_secret(self):
+        # The client secret of a SCIM resolver is stored encrypted and censored like every other password
+        save_resolver({"resolver": "SCIMres", "type": "scimresolver", "authserver": "http://localhost/auth",
+                       "resourceserver": "http://localhost/scim", "authclient": "client",
+                       "authsecret": "scimsecret", "mapping": "{}"})
+        stored = db.session.scalars(select(ResolverConfig).join(Resolver).where(
+            Resolver.name == "SCIMres", ResolverConfig.Key == "authsecret")).one()
+        self.assertEqual("password", stored.Type)
+        self.assertNotEqual("scimsecret", stored.Value)
+        resolvers = get_resolver_list(filter_resolver_name="SCIMres")
+        self.assertEqual("scimsecret", resolvers["SCIMres"]["data"]["authsecret"])
+        censored = get_resolver_list(filter_resolver_name="SCIMres", censor=True)
+        self.assertEqual(CENSORED, censored["SCIMres"]["data"]["authsecret"])
+
+        # A secret stored in plain text, before the resolver class declared it a password, is used as it is and
+        # censored as well
+        stored.Type = "string"
+        stored.Value = "plainsecret"
+        db.session.commit()
+        save_config_timestamp()
+        resolvers = get_resolver_list(filter_resolver_name="SCIMres")
+        self.assertEqual("plainsecret", resolvers["SCIMres"]["data"]["authsecret"])
+        censored = get_resolver_list(filter_resolver_name="SCIMres", censor=True)
+        self.assertEqual(CENSORED, censored["SCIMres"]["data"]["authsecret"])
+        delete_resolver("SCIMres")
 
     def test_15_try_to_delete_used_resolver(self):
         rid = save_resolver({"resolver": self.resolvername1,

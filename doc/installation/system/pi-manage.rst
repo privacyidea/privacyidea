@@ -707,15 +707,15 @@ restrict the import to certain types or to a single object.
 
 .. warning:: By default the exported data contains decrypted secrets - for
    example the bind password of an LDAP resolver, the password of an SQL
-   resolver, a RADIUS secret or an SMTP password - in clear text, so that it can
-   be imported into an instance with a different encryption key. Store the
-   exported files in a secure location or use the ``--censor`` option described
-   below.
+   resolver, a RADIUS secret, an SMTP password or the password entries of the
+   global configuration - in clear text, so that it can be imported into an
+   instance with a different encryption key. Store the exported files in a
+   secure location or use the ``--censor`` option described below.
 
-.. note:: The entries of the global configuration that are stored as passwords
-   are the exception: they are exported still encrypted with the encryption key
-   of the source instance and cannot be transferred this way. Set them again
-   after the import.
+.. versionchanged:: 3.14 The password entries of the global configuration are
+   exported decrypted as well. An export written by an earlier version contains
+   them encrypted with the key of its instance, and importing it stores them
+   unusable, so set them again after importing such a file.
 
 Censoring secrets on export
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
