@@ -92,7 +92,8 @@ from privacyidea.lib.error import (PolicyError, RegistrationError,
                                    TokenAdminError, ResourceNotFoundError, AuthError, ParameterError)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success, DEFAULT_JWT_VALIDITY
+from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth_success,
+                                             DEFAULT_JWT_VALIDITY, admin_granted_realms)
 from privacyidea.lib.policy import Match, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
 from privacyidea.lib.realm import get_realms, split_realms
@@ -303,44 +304,95 @@ def realmadmin(request=None, action=None):
     """
     This decorator narrows what an administrator reads to what the matching admin policies grant.
 
-    Without a realm parameter (or with an empty one), the realms in which the administrator is granted the
-    action are added to the parameters. This way, if the admin calls e.g. GET /user without a realm, they do
-    not see all users, but only the users of these realms. Every realm is matched on its own, so a policy
-    without a realm grants every realm and a realm excluded by ``!realm`` is left out. If every realm is
-    granted, the realm parameter is left unset so that the downstream function queries all realms; if none
-    is, the request is refused.
+    Without a realm parameter (or with an empty one), the realms granted by the matching policies (see
+    :func:`~privacyidea.lib.policies.helper.admin_granted_realms`) are added to the parameters. This way, if the
+    admin calls e.g. GET /user without a realm, they do not see all users, but only the users of these realms. A
+    policy granting every realm leaves the parameter unset, so that the downstream function queries all realms. A
+    policy scoped only by user or resolver has no realm to add, so a request that names no user is refused.
 
     For the user-list action, several granted realms are injected as a list;
     a single granted realm, or any other action, injects a single realm
     string (endpoints other than the user list expect a scalar realm).
 
     For the user-list action the resolver and user conditions of the policies are honoured as well, whether a
-    realm was given or not. ``request.pi_allowed_resolvers`` holds the resolvers the administrator may list in
-    each realm, and ``request.pi_user_filter`` checks each user of a resolver for which every matching policy
-    names the users. Both are None when they restrict nothing, and the user list applies them.
+    realm was given or not, and every realm is matched on its own, so a realm excluded by ``!realm`` is not
+    listed. ``request.pi_allowed_resolvers`` holds the resolvers the administrator may list in each realm, and
+    ``request.pi_user_filter`` checks each user of a resolver for which every matching policy names the users.
+    Both are None when they restrict nothing, and the user list applies them.
 
     :param request: The HTTP request
     :param action: The action like ACTION.USERLIST
     """
     request.pi_allowed_resolvers = None
     request.pi_user_filter = None
-    # This decorator is only valid for admins, and without any admin policy an administrator may do everything.
-    if (g.logged_in_user.get("role") != ROLE.ADMIN
-            or not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True)):
+    # This decorator is only valid for admins
+    if g.logged_in_user.get("role") == ROLE.ADMIN:
+        params = request.all_data
+        if not params.get("realm"):
+            # An empty realm (e.g. "?realm=") is treated the same as an absent one:
+            # otherwise a realm-restricted admin would be evaluated against an
+            # empty realm instead of falling back to their granted realm(s).
+            # A policy with no realm restriction means "all realms", and so does no matching policy at
+            # all: both leave request.all_data without a realm filter so the downstream function queries
+            # every realm.
+            granted_realms = admin_granted_realms(action)
+            if granted_realms == []:
+                # The policies that grant this action are scoped by user or by resolver and carry no
+                # realm, so the boundary cannot be written as a realm filter. Leaving the realm unset
+                # would hand back every realm, which is what the request was supposed to be narrowed
+                # away from. If the request names a user, check_base_action has scoped it against
+                # that user and there is nothing unbounded left to refuse; if it names nobody, there
+                # is no boundary left to apply and the request has to be turned away.
+                if not params.get("user"):
+                    raise PolicyError(_("Your permissions for this action are restricted to "
+                                        "individual users or resolvers rather than to realms, so "
+                                        "this request has to name the realm it applies to."))
+            elif granted_realms:
+                if len(granted_realms) == 1 or action != PolicyAction.USERLIST:
+                    request.all_data["realm"] = granted_realms[0]
+                else:
+                    request.all_data["realm"] = granted_realms
+        # Without any admin policy nothing restricts the list.
+        if action == PolicyAction.USERLIST and g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
+            _restrict_user_list(request)
+
+    return True
+
+
+def resolver_realm_access(request=None, action=None):
+    """
+    Bind an operation that addresses a user store by resolver to the realms the admin may administer.
+
+    An admin policy grants an action in a realm, while these endpoints take the user store from the
+    resolver in the request. The two are independent: creating and deleting a user carry no realm at all,
+    and where a realm is given nothing ties it to the resolver. The resolver is therefore resolved to the
+    realms containing it, and at least one of them has to be granted by a matching policy.
+
+    :param request: The HTTP request
+    :param action: The action like PolicyAction.ADDUSER
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
         return True
-    realms = list(get_realms())
-    granted = [realm for realm in realms if _admin_policies(action, realm)]
-    # An empty realm (e.g. "?realm=") is treated the same as an absent one: otherwise a realm-restricted admin
-    # would be evaluated against an empty realm instead of falling back to their granted realm(s).
-    if not request.all_data.get("realm") and len(granted) < len(realms):
-        if not granted:
-            raise PolicyError(f"Admin actions are defined, but the action {action} is not allowed!")
-        if len(granted) == 1 or action != PolicyAction.USERLIST:
-            request.all_data["realm"] = granted[0]
-        else:
-            request.all_data["realm"] = granted
-    if action == PolicyAction.USERLIST:
-        _restrict_user_list(request)
+
+    params = request.all_data
+    resolver = get_optional(params, "resolver") or get_optional(params, "resolvername")
+    if not resolver:
+        return True
+
+    granted_realms = admin_granted_realms(action)
+    if granted_realms is None:
+        # Nothing restricts this admin: no admin policy at all, or one that carries no target scope
+        return True
+    if not granted_realms:
+        # Restricted along a dimension a realm list cannot carry, so this resolver cannot be shown to
+        # be inside the boundary. Refuse rather than widen it.
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
+
+    resolver_realms = {realm for realm, realm_config in get_realms().items()
+                       if resolver in [entry.get("name") for entry in realm_config.get("resolver", [])]}
+    if not resolver_realms & set(granted_realms):
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
+
     return True
 
 
@@ -2153,6 +2205,11 @@ def webauthntoken_request(request, action):
     :return:
     :rtype:
     """
+    # The origin is what binds an assertion to the site it was made for, so it may only come from the
+    # request itself. It is set from the environment further down, but only for a request recognised as
+    # a WebAuthn one; dropping a parameter of the same name here means a request that is not recognised
+    # reaches the verifier without an origin, and is refused, rather than with the one the client chose.
+    request.all_data.pop("HTTP_ORIGIN", None)
 
     scope = None
 
@@ -2936,6 +2993,9 @@ def smartphone_config(request, action=None):
                 policies[action] = False
 
         request.all_data["client_policies"] = policies
+    else:
+        # The client policies are derived from the server side policies, they are not taken from the request
+        request.all_data.pop("client_policies", None)
     return is_smartphone
 
 

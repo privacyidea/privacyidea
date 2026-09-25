@@ -1051,6 +1051,12 @@ type: ``bool``
 The administrators are allowed to view the source IP addresses blocked by
 :ref:`conditional_access`.
 
+.. note:: The blocklist is keyed on source IP addresses, which carry no realm,
+   resolver or user. A policy that grants this action **and** scopes its target
+   to named realms, resolvers or users therefore names nothing in the blocklist,
+   and the request is refused rather than treated as unrestricted. Grant it
+   without a target scope, or with ``realm=*``.
+
 .. versionadded:: 3.14
 
 .. _policy_blocklist_reset:
@@ -1063,6 +1069,12 @@ type: ``bool``
 The administrators are allowed to remove entries from the blocklist of
 :ref:`conditional_access` and to purge the stale records of blocks that have
 already expired.
+
+.. note:: The blocklist is keyed on source IP addresses, which carry no realm,
+   resolver or user. A policy that grants this action **and** scopes its target
+   to named realms, resolvers or users therefore names nothing in the blocklist,
+   and the request is refused rather than treated as unrestricted. Grant it
+   without a target scope, or with ``realm=*``.
 
 .. versionadded:: 3.14
 
@@ -1081,6 +1093,12 @@ permanently, or for a chosen duration. The block is recorded with the cause
 Kept separate from :ref:`policy_blocklist_reset` because clearing a restriction
 is recoverable and imposing one is not. This is the IP counterpart of
 :ref:`policy_user_lock_set`.
+
+.. note:: The blocklist is keyed on source IP addresses, which carry no realm,
+   resolver or user. A policy that grants this action **and** scopes its target
+   to named realms, resolvers or users therefore names nothing in the blocklist,
+   and the request is refused rather than treated as unrestricted. Grant it
+   without a target scope, or with ``realm=*``.
 
 .. versionadded:: 3.14
 

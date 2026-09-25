@@ -279,6 +279,39 @@ class UserLockStateTestCase(MyTestCase):
         lock_user(self.user, duration_seconds=60)
         self.assertEqual(RestrictionCause.MANUAL, db.session.query(UserLockState).one().lock_cause)
 
+    def test_lock_user_drops_the_error_message_of_the_lock_it_replaces(self):
+        # The stored wording describes the lock in force. A policy's - written for its own expiry, and often
+        # carrying a {duration} countdown - describes neither the expiry nor the cause an administrator just
+        # wrote, and on a permanent lock the tag has nothing to substitute and would reach the user verbatim.
+        self._lock(utc_now() + timedelta(seconds=3600),
+                   error_message="Temporarily locked. Try again in about {duration}.")
+        lock_user(self.user)
+        self.assertIsNone(db.session.query(UserLockState).one().error_message)
+
+    def test_lock_internal_admin_drops_the_error_message_of_the_lock_it_replaces(self):
+        create_db_admin("ca_state_admin", password="adminpw")
+        try:
+            lock_internal_admin("ca_state_admin", duration_seconds=60)
+            state = db.session.query(UserLockState).one()
+            state.error_message = "Temporarily locked. Try again in about {duration}."
+            db.session.commit()
+
+            lock_internal_admin("ca_state_admin")
+
+            self.assertIsNone(db.session.query(UserLockState).one().error_message)
+        finally:
+            delete_db_admin("ca_state_admin")
+
+    def test_block_ip_drops_the_error_message_of_the_block_it_replaces(self):
+        block_ip("203.0.113.9", duration_seconds=300)
+        state = db.session.query(BlockList).one()
+        state.error_message = "Temporarily blocked. Try again in about {duration}."
+        db.session.commit()
+
+        block_ip("203.0.113.9")
+
+        self.assertIsNone(db.session.query(BlockList).one().error_message)
+
     def test_block_ip_writes_a_manual_block(self):
         entry = block_ip("203.0.113.9", duration_seconds=300)
         self.assertEqual("203.0.113.9", entry["identifier"])

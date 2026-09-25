@@ -77,10 +77,11 @@ from flask import request, g, Response
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication, build_ca_context,
                                       send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.engine import (get_subject_lock, get_user_lock_by_login, get_ip_block,
-                                                       evaluate_access_decision,
+from privacyidea.lib.conditional_access.engine import (get_subject_lock, get_user_lock, get_user_lock_by_login,
+                                                       get_ip_block, can_be_locked, evaluate_access_decision,
                                                        lock_subject, render_error_message, restriction_messages,
-                                                       AccessDecision, ConditionalAccessAction, RestrictionStatus)
+                                                       AccessDecision, ConditionalAccessAction, LockSubject,
+                                                       RestrictionStatus)
 from privacyidea.lib.conditional_access.policy import default_error_message
 from privacyidea.lib.conditional_access.session import release_ca_connection
 from privacyidea.lib.conditional_access.request_context import get_ca_context, peek_ca_context
@@ -207,8 +208,16 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
             # to be for is written on their row and looked for on the admin's, and so never met: the name would lock
             # over and over without a single request being refused. The same ambiguity already couples the two
             # accounts in the auth_max_fail time limit (see doc/policies/authorization.rst).
-            user_lock = get_user_lock_by_login(principal.username, clear_expired=True)
-            if user_lock is not None:
+            #
+            # Only while this admin is a principal some policy can lock, though. An operator who excluded them -
+            # a USER_ROLE condition is how a local admin is kept out of a user-target policy - has said this
+            # account is not to be locked, and a row written for somebody who merely shares the name does not
+            # change that: it is the account an operator recovers a locked-out deployment with, and the name it
+            # carries is often one a directory holds a user of as well. The row is looked for first because it is
+            # almost never there, and the applicability question costs a scan of every policy.
+            namesake_lock = get_user_lock_by_login(principal.username, clear_expired=True)
+            if namesake_lock is not None and can_be_locked(ca_context):
+                user_lock = namesake_lock
                 locked = f"user named {principal.username!r}"
         ip_block = get_ip_block(source_ip, clear_expired=True)
         binding = _binding_event_type(user_lock, ip_block)
@@ -586,8 +595,53 @@ def _reject_restricted_login(user: User) -> None:
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return
+    _raise_rejection(rejection, user)
+
+
+def reject_locked_fallback_user(user: User) -> None:
+    """
+    Reject an ``/auth`` login that has turned out to be for the locked *user*, after the login gate judged it a
+    local database admin's. Raises :class:`AuthError` when it must be rejected and returns ``None`` otherwise.
+
+    A login name that names both a local admin and a user is only resolved to one of them by the credential that
+    matches, which happens inside the view: the admin password is tried first, and only once it fails does the
+    view build the same-named user and authenticate them instead
+    (:func:`~privacyidea.api.auth.get_auth_token`). The gate ran before that, against the admin, so a lock
+    standing on the user it has now fallen back to has not been weighed yet - and it is this path, not the
+    admin's, that the lock was written for. Weighing it here is what lets the gate leave an unlockable local
+    admin alone (:func:`~privacyidea.lib.conditional_access.engine.can_be_locked`) without letting the locked
+    user in under the bare name.
+
+    Only the user's own lock is re-read. A source-IP block and the pre-auth ``DENY`` decision were evaluated by
+    the gate on this same request and do not change with the principal's realm - and re-running the decision
+    would buffer a second copy of its outcomes onto the row this request writes.
+
+    The caller re-points ``request.User`` and clears the local-admin flag first, the same way it reloads the
+    pre-policies, so the refusal is logged against the principal it is really about.
+    """
+    try:
+        lock = get_user_lock(user, clear_expired=True)
+    finally:
+        # Released for the reason the pre-check documents: this read is the only conditional-access work left
+        # before the request goes on, so its transaction must not hold a second connection for the duration.
+        release_ca_connection()
+    if lock is None:
+        return
+    context = get_ca_context()
+    context.use_default_error_message = show_default_ca_error_message(user)
+    log.info(f"Rejecting {request.path} for locked {LockSubject.for_user(user)}.")
+    messages = restriction_messages(lock, use_default_error_message=context.use_default_error_message)
+    _raise_rejection(Rejection(AuthEventType.USER_LOCKED, _audit_reason(lock, None),
+                               " ".join(message.text for message in messages) or None), user)
+
+
+def _raise_rejection(rejection: "Rejection", user: User) -> None:
+    """
+    Log, audit and raise *rejection* - everything that turns a decision into the 401 the login screen sees,
+    shared by the gate and by the in-view re-check so the two cannot render one differently.
+    """
     # Staged rather than written, so request teardown records it even though the AuthError below unwinds the view -
-    # and staged after _evaluate_rejection, so an enforced DENY's buffered outcome lands on this row.
+    # and staged after the decision, so an enforced DENY's buffered outcome lands on this row.
     event = log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
                                transaction_id=_rejected_transaction_id(),
                                internal_admin=g.get("resolved_user", {}).get("is_local_admin", False))

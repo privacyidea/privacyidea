@@ -232,31 +232,57 @@ class APIAuthTestCase(MyApiTestCase):
         self.assertIn(self.realm3, audit_entry.get("info", ""))
 
     def test_03d_realmadmin_no_realm_in_policy_means_all(self):
-        """A policy with no realm restriction should leave the realm
-        parameter unset so the endpoint queries all realms."""
+        """A policy that restricts nothing should leave the realm parameter unset
+        so the endpoint queries all realms."""
         self.setUp_user_realms()
         self.setUp_user_realm2()
         self.setUp_user_realm3()
-        # Policy with no realm → all realms
+        # Policy with no target scope at all → every realm
         set_policy(name="realmadmin_all", scope=SCOPE.ADMIN,
                    action=PolicyAction.USERLIST,
                    adminuser="testadmin")
 
-        with self.app.test_request_context('/user/',
-                                           method='GET',
-                                           data={},
-                                           headers={'Authorization':
-                                                        self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res)
-            result = res.json.get("result")
-            realms_in_result = set(u.get("realm") for u in result.get("value"))
-            # All three realms should be present
-            self.assertIn(self.realm1, realms_in_result)
-            self.assertIn(self.realm2, realms_in_result)
-            self.assertIn(self.realm3, realms_in_result)
+        try:
+            with self.app.test_request_context('/user/',
+                                               method='GET',
+                                               data={},
+                                               headers={'Authorization':
+                                                            self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 200, res)
+                result = res.json.get("result")
+                realms_in_result = set(u.get("realm") for u in result.get("value"))
+                # All three realms should be present
+                self.assertIn(self.realm1, realms_in_result)
+                self.assertIn(self.realm2, realms_in_result)
+                self.assertIn(self.realm3, realms_in_result)
+        finally:
+            delete_policy("realmadmin_all")
 
-        delete_policy("realmadmin_all")
+    def test_03f_realmadmin_user_scoped_policy_does_not_list_every_realm(self):
+        """In an admin policy the `user` field names the user acted upon, not the acting admin.
+
+        Such a policy is a restriction, but not one a realm filter can carry, so an unscoped
+        listing cannot be narrowed to it. Answering with every realm hands a user-scoped admin
+        the whole installation; the request is refused instead.
+        """
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        set_policy(name="realmadmin_user_scoped", scope=SCOPE.ADMIN,
+                   action=PolicyAction.USERLIST, user="alice")
+        try:
+            with self.app.test_request_context('/user/', method='GET', data={},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(403, res.status_code, res)
+            # naming the realm gives the action something to be checked against again
+            with self.app.test_request_context('/user/', method='GET',
+                                               query_string={"realm": self.realm1},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+        finally:
+            delete_policy("realmadmin_user_scoped")
 
     def test_03e_realmadmin_empty_realm_param_treated_as_absent(self):
         # A literal empty ``realm=`` query parameter must be treated the same as

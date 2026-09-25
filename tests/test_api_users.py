@@ -8,7 +8,8 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver, get_resolver_object
-from privacyidea.lib.token import init_token, remove_token
+from privacyidea.lib.token import init_token, remove_token, get_tokens
+from privacyidea.lib.container import init_container, delete_container_by_serial
 from privacyidea.lib.user import User
 from privacyidea.lib.users.internal_user_attributes import InternalUserAttributes
 from .base import MyApiTestCase, PristineSqliteFixtures
@@ -1146,6 +1147,120 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual({"count": 0, "with_tokens": 0}, res.json["result"]["value"])
         self.assertEqual([self.resolvername1], res.json["detail"]["skipped_resolvers"])
+
+    def test_21_resolver_is_bound_to_the_admins_realms(self):
+        """An admin restricted to one realm can not address a resolver of another realm.
+
+        The user endpoints take the target store from the request: `resolver` in the body for create
+        and update, and the first path component for delete. The policy is matched against the realm,
+        so without a binding between the two a realm-restricted admin reaches every resolver.
+        """
+        self.setUp_user_realms()
+        # an editable resolver in a realm the admin was not granted
+        foreign_parameters = dict(self.parameters, resolver="foreign_sql", type="sqlresolver", Editable=True)
+        self.assertTrue(save_resolver(foreign_parameters) > 0)
+        set_realm("otherrealm", [{"name": "foreign_sql"}])
+
+        set_policy("admin_realm1", scope=SCOPE.ADMIN,
+                   action=f"{PolicyAction.UPDATEUSER},{PolicyAction.ADDUSER},{PolicyAction.DELETEUSER}",
+                   realm=self.realm1)
+
+        # create: named by resolver alone, so the resolver has to be in a realm the admin was granted
+        with self.app.test_request_context("/user/", method="POST",
+                                           data={"user": "planted", "resolver": "foreign_sql",
+                                                 "password": "Test1234!"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertIn("foreign_sql", res.json["result"]["error"]["message"])
+
+        # delete: same, with the resolver in the path
+        with self.app.test_request_context("/user/foreign_sql/cornelius", method="DELETE",
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertIn("foreign_sql", res.json["result"]["error"]["message"])
+
+        # update: the realm the policy matches and the resolver the write follows must agree
+        with self.app.test_request_context("/user/", method="PUT",
+                                           data={"user": "cornelius", "realm": self.realm1,
+                                                 "resolver": "foreign_sql", "email": "x@example.com"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertIn("foreign_sql", res.json["result"]["error"]["message"])
+
+        # a resolver of the granted realm is not refused by the binding
+        with self.app.test_request_context(f"/user/{self.resolvername1}/cornelius", method="DELETE",
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertNotEqual(403, res.status_code, res.json)
+
+        delete_policy("admin_realm1")
+        delete_realm("otherrealm")
+        delete_resolver("foreign_sql")
+
+    def test_22_token_and_container_assign_reject_a_foreign_resolver(self):
+        """Assigning by (realm, resolver) must not let the owner come from another realm."""
+        self.setUp_user_realms()
+        save_resolver({"resolver": "foreign_pw", "type": "passwdresolver", "fileName": PWFILE})
+        set_realm("otherrealm", [{"name": "foreign_pw"}])
+        set_policy("admin_realm1_assign", scope=SCOPE.ADMIN,
+                   action=PolicyAction.ASSIGN, realm=self.realm1)
+        token = init_token({"type": "hotp", "genkey": True})
+
+        with self.app.test_request_context("/token/assign", method="POST",
+                                           data={"serial": token.get_serial(), "user": "cornelius",
+                                                 "realm": self.realm1, "resolver": "foreign_pw"},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+        self.assertIsNone(get_tokens(serial=token.get_serial())[0].user)
+
+        remove_token(token.get_serial())
+        delete_policy("admin_realm1_assign")
+        delete_realm("otherrealm")
+        delete_resolver("foreign_pw")
+
+    def _assign_user_to_new_container(self):
+        serial = init_container({"type": "generic"})["container_serial"]
+        with self.app.test_request_context(f"/container/{serial}/assign", method="POST",
+                                           data={"user": "cornelius", "realm": self.realm1,
+                                                 "resolver": self.resolvername1},
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+        delete_container_by_serial(serial)
+        return res
+
+    def test_23_user_scoped_grant_does_not_revoke_a_realm_grant(self):
+        """A further, narrower grant of the same action must not take away what a realm grant allows."""
+        self.setUp_user_realms()
+        set_policy("assign_realm1", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER,
+                   realm=self.realm1)
+        set_policy("assign_one_user", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER,
+                   user="someone")
+
+        res = self._assign_user_to_new_container()
+        delete_policy("assign_realm1")
+        delete_policy("assign_one_user")
+
+        self.assertEqual(200, res.status_code, res.json)
+
+    def test_24_unrestricted_grant_wins_regardless_of_policy_order(self):
+        """An unrestricted grant of the action allows the request whichever policy is evaluated first."""
+        self.setUp_user_realms()
+        scopes = {"user": {"user": "someone"}, "all": {}}
+        status_by_first_policy = {}
+        for first, second in [("all", "user"), ("user", "all")]:
+            set_policy(f"a_{first}", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER,
+                       priority=1, **scopes[first])
+            set_policy(f"b_{second}", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_ASSIGN_USER,
+                       priority=2, **scopes[second])
+            status_by_first_policy[first] = self._assign_user_to_new_container().status_code
+            delete_policy(f"a_{first}")
+            delete_policy(f"b_{second}")
+
+        self.assertEqual({"all": 200, "user": 200}, status_by_first_policy)
 
 
 class UserListScopeTestCase(MyApiTestCase):
