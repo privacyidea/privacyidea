@@ -409,6 +409,10 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
     :func:`conditional_access_login_gate`. The exception is a pre-policy that rewrites the identity: ``set_realm``
     and ``mangle`` on ``/validate/check`` assign a new ``request.User``, and everything downstream authenticates,
     logs and counts as that one - so they run first, or the gate would check an identity that never authenticates.
+    A pre-event handler can assign one too (the RequestMangler with ``reset_user``). The event handlers stay below
+    the gate, so that none of them runs for a user it refuses; instead the gate leaves its check on the request's
+    conditional-access context, and the event decorator runs it again for the new user
+    (:func:`~privacyidea.lib.conditional_access.request_context.recheck_conditional_access_gate`).
 
     Below the response decorators because this gate *returns* its rejection rather than raising one: a failed
     authentication on ``/validate/*`` is an ordinary ``200`` carrying ``result.value`` false, not an error
@@ -438,10 +442,14 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            user = identity_resolver() if identity_resolver is not None else request.User
-            rejection = conditional_access_precheck(user, RejectionShape(value=rejection_value))
+            def check() -> Response | None:
+                user = identity_resolver() if identity_resolver is not None else request.User
+                return conditional_access_precheck(user, RejectionShape(value=rejection_value))
+
+            rejection = check()
             if rejection is not None:
                 return rejection
+            get_ca_context().gate_check = check
             return wrapped_function(*args, **kwargs)
         return wrapper
     return decorator
@@ -684,14 +692,21 @@ def conditional_access_login_gate() -> Callable[[Callable], Callable]:
     Everything it reads is ready by then - ``/auth``'s ``before_request`` sets ``g.audit_object``, ``g.client_ip`` and
     ``g.resolved_user`` and resolves ``request.User`` - and the :class:`AuthError` it raises is handled by the
     ``jwtauth`` error handler exactly as one raised from the view would be.
+
+    A pre-event handler that replaces ``request.User`` has the check run again for the new user, as on
+    ``/validate`` (see :func:`conditional_access_gate`).
     """
 
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            user = request.User or User()
-            g.audit_object.log({"user": user.login, "realm": user.realm})
-            _reject_restricted_login(user)
+            def check() -> None:
+                user = request.User or User()
+                g.audit_object.log({"user": user.login, "realm": user.realm})
+                _reject_restricted_login(user)
+
+            check()
+            get_ca_context().gate_check = check
             return wrapped_function(*args, **kwargs)
 
         return wrapper

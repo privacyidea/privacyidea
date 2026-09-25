@@ -26,10 +26,13 @@ import re
 
 from privacyidea.lib import _
 from privacyidea.lib.eventhandler.base import BaseEventHandler
-from privacyidea.lib.user import User
+from privacyidea.lib.user import User, get_user_from_param
 from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
+
+#: The parameters naming the user of a request, for which ``reset_user`` determines the user again.
+USER_PARAMETERS = ("realm", "username", "user")
 
 
 class ACTION_TYPE:
@@ -142,9 +145,10 @@ class RequestManglerEventHandler(BaseEventHandler):
 
                 if value is not None:
                     # We only take action, if we have a value, even an empty string "".
+                    new_value = None
                     if not match_parameter:
                         # simple setting a parameter
-                        request.all_data[parameter] = value
+                        new_value = value
                     elif match_pattern and match_parameter in request.all_data:
                         # setting a parameter depending on another value,
                         # but only set it, if match_parameter exists
@@ -159,19 +163,32 @@ class RequestManglerEventHandler(BaseEventHandler):
                             # Now we set the new value with the matching tuple
                             try:
                                 new_value = value.format(*m.groups())
-                                request.all_data[parameter] = new_value
-                                reset_user = is_true(handler_options.get("reset_user"))
-
-                                # Optionally reset the user if a param of the user was mangled
-                                # TODO this should be a UserMangler to explicitly change the user
-                                # TODO then remove any user info from all_data...
-                                if parameter in ["realm", "username", "user"] and reset_user:
-                                    realm = request.all_data.get("realm")
-                                    user = request.all_data.get("username") or request.all_data.get("user")
-                                    user = User(login=user, realm=realm)
-                                    request.User = user
                             except IndexError:
                                 log.warning(f"The number of found tags ({m.groups()!r}) "
                                             f"do not match the required number ({value!r}).")
+                    if new_value is not None:
+                        request.all_data[parameter] = new_value
+                        # Optionally reset the user if a param of the user was mangled
+                        # TODO this should be a UserMangler to explicitly change the user
+                        # TODO then remove any user info from all_data...
+                        if parameter in USER_PARAMETERS and is_true(handler_options.get("reset_user")):
+                            request.User = _user_from_parameters(request.all_data)
 
         return ret
+
+
+def _user_from_parameters(parameters: dict) -> User:
+    """
+    The user the request parameters name, read like any other request that names a user
+    (:func:`~privacyidea.lib.user.get_user_from_param`): a ``user@realm`` login name is split as the Split@Sign
+    setting says, the ``realm`` parameter takes precedence over the split realm, no realm at all means the default
+    realm, and the ``resolver`` parameter is kept. ``/auth`` names the user in ``username`` rather than ``user``, so
+    that one is read first.
+
+    :param parameters: the request parameters, after the mangling
+    :return: the user of the request
+    """
+    # Only what names the user is passed on, so no other request parameter, such as the password, reaches its debug log.
+    user_parameters = {key: parameters[key] for key in ("realm", "resolver") if key in parameters}
+    user_parameters["user"] = parameters.get("username") or parameters.get("user")
+    return get_user_from_param(user_parameters)
