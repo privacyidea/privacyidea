@@ -1262,6 +1262,28 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
 
         self.assertEqual({"all": 200, "user": 200}, status_by_first_policy)
 
+    def test_25_a_realm_excluded_by_the_policy_is_not_administered(self):
+        """A policy granting every realm but one does not reach the resolvers of the excluded realm."""
+        self.setUp_user_realms()
+        save_resolver({"resolver": "excluded_pw", "type": "passwdresolver", "fileName": PWFILE})
+        set_realm("excludedrealm", [{"name": "excluded_pw"}])
+        set_policy("admin_all_but_one", scope=SCOPE.ADMIN, action=PolicyAction.DELETEUSER, realm="*,!excludedrealm")
+        try:
+            with self.app.test_request_context("/user/excluded_pw/cornelius", method="DELETE",
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(403, res.status_code, res.json)
+                self.assertIn("excluded_pw", res.json["result"]["error"]["message"])
+
+            with self.app.test_request_context(f"/user/{self.resolvername1}/cornelius", method="DELETE",
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertNotEqual(403, res.status_code, res.json)
+        finally:
+            delete_policy("admin_all_but_one")
+            delete_realm("excludedrealm")
+            delete_resolver("excluded_pw")
+
 
 class UserListScopeTestCase(MyApiTestCase):
     """

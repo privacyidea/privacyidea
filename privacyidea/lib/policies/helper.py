@@ -24,6 +24,7 @@ from flask import g, request
 
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.realm import get_realms
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timelimit, AUTH_RESPONSE
 
@@ -229,6 +230,11 @@ def admin_granted_realms(action: str) -> list[str] | None:
       revoked every user's devices in every realm. A caller that needs the user and resolver dimensions
       rather than just a yes/no should use :func:`get_policy_visibility_scopes`, which carries all three.
 
+    The realm field is read the way the policy engine matches it: ``"*"`` stands for every realm, and a
+    realm named with a leading ``"!"`` or ``"-"`` is excluded, also from ``"*"``. A policy granting every
+    realm but some therefore yields every other realm by name, and a realm field that restricts nothing -
+    empty, or ``"*"`` without an exclusion - is read as no realm at all.
+
     adminrealm, adminuser and policy conditions need no handling here: ``Match.admin(...).policies()``
     already returns only the policies applicable to the current admin and request.
 
@@ -241,19 +247,21 @@ def admin_granted_realms(action: str) -> list[str] | None:
         return None
     granted_realms = {}
     for policy in Match.admin(g, action=action).policies():
-        policy_realms = policy.get("realm")
-        if policy_realms and "*" in policy_realms:
-            # The realm field is matched with the policy engine's own comparison, which reads "*" as
-            # every realm. Returning it as a literal name would have a caller look it up, find no
-            # realm called "*", and quietly end up with an empty boundary.
-            return None
-        if not policy_realms:
+        policy_realms = policy.get("realm") or []
+        excluded_realms = {realm[1:] for realm in policy_realms if realm[:1] in ("!", "-")}
+        if not policy_realms or "*" in policy_realms:
             if policy.get("resolver") or policy.get("user"):
                 # Scoped along a dimension a realm list cannot carry, so it contributes no realm. If no
                 # other policy names one either, the empty result refuses rather than widening to every realm.
                 continue
-            return None
-        granted_realms.update(dict.fromkeys(policy_realms))
+            if not excluded_realms:
+                return None
+            # "*" with exclusions: returning None would widen the grant to the excluded realms as well.
+            granted_realms.update(dict.fromkeys(realm for realm in get_realms() if realm not in excluded_realms))
+            continue
+        # A field of nothing but exclusions matches no realm in the policy engine, and contributes none here.
+        granted_realms.update(dict.fromkeys(realm for realm in policy_realms
+                                            if realm[:1] not in ("!", "-") and realm not in excluded_realms))
     return list(granted_realms)
 
 

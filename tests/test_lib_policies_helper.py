@@ -21,11 +21,15 @@ enforced end-to-end in test_api_authentication_log.py; what is tested here is th
 including the failure paths a request cannot produce on demand.
 """
 import mock
+from flask import g
 
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.error import ResolverError
-from privacyidea.lib.policies.helper import own_entries_scope
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.helper import admin_granted_realms, own_entries_scope
+from privacyidea.lib.policy import PolicyClass, SCOPE, delete_policy, set_policy
 from privacyidea.lib.user import User
-from .base import MyTestCase
+from .base import FakeAudit, MyTestCase
 
 
 class OwnEntriesScopeTestCase(MyTestCase):
@@ -63,3 +67,50 @@ class OwnEntriesScopeTestCase(MyTestCase):
                         side_effect=ResolverError("The resolver is not reachable")):
             with self.app.test_request_context():
                 self.assertIsNone(own_entries_scope("cornelius", self.realm1))
+
+
+class AdminGrantedRealmsTestCase(MyTestCase):
+    """The realms an admin's policies grant, read the way the policy engine matches the realm field."""
+
+    def setUp(self) -> None:
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        self.setUp_user_realm3()
+        g.audit_object = FakeAudit()
+        g.logged_in_user = {"username": "admin1", "realm": "", "role": ROLE.ADMIN}
+        g.client_ip = None
+        g.serial = None
+
+    def _granted(self, **policy_scope: str) -> list[str] | None:
+        set_policy("granted", scope=SCOPE.ADMIN, action=PolicyAction.DELETEUSER, **policy_scope)
+        g.policy_object = PolicyClass()
+        try:
+            return admin_granted_realms(PolicyAction.DELETEUSER)
+        finally:
+            delete_policy("granted")
+
+    def test_named_realms_are_granted(self):
+        self.assertEqual([self.realm1, self.realm3], self._granted(realm=f"{self.realm1},{self.realm3}"))
+
+    def test_a_realm_field_that_restricts_nothing_grants_every_realm(self):
+        self.assertIsNone(self._granted())
+        self.assertIsNone(self._granted(realm="*"))
+
+    def test_every_realm_but_an_excluded_one(self):
+        granted = self._granted(realm=f"*,!{self.realm3}")
+        self.assertIn(self.realm1, granted)
+        self.assertIn(self.realm2, granted)
+        self.assertNotIn(self.realm3, granted)
+        self.assertEqual(granted, self._granted(realm=f"*,-{self.realm3}"))
+
+    def test_an_excluded_realm_is_not_granted_by_name_either(self):
+        self.assertEqual([self.realm1], self._granted(realm=f"{self.realm1},{self.realm3},!{self.realm3}"))
+        # Nothing but an exclusion matches no realm at all.
+        self.assertEqual([], self._granted(realm=f"!{self.realm3}"))
+
+    def test_a_policy_scoped_by_user_or_resolver_names_a_realm_only_if_its_realm_field_does(self):
+        for target_scope in ({"user": "cornelius"}, {"resolver": self.resolvername1}):
+            self.assertEqual([], self._granted(**target_scope), target_scope)
+            self.assertEqual([], self._granted(realm="*", **target_scope), target_scope)
+            self.assertEqual([], self._granted(realm=f"*,!{self.realm3}", **target_scope), target_scope)
+            self.assertEqual([self.realm1], self._granted(realm=self.realm1, **target_scope), target_scope)
