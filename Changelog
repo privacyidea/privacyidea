@@ -14,6 +14,18 @@ Version 3.14dev1
     subscription, with links to the documentation and the products (#4057, #5383)
 
   Enhancements:
+  * The token usage widget on the dashboard also reports how many users already own a token and how many do
+    not, and can be narrowed to a single realm. The chosen realm is stored with the widget. A resolver that
+    cannot be read is left out of both numbers and named below them, so an installation with a broken
+    resolver still sees the count of the resolvers that answered. Both numbers come from the new endpoint
+    `GET /user/count`, which counts the users `GET /user/` lists and how many of them own a token, guarded
+    by the `userlist` action like the user list itself and, as it tells who owns a token, by the `tokenlist`
+    action in every realm counted
+  * The user list can be narrowed to the users that own a token, or to those that do not, with the new
+    `has_tokens` filter of `GET /user/`. Token ownership is privacyIDEA's own record rather than a user
+    store attribute, so the filter is applied after the resolvers answered. A revoked token does not count,
+    a disabled one does. An administrator needs the `tokenlist` action in every realm listed to use the
+    filter. The token usage widget links its two user counts to the matching list
   * PUSH tokens can use Firebase, HTTP, or Script SMS gateways to deliver signed challenge payloads. HTTP and Script
     gateways require `ALLOW_PUSH=yes`; Firebase gateways remain enabled by default. HTTP gateways can receive the
     structured payload as JSON, while Script gateways receive it as JSON on stdin. In the options of an HTTP gateway,
@@ -100,9 +112,20 @@ Version 3.14dev1
   * Replaced the remaining usages of PyOpenSSL with the cryptography package (#1991)
   * `GET /user/` accepts the parameter `include_custom_attributes`, so a user list can be fetched without looking up
     the custom attributes of every user (#5185)
+  * Application specific password tokens can be enrolled in self-service. Listing the defined service IDs with
+    `GET /serviceid/`, which the enrollment needs to offer a choice, is available to users through the new
+    `serviceid_list` action in the user scope; on an installation without any user policy it is allowed like every
+    other action of that scope. Defining, changing and deleting a service ID stays with the administrator (#5611)
+  * The service ID of an application specific password token is checked against the defined service IDs when the
+    token is enrolled. An undefined service ID was accepted and stored, and the token then never matched an
+    authentication request (#5611)
   * Updated the pinned dependencies for the backend.
 
   Fixes:
+  * The token owner table has an index on its token column. This only matters on SQLite, where listing or
+    counting the tokens of a realm slowed down badly once many tokens were assigned. MySQL and MariaDB
+    already index the foreign key themselves, and on PostgreSQL and Oracle the same queries were measured
+    to take the same time with the index as without it, so nothing changes for them either way
   * `POST /token/copypin` and `POST /token/copyuser` check the `copytokenpin` / `copytokenuser` right for the
     source as well as for the destination token
   * The lost token process always creates a new replacement token. An earlier replacement of the same token
@@ -110,7 +133,19 @@ Version 3.14dev1
   * Realms can be deleted again when a custom user attribute was set for one of their users (#5094)
   * Editing an inactive policy no longer activates it, because the `active` parameter is now honoured (#5411)
   * A realm administrator with the `userlist` right sees the users of all realms granted to them, instead of only the
-    first realm of the first matching policy (#5421)
+    first realm of the first matching policy (#5421). Each realm of a request is checked on its own, so several
+    realms, given as a list or comma-separated, list no realm the administrator is not granted, and a realm excluded
+    in a policy with `!realm` stays excluded
+  * The resolvers and users named in an admin policy with the `userlist` right restrict the user list as well. Before,
+    only its realm did: such an administrator saw every user of the realm, while asking for one of the others by name
+    was refused
+  * An admin policy for the realm `*`, or for every realm but some (`*` with `!realm`), grants these realms to the token
+    and container list and to the audit log as well. The realm field was read literally there, so such an
+    administrator saw nothing. Several `auditlog` policies now add up, so one without a target scope grants every
+    realm. An `auditlog` policy that also names users or resolvers grants no realm, since the audit log can only be
+    restricted by realm - before, it showed every entry of its realms
+  * A resolver excluded in the resolver field of a policy with `!` or `-`, also from `*`, is excluded. Policy
+    matching ignored such exclusions for resolvers, while it honoured them for realms and users
   * `GET /user/` no longer returns a single user per realm when the requested `attributes` do not contain the
     username (#5482)
   * The user notification handler no longer mails every user of every realm when it is configured to notify an admin
