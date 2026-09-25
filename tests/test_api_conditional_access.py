@@ -28,7 +28,9 @@ from privacyidea.api.lib import conditional_access as ca_gate
 from privacyidea.lib.conditional_access import engine as ca_engine
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
+from privacyidea.lib.counter import read as read_counter
 from privacyidea.lib.error import Error
+from privacyidea.lib.event import delete_event, set_event
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole, CountMode
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs,
@@ -97,6 +99,17 @@ def _counter_types(counter_type):
     the list-of-strings shape stored in ``ConditionalAccessPolicy.counter_types_to_track``."""
     values = counter_type if isinstance(counter_type, (list, tuple)) else [counter_type]
     return [str(t) for t in values]
+
+
+def _rewrite_realm_by_request_mangler(event_name: str, named_realm: str, rewritten_realm: str) -> int:
+    """
+    Configure a RequestMangler pre-handler on *event_name* that rewrites the realm *named_realm* to *rewritten_realm*
+    and replaces the user of the request with the one in the rewritten realm (``reset_user``). Returns its id.
+    """
+    return set_event(f"rewrite_{named_realm}", event=[event_name], handlermodule="RequestMangler", action="set",
+                     position="pre", conditions={},
+                     options={"parameter": "realm", "value": rewritten_realm, "match_parameter": "realm",
+                              "match_pattern": named_realm, "reset_user": "1"})
 
 
 def _seed_ip_spray(user: "User", event_type: AuthEventType, source_ip: str, n_users: int,
@@ -1780,7 +1793,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
         self.assertEqual("Blocked for a while.", body["detail"]["message"], body)
 
-    # --- identity rewriting (legacy setrealm / mangle) --------------------------
+    # --- identity rewriting (legacy setrealm / mangle, RequestMangler) ----------
 
     def _setrealm_to_realm2(self) -> User:
         """Rewrite realm1 -> realm2 for cornelius via the legacy AUTHZ setrealm action, and return the identity
@@ -1827,6 +1840,71 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         finally:
             remove_token("CA_HOTP2")
             delete_policy("ca_setrealm")
+
+    def test_user_rewritten_by_a_pre_event_handler_is_gated(self):
+        # The request names cornelius in realm2, whom nothing restricts, and a RequestMangler pre-handler rewrites it to
+        # the locked cornelius in realm1 after the gate checked the named user. The gate is run again for the new user,
+        # before the handler ordered after the rewrite and before the token logic.
+        self.setUp_user_realm2()
+        self.addCleanup(delete_event, _rewrite_realm_by_request_mangler("validate_check", self.realm2, self.realm1))
+        self.addCleanup(delete_event, set_event("count_checks", event=["validate_check"], handlermodule="Counter",
+                                                action="increase_counter", position="pre", ordering=1, conditions={},
+                                                options={"counter_name": "rewritten_checks"}))
+        counted_before = read_counter("rewritten_checks") or 0
+        # The rewritten user can authenticate with the token of cornelius in realm1, so the rejection below is the lock.
+        body = self._check({"user": "cornelius", "realm": self.realm2, "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+        self.assertEqual(counted_before + 1, read_counter("rewritten_checks"))
+
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        body = self._check({"user": "cornelius", "realm": self.realm2, "pass": "pin287082"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
+        self.assertEqual(counted_before + 1, read_counter("rewritten_checks"))
+        self.assertEqual(0, self._failcount())
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS, AuthEventType.USER_LOCKED],
+                                            same_attempt=False)
+        assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user, endpoint='/validate/check')
+
+    def test_deny_is_decided_for_the_user_a_pre_event_handler_rewrites_to(self):
+        # A DENY scoped to realm1 refuses a request that names realm2 and is rewritten to realm1.
+        self.setUp_user_realm2()
+        self.addCleanup(delete_event, _rewrite_realm_by_request_mangler("validate_check", self.realm2, self.realm1))
+        create_conditional_access_policy(
+            name="ca_deny_realm1", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
+            stages=[{"failure_threshold": 0,
+                     "actions": [{"action_type": str(ConditionalAccessAction.DENY), "action_value": None}]}],
+            conditions=[{"condition_type": str(ConditionType.USER_REALM),
+                         "operator": str(ConditionOperator.IN),
+                         "value": [self.realm1]}],
+            target=ConditionalAccessTarget.USER, priority=1)
+        body = self._check({"user": "cornelius", "realm": self.realm2, "pass": "pin755224"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(0, self._failcount())
+        entries = assert_authentication_log([AuthEventType.ACCESS_DENIED])
+        self.assertEqual(self.realm1, entries[AuthEventType.ACCESS_DENIED].realm)
+
+    def test_row_of_a_rewritten_user_carries_only_the_decision_for_that_user(self):
+        # Two dry-run DENY policies, one for the realm the request names and one for the realm it is rewritten to. The
+        # request authenticates the rewritten user, so its row records the decision for realm1 alone.
+        self.setUp_user_realm2()
+        self.addCleanup(delete_event, _rewrite_realm_by_request_mangler("validate_check", self.realm2, self.realm1))
+        for priority, realm in enumerate((self.realm1, self.realm2), start=1):
+            create_conditional_access_policy(
+                name=f"ca_dry_deny_{realm}", time_window_seconds=3600,
+                counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
+                stages=[{"failure_threshold": 0,
+                         "actions": [{"action_type": str(ConditionalAccessAction.DENY), "action_value": None}]}],
+                conditions=[{"condition_type": str(ConditionType.USER_REALM),
+                             "operator": str(ConditionOperator.IN),
+                             "value": [realm]}],
+                target=ConditionalAccessTarget.USER, dry_run=True, priority=priority)
+        body = self._check({"user": "cornelius", "realm": self.realm2, "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        self.assertListEqual([f"ca_dry_deny_{self.realm1}"],
+                             [outcome.policy_name for outcome in get_outcomes(entries[AuthEventType.LOGIN_SUCCESS].id)])
 
     # --- deferred write: one row per request, written at teardown ---------------
 
@@ -2418,6 +2496,24 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(401, res.status_code, res)
         message = res.json["result"]["error"]["message"]
         self.assertEqual("MSG-ALPHA MSG-BETA", message)
+
+    def test_user_rewritten_by_a_pre_event_handler_is_gated_at_auth(self):
+        # The login names cornelius in realm2, whom nothing restricts, and a RequestMangler pre-handler rewrites it to
+        # the locked cornelius in realm1 after the login gate checked the named user. The gate is run again for the
+        # new user and refuses the login with the lock's message.
+        self.setUp_user_realm2()
+        self.addCleanup(delete_event, _rewrite_realm_by_request_mangler("auth", self.realm2, self.realm1))
+        data = {"username": "cornelius", "realm": self.realm2, "password": "test"}
+        with self.app.test_request_context('/auth', method='POST', data=data):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(self.realm1, res.json["result"]["value"]["realm"], res.json)
+
+        self._lock_user(error_message="MSG-ALPHA")
+        with self.app.test_request_context('/auth', method='POST', data=data):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(401, res.status_code, res.json)
+        self.assertEqual("MSG-ALPHA", res.json["result"]["error"]["message"])
 
     def test_permanent_ip_block_is_reported_before_a_timed_lock(self):
         # Escalation case: the user is temp-locked (1 min) AND their IP is now
