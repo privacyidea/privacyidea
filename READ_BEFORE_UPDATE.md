@@ -173,9 +173,13 @@
   Such a token could never authenticate, because a service sends the service ID it belongs to and only a token with
   the same one answers for it. The service ID is now looked up among the defined ones — case-insensitively, the way
   the authentication compares it — and the request is refused with a 400 if it does not exist. **If you enroll these
-  tokens through the API**, from a script or through a container template, make sure the service IDs they pass are
-  defined under *Config -> Service IDs*. Rolling such a token over needs a defined service ID as well. Existing tokens
-  keep the service ID they were enrolled with.
+  tokens through a script**, make sure the service IDs it passes are defined under *Config -> Service IDs*. Rolling
+  such a token over needs a defined service ID as well. Existing tokens keep the service ID they were enrolled with.
+
+  **Review your container templates** under *Config -> Container Templates* for an application specific password
+  token: a container is created without any token that could not be initialized, and the reason is only written to
+  the log, so a template naming a service ID that is no longer defined silently produces a container with one token
+  missing.
 
 * **Token info that a token type maintains itself is no longer writable through the generic token info endpoints.** A
   token info entry can hold what a token authenticates with — the public key of a passkey, the server a RADIUS token

@@ -469,4 +469,60 @@ class RegistrationAndPasswordToken(MyApiTestCase):
 
         self.assertEqual("thunderbird", get_one_token(serial=serial).get_tokeninfo("service_id"))
         remove_token(serial)
+
+        # a JSON request body keeps the type the service ID was sent with
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           json={'user': 'cornelius',
+                                                 'type': 'applspec',
+                                                 'genkey': True,
+                                                 'service_id': 7},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code)
+            self.assertEqual("ERR905: The service ID '7' is not defined.",
+                             res.json.get("result").get("error").get("message"))
+
+        delete_policy("enroll")
+
+    def test_06_applspec_rollover_with_undefined_service_id_keeps_the_password(self):
+        """A rollover that names an undefined service ID is refused without giving the token a new password."""
+        set_policy("enroll", scope=SCOPE.ADMIN,
+                   action=["enrollAPPLSPEC", PolicyAction.ENROLLPIN, PolicyAction.TOKENROLLOVER])
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'user': 'cornelius',
+                                                 'type': 'applspec',
+                                                 'genkey': '1',
+                                                 'service_id': 'thunderbird',
+                                                 'pin': 'test'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            detail = res.json.get("detail")
+            serial = detail.get("serial")
+            password = detail.get("password")
+
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={'serial': serial,
+                                                 'type': 'applspec',
+                                                 'genkey': '1',
+                                                 'service_id': 'lightning'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code)
+            self.assertEqual(905, res.json.get("result").get("error").get("code"))
+
+        # the password of the token is the one the enrollment handed out
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "cornelius",
+                                                 "service_id": "thunderbird",
+                                                 "pass": quote(f"test{password}")}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual("ACCEPT", res.json.get("result").get("authentication"), res.json)
+
+        remove_token(serial)
         delete_policy("enroll")
