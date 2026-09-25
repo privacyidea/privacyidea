@@ -814,7 +814,9 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
-            user = result.get("value")[0]
+            # The resolver is in more than one realm, and lists its users once per realm, in the order the
+            # database returns the realms.
+            user = next(user for user in result.get("value") if user.get("realm") == self.realm1)
             # should contain all attributes including custom attributes since realm is resolved
             expected_attributes = {"userid", "username", "surname", "givenname", "email", "phone", "mobile",
                                    "description", "resolver", "editable", "realm",
