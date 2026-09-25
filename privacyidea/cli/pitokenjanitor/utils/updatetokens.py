@@ -51,7 +51,7 @@
 import click
 from flask.cli import with_appcontext
 from yaml import safe_load as yaml_safe_load
-from privacyidea.lib.error import ParameterError, ResourceNotFoundError
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.token import update_token_from_export
 import sys
 
@@ -70,10 +70,11 @@ def updatetokens(yaml_file):
     token_list = yaml_safe_load(yaml_file.read())
     for tok in token_list:
         serial = tok.get("serial")
+        if not serial:
+            sys.stderr.write("\nSkipping an entry without a serial.\n")
+            continue
         try:
             update_token_from_export(tok)
-        except ParameterError:
-            sys.stderr.write("\nSkipping an entry without a serial.\n")
         except ResourceNotFoundError:
             sys.stderr.write(f"\nCan not find token {serial}. Not updating.\n")
         except Exception as e:

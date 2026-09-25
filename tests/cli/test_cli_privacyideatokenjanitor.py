@@ -163,13 +163,16 @@ class TokenJanitorUpdateTestCase(CliTestCase):
         # stdout only carries the export, so it can be read as YAML
         return yaml.safe_load(result.stdout)
 
-    def run_update(self, token_list: list) -> None:
+    def invoke_update(self, token_list: list) -> Result:
         runner = self.app.test_cli_runner()
         with tempfile.TemporaryDirectory() as directory:
             file_name = os.path.join(directory, "tokens.yaml")
             with open(file_name, "w") as yaml_file:
                 yaml_file.write(yaml.safe_dump(token_list))
-            result = runner.invoke(pi_token_janitor, ["update", file_name])
+            return runner.invoke(pi_token_janitor, ["update", file_name])
+
+    def run_update(self, token_list: list) -> None:
+        result = self.invoke_update(token_list)
         self.assertEqual(0, result.exit_code, result.output)
         self.assertNotIn("Failed to update token", result.output)
 
@@ -225,12 +228,7 @@ class TokenJanitorUpdateTestCase(CliTestCase):
         entry_without_serial["otpkey"] = "00" * 20
         entry_without_owner = {key: value for key, value in token_list[0].items() if key != "owner"}
 
-        runner = self.app.test_cli_runner()
-        with tempfile.TemporaryDirectory() as directory:
-            file_name = os.path.join(directory, "tokens.yaml")
-            with open(file_name, "w") as yaml_file:
-                yaml_file.write(yaml.safe_dump([entry_without_serial, entry_without_owner]))
-            result = runner.invoke(pi_token_janitor, ["update", file_name])
+        result = self.invoke_update([entry_without_serial, entry_without_owner])
         self.assertEqual(0, result.exit_code, result.output)
         self.assertIn("Skipping an entry without a serial.", result.output)
         self.assertIn("Updated token UPDATEGUARD.", result.output)
@@ -246,3 +244,56 @@ class TokenJanitorUpdateTestCase(CliTestCase):
         self.run_update(token_list)
 
         self.assertEqual("hardware", get_one_token(serial="UPDATEKIND").get_tokeninfo("tokenkind"))
+
+    def test_06_update_reports_an_unknown_serial_and_goes_on(self) -> None:
+        self.create_used_token("UPDATEFOUND", count=3, failcount=0)
+        token_list = self.export_yaml("UPDATEFOUND")
+        unknown_entry = {**token_list[0], "serial": "UPDATENOTFOUND"}
+        next_entry = {**token_list[0], "description": "updated from the export"}
+
+        result = self.invoke_update([unknown_entry, next_entry])
+
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn("Can not find token UPDATENOTFOUND. Not updating.", result.stderr)
+        self.assertNotIn("UPDATENOTFOUND", result.stdout)
+        self.assertIsNone(get_one_token(serial="UPDATENOTFOUND", silent_fail=True))
+        # The entry after the unknown serial is still written to its token
+        self.assertIn("Updated token UPDATEFOUND.", result.stdout)
+        self.assertEqual("updated from the export", get_one_token(serial="UPDATEFOUND").token.description)
+
+    def test_07_update_reports_an_entry_the_token_does_not_take_and_goes_on(self) -> None:
+        self.create_used_token("UPDATEFAILING", count=12, failcount=4)
+        self.create_used_token("UPDATEAFTERFAILURE", count=0, failcount=0)
+        failing_entry = self.export_yaml("UPDATEFAILING")[0]
+        # An OTP length which is not a number makes the update of the token fail
+        failing_entry["otplen"] = "six"
+        next_entry = self.export_yaml("UPDATEAFTERFAILURE")[0]
+        next_entry["description"] = "updated from the export"
+
+        result = self.invoke_update([failing_entry, next_entry])
+
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn("Failed to update token UPDATEFAILING (invalid literal for int() with base 10: 'six').",
+                      result.stderr)
+        self.assertNotIn("UPDATEFAILING", result.stdout)
+        # The token keeps its OTP length and its counters
+        token = get_one_token(serial="UPDATEFAILING")
+        self.assertEqual(6, token.token.otplen)
+        self.assertEqual(12, token.token.count)
+        self.assertEqual(4, token.token.failcount)
+        # The entry after the failed one is still written to its token
+        self.assertIn("Updated token UPDATEAFTERFAILURE.", result.stdout)
+        self.assertEqual("updated from the export", get_one_token(serial="UPDATEAFTERFAILURE").token.description)
+
+    def test_08_update_reports_a_parameter_error_of_an_entry_with_a_serial_as_failure(self) -> None:
+        self.create_used_token("UPDATEPARAM", count=3, failcount=0)
+        entry = self.export_yaml("UPDATEPARAM")[0]
+        entry["counter"] = "many"
+
+        result = self.invoke_update([entry])
+
+        self.assertEqual(0, result.exit_code, result.output)
+        self.assertIn("Failed to update token UPDATEPARAM (", result.stderr)
+        self.assertIn("The counter 'many' of the entry is not a number", result.stderr)
+        self.assertNotIn("Skipping an entry without a serial.", result.stderr)
+        self.assertEqual(3, get_one_token(serial="UPDATEPARAM").token.count)

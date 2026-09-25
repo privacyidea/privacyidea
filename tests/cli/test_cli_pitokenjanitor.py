@@ -861,6 +861,25 @@ class TestPiTokenJanitorActions:
         key = re.search(r"The key to import the tokens is:\s+(\S+)", result.stderr).group(1)
         assert key_file.read_text() == key
 
+    def test_export_pi_format_lists_the_tokens_that_could_not_be_exported(self, app, tokens):
+        """
+        Tests that the export in the 'pi' format leaves out the tokens whose type does not support the export and
+        names them on stderr, while stdout only contains the export of the other tokens.
+        """
+        for serial in ("MOTP0001", "MOTP0002"):
+            init_token({"serial": serial, "type": "motp", "otpkey": "1234567890abcdef", "motppin": "1234"})
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["find", "export", "--format", "pi"])
+        assert result.exit_code == 0, result.output
+        assert "Successfully exported 3 tokens." in result.stderr
+        stderr_lines = result.stderr.splitlines()
+        heading_index = stderr_lines.index("Failed to export 2 tokens:")
+        assert sorted(stderr_lines[heading_index + 1:heading_index + 3]) == ["MOTP0001", "MOTP0002"]
+        assert stderr_lines[heading_index + 3] == "Check the logfile for the cause of the failures."
+        key = re.search(r"The key to import the tokens is:\s+(\S+)", result.stderr).group(1)
+        exported_tokens = json.loads(Fernet(key).decrypt(result.stdout.strip()))
+        assert sorted(token["serial"] for token in exported_tokens) == ["HOTP0001", "HOTP0002", "TOTP0001"]
+
     def test_export_recognizes_stdout_by_name(self, app, tmp_path):
         """
         Tests that the export recognizes stdout by the name of the stream, also when it is a wrapper and not
@@ -941,6 +960,75 @@ class TestPiTokenJanitorActions:
         assert get_one_token(serial="HOTP0002").token.count == 70
         assert get_one_token(serial="TOTP0001").token.count == 30
         assert get_one_token(serial="TOTP0001").token.failcount == 10
+
+    def test_update_reports_an_unknown_serial_and_goes_on(self, app, tokens, tmp_path):
+        """
+        Tests that an entry whose serial belongs to no token is reported on stderr and creates no token, and that
+        the entry after it is still written to its token.
+        """
+        unknown_entry = get_one_token(serial="HOTP0001")._to_dict()
+        unknown_entry["serial"] = "UNKNOWN0001"
+        next_entry = get_one_token(serial="HOTP0002")._to_dict()
+        next_entry["description"] = "updated from the export"
+        yaml_file = tmp_path / "tokens.yaml"
+        yaml_file.write_text(yaml.safe_dump([unknown_entry, next_entry]))
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["update", str(yaml_file)])
+        assert result.exit_code == 0, result.output
+        assert "Can not find token UNKNOWN0001. Not updating." in result.stderr
+        assert "UNKNOWN0001" not in result.stdout
+        assert get_one_token(serial="UNKNOWN0001", silent_fail=True) is None
+        assert "Updated token HOTP0002." in result.stdout
+        assert get_one_token(serial="HOTP0002").token.description == "updated from the export"
+
+    def test_update_reports_an_entry_the_token_does_not_take_and_goes_on(self, app, tokens, tmp_path):
+        """
+        Tests that an entry the token cannot be updated with, here one with an OTP length that is not a number, is
+        reported on stderr with the cause, that the token keeps its OTP length and its counters, and that the entry
+        after it is still written to its token.
+        """
+        token = get_one_token(serial="HOTP0001")
+        token.token.count = 50
+        token.save()
+        failing_entry = token._to_dict()
+        failing_entry["otplen"] = "six"
+        next_entry = get_one_token(serial="HOTP0002")._to_dict()
+        next_entry["description"] = "updated from the export"
+        yaml_file = tmp_path / "tokens.yaml"
+        yaml_file.write_text(yaml.safe_dump([failing_entry, next_entry]))
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["update", str(yaml_file)])
+        assert result.exit_code == 0, result.output
+        assert "Failed to update token HOTP0001 (invalid literal for int() with base 10: 'six')." in result.stderr
+        assert "HOTP0001" not in result.stdout
+        token = get_one_token(serial="HOTP0001")
+        assert token.token.otplen == 6
+        assert token.token.count == 50
+        assert token.token.failcount == 5
+        assert "Updated token HOTP0002." in result.stdout
+        assert get_one_token(serial="HOTP0002").token.description == "updated from the export"
+
+    def test_update_reports_a_parameter_error_of_an_entry_with_a_serial_as_failure(self, app, tokens, tmp_path):
+        """
+        Tests that an entry with a serial that fails with a parameter error, here one whose counter is not a number,
+        is reported as a failed update of its token and not as an entry without a serial, and that the token is not
+        changed.
+        """
+        entry = get_one_token(serial="HOTP0001")._to_dict()
+        entry["counter"] = "many"
+        entry["description"] = "updated from the export"
+        yaml_file = tmp_path / "tokens.yaml"
+        yaml_file.write_text(yaml.safe_dump([entry]))
+
+        runner = app.test_cli_runner()
+        result = runner.invoke(cli, ["update", str(yaml_file)])
+        assert result.exit_code == 0, result.output
+        assert "Failed to update token HOTP0001 (" in result.stderr
+        assert "The counter 'many' of the entry is not a number" in result.stderr
+        assert "Skipping an entry without a serial." not in result.stderr
+        assert get_one_token(serial="HOTP0001").token.description != "updated from the export"
 
     def test_delete_more_tokens_than_chunksize(self, app, tokens):
         """

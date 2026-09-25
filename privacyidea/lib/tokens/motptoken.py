@@ -245,7 +245,7 @@ class MotpTokenClass(TokenClass):
 
         return res
 
-    def export_token(self) -> dict:
+    def export_token(self, export_user: bool = False) -> dict:
         """
         Export for this token is not supported.
         """

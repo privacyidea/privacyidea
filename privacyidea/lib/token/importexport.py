@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import (Token)
+from privacyidea.models import Token, db
 
 from privacyidea.lib.token.query import create_tokenclass_object, get_one_token
 
@@ -145,9 +145,12 @@ def update_token_from_export(token_data: dict) -> str:
     the OTP counter keeps its value or takes the counter of the entry, if that is higher. A lower OTP counter would
     make OTP values the token has already used valid again. The owner of the entry is ignored.
 
+    If update() fails, the changes it has not committed yet are discarded. update() commits in between, e.g. when it
+    writes token info, so the changes committed before the error remain.
+
     :param token_data: the entry of the export
     :return: the serial of the updated token
-    :raises ParameterError: if the entry has no serial
+    :raises ParameterError: if the entry has no serial or its counter is not a number
     :raises ResourceNotFoundError: if there is no token with the serial of the entry
     """
     serial = token_data.get("serial")
@@ -160,11 +163,18 @@ def update_token_from_export(token_data: dict) -> str:
     fail_count = token.token.failcount
     token_kind = token.get_tokeninfo("tokenkind")
     exported_otp_count = token_data.get("counter")
+    if exported_otp_count not in (None, ""):
+        # Checked before the token is changed, the counter is put back after the update
+        try:
+            otp_count = max(otp_count, int(exported_otp_count))
+        except (TypeError, ValueError):
+            raise ParameterError(f"The counter {exported_otp_count!r} of the entry is not a number")
     try:
         token.update(token_data)
+    except Exception:
+        db.session.rollback()
+        raise
     finally:
-        if exported_otp_count not in (None, ""):
-            otp_count = max(otp_count, int(exported_otp_count))
         token.token.count = otp_count
         token.token.failcount = fail_count
         if token_kind:
