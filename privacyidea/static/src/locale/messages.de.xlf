@@ -1564,7 +1564,7 @@
       </trans-unit>
       <trans-unit id="periodicTask.noPeriodicTasks" datatype="html">
         <source>No periodic tasks yet</source>
-        <target state="new">Keine periodischen Aufgaben gefunden.</target>
+        <target>Noch keine periodischen Aufgaben</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task.component.html</context>
           <context context-type="linenumber">257</context>
@@ -4368,7 +4368,7 @@
       </trans-unit>
       <trans-unit id="container.successfullyDeleted" datatype="html">
         <source>Successfully deleted <x id="COUNT" equiv-text="selectedContainers.length"/> containers.</source>
-        <target state="new">Erfolgreich <x id="COUNT" equiv-text="selectedContainers.length"/> Container gelöscht.</target>
+        <target><x id="COUNT" equiv-text="selectedContainers.length"/> Container erfolgreich gelöscht.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/container/container-table/container-table-actions/container-table-actions.component.ts</context>
           <context context-type="linenumber">81</context>
@@ -4980,7 +4980,7 @@
       </trans-unit>
       <trans-unit id="event.searchConditions" datatype="html">
         <source>Search conditions...</source>
-        <target state="new">Bedingung suchen ...</target>
+        <target>Bedingungen suchen ...</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/event/event-edit-page/tabs/event-conditions-tab/event-conditions-tab.component.html</context>
           <context context-type="linenumber">68</context>
@@ -5212,7 +5212,7 @@
       </trans-unit>
       <trans-unit id="caConnector.deleteCaConnectors" datatype="html">
         <source>Delete CA Connectors</source>
-        <target state="new">CA-Connector löschen</target>
+        <target>CA-Connectoren löschen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.ts</context>
           <context context-type="linenumber">127</context>
@@ -5904,7 +5904,7 @@
       </trans-unit>
       <trans-unit id="piServer.deletePrivacyideaServers" datatype="html">
         <source>Delete privacyIDEA Servers</source>
-        <target state="new">privacyIDEA-Server löschen</target>
+        <target>privacyIDEA-Server löschen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.ts</context>
           <context context-type="linenumber">140</context>
@@ -6100,7 +6100,7 @@
       </trans-unit>
       <trans-unit id="radiusServer.deleteRadiusServers" datatype="html">
         <source>Delete RADIUS Servers</source>
-        <target state="new">RADIUS-Server löschen</target>
+        <target>RADIUS-Server löschen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.ts</context>
           <context context-type="linenumber">139</context>
@@ -6196,7 +6196,7 @@
       </trans-unit>
       <trans-unit id="serviceId.deleteServiceIds" datatype="html">
         <source>Delete Service IDs</source>
-        <target state="new">Service-ID löschen</target>
+        <target>Service-IDs löschen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/service-ids/service-ids.component.ts</context>
           <context context-type="linenumber">124</context>
@@ -6328,7 +6328,7 @@
       </trans-unit>
       <trans-unit id="smsGateway.deleteSmsGateways" datatype="html">
         <source>Delete SMS Gateways</source>
-        <target state="new">SMS-Gateway löschen</target>
+        <target>SMS-Gateways löschen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/sms-gateways.component.ts</context>
           <context context-type="linenumber">135</context>
@@ -6508,7 +6508,7 @@
       </trans-unit>
       <trans-unit id="smtpServer.deleteSmtpServers" datatype="html">
         <source>Delete SMTP Servers</source>
-        <target state="new">SMTP-Server löschen</target>
+        <target>SMTP-Server löschen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.ts</context>
           <context context-type="linenumber">122</context>
@@ -6552,7 +6552,7 @@
       </trans-unit>
       <trans-unit id="tokenGroup.deleteTokenGroups" datatype="html">
         <source>Delete Token Groups</source>
-        <target state="new">Tokengruppe löschen</target>
+        <target>Tokengruppen löschen</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/tokengroups/tokengroups.component.ts</context>
           <context context-type="linenumber">133</context>
@@ -8579,7 +8579,7 @@
       </trans-unit>
       <trans-unit id="welcome.firstWeWouldLike" datatype="html">
         <source><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>First, we would like to give you some background information on privacyIDEA.<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> privacyIDEA is an <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Enterprise Level<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/> Multi Factor Authentication System. It is open source. The core developers are employed at NetKnights GmbH, Germany. NetKnights provides the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> including <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support and Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>. Moreover, NetKnights provides services, consultancy and paid programming of new features. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></source>
-        <target state="new"><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Zunächst möchten wir Ihnen einige Hintergrundinformationen zu privacyIDEA geben.<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> privacyIDEA ist ein <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Enterprise-Level<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>-Multi-Faktor-Authentifizierungssystem. Es ist Open Source. Die Kernentwickler sind bei der NetKnights GmbH in Deutschland angestellt. NetKnights stellt die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> einschließlich <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support und Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/> bereit. Darüber hinaus bietet NetKnights Dienstleistungen, Beratung und die bezahlte Programmierung neuer Funktionen an. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></target>
+        <target><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Zunächst möchten wir Ihnen einige Hintergrundinformationen zu privacyIDEA geben.<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> privacyIDEA ist ein <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Enterprise-Level<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>-Multi-Faktor-Authentifizierungssystem. Es ist Open Source. Die Kernentwickler sind bei der NetKnights GmbH in Deutschland angestellt. NetKnights stellt die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> einschließlich <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support und Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/> bereit. Darüber hinaus bietet NetKnights Dienstleistungen, Beratung und die bezahlte Programmierung neuer Funktionen an. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
           <context context-type="linenumber">10</context>
@@ -8611,7 +8611,7 @@
       </trans-unit>
       <trans-unit id="welcome.accordingAgplv3" datatype="html">
         <source>According to the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://github.com/privacyidea/privacyidea/blob/master/LICENSE&quot; target=&quot;_blank&quot; &gt;"/>AGPLv3<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/></source>
-        <target state="new">Gemäß der <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://github.com/privacyidea/privacyidea/blob/master/LICENSE&quot; target=&quot;_blank&quot; &gt;"/>AGPLv3 <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+        <target>Gemäß der <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://github.com/privacyidea/privacyidea/blob/master/LICENSE&quot; target=&quot;_blank&quot; &gt;"/>AGPLv3 <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
           <context context-type="linenumber">56</context>
@@ -8627,7 +8627,7 @@
       </trans-unit>
       <trans-unit id="welcome.addedValuesPrivacyidea" datatype="html">
         <source>The added values of the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> are:</source>
-        <target state="new">Die Mehrwerte der <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> sind:</target>
+        <target>Die Mehrwerte der <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> sind:</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
           <context context-type="linenumber">69</context>
@@ -8635,7 +8635,7 @@
       </trans-unit>
       <trans-unit id="welcome.supportService" datatype="html">
         <source><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> Support and <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/leistungen/service-level-agreements/&quot; target=&quot;_blank&quot; &gt;"/>Service Level Agreements by NetKnights<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/>, Germany. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Stable enterprise packages for Ubuntu and RHEL allow for an easy update and secure operations.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> An exclusive <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Appliance<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>-Tool, which allows easy setup of RADIUS clients, MySQL replications, backup and restore... <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Exclusive timely news and bug reports.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Depending on the support level you get help with updates and yearly consultancy.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> By buying the <x id="START_LINK_1" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> you ensure that professional developers can work full time on privacyIDEA, add new features and fix bugs in a timely manner. In addition, you allow for external services like code audits. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/></source>
-        <target state="new"><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> Support und <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/leistungen/service-level-agreements/&quot; target=&quot;_blank&quot; &gt;"/>Service Level Agreements durch NetKnights <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>, Deutschland. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Stabile Enterprise-Pakete für Ubuntu und RHEL ermöglichen einfache Updates und einen sicheren Betrieb.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> Ein exklusives <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Appliance<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>-Tool, das die einfache Einrichtung von RADIUS-Clients, MySQL-Replikationen, Backup und Wiederherstellung ermöglicht... <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Exklusive aktuelle Neuigkeiten und Fehlerberichte.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Je nach Support-Level erhalten Sie Hilfe bei Updates und jährliche Beratung.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> Durch den Kauf der <x id="START_LINK_1" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> stellen Sie sicher, dass professionelle Entwickler in Vollzeit an privacyIDEA arbeiten, neue Funktionen hinzufügen und Fehler zeitnah beheben können. Zudem ermöglichen Sie externe Dienstleistungen wie Code-Audits. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/></target>
+        <target><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> Support und <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/leistungen/service-level-agreements/&quot; target=&quot;_blank&quot; &gt;"/>Service Level Agreements durch NetKnights <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/>, Deutschland. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Stabile Enterprise-Pakete für Ubuntu und RHEL ermöglichen einfache Updates und einen sicheren Betrieb.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> Ein exklusives <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Appliance<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>-Tool, das die einfache Einrichtung von RADIUS-Clients, MySQL-Replikationen, Backup und Wiederherstellung ermöglicht... <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Exklusive aktuelle Neuigkeiten und Fehlerberichte.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/>Je nach Support-Level erhalten Sie Hilfe bei Updates und jährliche Beratung.<x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/><x id="START_LIST_ITEM" ctype="x-li" equiv-text="&lt;li&gt;"/> Durch den Kauf der <x id="START_LINK_1" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> stellen Sie sicher, dass professionelle Entwickler in Vollzeit an privacyIDEA arbeiten, neue Funktionen hinzufügen und Fehler zeitnah beheben können. Zudem ermöglichen Sie externe Dienstleistungen wie Code-Audits. <x id="CLOSE_LIST_ITEM" ctype="x-li" equiv-text="&lt;/li&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
           <context context-type="linenumber">79</context>
@@ -8643,7 +8643,7 @@
       </trans-unit>
       <trans-unit id="welcome.askPrivacyidea" datatype="html">
         <source><x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/unternehmen/kontakt/&quot; target=&quot;_blank&quot; &gt;"/>Ask for the privacyIDEA Enterprise Edition, now!<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/></source>
-        <target state="new"><x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/unternehmen/kontakt/&quot; target=&quot;_blank&quot; &gt;"/>Fragen Sie jetzt nach der privacyIDEA Enterprise Edition! <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
+        <target><x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/unternehmen/kontakt/&quot; target=&quot;_blank&quot; &gt;"/>Fragen Sie jetzt nach der privacyIDEA Enterprise Edition! <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
           <context context-type="linenumber">106</context>
@@ -8667,7 +8667,7 @@
       </trans-unit>
       <trans-unit id="welcome.youUsingPrivacyidea" datatype="html">
         <source><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/><x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>You are using privacyIDEA with more than 50 users.<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Thank you for your trust!<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> For the productive enterprise use, we recommend the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/>. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> NetKnights provides the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> including <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support and Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/>. Moreover, NetKnights provides services, consultancy and paid programming of new features. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></source>
-        <target state="new"><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/><x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Sie verwenden privacyIDEA mit mehr als 50 Benutzern.<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Vielen Dank für Ihr Vertrauen!<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> Für den produktiven Enterprise-Einsatz empfehlen wir die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> NetKnights stellt die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> einschließlich <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support und Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/> bereit. Darüber hinaus bietet NetKnights Dienstleistungen, Beratung und die bezahlte Programmierung neuer Funktionen an. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></target>
+        <target><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/><x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Sie verwenden privacyIDEA mit mehr als 50 Benutzern.<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/>Vielen Dank für Ihr Vertrauen!<x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> Für den produktiven Enterprise-Einsatz empfehlen wir die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition. <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/><x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/><x id="START_PARAGRAPH" ctype="x-p" equiv-text="&lt;p&gt;"/> NetKnights stellt die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;https://netknights.it/en/produkte/privacyidea/&quot; target=&quot;_blank&quot; &gt;"/>privacyIDEA Enterprise Edition <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> einschließlich <x id="START_BOLD_TEXT" ctype="x-b" equiv-text="&lt;b&gt;"/>Support und Service Level Agreements<x id="CLOSE_BOLD_TEXT" ctype="x-b" equiv-text="&lt;/b&gt;"/> bereit. Darüber hinaus bietet NetKnights Dienstleistungen, Beratung und die bezahlte Programmierung neuer Funktionen an. <x id="CLOSE_PARAGRAPH" ctype="x-p" equiv-text="&lt;/p&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/welcome-dialog/welcome-dialog.component.html</context>
           <context context-type="linenumber">127</context>
@@ -9027,7 +9027,7 @@
       </trans-unit>
       <trans-unit id="token.tokenSerialLost" datatype="html">
         <source>Token <x id="SERIAL" equiv-text="this.data.tokenSerial()"/> is lost?</source>
-        <target state="new">Token <x id="SERIAL" equiv-text="this.data.tokenSerial()"/> ist verloren?</target>
+        <target>Ist der Token <x id="SERIAL" equiv-text="this.data.tokenSerial()"/> verloren?</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.ts</context>
           <context context-type="linenumber">48</context>
@@ -9035,7 +9035,7 @@
       </trans-unit>
       <trans-unit id="token.tokenMarkedAs" datatype="html">
         <source>Token marked as lost: <x id="SERIAL" equiv-text="this.data.tokenSerial()"/></source>
-        <target state="new">Token als verloren markiert:</target>
+        <target>Token als verloren markiert: <x id="SERIAL" equiv-text="this.data.tokenSerial()"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/lost-token/lost-token.component.ts</context>
           <context context-type="linenumber">70</context>
@@ -9159,7 +9159,7 @@
       </trans-unit>
       <trans-unit id="token.rolloverToken" datatype="html">
         <source>Rollover Token <x id="SERIAL" equiv-text="this.token()?.serial || &quot;&quot;"/></source>
-        <target state="new">Token-Rollover</target>
+        <target>Rollover für Token <x id="SERIAL" equiv-text="this.token()?.serial || &quot;&quot;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/token-rollover/token-rollover.component.ts</context>
           <context context-type="linenumber">63</context>
@@ -9559,7 +9559,7 @@
       </trans-unit>
       <trans-unit id="token.authenticationSuccessful" datatype="html">
         <source>Authentication successful. You would have been logged in as: <x id="USERNAME" equiv-text="username"/></source>
-        <target state="new">Authentifizierung erfolgreich. Sie wären angemeldet worden als:</target>
+        <target>Authentifizierung erfolgreich. Sie wären angemeldet worden als: <x id="USERNAME" equiv-text="username"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.ts</context>
           <context context-type="linenumber">552</context>
@@ -9983,7 +9983,7 @@
       </trans-unit>
       <trans-unit id="token.eMailTokensWork" datatype="html">
         <source>For E-Mail tokens to work properly you need to set the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to Email token configuration&quot; i18n-aria-label=&quot;@@token.goEmailTokenConfiguration&quot; (click)=&quot;goToEmailConfig()&quot; (keydown)=&quot;onEmailConfigKeydown($event)&quot;&gt;"/> Email Token Configuration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/>!</source>
-        <target state="new">Damit E-Mail-Token korrekt funktionieren, müssen Sie die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to Email token configuration&quot; i18n-aria-label (click)=&quot;goToEmailConfig()&quot; (keydown)=&quot;onEmailConfigKeydown($event)&quot;&gt;"/>E-Mail-Token-Konfiguration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> festlegen!</target>
+        <target>Damit E-Mail-Token korrekt funktionieren, müssen Sie die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to Email token configuration&quot; i18n-aria-label (click)=&quot;goToEmailConfig()&quot; (keydown)=&quot;onEmailConfigKeydown($event)&quot;&gt;"/>E-Mail-Token-Konfiguration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> festlegen!</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-email/enroll-email.component.html</context>
           <context context-type="linenumber">25</context>
@@ -10175,7 +10175,7 @@
       </trans-unit>
       <trans-unit id="token.passwordRequired" datatype="html">
         <source>Password is required</source>
-        <target state="new">Passwort ist erforderlich</target>
+        <target>Passwort ist erforderlich</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.ts</context>
           <context context-type="linenumber">85</context>
@@ -10231,7 +10231,7 @@
       </trans-unit>
       <trans-unit id="token.passkeyCredential" datatype="html">
         <source>Passkey credential creation failed: <x id="MESSAGE" equiv-text="browserOrCredentialError.message"/></source>
-        <target state="new">Erstellung der Passkey-Anmeldedaten fehlgeschlagen: <x id="MESSAGE" equiv-text="browserOrCredentialError.message"/></target>
+        <target>Erstellung der Passkey-Anmeldedaten fehlgeschlagen: <x id="MESSAGE" equiv-text="browserOrCredentialError.message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-passkey/enroll-passkey.component.ts</context>
           <context context-type="linenumber">208</context>
@@ -10247,7 +10247,7 @@
       </trans-unit>
       <trans-unit id="token.failedDeleteToken" datatype="html">
         <source>Failed to delete token <x id="SERIAL" equiv-text="detail.serial"/> after registration error. Please check manually.</source>
-        <target state="new">Token <x id="SERIAL" equiv-text="detail.serial"/> konnte nach einem Registrierungsfehler nicht gelöscht werden. Bitte prüfen Sie es manuell.</target>
+        <target>Token <x id="SERIAL" equiv-text="detail.serial"/> konnte nach einem Registrierungsfehler nicht gelöscht werden. Bitte prüfen Sie es manuell.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-passkey/enroll-passkey.component.ts</context>
           <context context-type="linenumber">250</context>
@@ -10255,7 +10255,7 @@
       </trans-unit>
       <trans-unit id="token.tokenDeletedDue" datatype="html">
         <source>Token <x id="SERIAL" equiv-text="detail.serial"/> deleted due to registration error.</source>
-        <target state="new">Token <x id="SERIAL" equiv-text="detail.serial"/> wurde aufgrund eines Registrierungsfehlers gelöscht.</target>
+        <target>Token <x id="SERIAL" equiv-text="detail.serial"/> wurde aufgrund eines Registrierungsfehlers gelöscht.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-passkey/enroll-passkey.component.ts</context>
           <context context-type="linenumber">255</context>
@@ -10263,7 +10263,7 @@
       </trans-unit>
       <trans-unit id="token.enableQuestionnaire" datatype="html">
         <source>To enable questionnaire token enrollment, you need to set up the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to Questionnaire token configuration&quot; i18n-aria-label=&quot;@@token.goQuestionnaire&quot; (click)=&quot;goToQuestionConfig()&quot; (keydown)=&quot;onQuestionConfigKeydown($event)&quot;&gt;"/> Questionnaire Token Configuration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/>!</source>
-        <target state="new">Um die Ausrollung von Fragebogen-Token zu aktivieren, müssen Sie die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to Questionnaire token configuration&quot; i18n-aria-label (click)=&quot;goToQuestionConfig()&quot; (keydown)=&quot;onQuestionConfigKeydown($event)&quot;&gt;"/>Fragebogen-Token-Konfiguration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> einrichten!</target>
+        <target>Um das Ausrollen von Fragebogen-Token zu aktivieren, müssen Sie die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to Questionnaire token configuration&quot; i18n-aria-label (click)=&quot;goToQuestionConfig()&quot; (keydown)=&quot;onQuestionConfigKeydown($event)&quot;&gt;"/>Fragebogen-Token-Konfiguration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> einrichten!</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-questionnaire/enroll-question.component.html</context>
           <context context-type="linenumber">25</context>
@@ -10303,7 +10303,7 @@
       </trans-unit>
       <trans-unit id="token.easeEnrollmentRadius" datatype="html">
         <source>To ease the enrollment of RADIUS tokens you can set default values in the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to RADIUS token configuration&quot; i18n-aria-label=&quot;@@token.goRadiusToken&quot; (click)=&quot;goToRadiusConfig()&quot; (keydown)=&quot;onRadiusConfigKeydown($event)&quot;&gt;"/> RADIUS Token Configuration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/>!</source>
-        <target state="new">Um die Ausrollung von RADIUS-Token zu erleichtern, können Sie Standardwerte in der <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to RADIUS token configuration&quot; i18n-aria-label (click)=&quot;goToRadiusConfig()&quot; (keydown)=&quot;onRadiusConfigKeydown($event)&quot;&gt;"/>RADIUS-Token-Konfiguration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> festlegen!</target>
+        <target>Um das Ausrollen von RADIUS-Token zu erleichtern, können Sie Standardwerte in der <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to RADIUS token configuration&quot; i18n-aria-label (click)=&quot;goToRadiusConfig()&quot; (keydown)=&quot;onRadiusConfigKeydown($event)&quot;&gt;"/>RADIUS-Token-Konfiguration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> festlegen!</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">24</context>
@@ -10443,7 +10443,7 @@
       </trans-unit>
       <trans-unit id="token.easeEnrollment" datatype="html">
         <source>To ease the enrollment you can set default values in the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to SMS token configuration&quot; i18n-aria-label=&quot;@@token.goSmsTokenConfiguration&quot; (click)=&quot;goToSmsConfig()&quot; (keydown)=&quot;onSmsConfigKeydown($event)&quot;&gt;"/> SMS Token Configuration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/>!</source>
-        <target state="new">Um die Ausrollung zu erleichtern, können Sie Standardwerte in der <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to SMS token configuration&quot; i18n-aria-label (click)=&quot;goToSmsConfig()&quot; (keydown)=&quot;onSmsConfigKeydown($event)&quot;&gt;"/>SMS-Token-Konfiguration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> festlegen!</target>
+        <target>Um das Ausrollen zu erleichtern, können Sie Standardwerte in der <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to SMS token configuration&quot; i18n-aria-label (click)=&quot;goToSmsConfig()&quot; (keydown)=&quot;onSmsConfigKeydown($event)&quot;&gt;"/>SMS-Token-Konfiguration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> festlegen!</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
           <context context-type="linenumber">24</context>
@@ -10627,7 +10627,7 @@
       </trans-unit>
       <trans-unit id="token.webauthnCredential" datatype="html">
         <source>WebAuthn credential creation failed: <x id="MESSAGE" equiv-text="message || &quot;Unknown error&quot;"/></source>
-        <target state="new">Erstellung der WebAuthn-Anmeldedaten fehlgeschlagen: <x id="MESSAGE" equiv-text="message || &quot;Unknown error&quot;"/></target>
+        <target>Erstellung der WebAuthn-Anmeldedaten fehlgeschlagen: <x id="MESSAGE" equiv-text="message || &quot;Unknown error&quot;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component.ts</context>
           <context context-type="linenumber">201</context>
@@ -10655,7 +10655,7 @@
       </trans-unit>
       <trans-unit id="token.webauthnFinalization" datatype="html">
         <source>WebAuthn finalization failed: <x id="MESSAGE" equiv-text="message || error"/></source>
-        <target state="new">WebAuthn-Abschluss fehlgeschlagen: <x id="MESSAGE" equiv-text="message || error"/></target>
+        <target>WebAuthn-Abschluss fehlgeschlagen: <x id="MESSAGE" equiv-text="message || error"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component.ts</context>
           <context context-type="linenumber">290</context>
@@ -10663,7 +10663,7 @@
       </trans-unit>
       <trans-unit id="token.yubicoTokensWork" datatype="html">
         <source>For Yubico tokens to work properly you need to set the <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to Yubico token configuration&quot; i18n-aria-label=&quot;@@token.goYubicoToken&quot; (click)=&quot;goToYubicoConfig()&quot; (keydown)=&quot;onYubicoConfigKeydown($event)&quot;&gt;"/> Yubico Token Configuration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/>!</source>
-        <target state="new">Damit Yubico-Token korrekt funktionieren, müssen Sie die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to Yubico token configuration&quot; i18n-aria-label (click)=&quot;goToYubicoConfig()&quot; (keydown)=&quot;onYubicoConfigKeydown($event)&quot;&gt;"/>Yubico-Token-Konfiguration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> festlegen!</target>
+        <target>Damit Yubico-Token korrekt funktionieren, müssen Sie die <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; aria-label=&quot;Go to Yubico token configuration&quot; i18n-aria-label (click)=&quot;goToYubicoConfig()&quot; (keydown)=&quot;onYubicoConfigKeydown($event)&quot;&gt;"/>Yubico-Token-Konfiguration <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> festlegen!</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubico/enroll-yubico.component.html</context>
           <context context-type="linenumber">25</context>
@@ -10783,7 +10783,7 @@
       </trans-unit>
       <trans-unit id="token.tokenWasSuccessfullyEnrolled" datatype="html">
         <source>The token was successfully enrolled with serial number <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; [class.link-inert]=&quot;navigationBlocked()&quot; [attr.aria-disabled]=&quot;navigationBlocked()&quot; tabindex=&quot;0&quot; (click)=&quot;tokenSelected()&quot; (keydown.enter)=&quot;tokenSelected()&quot; (keydown.space)=&quot;$event.preventDefault(); tokenSelected()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ serial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/>.</source>
-        <target state="new">Der Token wurde erfolgreich mit der Seriennummer <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;tokenSelected()&quot; (keydown.enter)=&quot;tokenSelected()&quot; (keydown.space)=&quot;$event.preventDefault(); tokenSelected()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ serial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> ausgerollt.</target>
+        <target>Der Token wurde erfolgreich mit der Seriennummer <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;tokenSelected()&quot; (keydown.enter)=&quot;tokenSelected()&quot; (keydown.space)=&quot;$event.preventDefault(); tokenSelected()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ serial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/> ausgerollt.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
           <context context-type="linenumber">23</context>
@@ -10791,7 +10791,7 @@
       </trans-unit>
       <trans-unit id="token.hasBeenEnrolled" datatype="html">
         <source>It has been enrolled in the container <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; [class.link-inert]=&quot;navigationBlocked()&quot; [attr.aria-disabled]=&quot;navigationBlocked()&quot; tabindex=&quot;0&quot; (click)=&quot;natigateContainerDetails()&quot; (keydown.enter)=&quot;natigateContainerDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); natigateContainerDetails()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ containerSerial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> .</source>
-        <target state="new">Er wurde im Container <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;natigateContainerDetails()&quot; (keydown.enter)=&quot;natigateContainerDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); natigateContainerDetails()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ containerSerial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> ausgerollt.</target>
+        <target>Er wurde im Container <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;natigateContainerDetails()&quot; (keydown.enter)=&quot;natigateContainerDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); natigateContainerDetails()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ containerSerial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> ausgerollt.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
           <context context-type="linenumber">37</context>
@@ -10799,7 +10799,7 @@
       </trans-unit>
       <trans-unit id="token.userRealmWasAssigned" datatype="html">
         <source>The user <x id="START_BLOCK_IF" equiv-text="@if (authService.actionAllowed(&quot;userlist&quot;)) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; [class.link-inert]=&quot;navigationBlocked()&quot; [attr.aria-disabled]=&quot;navigationBlocked()&quot; tabindex=&quot;0&quot; (click)=&quot;navigateUserDetails()&quot; (keydown.enter)=&quot;navigateUserDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateUserDetails()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> in the realm <x id="START_BLOCK_IF_1" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK_1" equiv-text="&lt;a role=&quot;button&quot; [class.link-inert]=&quot;navigationBlocked()&quot; [attr.aria-disabled]=&quot;navigationBlocked()&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> was assigned to the token.</source>
-        <target state="new">Der Benutzer <x id="START_BLOCK_IF" equiv-text="@if (authService.actionAllowed(&quot;userlist&quot;)) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateUserDetails()&quot; (keydown.enter)=&quot;navigateUserDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateUserDetails()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> im Realm <x id="START_BLOCK_IF_1" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK_1" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> wurde dem Token zugewiesen.</target>
+        <target>Der Benutzer <x id="START_BLOCK_IF" equiv-text="@if (authService.actionAllowed(&quot;userlist&quot;)) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateUserDetails()&quot; (keydown.enter)=&quot;navigateUserDetails()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateUserDetails()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ username() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> im Realm <x id="START_BLOCK_IF_1" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK_1" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION_1" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> wurde dem Token zugewiesen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
           <context context-type="linenumber">54</context>
@@ -10807,7 +10807,7 @@
       </trans-unit>
       <trans-unit id="token.tokenWasAssigned" datatype="html">
         <source>The token was assigned to the realm <x id="START_BLOCK_IF" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; [class.link-inert]=&quot;navigationBlocked()&quot; [attr.aria-disabled]=&quot;navigationBlocked()&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> .</source>
-        <target state="new">Der Token wurde dem Realm <x id="START_BLOCK_IF" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> zugewiesen.</target>
+        <target>Der Token wurde dem Realm <x id="START_BLOCK_IF" equiv-text="@if (authService.role() === &quot;admin&quot;) {"/><x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;navigateRealms()&quot; (keydown.enter)=&quot;navigateRealms()&quot; (keydown.space)=&quot;$event.preventDefault(); navigateRealms()&quot; class=&quot;text-link-button cursor-pointer&quot; &gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/><x id="CLOSE_BLOCK_IF" equiv-text="}"/><x id="START_BLOCK_ELSE" equiv-text="@else {"/><x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"/><x id="INTERPOLATION" equiv-text="{{ userRealm() }}"/><x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"/><x id="CLOSE_BLOCK_ELSE" equiv-text="}"/> zugewiesen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
           <context context-type="linenumber">89</context>
@@ -10815,7 +10815,7 @@
       </trans-unit>
       <trans-unit id="token.tokenSerialNumber" datatype="html">
         <source>The token with serial number <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; [class.link-inert]=&quot;navigationBlocked()&quot; [attr.aria-disabled]=&quot;navigationBlocked()&quot; tabindex=&quot;0&quot; (click)=&quot;tokenSelected()&quot; (keydown.enter)=&quot;tokenSelected()&quot; (keydown.space)=&quot;$event.preventDefault(); tokenSelected()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ serial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> was successfully rolled over.</source>
-        <target state="new">Der Token mit der Seriennummer <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;tokenSelected()&quot; (keydown.enter)=&quot;tokenSelected()&quot; (keydown.space)=&quot;$event.preventDefault(); tokenSelected()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ serial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> wurde erfolgreich per Rollover erneuert.</target>
+        <target>Der Token mit der Seriennummer <x id="START_LINK" ctype="x-a" equiv-text="&lt;a role=&quot;button&quot; tabindex=&quot;0&quot; (click)=&quot;tokenSelected()&quot; (keydown.enter)=&quot;tokenSelected()&quot; (keydown.space)=&quot;$event.preventDefault(); tokenSelected()&quot;&gt;"/> <x id="INTERPOLATION" equiv-text="{{ serial() }}"/> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> wurde erfolgreich per Rollover erneuert.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component.html</context>
           <context context-type="linenumber">112</context>
@@ -10891,7 +10891,7 @@
       </trans-unit>
       <trans-unit id="token.yourPassword" datatype="html">
         <source>Your Password: <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/><x id="INTERPOLATION" equiv-text="{{ enrolledData()[&quot;password&quot;] }}"/><x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong &gt;"/>.</source>
-        <target state="new">Ihr Passwort: <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/><x id="INTERPOLATION" equiv-text="{{ enrolledData()?.[&quot;password&quot;] }}"/><x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong &gt;"/>.</target>
+        <target>Ihr Passwort: <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/><x id="INTERPOLATION" equiv-text="{{ enrolledData()?.[&quot;password&quot;] }}"/><x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong &gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component.html</context>
           <context context-type="linenumber">46</context>
@@ -11259,7 +11259,7 @@
       </trans-unit>
       <trans-unit id="token.serialNumberOtp" datatype="html">
         <source>The Serial number for the OTP value <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"/> is <x id="START_LINK" ctype="x-a" equiv-text="&lt;a class=&quot;link&quot; role=&quot;button&quot; tabindex=&quot;0&quot; [attr.aria-label]=&quot;linkLabel(data.foundSerial)&quot; (click)=&quot;onClickSerial()&quot; (keydown.enter)=&quot;onClickSerial()&quot; (keydown.space)=&quot;$event.preventDefault(); onClickSerial()&quot;&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ data.foundSerial }}"/>.<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/></source>
-        <target state="new">Die Seriennummer für den OTP-Wert <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"/> lautet <x id="START_LINK" ctype="x-a" equiv-text="&lt;a class=&quot;link&quot; role=&quot;button&quot; tabindex=&quot;0&quot; attr.aria-label=&quot;{{ data.foundSerial }} Link&quot; (click)=&quot;onClickSerial()&quot; (keydown.enter)=&quot;onClickSerial()&quot; (keydown.space)=&quot;$event.preventDefault(); onClickSerial()&quot;&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ data.foundSerial }}"/>.<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/></target>
+        <target>Die Seriennummer für den OTP-Wert <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"/> lautet <x id="START_LINK" ctype="x-a" equiv-text="&lt;a class=&quot;link&quot; role=&quot;button&quot; tabindex=&quot;0&quot; attr.aria-label=&quot;{{ data.foundSerial }} Link&quot; (click)=&quot;onClickSerial()&quot; (keydown.enter)=&quot;onClickSerial()&quot; (keydown.space)=&quot;$event.preventDefault(); onClickSerial()&quot;&gt;"/> <x id="INTERPOLATION_1" equiv-text="{{ data.foundSerial }}"/>.<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a &gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-find-serial/find-serial-result-dialog/find-serial-result-dialog.component.html</context>
           <context context-type="linenumber">29</context>
@@ -11663,7 +11663,7 @@
       </trans-unit>
       <trans-unit id="token.tokensImported" datatype="html">
         <source><x id="SUCCESS" equiv-text="success"/>/<x id="TOTAL" equiv-text="total"/> tokens imported successfully.</source>
-        <target state="new"><x id="SUCCESS" equiv-text="success"/>/<x id="TOTAL" equiv-text="total"/> Token erfolgreich importiert.</target>
+        <target><x id="SUCCESS" equiv-text="success"/>/<x id="TOTAL" equiv-text="total"/> Token erfolgreich importiert.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-import/token-import.component.ts</context>
           <context context-type="linenumber">130</context>
@@ -11879,7 +11879,7 @@
       </trans-unit>
       <trans-unit id="token.successfullyResetOther" datatype="html">
         <source>Successfully reset the failcounter for <x id="COUNT" equiv-text="selectedTokens.length"/> tokens.</source>
-        <target state="new">Fehlerzähler für <x id="COUNT" equiv-text="selectedTokens.length"/> Token erfolgreich zurückgesetzt.</target>
+        <target>Fehlerzähler für <x id="COUNT" equiv-text="selectedTokens.length"/> Token erfolgreich zurückgesetzt.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
           <context context-type="linenumber">220</context>
@@ -11911,7 +11911,7 @@
       </trans-unit>
       <trans-unit id="token.followingTokensFailed" datatype="html">
         <source>The following tokens failed to unassign: <x id="TOKENS" equiv-text="formatList(this.localeId, failedTokens)"/></source>
-        <target state="new">Bei folgenden Token konnte die Zuweisung nicht aufgehoben werden: <x id="TOKENS" equiv-text="formatList(this.localeId, failedTokens)"/></target>
+        <target>Bei folgenden Token konnte die Zuweisung nicht aufgehoben werden: <x id="TOKENS" equiv-text="formatList(this.localeId, failedTokens)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
           <context context-type="linenumber">311</context>
@@ -11919,7 +11919,7 @@
       </trans-unit>
       <trans-unit id="token.youNotAuthorized" datatype="html">
         <source>You are not authorized to unassign the following tokens: <x id="TOKENS" equiv-text="formatList(this.localeId, unauthorizedTokens)"/></source>
-        <target state="new">Sie sind nicht berechtigt, die Zuweisung der folgenden Token aufzuheben: <x id="TOKENS" equiv-text="formatList(this.localeId, unauthorizedTokens)"/></target>
+        <target>Sie sind nicht berechtigt, die Zuweisung der folgenden Token aufzuheben: <x id="TOKENS" equiv-text="formatList(this.localeId, unauthorizedTokens)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
           <context context-type="linenumber">317</context>
@@ -12095,7 +12095,7 @@
       </trans-unit>
       <trans-unit id="common.youDoNotHaveThe" datatype="html">
         <source>You do not have the permission to view this list.</source>
-        <target state="new">Sie haben keine Berechtigung, die Token-Liste anzuzeigen.</target>
+        <target>Sie haben keine Berechtigung, diese Liste anzuzeigen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/table-state/table-state.component.html</context>
           <context context-type="linenumber">147</context>
@@ -12263,7 +12263,7 @@
       </trans-unit>
       <trans-unit id="realm.failedCreateRealm" datatype="html">
         <source>Failed to create realm. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Realm konnte nicht erstellt werden. <x id="MESSAGE" equiv-text="message"/></target>
+        <target>Realm konnte nicht erstellt werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">437</context>
@@ -12283,7 +12283,7 @@
       </trans-unit>
       <trans-unit id="realm.realmUpdated" datatype="html">
         <source>Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; updated.</source>
-        <target state="new">Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; aktualisiert.</target>
+        <target>Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; aktualisiert.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">551</context>
@@ -12291,7 +12291,7 @@
       </trans-unit>
       <trans-unit id="realm.failedUpdateRealm" datatype="html">
         <source>Failed to update realm. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Realm konnte nicht aktualisiert werden. <x id="MESSAGE" equiv-text="message"/></target>
+        <target>Realm konnte nicht aktualisiert werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">558</context>
@@ -12307,7 +12307,7 @@
       </trans-unit>
       <trans-unit id="realm.realmDeleted" datatype="html">
         <source>Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; deleted.</source>
-        <target state="new">Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; gelöscht.</target>
+        <target>Realm &quot;<x id="REALM" equiv-text="realmName"/>&quot; gelöscht.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">629</context>
@@ -12315,7 +12315,7 @@
       </trans-unit>
       <trans-unit id="realm.failedDeleteRealm" datatype="html">
         <source>Failed to delete realm. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Realm konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
+        <target>Realm konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">651</context>
@@ -12323,7 +12323,7 @@
       </trans-unit>
       <trans-unit id="realm.realmSetAsDefault" datatype="html">
         <source>Realm &quot;<x id="NAME" equiv-text="row.name"/>&quot; set as default.</source>
-        <target state="new">Realm &quot;<x id="NAME" equiv-text="row.name"/>&quot; als Standard festgelegt.</target>
+        <target>Realm &quot;<x id="NAME" equiv-text="row.name"/>&quot; als Standard festgelegt.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">603</context>
@@ -12331,7 +12331,7 @@
       </trans-unit>
       <trans-unit id="realm.failedSetDefault" datatype="html">
         <source>Failed to set default realm. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Standard-Realm konnte nicht festgelegt werden. <x id="MESSAGE" equiv-text="message"/></target>
+        <target>Standard-Realm konnte nicht festgelegt werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/realm-table/realm-table.component.ts</context>
           <context context-type="linenumber">611</context>
@@ -12515,7 +12515,7 @@
       </trans-unit>
       <trans-unit id="user.customAttributes" datatype="html">
         <source>Custom Attributes</source>
-        <target state="new">Benutzerdefinierte Attribute:</target>
+        <target>Benutzerdefinierte Attribute</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-details/user-details.component.html</context>
           <context context-type="linenumber">194</context>
@@ -13245,7 +13245,7 @@
       </trans-unit>
       <trans-unit id="resolver.possibleTags" datatype="html">
         <source>Possible tags: <x id="TAGS" equiv-text="tags"/></source>
-        <target state="new">Mögliche Tags:</target>
+        <target>Mögliche Tags: <x id="TAGS" equiv-text="tags"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.ts</context>
           <context context-type="linenumber">354</context>
@@ -13981,7 +13981,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverNameContains" datatype="html">
         <source>Resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
-        <target state="new">Resolver-Name enthält <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ungültige Zeichen<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> . Es sind nur alphanumerische Zeichen, Punkte, Unterstriche und Bindestriche erlaubt.</target>
+        <target>Resolver-Name enthält <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ungültige Zeichen<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. Es sind nur alphanumerische Zeichen, Punkte, Unterstriche und Bindestriche erlaubt.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
           <context context-type="linenumber">70</context>
@@ -14041,7 +14041,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverUpdated" datatype="html">
         <source>Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; updated.</source>
-        <target state="new">Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; aktualisiert.</target>
+        <target>Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; aktualisiert.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">267</context>
@@ -14049,7 +14049,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverCreated" datatype="html">
         <source>Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; created.</source>
-        <target state="new">Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; erstellt.</target>
+        <target>Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; erstellt.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">268</context>
@@ -14069,7 +14069,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverTestExecuted" datatype="html">
         <source>Resolver test executed: <x id="DETAIL" equiv-text="detail"/></source>
-        <target state="new">Resolver-Test ausgeführt: <x id="DETAIL" equiv-text="detail"/></target>
+        <target>Resolver-Test ausgeführt: <x id="DETAIL" equiv-text="detail"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">367</context>
@@ -14169,7 +14169,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverDeleted" datatype="html">
         <source>Resolver &quot;<x id="RESOLVER" equiv-text="name"/>&quot; deleted.</source>
-        <target state="new">Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; gelöscht.</target>
+        <target>Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; gelöscht.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">441</context>
@@ -14181,7 +14181,7 @@
       </trans-unit>
       <trans-unit id="resolver.resolverNotFound" datatype="html">
         <source>Resolver &quot;<x id="RESOLVER" equiv-text="name"/>&quot; not found.</source>
-        <target state="new">Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; nicht gefunden.</target>
+        <target>Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; nicht gefunden.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">447</context>
@@ -14193,7 +14193,7 @@
       </trans-unit>
       <trans-unit id="resolver.failedDeleteResolver" datatype="html">
         <source>Failed to delete resolver. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Resolver konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
+        <target>Resolver konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
           <context context-type="linenumber">454</context>
@@ -14429,7 +14429,7 @@
       </trans-unit>
       <trans-unit id="nav.of" datatype="html">
         <source>0 of <x id="LENGTH" equiv-text="length"/></source>
-        <target state="new">0 von <x id="LENGTH" equiv-text="length"/></target>
+        <target>0 von <x id="LENGTH" equiv-text="length"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/paginator-intl.ts</context>
           <context context-type="linenumber">35</context>
@@ -14437,7 +14437,7 @@
       </trans-unit>
       <trans-unit id="nav.pageRange" datatype="html">
         <source><x id="START" equiv-text="startIndex + 1"/> – <x id="END" equiv-text="endIndex"/> of <x id="LENGTH" equiv-text="length"/></source>
-        <target state="new"><x id="START" equiv-text="startIndex + 1"/> – <x id="END" equiv-text="endIndex"/> von <x id="LENGTH" equiv-text="length"/></target>
+        <target><x id="START" equiv-text="startIndex + 1"/> – <x id="END" equiv-text="endIndex"/> von <x id="LENGTH" equiv-text="length"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/paginator-intl.ts</context>
           <context context-type="linenumber">40</context>
@@ -14461,7 +14461,7 @@
       </trans-unit>
       <trans-unit id="caConnector.failedSaveCaConnector" datatype="html">
         <source>Failed to save CA connector. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">CA-Connector konnte nicht gespeichert werden.</target>
+        <target>CA-Connector konnte nicht gespeichert werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/ca-connector/ca-connector.service.ts</context>
           <context context-type="linenumber">112</context>
@@ -14469,7 +14469,7 @@
       </trans-unit>
       <trans-unit id="caConnector.successfullyDeleted" datatype="html">
         <source>Successfully deleted CA connector: <x id="CONNECTOR" equiv-text="connectorname"/>.</source>
-        <target state="new">CA-Connector erfolgreich gelöscht: <x id="CONNECTOR" equiv-text="connectorname"/>.</target>
+        <target>CA-Connector erfolgreich gelöscht: <x id="CONNECTOR" equiv-text="connectorname"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/ca-connector/ca-connector.service.ts</context>
           <context context-type="linenumber">128</context>
@@ -14477,7 +14477,7 @@
       </trans-unit>
       <trans-unit id="caConnector.failedDeleteCa" datatype="html">
         <source>Failed to delete CA connector. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">CA-Connector konnte nicht gelöscht werden.</target>
+        <target>CA-Connector konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/ca-connector/ca-connector.service.ts</context>
           <context context-type="linenumber">135</context>
@@ -14485,7 +14485,7 @@
       </trans-unit>
       <trans-unit id="caConnector.failedFetchCa" datatype="html">
         <source>Failed to fetch CA specific options. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">CA-spezifische Optionen konnten nicht abgerufen werden.</target>
+        <target>CA-spezifische Optionen konnten nicht abgerufen werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/ca-connector/ca-connector.service.ts</context>
           <context context-type="linenumber">153</context>
@@ -14509,7 +14509,7 @@
       </trans-unit>
       <trans-unit id="common.errors" datatype="html">
         <source><x id="COUNT" equiv-text="count"/> errors:</source>
-        <target state="new"><x id="COUNT" equiv-text="count"/> Fehler:</target>
+        <target><x id="COUNT" equiv-text="count"/> Fehler:</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/notification/notification.service.ts</context>
           <context context-type="linenumber">137</context>
@@ -14525,7 +14525,7 @@
       </trans-unit>
       <trans-unit id="common.warnings" datatype="html">
         <source><x id="COUNT" equiv-text="count"/> warnings:</source>
-        <target state="new"><x id="COUNT" equiv-text="count"/> Warnungen:</target>
+        <target><x id="COUNT" equiv-text="count"/> Warnungen:</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/notification/notification.service.ts</context>
           <context context-type="linenumber">145</context>
@@ -14541,7 +14541,7 @@
       </trans-unit>
       <trans-unit id="common.successes" datatype="html">
         <source><x id="COUNT" equiv-text="count"/> successes:</source>
-        <target state="new"><x id="COUNT" equiv-text="count"/> Erfolge:</target>
+        <target><x id="COUNT" equiv-text="count"/> Erfolge:</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/notification/notification.service.ts</context>
           <context context-type="linenumber">153</context>
@@ -14825,7 +14825,7 @@
       </trans-unit>
       <trans-unit id="policy.creatingPolicy" datatype="html">
         <source>Creating policy failed: <x id="DETAIL" equiv-text="error"/></source>
-        <target state="new">Erstellen der Richtlinie fehlgeschlagen: <x id="DETAIL" equiv-text="error"/></target>
+        <target>Erstellen der Richtlinie fehlgeschlagen: <x id="DETAIL" equiv-text="error"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
           <context context-type="linenumber">601</context>
@@ -14845,7 +14845,7 @@
       </trans-unit>
       <trans-unit id="policy.savingPolicyFailed" datatype="html">
         <source>Saving policy failed<x id="DETAIL" equiv-text="errorMessage"/></source>
-        <target state="new">Speichern der Richtlinie fehlgeschlagen</target>
+        <target>Speichern der Richtlinie fehlgeschlagen<x id="DETAIL" equiv-text="errorMessage"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policies/policies.service.ts</context>
           <context context-type="linenumber">720</context>
@@ -14853,7 +14853,7 @@
       </trans-unit>
       <trans-unit id="policy.errorFetching" datatype="html">
         <source>Error fetching policy template <x id="TEMPLATE" equiv-text="templateName"/>.</source>
-        <target state="new">Fehler beim Abrufen der Richtlinienvorlage <x id="TEMPLATE" equiv-text="templateName"/>.</target>
+        <target>Fehler beim Abrufen der Richtlinienvorlage <x id="TEMPLATE" equiv-text="templateName"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/policy-templates/policy-templates.service.ts</context>
           <context context-type="linenumber">97</context>
@@ -14877,7 +14877,7 @@
       </trans-unit>
       <trans-unit id="piServer.failedSavePrivacyidea" datatype="html">
         <source>Failed to save privacyIDEA server. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">privacyIDEA-Server konnte nicht gespeichert werden.</target>
+        <target>privacyIDEA-Server konnte nicht gespeichert werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
           <context context-type="linenumber">119</context>
@@ -14885,7 +14885,7 @@
       </trans-unit>
       <trans-unit id="piServer.successfullyDeleted" datatype="html">
         <source>Successfully deleted privacyIDEA server: <x id="IDENTIFIER" equiv-text="identifier"/>.</source>
-        <target state="new">privacyIDEA-Server erfolgreich gelöscht: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
+        <target>privacyIDEA-Server erfolgreich gelöscht: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
           <context context-type="linenumber">135</context>
@@ -14893,7 +14893,7 @@
       </trans-unit>
       <trans-unit id="piServer.failedDeletePrivacyidea" datatype="html">
         <source>Failed to delete privacyIDEA server. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">privacyIDEA-Server konnte nicht gelöscht werden.</target>
+        <target>privacyIDEA-Server konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
           <context context-type="linenumber">142</context>
@@ -14917,7 +14917,7 @@
       </trans-unit>
       <trans-unit id="piServer.failedSendTest" datatype="html">
         <source>Failed to send test request. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Testanfrage konnte nicht gesendet werden.</target>
+        <target>Testanfrage konnte nicht gesendet werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/privacyidea-server/privacyidea-server.service.ts</context>
           <context context-type="linenumber">163</context>
@@ -14933,7 +14933,7 @@
       </trans-unit>
       <trans-unit id="radiusServer.failedSaveRadius" datatype="html">
         <source>Failed to save RADIUS server. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">RADIUS-Server konnte nicht gespeichert werden.</target>
+        <target>RADIUS-Server konnte nicht gespeichert werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/radius-server/radius-server.service.ts</context>
           <context context-type="linenumber">105</context>
@@ -14957,7 +14957,7 @@
       </trans-unit>
       <trans-unit id="radiusServer.failedSendRadius" datatype="html">
         <source>Failed to send RADIUS test request. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">RADIUS-Testanfrage konnte nicht gesendet werden.</target>
+        <target>RADIUS-Testanfrage konnte nicht gesendet werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/radius-server/radius-server.service.ts</context>
           <context context-type="linenumber">130</context>
@@ -14965,7 +14965,7 @@
       </trans-unit>
       <trans-unit id="radiusServer.successfullyDeleted" datatype="html">
         <source>Successfully deleted RADIUS server: <x id="IDENTIFIER" equiv-text="identifier"/>.</source>
-        <target state="new">RADIUS-Server erfolgreich gelöscht: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
+        <target>RADIUS-Server erfolgreich gelöscht: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/radius-server/radius-server.service.ts</context>
           <context context-type="linenumber">146</context>
@@ -14973,7 +14973,7 @@
       </trans-unit>
       <trans-unit id="radiusServer.failedDeleteRadius" datatype="html">
         <source>Failed to delete RADIUS server. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">RADIUS-Server konnte nicht gelöscht werden.</target>
+        <target>RADIUS-Server konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/radius-server/radius-server.service.ts</context>
           <context context-type="linenumber">154</context>
@@ -14989,7 +14989,7 @@
       </trans-unit>
       <trans-unit id="serviceId.failedSaveService" datatype="html">
         <source>Failed to save service ID. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Service-ID konnte nicht gespeichert werden.</target>
+        <target>Service-ID konnte nicht gespeichert werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
           <context context-type="linenumber">117</context>
@@ -14997,7 +14997,7 @@
       </trans-unit>
       <trans-unit id="serviceId.successfullyDeleted" datatype="html">
         <source>Successfully deleted service ID: <x id="SERVICE" equiv-text="servicename"/>.</source>
-        <target state="new">Service-ID erfolgreich gelöscht: <x id="SERVICE" equiv-text="servicename"/>.</target>
+        <target>Service-ID erfolgreich gelöscht: <x id="SERVICE" equiv-text="servicename"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
           <context context-type="linenumber">130</context>
@@ -15005,7 +15005,7 @@
       </trans-unit>
       <trans-unit id="serviceId.failedDeleteService" datatype="html">
         <source>Failed to delete service ID. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Service-ID konnte nicht gelöscht werden.</target>
+        <target>Service-ID konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
           <context context-type="linenumber">137</context>
@@ -15029,7 +15029,7 @@
       </trans-unit>
       <trans-unit id="smsGateway.failedSaveSms" datatype="html">
         <source>Failed to save SMS gateway. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">SMS-Gateway konnte nicht gespeichert werden.</target>
+        <target>SMS-Gateway konnte nicht gespeichert werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/sms-gateway/sms-gateway.service.ts</context>
           <context context-type="linenumber">128</context>
@@ -15037,7 +15037,7 @@
       </trans-unit>
       <trans-unit id="smsGateway.successfullyDeleted" datatype="html">
         <source>Successfully deleted SMS gateway: <x id="NAME" equiv-text="name"/>.</source>
-        <target state="new">SMS-Gateway erfolgreich gelöscht: <x id="NAME" equiv-text="name"/>.</target>
+        <target>SMS-Gateway erfolgreich gelöscht: <x id="NAME" equiv-text="name"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/sms-gateway/sms-gateway.service.ts</context>
           <context context-type="linenumber">141</context>
@@ -15045,7 +15045,7 @@
       </trans-unit>
       <trans-unit id="smsGateway.failedDeleteSms" datatype="html">
         <source>Failed to delete SMS gateway. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">SMS-Gateway konnte nicht gelöscht werden.</target>
+        <target>SMS-Gateway konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/sms-gateway/sms-gateway.service.ts</context>
           <context context-type="linenumber">148</context>
@@ -15061,7 +15061,7 @@
       </trans-unit>
       <trans-unit id="smtpServer.failedSaveSmtp" datatype="html">
         <source>Failed to save SMTP server. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">SMTP-Server konnte nicht gespeichert werden.</target>
+        <target>SMTP-Server konnte nicht gespeichert werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
           <context context-type="linenumber">121</context>
@@ -15077,7 +15077,7 @@
       </trans-unit>
       <trans-unit id="smtpServer.failedSendTest" datatype="html">
         <source>Failed to send test email. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Test-E-Mail konnte nicht gesendet werden.</target>
+        <target>Test-E-Mail konnte nicht gesendet werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
           <context context-type="linenumber">140</context>
@@ -15085,7 +15085,7 @@
       </trans-unit>
       <trans-unit id="smtpServer.successfullyDeleted" datatype="html">
         <source>Successfully deleted SMTP server: <x id="IDENTIFIER" equiv-text="identifier"/>.</source>
-        <target state="new">SMTP-Server erfolgreich gelöscht: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
+        <target>SMTP-Server erfolgreich gelöscht: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
           <context context-type="linenumber">156</context>
@@ -15093,7 +15093,7 @@
       </trans-unit>
       <trans-unit id="smtpServer.failedDeleteSmtp" datatype="html">
         <source>Failed to delete SMTP server. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">SMTP-Server konnte nicht gelöscht werden.</target>
+        <target>SMTP-Server konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
           <context context-type="linenumber">162</context>
@@ -15109,7 +15109,7 @@
       </trans-unit>
       <trans-unit id="tokenGroup.failedSaveTokengroup" datatype="html">
         <source>Failed to save tokengroup. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Tokengruppe konnte nicht gespeichert werden.</target>
+        <target>Tokengruppe konnte nicht gespeichert werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/tokengroup/tokengroup.service.ts</context>
           <context context-type="linenumber">104</context>
@@ -15117,7 +15117,7 @@
       </trans-unit>
       <trans-unit id="tokenGroup.successfullyDeleted" datatype="html">
         <source>Successfully deleted tokengroup: <x id="GROUP" equiv-text="groupname"/>.</source>
-        <target state="new">Tokengruppe erfolgreich gelöscht: <x id="GROUP" equiv-text="groupname"/>.</target>
+        <target>Tokengruppe erfolgreich gelöscht: <x id="GROUP" equiv-text="groupname"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/tokengroup/tokengroup.service.ts</context>
           <context context-type="linenumber">117</context>
@@ -15125,7 +15125,7 @@
       </trans-unit>
       <trans-unit id="tokenGroup.failedDeleteTokengroup" datatype="html">
         <source>Failed to delete tokengroup. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Tokengruppe konnte nicht gelöscht werden.</target>
+        <target>Tokengruppe konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/tokengroup/tokengroup.service.ts</context>
           <context context-type="linenumber">124</context>
@@ -15133,7 +15133,7 @@
       </trans-unit>
       <trans-unit id="user.failedSetUser" datatype="html">
         <source>Failed to set user attribute. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Benutzerattribut konnte nicht gesetzt werden.</target>
+        <target>Benutzerattribut konnte nicht gesetzt werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
           <context context-type="linenumber">571</context>
@@ -15141,7 +15141,7 @@
       </trans-unit>
       <trans-unit id="user.failedDeleteUserAttribute" datatype="html">
         <source>Failed to delete user attribute. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Benutzerattribut konnte nicht gelöscht werden.</target>
+        <target>Benutzerattribut konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
           <context context-type="linenumber">589</context>
@@ -15149,7 +15149,7 @@
       </trans-unit>
       <trans-unit id="user.failedCreateUser" datatype="html">
         <source>Failed to create user <x id="USERNAME" equiv-text="userData.username"/>. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Benutzer <x id="USERNAME" equiv-text="userData.username"/> konnte nicht erstellt werden.</target>
+        <target>Benutzer <x id="USERNAME" equiv-text="userData.username"/> konnte nicht erstellt werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
           <context context-type="linenumber">609</context>
@@ -15157,7 +15157,7 @@
       </trans-unit>
       <trans-unit id="user.failedUpdateUser" datatype="html">
         <source>Failed to update user <x id="USERNAME" equiv-text="userData.username"/>. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Benutzer <x id="USERNAME" equiv-text="userData.username"/> konnte nicht aktualisiert werden.</target>
+        <target>Benutzer <x id="USERNAME" equiv-text="userData.username"/> konnte nicht aktualisiert werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
           <context context-type="linenumber">625</context>
@@ -15165,7 +15165,7 @@
       </trans-unit>
       <trans-unit id="user.failedDeleteUser" datatype="html">
         <source>Failed to delete user <x id="USERNAME" equiv-text="username"/>. <x id="MESSAGE" equiv-text="message"/></source>
-        <target state="new">Benutzer <x id="USERNAME" equiv-text="username"/> konnte nicht gelöscht werden.</target>
+        <target>Benutzer <x id="USERNAME" equiv-text="username"/> konnte nicht gelöscht werden. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
           <context context-type="linenumber">640</context>
