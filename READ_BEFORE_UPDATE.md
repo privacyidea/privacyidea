@@ -168,6 +168,15 @@
   works right away — and there, as with every other user-scope action, the names and descriptions of your service IDs
   are readable by every self-service user.
 
+* **An application specific password token is only enrolled with a service ID that is defined.** `POST /token/init`
+  with `type=applspec` stored whatever `service_id` was sent, including a name that no service ID definition carries.
+  Such a token could never authenticate, because a service sends the service ID it belongs to and only a token with
+  the same one answers for it. The service ID is now looked up among the defined ones — case-insensitively, the way
+  the authentication compares it — and the request is refused with a 400 if it does not exist. **If you enroll these
+  tokens through the API**, from a script or through a container template, make sure the service IDs they pass are
+  defined under *Config -> Service IDs*. Rolling such a token over needs a defined service ID as well. Existing tokens
+  keep the service ID they were enrolled with.
+
 * **Token info that a token type maintains itself is no longer writable through the generic token info endpoints.** A
   token info entry can hold what a token authenticates with — the public key of a passkey, the server a RADIUS token
   forwards to, the answers of a questionnaire token — next to the free-form metadata an administrator keeps there.

@@ -44,6 +44,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, enable_pol
                                     PolicyClass)
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.smsprovider.SMSProvider import (set_smsgateway,
                                                      delete_smsgateway)
 from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
@@ -4155,7 +4156,8 @@ class APITokenTestCase(MyApiTestCase):
             remove_token(serial)
         delete_policy("motp_genkey")
 
-        # applspec
+        # applspec, which only enrolls with a defined service ID
+        set_serviceid("123", "the service of the token below")
         set_policy("applspec_genkey", scope=SCOPE.ADMIN, action=f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}")
         otpkey = "3132333435363738393031323334353637383930"
         with self.app.test_request_context('/token/init',

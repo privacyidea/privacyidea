@@ -26,6 +26,8 @@ from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.params import get_required
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.serviceid import get_serviceids
 
 
 TOKENINFO_KEY = "service_id"
@@ -125,8 +127,26 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
         """
         PasswordTokenClass.update(self, param)
         # In addition to the initialization from the parent class, we also need to set the service_id
-        service_id = get_required(param, TOKENINFO_KEY)
+        service_id = self._check_service_id(get_required(param, TOKENINFO_KEY))
         self.write_tokeninfo(TOKENINFO_KEY, service_id)
+
+    @staticmethod
+    def _check_service_id(service_id: str) -> str:
+        """
+        Return the given service ID in the spelling it is defined with.
+
+        A token only authenticates if its service ID matches the one the service sends, which is compared
+        case-insensitively. The defined service IDs are therefore looked up the same way, and the name is stored as
+        it is defined, so that the token carries the service ID the administrator defined and not a variation of it.
+
+        :param service_id: The service ID from the request
+        :return: The name of the matching service ID definition
+        """
+        defined_service_ids = {entry.name.lower(): entry.name for entry in get_serviceids()}
+        defined_name = defined_service_ids.get(service_id.lower())
+        if defined_name is None:
+            raise ParameterError(f"The service ID {service_id!r} is not defined.")
+        return defined_name
 
     @property
     def service_id(self):
