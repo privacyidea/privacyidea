@@ -35,8 +35,7 @@
     @if (showFilter()) {
     <app-filter-value-button
       class="margin-left-8"
-      label="Filter by this source IP"
-      i18n-label="@@authLog.filterSourceIp"
+      column="source_ip"
       [value]="sourceIp()!"
       (filterValue)="onFilter('source_ip', $event)" />
     }
@@ -65,8 +64,7 @@
       <span>{{ peerIp() }}</span>
       <app-filter-value-button
         class="margin-left-8"
-        label="Filter by this peer address"
-        i18n-label="@@authLog.filterPeerAddress"
+        column="peer_ip"
         [value]="peerIp()!"
         (filterValue)="onFilter('peer_ip', $event)" />
     </app-copyable>

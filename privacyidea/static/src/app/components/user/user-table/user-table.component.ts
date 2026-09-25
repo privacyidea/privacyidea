@@ -60,6 +60,7 @@ import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -123,6 +124,7 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
     ScrollToTopDirective,
     ClearableInputComponent,
     CopyableComponent,
+    FilterValueButtonComponent,
     UserTableActionsComponent,
     RouterLink,
     MatIcon,
@@ -254,6 +256,10 @@ export class UserTableComponent implements OnDestroy {
 
   getFilterIconName(keyword: string): string {
     return this.isFilterSelected(keyword) ? "filter_alt_off" : "filter_alt";
+  }
+
+  addFilterValue(keyword: string, value: string): void {
+    this.userService.updateFilter((current) => current.addEntry(keyword, value));
   }
 
   onFilterClick(filterKeyword: string): void {

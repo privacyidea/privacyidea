@@ -110,11 +110,11 @@
                         (click)="onEditEventHandler(element)"
                         (keydown.enter)="onEditEventHandler(element)"
                         (keydown.space)="onEditEventHandler(element); $event.preventDefault()"
-                        [innerHTML]="element.name | highlight: filterString()"
+                        [innerHTML]="element.name | highlight: highlightTerm()"
                         role="button"
                         tabindex="0"></a>
                     } @else {
-                      <span [innerHTML]="element.name | highlight: filterString()"></span>
+                      <span [innerHTML]="element.name | highlight: highlightTerm()"></span>
                     }
                   </div>
                 }
@@ -123,13 +123,32 @@
                     <div class="detailed-cell-container">
                       <ul class="no-indention margin-0">
                         @for (event of getEventArray(element.event); track event) {
-                          <li [innerHTML]="event | highlight: filterString()"></li>
+                          <li class="flex ali-center">
+                            <span [innerHTML]="event | highlight: highlightTerm()"></span>
+                            <app-filter-value-button
+                              class="margin-left-8"
+                              column="event"
+                              [value]="event"
+                              (filterValue)="filterByEvent($event)" />
+                          </li>
                         }
                       </ul>
                     </div>
                   } @else {
                     <div class="event-table-cell">
-                      <span [innerHTML]="element.event?.join(', ') | highlight: filterString()"></span>
+                      @for (event of getEventArray(element.event); track event; let last = $last) {
+                        <span class="event-inline">
+                          <span [innerHTML]="event | highlight: highlightTerm()"></span>
+                          <app-filter-value-button
+                            class="margin-left-8"
+                            column="event"
+                            [value]="event"
+                            (filterValue)="filterByEvent($event)" />
+                          @if (!last) {
+                            ,
+                          }
+                        </span>
+                      }
                     </div>
                   }
                 }
@@ -138,13 +157,13 @@
                     <div class="detailed-cell-container">
                       <ul class="no-indention margin-0">
                         @for (condition of Object.entries(element.conditions); track condition[0]) {
-                          <li [innerHTML]="condition[0] + ': ' + condition[1] | highlight: filterString()"></li>
+                          <li [innerHTML]="condition[0] + ': ' + condition[1] | highlight: highlightTerm()"></li>
                         }
                       </ul>
                     </div>
                   } @else {
                     <div class="event-table-cell">
-                      <span [innerHTML]="formatConditions(element.conditions) | highlight: filterString()"></span>
+                      <span [innerHTML]="formatConditions(element.conditions) | highlight: highlightTerm()"></span>
                     </div>
                   }
                 }
@@ -152,11 +171,11 @@
                   @if (detailedView()) {
                     <div class="detailed-cell-container">
                       <div class="break-words">
-                        <span [innerHTML]="element.action | highlight: filterString()"></span>
+                        <span [innerHTML]="element.action | highlight: highlightTerm()"></span>
                       </div>
                       <ul class="no-indention margin-top-0">
                         @for (option of Object.entries(element.options); track option[0]) {
-                          <li [innerHTML]="option[0] + ': ' + option[1] | highlight: filterString()"></li>
+                          <li [innerHTML]="option[0] + ': ' + option[1] | highlight: highlightTerm()"></li>
                         }
                       </ul>
                     </div>
@@ -164,7 +183,7 @@
                     <div
                       [attr.title]="element.action"
                       class="event-table-cell">
-                      <span [innerHTML]="element.action | highlight: filterString()"></span>
+                      <span [innerHTML]="element.action | highlight: highlightTerm()"></span>
                     </div>
                   }
                 }
@@ -209,7 +228,7 @@
                 }
                 @default {
                   <span
-                    [innerHTML]="element[column] | highlight: filterString()"
+                    [innerHTML]="element[column] | highlight: highlightTerm()"
                     [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'"></span>
                 }
               }

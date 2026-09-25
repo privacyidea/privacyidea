@@ -124,6 +124,11 @@
                         tabindex="0">
                         {{ element[column.key] }}
                       </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        column="serial"
+                        [value]="element.serial"
+                        (filterValue)="addFilterValue('serial', $event)" />
                     </app-copyable>
                   }
                   @case ("user") {
@@ -139,18 +144,15 @@
                       {{ element[column.key] }}
                     </a>
                   }
-                  @default {
-                    @if (tableUtilsService.isLink(column.key)) {
-                      <a
-                        [attr.aria-label]="linkLabel(column.label)"
-                        href="#">
-                        {{ element[column.key] }}
-                      </a>
-                    } @else {
-                      <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                        {{ tableUtilsService.getDisplayText(column.key, element) }}
-                      </span>
-                    }
+                  @case ("service_id") {
+                    <span class="flex ali-center">
+                      <span>{{ element.service_id }}</span>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        column="service_id"
+                        [value]="element.service_id"
+                        (filterValue)="addFilterValue('service_id', $event)" />
+                    </span>
                   }
                 }
               </div>

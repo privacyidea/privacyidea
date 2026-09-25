@@ -36,6 +36,7 @@ import {
   ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
@@ -54,6 +55,7 @@ import { ContainerTableActionsComponent } from "@components/container/container-
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
@@ -62,6 +64,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { withUser } from "@utils/filter.utils";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -90,6 +93,7 @@ const columnsKeyMap = [
     NgClass,
     CopyButtonComponent,
     CopyableComponent,
+    FilterValueButtonComponent,
     MatCheckboxModule,
     ScrollToTopDirective,
     ClearableInputComponent,
@@ -119,6 +123,7 @@ export class ContainerTableComponent implements OnDestroy {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
 
   readonly columnsKeyMap = columnsKeyMap;
   readonly columnKeys = columnsKeyMap.map((column) => column.key);
@@ -261,6 +266,10 @@ export class ContainerTableComponent implements OnDestroy {
   getFilterIconName(keyword: string): string {
     const isSelected = this.isFilterSelected(keyword, this.containerService.activeFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  filterByUser(username: string, realm: string): void {
+    this.containerService.updateFilter((current) => withUser(current, username, realm));
   }
 
   onKeywordClick(filterKeyword: string): void {

@@ -258,14 +258,6 @@ const CLIENT_LABEL_SOURCE_META: Record<string, { label: string; tooltip: string 
 // Full, independently-translatable tooltip per column with an inline filter button, kept as complete sentences (not
 // noun-interpolated) so each language can phrase its grammar correctly; a column with no entry falls back to the
 // button's generic default.
-const FILTER_TOOLTIPS: Record<string, string> = {
-  username: $localize`:@@common.filterUser:Filter by this user`,
-  source_ip: $localize`:@@authLog.filterSourceIp:Filter by this source IP`,
-  serial: $localize`:@@authLog.filterSerial:Filter by this serial`,
-  transaction_id: $localize`:@@authLog.filterTransactionId:Filter by this transaction ID`,
-  attempt_id: $localize`:@@authLog.filterAttemptId:Filter by this attempt ID`
-};
-
 // Columns whose value is clipped instead of widening the table: the full value stays reachable via the truncation
 // tooltip, the copy button and the inline filter. Width classes (see .cell-truncate-* rules) differ per column - ids
 // read by their leading characters, a client label read as a name - but never narrow a column past its header's own
@@ -826,11 +818,6 @@ export class AuthenticationLog {
   // User-Agent is a string any browser sends.
   clientLabelBadge(source: string | null | undefined): { label: string; tooltip: string } | null {
     return source ? (CLIENT_LABEL_SOURCE_META[source] ?? null) : null;
-  }
-
-  // Localized tooltip for a cell's inline filter button, falling back to the generic phrasing.
-  filterTooltip(columnKey: string): string {
-    return FILTER_TOOLTIPS[columnKey] ?? $localize`:@@common.filterByValue:Filter by this value`;
   }
 
   // The width class a clipped column's value carries, or null for a column shown in full.

@@ -60,17 +60,6 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
-// Reveal the shortcut only while the row is hovered or holds focus, to keep dense rows calm;
-// :focus-within keeps it reachable for keyboard/AT users.
-.blocklist-table tr.mat-mdc-row {
-  --filter-button-opacity: 0;
-
-  &:hover,
-  &:focus-within {
-    --filter-button-opacity: 1;
-  }
-}
-
 .filter-container {
   margin-bottom: 16px;
 }

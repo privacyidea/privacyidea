@@ -81,6 +81,20 @@ describe("MachinesComponent", () => {
     expect(component.machineDataSource().filter).toBe("host1");
   });
 
+  it("filterByResolver matches the clicked resolver in full", () => {
+    machineServiceMock.machines.set([
+      { id: 1, hostname: ["host1"], ip: "1.1.1.1", resolver_name: "res1" },
+      { id: 2, hostname: ["host2"], ip: "2.2.2.2", resolver_name: "res10" }
+    ]);
+    const filteredIds = () => component.machineDataSource().filteredData.map((machine) => machine.id);
+
+    component.onFilterInput("res1");
+    expect(filteredIds()).toEqual([1, 2]);
+
+    component.filterByResolver("res1");
+    expect(filteredIds()).toEqual([1]);
+  });
+
   it("should navigate to details page", () => {
     const router = TestBed.inject(Router);
     jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);

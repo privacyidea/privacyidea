@@ -27,6 +27,7 @@ export interface FilterInputHintOptions {
 export function filterInputHint(options: FilterInputHintOptions = {}): string {
   const lines: string[] = [];
   lines.push($localize`:@@common.useAsWildcard:Use * as a wildcard.`);
+  lines.push($localize`:@@common.startValueWithMatch:Start a value with = to match it exactly.`);
   if (options.supportsKeywords ?? true) {
     lines.push(
       $localize`:@@common.quoteValuesContain:Quote values that contain spaces or a colon, e.g. description: "my note".`

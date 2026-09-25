@@ -56,6 +56,8 @@ import { TableState } from "@core/models/table_state/table-state";
 import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { exactMatch } from "@utils/filter.utils";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 
 type AuditCellRenderType =
   | "status-span"
@@ -89,6 +91,10 @@ const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
   client: "copy-text",
   resolver: "copy-text"
 };
+
+// A clicked cell value names one entry, so it is matched in full - except a day, which only begins the timestamp it
+// is compared with, and a policy, which is one of several the column lists.
+const PARTIAL_MATCH_CELL_FILTER_KEYS = new Set(["startdate", "date", "policies"]);
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to. Columns left without a "width" stay flexible (long free text or a list that can overflow);
@@ -147,6 +153,7 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
     MatColumnDef,
     MatLabel,
     CopyableComponent,
+    FilterValueButtonComponent,
     RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent,
@@ -256,5 +263,17 @@ export class AuditComponent {
 
   getCellRenderType(columnKey: string): AuditCellRenderType {
     return cellRenderTypeByKey[columnKey] ?? "default";
+  }
+
+  // info is free prose that practically never repeats, so filtering on one entry's value finds only that entry.
+  showInlineCellFilter(columnKey: string): boolean {
+    return columnKey !== "info";
+  }
+
+  // Inline "filter by this value" action on a cell: replaces whatever the column was filtered by with this value.
+  addFilterValue(columnKey: string, value: string): void {
+    const keyword = this.apiFilterKeyMap[columnKey] ?? columnKey;
+    const filterValue = PARTIAL_MATCH_CELL_FILTER_KEYS.has(keyword) ? value : exactMatch(value);
+    this.auditService.updateFilter((current) => current.addEntry(keyword, filterValue));
   }
 }

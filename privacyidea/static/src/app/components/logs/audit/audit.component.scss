@@ -35,3 +35,16 @@
 .filter-action-button {
   margin-left: 8px;
 }
+
+.audit-table {
+  // The scroll region wraps anywhere, so below this width the date breaks mid-value.
+  th.mat-mdc-header-cell.mat-column-startdate,
+  td.mat-mdc-cell.mat-column-startdate {
+    min-width: 10rem;
+  }
+}
+
+.date-cell {
+  display: flex;
+  flex-direction: column;
+}

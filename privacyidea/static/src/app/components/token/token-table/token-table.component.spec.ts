@@ -448,6 +448,38 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(table.getFilterIconName("description")).toBe("filter_alt_off");
   });
 
+  describe("inline cell filter", () => {
+    it("addFilterValue filters by the API keyword the column maps to", () => {
+      table.apiFilterKeyMap["container_serial"] = "container_serial_api";
+
+      table.addFilterValue("container_serial", "CONT-1");
+
+      expect(tokenService.activeFilter().getValueOfKey("container_serial_api")).toBe("CONT-1");
+    });
+
+    it("addFilterValue filters by the column key itself when it has no API mapping", () => {
+      tokenService.activeFilter.set(new FilterValue({ value: "tokentype: totp" }));
+
+      table.addFilterValue("tokentype", "hotp");
+
+      expect(tokenService.activeFilter().getValueOfKey("tokentype")).toBe("hotp");
+    });
+
+    it("filterByUser filters by the user together with the row's realm", () => {
+      table.filterByUser("alice", "realm1");
+
+      expect(tokenService.activeFilter().getValueOfKey("user")).toBe("alice");
+      expect(tokenService.activeFilter().getValueOfKey("realm")).toBe("realm1");
+    });
+
+    it("filterByUser filters by the user alone when the row has no realm", () => {
+      table.filterByUser("alice", "");
+
+      expect(tokenService.activeFilter().getValueOfKey("user")).toBe("alice");
+      expect(tokenService.activeFilter().hasKey("realm")).toBe(false);
+    });
+  });
+
   it("onKeywordClick toggles the filter, focuses the input, and positions the cursor after 'user:'", async () => {
     showsTokens();
 

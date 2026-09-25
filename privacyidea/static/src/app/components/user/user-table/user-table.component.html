@@ -147,6 +147,11 @@
                         } @else {
                           {{ element[column.key] }}
                         }
+                        <app-filter-value-button
+                          class="margin-left-8"
+                          column="resolver"
+                          [value]="element[column.key]"
+                          (filterValue)="addFilterValue('resolver', $event)" />
                       </app-copyable>
                     }
                     @default {

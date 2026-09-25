@@ -151,13 +151,10 @@
                 {{ roleBadgeValue.label }}
               </span>
             }
-            @if (row.username) {
-              <app-filter-value-button
-                [value]="row.username"
-                i18n-label="@@common.filterUser"
-                label="Filter by this user"
-                (filterValue)="addFilterValue('usernames', $event)" />
-            }
+            <app-filter-value-button
+              column="username"
+              [value]="row.username"
+              (filterValue)="addFilterValue('usernames', $event)" />
             @if (authService.actionAllowed("authentication_log_read")) {
               <button
                 (click)="showAuthenticationLog(row)"
@@ -346,7 +343,7 @@
           <span class="header-cell">
             <span i18n="@@common.errorMessage">Error Message</span>
             <button
-              (click)="onKeywordClick('error_messages')"
+              (click)="onKeywordClick('error_message')"
               aria-label="Filter by message"
               class="filter-button"
               i18n-aria-label="@@lockedUsers.filterMessage"
@@ -359,7 +356,14 @@
         <td
           *matCellDef="let row"
           mat-cell>
-          <app-expandable-message [text]="row.error_message" />
+          <span class="flex ali-center">
+            <app-expandable-message [text]="row.error_message" />
+            <app-filter-value-button
+              class="margin-left-8"
+              column="error_message"
+              [value]="row.error_message"
+              (filterValue)="filterByErrorMessage($event)" />
+          </span>
         </td>
       </ng-container>
 

@@ -44,11 +44,13 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService } from "@services/auth/auth.service";
 import { EMPTY_EVENT, EventHandler, EventService, MAX_ORDERING } from "@services/event/event.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { exactMatch, matchesFilterTerm, splitExactMatch } from "@utils/filter.utils";
 import { of } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
@@ -63,6 +65,7 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     MatIcon,
     MatSlideToggle,
     ClearableInputComponent,
+    FilterValueButtonComponent,
     MatFormField,
     MatInput,
     MatLabel,
@@ -121,6 +124,8 @@ export class EventComponent {
   paginator = viewChild(MatPaginator);
   sort = signal({ active: "", direction: "" } as Sort);
   filterString = signal<string>("");
+  // A term that asks for an exact match is highlighted without its prefix, which the text does not contain.
+  readonly highlightTerm = computed(() => splitExactMatch(this.filterString().trim()).text);
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.eventService.eventHandlers,
     computation: (eventResource, previous) => {
@@ -153,10 +158,10 @@ export class EventComponent {
           return true;
         }
         return (
-          data.name.toLowerCase().includes(normalizedFilter) ||
-          data.handlermodule.toLowerCase().includes(normalizedFilter) ||
-          data.position.toLowerCase().includes(normalizedFilter) ||
-          data.action.toLowerCase().includes(normalizedFilter) ||
+          matchesFilterTerm(data.name, normalizedFilter) ||
+          matchesFilterTerm(data.handlermodule, normalizedFilter) ||
+          matchesFilterTerm(data.position, normalizedFilter) ||
+          matchesFilterTerm(data.action, normalizedFilter) ||
           this.filterMatchesActionOptions(data, normalizedFilter) ||
           this.filterMatchesEvents(data, normalizedFilter) ||
           this.filterMatchesConditions(data, normalizedFilter)
@@ -178,6 +183,11 @@ export class EventComponent {
     this.filterString.set(value);
     const ds = this.eventHandlerDataSource();
     ds.filter = value.trim().toLowerCase();
+  }
+
+  // A clicked event names one event, so it is matched in full rather than anywhere in a handler.
+  filterByEvent(event: string): void {
+    this.onFilterInput(exactMatch(event));
   }
 
   onEditEventHandler(eventHandler: EventHandler) {
@@ -247,7 +257,7 @@ export class EventComponent {
   private filterMatchesEvents(data: EventHandler, filter: string): boolean {
     // checks if the filter string matches any of the events in the event handler
     for (const event of data.event) {
-      if (event.toLowerCase().includes(filter)) {
+      if (matchesFilterTerm(event, filter)) {
         return true;
       }
     }
@@ -257,7 +267,7 @@ export class EventComponent {
   private filterMatchesConditions(data: EventHandler, filter: string): boolean {
     // checks if the filter string matches any of the events in the event handler
     for (const condition of Object.entries(data.conditions)) {
-      if ((condition[0] + ": " + condition[1]).toLowerCase().includes(filter)) {
+      if (matchesFilterTerm(condition[0] + ": " + condition[1], filter)) {
         return true;
       }
     }
@@ -267,7 +277,7 @@ export class EventComponent {
   private filterMatchesActionOptions(data: EventHandler, filter: string): boolean {
     // checks if the filter string matches any of the events in the event handler
     for (const option of Object.entries(data.options || {})) {
-      if ((option[0] + ": " + option[1]).toLowerCase().includes(filter)) {
+      if (matchesFilterTerm(option[0] + ": " + option[1], filter)) {
         return true;
       }
     }

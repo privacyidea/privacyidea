@@ -125,14 +125,27 @@
                     </span>
                   }
                   @case ("date") {
-                    <span>
-                      {{ element[column.key] | localDateTime }}
-                    </span>
+                    <div class="date-cell">
+                      <div class="flex ali-center">
+                        <span>{{ element[column.key] | localDateTime: "date" }}</span>
+                        <app-filter-value-button
+                          class="margin-left-8"
+                          [column]="column.key"
+                          [value]="element[column.key]?.slice(0, 10)"
+                          (filterValue)="addFilterValue(column.key, $event)" />
+                      </div>
+                      <span>{{ element[column.key] | localDateTime: "time" }}</span>
+                    </div>
                   }
                   @case ("policies-csv") {
                     @for (policy of element[column.key]?.split(","); track policy) {
                       <app-copyable [copyText]="policy">
                         <span>{{ policy }}</span>
+                        <app-filter-value-button
+                          class="margin-left-8"
+                          column="policies"
+                          [value]="policy"
+                          (filterValue)="addFilterValue('policies', $event)" />
                       </app-copyable>
                     }
                   }
@@ -144,6 +157,11 @@
                         routerLink="/token">
                         {{ element[column.key] }}
                       </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        column="serial"
+                        [value]="element.serial"
+                        (filterValue)="addFilterValue('serial', $event)" />
                     </app-copyable>
                   }
                   @case ("container-link") {
@@ -154,6 +172,11 @@
                         routerLink="/token">
                         {{ element[column.key] }}
                       </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        column="container_serial"
+                        [value]="element.container_serial"
+                        (filterValue)="addFilterValue('container_serial', $event)" />
                     </app-copyable>
                   }
                   @case ("user-link") {
@@ -170,11 +193,23 @@
                         tabindex="0">
                         {{ element[column.key] }}
                       </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        column="user"
+                        [value]="element[column.key]"
+                        (filterValue)="addFilterValue('user', $event)" />
                     </app-copyable>
                   }
                   @case ("copy-text") {
                     <app-copyable [copyText]="element[column.key]">
                       <span>{{ element[column.key] }}</span>
+                      @if (showInlineCellFilter(column.key)) {
+                        <app-filter-value-button
+                          class="margin-left-8"
+                          [column]="column.key"
+                          [value]="element[column.key]"
+                          (filterValue)="addFilterValue(column.key, $event)" />
+                      }
                     </app-copyable>
                   }
                   @default {
