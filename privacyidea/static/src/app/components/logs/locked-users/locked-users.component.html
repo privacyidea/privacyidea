@@ -43,7 +43,9 @@
       </mat-hint>
     </mat-form-field>
     <mat-paginator
+      appPaginatorPageSizeTooltip
       (page)="onPageEvent($event)"
+      class="hide-page-size-label"
       [length]="totalLength()"
       [pageIndex]="casService.lockedUsersPageIndex() - 1"
       [pageSize]="casService.lockedUsersPageSize()"
@@ -364,7 +366,7 @@
       </ng-container>
 
       <tr
-        *matHeaderRowDef="displayedColumns"
+        *matHeaderRowDef="displayedColumns; sticky: true"
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"

@@ -41,7 +41,9 @@
         <mat-hint>{{ filterHint }}</mat-hint>
       </mat-form-field>
       <mat-paginator
+        appPaginatorPageSizeTooltip
         (page)="onPageEvent($event)"
+        class="hide-page-size-label"
         [length]="length()"
         [pageIndex]="pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"

@@ -70,6 +70,8 @@
           <mat-hint>{{ filterHint }}</mat-hint>
         </mat-form-field>
         <mat-paginator
+          appPaginatorPageSizeTooltip
+          class="hide-page-size-label"
           [length]="totalLength()"
           [pageSizeOptions]="pageSizeOptions()"
           [pageSize]="userService.pageSize()"

@@ -62,6 +62,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
@@ -128,7 +129,8 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
     MatIcon,
     MatIconButton,
     ScrollEdgesDirective,
-    TableStateComponent
+    TableStateComponent,
+    PaginatorPageSizeTooltipDirective
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
