@@ -35,7 +35,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.ts</context>
-          <context context-type="linenumber">209</context>
+          <context context-type="linenumber">214</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.filterAuditLog" datatype="html">
@@ -467,7 +467,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
-          <context context-type="linenumber">150</context>
+          <context context-type="linenumber">153</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/audit/audit.component.ts</context>
@@ -751,7 +751,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
-          <context context-type="linenumber">83</context>
+          <context context-type="linenumber">84</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.threadId" datatype="html">
@@ -835,7 +835,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
-          <context context-type="linenumber">137</context>
+          <context context-type="linenumber">138</context>
         </context-group>
       </trans-unit>
       <trans-unit id="audit.yourAuthenticationsToken" datatype="html">
@@ -1271,7 +1271,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
-          <context context-type="linenumber">159</context>
+          <context context-type="linenumber">158</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machine.attachNewToken" datatype="html">
@@ -1571,7 +1571,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
-          <context context-type="linenumber">168</context>
+          <context context-type="linenumber">167</context>
         </context-group>
       </trans-unit>
       <trans-unit id="periodicTask.lastDefinition" datatype="html">
@@ -1947,7 +1947,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.ts</context>
-          <context context-type="linenumber">242</context>
+          <context context-type="linenumber">247</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policy-edit-page/policy-edit-page.component.ts</context>
@@ -1967,7 +1967,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">301</context>
+          <context context-type="linenumber">304</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.periodicTasks" datatype="html">
@@ -2315,7 +2315,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
-          <context context-type="linenumber">152</context>
+          <context context-type="linenumber">151</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
@@ -2343,7 +2343,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">849</context>
+          <context context-type="linenumber">855</context>
         </context-group>
       </trans-unit>
       <trans-unit id="periodicTask.successfullyDeleted" datatype="html">
@@ -5079,7 +5079,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
-          <context context-type="linenumber">134</context>
+          <context context-type="linenumber">137</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/privacyidea-servers.component.html</context>
@@ -5087,7 +5087,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">185</context>
+          <context context-type="linenumber">188</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/radius-servers.component.html</context>
@@ -5111,7 +5111,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">193</context>
+          <context context-type="linenumber">196</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/smtp-servers.component.html</context>
@@ -5179,7 +5179,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
-          <context context-type="linenumber">82</context>
+          <context context-type="linenumber">83</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
@@ -5403,7 +5403,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
-          <context context-type="linenumber">77</context>
+          <context context-type="linenumber">76</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.html</context>
@@ -5487,7 +5487,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
-          <context context-type="linenumber">76</context>
+          <context context-type="linenumber">77</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.validatePassphrase" datatype="html">
@@ -6503,7 +6503,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
-          <context context-type="linenumber">79</context>
+          <context context-type="linenumber">80</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
@@ -6923,11 +6923,11 @@
         <target>ທັງໝົດ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
-          <context context-type="linenumber">31</context>
+          <context context-type="linenumber">69</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
-          <context context-type="linenumber">33</context>
+          <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.hardware" datatype="html">
@@ -6935,7 +6935,7 @@
         <target>ຮາດແວ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
-          <context context-type="linenumber">45</context>
+          <context context-type="linenumber">83</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.software" datatype="html">
@@ -6943,7 +6943,7 @@
         <target>ຊອບແວ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
-          <context context-type="linenumber">58</context>
+          <context context-type="linenumber">96</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.unassignedHardware" datatype="html">
@@ -6951,11 +6951,11 @@
         <target>ຮາດແວທີ່ຍັງບໍ່ໄດ້ກຳນົດ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
-          <context context-type="linenumber">72</context>
+          <context context-type="linenumber">110</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
-          <context context-type="linenumber">75</context>
+          <context context-type="linenumber">113</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.unassignedSoftware" datatype="html">
@@ -6963,11 +6963,11 @@
         <target>ຊອບແວທີ່ຍັງບໍ່ໄດ້ກຳນົດ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
-          <context context-type="linenumber">87</context>
+          <context context-type="linenumber">125</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
-          <context context-type="linenumber">90</context>
+          <context context-type="linenumber">128</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.unassigned" datatype="html">
@@ -6975,11 +6975,11 @@
         <target>ຍັງບໍ່ໄດ້ກຳນົດ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
-          <context context-type="linenumber">103</context>
+          <context context-type="linenumber">141</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
-          <context context-type="linenumber">106</context>
+          <context context-type="linenumber">144</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.tokenUsage" datatype="html">
@@ -6987,7 +6987,7 @@
         <target>ການນຳໃຊ້ໂທເຄັນ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.ts</context>
-          <context context-type="linenumber">58</context>
+          <context context-type="linenumber">80</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.loadingWidgetData" datatype="html">
@@ -7927,7 +7927,7 @@
         <target>ນີ້ແມ່ນຊື່ລະບຸຕົວຕົນສະເພາະຂອງການກຳນົດຄ່າເຊີເວີ privacyIDEA.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
-          <context context-type="linenumber">92</context>
+          <context context-type="linenumber">95</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.urlPrivacyidea" datatype="html">
@@ -7935,7 +7935,7 @@
         <target>URL ຂອງເຊີເວີ privacyIDEA</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
-          <context context-type="linenumber">99</context>
+          <context context-type="linenumber">102</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.urlPrivacyideaServer" datatype="html" xml:space="preserve">
@@ -7943,7 +7943,7 @@
         <target state="translated">URL ຂອງເຊີບເວີ privacyIDEA ແມ່ນ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຈຳເປັນຕ້ອງມີ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
-          <context context-type="linenumber">110</context>
+          <context context-type="linenumber">113</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.pleaseProvide" datatype="html">
@@ -7951,7 +7951,7 @@
         <target>ກະລຸນາລະບຸ URL ພື້ນຖານຂອງເຊີເວີ privacyIDEA.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
-          <context context-type="linenumber">113</context>
+          <context context-type="linenumber">116</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.verifyCertificate" datatype="html">
@@ -7959,7 +7959,7 @@
         <target>ກວດສອບໃບຢັ້ງຢືນ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
-          <context context-type="linenumber">121</context>
+          <context context-type="linenumber">124</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.certificateChecked" datatype="html">
@@ -7967,7 +7967,7 @@
         <target>ໃບຢັ້ງຢືນຈະຖືກກວດສອບຄວາມຖືກຕ້ອງຂອງຊື່ໂຮສ ແລະ ຄວາມໜ້າເຊື່ອຖື. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> ຫ້າມຍົກເລີກການເລືອກນີ້ໃນການໃຊ້ງານຈິງ!</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
-          <context context-type="linenumber">126</context>
+          <context context-type="linenumber">129</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.password" datatype="html">
@@ -7975,15 +7975,15 @@
         <target>ລະຫັດຜ່ານ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
-          <context context-type="linenumber">163</context>
+          <context context-type="linenumber">166</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">225</context>
+          <context context-type="linenumber">228</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">177</context>
+          <context context-type="linenumber">180</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
@@ -8011,7 +8011,7 @@
         <target>ສົ່ງຄຳຮ້ອງຂໍທົດສອບ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
-          <context context-type="linenumber">183</context>
+          <context context-type="linenumber">186</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.filterPrivacyidea" datatype="html">
@@ -8127,11 +8127,11 @@
         <target>IP ຫຼື FQDN</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">99</context>
+          <context context-type="linenumber">102</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">99</context>
+          <context context-type="linenumber">102</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.serverRequired" datatype="html" xml:space="preserve">
@@ -8139,11 +8139,11 @@
         <target state="translated">ເຊີບເວີແມ່ນ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຈຳເປັນຕ້ອງມີ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">109</context>
+          <context context-type="linenumber">112</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">109</context>
+          <context context-type="linenumber">112</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.port" datatype="html">
@@ -8151,11 +8151,11 @@
         <target>ພອດ (Port)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">116</context>
+          <context context-type="linenumber">119</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">116</context>
+          <context context-type="linenumber">119</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/sql-resolver/sql-resolver.component.html</context>
@@ -8167,7 +8167,7 @@
         <target>ຄວາມລັບ (Secret)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">129</context>
+          <context context-type="linenumber">132</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/sms-gateways/new-sms-gateway/new-sms-gateway.component.html</context>
@@ -8199,7 +8199,7 @@
         <target state="translated">ລະຫັດລັບ (Secret) ແມ່ນ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຈຳເປັນຕ້ອງມີ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">139</context>
+          <context context-type="linenumber">142</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.timeout" datatype="html">
@@ -8207,11 +8207,11 @@
         <target>ໝົດເວລາ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">146</context>
+          <context context-type="linenumber">149</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">149</context>
+          <context context-type="linenumber">152</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component.html</context>
@@ -8231,7 +8231,7 @@
         <target>ພົດຈະນານຸກົມ RADIUS</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">159</context>
+          <context context-type="linenumber">162</context>
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.retries" datatype="html">
@@ -8239,7 +8239,7 @@
         <target>ລອງໃໝ່</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">173</context>
+          <context context-type="linenumber">176</context>
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.requireMessage" datatype="html">
@@ -8247,7 +8247,7 @@
         <target>ຕ້ອງການ Message-Authenticator</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">202</context>
+          <context context-type="linenumber">205</context>
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.testRadiusServer" datatype="html">
@@ -8255,7 +8255,7 @@
         <target>ທົດສອບເຊີເວີ RADIUS</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">206</context>
+          <context context-type="linenumber">209</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.username" datatype="html">
@@ -8263,11 +8263,11 @@
         <target>ຊື່ຜູ້ໃຊ້</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">212</context>
+          <context context-type="linenumber">215</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">162</context>
+          <context context-type="linenumber">165</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
@@ -8295,7 +8295,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
-          <context context-type="linenumber">75</context>
+          <context context-type="linenumber">76</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
@@ -8307,7 +8307,7 @@
         <target>ສົ່ງຄຳຮ້ອງຂໍທົດສອບ RADIUS</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
-          <context context-type="linenumber">241</context>
+          <context context-type="linenumber">244</context>
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.filterRadiusServers" datatype="html">
@@ -8671,7 +8671,7 @@
         <target>ອີເມລຜູ້ສົ່ງ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">129</context>
+          <context context-type="linenumber">132</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.senderEmailRequired" datatype="html" xml:space="preserve">
@@ -8679,7 +8679,7 @@
         <target state="translated">ອີເມວຜູ້ສົ່ງແມ່ນ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຈຳເປັນຕ້ອງມີ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">139</context>
+          <context context-type="linenumber">142</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.invalidEmailFormat" datatype="html">
@@ -8687,7 +8687,7 @@
         <target>ຮູບແບບອີເມລບໍ່ຖືກຕ້ອງ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">142</context>
+          <context context-type="linenumber">145</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.ifSmtpServerRequires" datatype="html">
@@ -8695,7 +8695,7 @@
         <target>ຖ້າເຊີເວີ SMTP ຕ້ອງການການຢືນຢັນຕົວຕົນ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">171</context>
+          <context context-type="linenumber">174</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.useStarttls" datatype="html">
@@ -8703,7 +8703,7 @@
         <target>ໃຊ້ StartTLS</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">211</context>
+          <context context-type="linenumber">214</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.sendMailFromJob" datatype="html">
@@ -8711,7 +8711,7 @@
         <target>ສົ່ງເມລຈາກຄິວວຽກ (Job Queue)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">218</context>
+          <context context-type="linenumber">221</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.sMime" datatype="html" xml:space="preserve">
@@ -8719,7 +8719,7 @@
         <target state="translated">S/MIME</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">224</context>
+          <context context-type="linenumber">227</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.certificate" datatype="html">
@@ -8727,7 +8727,7 @@
         <target>ໃບຢັ້ງຢືນ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">237</context>
+          <context context-type="linenumber">240</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.pathCertificate" datatype="html">
@@ -8735,7 +8735,7 @@
         <target>ທີ່ຢູ່ (Path) ໄປຫາໄຟລ໌ໃບຢັ້ງຢືນ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">245</context>
+          <context context-type="linenumber">248</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.sMimeSigning" datatype="html">
@@ -8743,7 +8743,7 @@
         <target>ການເຊັນ S/MIME</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">255</context>
+          <context context-type="linenumber">258</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.donTSendSigning" datatype="html" xml:space="preserve">
@@ -8751,7 +8751,7 @@
         <target state="translated">ບໍ່ຕ້ອງສົ່ງຖ້າມີຂໍ້ຜິດພາດໃນການເຊັນ (signing error)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">261</context>
+          <context context-type="linenumber">264</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.privateKey" datatype="html">
@@ -8759,7 +8759,7 @@
         <target>ຄີສ່ວນຕົວ (Private Key)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">269</context>
+          <context context-type="linenumber">272</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.pathPrivateKey" datatype="html">
@@ -8767,7 +8767,7 @@
         <target>ທີ່ຢູ່ (Path) ໄປຫາໄຟລ໌ຄີສ່ວນຕົວ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">277</context>
+          <context context-type="linenumber">280</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.passwordPrivate" datatype="html">
@@ -8775,7 +8775,7 @@
         <target>ລະຫັດຜ່ານສຳລັບຄີສ່ວນຕົວ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">284</context>
+          <context context-type="linenumber">287</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -8787,7 +8787,7 @@
         <target>ຜູ້ຮັບສຳລັບການທົດສອບ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">303</context>
+          <context context-type="linenumber">306</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.sendTestEmail" datatype="html">
@@ -8795,7 +8795,7 @@
         <target>ສົ່ງອີເມລທົດສອບ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">318</context>
+          <context context-type="linenumber">321</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.filterSmtpServers" datatype="html">
@@ -9834,15 +9834,15 @@
         <target>ຊື່ Machine Resolver</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.html</context>
-          <context context-type="linenumber">94</context>
+          <context context-type="linenumber">92</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machine.machineResolverNameContains" datatype="html">
-        <source>Machine resolver name contains <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>invalid characters<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</source>
-        <target>ຊື່ Machine resolver ມີ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຕົວອັກສອນທີ່ບໍ່ຖືກຕ້ອງ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. ອະນຸຍາດໃຫ້ໃຊ້ພຽງແຕ່ ຕົວອັກສອນ, ຕົວເລກ, ຈ້ຳ, ຂີດກ້ອງ ແລະ ຂີດຕໍ່ ເທົ່ານັ້ນ.</target>
+        <source>Only <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>letters, digits and . _ -<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> are allowed.</source>
+        <target state="new">ຊື່ Machine resolver ມີ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຕົວອັກສອນທີ່ບໍ່ຖືກຕ້ອງ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. ອະນຸຍາດໃຫ້ໃຊ້ພຽງແຕ່ ຕົວອັກສອນ, ຕົວເລກ, ຈ້ຳ, ຂີດກ້ອງ ແລະ ຂີດຕໍ່ ເທົ່ານັ້ນ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.html</context>
-          <context context-type="linenumber">106</context>
+          <context context-type="linenumber">104</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machine.unknownMachine" datatype="html">
@@ -9850,7 +9850,7 @@
         <target>ບໍ່ຮູ້ຈັກປະເພດ machine resolver: <x id="INTERPOLATION" equiv-text="{{ currentMachineResolver().type }}"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.html</context>
-          <context context-type="linenumber">147</context>
+          <context context-type="linenumber">144</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machine.machineResolverNot" datatype="html" xml:space="preserve">
@@ -9858,7 +9858,7 @@
         <target state="translated">ບໍ່ພົບ Machine resolver &quot;<x id="NAME" equiv-text="name"/>&quot;.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.ts</context>
-          <context context-type="linenumber">154</context>
+          <context context-type="linenumber">159</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machine.saveMachineResolver" datatype="html">
@@ -9866,7 +9866,7 @@
         <target>ຕ້ອງການບັນທຶກ machine resolver ຫຼື ບໍ່ ເຖິງແມ່ນວ່າການທົດສອບຈະລົ້ມເຫຼວ?</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.ts</context>
-          <context context-type="linenumber">208</context>
+          <context context-type="linenumber">213</context>
         </context-group>
       </trans-unit>
       <trans-unit id="machine.newMachineResolver" datatype="html">
@@ -9874,7 +9874,7 @@
         <target>Machine Resolver ໃໝ່</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.ts</context>
-          <context context-type="linenumber">210</context>
+          <context context-type="linenumber">215</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver.component.html</context>
@@ -10118,7 +10118,7 @@
         <target>ລຶບ Machine Resolver</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.ts</context>
-          <context context-type="linenumber">266</context>
+          <context context-type="linenumber">271</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver.component.ts</context>
@@ -15046,7 +15046,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/realm/realm.service.ts</context>
-          <context context-type="linenumber">262</context>
+          <context context-type="linenumber">263</context>
         </context-group>
       </trans-unit>
       <trans-unit id="realm.noResolversConfigured" datatype="html">
@@ -15098,7 +15098,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/realm/realm.service.ts</context>
-          <context context-type="linenumber">296</context>
+          <context context-type="linenumber">297</context>
         </context-group>
       </trans-unit>
       <trans-unit id="realm.realmDeleted" datatype="html" xml:space="preserve">
@@ -15162,11 +15162,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">247</context>
+          <context context-type="linenumber">250</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">337</context>
+          <context context-type="linenumber">340</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.userDetailsContainer" datatype="html">
@@ -15564,7 +15564,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
-          <context context-type="linenumber">78</context>
+          <context context-type="linenumber">79</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
@@ -15584,7 +15584,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
-          <context context-type="linenumber">80</context>
+          <context context-type="linenumber">81</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
@@ -15604,7 +15604,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
-          <context context-type="linenumber">81</context>
+          <context context-type="linenumber">82</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
@@ -16964,7 +16964,7 @@
         <target state="translated">ຊື່ Resolver ແມ່ນ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຈຳເປັນຕ້ອງມີ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
-          <context context-type="linenumber">64</context>
+          <context context-type="linenumber">62</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverNameContains" datatype="html">
@@ -16972,7 +16972,7 @@
         <target>ຊື່ Resolver ມີ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຕົວອັກສອນທີ່ບໍ່ຖືກຕ້ອງ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. ອະນຸຍາດໃຫ້ໃຊ້ສະເພາະຕົວອັກສອນ, ຕົວເລກ, ຈ້ຳ (.), ຂີດກ້ອງ (_) ແລະ ຂີດຕໍ່ (-) ເທົ່ານັ້ນ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
-          <context context-type="linenumber">70</context>
+          <context context-type="linenumber">66</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.testUsername" datatype="html">
@@ -16980,7 +16980,7 @@
         <target>ທົດສອບຊື່ຜູ້ໃຊ້</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
-          <context context-type="linenumber">100</context>
+          <context context-type="linenumber">99</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.testUserId" datatype="html">
@@ -16988,7 +16988,7 @@
         <target>ທົດສອບ ID ຜູ້ໃຊ້</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
-          <context context-type="linenumber">113</context>
+          <context context-type="linenumber">112</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.quickResolver" datatype="html">
@@ -16996,7 +16996,7 @@
         <target>ທົດສອບ Resolver ແບບດ່ວນ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
-          <context context-type="linenumber">133</context>
+          <context context-type="linenumber">132</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.testConnection" datatype="html">
@@ -17004,7 +17004,7 @@
         <target>ທົດສອບການເຊື່ອມຕໍ່</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
-          <context context-type="linenumber">143</context>
+          <context context-type="linenumber">142</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.pleaseEnterResolver" datatype="html">
@@ -17012,7 +17012,7 @@
         <target>ກະລຸນາໃສ່ຊື່ resolver.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">239</context>
+          <context context-type="linenumber">242</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.pleaseSelectResolver" datatype="html">
@@ -17020,11 +17020,11 @@
         <target>ກະລຸນາເລືອກປະເພດ resolver.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">243</context>
+          <context context-type="linenumber">246</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">332</context>
+          <context context-type="linenumber">335</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverUpdated" datatype="html" xml:space="preserve">
@@ -17032,7 +17032,7 @@
         <target state="translated">ອັບເດດ Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; ແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">267</context>
+          <context context-type="linenumber">270</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverCreated" datatype="html" xml:space="preserve">
@@ -17040,7 +17040,7 @@
         <target state="translated">ສ້າງ Resolver &quot;<x id="NAME" equiv-text="name"/>&quot; ແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">268</context>
+          <context context-type="linenumber">271</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.failedSaveResolver" datatype="html">
@@ -17048,11 +17048,11 @@
         <target>ບໍ່ສາມາດບັນທຶກ resolver ໄດ້.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">274</context>
+          <context context-type="linenumber">277</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">279</context>
+          <context context-type="linenumber">282</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.resolverTestExecuted" datatype="html">
@@ -17060,7 +17060,7 @@
         <target>ການທົດສອບ Resolver ຖືກດຳເນີນການ: <x id="DETAIL" equiv-text="detail"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">367</context>
+          <context context-type="linenumber">370</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.failedTestResolver" datatype="html">
@@ -17068,11 +17068,11 @@
         <target>ບໍ່ສາມາດທົດສອບ resolver ໄດ້.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">372</context>
+          <context context-type="linenumber">375</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">379</context>
+          <context context-type="linenumber">382</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.unknownServer" datatype="html">
@@ -17080,11 +17080,11 @@
         <target>ເກີດຂໍ້ຜິດພາດທີ່ບໍ່ຮູ້ຈັກຈາກເຊີບເວີ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">396</context>
+          <context context-type="linenumber">399</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">402</context>
+          <context context-type="linenumber">405</context>
         </context-group>
       </trans-unit>
       <trans-unit id="resolver.newResolver" datatype="html">
@@ -17176,7 +17176,7 @@
         <target>ລຶບ Resolver</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">430</context>
+          <context context-type="linenumber">433</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
@@ -17188,7 +17188,7 @@
         <target state="new">ລຶບ Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot; ແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">441</context>
+          <context context-type="linenumber">444</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
@@ -17200,7 +17200,7 @@
         <target state="new">ບໍ່ພົບ Resolver &quot;<x id="RESOLVER" equiv-text="resolver.resolvername"/>&quot;.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">447</context>
+          <context context-type="linenumber">450</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
@@ -17212,7 +17212,7 @@
         <target>ບໍ່ສາມາດລຶບ resolver ໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.ts</context>
-          <context context-type="linenumber">454</context>
+          <context context-type="linenumber">457</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-resolver/user-resolver.component.ts</context>
@@ -17296,7 +17296,7 @@
         <target>ຊື່</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-table/user-table.component.ts</context>
-          <context context-type="linenumber">77</context>
+          <context context-type="linenumber">78</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.navigationBlockedByAuthguard" datatype="html">
@@ -17528,7 +17528,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">920</context>
+          <context context-type="linenumber">926</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.cannotSaveContainerStatesAt" datatype="html">
@@ -17556,7 +17556,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1125</context>
+          <context context-type="linenumber">1131</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToAssignUser" datatype="html">
@@ -17568,7 +17568,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1184</context>
+          <context context-type="linenumber">1190</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToSaveContainerInfos" datatype="html">
@@ -18368,7 +18368,7 @@
         <target>ບັນທຶກ ID ບໍລິການສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
-          <context context-type="linenumber">111</context>
+          <context context-type="linenumber">107</context>
         </context-group>
       </trans-unit>
       <trans-unit id="serviceId.failedSaveService" datatype="html">
@@ -18376,7 +18376,7 @@
         <target>ບໍ່ສາມາດບັນທຶກ ID ບໍລິການໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
-          <context context-type="linenumber">117</context>
+          <context context-type="linenumber">113</context>
         </context-group>
       </trans-unit>
       <trans-unit id="serviceId.successfullyDeleted" datatype="html">
@@ -18384,7 +18384,7 @@
         <target>ລຶບ ID ບໍລິການສຳເລັດແລ້ວ: <x id="SERVICE" equiv-text="servicename"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
-          <context context-type="linenumber">130</context>
+          <context context-type="linenumber">126</context>
         </context-group>
       </trans-unit>
       <trans-unit id="serviceId.failedDeleteService" datatype="html">
@@ -18392,7 +18392,7 @@
         <target>ບໍ່ສາມາດລຶບ ID ບໍລິການໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
-          <context context-type="linenumber">137</context>
+          <context context-type="linenumber">133</context>
         </context-group>
       </trans-unit>
       <trans-unit id="session.sessionWillExpireIn30" datatype="html">
@@ -18540,7 +18540,7 @@
         <target>ຍົກເລີກການກຳນົດໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">816</context>
+          <context context-type="linenumber">822</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToDeleteTokens" datatype="html">
@@ -18548,7 +18548,7 @@
         <target>ລຶບໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">832</context>
+          <context context-type="linenumber">838</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.deleteSelectedTokens" datatype="html">
@@ -18556,7 +18556,7 @@
         <target>ລຶບໂທເຄັນທີ່ເລືອກ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">844</context>
+          <context context-type="linenumber">850</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedOne" datatype="html">
@@ -18564,7 +18564,7 @@
         <target>ລຶບ 1 ໂທເຄັນສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">869</context>
+          <context context-type="linenumber">875</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedOther" datatype="html">
@@ -18572,7 +18572,7 @@
         <target>ລຶບ <x id="COUNT" equiv-text="count_success"/> ໂທເຄັນສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">872</context>
+          <context context-type="linenumber">878</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.followingTokensFailedDelete" datatype="html">
@@ -18580,7 +18580,7 @@
         <target>ໂທເຄັນຕໍ່ໄປນີ້ລຶບບໍ່ສຳເລັດ: <x id="TOKENS" equiv-text="formatList(this.localeId, failedTokens)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">879</context>
+          <context context-type="linenumber">885</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.notAuthorizedDelete" datatype="html">
@@ -18588,7 +18588,7 @@
         <target>ເຈົ້າບໍ່ມີສິດລຶບໂທເຄັນຕໍ່ໄປນີ້: <x id="TOKENS" equiv-text="formatList(this.localeId, unauthorizedTokens)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">885</context>
+          <context context-type="linenumber">891</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToResetFailCount" datatype="html">
@@ -18596,7 +18596,7 @@
         <target>ຣີເຊັດຈຳນວນຄັ້ງທີ່ຜິດພາດບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">936</context>
+          <context context-type="linenumber">942</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenDetail" datatype="html">
@@ -18604,7 +18604,7 @@
         <target>ຕັ້ງລາຍລະອຽດໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">965</context>
+          <context context-type="linenumber">971</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToGetCount" datatype="html">
@@ -18612,7 +18612,7 @@
         <target>ດຶງຂໍ້ມູນຈຳນວນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">986</context>
+          <context context-type="linenumber">992</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenInfo" datatype="html">
@@ -18620,7 +18620,7 @@
         <target>ຕັ້ງຂໍ້ມູນໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1008</context>
+          <context context-type="linenumber">1014</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToRevokeToken" datatype="html">
@@ -18628,7 +18628,7 @@
         <target>ຍົກເລີກການໃຊ້ງານໂທເຄັນ (revoke) ບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1067</context>
+          <context context-type="linenumber">1073</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToDeleteTokenInfo" datatype="html">
@@ -18636,7 +18636,7 @@
         <target>ລຶບຂໍ້ມູນໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1088</context>
+          <context context-type="linenumber">1094</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToUnassignUserFrom" datatype="html">
@@ -18644,7 +18644,7 @@
         <target>ຍົກເລີກການກຳນົດຜູ້ໃຊ້ຈາກທຸກໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1108</context>
+          <context context-type="linenumber">1114</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToAssignUserTo" datatype="html">
@@ -18652,7 +18652,7 @@
         <target>ກຳນົດຜູ້ໃຊ້ໃຫ້ທຸກໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1153</context>
+          <context context-type="linenumber">1159</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetPin" datatype="html">
@@ -18660,7 +18660,7 @@
         <target>ຕັ້ງລະຫັດ PIN ບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1206</context>
+          <context context-type="linenumber">1212</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetRandomPin" datatype="html">
@@ -18668,7 +18668,7 @@
         <target>ຕັ້ງລະຫັດ PIN ແບບສຸ່ມບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1227</context>
+          <context context-type="linenumber">1233</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToResyncOtpToken" datatype="html">
@@ -18676,7 +18676,7 @@
         <target>ຊິງໂຄໄນຊ໌ (Sync) ໂທເຄັນ OTP ຄືນໃໝ່ບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1251</context>
+          <context context-type="linenumber">1257</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToEnrollToken" datatype="html">
@@ -18684,7 +18684,7 @@
         <target>ລົງທະບຽນໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1292</context>
+          <context context-type="linenumber">1298</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToVerifyToken" datatype="html">
@@ -18692,7 +18692,7 @@
         <target>ກວດສອບໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1308</context>
+          <context context-type="linenumber">1314</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToMarkTokenAs" datatype="html">
@@ -18700,7 +18700,7 @@
         <target>ໝາຍໂທເຄັນວ່າເສຍບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1324</context>
+          <context context-type="linenumber">1330</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToPollTokenState" datatype="html">
@@ -18708,7 +18708,7 @@
         <target>ກວດສອບສະຖານະໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1351</context>
+          <context context-type="linenumber">1357</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenRealm" datatype="html">
@@ -18716,7 +18716,7 @@
         <target>ຕັ້ງ Realm ຂອງໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1375</context>
+          <context context-type="linenumber">1381</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToGetTokengroups" datatype="html">
@@ -18724,7 +18724,7 @@
         <target>ດຶງຂໍ້ມູນກຸ່ມໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1389</context>
+          <context context-type="linenumber">1395</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenGroup" datatype="html">
@@ -18732,7 +18732,7 @@
         <target>ຕັ້ງກຸ່ມໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1413</context>
+          <context context-type="linenumber">1419</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToImportTokens" datatype="html">
@@ -18740,7 +18740,7 @@
         <target>ນຳເຂົ້າໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1431</context>
+          <context context-type="linenumber">1437</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenGroup.successfullySaved" datatype="html">
@@ -18780,7 +18780,7 @@
         <target>ບໍ່ສາມາດຕັ້ງຄ່າຄຸນລັກສະນະຜູ້ໃຊ້ໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
-          <context context-type="linenumber">571</context>
+          <context context-type="linenumber">610</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.failedDeleteUserAttribute" datatype="html">
@@ -18788,7 +18788,7 @@
         <target>ບໍ່ສາມາດລຶບຄຸນລັກສະນະຜູ້ໃຊ້ໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
-          <context context-type="linenumber">589</context>
+          <context context-type="linenumber">628</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.failedCreateUser" datatype="html">
@@ -18796,7 +18796,7 @@
         <target>ບໍ່ສາມາດສ້າງຜູ້ໃຊ້ <x id="USERNAME" equiv-text="userData.username"/> ໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
-          <context context-type="linenumber">609</context>
+          <context context-type="linenumber">648</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.failedUpdateUser" datatype="html">
@@ -18804,7 +18804,7 @@
         <target>ບໍ່ສາມາດປັບປຸງຜູ້ໃຊ້ <x id="USERNAME" equiv-text="userData.username"/> ໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
-          <context context-type="linenumber">625</context>
+          <context context-type="linenumber">664</context>
         </context-group>
       </trans-unit>
       <trans-unit id="user.failedDeleteUser" datatype="html">
@@ -18812,7 +18812,7 @@
         <target>ບໍ່ສາມາດລຶບຜູ້ໃຊ້ <x id="USERNAME" equiv-text="username"/> ໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/user/user.service.ts</context>
-          <context context-type="linenumber">640</context>
+          <context context-type="linenumber">679</context>
         </context-group>
       </trans-unit>
       <trans-unit id="validate.failedToTestToken" datatype="html">
@@ -19900,7 +19900,7 @@
         <target>ລຶບ <x id="COUNT" equiv-text="count_success"/> ໂທເຄັນສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">870</context>
+          <context context-type="linenumber">876</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedMany" datatype="html">
@@ -19908,7 +19908,7 @@
         <target>ລຶບ <x id="COUNT" equiv-text="count_success"/> ໂທເຄັນສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">871</context>
+          <context context-type="linenumber">877</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.enrollmentTokenCancelled" datatype="html" xml:space="preserve">
@@ -19916,7 +19916,7 @@
         <target state="translated">ການລົງທະບຽນຂອງໂທເຄັນ <x id="PH" equiv-text="tokenSerial"/> ຖືກຍົກເລີກແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1046</context>
+          <context context-type="linenumber">1052</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedCancelEnrollment" datatype="html" xml:space="preserve">
@@ -19924,7 +19924,7 @@
         <target state="translated">ບໍ່ສາມາດຍົກເລີກການລົງທະບຽນໄດ້. <x id="PH" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1053</context>
+          <context context-type="linenumber">1059</context>
         </context-group>
       </trans-unit>
       <trans-unit id="valueLabelOff" datatype="html" xml:space="preserve">
@@ -24080,7 +24080,7 @@
         <target state="new">Delete privacyIDEA Server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.ts</context>
-          <context context-type="linenumber">188</context>
+          <context context-type="linenumber">192</context>
         </context-group>
       </trans-unit>
       <trans-unit id="piServer.privacyideaServer" datatype="html">
@@ -24088,7 +24088,7 @@
         <target state="new">privacyIDEA server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.ts</context>
-          <context context-type="linenumber">190</context>
+          <context context-type="linenumber">194</context>
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.deleteRadiusServer" datatype="html">
@@ -24096,7 +24096,7 @@
         <target state="new">Delete RADIUS Server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.ts</context>
-          <context context-type="linenumber">221</context>
+          <context context-type="linenumber">225</context>
         </context-group>
       </trans-unit>
       <trans-unit id="radiusServer.radiusServer" datatype="html">
@@ -24104,7 +24104,7 @@
         <target state="new">RADIUS server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.ts</context>
-          <context context-type="linenumber">223</context>
+          <context context-type="linenumber">227</context>
         </context-group>
       </trans-unit>
       <trans-unit id="serviceId.deleteServiceId" datatype="html">
@@ -24136,7 +24136,7 @@
         <target state="new">Delete SMTP Server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.ts</context>
-          <context context-type="linenumber">229</context>
+          <context context-type="linenumber">233</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.smtpServer" datatype="html">
@@ -24144,7 +24144,7 @@
         <target state="new">SMTP server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.ts</context>
-          <context context-type="linenumber">231</context>
+          <context context-type="linenumber">235</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokengroup.deleteTokengroup" datatype="html">
@@ -24355,20 +24355,80 @@
           <context context-type="linenumber">86</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="serviceId.unavailableSelfService" datatype="html">
-        <source>Application specific password tokens cannot be enrolled in self-service: the service IDs are only available to administrators.</source>
-        <target state="new">Application specific password tokens cannot be enrolled in self-service: the service IDs are only available to administrators.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
-          <context context-type="linenumber">68</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="serviceId.unavailableNeedsListRight" datatype="html">
         <source>Application specific password tokens cannot be enrolled: selecting the service ID needs the serviceid_list right.</source>
         <target state="new">Application specific password tokens cannot be enrolled: selecting the service ID needs the serviceid_list right.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/service-id/service-id.service.ts</context>
-          <context context-type="linenumber">69</context>
+          <context context-type="linenumber">65</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.selectRealm" datatype="html">
+        <source>Select realm</source>
+        <target state="new">Select realm</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
+          <context context-type="linenumber">27</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.ts</context>
+          <context context-type="linenumber">137</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.noRealms" datatype="html">
+        <source>There is no realm to count. Create one to see its tokens and users.</source>
+        <target state="new">There is no realm to count. Create one to see its tokens and users.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
+          <context context-type="linenumber">56</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.usersWithTokens" datatype="html">
+        <source>Users with tokens</source>
+        <target state="new">Users with tokens</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
+          <context context-type="linenumber">158</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.usersWithoutTokens" datatype="html">
+        <source>Users without tokens</source>
+        <target state="new">Users without tokens</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
+          <context context-type="linenumber">170</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dashboard.userListIncomplete" datatype="html">
+        <source>Excluding <x id="INTERPOLATION" equiv-text="{{ skippedResolverNames() }}"/>, which did not answer.</source>
+        <target state="new">Excluding <x id="INTERPOLATION" equiv-text="{{ skippedResolverNames() }}"/>, which did not answer.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/dashboard/widgets/tokens-widget/tokens-widget.component.html</context>
+          <context context-type="linenumber">181</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.cannotBeNamed" datatype="html">
+        <source>Cannot be named &quot;<x id="INTERPOLATION" equiv-text="{{ privacyideaForm.identifier().value() }}"/>&quot;.</source>
+        <target state="new">Cannot be named &quot;<x id="INTERPOLATION" equiv-text="{{ privacyideaForm.identifier().value() }}"/>&quot;.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/external-services/privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component.html</context>
+          <context context-type="linenumber">92</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/external-services/radius-servers/new-radius-server/new-radius-server.component.html</context>
+          <context context-type="linenumber">94</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
+          <context context-type="linenumber">94</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.html</context>
+          <context context-type="linenumber">109</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/user/user-new-resolver/user-new-resolver.component.html</context>
+          <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
     </body>
