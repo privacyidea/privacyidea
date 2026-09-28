@@ -1313,6 +1313,7 @@ class WebAuthnAuthorizationTestCase(MyApiTestCase):
 
         res = self._validate_check(transaction_id, serial=self.serial)
         self.assertEqual("ACCEPT", res.json["result"]["authentication"], res.json)
+
     def test_06_invalid_signature_with_authorization_policy(self):
         """
         The authorization policies are checked for a valid assertion only. An invalid signature is a failed

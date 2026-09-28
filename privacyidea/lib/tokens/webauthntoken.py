@@ -1533,8 +1533,7 @@ class WebAuthnTokenClass(TokenClass):
                 )
                 raise PolicyError("The WebAuthn token is not allowed to authenticate due to a policy restriction.")
 
-            # Check if the attestation certificate is
-            # authorized. If not, we can raise a policy exception.
+            # Check if the attestation certificate is authorized. If not, we can raise a policy exception.
             if not attestation_certificate_allowed(
                     {
                         "attestation_issuer": self.get_tokeninfo(FIDO2TokenInfo.ATTESTATION_ISSUER),
