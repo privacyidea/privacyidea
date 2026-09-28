@@ -48,6 +48,7 @@ from privacyidea.lib.eventhandler.webhookeventhandler import (ActionType as WHEH
                                                               ContentType,
                                                               DB_CONTENT_TYPE_MAP)
 from privacyidea.lib.machine import list_token_machines
+from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
                                    get_one_token, unassign_token, get_tokens_paginate)
 from privacyidea.lib.tokenclass import DATE_FORMAT, ChallengeSession
@@ -2129,6 +2130,45 @@ class RequestManglerTestCase(MyTestCase):
         self.assertTrue(hasattr(req, "User"))
         self.assertEqual(req.User.login, "cornelius")
         self.assertEqual(req.User.realm, self.realm1)
+
+    @staticmethod
+    def _set(request_data: dict, handler_options: dict) -> Request:
+        """Run the set action on a request carrying *request_data* and return the request."""
+        req = Request(EnvironBuilder(method='POST').get_environ())
+        req.User = User()
+        req.all_data = dict(request_data)
+        options = {"g": FakeFlaskG(), "request": req, "response": Response(),
+                   "handler_def": {"options": handler_options}}
+        RequestManglerEventHandler().do("set", options=options)
+        return req
+
+    def test_05_reset_user_with_a_fixed_value(self):
+        # Setting a user parameter to a fixed value resets the user just like a value built from a match.
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        req = self._set({"user": "cornelius", "realm": self.realm1},
+                        {"parameter": "realm", "value": self.realm2, "reset_user": True})
+        self.assertEqual(self.realm2, req.all_data["realm"])
+        self.assertEqual(User("cornelius", self.realm2), req.User)
+
+    def test_06_reset_user_reads_the_parameters_like_a_request(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        # A login name with the name of a realm is split.
+        req = self._set({"user": "hans"},
+                        {"parameter": "user", "value": f"cornelius@{self.realm2}", "reset_user": True})
+        self.assertEqual(User("cornelius", self.realm2), req.User)
+        # The realm parameter takes precedence over the realm in the login name.
+        req = self._set({"user": "hans", "realm": self.realm1},
+                        {"parameter": "user", "value": f"cornelius@{self.realm2}", "reset_user": True})
+        self.assertEqual(User("cornelius", self.realm1), req.User)
+        # Without any realm, the user is looked up in the default realm.
+        req = self._set({"user": "hans"}, {"parameter": "user", "value": "cornelius", "reset_user": True})
+        self.assertEqual(User("cornelius", get_default_realm()), req.User)
+        # /auth names the user in the username parameter.
+        req = self._set({"username": "hans", "realm": self.realm2},
+                        {"parameter": "username", "value": "cornelius", "reset_user": True})
+        self.assertEqual(User("cornelius", self.realm2), req.User)
 
 
 class ResponseManglerTestCase(MyTestCase):
