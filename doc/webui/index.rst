@@ -146,7 +146,8 @@ Dashboard
 .. index:: dashboard
 
 Starting with version 3.4, privacyIDEA includes a basic dashboard, which can be enabled
-by the WebUI policy :ref:`webui_admin_dashboard`. The dashboard will be displayed as a starting page
+by the WebUI policy :ref:`webui_admin_dashboard`. The new WebUI always shows the dashboard to
+administrators, regardless of this policy. The dashboard will be displayed as a starting page
 for administrators and contains information about token numbers, authentication requests,
 recent administrative changes, policies, event handlers and subscriptions. It uses the usual
 endpoints to fetch the information, so only information to which an administrator has read
@@ -444,24 +445,24 @@ which rights it needs are described in
 Storage and cleanup
 ~~~~~~~~~~~~~~~~~~~
 
-.. index:: MetricsCleanup, metric_aggregate
+.. index:: metrics, metric_aggregate
 
 The Resolver Timing and Notification Delivery panels both read from a
 single pre-aggregated table (``metric_aggregate``). Each row holds a
 counter or histogram for a 5-minute window, partitioned by the writing
 node, so per-request overhead stays low.
 
-The table grows unbounded unless an operator schedules the
-``MetricsCleanup`` periodic task under *Config -> Tasks*. The task takes
-one option, ``older_than_hours`` (default ``24``); a daily schedule is
-recommended, which keeps the table at roughly two days' worth of rows.
-Each run is a single indexed ``DELETE``, so cost is negligible. Skip the
-task entirely and the table will keep all metric rows indefinitely.
+The table grows unbounded unless something deletes the old rows. The
+Ubuntu packages and the Docker image run ``pi-manage config metrics cleanup``
+daily, which deletes the rows older than 24 hours and so keeps the table at
+roughly two days' worth of rows; on an installation from PyPI you have to
+schedule it yourself, see :ref:`cleanup_jobs`. Each run is a single indexed
+``DELETE``, so cost is negligible.
 
 If you need to turn the whole feature off, set ``PI_NO_INTERNAL_METRICS = True``
 in ``pi.cfg``. With that flag every ``observe`` / ``inc`` call short-circuits
 before touching the database; the dashboard panels will simply show no data.
-Reads remain available, and the ``MetricsCleanup`` task continues to work.
+Reads remain available, and the cleanup continues to work.
 
 .. _news:
 

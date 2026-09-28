@@ -28,7 +28,7 @@ session it writes on.
 import logging
 import secrets
 from dataclasses import dataclass, field
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from flask import has_request_context
@@ -114,6 +114,9 @@ class ConditionalAccessContext:
         # way out, because the gate does not have the last word on it: /ttype/push runs a view afterwards that logs
         # success and the identity itself (see _audit_rejection).
         self.rejection_audit: dict | None = None
+        # The check of the gate this request passed, kept so it can be run again for a user that replaces
+        # request.User after the gate (see recheck_conditional_access_gate).
+        self.gate_check: Callable[[], Any] | None = None
 
     def claim_message(self, message: str) -> None:
         """
@@ -619,6 +622,28 @@ def claimed_ca_message() -> str | None:
     """
     context = peek_ca_context()
     return context.own_message if context else None
+
+
+def recheck_conditional_access_gate() -> Any:
+    """
+    Run the conditional-access gate this request passed again, because the user it authenticates has changed since.
+
+    The gates sit above the pre-policies and the event handlers, so nothing runs for a locked user before the request
+    is refused. A pre-event handler can replace ``request.User`` after that - the RequestMangler does with
+    ``reset_user`` - so the event decorator calls this as soon as a handler has done so, before any later handler or
+    the view acts for the new user. Every user the request acts for is thereby one the gate has checked.
+
+    The decision the first check buffered is dropped: it was about a user this request no longer authenticates, and
+    the row it would be recorded on is the new user's.
+
+    :return: what the gate returns for a refused request - the rejection response on ``/validate/*``, while ``/auth``
+        raises instead - or ``None`` when the request may continue or passed no gate
+    """
+    context = peek_ca_context()
+    if context is None or context.gate_check is None:
+        return None
+    context.pending_outcomes.clear()
+    return context.gate_check()
 
 
 def peek_ca_context() -> ConditionalAccessContext | None:

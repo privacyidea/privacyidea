@@ -84,6 +84,18 @@ will be modified to::
 .. note:: The *match_pattern* in the above example will not match "surname.givenname@example.company",
    since it always matches the complete value as mentioned above.
 
+**Changing the user of the request**
+
+privacyIDEA determines the user of a request before the event handlers run, and the authentication endpoints
+``/validate/check`` and ``/auth`` work with that user. Setting the parameter ``user``, ``username`` or ``realm`` does
+not change it, unless the option *reset_user* is checked. The two examples above need it to change who
+authenticates. With *reset_user*, the user is determined again from the modified parameters, the same way as for any
+request: a ``user@realm`` login name is split according to the :ref:`splitatsign` setting, the ``realm`` parameter
+takes precedence over the realm in the login name, and without any realm the default realm is used.
+
+:ref:`conditional_access` is checked for the user of the original request and again for the new user. Other policies
+that are checked before the event handlers run still apply to the user of the original request.
+
 Code
 ~~~~
 

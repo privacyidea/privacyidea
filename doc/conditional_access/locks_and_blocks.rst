@@ -32,7 +32,8 @@ Lifting locks and blocks
 *Logs → Locked Users* and *Logs → IP Blocklist* show the restrictions in force,
 with the permanent ones marked. An entry can be lifted individually or in bulk.
 Expired records restrict nobody; they are kept for the record and can be purged
-from the same pages.
+from the same pages. The Ubuntu packages and the Docker image purge them daily,
+see :ref:`cleanup_jobs`.
 
 The same can be done on the command line with :ref:`pi-manage <pimanage>`::
 

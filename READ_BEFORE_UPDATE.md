@@ -340,11 +340,11 @@
   overwritten). To set a new secret, supply the actual new value.
 
 * A new pre-aggregated `metric_aggregate` table backs the *Resolver Timing* and *Notification Delivery*
-  dashboard panels. The schema migration creates the table empty; nothing breaks if you skip the next step, but the
-  table grows unbounded over time. After the upgrade, go to *Config -> Tasks* and schedule the new **MetricsCleanup**
-  periodic task (option `older_than_hours`, default `24`; daily cadence recommended). If you prefer not to record
-  metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` - the dashboard panels will show no data and the table
-  stays empty. The dashboard panels read the last hour by default, so anything older than ~24 h is dead weight.
+  dashboard panels. The schema migration creates the table empty. Without a cleanup the table grows unbounded, so
+  `pi-manage config metrics cleanup` has to run regularly: it deletes the rows older than 24 hours, the most the
+  dashboard panels show. The Ubuntu packages and the Docker image schedule it daily; on an installation from PyPI add
+  it to your crontab. If you prefer not to record metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` - the
+  dashboard panels will show no data and the table stays empty.
 
 * The `/validate/samlcheck` endpoint has been removed (deprecated in 3.11). The
   `ReturnSamlAttributes` and `ReturnSamlAttributesOnFail` system configuration options are removed along with it; the
@@ -527,6 +527,37 @@
   code or status are unaffected. Only clients that match on the literal message string need updating — and the specific
   reason is still available where it always was: in `detail.message` (unless the `hide_specific_error_message` policy
   masks it) and, for an admin, in the authentication log's event type.
+
+* **`pi-manage config export`** — The password entries of the global configuration are now exported decrypted, like
+  every other secret in the export, so the importing instance can encrypt them with its own key. `--censor` now also
+  censors the client secret of a SCIM resolver. An export written by an earlier version contains the password entries
+  encrypted with the key of its instance, and importing it stores them unusable: set them again after importing such
+  a file.
+
+* **Token janitors** — `privacyidea-token-janitor find --orphaned-on-error` now defaults to `False`: a token whose
+  user lookup fails with an error, e.g. because the LDAP server cannot be reached, no longer counts as orphaned
+  unless you pass `--orphaned-on-error True`. In both token janitors `--orphaned`, `--active` and `--assigned` accept
+  `true`/`false`, `1`/`0`, `yes`/`no` and `on`/`off` and reject any other value instead of reading it as false.
+  `update` keeps the OTP counter, the fail counter and the token kind of each token.
+
+* **`pi-manage audit rotate`** with watermarks now keeps exactly `--lowwatermark` entries. It used to count back from
+  the id of the newest entry, which kept one entry more, and on Galera, which increments the ids by more than one,
+  only a fraction of them, e.g. a third with an increment of 3: there the audit table keeps more entries after the
+  update. A negative `--lowwatermark` is rejected.
+
+* **`privacyidea-pip-update -f`** only skips the confirmation question and runs the database schema upgrade as well;
+  pass `-n` to skip the schema upgrade.
+
+* **Tokens of a deleted resolver** — A token whose owner belongs to a resolver that is in no realm any more, e.g.
+  because the resolver was deleted, was left out of every token list and could neither be found nor deleted through
+  the WebUI, the API or the token janitors, while the subscription still counted it. Such a token belongs to no node
+  and is now listed on every node, so the token lists can show tokens that were not visible before. The token janitors
+  find them as orphaned, e.g. `pi-tokenjanitor find --orphaned true list`.
+
+* **Removed scripts** — `reset-privacyidea`, `privacyidea-create-certificate`, `privacyidea-export-linotp-counter.py`,
+  `privacyidea-export-privacyidea-counter.py`, `privacyidea-migrate-linotp.py`, `privacyidea-sync-owncloud.py`,
+  `creategoogleauthenticator-file` and `getgooglecodes` are no longer installed. They did not work with the current
+  dependencies, and `reset-privacyidea` deleted the encryption key and dropped the database without asking.
 
 ## Update from 3.12 to 3.13
 

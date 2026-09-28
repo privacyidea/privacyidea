@@ -14,6 +14,7 @@ from privacyidea.lib.subscriptions import (save_subscription,
                                            get_users_with_active_tokens,
                                            raise_exception_probability,
                                            check_subscription,
+                                           check_signature,
                                            SubscriptionError,
                                            subscription_status,
                                            _USER_COUNT_KEY,
@@ -303,6 +304,15 @@ class SubscriptionApplicationTestCase(MyTestCase):
         # Only a subscription that is still valid gets its signature checked, so this
         # having run at all shows the valid record was the one selected.
         mock_check_signature.assert_called_once_with(valid_legacy)
+
+    def test_11_vendor_name_cannot_escape_the_key_directory(self):
+        # The vendor is read from the uploaded subscription file and is used to build the path
+        # of the public key. A vendor carrying a path separator is rejected, so the lookup
+        # cannot be pointed at a file outside the key directory.
+        subscription = dict(SUBSCRIPTION1, by_name="../../../tmp/NetKnights GmbH")
+        with self.assertRaises(SubscriptionError) as cm:
+            check_signature(subscription)
+        self.assertIn("Invalid vendor", f"{cm.exception}")
 
     def test_09_subscription_status_never_enforced_product(self):
         # subscription_status() must honor free_users=None (the Authenticator App's

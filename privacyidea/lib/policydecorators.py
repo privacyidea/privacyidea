@@ -44,13 +44,12 @@ The functions of this module are tested in tests/test_lib_policy_decorator.py
 import datetime
 import functools
 import logging
-import re
 from typing import TYPE_CHECKING
 
 import pyrad
 from dateutil.tz import tzlocal
 
-from privacyidea.lib.authcache import verify_in_cache, add_to_cache
+from privacyidea.lib.authcache import verify_in_cache, add_to_cache, parse_auth_cache_value
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            AuthEventReason, AUTH_EVENT_REASON_KEY,
                                                                            AUTH_EVENT_REASON_DETAIL_KEY,
@@ -63,7 +62,7 @@ from privacyidea.lib.policy import Match
 from privacyidea.lib.policy import SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.radiusserver import get_radius
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import parse_timedelta, split_pin_pass
+from privacyidea.lib.utils import split_pin_pass
 
 if TYPE_CHECKING:
     from privacyidea.lib.tokenclass import TokenClass
@@ -216,22 +215,12 @@ def auth_cache(wrapped_function, user_object, passw, options=None):
         auth_cache_policy = (Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.AUTH_CACHE, user_object=user_object)
                              .action_values(unique=True, write_to_audit_log=False))
         if auth_cache_policy:
-            auth_times = list(auth_cache_policy)[0].split("/")
-
-            # Determine first_auth from policy!
-            first_offset = parse_timedelta(auth_times[0])
+            first_offset, last_offset, max_auths = parse_auth_cache_value(list(auth_cache_policy)[0])
             first_auth = datetime.datetime.utcnow() - first_offset
-            last_auth = first_auth  # Default if no last auth exists
-            max_auths = 0  # Default value, 0 has no effect on verification
-
-            # Use auth cache when number of allowed authentications is defined
-            if len(auth_times) == 2:
-                if re.match(r"^\d+$", auth_times[1]):
-                    max_auths = int(auth_times[1])
-                else:
-                    # Determine last_auth delta from policy
-                    last_offset = parse_timedelta(auth_times[1])
-                    last_auth = datetime.datetime.utcnow() - last_offset
+            # Without a second interval only the first authentication limits the entry
+            last_auth = first_auth
+            if last_offset is not None:
+                last_auth = datetime.datetime.utcnow() - last_offset
 
             result = verify_in_cache(user_object.login, user_object.realm,
                                      user_object.resolver, passw,

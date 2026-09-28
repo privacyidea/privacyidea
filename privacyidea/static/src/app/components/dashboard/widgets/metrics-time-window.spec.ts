@@ -18,8 +18,8 @@
  **/
 import { DEFAULT_METRICS_TIME_WINDOW, METRICS_TIME_WINDOWS } from "./metrics-time-window";
 
-// What lib/metrics.py keeps: rows are dropped once they are older than RETENTION_SECONDS, which the MetricsCleanup
-// task defaults to as well. A window past it would be a promise the store cannot keep - the widget would show the
+// What lib/metrics.py keeps: rows are dropped once they are older than RETENTION_SECONDS, which the metrics cleanup
+// job defaults to as well. A window past it would be a promise the store cannot keep - the widget would show the
 // hours that happen to be left rather than the span its label names.
 const RETENTION_SECONDS = 24 * 3600;
 

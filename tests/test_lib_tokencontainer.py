@@ -22,7 +22,7 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        create_container_template_from_db_object, compare_template_dicts,
                                        set_default_template, compare_template_with_container,
                                        finalize_registration, finalize_container_rollover, init_container_rollover,
-                                       unassign_user)
+                                       unassign_user, get_container_generator)
 from privacyidea.lib.container import get_container_classes, unregister
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL, RegistrationState
@@ -34,10 +34,11 @@ from privacyidea.lib.containertemplate.yubikeytemplate import YubikeyContainerTe
 from privacyidea.lib.crypto import (geturandom, generate_keypair_ecc, ecc_key_pair_to_b64url_str, sign_ecc,
                                     decryptPassword, KeyPair)
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError,
-                                   TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered, PolicyError)
+                                   TokenAdminError, ContainerInvalidChallenge, ContainerNotRegistered, PolicyError,
+                                   ResolverError)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, db
+from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, TokenContainerOwner, db
 from .base import MyTestCase
 
 
@@ -2847,3 +2848,74 @@ class TokenContainerTemplateTestCase(MyTestCase):
         # yubikey template
         class_options = YubikeyContainerTemplate.get_template_class_options()
         self.assertDictEqual({}, class_options)
+
+
+class ContainerGeneratorAndOrphanTestCase(MyTestCase):
+
+    def test_01_generator_continues_after_the_caller_deletes_a_page(self):
+        serials = [init_container({"type": "generic", "description": "generator test"})["container_serial"]
+                   for _ in range(5)]
+
+        visited_serials = []
+        for containers in get_container_generator(pagesize=2, description="generator test"):
+            for container in containers:
+                visited_serials.append(container.serial)
+                container.delete()
+
+        self.assertListEqual(serials, visited_serials)
+        self.assertListEqual([], get_all_containers(description="generator test")["containers"])
+
+    def test_01b_generator_with_a_page_size_below_one(self):
+        # A page size below one is replaced by ten, so the containers are still found, all in one page
+        serials = [init_container({"type": "generic", "description": "page size test"})["container_serial"]
+                   for _ in range(3)]
+
+        pages = list(get_container_generator(pagesize=0, description="page size test"))
+
+        self.assertEqual(1, len(pages))
+        self.assertListEqual(serials, [container.serial for container in pages[0]])
+        for serial in serials:
+            find_container_by_serial(serial).delete()
+
+    def test_02_generator_yields_a_container_matched_by_several_rows_once(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        serials = []
+        for _ in range(3):
+            serial = init_container({"type": "generic", "description": "two realms"})["container_serial"]
+            set_container_realms(serial, [self.realm1, self.realm2], allowed_realms=None)
+            serials.append(serial)
+
+        # The realm wildcard matches both realms of each container, so the query returns every container twice
+        visited_serials = [container.serial
+                           for containers in get_container_generator(pagesize=1, realm="realm*")
+                           for container in containers]
+
+        self.assertListEqual(serials, visited_serials)
+        for serial in serials:
+            find_container_by_serial(serial).delete()
+
+    def test_03_is_orphaned(self):
+        self.setUp_user_realms()
+        container = find_container_by_serial(init_container({"type": "generic"})["container_serial"])
+        # Not assigned to anyone
+        self.assertFalse(container.is_orphaned())
+
+        # Assigned to a user who exists
+        container.add_user(User(login="cornelius", realm=self.realm1))
+        self.assertFalse(container.is_orphaned())
+
+        # Assigned to a user who does not exist in the user store
+        orphan = find_container_by_serial(init_container({"type": "generic"})["container_serial"])
+        db.session.add(TokenContainerOwner(container_id=orphan._db_container.id, user_id="999999",
+                                           resolver=self.resolvername1, realm_name=self.realm1))
+        db.session.commit()
+        self.assertTrue(orphan.is_orphaned())
+
+        # An error of the user store is raised, since the container is then neither orphaned nor not orphaned
+        with mock.patch("privacyidea.lib.containerclass.User", side_effect=ResolverError("unreachable")):
+            self.assertRaises(ResolverError, orphan.is_orphaned)
+            self.assertRaises(ResolverError, container.is_orphaned)
+
+        container.delete()
+        orphan.delete()
