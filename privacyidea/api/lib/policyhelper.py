@@ -168,7 +168,8 @@ def get_token_user_attributes(serial: str):
         # policies are matched against the realm and the resolver of the owner then, as there is no login name.
         log.warning(f"The owner of the token {serial} can not be looked up: {error}")
         token_owner = get_token_owner_without_lookup(serial)
-        user_attributes.unknown_login = True
+    # Neither an owner that can not be looked up nor one removed from a reachable resolver has a login name
+    user_attributes.unknown_login = token_owner is not None and not token_owner.login
     if token_owner:
         user_attributes.username = token_owner.login
         user_attributes.realm = token_owner.realm

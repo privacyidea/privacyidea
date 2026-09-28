@@ -6000,3 +6000,42 @@ class APITokenListNodeTestCase(MyApiTestCase):
                     remove_token(serial)
                 except ResourceNotFoundError:
                     pass
+
+    def test_04_owner_removed_from_a_reachable_resolver(self):
+        # The resolver of the owner is reachable, but no longer knows the owner, so the login name stays empty. A
+        # policy naming users can not be checked then, as for an unreachable resolver.
+        self.setUp_user_realms()
+        single = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        bulk = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+
+        def delete_single() -> Response:
+            with self.app.test_request_context(f'/token/{single}', method='DELETE',
+                                               headers={'Authorization': self.at}):
+                return self.app.full_dispatch_request()
+
+        def delete_bulk() -> Response:
+            with self.app.test_request_context('/token/', method='DELETE', json={"serials": [bulk]},
+                                               headers={'Authorization': self.at}):
+                return self.app.full_dispatch_request()
+
+        try:
+            with mock.patch.object(PasswdIdResolver, "getUsername", return_value=""):
+                set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1,
+                           user="*,!cornelius")
+                self.assertEqual(403, delete_single().status_code)
+                self.assertEqual(403, delete_bulk().status_code)
+
+                set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1, user="*")
+                res = delete_single()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(1, res.json["result"]["value"], res.json)
+                res = delete_bulk()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(1, res.json["result"]["value"], res.json)
+        finally:
+            delete_policy("delete")
+            for serial in (single, bulk):
+                try:
+                    remove_token(serial)
+                except ResourceNotFoundError:
+                    pass
