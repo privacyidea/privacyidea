@@ -1981,6 +1981,33 @@ class PolicyTestCase(MyTestCase):
             for name in ("disable_but_resolver3", "disable_but_resolver1", "disable_only_exclusion"):
                 delete_policy(name)
 
+    def test_41c_list_policies_unknown_login(self):
+        # Whether a policy names a user whose login is unknown can not be checked, so only the policies without a
+        # user and those for every user are left. Matched with the empty login alone, "*" also matches the
+        # exclusion and the regular expression.
+        policies = {"unknown_login_no_user": None,
+                    "unknown_login_every_user": "*",
+                    "unknown_login_user": "cornelius",
+                    "unknown_login_but_user": "*,!cornelius",
+                    "unknown_login_regex": ".*",
+                    "unknown_login_every_user_and_user": "*,bob"}
+        for name, user in policies.items():
+            set_policy(name=name, scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, user=user)
+        policy_class = PolicyClass()
+
+        def matching(unknown_login: bool) -> set[str]:
+            return {policy["name"] for policy in policy_class.list_policies(action=PolicyAction.DISABLE, user="",
+                                                                             unknown_login=unknown_login)
+                    if policy["name"].startswith("unknown_login_")}
+
+        try:
+            self.assertSetEqual({"unknown_login_no_user", "unknown_login_every_user"}, matching(True))
+            self.assertSetEqual({"unknown_login_no_user", "unknown_login_every_user", "unknown_login_but_user",
+                                 "unknown_login_regex", "unknown_login_every_user_and_user"}, matching(False))
+        finally:
+            for name in policies:
+                delete_policy(name)
+
     def test_42_convert_action_dict_to_python_dict_success(self):
         action_dict = "'Key1':'Value1'-'Community News':'https://community.privacyidea.org/c/news.rss'-'Key2':'Value2'"
         python_dict = convert_action_dict_to_python_dict(action_dict)

@@ -5926,7 +5926,15 @@ class APITokenListNodeTestCase(MyApiTestCase):
                 res = self.app.full_dispatch_request()
             self.assertEqual(403, res.status_code, res.json)
 
-            set_policy("delete_realm1", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1)
+            # Without the login name it can not be checked whether a policy excludes the owner
+            set_policy("delete_realm1", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1,
+                       user="*,!cornelius")
+            with self.app.test_request_context(f'/token/{serial}', method='DELETE',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+
+            set_policy("delete_realm1", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1, user="")
             with self.app.test_request_context(f'/token/{serial}', method='DELETE',
                                                headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
@@ -5941,7 +5949,8 @@ class APITokenListNodeTestCase(MyApiTestCase):
 
     def test_03_owner_behind_an_unreachable_resolver(self):
         # The resolver of the owner can not be reached. As for a deleted resolver, the realm of the owner still
-        # scopes the policies, while a policy naming the owner can not be checked without the login name.
+        # scopes the policies, while a policy naming users can not be checked without the login name, not even one
+        # that excludes the owner.
         self.setUp_user_realms()
         self.setUp_user_realm3()
         # A single serial is looked up by before_request and the policy check, a list of serials by the policy
@@ -5970,16 +5979,20 @@ class APITokenListNodeTestCase(MyApiTestCase):
                     self.assertEqual(403, delete_bulk().status_code)
                 self.assertIn(f"The owner of the token {bulk} can not be looked up", captured.output[0])
 
-                set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1,
-                           user="cornelius")
-                self.assertEqual(403, delete_single().status_code)
-                self.assertEqual(403, delete_bulk().status_code)
+                for user in ("cornelius", "*,!cornelius"):
+                    set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1, user=user)
+                    self.assertEqual(403, delete_single().status_code, user)
+                    self.assertEqual(403, delete_bulk().status_code, user)
+
+                set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1, user="*")
+                res = delete_single()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(1, res.json["result"]["value"], res.json)
 
                 set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1, user="")
-                for delete in (delete_single, delete_bulk):
-                    res = delete()
-                    self.assertEqual(200, res.status_code, res.json)
-                    self.assertEqual(1, res.json["result"]["value"], res.json)
+                res = delete_bulk()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(1, res.json["result"]["value"], res.json)
         finally:
             delete_policy("delete")
             for serial in (single, bulk):

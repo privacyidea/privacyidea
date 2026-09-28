@@ -52,6 +52,8 @@ class UserAttributes:
     adminrealm: str | None = None
     additional_realms: list | None = None
     user: User | None = None
+    # The user exists, but their login name could not be looked up
+    unknown_login: bool = False
 
 
 @log_with(log)
@@ -166,6 +168,7 @@ def get_token_user_attributes(serial: str):
         # policies are matched against the realm and the resolver of the owner then, as there is no login name.
         log.warning(f"The owner of the token {serial} can not be looked up: {error}")
         token_owner = get_token_owner_without_lookup(serial)
+        user_attributes.unknown_login = True
     if token_owner:
         user_attributes.username = token_owner.login
         user_attributes.realm = token_owner.realm
@@ -195,6 +198,8 @@ def get_container_user_attributes(container_serial: str) -> UserAttributes:
     if container:
         container_owners = container.get_users()
         container_owner = container_owners[0] if container_owners else None
+        # get_users returns an owner without a login name if it can not be looked up
+        container_owner_attributes.unknown_login = container_owner is not None and not container_owner.login
         if container_owner:
             container_owner_attributes.username = container_owner.login
             container_owner_attributes.realm = container_owner.realm
@@ -215,6 +220,8 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
     without conditions on the user. Only for the action ASSIGN, all policies are considered, ignoring the username,
     realm, and resolver conditions. The token realms are still taken into account. This shall allow helpdesk admins
     to assign their users to tokens without owner.
+    If the owner exists but can not be looked up, only the policies without a user and those for every user (``*``)
+    are considered, as it can not be checked whether a policy names the owner.
 
     :param g: The global flask object g
     :param action: The action to be performed on the token
@@ -244,6 +251,7 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
             user_attributes.resolver = token_owner_attributes.resolver or ""
         user_attributes.user = token_owner_attributes.user
         user_attributes.additional_realms = token_owner_attributes.additional_realms or None
+        user_attributes.unknown_login = token_owner_attributes.unknown_login
     elif user_attributes.role == "user" and serial:
         # for adding / removing tokens from a container, the user has to be the owner of the token
         if action in [PolicyAction.CONTAINER_ADD_TOKEN, PolicyAction.CONTAINER_REMOVE_TOKEN]:
@@ -273,7 +281,8 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
                                    adminuser=user_attributes.adminuser,
                                    additional_realms=user_attributes.additional_realms,
                                    serial=serial,
-                                   extended_condition_check=condition_check).allowed()
+                                   extended_condition_check=condition_check,
+                                   unknown_login=user_attributes.unknown_login).allowed()
 
     if action_allowed and action == PolicyAction.CONTAINER_ADD_TOKEN:
         # Adding a token to a container will remove it from the old container: Check if the remove action is allowed
@@ -303,6 +312,8 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
     without conditions on the user. Only for the action CONTAINER_ASSIGN_USER, all policies are considered, ignoring
     the username, realm, and resolver conditions. The container realms are still taken into account. This shall allow
     helpdesk admins to assign their users to containers without owner.
+    If the owner exists but can not be looked up, only the policies without a user and those for every user (``*``)
+    are considered, as it can not be checked whether a policy names the owner.
 
     For the action CONTAINER_CREATE, the user attributes from the parameters are considered, as the container has no
     owner yet.
@@ -314,6 +325,7 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
     :return: True if the action is allowed, False otherwise
     """
     user_attributes.additional_realms = None
+    user_attributes.unknown_login = False
     container_owner_attributes = UserAttributes()
     if container_serial:
         # get user attributes from the container
@@ -348,6 +360,7 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
             user_attributes.resolver = container_owner_attributes.resolver or ""
             user_attributes.user = container_owner_attributes.user
         user_attributes.additional_realms = container_owner_attributes.additional_realms or None
+        user_attributes.unknown_login = container_owner_attributes.unknown_login
     elif user_attributes.role == "user" and container_serial:
         # check if the user is the owner of the container
         if action == PolicyAction.CONTAINER_CREATE:
@@ -379,7 +392,8 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
                                    adminuser=user_attributes.adminuser,
                                    additional_realms=user_attributes.additional_realms,
                                    container_serial=container_serial,
-                                   extended_condition_check=condition_check).allowed()
+                                   extended_condition_check=condition_check,
+                                   unknown_login=user_attributes.unknown_login).allowed()
     return action_allowed
 
 
