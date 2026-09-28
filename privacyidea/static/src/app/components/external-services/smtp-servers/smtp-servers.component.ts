@@ -28,6 +28,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SmtpServer, SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
@@ -62,7 +63,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatInput,
     CopyableComponent,
     TableStateComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./smtp-servers.component.html",
   styleUrl: "./smtp-servers.component.scss"

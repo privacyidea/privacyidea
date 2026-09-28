@@ -50,6 +50,7 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
@@ -158,7 +159,8 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
     ScrollEdgesDirective,
     LocalDateTimePipe,
     TableStateComponent,
-    PaginatorPageSizeTooltipDirective
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"

@@ -31,6 +31,7 @@ import {
   RadiusServerServiceInterface
 } from "@services/radius-server/radius-server.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -68,7 +69,8 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatInput,
     CopyableComponent,
     TableStateComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./radius-servers.component.html",
   styleUrl: "./radius-servers.component.scss"

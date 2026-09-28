@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AfterViewInit, Directive, ElementRef, inject, OnDestroy } from "@angular/core";
+import { AfterViewInit, Directive, DoCheck, ElementRef, inject, OnDestroy } from "@angular/core";
 import { MatPaginator, MatPaginatorIntl } from "@angular/material/paginator";
 import { getCompactRangeLabel } from "@app/paginator-intl";
 
@@ -28,13 +28,14 @@ import { getCompactRangeLabel } from "@app/paginator-intl";
 // it (inside .filter-actions-group, the container's other child) has no slack left. Material renders
 // the whole phrase as one interpolated text node with no separate markup for the range and the
 // total, so it can't be trimmed with CSS alone; this rewrites the node by hand instead, in either
-// direction, so it stays correct whether the rewrite runs before or after Angular's own change
-// detection updates the label for a genuine page change.
+// direction, so it stays correct whether the rewrite runs during ngDoCheck (a genuine page change)
+// or from one of this directive's own observers (scroll/resize, neither of which goes through
+// Angular change detection on their own).
 @Directive({
   selector: "mat-paginator[appPaginatorCompactRange]",
   standalone: true
 })
-export class PaginatorCompactRangeDirective implements AfterViewInit, OnDestroy {
+export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, OnDestroy {
   // The gap between .filter-actions-group and this paginator (container width minus both their
   // rendered widths) has to clear this margin before switching back to the full label - not just
   // reach zero. Switching eats back into that same gap by roughly the width of " of 10,189" at this
@@ -56,7 +57,6 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, OnDestroy 
   private scrollRegion?: Element;
   private container?: HTMLElement;
   private filterActionsGroup?: HTMLElement;
-  private textObserver?: MutationObserver;
   private classObserver?: MutationObserver;
   private resizeObserver?: ResizeObserver;
   private writingBack = false;
@@ -74,11 +74,6 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, OnDestroy 
     this.scrollRegion = scrollRegion;
     this.filterActionsGroup = container.querySelector<HTMLElement>(":scope > .filter-actions-group") ?? undefined;
 
-    // Angular rewrites the label's text node whenever pageIndex/pageSize/length change - catch that
-    // and reapply the compact form on top of it rather than fighting over who renders last.
-    this.textObserver = new MutationObserver(() => this.apply());
-    this.textObserver.observe(label, { childList: true, characterData: true, subtree: true });
-
     // ScrollEdgesDirective toggles scrolled-from-top via Renderer2, which does not go through
     // Angular change detection, so this label needs its own observer to notice it.
     this.classObserver = new MutationObserver(() => this.apply());
@@ -92,8 +87,19 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, OnDestroy 
     this.apply();
   }
 
+  // Angular re-renders the paginator's own template - including this label - whenever
+  // pageIndex/pageSize/length change, as part of the very same change-detection pass that reads
+  // those inputs in the first place; ngDoCheck runs on every one of those passes too, so it catches
+  // that re-render deterministically instead of watching for it to land in the DOM. That distinction
+  // matters beyond just being simpler: a MutationObserver is a real, live browser mechanism, and
+  // this project's test setup stubs it out globally as an inert no-op - relying on one here would
+  // have frozen this label at whatever it first rendered in every component test that mounts a real
+  // paginator with this directive but does not itself know to override that stub.
+  ngDoCheck(): void {
+    this.apply();
+  }
+
   ngOnDestroy(): void {
-    this.textObserver?.disconnect();
     this.classObserver?.disconnect();
     this.resizeObserver?.disconnect();
   }
@@ -120,7 +126,7 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, OnDestroy 
   // reverted: the "did anything actually change" check further up can only compare against the
   // label's live content, so a measurement step that alters that same content as a side effect
   // defeats its own guard - every call then looks like a change, every call rewrites the label, and
-  // every rewrite reopens this same MutationObserver-driven call, forever.
+  // every rewrite runs straight back into ngDoCheck on the next change-detection pass, forever.
   //
   // Measures the gap between the filter field's group and this paginator, not the group's (or the
   // filter field's) own width against its max-width: both are capped by CSS, so once either is fully
@@ -134,6 +140,13 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, OnDestroy 
     const containerWidth = this.container.getBoundingClientRect().width;
     const groupWidth = this.filterActionsGroup.getBoundingClientRect().width;
     const paginatorWidth = this.host.nativeElement.getBoundingClientRect().width;
+    // A real, rendered row is never literally zero-width on every one of its three measured
+    // elements at once - that combination only happens where no layout engine ran at all (unit
+    // tests under jsdom), which would otherwise read as an infinitely tight row and permanently
+    // force compact mode in any test that renders a real paginator with this directive attached.
+    if (containerWidth === 0 && groupWidth === 0 && paginatorWidth === 0) {
+      return false;
+    }
     const gap = containerWidth - groupWidth - paginatorWidth;
     const threshold = this.compact
       ? PaginatorCompactRangeDirective.RELEASE_GAP_PX

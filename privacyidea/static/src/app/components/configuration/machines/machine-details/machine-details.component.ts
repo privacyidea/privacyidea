@@ -31,6 +31,7 @@ import { ActivatedRoute } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ApplicationService, ApplicationServiceInterface } from "@services/application/application.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -63,7 +64,8 @@ import { lastValueFrom } from "rxjs";
     MatAutocompleteModule,
     CopyButtonComponent,
     CopyableComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./machine-details.component.html",
   styleUrl: "./machine-details.component.scss"

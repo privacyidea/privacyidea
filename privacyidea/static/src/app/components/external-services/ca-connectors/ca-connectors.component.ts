@@ -30,6 +30,7 @@ import {
   CaConnectorServiceInterface
 } from "@services/ca-connector/ca-connector.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -66,7 +67,8 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatInput,
     CopyableComponent,
     TableStateComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./ca-connectors.component.html",
   styleUrl: "./ca-connectors.component.scss"

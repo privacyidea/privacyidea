@@ -42,6 +42,7 @@ import { IntegrationsService, IntegrationsServiceInterface } from "@services/int
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
@@ -65,7 +66,8 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     ApiClientIssuedKeyBannerComponent,
     DatePipe,
     TableStateComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./api-clients.component.html",
   styleUrl: "./api-clients.component.scss"

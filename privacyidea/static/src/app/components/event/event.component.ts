@@ -42,6 +42,7 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -71,7 +72,8 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     HighlightPipe,
     MatTooltip,
     TableStateComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   standalone: true,
   templateUrl: "./event.component.html",

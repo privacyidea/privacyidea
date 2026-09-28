@@ -64,6 +64,7 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
@@ -321,7 +322,8 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatMenuModule,
     MatSliderModule,
     MatTooltipModule,
-    PaginatorPageSizeTooltipDirective
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   providers: [provideNativeDateAdapter()],
   templateUrl: "./authentication-log.html",

@@ -45,6 +45,7 @@
         </mat-form-field>
       </div>
       <mat-paginator
+        appPaginatorCompactRange
         [length]="eventHandlerDataSource().data.length"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSizeOptions()[1]"

@@ -27,6 +27,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -58,7 +59,8 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     ClearableInputComponent,
     CopyableComponent,
     TableStateComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./machines.component.html",
   styleUrl: "./machines.component.scss"

@@ -33,6 +33,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ADMIN_INTERNAL_ROLE } from "@core/models/user_role/user-role";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
@@ -87,7 +88,8 @@ import { concatMap, reduce } from "rxjs/operators";
     RouterLink,
     NgClass,
     DatePipe,
-    PaginatorPageSizeTooltipDirective
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ]
 })
 export class LockedUsersComponent {

@@ -61,6 +61,7 @@
           </mat-form-field>
         </div>
         <mat-paginator
+          appPaginatorCompactRange
           (page)="machineService.onPageEvent($event)"
           [length]="length()"
           [pageIndex]="machineService.pageIndex()"

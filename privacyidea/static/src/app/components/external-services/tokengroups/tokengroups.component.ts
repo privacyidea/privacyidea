@@ -39,6 +39,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
@@ -62,7 +63,8 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatInput,
     CopyableComponent,
     TableStateComponent,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./tokengroups.component.html",
   styleUrl: "./tokengroups.component.scss"

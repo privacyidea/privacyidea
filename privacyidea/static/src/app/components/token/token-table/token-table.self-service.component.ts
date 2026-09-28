@@ -30,6 +30,7 @@ import { RouterLink } from "@angular/router";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
@@ -58,7 +59,8 @@ import { TokenTableComponent } from "./token-table.component";
     ScrollEdgesDirective,
     TableStateComponent,
     RouterLink,
-    PaginatorPageSizeTooltipDirective
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./token-table.self-service.component.html",
   styleUrl: "./token-table.component.scss"

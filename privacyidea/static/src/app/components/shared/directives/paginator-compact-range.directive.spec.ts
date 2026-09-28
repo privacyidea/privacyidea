@@ -95,9 +95,10 @@ describe("PaginatorCompactRangeDirective", () => {
   const group = (): HTMLElement => fixture.nativeElement.querySelector(".filter-actions-group");
   const paginatorHost = (): HTMLElement => fixture.nativeElement.querySelector("mat-paginator");
 
-  // The class-attribute observer (on .table-scroll-region) is the second MutationObserver the
-  // directive creates, after the text observer on the range label itself.
-  const triggerClassChange = () => mutationObservers[1].cb([], mutationObservers[1] as unknown as MutationObserver);
+  // The directive creates exactly one MutationObserver: the class-attribute watcher on
+  // .table-scroll-region. Genuine paginator data changes are picked up via ngDoCheck instead (see
+  // the directive's own comment on why), so triggering that just means fixture.detectChanges().
+  const triggerClassChange = () => mutationObservers[0].cb([], mutationObservers[0] as unknown as MutationObserver);
 
   // Angular Material's own form-field internals also use a ResizeObserver (for its outline notch),
   // so pick out the one this directive created by which element it actually observes.
@@ -160,11 +161,18 @@ describe("PaginatorCompactRangeDirective", () => {
     expect(rangeLabel().textContent?.trim()).toBe("1 – 10 of 10189");
   });
 
-  it("observes the range label's text, the scroll region's class, and the container's size", () => {
-    expect(mutationObservers).toHaveLength(2);
-    expect(mutationObservers[0].observed[0]).toBe(rangeLabel());
-    expect(mutationObservers[1].observed[0]).toBe(scrollRegion());
+  it("observes the scroll region's class and the container's size", () => {
+    expect(mutationObservers).toHaveLength(1);
+    expect(mutationObservers[0].observed[0]).toBe(scrollRegion());
     expect(ourResizeObserver().observed[0]).toBe(container());
+  });
+
+  it("picks up a genuine paginator data change on the next change-detection pass", () => {
+    fixture.componentInstance.length = 3;
+    fixture.detectChanges();
+    fixture.detectChanges();
+
+    expect(rangeLabel().textContent?.trim()).toBe("1 – 3 of 3");
   });
 
   it("collapses to just the range once the sibling scroll region is scrolled from the top", () => {
@@ -223,18 +231,17 @@ describe("PaginatorCompactRangeDirective", () => {
     expect(rangeLabel().textContent?.trim()).toBe("1 – 10");
   });
 
-  it("does not re-enter itself when its own write is observed back (regression: a measure-by-mutating design looped here)", () => {
+  it("does not re-enter itself across repeated change-detection passes (regression: a measure-by-mutating design looped here)", () => {
     scrollRegion().classList.add("scrolled-from-top");
     triggerClassChange();
     expect(rangeLabel().textContent?.trim()).toBe("1 – 10");
 
-    // Simulates the label's own MutationObserver reacting to the write apply() just made, exactly
-    // as a real browser would - a version of apply() that mutated the label as part of measuring
-    // (rather than only reading current widths) rewrote it every single time this fired, which
-    // retriggered this same observer forever.
-    const textObserver = mutationObservers[0];
+    // Simulates Angular re-running change detection for unrelated reasons, exactly as a real app
+    // does constantly - a version of apply() that mutated the label as part of measuring (rather
+    // than only reading current widths) rewrote it every single time ngDoCheck ran, which is far
+    // more often than any genuine data or layout change.
     for (let i = 0; i < 5; i++) {
-      textObserver.cb([], textObserver as unknown as MutationObserver);
+      fixture.detectChanges();
     }
 
     expect(rangeLabel().textContent?.trim()).toBe("1 – 10");
@@ -245,7 +252,6 @@ describe("PaginatorCompactRangeDirective", () => {
     fixture.destroy();
 
     expect(mutationObservers[0].disconnect).toHaveBeenCalled();
-    expect(mutationObservers[1].disconnect).toHaveBeenCalled();
     expect(resizeObserver.disconnect).toHaveBeenCalled();
   });
 

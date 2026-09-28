@@ -40,6 +40,7 @@ import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { RowSelector } from "@services/table-utils/row-selector";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ViewTemplateTokensComponent } from "./view-template-tokens/view-template-tokens.component";
@@ -100,7 +101,8 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     MatPaginatorModule,
     TableStateComponent,
     RouterLink,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"
