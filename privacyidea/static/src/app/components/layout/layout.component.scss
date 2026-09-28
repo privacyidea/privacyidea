@@ -57,10 +57,19 @@
   flex: 1;
   min-height: 0;
   display: flex;
-  justify-content: center;
+  // "safe" center: plain `center` overflows a too-wide child equally on both sides, but only ever
+  // extends the scrollable range to cover the end-side half - the start-side half stays outside
+  // the scrollable range entirely (it's *centering*, not scrolling, that pushed it there), so with
+  // plain overflow: auto below it was unreachable at any scroll position, not just clipped. "safe"
+  // falls back to start-alignment instead of centering once the child no longer fits, which keeps
+  // the whole child within scrollable range.
+  justify-content: safe center;
   align-items: stretch;
   padding: 16px;
-  overflow: hidden;
+  // Its routed child now carries a real min-width (styles.scss), so once the viewport is narrower
+  // than that, the child is wider than this box; overflow: hidden used to simply clip the excess,
+  // auto turns it into a horizontal scrollbar so the content past the edge stays reachable.
+  overflow: auto;
   container-type: size;
 
   // The dashboard is a scrollable canvas, not a centered content card, so it
