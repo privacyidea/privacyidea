@@ -115,7 +115,7 @@ class AuthEventType(str, Enum):
     normalizes ``str()``/f-string output to the value across all supported versions (3.10-3.14); without it the
     output would differ between versions.
     """
-    # An authorization policy blocked the authentication
+    # An authorization policy or the server configuration blocked the authentication
     NOT_AUTHORIZED = "NOT_AUTHORIZED"
     # Wrong user store password
     PASSWORD_FAIL = "PASSWORD_FAIL"
@@ -167,6 +167,9 @@ class AuthEventType(str, Enum):
     ENROLLMENT_TRIGGERED = "ENROLLMENT_TRIGGERED"
     # cancelling the enrollment failed (unknown or already-consumed transaction_id).
     ENROLLMENT_CANCELED_FAIL = "ENROLLMENT_CANCELED_FAIL"
+    # Completing the enrollment of a token during authentication failed: a required enrollment policy is missing, or
+    # the registration data from the authenticator was rejected.
+    ENROLLMENT_FAIL = "ENROLLMENT_FAIL"
     # Fallback used when authentication fails but no other event type was set, so the failure is still recorded.
     UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
 
@@ -246,8 +249,8 @@ class AuthEventReason(str, Enum):
     # application-specific password whose service_id does not match the one the request names.
     TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
 
-    # --- authorization, i.e. a policy refusing an otherwise valid authentication ---------------------------------
-    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The three below are
+    # --- authorization, i.e. a policy or the server configuration refusing an otherwise valid authentication ----
+    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The next three are
     # authorization decisions too, each naming the specific limit that was hit; this one is the plain deny.
     AUTHORIZATION_DENIED = "AUTHORIZATION_DENIED"
     # The user made too many failed attempts inside the policy's time limit (auth_max_fail).
@@ -256,6 +259,8 @@ class AuthEventReason(str, Enum):
     AUTH_MAX_SUCCESS = "AUTH_MAX_SUCCESS"
     # The token's last successful authentication is too long ago (last_auth).
     LAST_AUTH_TOO_OLD = "LAST_AUTH_TOO_OLD"
+    # A WebUI login without a username was refused because WEBUI_PASSKEY_LOGIN_ENABLED is off in pi.cfg.
+    WEBUI_PASSKEY_LOGIN_DISABLED = "WEBUI_PASSKEY_LOGIN_DISABLED"
 
     # --- the credentials themselves ------------------------------------------------------------------------------
     # The first factor was right (or not required) but the OTP was not. There is deliberately no reason for a wrong
@@ -267,6 +272,8 @@ class AuthEventReason(str, Enum):
     # --- challenge-response --------------------------------------------------------------------------------------
     # The response did not match the challenge.
     CHALLENGE_WRONG_RESPONSE = "CHALLENGE_WRONG_RESPONSE"
+    # The response names no transaction at all. Unlike an unknown transaction, this is almost always a broken client.
+    CHALLENGE_MISSING_TRANSACTION = "CHALLENGE_MISSING_TRANSACTION"
     # The transaction the response names holds no challenge for this token: already consumed, belonging to another
     # token, never issued - or expired and no longer stored (see CHALLENGE_EXPIRED).
     CHALLENGE_UNKNOWN_TRANSACTION = "CHALLENGE_UNKNOWN_TRANSACTION"
@@ -386,6 +393,7 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.CHALLENGE_DECLINED_UNKNOWN_TRIGGER: AuthEventOutcome.FAILURE,
     AuthEventType.CHALLENGE_CANCELLED: AuthEventOutcome.FAILURE,
     AuthEventType.ENROLLMENT_CANCELED_FAIL: AuthEventOutcome.FAILURE,
+    AuthEventType.ENROLLMENT_FAIL: AuthEventOutcome.FAILURE,
     AuthEventType.UNKNOWN_FAIL_REASON: AuthEventOutcome.FAILURE,
     AuthEventType.USER_LOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.IP_BLOCKED: AuthEventOutcome.FAILURE,
@@ -550,6 +558,7 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     # Lowest of the three declines: the user abandoning their own attempt says least about the request.
     AuthEventType.CHALLENGE_CANCELLED,
     AuthEventType.ENROLLMENT_CANCELED_FAIL,
+    AuthEventType.ENROLLMENT_FAIL,
     AuthEventType.MFA_FAIL,
     AuthEventType.TOKEN_ONLY_FAIL,
     AuthEventType.PASSWORD_FAIL,

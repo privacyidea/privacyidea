@@ -118,8 +118,13 @@ Failure
      on users changing their mind.
    ``ENROLLMENT_CANCELED_FAIL``
      cancelling an enrollment failed.
+   ``ENROLLMENT_FAIL``
+     completing the enrollment of a token during authentication failed, for
+     example of a passkey with :ref:`policy_enroll_via_multichallenge`. Either a
+     required enrollment policy is missing, or the registration data from the
+     authenticator was rejected. The ready-made failure rate limits leave it out.
    ``NOT_AUTHORIZED``
-     an authorization policy refused the authentication.
+     an authorization policy or the server configuration refused the authentication.
    ``UNKNOWN_FAIL_REASON``
      the authentication failed and nothing more specific was determined. This is only used as fallback and should
      usually not be seen.
@@ -171,10 +176,10 @@ The state of a token
      the token excluded itself from this request, for example an
      application-specific password whose service does not match.
 
-A policy refusing an otherwise valid authentication
+A policy or the server configuration refusing an otherwise valid authentication
    ``AUTHORIZATION_DENIED``
      an authorization policy turned the request away outright
-     (``authorized=deny``); the three below are authorization decisions too,
+     (``authorized=deny``); the next three are authorization decisions too,
      each naming the specific limit that was hit.
    ``AUTH_MAX_FAIL``
      too many failed attempts inside the policy's time limit, see
@@ -183,6 +188,9 @@ A policy refusing an otherwise valid authentication
      too many successful authentications inside the policy's time limit.
    ``LAST_AUTH_TOO_OLD``
      the token's last successful authentication is too long ago.
+   ``WEBUI_PASSKEY_LOGIN_DISABLED``
+     a login to the WebUI without a username was refused because
+     ``WEBUI_PASSKEY_LOGIN_ENABLED`` is switched off in the :ref:`cfgfile`.
 
 The credentials
    ``WRONG_OTP``
@@ -195,6 +203,8 @@ The credentials
 Challenge-response
    ``CHALLENGE_WRONG_RESPONSE``
      the response did not match the challenge.
+   ``CHALLENGE_MISSING_TRANSACTION``
+     the response named no transaction at all.
    ``CHALLENGE_UNKNOWN_TRANSACTION``
      the transaction holds no challenge for this token: already consumed,
      belonging to another token, or never issued.

@@ -93,7 +93,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
 from privacyidea.lib.conditional_access.request_context import continue_attempt, confirm_attempt
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.crypto import geturandom, init_hsm
-from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError
+from privacyidea.lib.error import AuthError, Error, ResourceNotFoundError, PolicyError, ParameterError
 from privacyidea.lib.event import event, EventConfiguration
 from privacyidea.lib.fido2.challenge import verify_fido2_challenge, has_unbound_challenge
 from privacyidea.lib.fido2.util import get_fido2_token_by_credential_id, token_belongs_to_user
@@ -316,17 +316,24 @@ def get_auth_token():
     credential_id = get_optional(request.all_data, "credential_id")
     passkey_login_success = False
     if credential_id:
-        transaction_id: str = get_required(request.all_data, "transaction_id")
+        try:
+            transaction_id: str = get_required(request.all_data, "transaction_id")
+        except ParameterError:
+            log_authentication(AuthEventType.MFA_FAIL, request, user=user,
+                               reasons=[AuthEventReason.CHALLENGE_MISSING_TRANSACTION])
+            raise
+        # The passkey branch is the only one that consumes the transaction it was given, so it is where the
+        # attempt claimed in before_request is settled. The password branch below never reads it, and echoes
+        # it onto its row regardless, which is why naming a transaction cannot settle an attempt by itself.
+        confirm_attempt(transaction_id)
         # A challenge from /validate/initialize starts a passkey login without a username, which
         # WEBUI_PASSKEY_LOGIN_ENABLED switches off. Challenges bound to a token were triggered with the PIN or password.
         usernameless_login = has_unbound_challenge(transaction_id)
         if usernameless_login and not get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True):
             log.debug("WebUI passkey login disabled in pi.cfg!")
+            log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, transaction_id=transaction_id,
+                               reasons=[AuthEventReason.WEBUI_PASSKEY_LOGIN_DISABLED])
             raise AuthError(_("Authentication with passkey disabled."), id=Error.AUTHENTICATE_ILLEGAL_METHOD)
-        # The passkey branch is the only one that consumes the transaction it was given, so it is where the
-        # attempt claimed in before_request is settled. The password branch below never reads it, and echoes
-        # it onto its row regardless, which is why naming a transaction cannot settle an attempt by itself.
-        confirm_attempt(transaction_id)
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
             log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
