@@ -32,6 +32,12 @@ interface FakeObserver {
   disconnect: jest.Mock;
 }
 
+interface FakeResizeObserver {
+  cb: () => void;
+  observed: Element[];
+  disconnect: jest.Mock;
+}
+
 @Component({
   standalone: true,
   imports: [ScrollEdgesDirective],
@@ -48,12 +54,32 @@ class HostComponent {
   @ViewChild("region") region!: { nativeElement: HTMLElement };
 }
 
+@Component({
+  standalone: true,
+  imports: [ScrollEdgesDirective],
+  template: `
+    <div
+      #region
+      class="table-scroll-region"
+      appScrollEdges>
+      <table>
+        <tr class="mat-mdc-header-row"></tr>
+      </table>
+    </div>
+  `
+})
+class HostWithHeaderRowComponent {
+  @ViewChild("region") region!: { nativeElement: HTMLElement };
+}
+
 describe("ScrollEdgesDirective", () => {
   let fixture: ComponentFixture<HostComponent>;
   let observers: FakeObserver[];
+  let resizeObservers: FakeResizeObserver[];
 
   beforeEach(async () => {
     observers = [];
+    resizeObservers = [];
     (globalThis.IntersectionObserver as unknown as jest.Mock).mockImplementation(
       (cb: EdgeCallback, options: IntersectionObserverInit) => {
         const observer: FakeObserver = { cb, options, observed: [], disconnect: jest.fn() };
@@ -65,6 +91,15 @@ describe("ScrollEdgesDirective", () => {
         };
       }
     );
+    (globalThis.ResizeObserver as unknown as jest.Mock).mockImplementation((cb: () => void) => {
+      const observer: FakeResizeObserver = { cb, observed: [], disconnect: jest.fn() };
+      resizeObservers.push(observer);
+      return {
+        observe: (el: Element) => observer.observed.push(el),
+        unobserve: jest.fn(),
+        disconnect: observer.disconnect
+      };
+    });
 
     await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
     fixture = TestBed.createComponent(HostComponent);
@@ -114,5 +149,68 @@ describe("ScrollEdgesDirective", () => {
     expect(observers[1].disconnect).toHaveBeenCalled();
     expect(first!.isConnected).toBe(false);
     expect(last!.isConnected).toBe(false);
+  });
+
+  it("does not insert a header shadow layer when the host has no header row", () => {
+    expect(regionEl().querySelector(".sticky-header-shadow")).toBeNull();
+    expect(resizeObservers).toHaveLength(0);
+  });
+});
+
+describe("ScrollEdgesDirective with a header row", () => {
+  let fixture: ComponentFixture<HostWithHeaderRowComponent>;
+  let resizeObservers: FakeResizeObserver[];
+
+  beforeEach(async () => {
+    resizeObservers = [];
+    (globalThis.IntersectionObserver as unknown as jest.Mock).mockImplementation(() => ({
+      observe: jest.fn(),
+      unobserve: jest.fn(),
+      disconnect: jest.fn()
+    }));
+    (globalThis.ResizeObserver as unknown as jest.Mock).mockImplementation((cb: () => void) => {
+      const observer: FakeResizeObserver = { cb, observed: [], disconnect: jest.fn() };
+      resizeObservers.push(observer);
+      return {
+        observe: (el: Element) => observer.observed.push(el),
+        unobserve: jest.fn(),
+        disconnect: observer.disconnect
+      };
+    });
+
+    await TestBed.configureTestingModule({ imports: [HostWithHeaderRowComponent] }).compileComponents();
+    fixture = TestBed.createComponent(HostWithHeaderRowComponent);
+    fixture.detectChanges();
+  });
+
+  function regionEl(): HTMLElement {
+    return fixture.componentInstance.region.nativeElement;
+  }
+
+  it("inserts a header shadow layer right after the top sentinel and observes the header row's size", () => {
+    const headerRow = regionEl().querySelector(".mat-mdc-header-row") as HTMLElement;
+    const shadow = regionEl().querySelector(".sticky-header-shadow");
+
+    expect(shadow).not.toBeNull();
+    expect(regionEl().children[1]).toBe(shadow);
+    expect(resizeObservers).toHaveLength(1);
+    expect(resizeObservers[0].observed[0]).toBe(headerRow);
+  });
+
+  it("writes the header row's height as --sticky-header-height on the region", () => {
+    const headerRow = regionEl().querySelector(".mat-mdc-header-row") as HTMLElement;
+    Object.defineProperty(headerRow, "offsetHeight", { value: 56, configurable: true });
+
+    resizeObservers[0].cb();
+
+    expect(regionEl().style.getPropertyValue("--sticky-header-height")).toBe("56px");
+  });
+
+  it("disconnects the header ResizeObserver and removes the shadow layer on destroy", () => {
+    const shadow = regionEl().querySelector(".sticky-header-shadow");
+    fixture.destroy();
+
+    expect(resizeObservers[0].disconnect).toHaveBeenCalled();
+    expect(shadow!.isConnected).toBe(false);
   });
 });

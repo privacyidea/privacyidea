@@ -29,6 +29,12 @@ import { AfterViewInit, Directive, ElementRef, inject, OnDestroy, Renderer2 } fr
  * observed via IntersectionObserver against the host as the scroll root, e.g.:
  *
  *   <div class="table-scroll-region" appScrollEdges>...</div>
+ *
+ * It also tracks the height of a sticky `.mat-mdc-header-row`, if the host has one, as the
+ * `--sticky-header-height` custom property on the host. table-global.scss reads that property to
+ * size a single `.sticky-header-shadow` layer spanning the whole row, so the elevation under the
+ * sticky header is cast once rather than once per header cell (which seams at every column
+ * boundary where two adjacent cells' shadows overlap).
  */
 @Directive({
   selector: "[appScrollEdges]",
@@ -39,8 +45,10 @@ export class ScrollEdgesDirective implements AfterViewInit, OnDestroy {
   private readonly renderer = inject(Renderer2);
   private topObserver?: IntersectionObserver;
   private bottomObserver?: IntersectionObserver;
+  private headerResizeObserver?: ResizeObserver;
   private topSentinel?: HTMLElement;
   private bottomSentinel?: HTMLElement;
+  private headerShadow?: HTMLElement;
 
   ngAfterViewInit(): void {
     const root = this.host.nativeElement;
@@ -53,6 +61,19 @@ export class ScrollEdgesDirective implements AfterViewInit, OnDestroy {
     this.renderer.setStyle(bottomSentinel, "height", "0");
     this.renderer.insertBefore(root, topSentinel, root.firstChild);
     this.renderer.appendChild(root, bottomSentinel);
+
+    const headerRow = root.querySelector<HTMLElement>(".mat-mdc-header-row");
+    if (headerRow) {
+      const headerShadow: HTMLElement = this.renderer.createElement("div");
+      this.headerShadow = headerShadow;
+      this.renderer.addClass(headerShadow, "sticky-header-shadow");
+      this.renderer.insertBefore(root, headerShadow, topSentinel.nextSibling);
+
+      this.headerResizeObserver = new ResizeObserver(() => {
+        root.style.setProperty("--sticky-header-height", `${headerRow.offsetHeight}px`);
+      });
+      this.headerResizeObserver.observe(headerRow);
+    }
 
     this.topObserver = new IntersectionObserver(
       ([entry]) => {
@@ -84,11 +105,15 @@ export class ScrollEdgesDirective implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.topObserver?.disconnect();
     this.bottomObserver?.disconnect();
+    this.headerResizeObserver?.disconnect();
     if (this.topSentinel) {
       this.renderer.removeChild(this.renderer.parentNode(this.topSentinel), this.topSentinel);
     }
     if (this.bottomSentinel) {
       this.renderer.removeChild(this.renderer.parentNode(this.bottomSentinel), this.bottomSentinel);
+    }
+    if (this.headerShadow) {
+      this.renderer.removeChild(this.renderer.parentNode(this.headerShadow), this.headerShadow);
     }
   }
 }
