@@ -804,7 +804,7 @@ remain visible but are superseded once a webhook is picked — which the option'
 (`WebhookObjectHandlerTestCase` 11–15: identifier + status audited, reason on failure, no URL, dangling
 reference, inline path).
 
-### 8.2 — Security review
+### 8.2 — Security review ✅
 
 - [x] `encryptPassword()` is used for `password`, `client_key_password` and encrypted header values —
   covered by `test_lib_webhook.py::test_password_is_encrypted_at_rest`,
@@ -825,49 +825,75 @@ reference, inline path).
 
 ---
 
-## Phase 9 — Documentation
+## Phase 9 — Documentation ✅
 
-### 9.1 — Webhook configuration page
+### 9.1 — Webhook configuration page ✅
 
-- [ ] **File:** `doc/configuration/webhook.rst` (new)
-- [ ] How to create and manage webhook endpoints
-- [ ] Authentication types (none, basic, header, mTLS)
-- [ ] TLS and proxy settings
-- [ ] Default payload and tag replacement
-- [ ] The outbound guard (2.4): what `off`/`warn`/`enforce` do, that the default is `off`, and the recommendation to run
-  `warn` before `enforce`
+- [x] **File:** `doc/configuration/webhook_config.rst` (new, named like its siblings
+  `smtpserver_config.rst` / `sms_gateway_config.rst`), linked from `doc/configuration/index.rst`
+- [x] How to create and manage webhook endpoints, and the split the whole feature rests on — the object owns the
+  endpoint, the call site owns the payload
+- [x] Authentication types (none, basic, header, mTLS)
+- [x] TLS and proxy settings
+- [x] Default payload and tag replacement, including that a JSON body is substituted value by value and anything
+  else as plain text
+- [x] The outbound guard (2.4) under its own label `webhook_outbound_guard`: the three modes, the `off` default, the
+  blocked ranges, the allowlist syntax, that a configured proxy is what gets checked — and the DNS-rebinding limit,
+  which the design doc had recorded as an accepted trade-off but which appeared nowhere a reader would find it
+- [x] The **Test** button fires the stored configuration, so it is disabled while the form has unsaved changes
+- [x] Secret handling and the rename caveat (see B in the review follow-ups)
 
-### 9.2 — Event handler documentation update
+### 9.2 — Event handler documentation update ✅
 
-- [ ] **File:** `doc/eventhandler/webhookhandler.rst` (rewrite)
-- [ ] Update to reference webhook objects instead of inline config
-- [ ] Document the `webhook` dropdown
-- [ ] Document available tags (from `create_tag_dict()`)
+- [x] **File:** `doc/eventhandler/webhookhandler.rst` (rewritten)
+- [x] References webhook objects; the inline `URL`/`content_type` are documented as the pre-3.15 shape that keeps
+  working and cannot carry authentication
+- [x] Documents the `webhook` dropdown and that **no** option of the action is mandatory — an empty `data` is what
+  makes the webhook's own `default_payload` apply
+- [x] Documents the available tags (from `create_tag_dict()`) including the backward-compatible aliases, and that
+  which of them carry a value depends on the event
+- [x] Documents the audit entry the run writes
 
-### 9.3 — Conditional Access webhook action
+### 9.3 — Conditional Access webhook action ✅
 
-- [ ] Document the WEBHOOK stage action
-- [ ] Available Conditional Access tags in payload
+- [x] `WEBHOOK` documented in `doc/conditional_access/policies.rst` beside the other stage actions, and added to the
+  per-target action table
+- [x] The available tags are listed, **and the three that are not**: `{email}`, `{givenname}` and `{surname}` are
+  resolver-backed and fetched only for an email action, so a webhook payload referencing them renders them
+  unsubstituted
+- [x] That a stage may carry more than one `WEBHOOK`, and that a dry-run policy never fires it
 
-### 9.4 — Synchronous delivery documentation
+### 9.4 — Synchronous delivery documentation ✅
 
-- [ ] Clearly state: V1 is synchronous, 3s default timeout, no retries
-- [ ] Warn: pointing at a slow endpoint adds latency to triggering requests
-- [ ] Especially critical for Conditional Access (fires inside auth request)
+- [x] Its own labelled section `webhook_synchronous` in 9.1, referenced from both call sites rather than repeated:
+  synchronous, 3s default, no retries; a slow endpoint adds its timeout to the triggering request; worst for a
+  Conditional Access action, which fires inside the authentication request
+- [x] And the other half, which matters just as much: a failing webhook never fails its caller
 
-### 9.5 — Security documentation
+### 9.5 — Security documentation ✅
 
-- [ ] Document `webhook_write` as a sensitive right (SSRF implications)
-- [ ] Document secret handling (encrypted at rest, censored in export)
-- [ ] Document that the outbound guard (2.4) narrows this right's blast radius when enabled, but does not replace it as
-  a sensitive right to hand out carefully
-- [ ] Document `PI_OUTBOUND_GUARD` and `PI_OUTBOUND_GUARD_ALLOW` themselves — the modes, the default (`off`), the
-  blocked ranges and the allowlist syntax. They appear nowhere outside `lib/webhook.py` and its tests today, and
-  an opt-in security control nobody is told about is off everywhere. **8.2 stays open until this lands.**
+- [x] `webhook_write` as a sensitive right (SSRF implications) — this was already in `doc/policies/admin.rst`;
+  extended with the guard reference and with what the right does *not* disclose (existing credentials are encrypted
+  at rest and never returned in clear text — it allows replacing them, not reading them)
+- [x] Secret handling documented in 9.1: encrypted at rest, censored in the API, the WebUI and the export, and what
+  a censored export does on import
+- [x] The guard narrows the blast radius but does not turn `webhook_write` into an ordinary right — stated in the
+  admin policy note itself, where someone deciding whether to grant it is looking
+- [x] `PI_OUTBOUND_GUARD` / `PI_OUTBOUND_GUARD_ALLOW` documented in `doc/installation/system/inifile.rst`
+  (`ini_outbound_guard`, `.. versionadded:: 3.15`) with the full description under `webhook_outbound_guard`. **This was
+  the last open item of 8.2, which is now closed.**
 
-### ToDo:
+### ToDo: ✅
 
-- [ ]Add new policy to templates (superuser, admin, etc.) and document it in `doc/policies/admin.rst`
+- [x] `webhook_read` / `webhook_write` are in `superuser.json` (both trees, guarded by
+  `tests/test_policy_webhook_actions.py`) and documented in `doc/policies/admin.rst`. `helpdesk.json` now denies
+  `webhook_write` explicitly, next to the `smtpserver_write` / `radiusserver_write` it already named — that
+  template lists the sensitive configuration-write rights rather than leaving them out, and this is the most
+  sensitive of the three. The remaining templates are not admin-scope and carry no configuration rights.
+
+**Note:** the docs could not be built here — sphinx and docutils are not installed in the venv. Every `:ref:`
+target used in the changed files was verified to exist, and the heading underlines and inline literals were
+checked; the rendering itself is unverified.
 
 ---
 

@@ -17,18 +17,28 @@ Possible Actions
 post_webhook
 ............
 
-Currently the webhook event handler has just one action, ``post_webhook``. You can post a webhook to
-a URL. There is no predefined setting for webhook, because of the missing standard.
-You can choose between HTTP encoding and JSON for your webhook and you can write
-whatever your other application understands as data.
+Currently the webhook event handler has just one action, ``post_webhook``. You can write whatever your
+other application understands as data.
 
-The action takes the following options:
+Starting with privacyIDEA 3.15 the endpoint should be a :ref:`webhook_config` object, which owns the URL,
+the HTTP method, the authentication, the headers and the TLS, proxy and timeout settings; this handler then
+contributes only the payload. The inline ``URL`` / ``content_type`` below are the shape from before that and
+keep working, but they can not carry authentication.
+
+None of the options is mandatory - each has a meaningful empty state.
+
+**webhook**
+
+The webhook object to post to, selected from the configured ones. When one is selected, ``URL`` and
+``content_type`` are ignored.
+
+Delivery is synchronous and there are no retries, so a slow endpoint delays the request that triggered the
+event; see :ref:`webhook_synchronous`. A webhook that fails never fails the event - the failure is logged and
+audited, and the remaining handlers still run.
 
 **URL**
 
-  * *required* Option
-
-The URL the webhook is posted to.
+The URL the webhook is posted to, used only when no webhook object is selected above.
 
 For an ``https`` URL the server certificate is always verified against the CA bundle of the Python ``requests``
 library (certifi, or the file named in ``REQUESTS_CA_BUNDLE``); it can not be switched off per webhook.
@@ -36,12 +46,12 @@ privacyIDEA waits up to 10 seconds for the webhook, also in the pre position. A 
 an HTTP error status of the webhook is ignored; neither fails the request. With
 ``application/x-www-form-urlencoded``, replaced tag values are not URL-encoded.
 
+The :ref:`webhook_outbound_guard` applies to this inline shape just as it does to a webhook object.
+
 **content_type**
 
-  * *required* Option
-
 The MIME type (Content-Type) used for the webhook payload, either ``application/json`` or
-``application/x-www-form-urlencoded``.
+``application/x-www-form-urlencoded``. Used only when no webhook object is selected above.
 
 **replace**
 
@@ -49,9 +59,8 @@ If enabled, the placeholders in the data are replaced.
 
 **data**
 
-  * *required* Option
-
-The data posted in the webhook.
+The data posted in the webhook. Leave it empty to send the selected webhook object's own default payload,
+which is how one webhook can serve several handlers with one body.
 
 .. note:: You can use placeholders for more flexibility of the webhook, if the option **replace** is enabled.
     For example: If the user John authenticates and the webhook handler text is "This webhook is triggered by
@@ -73,6 +82,17 @@ The data posted in the webhook.
     not reported) or on ``/token/init`` without a serial (the new serial only appears within this list).
 
     ``{url}`` is the URL set in ``PI_BASE_URL`` (see :ref:`cfgfile`) and empty if it is not set.
+
+    A payload that is a JSON object or array is substituted value by value, so a placeholder carrying a quote
+    cannot break the document. Anything else - including a plain sentence sent to a webhook whose content type
+    is ``application/json`` - is substituted as plain text.
+
+Auditing
+~~~~~~~~
+
+Each run writes an audit entry naming the webhook and what the endpoint answered, for example
+``My Hook (webhook 'siem': HTTP 200)``, or the reason on a failure. The URL of a webhook object never appears
+there: it belongs to the object and may embed a token.
 
 Code
 ~~~~

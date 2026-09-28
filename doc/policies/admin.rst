@@ -781,6 +781,15 @@ needs the right ``webhook_write``.
    on internal networks that are not reachable from the outside. Grant it only
    to administrators you would also trust with network access to those hosts.
 
+   The :ref:`webhook_outbound_guard` narrows what such a request can reach. It
+   is off by default and has to be switched on. It raises the cost of reaching
+   an internal host; it does not turn this into an ordinary right.
+
+A webhook definition also carries credentials - a basic authentication password,
+a client key password, header values marked as secret. These are encrypted at
+rest and are never returned in clear text, so this right does not disclose the
+credentials of webhooks that already exist. It does allow replacing them.
+
 .. _policy_webhook_read:
 
 webhook_read
@@ -791,7 +800,7 @@ type: ``bool``
 Allow the administrator to read the webhook definitions. Secrets such as the
 basic authentication password, the client key password and the values of
 headers marked as encrypted are never returned in clear text, they are
-replaced by ``__CENSORED__``.
+replaced by ``__CENSORED__``. See :ref:`webhook_config`.
 
 .. _policy_periodictask_write:
 
