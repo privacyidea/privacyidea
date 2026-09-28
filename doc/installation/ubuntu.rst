@@ -79,6 +79,9 @@ After having added the repositories, run::
 If you do not like the Apache2 webserver you could
 alternatively use the meta package ``privacyidea-nginx``.
 
+Both packages also install the cron jobs that clean up the database, see
+:ref:`cleanup_jobs`.
+
 ------------
 
 Now you may proceed to :ref:`first_steps`.

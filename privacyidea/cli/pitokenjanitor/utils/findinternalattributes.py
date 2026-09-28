@@ -44,8 +44,10 @@ def findinternalattributes(ctx, orphaned_on_error):
     because the user was deleted from the user store. Without a subcommand
     the orphans are listed; pass ``delete`` to remove them.
     """
+    # The scan runs in the subcommands: only they get an application context, and a
+    # subcommand's --help should not have to wait for a lookup of every user.
     ctx.ensure_object(dict)
-    ctx.obj['orphans'] = find_orphaned_internal_attributes(orphaned_on_error=orphaned_on_error)
+    ctx.obj['orphaned_on_error'] = orphaned_on_error
     if ctx.invoked_subcommand is None:
         ctx.invoke(list_cmd)
 
@@ -54,7 +56,7 @@ def findinternalattributes(ctx, orphaned_on_error):
 @click.pass_context
 def list_cmd(ctx):
     """List the orphaned (user_id, resolver, realm_id) tuples."""
-    orphans = ctx.obj['orphans']
+    orphans = find_orphaned_internal_attributes(orphaned_on_error=ctx.obj['orphaned_on_error'])
     if not orphans:
         click.echo("No orphaned internal user attributes found.")
         return
@@ -69,7 +71,7 @@ def list_cmd(ctx):
 @click.pass_context
 def delete_cmd(ctx, yes):
     """Delete every internaluserattribute row that belongs to an orphaned user."""
-    orphans = ctx.obj['orphans']
+    orphans = find_orphaned_internal_attributes(orphaned_on_error=ctx.obj['orphaned_on_error'])
     if not orphans:
         click.echo("No orphaned internal user attributes found.")
         return
