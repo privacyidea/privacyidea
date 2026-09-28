@@ -346,6 +346,14 @@ $checkbox-column-width: 72px;
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
+    // Once scrolled, the action row above collapses and frees up height, which can shrink this
+    // region's own content back under the point where it needs to scroll at all - overflow: auto
+    // then drops the scrollbar mid-scroll. Without a reserved gutter, that also drops the width the
+    // scrollbar took from the content, so every column jumps a few pixels wider at the same moment
+    // the header is trying to look stable. scrollbar-gutter keeps that width reserved regardless of
+    // whether a scrollbar is actually needed right now, so only the scrollbar itself appears or
+    // disappears - nothing else about the table's layout moves.
+    scrollbar-gutter: stable;
 
     // Flush with the top of the region: the cover each edge needs comes from the ::before below,
     // which overhangs without moving the cell, so neither edge is uncovered to pay for the other.
