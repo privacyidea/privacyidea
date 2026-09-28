@@ -23,29 +23,31 @@
   i18n-aria-label="@@conditionalAccess.conditionalAccessPolicies">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        appearance="fill"
-        class="conditional-access-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@conditionalAccess.filterConditionalAccessPolicies"
-          >Filter Conditional Access Policies...</mat-label
-        >
-        <app-clearable-input
-          (clearButtonClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="policyService.policiesResource.isLoading()"
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@conditionalAccess.filterNameTrackedEvent"
-            matInput
-            placeholder="Filter by name or tracked event type"
-            [disabled]="reorderMode()" />
-        </app-clearable-input>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          appearance="fill"
+          class="conditional-access-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@conditionalAccess.filterConditionalAccessPolicies"
+            >Filter Conditional Access Policies...</mat-label
+          >
+          <app-clearable-input
+            (clearButtonClick)="resetFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="policyService.policiesResource.isLoading()"
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@conditionalAccess.filterNameTrackedEvent"
+              matInput
+              placeholder="Filter by name or tracked event type"
+              [disabled]="reorderMode()" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
       <mat-paginator
         [disabled]="reorderMode()"
         [length]="totalLength()"

@@ -20,28 +20,30 @@
   appScrollToTop
   class="locked-users-table-container">
   <div class="filter-paginator-container">
-    <mat-form-field
-      class="locked-users-table-filter"
-      subscriptSizing="dynamic">
-      <mat-label i18n="@@lockedUsers.filterLockedUsers">Filter Locked Users ...</mat-label>
-      <app-clearable-input
-        (clearButtonClick)="clearFilter()"
-        [showClearButton]="casService.lockedUsersFilter().isNotEmpty">
-        <input
-          #filterHTMLInputElement
-          [appRefocusAfterReload]="casService.lockedUsersResource.isLoading()"
-          (input)="handleFilterInput($event)"
-          [value]="casService.lockedUsersFilter().value"
-          aria-label="Filter Input"
-          i18n-aria-label="@@common.filterInput"
-          i18n-placeholder="@@lockedUsers.exampleQueryUsernamesAlice"
-          matInput
-          placeholder="Example query: 'usernames: alice realms: myrealm'" />
-      </app-clearable-input>
-      <mat-hint i18n="@@lockedUsers.useWildcardWrapFilter">
-        Use * as a wildcard. Wrap the filter value in quotation marks if it contains colons or spaces.
-      </mat-hint>
-    </mat-form-field>
+    <div class="filter-actions-group">
+      <mat-form-field
+        class="locked-users-table-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n="@@lockedUsers.filterLockedUsers">Filter Locked Users ...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="clearFilter()"
+          [showClearButton]="casService.lockedUsersFilter().isNotEmpty">
+          <input
+            #filterHTMLInputElement
+            [appRefocusAfterReload]="casService.lockedUsersResource.isLoading()"
+            (input)="handleFilterInput($event)"
+            [value]="casService.lockedUsersFilter().value"
+            aria-label="Filter Input"
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@lockedUsers.exampleQueryUsernamesAlice"
+            matInput
+            placeholder="Example query: 'usernames: alice realms: myrealm'" />
+        </app-clearable-input>
+        <mat-hint i18n="@@lockedUsers.useWildcardWrapFilter">
+          Use * as a wildcard. Wrap the filter value in quotation marks if it contains colons or spaces.
+        </mat-hint>
+      </mat-form-field>
+    </div>
     <mat-paginator
       appPaginatorPageSizeTooltip
       (page)="onPageEvent($event)"

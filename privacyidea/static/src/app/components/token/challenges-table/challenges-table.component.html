@@ -21,25 +21,27 @@
   class="challenges-table-container">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        subscriptSizing="dynamic"
-        appearance="fill"
-        class="challenges-table-filter">
-        <mat-label i18n="@@token.filterChallenges">Filter Challenges...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="challengesService.clearFilter()"
-          [showClearButton]="challengesService.filterDraft().isNotEmpty">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="challengesService.challengesResource.isLoading()"
-            (input)="challengesService.handleFilterInput($event)"
-            [value]="challengesService.filterDraft().filterString"
-            i18n-placeholder="@@token.exampleQueryTransaction"
-            matInput
-            placeholder="Example query: 'transaction_id: 00000000000000000001'" />
-        </app-clearable-input>
-        <mat-hint>{{ filterHint }}</mat-hint>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          subscriptSizing="dynamic"
+          appearance="fill"
+          class="challenges-table-filter">
+          <mat-label i18n="@@token.filterChallenges">Filter Challenges...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="challengesService.clearFilter()"
+            [showClearButton]="challengesService.filterDraft().isNotEmpty">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="challengesService.challengesResource.isLoading()"
+              (input)="challengesService.handleFilterInput($event)"
+              [value]="challengesService.filterDraft().filterString"
+              i18n-placeholder="@@token.exampleQueryTransaction"
+              matInput
+              placeholder="Example query: 'transaction_id: 00000000000000000001'" />
+          </app-clearable-input>
+          <mat-hint>{{ filterHint }}</mat-hint>
+        </mat-form-field>
+      </div>
       <mat-paginator
         appPaginatorPageSizeTooltip
         (page)="onPageEvent($event)"

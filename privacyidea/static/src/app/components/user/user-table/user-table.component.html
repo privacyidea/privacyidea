@@ -48,27 +48,29 @@
     }
     @if (tableState.showTable()) {
       <div class="filter-paginator-container">
-        <mat-form-field
-          class="token-table-filter"
-          subscriptSizing="dynamic">
-          <mat-label i18n="@@user.filterUsers">Filter Users...</mat-label>
-          <app-clearable-input
-            (clearButtonClick)="userService.clearFilter()"
-            [showClearButton]="filterHTMLInputElement.value.length > 0">
-            <input
-              #filterHTMLInputElement
-              [appRefocusAfterReload]="userService.usersResource.isLoading()"
-              [appFilterAutocomplete]="filterKeywords()"
-              (input)="userService.handleFilterInput($event)"
-              [value]="userService.filterDraft().filterString"
-              aria-label="Filter Input"
-              i18n-aria-label="@@common.filterInput"
-              i18n-placeholder="@@user.searchAllColumns"
-              matInput
-              placeholder="Search all columns, or by column e.g. 'root email: @acme'" />
-          </app-clearable-input>
-          <mat-hint>{{ filterHint }}</mat-hint>
-        </mat-form-field>
+        <div class="filter-actions-group">
+          <mat-form-field
+            class="token-table-filter"
+            subscriptSizing="dynamic">
+            <mat-label i18n="@@user.filterUsers">Filter Users...</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="userService.clearFilter()"
+              [showClearButton]="filterHTMLInputElement.value.length > 0">
+              <input
+                #filterHTMLInputElement
+                [appRefocusAfterReload]="userService.usersResource.isLoading()"
+                [appFilterAutocomplete]="filterKeywords()"
+                (input)="userService.handleFilterInput($event)"
+                [value]="userService.filterDraft().filterString"
+                aria-label="Filter Input"
+                i18n-aria-label="@@common.filterInput"
+                i18n-placeholder="@@user.searchAllColumns"
+                matInput
+                placeholder="Search all columns, or by column e.g. 'root email: @acme'" />
+            </app-clearable-input>
+            <mat-hint>{{ filterHint }}</mat-hint>
+          </mat-form-field>
+        </div>
         <mat-paginator
           appPaginatorPageSizeTooltip
           class="hide-page-size-label"

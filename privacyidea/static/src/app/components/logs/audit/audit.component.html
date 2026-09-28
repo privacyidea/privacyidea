@@ -21,40 +21,42 @@
   class="audit-table-container">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        class="audit-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@audit.filterAuditLog">Filter Audit Log...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="auditService.clearFilter()"
-          [showClearButton]="auditService.filterDraft().isNotEmpty">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="auditService.auditResource.isLoading()"
-            [appFilterAutocomplete]="auditService.apiFilterKeys"
-            (input)="auditService.handleFilterInput($event)"
-            [value]="auditService.filterDraft().value"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@audit.exampleQueryAction"
-            matInput
-            placeholder="Example query: 'action: GET success: false'" />
-        </app-clearable-input>
-        <mat-hint>{{ filterHint }}</mat-hint>
-      </mat-form-field>
-      @if (authService.actionAllowed("auditlog_download")) {
-        <button
-          (click)="auditService.downloadCSV()"
-          [disabled]="auditService.isDownloading()"
-          aria-label="Download Audit Log"
-          class="filter-action-button"
-          i18n-aria-label="@@audit.downloadAudit"
-          i18n-matTooltip="@@audit.downloadAudit"
-          mat-icon-button
-          matTooltip="Download Audit Log">
-          <mat-icon>download</mat-icon>
-        </button>
-      }
+      <div class="filter-actions-group">
+        <mat-form-field
+          class="audit-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@audit.filterAuditLog">Filter Audit Log...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="auditService.clearFilter()"
+            [showClearButton]="auditService.filterDraft().isNotEmpty">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="auditService.auditResource.isLoading()"
+              [appFilterAutocomplete]="auditService.apiFilterKeys"
+              (input)="auditService.handleFilterInput($event)"
+              [value]="auditService.filterDraft().value"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@audit.exampleQueryAction"
+              matInput
+              placeholder="Example query: 'action: GET success: false'" />
+          </app-clearable-input>
+          <mat-hint>{{ filterHint }}</mat-hint>
+        </mat-form-field>
+        @if (authService.actionAllowed("auditlog_download")) {
+          <button
+            (click)="auditService.downloadCSV()"
+            [disabled]="auditService.isDownloading()"
+            aria-label="Download Audit Log"
+            class="filter-action-button"
+            i18n-aria-label="@@audit.downloadAudit"
+            i18n-matTooltip="@@audit.downloadAudit"
+            mat-icon-button
+            matTooltip="Download Audit Log">
+            <mat-icon>download</mat-icon>
+          </button>
+        }
+      </div>
       <mat-paginator
         appPaginatorPageSizeTooltip
         (page)="onPageEvent($event)"

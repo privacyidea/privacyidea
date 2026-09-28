@@ -21,26 +21,28 @@
   class="tokengroups-container">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        appearance="fill"
-        class="tokengroups-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@tokenGroup.filterTokengroups">Filter Tokengroups...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="tokengroupService.tokengroupResource.isLoading()"
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@common.filterByNameDescription"
-            matInput
-            placeholder="Filter by name or description" />
-        </app-clearable-input>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          appearance="fill"
+          class="tokengroups-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@tokenGroup.filterTokengroups">Filter Tokengroups...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="resetFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="tokengroupService.tokengroupResource.isLoading()"
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@common.filterByNameDescription"
+              matInput
+              placeholder="Filter by name or description" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
       <mat-paginator
         [length]="totalLength()"
         [pageSizeOptions]="pageSizeOptions()"

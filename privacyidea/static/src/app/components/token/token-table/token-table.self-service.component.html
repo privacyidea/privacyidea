@@ -26,11 +26,13 @@
     <div
       [appStickyHeader]="scrollContainer"
       class="filter-paginator-container sticky-header">
-      <h3
-        class="selfservice-paginator-label"
-        i18n="@@token.yourTokens"
-        >Your Tokens</h3
-      >
+      <div class="filter-actions-group">
+        <h3
+          class="selfservice-paginator-label"
+          i18n="@@token.yourTokens"
+          >Your Tokens</h3
+        >
+      </div>
       <mat-paginator
         appPaginatorPageSizeTooltip
         (page)="onPageEvent($event)"

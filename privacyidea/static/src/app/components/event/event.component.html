@@ -23,25 +23,27 @@
   i18n-aria-label="@@event.eventHandlers">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        class="event-handler-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@event.filterEventHandlers">Filter Event Handlers ...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="onClearFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="eventService.allEventsResource.isLoading()"
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@common.exampleQueryUsername"
-            matInput
-            placeholder="Example query: 'username: root'" />
-        </app-clearable-input>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          class="event-handler-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@event.filterEventHandlers">Filter Event Handlers ...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="onClearFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="eventService.allEventsResource.isLoading()"
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@common.exampleQueryUsername"
+              matInput
+              placeholder="Example query: 'username: root'" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
       <mat-paginator
         [length]="eventHandlerDataSource().data.length"
         [pageSizeOptions]="pageSizeOptions()"

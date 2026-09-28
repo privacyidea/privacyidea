@@ -166,6 +166,32 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   margin-bottom: 16px;
   flex-wrap: wrap;
 
+  // Groups the filter field with its adjacent buttons (More Filter, bulk actions, ...) into one
+  // block, capped at a comfortable reading width instead of letting the row stretch edge-to-edge on
+  // wide screens. It carries the width the filter field and buttons used to size against directly
+  // on .filter-paginator-container, so their own flex rules below now target it through this group
+  // rather than as its own direct children.
+  //
+  // flex: 1 1 0 (not width: 100%, and not flex-basis: auto) so it claims exactly the free space left
+  // once the paginator has taken its own content width, up to the cap - and, since it is the only
+  // child here with flex-grow, shrinks first as that free space runs out: the paginator's own
+  // flex: 0 1 max-content below never grows past its content and never shrinks past it either, so
+  // this group gives up width - down to the filter field's own min-width - before the paginator is
+  // ever pushed to wrap onto the next line. A flex-basis of auto instead of 0 measures the group by
+  // its children's own preferred size to size the parent, which - because the filter field inside
+  // uses flex-basis: 0% itself (an intentional "grow from nothing" pattern, not a real size) -
+  // resolves inconsistently across browsers, and even in the same browser depending on how many
+  // sibling buttons are visible (the bulk-actions trigger button toggles on scroll): basis 0 removes
+  // that ambiguity by giving the group a definite starting size instead of one derived from content.
+  > .filter-actions-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: calc(932px + 48px + 48px);
+  }
+
   // The filter field is taller than its input: a hint line sits underneath it. Centring the row
   // would centre on that too, so give the paginator the input's own height from the top of the row
   // and centre it inside that - it then lines up on the middle of the input itself, whether or not
@@ -184,7 +210,7 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   // drawn as a circle, and matching the input's height instead would draw it as an ellipse - and
   // is shifted onto the middle of the input row: a translate percentage resolves against the
   // element's own height, so the offset holds whatever the size above is.
-  > button {
+  .filter-actions-group > button {
     align-self: flex-start;
     height: table.$filter-trigger-size;
     width: table.$filter-trigger-size;
@@ -209,7 +235,9 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
 
   .mat-mdc-paginator {
     background-color: table.$paginator-bg;
-    flex: 1 1 max-content;
+    // No flex-grow: it only ever needs its own content width, and growing left it stretching to
+    // fill whatever the filter-actions-group didn't claim, wider than its own controls needed.
+    flex: 0 1 max-content;
     min-width: max-content;
 
     @media (max-width: 1100px) {

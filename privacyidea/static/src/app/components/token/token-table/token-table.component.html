@@ -24,58 +24,61 @@
   i18n-aria-label="@@token.tokenTable">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        class="token-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@common.filterTokens">Filter Tokens...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="tokenService.clearFilter()"
-          [showClearButton]="tokenService.filterDraft().isNotEmpty">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="tokenResource.isLoading()"
-            [appFilterAutocomplete]="filterKeywords"
-            (input)="onFilterInput($event)"
-            (keyup.enter)="tokenService.applyFilterInput($event)"
-            [value]="tokenService.filterDraft().filterString"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@token.exampleQueryType"
-            id="token-filter-input"
-            matInput
-            placeholder="Example query: 'type: hotp userid: 1000'" />
-        </app-clearable-input>
-        <mat-hint>{{ filterHint }}</mat-hint>
-        @if (showFilterHint()) {
-          <mat-hint
-            align="end"
-            i18n="@@common.pressEnterApply"
-            >Press enter to apply the filter</mat-hint
-          >
-        }
-      </mat-form-field>
-      <button
-        [matMenuTriggerFor]="advancedFilterMenu"
-        aria-label="More Filter"
-        class="margin-left-8"
-        i18n-aria-label="@@common.moreFilter"
-        i18n-matTooltip="@@common.moreFilter"
-        mat-icon-button
-        matTooltip="More Filter">
-        <mat-icon>filter_list</mat-icon>
-      </button>
-      <button
-        [matMenuTriggerFor]="tokenTableActions.actionsMenu"
-        aria-label="Actions"
-        class="table-actions-trigger margin-left-8"
-        i18n-aria-label="@@common.actions"
-        i18n-matTooltip="@@common.actions"
-        mat-icon-button
-        matTooltip="Actions">
-        <mat-icon>menu</mat-icon>
-      </button>
+      <div class="filter-actions-group">
+        <mat-form-field
+          class="token-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@common.filterTokens">Filter Tokens...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="tokenService.clearFilter()"
+            [showClearButton]="tokenService.filterDraft().isNotEmpty">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="tokenResource.isLoading()"
+              [appFilterAutocomplete]="filterKeywords"
+              (input)="onFilterInput($event)"
+              (keyup.enter)="tokenService.applyFilterInput($event)"
+              [value]="tokenService.filterDraft().filterString"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@token.exampleQueryType"
+              id="token-filter-input"
+              matInput
+              placeholder="Example query: 'type: hotp userid: 1000'" />
+          </app-clearable-input>
+          <mat-hint>{{ filterHint }}</mat-hint>
+          @if (showFilterHint()) {
+            <mat-hint
+              align="end"
+              i18n="@@common.pressEnterApply"
+              >Press enter to apply the filter</mat-hint
+            >
+          }
+        </mat-form-field>
+        <button
+          [matMenuTriggerFor]="advancedFilterMenu"
+          aria-label="More Filter"
+          class="margin-left-8"
+          i18n-aria-label="@@common.moreFilter"
+          i18n-matTooltip="@@common.moreFilter"
+          mat-icon-button
+          matTooltip="More Filter">
+          <mat-icon>filter_list</mat-icon>
+        </button>
+        <button
+          [matMenuTriggerFor]="tokenTableActions.actionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <mat-icon>menu</mat-icon>
+        </button>
+      </div>
       <mat-paginator
         appPaginatorPageSizeTooltip
+        appPaginatorCompactRange
         (page)="onPageEvent($event)"
         class="hide-page-size-label"
         [length]="totalLength()"
