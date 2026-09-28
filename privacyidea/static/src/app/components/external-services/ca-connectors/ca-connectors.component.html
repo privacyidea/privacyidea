@@ -67,91 +67,95 @@
         <span i18n="@@common.delete">Delete</span>
       </button>
     </div>
-    <table
-      [dataSource]="caConnectorDataSource()"
-      class="ca-connectors-table"
-      mat-table
-      matSort>
-      <ng-container matColumnDef="select">
-        <th
-          *matHeaderCellDef
-          class="table-checkbox"
-          mat-header-cell>
-          <mat-checkbox
-            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
-            [checked]="selector.allRowsSelected()"
-            [disabled]="!selector.hasVisibleRows()"
-            [indeterminate]="selector.someRowsSelected()" />
-        </th>
-        <td
-          *matCellDef="let row"
-          class="table-checkbox"
-          mat-cell>
-          <mat-checkbox
-            (change)="selector.setRowSelected(row, $event.checked)"
-            (click)="$event.stopPropagation()"
-            [checked]="selector.isRowSelected(row)" />
-        </td>
-      </ng-container>
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="caConnectorDataSource()"
+        class="ca-connectors-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="select">
+          <th
+            *matHeaderCellDef
+            class="table-checkbox"
+            mat-header-cell>
+            <mat-checkbox
+              (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+              [checked]="selector.allRowsSelected()"
+              [disabled]="!selector.hasVisibleRows()"
+              [indeterminate]="selector.someRowsSelected()" />
+          </th>
+          <td
+            *matCellDef="let row"
+            class="table-checkbox"
+            mat-cell>
+            <mat-checkbox
+              (change)="selector.setRowSelected(row, $event.checked)"
+              (click)="$event.stopPropagation()"
+              [checked]="selector.isRowSelected(row)" />
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="connectorname">
-        <th
-          *matHeaderCellDef
-          class="col-width-l"
-          i18n="@@caConnector.caConnectorName"
-          mat-header-cell
-          mat-sort-header
-          >CA Connector Name</th
-        >
-        <td
-          *matCellDef="let connector"
-          class="col-width-l"
-          mat-cell>
-          <app-copyable [copyText]="connector.connectorname">
-            <a
-              role="button"
-              tabindex="0"
-              (click)="openEditDialog(connector)"
-              (keydown.enter)="openEditDialog(connector)"
-              class="flex ali-center">
-              {{ connector.connectorname }}
-            </a>
-          </app-copyable>
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="connectorname">
+          <th
+            *matHeaderCellDef
+            class="col-width-l"
+            i18n="@@caConnector.caConnectorName"
+            mat-header-cell
+            mat-sort-header
+            >CA Connector Name</th
+          >
+          <td
+            *matCellDef="let connector"
+            class="col-width-l"
+            mat-cell>
+            <app-copyable [copyText]="connector.connectorname">
+              <a
+                role="button"
+                tabindex="0"
+                (click)="openEditDialog(connector)"
+                (keydown.enter)="openEditDialog(connector)"
+                class="flex ali-center">
+                {{ connector.connectorname }}
+              </a>
+            </app-copyable>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="type">
-        <th
-          *matHeaderCellDef
-          class="col-width-s"
-          i18n="@@common.type"
-          mat-header-cell
-          mat-sort-header
-          >Type</th
-        >
-        <td
-          *matCellDef="let connector"
-          class="col-width-s"
-          mat-cell>
-          {{ connector.type }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="type">
+          <th
+            *matHeaderCellDef
+            class="col-width-s"
+            i18n="@@common.type"
+            mat-header-cell
+            mat-sort-header
+            >Type</th
+          >
+          <td
+            *matCellDef="let connector"
+            class="col-width-s"
+            mat-cell>
+            {{ connector.type }}
+          </td>
+        </ng-container>
 
-      <tr
-        *matHeaderRowDef="displayedColumns"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: displayedColumns"
-        mat-row></tr>
+        <tr
+          *matHeaderRowDef="displayedColumns; sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: displayedColumns"
+          mat-row></tr>
 
-      <tr *matNoDataRow>
-        <td colspan="3">
-          <app-table-state
-            [status]="tableState.rowStatus()"
-            [table]="tableState" />
-        </td>
-      </tr>
-    </table>
+        <tr *matNoDataRow>
+          <td colspan="3">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"

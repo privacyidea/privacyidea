@@ -40,13 +40,16 @@
     <app-container-templates-table-actions [selectedTemplates]="selector.selectedRows()">
     </app-container-templates-table-actions>
 
-    <table
-      mat-table
-      matSort
-      (matSortChange)="onSortChange($event)"
-      [dataSource]="pagedContainerTemplates()"
-      class="container-templates-table">
-      <ng-container matColumnDef="select">
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        mat-table
+        matSort
+        (matSortChange)="onSortChange($event)"
+        [dataSource]="pagedContainerTemplates()"
+        class="container-templates-table">
+        <ng-container matColumnDef="select">
         <th
           mat-header-cell
           *matHeaderCellDef
@@ -140,7 +143,7 @@
 
       <tr
         mat-header-row
-        *matHeaderRowDef="columnKeys()"></tr>
+        *matHeaderRowDef="columnKeys(); sticky: true"></tr>
       <tr
         mat-row
         *matRowDef="let row; columns: columnKeys()"></tr>
@@ -165,7 +168,8 @@
           </app-table-state>
         </td>
       </tr>
-    </table>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"

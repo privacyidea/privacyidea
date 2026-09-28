@@ -46,6 +46,7 @@ import { TableState } from "@core/models/table_state/table-state";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-radius-servers",
@@ -66,7 +67,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     ClearableInputComponent,
     MatInput,
     CopyableComponent,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective
   ],
   templateUrl: "./radius-servers.component.html",
   styleUrl: "./radius-servers.component.scss"

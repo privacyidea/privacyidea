@@ -67,125 +67,129 @@
         <span i18n="@@common.delete">Delete</span>
       </button>
     </div>
-    <table
-      [dataSource]="radiusDataSource()"
-      class="radius-servers-table"
-      mat-table
-      matSort>
-      <ng-container matColumnDef="select">
-        <th
-          *matHeaderCellDef
-          class="table-checkbox"
-          mat-header-cell>
-          <mat-checkbox
-            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
-            [checked]="selector.allRowsSelected()"
-            [disabled]="!selector.hasVisibleRows()"
-            [indeterminate]="selector.someRowsSelected()" />
-        </th>
-        <td
-          *matCellDef="let row"
-          class="table-checkbox"
-          mat-cell>
-          <mat-checkbox
-            (change)="selector.setRowSelected(row, $event.checked)"
-            (click)="$event.stopPropagation()"
-            [checked]="selector.isRowSelected(row)" />
-        </td>
-      </ng-container>
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="radiusDataSource()"
+        class="radius-servers-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="select">
+          <th
+            *matHeaderCellDef
+            class="table-checkbox"
+            mat-header-cell>
+            <mat-checkbox
+              (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+              [checked]="selector.allRowsSelected()"
+              [disabled]="!selector.hasVisibleRows()"
+              [indeterminate]="selector.someRowsSelected()" />
+          </th>
+          <td
+            *matCellDef="let row"
+            class="table-checkbox"
+            mat-cell>
+            <mat-checkbox
+              (change)="selector.setRowSelected(row, $event.checked)"
+              (click)="$event.stopPropagation()"
+              [checked]="selector.isRowSelected(row)" />
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="identifier">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-' + columnWidths['identifier']"
-          i18n="@@common.identifier"
-          mat-header-cell
-          mat-sort-header
-          >Identifier</th
-        >
-        <td
-          *matCellDef="let server"
-          [ngClass]="'col-width-' + columnWidths['identifier']"
-          mat-cell>
-          <app-copyable [copyText]="server.identifier">
-            <a
-              role="button"
-              tabindex="0"
-              (click)="onEditServer(server)"
-              (keydown.enter)="onEditServer(server)"
-              class="flex ali-center">
-              {{ server.identifier }}
-            </a>
-          </app-copyable>
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="identifier">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-' + columnWidths['identifier']"
+            i18n="@@common.identifier"
+            mat-header-cell
+            mat-sort-header
+            >Identifier</th
+          >
+          <td
+            *matCellDef="let server"
+            [ngClass]="'col-width-' + columnWidths['identifier']"
+            mat-cell>
+            <app-copyable [copyText]="server.identifier">
+              <a
+                role="button"
+                tabindex="0"
+                (click)="onEditServer(server)"
+                (keydown.enter)="onEditServer(server)"
+                class="flex ali-center">
+                {{ server.identifier }}
+              </a>
+            </app-copyable>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="server">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-' + columnWidths['server']"
-          i18n="@@common.ipFqdnColumn"
-          mat-header-cell
-          mat-sort-header
-          >IP/FQDN</th
-        >
-        <td
-          *matCellDef="let server"
-          [ngClass]="'col-width-' + columnWidths['server']"
-          mat-cell>
-          {{ server.server }}:{{ server.port }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="server">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-' + columnWidths['server']"
+            i18n="@@common.ipFqdnColumn"
+            mat-header-cell
+            mat-sort-header
+            >IP/FQDN</th
+          >
+          <td
+            *matCellDef="let server"
+            [ngClass]="'col-width-' + columnWidths['server']"
+            mat-cell>
+            {{ server.server }}:{{ server.port }}
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="dictionary">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-' + columnWidths['dictionary']"
-          i18n="@@radiusServer.dictionary"
-          mat-header-cell
-          mat-sort-header
-          >Dictionary</th
-        >
-        <td
-          *matCellDef="let server"
-          [ngClass]="'col-width-' + columnWidths['dictionary']"
-          mat-cell>
-          {{ server.dictionary }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="dictionary">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-' + columnWidths['dictionary']"
+            i18n="@@radiusServer.dictionary"
+            mat-header-cell
+            mat-sort-header
+            >Dictionary</th
+          >
+          <td
+            *matCellDef="let server"
+            [ngClass]="'col-width-' + columnWidths['dictionary']"
+            mat-cell>
+            {{ server.dictionary }}
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="description">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-' + columnWidths['description']"
-          i18n="@@common.description"
-          mat-header-cell
-          mat-sort-header
-          >Description</th
-        >
-        <td
-          *matCellDef="let server"
-          [ngClass]="'col-width-' + columnWidths['description']"
-          mat-cell>
-          {{ server.description }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="description">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-' + columnWidths['description']"
+            i18n="@@common.description"
+            mat-header-cell
+            mat-sort-header
+            >Description</th
+          >
+          <td
+            *matCellDef="let server"
+            [ngClass]="'col-width-' + columnWidths['description']"
+            mat-cell>
+            {{ server.description }}
+          </td>
+        </ng-container>
 
-      <tr
-        *matHeaderRowDef="displayedColumns"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: displayedColumns"
-        mat-row></tr>
+        <tr
+          *matHeaderRowDef="displayedColumns; sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: displayedColumns"
+          mat-row></tr>
 
-      <tr *matNoDataRow>
-        <td colspan="5">
-          <app-table-state
-            [status]="tableState.rowStatus()"
-            [table]="tableState" />
-        </td>
-      </tr>
-    </table>
+        <tr *matNoDataRow>
+          <td colspan="5">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"

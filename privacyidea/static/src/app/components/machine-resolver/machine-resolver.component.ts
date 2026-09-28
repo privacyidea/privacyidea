@@ -43,6 +43,7 @@ import {
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { lastValueFrom } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so table.page-table-state-size(table.table-width(...)) in the .scss (see table-width()
@@ -70,7 +71,8 @@ const columnKeysMap = [
     ClearableInputComponent,
     ScrollToTopDirective,
     RouterLink,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective
   ]
 })
 export class MachineResolverComponent {

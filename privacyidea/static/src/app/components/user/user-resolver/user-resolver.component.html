@@ -46,14 +46,17 @@
         </mat-form-field>
       </div>
       <app-resolver-table-actions />
-      <table
-        [dataSource]="resolversDataSource()"
-        i18n-aria-label="@@resolver.tableLabel"
-        aria-label="Resolvers Table"
-        class="user-sources-table"
-        mat-table
-        matSort>
-        <ng-container matColumnDef="resolvername">
+      <div
+        appScrollEdges
+        class="table-scroll-region">
+        <table
+          [dataSource]="resolversDataSource()"
+          i18n-aria-label="@@resolver.tableLabel"
+          aria-label="Resolvers Table"
+          class="user-sources-table"
+          mat-table
+          matSort>
+          <ng-container matColumnDef="resolvername">
           <th
             *matHeaderCellDef
             [ngClass]="'col-width-' + columnKeysMap[0].width"
@@ -120,39 +123,40 @@
           </td>
         </ng-container>
 
-        <tr
-          *matHeaderRowDef="columnKeys"
-          mat-header-row></tr>
+          <tr
+            *matHeaderRowDef="columnKeys; sticky: true"
+            mat-header-row></tr>
 
-        <tr
-          *matRowDef="let row; columns: columnKeys"
-          mat-row></tr>
+          <tr
+            *matRowDef="let row; columns: columnKeys"
+            mat-row></tr>
 
-        <tr *matNoDataRow>
-          <td [attr.colspan]="columnKeys.length">
-            <app-table-state
-              [hint]="emptyHint()"
-              [status]="tableState.rowStatus()"
-              [table]="tableState"
-              heading="No resolvers yet"
-              i18n-heading="@@resolver.noResolversYet"
-              icon="storage">
-              @if (authService.actionAllowed("resolverwrite")) {
-                <button
-                  [routerLink]="[ROUTE_PATHS.USERS_RESOLVERS, 'new']"
-                  class="action-button-primary button-width-m"
-                  mat-stroked-button>
-                  <span class="icon-badge">
-                    <mat-icon class="ms--database padding-right-3"></mat-icon>
-                    <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-                  </span>
-                  <span i18n="@@resolver.newResolver">New Resolver</span>
-                </button>
-              }
-            </app-table-state>
-          </td>
-        </tr>
-      </table>
+          <tr *matNoDataRow>
+            <td [attr.colspan]="columnKeys.length">
+              <app-table-state
+                [hint]="emptyHint()"
+                [status]="tableState.rowStatus()"
+                [table]="tableState"
+                heading="No resolvers yet"
+                i18n-heading="@@resolver.noResolversYet"
+                icon="storage">
+                @if (authService.actionAllowed("resolverwrite")) {
+                  <button
+                    [routerLink]="[ROUTE_PATHS.USERS_RESOLVERS, 'new']"
+                    class="action-button-primary button-width-m"
+                    mat-stroked-button>
+                    <span class="icon-badge">
+                      <mat-icon class="ms--database padding-right-3"></mat-icon>
+                      <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+                    </span>
+                    <span i18n="@@resolver.newResolver">New Resolver</span>
+                  </button>
+                }
+              </app-table-state>
+            </td>
+          </tr>
+        </table>
+      </div>
     } @else {
       <app-table-state
         [hint]="emptyHint()"

@@ -15,6 +15,9 @@
     table-layout: fixed;
     width: auto;
   }
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .actions-container {

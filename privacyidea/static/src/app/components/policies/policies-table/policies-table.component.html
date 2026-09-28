@@ -35,7 +35,10 @@
 
     <app-policies-table-actions [policySelection]="selector.selectedRows()" />
 
-    <table
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
       (matSortChange)="onSortChange($event)"
       [dataSource]="sortedFilteredPolicies()"
       class="policies-table row-striped"
@@ -175,7 +178,7 @@
       }
 
       <tr
-        *matHeaderRowDef="columnKeys()"
+        *matHeaderRowDef="columnKeys(); sticky: true"
         mat-header-row></tr>
       <tr
         *matRowDef="let policy; columns: columnKeys()"
@@ -206,7 +209,8 @@
           </app-table-state>
         </td>
       </tr>
-    </table>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [hint]="emptyHint()"

@@ -45,6 +45,7 @@ import {
   ResolverService
 } from "@services/resolver/resolver.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { HttpConfigComponent, HttpConfigModel } from "./http-config/http-config.component";
 import { HttpGroupsAttributeComponent, UserGroupsModel } from "./http-groups-attribute/http-groups-attribute.component";
 
@@ -196,7 +197,8 @@ function emptyHttpModel(): HttpResolverModel {
     MatButtonToggle,
     HttpConfigComponent,
     ClearableInputComponent,
-    HttpGroupsAttributeComponent
+    HttpGroupsAttributeComponent,
+    ScrollEdgesDirective
   ],
   templateUrl: "./http-resolver.component.html",
   styleUrl: "./http-resolver.component.scss"

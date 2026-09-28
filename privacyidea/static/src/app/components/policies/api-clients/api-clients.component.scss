@@ -9,6 +9,10 @@
   // empty/error state is as wide as the table it stands in for, not the unrelated 44rem default.
   @include table.page-table-state-size(table.table-width(checkbox, l, m, s, s, m, m, s));
 
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
   // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead
   // of holding it steady; fixed makes the header row's declared widths authoritative.
   .api-clients-table {

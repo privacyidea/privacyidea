@@ -40,6 +40,7 @@ import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-tokengroups",
@@ -60,7 +61,8 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     ClearableInputComponent,
     MatInput,
     CopyableComponent,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective
   ],
   templateUrl: "./tokengroups.component.html",
   styleUrl: "./tokengroups.component.scss"

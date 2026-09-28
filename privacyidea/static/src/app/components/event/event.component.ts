@@ -51,6 +51,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { of } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-event",
@@ -69,7 +70,8 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     MatPaginator,
     HighlightPipe,
     MatTooltip,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective
   ],
   standalone: true,
   templateUrl: "./event.component.html",

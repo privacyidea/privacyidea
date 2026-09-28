@@ -29,6 +29,7 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SmtpServer, SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { Router } from "@angular/router";
@@ -60,7 +61,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     ClearableInputComponent,
     MatInput,
     CopyableComponent,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective
   ],
   templateUrl: "./smtp-servers.component.html",
   styleUrl: "./smtp-servers.component.scss"

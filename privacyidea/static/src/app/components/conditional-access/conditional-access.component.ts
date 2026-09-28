@@ -63,6 +63,7 @@ import {
   ConditionalAccessDryRunOffDialogResult
 } from "./conditional-access-dry-run-off-dialog/conditional-access-dry-run-off-dialog.component";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-conditional-access",
@@ -83,7 +84,8 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     ClearableInputComponent,
     MatInput,
     InfoHintComponent,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective
   ],
   templateUrl: "./conditional-access.component.html",
   styleUrl: "./conditional-access.component.scss"

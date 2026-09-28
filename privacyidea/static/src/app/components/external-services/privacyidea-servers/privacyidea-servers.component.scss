@@ -4,6 +4,9 @@
 
 .privacyidea-servers-container {
   @include styles.main-component-style;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   @include table.base-table-structure(".privacyidea-servers-table", ".table-filter", ".table-scroll-container");
   // Sized from the col-width-* tiers the columns below use (select checkbox + identifier m + tls
   // s), plus a flat estimate for url and description, which have no tier - both are untiered free

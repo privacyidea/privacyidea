@@ -179,7 +179,10 @@
       >
     </div>
 
-    <table
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
       [dataSource]="mappingRows()"
       class="mapping-table unstriped"
       mat-table>
@@ -293,12 +296,13 @@
       </ng-container>
 
       <tr
-        *matHeaderRowDef="displayedColumns"
+        *matHeaderRowDef="displayedColumns; sticky: true"
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
         mat-row></tr>
-    </table>
+      </table>
+    </div>
 
     <mat-hint
       class="hint"

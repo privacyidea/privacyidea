@@ -4,6 +4,9 @@
 
 .machines-container {
   @include styles.main-component-style;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   @include table.base-table-structure(".machines-table", ".table-filter", ".table-scroll-container");
   @include table.page-table-state-size(table.table-width(l, m, s, m));
 

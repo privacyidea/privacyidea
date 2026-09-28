@@ -70,11 +70,14 @@
       >
     </div>
 
-    <table
-      [dataSource]="eventHandlerDataSource()"
-      class="event-handler-table row-striped"
-      mat-table>
-      @for (column of Object.keys(columnKeysMap); track column) {
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="eventHandlerDataSource()"
+        class="event-handler-table row-striped"
+        mat-table>
+        @for (column of Object.keys(columnKeysMap); track column) {
         @if (column !== "delete" || authService.actionAllowed("eventhandling_write")) {
           <ng-container [matColumnDef]="column">
             <th
@@ -218,23 +221,24 @@
         }
       }
 
-      <tr
-        *matHeaderRowDef="columnKeys()"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: columnKeys()"
-        [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"
-        class="example-element-row"
-        mat-row></tr>
+        <tr
+          *matHeaderRowDef="columnKeys(); sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: columnKeys()"
+          [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"
+          class="example-element-row"
+          mat-row></tr>
 
-      <tr *matNoDataRow>
-        <td [attr.colspan]="columnKeys().length">
-          <app-table-state
-            [status]="tableState.rowStatus()"
-            [table]="tableState" />
-        </td>
-      </tr>
-    </table>
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeys().length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"

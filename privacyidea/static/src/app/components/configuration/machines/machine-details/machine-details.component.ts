@@ -42,6 +42,7 @@ import {
   TokenApplication,
   TokenApplications
 } from "@services/machine/machine.service";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { lastValueFrom } from "rxjs";
@@ -61,7 +62,8 @@ import { lastValueFrom } from "rxjs";
     MatSelectModule,
     MatAutocompleteModule,
     CopyButtonComponent,
-    CopyableComponent
+    CopyableComponent,
+    ScrollEdgesDirective
   ],
   templateUrl: "./machine-details.component.html",
   styleUrl: "./machine-details.component.scss"

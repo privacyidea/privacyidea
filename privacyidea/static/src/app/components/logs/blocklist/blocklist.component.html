@@ -267,7 +267,7 @@
       </ng-container>
 
       <tr
-        *matHeaderRowDef="displayedColumns"
+        *matHeaderRowDef="displayedColumns; sticky: true"
         mat-header-row></tr>
       <tr
         *matRowDef="let _row; columns: displayedColumns"

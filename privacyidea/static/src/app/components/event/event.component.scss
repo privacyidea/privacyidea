@@ -14,6 +14,9 @@
   // event.component.ts) - all three hold lists or free text left to the table's remaining space -
   // so the panel is not narrower than the real table.
   @include table.page-table-state-size(calc(#{table.table-width(s, m, s, s, s, s)} + 3 * 240px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .event-handler-table {

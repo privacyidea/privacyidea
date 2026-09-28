@@ -3,6 +3,9 @@
 
 .conditional-access-container {
   @include styles.main-component-style;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   @include table.base-table-structure(
     ".conditional-access-table",
     ".conditional-access-table-filter",

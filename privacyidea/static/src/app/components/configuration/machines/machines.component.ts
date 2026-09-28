@@ -39,6 +39,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-machines",
@@ -56,7 +57,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatInputModule,
     ClearableInputComponent,
     CopyableComponent,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective
   ],
   templateUrl: "./machines.component.html",
   styleUrl: "./machines.component.scss"

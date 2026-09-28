@@ -4,6 +4,9 @@
 
 .ca-connectors-container {
   @include styles.main-component-style;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   @include table.base-table-structure(".ca-connectors-table", ".table-filter", ".table-scroll-container");
   // Sized from the same col-width-* tiers the columns above use (select checkbox + connectorname l + type s).
   @include table.page-table-state-size(table.table-width(checkbox, l, s));

@@ -67,146 +67,150 @@
         <span i18n="@@common.delete">Delete</span>
       </button>
     </div>
-    <table
-      [dataSource]="smtpDataSource()"
-      class="smtp-servers-table"
-      mat-table
-      matSort>
-      <ng-container matColumnDef="select">
-        <th
-          *matHeaderCellDef
-          class="table-checkbox"
-          mat-header-cell>
-          <mat-checkbox
-            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
-            [checked]="selector.allRowsSelected()"
-            [disabled]="!selector.hasVisibleRows()"
-            [indeterminate]="selector.someRowsSelected()" />
-        </th>
-        <td
-          *matCellDef="let row"
-          class="table-checkbox"
-          mat-cell>
-          <mat-checkbox
-            (change)="selector.setRowSelected(row, $event.checked)"
-            (click)="$event.stopPropagation()"
-            [checked]="selector.isRowSelected(row)" />
-        </td>
-      </ng-container>
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="smtpDataSource()"
+        class="smtp-servers-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="select">
+          <th
+            *matHeaderCellDef
+            class="table-checkbox"
+            mat-header-cell>
+            <mat-checkbox
+              (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+              [checked]="selector.allRowsSelected()"
+              [disabled]="!selector.hasVisibleRows()"
+              [indeterminate]="selector.someRowsSelected()" />
+          </th>
+          <td
+            *matCellDef="let row"
+            class="table-checkbox"
+            mat-cell>
+            <mat-checkbox
+              (change)="selector.setRowSelected(row, $event.checked)"
+              (click)="$event.stopPropagation()"
+              [checked]="selector.isRowSelected(row)" />
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="identifier">
-        <th
-          *matHeaderCellDef
-          class="col-width-m"
-          i18n="@@common.identifier"
-          mat-header-cell
-          mat-sort-header
-          >Identifier</th
-        >
-        <td
-          *matCellDef="let server"
-          class="col-width-m"
-          mat-cell>
-          <app-copyable [copyText]="server.identifier">
-            <a
-              role="button"
-              tabindex="0"
-              (click)="onEditServer(server)"
-              (keydown.enter)="onEditServer(server)"
-              class="flex ali-center">
-              {{ server.identifier }}
-            </a>
-          </app-copyable>
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="identifier">
+          <th
+            *matHeaderCellDef
+            class="col-width-m"
+            i18n="@@common.identifier"
+            mat-header-cell
+            mat-sort-header
+            >Identifier</th
+          >
+          <td
+            *matCellDef="let server"
+            class="col-width-m"
+            mat-cell>
+            <app-copyable [copyText]="server.identifier">
+              <a
+                role="button"
+                tabindex="0"
+                (click)="onEditServer(server)"
+                (keydown.enter)="onEditServer(server)"
+                class="flex ali-center">
+                {{ server.identifier }}
+              </a>
+            </app-copyable>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="server">
-        <th
-          *matHeaderCellDef
-          class="col-width-l"
-          i18n="@@common.ipFqdnColumn"
-          mat-header-cell
-          mat-sort-header
-          >IP/FQDN</th
-        >
-        <td
-          *matCellDef="let server"
-          class="col-width-l"
-          mat-cell>
-          {{ server.server }}:{{ server.port }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="server">
+          <th
+            *matHeaderCellDef
+            class="col-width-l"
+            i18n="@@common.ipFqdnColumn"
+            mat-header-cell
+            mat-sort-header
+            >IP/FQDN</th
+          >
+          <td
+            *matCellDef="let server"
+            class="col-width-l"
+            mat-cell>
+            {{ server.server }}:{{ server.port }}
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="sender">
-        <th
-          *matHeaderCellDef
-          class="col-width-l"
-          i18n="@@smtpServer.sender"
-          mat-header-cell
-          mat-sort-header
-          >Sender</th
-        >
-        <td
-          *matCellDef="let server"
-          class="col-width-l"
-          mat-cell>
-          {{ server.sender }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="sender">
+          <th
+            *matHeaderCellDef
+            class="col-width-l"
+            i18n="@@smtpServer.sender"
+            mat-header-cell
+            mat-sort-header
+            >Sender</th
+          >
+          <td
+            *matCellDef="let server"
+            class="col-width-l"
+            mat-cell>
+            {{ server.sender }}
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="tls">
-        <th
-          *matHeaderCellDef
-          class="col-width-s"
-          i18n="@@smtpServer.starttls"
-          mat-header-cell
-          mat-sort-header
-          >StartTLS</th
-        >
-        <td
-          *matCellDef="let server"
-          class="col-width-s"
-          mat-cell>
-          <div class="flex just-center">
-            @if (server.tls) {
-              <mat-icon>check</mat-icon>
-            }
-          </div>
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="tls">
+          <th
+            *matHeaderCellDef
+            class="col-width-s"
+            i18n="@@smtpServer.starttls"
+            mat-header-cell
+            mat-sort-header
+            >StartTLS</th
+          >
+          <td
+            *matCellDef="let server"
+            class="col-width-s"
+            mat-cell>
+            <div class="flex just-center">
+              @if (server.tls) {
+                <mat-icon>check</mat-icon>
+              }
+            </div>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="description">
-        <th
-          *matHeaderCellDef
-          class="col-width-xl"
-          i18n="@@common.description"
-          mat-header-cell
-          mat-sort-header
-          >Description</th
-        >
-        <td
-          *matCellDef="let server"
-          class="col-width-xl"
-          mat-cell>
-          {{ server.description }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="description">
+          <th
+            *matHeaderCellDef
+            class="col-width-xl"
+            i18n="@@common.description"
+            mat-header-cell
+            mat-sort-header
+            >Description</th
+          >
+          <td
+            *matCellDef="let server"
+            class="col-width-xl"
+            mat-cell>
+            {{ server.description }}
+          </td>
+        </ng-container>
 
-      <tr
-        *matHeaderRowDef="displayedColumns"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: displayedColumns"
-        mat-row></tr>
+        <tr
+          *matHeaderRowDef="displayedColumns; sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: displayedColumns"
+          mat-row></tr>
 
-      <tr *matNoDataRow>
-        <td colspan="6">
-          <app-table-state
-            [status]="tableState.rowStatus()"
-            [table]="tableState" />
-        </td>
-      </tr>
-    </table>
+        <tr *matNoDataRow>
+          <td colspan="6">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"

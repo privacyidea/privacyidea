@@ -3,6 +3,9 @@
 
 .periodic-task-layout {
   @include styles.main-component-style;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   @include table.base-table-structure(".periodic-task-table", ".periodic-task-table-filter", ".table-scroll-container");
   // Sized from the col-width-* tiers the columns below use (select checkbox + name m + taskmodule s
   // + interval s + nodes m + active s), plus the "options" column's own existing max-width (it

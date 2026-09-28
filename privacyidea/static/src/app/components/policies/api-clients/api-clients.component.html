@@ -80,12 +80,15 @@
       </p>
     </div>
 
-    <table
-      [dataSource]="apiClientDataSource()"
-      class="api-clients-table"
-      mat-table
-      matSort>
-      <ng-container matColumnDef="select">
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="apiClientDataSource()"
+        class="api-clients-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="select">
         <th
           *matHeaderCellDef
           class="table-checkbox"
@@ -256,7 +259,7 @@
       </ng-container>
 
       <tr
-        *matHeaderRowDef="displayedColumns"
+        *matHeaderRowDef="displayedColumns; sticky: true"
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
@@ -269,7 +272,8 @@
             [table]="tableState" />
         </td>
       </tr>
-    </table>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"

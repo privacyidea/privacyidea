@@ -19,6 +19,9 @@
     table-layout: fixed;
     width: auto;
   }
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .name-actions-container {

@@ -45,70 +45,74 @@
       </app-clearable-input>
     </mat-form-field>
 
-    <table
-      (matSortChange)="onSortChange($event)"
-      [dataSource]="clientDataSource()"
-      aria-label="Client Data Table"
-      class="clients-table column-striped-explicit"
-      i18n-aria-label="@@audit.clientDataTable"
-      mat-table
-      matSort>
-      @for (column of columnKeysMap; let colIdx = $index; track column) {
-        <ng-container [matColumnDef]="column.key">
-          <th
-            *matHeaderCellDef
-            [ngClass]="{ 'col-stripe': colIdx % 2 === 0 }"
-            mat-header-cell
-            mat-sort-header>
-            {{ column.label }}
-          </th>
-          <ng-container *matCellDef="let client">
-            @if (!useApplicationRowSpan(column.key) || client.isFirst) {
-              <td
-                [attr.rowspan]="useApplicationRowSpan(column.key) ? client.rowspan : 1"
-                [ngClass]="{ 'col-stripe': colIdx % 2 === 0 }"
-                mat-cell>
-                <div class="data-table-cell">
-                  @if (column.key === "lastseen") {
-                    {{ client.lastseen | localDateTime }}
-                  } @else {
-                    {{ client[column.key] }}
-                  }
-                  @if (["ip", "application"].includes(column.key)) {
-                    <app-copy-button [copyText]="client[column.key]" />
-                    @if (authService.actionAllowed("auditlog")) {
-                      <button
-                        (click)="showInAuditLog(column.key, client[column.key])"
-                        [routerLink]="[ROUTE_PATHS.AUDIT]"
-                        class="ml-4 small-icon-button"
-                        i18n-matTooltip="@@audit.showAuditLog"
-                        mat-icon-button
-                        matTooltip="Show in audit log">
-                        <mat-icon>receipt_long</mat-icon>
-                      </button>
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        (matSortChange)="onSortChange($event)"
+        [dataSource]="clientDataSource()"
+        aria-label="Client Data Table"
+        class="clients-table column-striped-explicit"
+        i18n-aria-label="@@audit.clientDataTable"
+        mat-table
+        matSort>
+        @for (column of columnKeysMap; let colIdx = $index; track column) {
+          <ng-container [matColumnDef]="column.key">
+            <th
+              *matHeaderCellDef
+              [ngClass]="{ 'col-stripe': colIdx % 2 === 0 }"
+              mat-header-cell
+              mat-sort-header>
+              {{ column.label }}
+            </th>
+            <ng-container *matCellDef="let client">
+              @if (!useApplicationRowSpan(column.key) || client.isFirst) {
+                <td
+                  [attr.rowspan]="useApplicationRowSpan(column.key) ? client.rowspan : 1"
+                  [ngClass]="{ 'col-stripe': colIdx % 2 === 0 }"
+                  mat-cell>
+                  <div class="data-table-cell">
+                    @if (column.key === "lastseen") {
+                      {{ client.lastseen | localDateTime }}
+                    } @else {
+                      {{ client[column.key] }}
                     }
-                  }
-                </div>
-              </td>
-            }
+                    @if (["ip", "application"].includes(column.key)) {
+                      <app-copy-button [copyText]="client[column.key]" />
+                      @if (authService.actionAllowed("auditlog")) {
+                        <button
+                          (click)="showInAuditLog(column.key, client[column.key])"
+                          [routerLink]="[ROUTE_PATHS.AUDIT]"
+                          class="ml-4 small-icon-button"
+                          i18n-matTooltip="@@audit.showAuditLog"
+                          mat-icon-button
+                          matTooltip="Show in audit log">
+                          <mat-icon>receipt_long</mat-icon>
+                        </button>
+                      }
+                    }
+                  </div>
+                </td>
+              }
+            </ng-container>
           </ng-container>
-        </ng-container>
-      }
-      <tr
-        *matHeaderRowDef="columnKeys"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: columnKeys"
-        mat-row></tr>
+        }
+        <tr
+          *matHeaderRowDef="columnKeys; sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: columnKeys"
+          mat-row></tr>
 
-      <tr *matNoDataRow>
-        <td [attr.colspan]="columnKeys.length">
-          <app-table-state
-            [status]="tableState.rowStatus()"
-            [table]="tableState" />
-        </td>
-      </tr>
-    </table>
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeys.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"

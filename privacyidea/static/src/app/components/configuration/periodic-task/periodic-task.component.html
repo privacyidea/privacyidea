@@ -74,183 +74,187 @@
       >
     </div>
 
-    <table
-      [dataSource]="periodicTasksDataSource()"
-      class="periodic-task-table"
-      mat-table
-      matSort>
-      <ng-container matColumnDef="select">
-        <th
-          *matHeaderCellDef
-          class="table-checkbox"
-          mat-header-cell>
-          <mat-checkbox
-            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
-            [checked]="selector.allRowsSelected()"
-            [disabled]="!authService.actionAllowed('periodictask_write') || !selector.hasVisibleRows()"
-            [indeterminate]="selector.someRowsSelected()"
-            aria-label="Select all periodic tasks"
-            i18n-aria-label="@@periodicTask.selectAllPeriodic"></mat-checkbox>
-        </th>
-        <td
-          *matCellDef="let task"
-          class="table-checkbox"
-          mat-cell>
-          <mat-checkbox
-            (change)="selector.setRowSelected(task, $event.checked)"
-            (click)="$event.stopPropagation()"
-            [checked]="selector.isRowSelected(task)"
-            [disabled]="!authService.actionAllowed('periodictask_write') || task.id === null || task.id === undefined"
-            aria-label="Select periodic task"
-            i18n-aria-label="@@periodicTask.selectPeriodic"></mat-checkbox>
-        </td>
-      </ng-container>
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="periodicTasksDataSource()"
+        class="periodic-task-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="select">
+          <th
+            *matHeaderCellDef
+            class="table-checkbox"
+            mat-header-cell>
+            <mat-checkbox
+              (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+              [checked]="selector.allRowsSelected()"
+              [disabled]="!authService.actionAllowed('periodictask_write') || !selector.hasVisibleRows()"
+              [indeterminate]="selector.someRowsSelected()"
+              aria-label="Select all periodic tasks"
+              i18n-aria-label="@@periodicTask.selectAllPeriodic"></mat-checkbox>
+          </th>
+          <td
+            *matCellDef="let task"
+            class="table-checkbox"
+            mat-cell>
+            <mat-checkbox
+              (change)="selector.setRowSelected(task, $event.checked)"
+              (click)="$event.stopPropagation()"
+              [checked]="selector.isRowSelected(task)"
+              [disabled]="!authService.actionAllowed('periodictask_write') || task.id === null || task.id === undefined"
+              aria-label="Select periodic task"
+              i18n-aria-label="@@periodicTask.selectPeriodic"></mat-checkbox>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="name">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-' + columnWidths['name']"
-          i18n="@@common.name"
-          mat-header-cell
-          mat-sort-header
-          >Name</th
-        >
-        <td
-          *matCellDef="let task"
-          [ngClass]="'col-width-' + columnWidths['name']"
-          mat-cell>
-          <app-copyable [copyText]="task.name">
-            <a
-              (click)="onEditTask(task)"
-              (keydown.enter)="onEditTask(task)"
-              (keydown.space)="onEditTask(task); $event.preventDefault()"
-              class="flex ali-center"
-              role="button"
-              tabindex="0">
-              {{ task.name }}
-            </a>
-          </app-copyable>
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="name">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-' + columnWidths['name']"
+            i18n="@@common.name"
+            mat-header-cell
+            mat-sort-header
+            >Name</th
+          >
+          <td
+            *matCellDef="let task"
+            [ngClass]="'col-width-' + columnWidths['name']"
+            mat-cell>
+            <app-copyable [copyText]="task.name">
+              <a
+                (click)="onEditTask(task)"
+                (keydown.enter)="onEditTask(task)"
+                (keydown.space)="onEditTask(task); $event.preventDefault()"
+                class="flex ali-center"
+                role="button"
+                tabindex="0">
+                {{ task.name }}
+              </a>
+            </app-copyable>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="taskmodule">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-' + columnWidths['taskmodule']"
-          i18n="@@periodicTask.taskModule"
-          mat-header-cell
-          mat-sort-header
-          >Task Module</th
-        >
-        <td
-          *matCellDef="let task"
-          [ngClass]="'col-width-' + columnWidths['taskmodule']"
-          mat-cell>
-          {{ getModuleLabel(task.taskmodule) }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="taskmodule">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-' + columnWidths['taskmodule']"
+            i18n="@@periodicTask.taskModule"
+            mat-header-cell
+            mat-sort-header
+            >Task Module</th
+          >
+          <td
+            *matCellDef="let task"
+            [ngClass]="'col-width-' + columnWidths['taskmodule']"
+            mat-cell>
+            {{ getModuleLabel(task.taskmodule) }}
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="interval">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-' + columnWidths['interval']"
-          i18n="@@periodicTask.interval"
-          mat-header-cell
-          mat-sort-header
-          >Interval</th
-        >
-        <td
-          *matCellDef="let task"
-          [ngClass]="'col-width-' + columnWidths['interval']"
-          mat-cell>
-          {{ task.interval }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="interval">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-' + columnWidths['interval']"
+            i18n="@@periodicTask.interval"
+            mat-header-cell
+            mat-sort-header
+            >Interval</th
+          >
+          <td
+            *matCellDef="let task"
+            [ngClass]="'col-width-' + columnWidths['interval']"
+            mat-cell>
+            {{ task.interval }}
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="nodes">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-' + columnWidths['nodes']"
-          i18n="@@periodicTask.nodes"
-          mat-header-cell
-          mat-sort-header
-          >Nodes</th
-        >
-        <td
-          *matCellDef="let task"
-          [ngClass]="'col-width-' + columnWidths['nodes']"
-          mat-cell>
-          {{ Array.isArray(task.nodes) ? task.nodes.join(", ") : task.nodes }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="nodes">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-' + columnWidths['nodes']"
+            i18n="@@periodicTask.nodes"
+            mat-header-cell
+            mat-sort-header
+            >Nodes</th
+          >
+          <td
+            *matCellDef="let task"
+            [ngClass]="'col-width-' + columnWidths['nodes']"
+            mat-cell>
+            {{ Array.isArray(task.nodes) ? task.nodes.join(", ") : task.nodes }}
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="options">
-        <th
-          *matHeaderCellDef
-          class="column-max-width"
-          i18n="@@common.options"
-          mat-header-cell
-          >Options</th
-        >
-        <td
-          *matCellDef="let task"
-          class="column-max-width"
-          mat-cell>
-          @if (detailedView()) {
-            <ul class="no-indention margin-0">
-              @for (option of Object.entries(task.options); track option[0]) {
-                @if (isBooleanValue(option[1])) {
-                  <li>{{ option[0] }}</li>
-                } @else {
-                  <li>{{ option[0] }}: {{ option[1] }}</li>
+        <ng-container matColumnDef="options">
+          <th
+            *matHeaderCellDef
+            class="column-max-width"
+            i18n="@@common.options"
+            mat-header-cell
+            >Options</th
+          >
+          <td
+            *matCellDef="let task"
+            class="column-max-width"
+            mat-cell>
+            @if (detailedView()) {
+              <ul class="no-indention margin-0">
+                @for (option of Object.entries(task.options); track option[0]) {
+                  @if (isBooleanValue(option[1])) {
+                    <li>{{ option[0] }}</li>
+                  } @else {
+                    <li>{{ option[0] }}: {{ option[1] }}</li>
+                  }
                 }
-              }
-            </ul>
-          } @else {
-            <div class="truncate-cell">{{ formatOptions(task.options) }}</div>
-          }
-        </td>
-      </ng-container>
+              </ul>
+            } @else {
+              <div class="truncate-cell">{{ formatOptions(task.options) }}</div>
+            }
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="active">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-' + columnWidths['active']"
-          i18n="@@common.active"
-          mat-header-cell
-          mat-sort-header
-          >Active</th
-        >
-        <td
-          *matCellDef="let task"
-          [ngClass]="'col-width-' + columnWidths['active']"
-          mat-cell>
-          <mat-slide-toggle
-            i18n-matTooltip="@@common.toggleActiveStatus"
-            matTooltip="Toggle Active Status"
-            [checked]="task.active"
-            (change)="toggleActive(task, $event.checked)"
-            (click)="$event.stopPropagation()"
-            [disabled]="!authService.actionAllowed('periodictask_write')"
-            [disableRipple]="true"></mat-slide-toggle>
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="active">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-' + columnWidths['active']"
+            i18n="@@common.active"
+            mat-header-cell
+            mat-sort-header
+            >Active</th
+          >
+          <td
+            *matCellDef="let task"
+            [ngClass]="'col-width-' + columnWidths['active']"
+            mat-cell>
+            <mat-slide-toggle
+              i18n-matTooltip="@@common.toggleActiveStatus"
+              matTooltip="Toggle Active Status"
+              [checked]="task.active"
+              (change)="toggleActive(task, $event.checked)"
+              (click)="$event.stopPropagation()"
+              [disabled]="!authService.actionAllowed('periodictask_write')"
+              [disableRipple]="true"></mat-slide-toggle>
+          </td>
+        </ng-container>
 
-      <tr
-        *matHeaderRowDef="displayedColumns"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: displayedColumns"
-        mat-row></tr>
+        <tr
+          *matHeaderRowDef="displayedColumns; sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: displayedColumns"
+          mat-row></tr>
 
-      <tr *matNoDataRow>
-        <td colspan="7">
-          <app-table-state
-            [status]="tableState.rowStatus()"
-            [table]="tableState" />
-        </td>
-      </tr>
-    </table>
+        <tr *matNoDataRow>
+          <td colspan="7">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"
