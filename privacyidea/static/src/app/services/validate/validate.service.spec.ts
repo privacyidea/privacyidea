@@ -178,6 +178,9 @@ describe("ValidateService", () => {
       expect(b64.bytesToBase64).toHaveBeenCalled();
       expect(auth.authenticate).not.toHaveBeenCalled();
       expect(final).toEqual({ success: true });
+      expect(credGet).toHaveBeenCalledWith({
+        publicKey: expect.objectContaining({ userVerification: "preferred" })
+      });
     });
 
     describe("testToken (errors)", () => {
@@ -300,6 +303,9 @@ describe("ValidateService", () => {
         expect(postSpy).toHaveBeenCalledTimes(1);
         expect(authSpy).toHaveBeenCalledTimes(1);
         expect(final).toEqual({ success: true });
+        expect(credGet).toHaveBeenCalledWith({
+          publicKey: expect.objectContaining({ userVerification: "required" })
+        });
 
         expect(b64.bytesToBase64).toHaveBeenCalledTimes(4);
       });
@@ -433,6 +439,39 @@ describe("ValidateService", () => {
 
         expect(authSpy).toHaveBeenCalledTimes(1);
         expect(final).toEqual({ ok: 1 });
+      });
+
+      it("sends the realm with the WebAuthn response when one is given", async () => {
+        setWebAuthn(() =>
+          Promise.resolve({
+            id: "cred-id",
+            response: {
+              authenticatorData: new ArrayBuffer(1),
+              clientDataJSON: new ArrayBuffer(1),
+              signature: new ArrayBuffer(1),
+              userHandle: null
+            }
+          })
+        );
+
+        const authSpy = jest
+          .spyOn(auth, "authenticate")
+          .mockReturnValue(of({ ok: 1 } as unknown as AuthResponse));
+
+        await new Promise<void>((resolve) => {
+          validateService
+            .authenticateWebAuthn({
+              signRequest: okSignRequest as unknown as WebAuthnSignRequest,
+              transaction_id: "T-3",
+              username: "bob",
+              realm: "realm2"
+            })
+            .subscribe(() => resolve());
+        });
+
+        expect(authSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ transaction_id: "T-3", username: "bob", realm: "realm2" })
+        );
       });
 
       it("handles navigator.credentials.get rejection (catchError path)", async () => {

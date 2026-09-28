@@ -164,6 +164,7 @@ export interface PasswordLoginParams {
 export interface WebAuthnLoginParams {
   transaction_id: string;
   username: string;
+  realm?: string;
   credential_id: string;
   authenticatorData: string;
   clientDataJSON: string;
