@@ -30,7 +30,8 @@ from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFo
 from privacyidea.lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
-from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_token_by_credential_id, hash_credential_id
+from privacyidea.lib.fido2.util import (get_credential_ids_for_user, get_fido2_token_by_credential_id,
+                                        hash_credential_id, save_credential_id_hash)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.token import (init_token, remove_token, unassign_token, import_tokens, get_tokens)
@@ -38,7 +39,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
-from privacyidea.models import TokenCredentialIdHash
+from privacyidea.models import TokenCredentialIdHash, db
 from tests.base import MyTestCase
 from tests.passkey_base import PasskeyTestBase
 
@@ -387,6 +388,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(result.success, 1)
 
         # "required" + no UV bit -> fail. recreate token since successful auth deletes the challenge
+        remove_token(serial=token.get_serial())
         token = self._create_token()
         challenge = self._initialize_authentication()
         db_challenges = get_challenges(transaction_id=challenge["transaction_id"])
@@ -402,7 +404,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         remove_token(serial=token.get_serial())
 
     def test_08_no_tokencredentialidhash_entry(self):
-        _ = self._create_token()
+        created_token = self._create_token()
         # Remove the tokencredentialidhash entry
         credential_id_hash = hash_credential_id(self.credential_id)
         tcih = TokenCredentialIdHash.query.filter(
@@ -411,10 +413,12 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         tcih.delete()
         # Try to get the token by credential id
         token = get_fido2_token_by_credential_id(self.credential_id)
+        self.assertEqual(created_token.get_serial(), token.get_serial())
         # Check that the credential id hash has been added again
         tcih = TokenCredentialIdHash.query.filter(
             TokenCredentialIdHash.credential_id_hash == credential_id_hash).one()
         self.assertTrue(tcih)
+        remove_token(serial=created_token.get_serial())
 
     def test_09_duplicate_tokencredentialidhash_entry(self):
         token1 = self._create_token()
@@ -424,12 +428,18 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             TokenCredentialIdHash.credential_id_hash == credential_id_hash).one()
         self.assertTrue(tcih)
         self.assertEqual(tcih.token_id, token1.token.id)
-        # Create a new token with the same credential id, which will overwrite the existing TCIH entry
-        token2 = self._create_token()
+        # A second registration of the same credential is refused and the entry keeps pointing to the first token
+        registration_request = self._initialize_registration()
+        token2 = registration_request.token
+        with self.assertRaises(EnrollmentError):
+            token2.update(registration_request.registration_response)
+        self.assertEqual(RolloutState.CLIENTWAIT, token2.token.rollout_state)
         tcih = TokenCredentialIdHash.query.filter(
             TokenCredentialIdHash.credential_id_hash == credential_id_hash).one()
-        self.assertTrue(tcih)
-        self.assertEqual(tcih.token_id, token2.token.id)
+        self.assertEqual(tcih.token_id, token1.token.id)
+        self.assertEqual(token1.get_serial(), get_fido2_token_by_credential_id(self.credential_id).get_serial())
+        remove_token(serial=token1.get_serial())
+        remove_token(serial=token2.get_serial())
 
     def test_10_passkey_token_export(self):
         # Set up the passkey token for testing
@@ -698,6 +708,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         authentication_response[PasskeyAction.EnforceUserHandle] = True
         verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
         self.assertEqual(1, verification_result.success)
+        remove_token(serial=token.get_serial())
 
     def test_19_authenticate_genuine_multi_device_credential(self):
         """
@@ -771,3 +782,97 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             self.assertTrue(any("unusable sign count or public key" in message
                                 for message in log_capture.output), log_capture.output)
             remove_token(serial=token.get_serial())
+
+    def test_22_minimum_user_verification(self):
+        """
+        A minimum user verification raises the requirement stored in the challenge, and a stricter requirement in the
+        challenge is kept.
+        """
+        token = self._create_token()
+        authentication_response = dict(self.authentication_response_no_uv)
+        authentication_response["HTTP_ORIGIN"] = self.expected_origin
+
+        challenge = self._initialize_authentication()
+        result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response,
+                                        minimum_user_verification="required")
+        self.assertEqual(-1, result.success)
+
+        result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response,
+                                        minimum_user_verification="discouraged")
+        self.assertEqual(1, result.success)
+
+        token.write_tokeninfo(FIDO2TokenInfo.SIGN_COUNT, 0)
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.authentication_challenge_no_uv
+            challenge = create_fido2_challenge(self.rp_id, user_verification="required")
+        result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response,
+                                        minimum_user_verification="discouraged")
+        self.assertEqual(-1, result.success)
+        remove_token(serial=token.get_serial())
+
+    def test_23_registration_credential_id_must_match_attestation(self):
+        """
+        The credential_id in the registration request has to be the one in the attestation. A registration that
+        names the credential of another token with its own attestation is refused, and the other token keeps its
+        credential.
+        """
+        victim_token = self._create_token_multi_device()
+        self.assertEqual(victim_token.get_serial(),
+                         get_fido2_token_by_credential_id(self.credential_id_multi_device).get_serial())
+
+        registration_request = self._initialize_registration()
+        registration_response = dict(registration_request.registration_response)
+        registration_response["credential_id"] = self.credential_id_multi_device
+        registration_response["rawId"] = self.credential_id_multi_device
+        with self.assertRaises(EnrollmentError):
+            registration_request.token.update(registration_response)
+        self.assertEqual(RolloutState.CLIENTWAIT, registration_request.token.token.rollout_state)
+        self.assertEqual(victim_token.get_serial(),
+                         get_fido2_token_by_credential_id(self.credential_id_multi_device).get_serial())
+        self.assertIsNone(get_fido2_token_by_credential_id(self.credential_id))
+
+        # The same token can be registered with its own credential
+        registration_request.token.update(registration_request.registration_response)
+        self.assertEqual(RolloutState.ENROLLED, registration_request.token.token.rollout_state)
+        self.assertEqual(registration_request.token.get_serial(),
+                         get_fido2_token_by_credential_id(self.credential_id).get_serial())
+        remove_token(serial=victim_token.get_serial())
+        remove_token(serial=registration_request.token.get_serial())
+
+    def test_24_registration_of_credential_known_from_token_info(self):
+        """
+        A token that is not in the TokenCredentialIdHash table yet, like an imported one, is found by the credential
+        id hash in its token info. Registering its credential for another token is refused.
+        """
+        token = self._create_token()
+        TokenCredentialIdHash.query.filter(TokenCredentialIdHash.token_id == token.token.id).delete()
+        db.session.commit()
+        self.assertEqual(hash_credential_id(self.credential_id), token.get_tokeninfo(FIDO2TokenInfo.CREDENTIAL_ID_HASH))
+
+        registration_request = self._initialize_registration()
+        with self.assertRaises(EnrollmentError):
+            registration_request.token.update(registration_request.registration_response)
+        self.assertEqual(RolloutState.CLIENTWAIT, registration_request.token.token.rollout_state)
+        self.assertEqual(token.get_serial(), get_fido2_token_by_credential_id(self.credential_id).get_serial())
+        remove_token(serial=token.get_serial())
+        remove_token(serial=registration_request.token.get_serial())
+
+    def test_25_save_credential_id_hash_keeps_mapping_of_other_token(self):
+        """
+        save_credential_id_hash does not map a credential that is registered to one token to another token. Saving
+        it again for the same token changes nothing.
+        """
+        token = self._create_token()
+        other_token = init_token({"type": "passkey"}, user=self.user)
+        credential_id_hash = hash_credential_id(self.credential_id)
+
+        save_credential_id_hash(credential_id_hash, token.token.id)
+        with self.assertRaises(EnrollmentError):
+            save_credential_id_hash(credential_id_hash, other_token.token.id)
+
+        entries = TokenCredentialIdHash.query.filter(
+            TokenCredentialIdHash.credential_id_hash == credential_id_hash).all()
+        self.assertEqual([token.token.id], [entry.token_id for entry in entries])
+        self.assertEqual(token.get_serial(), get_fido2_token_by_credential_id(self.credential_id).get_serial())
+        remove_token(serial=token.get_serial())
+        remove_token(serial=other_token.get_serial())

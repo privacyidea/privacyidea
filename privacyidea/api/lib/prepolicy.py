@@ -2321,6 +2321,9 @@ def webauthntoken_request(request, action):
             if allowed_aaguids:
                 request.all_data[FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST] \
                     = list(allowed_aaguids)
+            elif scope == SCOPE.AUTH:
+                # Only a policy restricts the authenticators that may authenticate
+                request.all_data.pop(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST, None)
 
         request.all_data['HTTP_ORIGIN'] = request.environ.get('HTTP_ORIGIN')
 

@@ -146,7 +146,8 @@ Dashboard
 .. index:: dashboard
 
 Starting with version 3.4, privacyIDEA includes a basic dashboard, which can be enabled
-by the WebUI policy :ref:`webui_admin_dashboard`. The dashboard will be displayed as a starting page
+by the WebUI policy :ref:`webui_admin_dashboard`. The new WebUI always shows the dashboard to
+administrators, regardless of this policy. The dashboard will be displayed as a starting page
 for administrators and contains information about token numbers, authentication requests,
 recent administrative changes, policies, event handlers and subscriptions. It uses the usual
 endpoints to fetch the information, so only information to which an administrator has read

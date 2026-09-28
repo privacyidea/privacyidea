@@ -173,8 +173,9 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
     const password = isChallengeResponse ? this.otp() : this.password();
 
     const params: PasswordLoginParams = { username, password };
-    if (this.realm() && this.realm() !== NO_REALM_SENTINEL) {
-      params.realm = this.realm();
+    const realm = this.selectedRealm();
+    if (realm) {
+      params.realm = realm;
     }
 
     if (isChallengeResponse) {
@@ -213,11 +214,14 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
       return;
     }
 
+    // The server only accepts the answer for the user of the first step, so the realm has to be the same
+    const realm = this.selectedRealm();
     this.validateService
       .authenticateWebAuthn({
         signRequest: signRequest,
         transaction_id: this.transactionId,
-        username: this.username()
+        username: this.username(),
+        ...(realm && { realm })
       })
       .subscribe({
         next: (response: AuthResponse) => this.evaluateResponse(response, "webauthn"),
@@ -250,6 +254,11 @@ export class LoginComponent implements OnDestroy, AfterViewInit {
 
   ngOnDestroy(): void {
     this.stopPushPolling();
+  }
+
+  private selectedRealm(): string | undefined {
+    const realm = this.realm();
+    return realm && realm !== NO_REALM_SENTINEL ? realm : undefined;
   }
 
   clearRealmSelection(event: MouseEvent) {
