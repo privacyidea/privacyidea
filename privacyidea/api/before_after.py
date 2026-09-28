@@ -82,7 +82,7 @@ from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
 from ..lib.error import (PrivacyIDEAError,
-                         AuthError, UserError,
+                         AuthError, UserError, ResolverError,
                          PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
@@ -474,10 +474,10 @@ def before_request():
             except ResourceNotFoundError:
                 # The serial might not exist! This would raise an exception
                 pass
-            except UserError as error:
-                # The owner can not be looked up, e.g. because the resolver of the owner was deleted. The token can
-                # still be managed, and the policies of the realm of the owner still apply to it.
-                log.info(f"The owner of the token {serial} can not be looked up: {error}")
+            except (UserError, ResolverError) as error:
+                # The owner can not be looked up, because the resolver of the owner was deleted or is unreachable. The
+                # token can still be managed, and the policies of the realm of the owner still apply to it.
+                log.warning(f"The owner of the token {serial} can not be looked up: {error}")
                 request.User = get_token_owner_without_lookup(serial)
 
     else:

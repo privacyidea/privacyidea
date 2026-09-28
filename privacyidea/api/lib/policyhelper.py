@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from datetime import timedelta, datetime, timezone
 
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
-from privacyidea.lib.error import PolicyError, ResourceNotFoundError, UserError
+from privacyidea.lib.error import PolicyError, ResourceNotFoundError, UserError, ResolverError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
@@ -161,10 +161,10 @@ def get_token_user_attributes(serial: str):
     token = get_tokens_from_serial_or_user(serial, user=None)[0]
     try:
         token_owner = get_token_owner(serial)
-    except UserError as error:
-        # The owner can not be looked up, e.g. because the resolver of the owner was deleted. The policies are
-        # matched against the realm and the resolver of the owner then, as there is no login name.
-        log.info(f"The owner of the token {serial} can not be looked up: {error}")
+    except (UserError, ResolverError) as error:
+        # The owner can not be looked up, because the resolver of the owner was deleted or is unreachable. The
+        # policies are matched against the realm and the resolver of the owner then, as there is no login name.
+        log.warning(f"The owner of the token {serial} can not be looked up: {error}")
         token_owner = get_token_owner_without_lookup(serial)
     if token_owner:
         user_attributes.username = token_owner.login

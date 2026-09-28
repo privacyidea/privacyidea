@@ -21,11 +21,12 @@ import codecs
 import datetime
 import json
 import unittest
-from urllib.parse import urlencode, quote
+from urllib.parse import quote, urlencode
 
 import pytest
 import requests
 from dateutil.tz import tzlocal
+from flask import Response
 from mock import mock
 
 from privacyidea.lib import _
@@ -34,35 +35,48 @@ from privacyidea.lib.caconnector import save_caconnector
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
 from privacyidea.lib.caconnectors.msca import MSCAConnector
-from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
-from privacyidea.lib.container import (init_container, add_token_to_container,
-                                       find_container_by_serial, find_container_for_token)
-from privacyidea.lib.error import ResourceNotFoundError, TokenAdminError
-from privacyidea.lib.event import set_event, delete_event, EventConfiguration
+from privacyidea.lib.config import delete_privacyidea_config, set_privacyidea_config
+from privacyidea.lib.container import (
+    add_token_to_container,
+    find_container_by_serial,
+    find_container_for_token,
+    init_container,
+)
+from privacyidea.lib.error import ResolverError, ResourceNotFoundError, TokenAdminError
+from privacyidea.lib.event import EventConfiguration, delete_event, set_event
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, enable_policy,
-                                    PolicyClass)
+from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, enable_policy, set_policy
 from privacyidea.lib.realm import delete_realm, set_realm
 from privacyidea.lib.resolver import delete_resolver, save_resolver
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.serviceid import set_serviceid
-from privacyidea.lib.smsprovider.SMSProvider import (set_smsgateway,
-                                                     delete_smsgateway)
-from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
-                                   get_tokens_from_serial_or_user, enable_token,
-                                   check_serial_pass, unassign_token, init_token,
-                                   assign_token, token_exist, add_tokeninfo)
+from privacyidea.lib.smsprovider.SMSProvider import delete_smsgateway, set_smsgateway
+from privacyidea.lib.token import (
+    add_tokeninfo,
+    assign_token,
+    check_serial_pass,
+    enable_token,
+    get_one_token,
+    get_tokens,
+    get_tokens_from_serial_or_user,
+    init_token,
+    remove_token,
+    token_exist,
+    unassign_token,
+)
 from privacyidea.lib.token.const import LOST_TOKEN_FOR
 from privacyidea.lib.token.lifecycle import lost_token
-from privacyidea.lib.tokenclass import DATE_FORMAT
+from privacyidea.lib.tokenclass import DATE_FORMAT, TokenClass
 from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
-from privacyidea.models import db, NodeName, Token
+from privacyidea.models import NodeName, Token, db
 from privacyidea.models.token import TokenOwner
-from .base import MyApiTestCase, PWFILE2
+
+from .base import PWFILE2, MyApiTestCase
 from .mscamock import CAServiceMock
-from .test_lib_tokens_certificate import REQUEST, CERTIFICATE
+from .test_lib_tokens_certificate import CERTIFICATE, REQUEST
 
 # Mock for certificate from MSCA
 MY_CA_NAME = "192.168.47.11"
@@ -993,7 +1007,7 @@ class APIAttestationTestCase(MyApiTestCase):
     def test_01_enroll_certificate(self):
         self.setUp_user_realms()
         # Enroll a certificate without a policy
-        from .test_lib_tokens_certificate import YUBIKEY_CSR, BOGUS_ATTESTATION, YUBIKEY_ATTEST
+        from .test_lib_tokens_certificate import BOGUS_ATTESTATION, YUBIKEY_ATTEST, YUBIKEY_CSR
 
         # A bogus attestation certificate will fail!
         with self.app.test_request_context('/token/init',
@@ -5398,11 +5412,11 @@ class APITokenRolloverRightTestCase(MyApiTestCase):
     original_key = "31323334353637383930313233343536373839dd"
     chosen_key = "dddddddddddddddddddddddddddddddddddddddd"
 
-    def _init_owned_token(self, serial: str = None) -> "TokenClass":
+    def _init_owned_token(self, serial: str = None) -> TokenClass:
         return init_token({"serial": serial or self.serial, "type": "hotp", "otpkey": self.original_key,
                            "pin": "ownerpin"}, user=User("cornelius", self.realm1))
 
-    def _init_request(self, data: dict) -> "Response":
+    def _init_request(self, data: dict) -> Response:
         with self.app.test_request_context('/token/init',
                                            method="POST",
                                            data=data,
@@ -5877,11 +5891,17 @@ class APITokenListNodeTestCase(MyApiTestCase):
             self.app.config["PI_NODE_UUID"] = self.OTHER_NODE
             self.assertIn(other_node_token, self._listed())
         finally:
+            # The token of the other node is only found on that node
+            self.app.config["PI_NODE_UUID"] = self.OTHER_NODE
+            try:
+                remove_token("OTHERNODE")
+            except ResourceNotFoundError:
+                pass
             if original_node is None:
                 self.app.config.pop("PI_NODE_UUID", None)
             else:
                 self.app.config["PI_NODE_UUID"] = original_node
-            for serial in ("DELETEDRESOLVER", "SPARERESOLVER", "OTHERNODE"):
+            for serial in ("DELETEDRESOLVER", "SPARERESOLVER"):
                 try:
                     remove_token(serial)
                 except ResourceNotFoundError:
@@ -5919,3 +5939,51 @@ class APITokenListNodeTestCase(MyApiTestCase):
             except ResourceNotFoundError:
                 pass
 
+    def test_03_owner_behind_an_unreachable_resolver(self):
+        # The resolver of the owner can not be reached. As for a deleted resolver, the realm of the owner still
+        # scopes the policies, while a policy naming the owner can not be checked without the login name.
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        # A single serial is looked up by before_request and the policy check, a list of serials by the policy
+        # check only
+        single = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        bulk = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        unreachable = ResolverError("Error performing bind operation: unreachable")
+
+        def delete_single() -> Response:
+            with self.app.test_request_context(f'/token/{single}', method='DELETE',
+                                               headers={'Authorization': self.at}):
+                return self.app.full_dispatch_request()
+
+        def delete_bulk() -> Response:
+            with self.app.test_request_context('/token/', method='DELETE', json={"serials": [bulk]},
+                                               headers={'Authorization': self.at}):
+                return self.app.full_dispatch_request()
+
+        try:
+            with (mock.patch.object(PasswdIdResolver, "getUsername", side_effect=unreachable),
+                  mock.patch.object(PasswdIdResolver, "getUserId", side_effect=unreachable),
+                  mock.patch.object(PasswdIdResolver, "get_user_info", side_effect=unreachable)):
+                set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm3)
+                self.assertEqual(403, delete_single().status_code)
+                with self.assertLogs("privacyidea.api.lib.policyhelper", level="WARNING") as captured:
+                    self.assertEqual(403, delete_bulk().status_code)
+                self.assertIn(f"The owner of the token {bulk} can not be looked up", captured.output[0])
+
+                set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1,
+                           user="cornelius")
+                self.assertEqual(403, delete_single().status_code)
+                self.assertEqual(403, delete_bulk().status_code)
+
+                set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1, user="")
+                for delete in (delete_single, delete_bulk):
+                    res = delete()
+                    self.assertEqual(200, res.status_code, res.json)
+                    self.assertEqual(1, res.json["result"]["value"], res.json)
+        finally:
+            delete_policy("delete")
+            for serial in (single, bulk):
+                try:
+                    remove_token(serial)
+                except ResourceNotFoundError:
+                    pass
