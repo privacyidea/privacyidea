@@ -54,7 +54,7 @@ it, ours or not.
 See https://github.com/privacyidea/privacyidea/issues/5751
 
 Revision ID: e1f2a3b4c5d6
-Revises: e0f1a2b3c4d5
+Revises: b7c1e4d2a9f3
 Create Date: 2026-08-20 00:00:00.000000
 
 """
@@ -123,7 +123,7 @@ def _marked(column):
 
 # revision identifiers, used by Alembic.
 revision = 'e1f2a3b4c5d6'
-down_revision = 'e0f1a2b3c4d5'
+down_revision = 'b7c1e4d2a9f3'
 branch_labels = None
 depends_on = None
 
@@ -469,8 +469,28 @@ def _run_data_migration(conn):
             identifier = f"webhook_from_handler_{handler_id}"
 
         # 5. Normalize content_type (handle legacy "json"/"urlencoded" shorthand).
-        raw_ct = opts.get('content_type', 'application/json')
+        #
+        #    No content type at all - the option absent, or present with an empty value - is a
+        #    setting that was never made, and it gets the same default a webhook created today
+        #    gets. Such a handler sends nothing as it stands (the inline WebHookHandler maps the
+        #    value through DB_CONTENT_TYPE_MAP, which has no default, and refuses anything that is
+        #    not JSON or urlencoded), so filling it in repairs the handler rather than changing
+        #    what it does. `opts.get(..., default)` alone would miss the empty case.
+        #
+        #    A value that *is* set but is not a MIME type is different: someone typed it. Storing
+        #    it raw would put it past set_webhook()/_validate(), which this code writes around, and
+        #    reading it as JSON would be a guess about what was meant. The handler is left on its
+        #    inline configuration instead, the way one without a URL is - it sends nothing today
+        #    either, and an admin can correct the value and run the upgrade again.
+        raw_ct = opts.get('content_type') or 'application/json'
         content_type = _CONTENT_TYPE_MAP.get(raw_ct, raw_ct)
+        if '/' not in content_type:
+            log.warning(
+                f"WebHook handler {handler_id} has an unusable content_type "
+                f"({opts.get('content_type')!r}) — skipping migration. It sends nothing today "
+                f"either; correct the option and run the upgrade again."
+            )
+            continue
 
         # 6. Insert the webhook row - unless a previous, interrupted run already did.
         #

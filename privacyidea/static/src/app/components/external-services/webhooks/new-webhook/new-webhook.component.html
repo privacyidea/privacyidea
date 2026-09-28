@@ -44,7 +44,7 @@
         </button>
         <button
           (click)="save()"
-          [disabled]="!webhookForm().valid()"
+          [disabled]="!canSave"
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>

@@ -186,6 +186,29 @@ describe("NewWebhookComponent", () => {
       );
     });
 
+    it("cannot save before the definition has arrived, and never to an empty identifier", async () => {
+      // A reload or a deep link to /external-services/webhooks/details/siem renders while the
+      // list is still loading: `data` is null and the form holds the empty defaults. Saving them
+      // would POST the defaults over the stored webhook - and to /webhook/ rather than
+      // /webhook/siem, because the identifier field is disabled in edit mode and a disabled field
+      // skips its own required validator.
+      webhookServiceMock.webhooks.set([]);
+      component.webhookModel.update((m) => ({ ...m, identifier: "" }));
+      component["data"] = null;
+
+      expect(component.canSave).toBe(false);
+      expect(await component.save()).toBe(false);
+      expect(webhookServiceMock.postWebhook).not.toHaveBeenCalled();
+    });
+
+    it("addresses the webhook named by the route, not the one mirrored into the form", async () => {
+      component.webhookModel.update((m) => ({ ...m, identifier: "", description: "changed" }));
+
+      await component.save();
+
+      expect(webhookServiceMock.postWebhook).toHaveBeenCalledWith(expect.objectContaining({ identifier: "siem" }));
+    });
+
     it("can test an unchanged definition, but not once it is edited", () => {
       expect(component.canTest()).toBe(true);
       component.updateHeader(0, { value: "new" });

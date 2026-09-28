@@ -291,6 +291,36 @@ class MigrateInlineWebhooksTestCase(MyTestCase):
         self.assertNotIn("!", wh.identifier)
         self.assertIn(str(eh.id), wh.identifier)
 
+    def test_an_unusable_content_type_is_skipped(self):
+        """
+        Such a handler is already inert: the inline WebHookHandler maps the value through
+        DB_CONTENT_TYPE_MAP and refuses anything that is not JSON or urlencoded. Migrating it would
+        either store an empty Content-Type or quietly start posting as JSON, so it is left on its
+        inline configuration the way a handler without a URL is.
+        """
+        eh = _create_webhook_handler(name="Bad", url="https://bad.example.com",
+                                     content_type="nonsense")
+
+        self.assertEqual(self._run_migration(), 0)
+
+        self.assertEqual(0, Webhook.query.count())
+        self.assertIsNone(EventHandlerOption.query.filter_by(
+            eventhandler_id=eh.id, Key="webhook").first())
+        # Its inline configuration is untouched, so nothing was lost.
+        self.assertEqual("https://bad.example.com",
+                         EventHandlerOption.query.filter_by(
+                             eventhandler_id=eh.id, Key="URL").one().Value)
+
+    def test_an_empty_content_type_gets_the_default_like_a_missing_one(self):
+        # Absent and present-but-empty are the same thing - a setting nobody made - and the inline
+        # handler refuses both, so filling in the default repairs the handler instead of changing
+        # what it does. `opts.get(key, default)` only covers the absent half.
+        _create_webhook_handler(name="Empty", url="https://empty.example.com", content_type="")
+
+        self.assertEqual(self._run_migration(), 1)
+
+        self.assertEqual("application/json", Webhook.query.one().content_type)
+
     def test_missing_content_type_defaults_to_json(self):
         """A handler without a content_type option defaults to application/json."""
         _create_webhook_handler(

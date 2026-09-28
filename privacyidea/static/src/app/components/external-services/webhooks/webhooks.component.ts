@@ -63,39 +63,47 @@ import { Webhook, WebhookService, WebhookServiceInterface } from "@services/webh
   styleUrl: "./webhooks.component.scss"
 })
 export class WebhooksComponent {
+  // The order of these fields is load-bearing, not stylistic: a class field is initialized where it
+  // stands, so anything reading `this.x` must be declared after `x`. Sorting them by visibility or
+  // alphabetically - an IDE "rearrange members" action does exactly that - moves `selector` above
+  // `webhookDataSource`, which then receives `undefined`; it surfaces far away as
+  filterString = signal<string>("");
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  // Must stay below webhookDataSource; see the note at the top of the class.
   selector = new RowSelector<Webhook>({
     keyGetter: (webhook) => webhook.identifier,
     visibleRows: renderedRows(this.webhookDataSource)
   });
+  // "TypeError: source is not a function" out of toObservable().
   protected readonly webhookService: WebhookServiceInterface = inject(WebhookService);
   totalLength: WritableSignal<number> = computed(() => this.webhookService.webhooks().length) as WritableSignal<number>;
-  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  webhookDataSource = computed(() => {
+    const webhooks = this.webhookService.webhooks();
+    const dataSource = new MatTableDataSource(webhooks);
+    dataSource.paginator = this.paginator() ?? null;
+    dataSource.sort = this.sort;
+    // Read from the signal rather than set imperatively: this computed builds a *new* data source
+    // whenever the webhook list changes, so a filter written onto the old instance was lost on the
+    // next delete or reload - the full list came back while the input still showed the filter.
+    dataSource.filter = this.filterString().toLowerCase();
+    return dataSource;
+  });
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   readonly tableState = new TableState({
     resource: this.webhookService.webhookResource,
     count: () => this.webhookService.webhooks().length,
     allowed: () => this.authService.actionAllowed("webhook_read"),
     resetFilter: () => this.resetFilter()
   });
-  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
-
-  filterString = signal<string>("");
-  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   readonly paginator = viewChild(MatPaginator);
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   displayedColumns: string[] = ["select", "identifier", "url", "http_method", "auth_type", "description"];
-
-  webhookDataSource = computed(() => {
-    const webhooks = this.webhookService.webhooks();
-    const dataSource = new MatTableDataSource(webhooks);
-    dataSource.paginator = this.paginator() ?? null;
-    dataSource.sort = this.sort;
-    return dataSource;
-  });
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private readonly router = inject(Router);
 
   onCreateNewWebhook(): void {
@@ -103,7 +111,11 @@ export class WebhooksComponent {
   }
 
   onEditWebhook(webhook: Webhook): void {
-    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS + webhook.identifier);
+    // Encoded, like WebhookService does for its API URLs: the editor restricts an identifier to
+    // [a-zA-Z0-9._-], but set_webhook() accepts any non-empty string, so one created through the
+    // API or a config import can carry a space or a slash - and "team/siem" pasted raw into the
+    // path is a route that matches nothing.
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS + encodeURIComponent(webhook.identifier));
   }
 
   deleteSelected(): void {
@@ -131,17 +143,11 @@ export class WebhooksComponent {
   }
 
   onFilterInput(value: string): void {
-    const trimmed = (value ?? "").trim();
-    this.filterString.set(trimmed);
-
-    const ds = this.webhookDataSource();
-    ds.filter = trimmed.toLowerCase();
+    this.filterString.set((value ?? "").trim());
   }
 
   resetFilter(): void {
     this.filterString.set("");
-    const ds = this.webhookDataSource();
-    ds.filter = "";
     const inputEl = this.filterInput?.nativeElement as HTMLInputElement | undefined;
     if (inputEl) {
       inputEl.value = "";

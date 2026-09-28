@@ -27,7 +27,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
-from privacyidea.lib.crypto import decryptPassword
+from privacyidea.lib.crypto import FAILED_TO_DECRYPT_PASSWORD, decryptPassword
 
 log = logging.getLogger(__name__)
 
@@ -127,16 +127,27 @@ class Webhook(MethodsMixin, db.Model):
     @property
     def header_dict(self):
         """
-        Return a dict of header key → decrypted value for all associated
-        headers.  Mirrors :attr:`SMSGateway.header_dict`.
+        Return a dict of header key → decrypted value for all associated headers.
+
+        A value that cannot be decrypted - after an enckey change or a restore from a backup
+        without it - becomes an empty string, never the stored ciphertext. This is what the
+        callers need: ``fire_webhook()`` would otherwise send the base64 ciphertext to the
+        endpoint as a header value, and an uncensored ``export_webhook()`` would write it into
+        the export, where re-importing it encrypts it a second time. It is the same treatment
+        the two password columns get in
+        :func:`~privacyidea.lib.webhook._decrypt_or_empty`; an empty credential fails the
+        delivery visibly, a wrong one fails it confusingly.
         """
         res = {}
         for header in self.headers:
             value = header.value
             if header.encrypted and value:
                 decrypted = decryptPassword(value)
-                if decrypted and not decrypted.startswith("FAILED TO DECRYPT"):
-                    value = decrypted
+                if decrypted == FAILED_TO_DECRYPT_PASSWORD:
+                    log.warning(f"Failed to decrypt the value of header {header.key!r} of webhook "
+                                f"{self.identifier!r}. Returning an empty value.")
+                    decrypted = ""
+                value = decrypted
             res[header.key] = value
         return res
 

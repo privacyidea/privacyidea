@@ -210,6 +210,13 @@ export class NewWebhookComponent implements OnDestroy {
   }
 
   get canSave(): boolean {
+    // In edit mode the form only describes the stored definition once the list has arrived. Until
+    // then it holds the empty defaults, and saving those would POST them over a real webhook -
+    // clearing its URL, auth and headers. The form does not catch it by itself: the identifier is
+    // `disabled()` in edit mode, and a disabled field skips its own `required` validator.
+    if (this.isEditMode() && !this.data) {
+      return false;
+    }
     return this.webhookForm().valid();
   }
 
@@ -233,7 +240,7 @@ export class NewWebhookComponent implements OnDestroy {
   }
 
   async save(): Promise<boolean> {
-    if (!this.webhookForm().valid()) {
+    if (!this.canSave) {
       return false;
     }
     const model = this.webhookModel();
@@ -241,6 +248,10 @@ export class NewWebhookComponent implements OnDestroy {
     const rows = this.headers().filter((row) => row.key.trim());
     const webhook: Webhook = {
       ...model,
+      // The route is what says which webhook is being edited; the model's copy only mirrors it,
+      // and mirrors it as "" until the definition has loaded. Posting that would address
+      // /webhook/ instead of /webhook/<identifier>.
+      identifier: this.editIdentifier ?? model.identifier,
       timeout: Number(model.timeout),
       headers: Object.fromEntries(rows.map((row) => [row.key.trim(), row.value])),
       secret_headers: rows.filter((row) => row.secret).map((row) => row.key.trim())

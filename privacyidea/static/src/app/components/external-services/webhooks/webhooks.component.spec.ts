@@ -130,6 +130,33 @@ describe("WebhooksComponent", () => {
     );
   });
 
+  it("encodes an identifier that is not URL-safe", () => {
+    // The editor restricts identifiers to [a-zA-Z0-9._-], but set_webhook() accepts any non-empty
+    // string, so one created through the API or a config import can carry a slash or a space -
+    // pasted raw into the path it produces a route that matches nothing and the page 404s.
+    component.onEditWebhook(buildWebhook("team/siem hook"));
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS_DETAILS + "team%2Fsiem%20hook"
+    );
+  });
+
+  it("keeps the filter when the rows are replaced", async () => {
+    // The data source is rebuilt whenever the list changes - a delete, or the reload button. A
+    // filter written onto the old instance was lost there, so the full list reappeared while the
+    // input still showed what it was filtered by.
+    component.onFilterInput("siem");
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(component.webhookDataSource().filteredData.map((row) => row.identifier)).toEqual(["siem"]);
+
+    webhookServiceMock.webhooks.set([buildWebhook("siem"), buildWebhook("chat"), buildWebhook("siem2")]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(component.filterString()).toBe("siem");
+    expect(component.webhookDataSource().filteredData.map((row) => row.identifier)).toEqual(["siem", "siem2"]);
+  });
+
   it("should delete the selected webhook after confirmation", () => {
     component.selector.selectRow(webhookServiceMock.webhooks()[0]);
     component.deleteSelected();

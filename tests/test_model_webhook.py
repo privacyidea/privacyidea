@@ -191,6 +191,22 @@ class WebhookModelTestCase(MyTestCase):
         headers = loaded.header_dict
         self.assertEqual(headers["Authorization"], secret)
 
+    def test_an_undecryptable_header_reads_as_empty_not_as_ciphertext(self):
+        """
+        After an enckey change, or a restore from a backup without it, a stored header value can no
+        longer be decrypted. Handing the ciphertext back would send it to the endpoint as the header
+        value and write it into an uncensored export, where a re-import encrypts it a second time.
+        An empty credential fails the delivery visibly; a wrong one fails it confusingly.
+        """
+        wh = Webhook(identifier="stale-key-hook", url="https://e.example.com")
+        wh_id = wh.save()
+        WebhookHeader(webhook_id=wh_id, key="Authorization",
+                      value="not-something-this-key-can-decrypt", encrypted=True)
+
+        loaded = db.session.get(Webhook, wh_id)
+
+        self.assertEqual("", loaded.header_dict["Authorization"])
+
     def test_header_in_get_dict(self):
         """The get() dict includes headers."""
         wh = Webhook(identifier="get-header-hook", url="https://g.example.com")

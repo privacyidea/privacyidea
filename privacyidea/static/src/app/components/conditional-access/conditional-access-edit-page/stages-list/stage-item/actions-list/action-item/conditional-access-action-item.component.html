@@ -130,18 +130,15 @@
             (selectionChange)="onDurationUnitChange($event.value)">
             <mat-option
               value="seconds"
-              i18n="@@conditionalAccess.seconds"
-              >Seconds
+              i18n="@@conditionalAccess.seconds">Seconds
             </mat-option>
             <mat-option
               value="minutes"
-              i18n="@@conditionalAccess.minutes"
-              >Minutes
+              i18n="@@conditionalAccess.minutes">Minutes
             </mat-option>
             <mat-option
               value="hours"
-              i18n="@@conditionalAccess.hours"
-              >Hours
+              i18n="@@conditionalAccess.hours">Hours
             </mat-option>
           </mat-select>
         </mat-form-field>
@@ -247,9 +244,9 @@
         }
 
         <details class="ca-placeholder-help margin-top-16">
-          <summary i18n="@@conditionalAccess.availablePlaceholdersSubjectBody"
-            >Available placeholders for subject and body</summary
-          >
+          <summary
+            i18n="@@conditionalAccess.availablePlaceholdersSubjectBody">Available placeholders for subject and body
+          </summary>
           <div class="margin-left-16">
             <p
               class="ca-placeholder-intro"
@@ -267,9 +264,9 @@
             <p
               class="ca-placeholder-intro"
               i18n="@@conditionalAccess.addRBeforeClosing">
-              Add <code>!r</code> before the closing brace to insert the value's quoted form, e.g.
-              <code>{{ "{" }} policy!r{{ "}" }}</code> renders <code>'Brute Force PIN Lock'</code> instead of
-              <code>Brute Force PIN Lock</code>.
+              Add <code>!r</code> before the closing brace to insert the value's quoted form, e.g. <code>{{ "{" }}
+              policy!r{{ "}" }}</code> renders <code>'Brute Force PIN Lock'</code> instead of <code>Brute Force PIN
+                                                                                                    Lock</code>.
             </p>
           </div>
         </details>
@@ -311,7 +308,10 @@
                 No webhook to choose from. Configure one under External Services.
               </mat-hint>
             } @else {
-              <mat-hint i18n="@@conditionalAccess.webhookDefinitionOwns">The webhook definition that owns the URL, method, headers and credentials.</mat-hint>
+              <mat-hint
+                i18n="@@conditionalAccess.webhookDefinitionOwns">The webhook definition that owns the URL, method,
+                                                                 headers and credentials.
+              </mat-hint>
             }
           </mat-form-field>
         } @else {
@@ -338,11 +338,16 @@
             [value]="webhookFieldValue('payload')"
             matInput
             rows="4"></textarea>
-          <mat-hint i18n="@@conditionalAccess.optionalLeftEmpty">Optional. Left empty, the webhook's own default payload is sent.</mat-hint>
+          <mat-hint
+            i18n="@@conditionalAccess.optionalLeftEmpty">Optional. Left empty, the webhook's own default payload is
+                                                         sent.
+          </mat-hint>
         </mat-form-field>
 
         <details class="ca-placeholder-help margin-top-16">
-          <summary i18n="@@conditionalAccess.availablePlaceholdersPayload">Available placeholders for the payload</summary>
+          <summary
+            i18n="@@conditionalAccess.availablePlaceholdersPayload">Available placeholders for the payload
+          </summary>
           <div class="margin-left-16">
             <p
               class="ca-placeholder-intro"
