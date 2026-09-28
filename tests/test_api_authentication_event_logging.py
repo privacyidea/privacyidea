@@ -39,7 +39,7 @@ from privacyidea.lib.config import SYSCONF, delete_privacyidea_config, set_priva
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.conditional_access.request_context import ATTEMPT_ID_CHALLENGE_KEY
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
-from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED
+from privacyidea.lib.policy import set_policy, delete_policy, SCOPE, PolicyAction, AUTHORIZED, LOGINMODE
 from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.token import init_token, remove_token, get_one_token, revoke_token
 from privacyidea.lib.tokenclass import TokenClass
@@ -1387,6 +1387,18 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                             user_role=AuthLogUserRole.ADMIN_EXTERNAL, endpoint=self.endpoint_path)
         finally:
             delete_realm("adminrealm")
+
+    def test_login_mode_disable_logs_not_authorized(self):
+        set_policy("authlog_login_disabled", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        try:
+            res = self._auth({"username": self.username, "realm": self.realm1, "password": "test"}, status=403)
+            self.assertEqual("The login for this user is disabled.", res.json["result"]["error"]["message"])
+        finally:
+            delete_policy("authlog_login_disabled")
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        endpoint=self.endpoint_path, reason=AuthEventReason.LOGIN_MODE_DISABLED,
+                                        policies=["authlog_login_disabled"])
 
     def test_revoked_token_logs_no_usable_token(self):
         # All of the user's tokens are revoked, so check_user_pass raises TOKEN_LOCKED before it can classify the

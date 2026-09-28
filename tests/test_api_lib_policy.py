@@ -11,13 +11,13 @@ from datetime import datetime, timedelta
 from unittest import mock
 
 from dateutil.tz import tzlocal
-from flask import Request, g, current_app, jsonify
+from flask import Request, g, current_app, jsonify, request
 from passlib.hash import pbkdf2_sha512
 from testfixtures import log_capture, LogCapture
 from werkzeug.datastructures.headers import Headers
 from werkzeug.test import EnvironBuilder
 
-from privacyidea.api.lib.policyhelper import get_realm_for_authentication
+from privacyidea.api.lib.policyhelper import get_realm_for_authentication, get_login_mode
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             check_tokeninfo,
                                             no_detail_on_success,
@@ -32,6 +32,7 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             multichallenge_enroll_via_validate,
                                             postpolicy, postrequest)
 from privacyidea.api.lib.prepolicy import (init_token_defaults, verify_enrollment)
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
                                        get_all_containers, delete_container_template)
@@ -41,7 +42,7 @@ from privacyidea.lib.machine import attach_token
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE, AUTOASSIGNVALUE, AUTHORIZED,
-                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, SESSION_PERSISTENCE)
+                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, SESSION_PERSISTENCE, LOGINMODE)
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    check_user_pass, unassign_token)
@@ -2273,3 +2274,22 @@ class PolicyHelperTestCase(MyApiTestCase):
         self.assertEqual("realm2", realm)
 
         delete_policy("auth_realm")
+
+    def test_02_get_login_mode(self):
+        self.setUp_user_realms()
+        user = User("cornelius", self.realm1)
+        with self.app.test_request_context('/auth', method='POST'):
+            self.assertEqual(LOGINMODE.USERSTORE, get_login_mode(g, request, user))
+
+            set_policy("login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
+            self.assertEqual(LOGINMODE.PRIVACYIDEA, get_login_mode(g, request, user))
+
+            set_policy("login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+            with mock.patch("privacyidea.api.lib.policyhelper.log_authentication") as log_authentication:
+                with self.assertRaises(PolicyError) as error:
+                    get_login_mode(g, request, user)
+            self.assertEqual("The login for this user is disabled.", error.exception.message)
+            log_authentication.assert_called_once()
+            self.assertEqual(AuthEventType.NOT_AUTHORIZED, log_authentication.call_args.args[0])
+            self.assertListEqual([AuthEventReason.LOGIN_MODE_DISABLED], log_authentication.call_args.kwargs["reasons"])
+        delete_policy("login_mode")

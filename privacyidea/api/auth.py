@@ -73,7 +73,7 @@ from flask_babel import _
 from privacyidea.api.lib.conditional_access import (conditional_access_login_gate,
                                                     reject_locked_fallback_user)
 from privacyidea.api.lib.policyhelper import (check_last_auth_policy, get_realm_for_authentication,
-                                              get_login_disabled_policies)
+                                              get_login_mode)
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
                                             get_webui_settings)
@@ -102,9 +102,8 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import UserVerificationLevel
 from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.policy import PolicyClass, REMOTE_USER
-from privacyidea.lib.policydecorators import (reset_all_user_tokens_active, reset_token_failcounters,
-                                              LOGIN_DISABLED_MESSAGE)
+from privacyidea.lib.policy import PolicyClass, REMOTE_USER, LOGINMODE
+from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.user import User, split_user, log_used_user
@@ -372,12 +371,7 @@ def get_auth_token():
                     token_type=token.get_type()),
                 id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         # A passkey login carries no password, so of the login modes only disable applies to it.
-        login_disabled_policies = get_login_disabled_policies(g, token.user)
-        if login_disabled_policies:
-            log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=token.user, serial=token.get_serial(),
-                               transaction_id=transaction_id, reasons=[AuthEventReason.LOGIN_MODE_DISABLED],
-                               reason_detail=build_reason_detail(policies=login_disabled_policies))
-            raise PolicyError(str(LOGIN_DISABLED_MESSAGE))
+        get_login_mode(g, request, token.user, serial=token.get_serial(), transaction_id=transaction_id)
         last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
         if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
@@ -556,13 +550,15 @@ def get_auth_token():
                     increase_failcounter_on_challenge(request, None)
                     disabled_token_types(request, None)
 
+            login_mode = get_login_mode(g, request, user)
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
                 # Never copy internal keys
                 if value and key not in ["g", "clientip"] and key not in INTERNAL_OPTION_KEYS:
                     options[key] = value
             user_auth, role, details = check_webui_user(user, password, options=options,
-                                                        superuser_realms=superuser_realms)
+                                                        superuser_realms=superuser_realms,
+                                                        check_otp=login_mode == LOGINMODE.PRIVACYIDEA)
             details = details or {}
             # The lib layer stashes the classification in details; capture it for the authentication log, then
             # pop it so it never reaches the client.

@@ -26,6 +26,12 @@ import logging
 from dataclasses import dataclass
 from datetime import timedelta, datetime, timezone
 
+from flask import Request
+from flask_babel import lazy_gettext
+
+from privacyidea.api.lib.utils import log_authentication
+from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
+                                                                          build_reason_detail)
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
 from privacyidea.lib.error import PolicyError, ResourceNotFoundError, UserError
 from privacyidea.lib.log import log_with
@@ -426,18 +432,27 @@ def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
     return True, []
 
 
-def get_login_disabled_policies(g, user: User) -> list[str]:
+def get_login_mode(g, request: Request, user: User, serial: str | None = None,
+                   transaction_id: str | None = None) -> str:
     """
-    Names of the ``login_mode=disable`` policies that disable the WebUI login for *user*.
+    The WebUI login mode of *user*: whether a password login is checked against the user store or against
+    privacyIDEA. A ``login_mode=disable`` policy refuses the login instead, which is logged.
 
-    The other login modes only decide which credential a password login is checked against, so they do not apply to
-    a login that carries no password, such as a passkey login.
+    The mode only decides which credential a password is checked against, so a login that carries no password, such
+    as a passkey login, only has to respect the refusal.
 
-    :return: the deciding policies; empty if the login is not disabled
+    :return: ``LOGINMODE.USERSTORE`` or ``LOGINMODE.PRIVACYIDEA``
+    :raises PolicyError: if the login is disabled
     """
     login_mode = Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGINMODE,
                             user_object=user).action_values(unique=True)
-    return login_mode.get(LOGINMODE.DISABLE, [])
+    login_disabled_policies = login_mode.get(LOGINMODE.DISABLE)
+    if login_disabled_policies:
+        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, serial=serial,
+                           transaction_id=transaction_id, reasons=[AuthEventReason.LOGIN_MODE_DISABLED],
+                           reason_detail=build_reason_detail(policies=login_disabled_policies))
+        raise PolicyError(str(lazy_gettext("The login for this user is disabled.")))
+    return next(iter(login_mode), LOGINMODE.USERSTORE)
 
 
 def get_realm_for_authentication(g, username: str, realm: str) -> str:
