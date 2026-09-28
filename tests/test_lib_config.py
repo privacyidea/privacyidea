@@ -4,6 +4,7 @@ This test file tests the lib.config
 The lib.config only depends on the database model.
 """
 import importlib
+from unittest import mock
 
 from privacyidea.lib.config import (get_resolver_list,
                                     get_resolver_classes,
@@ -314,3 +315,52 @@ class ConfigTestCase(MyTestCase):
         import_config({"ExpSecret": {"Value": CENSORED, "Type": "password"}})
         self.assertEqual(get_from_config("ExpSecret"), "topsecret")
         delete_privacyidea_config("ExpSecret")
+
+    def test_12b_export_import_password_roundtrip(self):
+        from privacyidea.lib.config import export_config, import_config
+        from privacyidea.lib.crypto import decryptPassword
+        set_privacyidea_config("ExpSecret", "topsecret", typ="password")
+        # The export carries the decrypted value, which the import encrypts with the key of the instance
+        exported = export_config(name="ExpSecret")
+        self.assertEqual("topsecret", exported["ExpSecret"]["Value"])
+        self.assertEqual("password", exported["ExpSecret"]["Type"])
+
+        import_config(exported)
+        self.assertEqual("topsecret", get_from_config("ExpSecret"))
+        stored = db.session.query(Config).filter_by(Key="ExpSecret").one()
+        self.assertEqual("topsecret", decryptPassword(stored.Value))
+        delete_privacyidea_config("ExpSecret")
+
+    def test_12c_export_undecryptable_password_censored(self):
+        from privacyidea.lib.config import export_config
+        from privacyidea.lib.crypto import CENSORED, FAILED_TO_DECRYPT_PASSWORD
+        set_privacyidea_config("ExpSecret", "topsecret", typ="password")
+        # A value that can not be decrypted is exported censored, so that an import does not store the error text
+        with mock.patch("privacyidea.lib.config.decryptPassword", return_value=FAILED_TO_DECRYPT_PASSWORD):
+            exported = export_config(name="ExpSecret")
+        self.assertEqual(CENSORED, exported["ExpSecret"]["Value"])
+        delete_privacyidea_config("ExpSecret")
+
+    def test_13_update_password_entry_without_type(self):
+        from privacyidea.lib.crypto import decryptPassword
+        set_privacyidea_config("SecretToUpdate", "first", typ="password")
+        # The update names no type, so the entry keeps the password type it already has and the
+        # new value is stored the same way the first one was.
+        set_privacyidea_config("SecretToUpdate", "second")
+
+        stored = db.session.query(Config).filter_by(Key="SecretToUpdate").one()
+        self.assertEqual("password", stored.Type)
+        self.assertNotEqual("second", stored.Value)
+        self.assertEqual("second", decryptPassword(stored.Value))
+        self.assertEqual("second", get_from_config("SecretToUpdate"))
+        delete_privacyidea_config("SecretToUpdate")
+
+    def test_14_update_entry_without_type_keeps_plain_type(self):
+        # The type fallback carries over whatever type is there, so a public entry stays plain.
+        set_privacyidea_config("PlainToUpdate", "first", typ="public")
+        set_privacyidea_config("PlainToUpdate", "second")
+
+        stored = db.session.query(Config).filter_by(Key="PlainToUpdate").one()
+        self.assertEqual("public", stored.Type)
+        self.assertEqual("second", stored.Value)
+        delete_privacyidea_config("PlainToUpdate")

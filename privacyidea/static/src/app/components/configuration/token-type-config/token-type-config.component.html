@@ -64,6 +64,7 @@
       (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"
       [radiusServers]="systemService.radiusServers()"
+      [radiusServersListable]="systemService.canListRadiusServers()"
       [expanded]="expandedPanel === 'radius'"></app-radius-config>
     <app-remote-config
       (formDataChange)="onFormDataChange($event)"
@@ -72,6 +73,7 @@
       (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"
       [smsGateways]="smsGatewayNames()"
+      [smsGatewaysListable]="smsGatewayService.canListSmsGateways()"
       [expanded]="expandedPanel === 'sms'"></app-sms-config>
     <app-tiqr-config
       (formDataChange)="onFormDataChange($event)"
@@ -80,6 +82,7 @@
       (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"
       [smtpServers]="smtpServerIdentifiers()"
+      [smtpServersListable]="smtpService.canListSmtpServers()"
       [expanded]="expandEmail()"></app-email-config>
     <app-questionnaire-config
       (formDataChange)="onFormDataChange($event)"

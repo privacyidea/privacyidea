@@ -25,9 +25,11 @@ Each endpoint x case has its own test method so a failure names exactly the
 endpoint and case that broke.
 """
 from datetime import timedelta
+from unittest import mock
 
 from werkzeug.test import TestResponse
 
+from privacyidea.lib.params import MAX_PAGE_SIZE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthLogUserRole,
@@ -487,6 +489,59 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         res = self._request("blocklist", method="POST", json_data={"ip": "not-an-ip"})
         self.assertEqual(400, res.status_code, res.json)
 
+    def test_the_lock_listing_caps_the_page_size(self):
+        # Pagination is what keeps one request from asking the database and the serializer for every row there
+        # is, and the locked-user table grows with exactly the incident a lock policy responds to.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        with mock.patch("privacyidea.api.conditional_access.list_locked_users_paginate") as paginate:
+            paginate.return_value = {"locked_users": [], "count": 0, "current": 1, "prev": None, "next": None}
+            self._request("lock/users", query_string={"page_size": "100000000"})
+        self.assertEqual(MAX_PAGE_SIZE, paginate.call_args.kwargs["page_size"])
+
+    def test_a_target_scoped_permission_does_not_reach_the_blocklist(self):
+        # A blocklist entry is a source IP and carries none of the three terms an admin policy scopes a target
+        # by, so a scoped permission names nothing in it. Refused rather than read as unrestricted, which would
+        # hand an admin delegated one realm the whole list and the power to lift another realm's blocks.
+        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        set_policy("ca_state_scoped_blocklist", scope=SCOPE.ADMIN, realm=self.realm1,
+                   action=f"{PolicyAction.BLOCKLIST_READ},{PolicyAction.BLOCKLIST_SET},"
+                          f"{PolicyAction.BLOCKLIST_RESET}")
+        try:
+            self.assertEqual(403, self._request("blocklist").status_code)
+            self.assertEqual(403, self._request("blocklist", method="POST",
+                                                json_data={"ip": "203.0.113.9"}).status_code)
+            self.assertEqual(403, self._request("blocklist/purge", method="POST").status_code)
+            self.assertEqual(403, self._request("blocklist/203.0.113.7", method="DELETE").status_code)
+        finally:
+            delete_policy("ca_state_scoped_blocklist")
+        self.assertEqual(1, BlockList.query.count())
+
+    def test_a_permission_granted_for_every_realm_reaches_the_blocklist(self):
+        # "*" is how a policy says every realm, so it names no target and leaves the permission unrestricted.
+        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        set_policy("ca_state_wildcard_blocklist", scope=SCOPE.ADMIN, realm="*",
+                   action=f"{PolicyAction.BLOCKLIST_READ},{PolicyAction.BLOCKLIST_RESET}")
+        try:
+            res = self._request("blocklist")
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(1, len(res.json["result"]["value"]))
+            self.assertEqual(200, self._request("blocklist/203.0.113.7", method="DELETE").status_code)
+        finally:
+            delete_policy("ca_state_wildcard_blocklist")
+
+    def test_an_admin_realm_scoped_permission_reaches_the_blocklist(self):
+        # adminrealm says who the administrator is, not which targets they may act on, so it leaves the
+        # permission unrestricted in the sense that matters here.
+        self._block("203.0.113.7", utc_now() + timedelta(seconds=600))
+        set_policy("ca_state_adminrealm_blocklist", scope=SCOPE.ADMIN, adminuser=self.testadmin,
+                   action=str(PolicyAction.BLOCKLIST_READ))
+        try:
+            res = self._request("blocklist")
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(1, len(res.json["result"]["value"]))
+        finally:
+            delete_policy("ca_state_adminrealm_blocklist")
+
     def test_read_and_reset_do_not_grant_set(self):
         # Clearing a restriction is recoverable, imposing one is not, so the rights are separate.
         set_policy("ca_state_no_set", scope=SCOPE.ADMIN,
@@ -657,6 +712,21 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
             delete_policy("ca_state_realm1")
         # The scope narrows the view, not the data: both rows are still there.
         self.assertEqual(2, UserLockState.query.count())
+
+    def test_a_read_action_granted_for_every_realm_lists_every_realm(self):
+        # The policy engine reads "*" as every realm, so it names no boundary. Taken as the literal name of a
+        # realm it would match none, and a grant over everything would show nothing.
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        db.session.add(UserLockState(resolver="other", uid="7", realm="otherrealm",
+                                     lock_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        set_policy("ca_state_all_realms", scope=SCOPE.ADMIN,
+                   action=str(PolicyAction.USER_LOCK_READ), realm="*")
+        try:
+            users = self._request("lock/users").json["result"]["value"]["locked_users"]
+            self.assertEqual(2, len(users))
+        finally:
+            delete_policy("ca_state_all_realms")
 
     def test_reset_only_clears_rows_inside_the_resolver_scope(self):
         # The boundary must be part of the delete criterion, not a pre-flight check on one identity: resetting by

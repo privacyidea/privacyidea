@@ -371,6 +371,23 @@ describe("MachineService resources and signals", () => {
       expect(machineService.tokenApplications()).toBeUndefined();
     });
 
+    // /machine/token requires manage_machine_tokens, not tokenlist.
+    it("should request token applications with manage_machine_tokens alone", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["manage_machine_tokens"] });
+      contentService.onTokensApplications = signal(true);
+      TestBed.tick();
+
+      httpMock.expectOne((r) => r.url.includes("/machine/token"));
+    });
+
+    it("should not request token applications with tokenlist but without manage_machine_tokens", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["tokenlist"] });
+      contentService.onTokensApplications = signal(true);
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url.includes("/machine/token"));
+    });
+
     it("should reset to undefined when tokenApplicationResource errors after successful load", async () => {
       authService.actionAllowed = jest.fn().mockReturnValue(true);
       contentService.onTokensApplications = signal(true);

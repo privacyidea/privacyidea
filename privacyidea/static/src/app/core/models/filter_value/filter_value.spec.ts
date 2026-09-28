@@ -302,4 +302,22 @@ describe("Edge cases", () => {
     expect(fv.filterMap.get("description")).toBeUndefined();
     expect(fv.filterMap.get("user")).toBe("alice");
   });
+
+  test("withExactKey marks a key, and only that key", () => {
+    const fv = new FilterValue({ value: "tokenrealm: realm1 user: alice" }).withExactKey("tokenrealm");
+    expect(fv.isExactKey("tokenrealm")).toBe(true);
+    expect(fv.isExactKey("user")).toBe(false);
+    expect(fv.getValueOfKey("tokenrealm")).toBe("realm1");
+  });
+
+  test("an exact marking does not survive a change to the filter", () => {
+    const marked = new FilterValue({ value: "tokenrealm: realm1" }).withExactKey("tokenrealm");
+
+    expect(marked.addEntry("user", "alice").isExactKey("tokenrealm")).toBe(false);
+    expect(marked.copyWith({ value: "tokenrealm: realm1" }).isExactKey("tokenrealm")).toBe(false);
+    expect(marked.removeKey("user").isExactKey("tokenrealm")).toBe(false);
+    expect(marked.updateHiddenEntry("assigned", "true").isExactKey("tokenrealm")).toBe(false);
+    // The marked instance itself is unchanged by any of those.
+    expect(marked.isExactKey("tokenrealm")).toBe(true);
+  });
 });

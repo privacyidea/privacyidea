@@ -38,8 +38,18 @@ translate-server:
 	(cd privacyidea; pybabel extract -F babel.cfg -k lazy_gettext -o messages.pot .)
 	# pybabel init -i messages.pot -d translations -l de
 	(cd privacyidea; pybabel update -i messages.pot -d translations)
+	$(MAKE) check-translations-server
 	# create the .mo file
 	(cd privacyidea; pybabel compile -d translations)
+
+# pybabel update keeps an obsolete entry when its msgid comes back into the source, which leaves a
+# duplicate definition that pybabel accepts but GNU gettext (and therefore Weblate) rejects.
+check-translations-server:
+	status=0; \
+	for catalog in privacyidea/translations/*/LC_MESSAGES/messages.po; do \
+		msgfmt --check -o /dev/null $$catalog || status=1; \
+	done; \
+	exit $$status
 
 pypi:
 	make doc-man

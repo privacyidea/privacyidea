@@ -84,6 +84,68 @@ describe("DashboardPersistenceService", () => {
     expect(loadedWidgets()).toEqual(sampleWidgets());
   });
 
+  it("should round-trip a widget's settings", () => {
+    const widgets: WidgetInstance[] = [
+      { id: "w1", type: "tokens", x: 0, y: 0, cols: 6, rows: 8, settings: { realm: "realm1" } }
+    ];
+    service.save(widgets).subscribe();
+
+    expect(loadedWidgets()).toEqual(widgets);
+  });
+
+  it("should keep a widget without settings unchanged", () => {
+    expect(loadedWidgets()).toBeNull();
+    const widgets = sampleWidgets();
+    service.save(widgets).subscribe();
+
+    expect(loadedWidgets()?.[0].settings).toBeUndefined();
+  });
+
+  it("should drop a widget whose settings are not a plain string/number/boolean record", () => {
+    const invalidSettings = [
+      "nonsense",
+      ["array", "not", "object"],
+      { nested: { realm: "realm1" } },
+      { realm: undefined }
+    ];
+    for (const settings of invalidSettings) {
+      userSettings.settings.set({
+        dashboard: { widgets: [{ id: "w1", type: "tokens", x: 0, y: 0, cols: 6, rows: 8, settings }] }
+      });
+      expect(loadedWidgets()).toEqual([]);
+    }
+  });
+
+  it("should accept a settings value of null", () => {
+    userSettings.settings.set({
+      dashboard: { widgets: [{ id: "w1", type: "tokens", x: 0, y: 0, cols: 6, rows: 8, settings: { realm: null } }] }
+    });
+
+    expect(loadedWidgets()?.[0].settings).toEqual({ realm: null });
+  });
+
+  it("should keep the options a widget was stored with", () => {
+    const widgets: WidgetInstance[] = [{ ...sampleWidgets()[0], options: { range: "24h" } }];
+    service.save(widgets).subscribe();
+
+    expect(loadedWidgets()?.[0].options).toEqual({ range: "24h" });
+  });
+
+  it("should drop option keys it does not know and options that are not an object", () => {
+    userSettings.settings.set({
+      dashboard: {
+        widgets: [
+          { ...sampleWidgets()[0], options: { range: "24h", clutter: "x" } },
+          { ...sampleWidgets()[0], id: "w2", options: "nonsense" }
+        ]
+      }
+    });
+
+    const loaded = loadedWidgets();
+    expect(loaded?.[0].options).toEqual({ range: "24h" });
+    expect(loaded?.[1].options).toBeUndefined();
+  });
+
   it("should fall back to null when loading fails", () => {
     jest.spyOn(userSettings, "getSetting").mockReturnValue(throwError(() => new Error("boom")));
 

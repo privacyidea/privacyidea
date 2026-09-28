@@ -76,6 +76,14 @@ export class CertificateHealthWidgetComponent extends DashboardWidget implements
 
   readonly sortedEntries = computed<CertificateHealthEntry[]>(() => this.sort.apply(this.entries()));
 
+  /**
+   * When the certificates were last probed. The numbers in the table are days until expiry, which do not depend on
+   * when they were read, so this answers a different question than the windows the other health widgets carry: it
+   * says how long ago the endpoints were reached, which is what tells a reader whether a certificate they have just
+   * replaced is in here yet. Taken from the first entry, all of them being probed and stamped together.
+   */
+  readonly checkedAt = computed<string | null>(() => this.entries()[0]?.checked_at ?? null);
+
   constructor() {
     super();
     effect(() => {

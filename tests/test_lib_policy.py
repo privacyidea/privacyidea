@@ -1955,6 +1955,32 @@ class PolicyTestCase(MyTestCase):
         delete_policy("disable_realm1_userA_resolver1")
         delete_policy("disable_realm1_userA_resolver3")
 
+    def test_41b_list_policies_resolver_exclusion(self):
+        # A resolver excluded with "!" or "-" is left out, also from "*", as an excluded realm or user is.
+        set_policy(name="disable_but_resolver3", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE,
+                   resolver=f"*,!{self.resolvername3}")
+        set_policy(name="disable_but_resolver1", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE,
+                   resolver=f"*,-{self.resolvername1}")
+        set_policy(name="disable_only_exclusion", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE,
+                   resolver=f"!{self.resolvername3}")
+        policy_class = PolicyClass()
+
+        def matching(resolver: str) -> set[str]:
+            return {policy["name"] for policy in policy_class.list_policies(action=PolicyAction.DISABLE,
+                                                                             resolver=resolver)}
+
+        try:
+            self.assertIn("disable_but_resolver3", matching(self.resolvername1))
+            self.assertNotIn("disable_but_resolver3", matching(self.resolvername3))
+            self.assertIn("disable_but_resolver1", matching(self.resolvername3))
+            self.assertNotIn("disable_but_resolver1", matching(self.resolvername1))
+            # A field of nothing but exclusions matches no resolver.
+            self.assertNotIn("disable_only_exclusion", matching(self.resolvername1))
+            self.assertNotIn("disable_only_exclusion", matching(self.resolvername3))
+        finally:
+            for name in ("disable_but_resolver3", "disable_but_resolver1", "disable_only_exclusion"):
+                delete_policy(name)
+
     def test_42_convert_action_dict_to_python_dict_success(self):
         action_dict = "'Key1':'Value1'-'Community News':'https://community.privacyidea.org/c/news.rss'-'Key2':'Value2'"
         python_dict = convert_action_dict_to_python_dict(action_dict)

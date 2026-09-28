@@ -30,6 +30,7 @@ export class MockPrivacyideaServerService implements PrivacyideaServerServiceInt
     MockPiResponse.fromValue<PrivacyideaServers>({})
   );
   remoteServerOptions = signal<PrivacyideaServer[]>([]);
+  canListRemoteServers = signal<boolean>(true);
   postPrivacyideaServer = jest.fn(async (): Promise<void> => Promise.resolve());
   deletePrivacyideaServer = jest.fn(async (): Promise<void> => Promise.resolve());
   testPrivacyideaServer = jest.fn(async (): Promise<boolean> => Promise.resolve(true));

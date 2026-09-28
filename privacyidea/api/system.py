@@ -70,7 +70,7 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list, CENSORED
 from privacyidea.lib.health import get_certificate_status
-from privacyidea.lib.metrics import get_metrics, cleanup_old_metrics
+from privacyidea.lib.metrics import get_metrics
 from privacyidea.lib.cache.user import flush_user_cache
 from privacyidea.lib.usercache import delete_user_cache
 from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode, is_true
@@ -80,7 +80,9 @@ from .lib.utils import (getLowerParams,
 from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action, check_admin_base_action
 from ..lib.caconnector import get_caconnector_list
-from ..lib.config import (get_token_class,
+from ..lib.config import (censor_app_config,
+                          get_stored_config_type,
+                          get_token_class,
                           set_privacyidea_config,
                           delete_privacyidea_config,
                           get_from_config,
@@ -126,7 +128,9 @@ def get_config_documentation():
     context = {"system": socket.getfqdn(socket.gethostname()),
                "date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                "systemconfig": config,
-               "appconfig": current_app.config,
+               # Censored here rather than in the template, so the report cannot carry a
+               # credential out of pi.cfg no matter which template renders it.
+               "appconfig": censor_app_config(current_app.config),
                "resolverconfig": resolvers,
                "realmconfig": realms,
                "policyconfig": policies,
@@ -308,10 +312,14 @@ def set_config():
             value = get_optional(param, key)
             typ = get_optional(param, key + ".type")
             desc = get_optional(param, key + ".desc")
+            # A request that names no type updates the entry under the type it already has, so
+            # the stored type says as much about the value as a given one does. Read before the
+            # write, because the write is what may set the type in the first place.
+            stored_type = get_stored_config_type(key)
             res = set_privacyidea_config(key, value, typ, desc)
             result[key] = res
             # Do not write password-typed values to the audit log in cleartext
-            audit_value = CENSORED if typ == "password" else value
+            audit_value = CENSORED if "password" in (typ, stored_type) else value
             g.audit_object.add_to_log({"info": f"{key!s}={audit_value!s}, "})
     g.audit_object.log({"success": True})
     return send_result(result)
@@ -603,9 +611,10 @@ def get_health_certificates():
 
     Each entry carries ``source``, ``name``, ``host``, ``tls_mode``, the
     certificate ``subject`` / ``issuer`` / ``not_after`` / ``days_remaining``,
-    an ``error`` message (or ``null``), and a ``status`` of ``ok`` (>30 days),
-    ``warning`` (<=30 days), ``critical`` (<=7 days), ``expired`` (<=0 days),
-    or ``error`` (the certificate could not be read).
+    an ``error`` message (or ``null``), ``checked_at`` (ISO 8601, when the list
+    was probed rather than when it was served from the cache), and a ``status``
+    of ``ok`` (>30 days), ``warning`` (<=30 days), ``critical`` (<=7 days),
+    ``expired`` (<=0 days), or ``error`` (the certificate could not be read).
 
     :queryparam refresh: If truthy, bypass the cache and re-check.
     :>json list value: List of certificate status entries (see above).
@@ -791,32 +800,3 @@ def delete_user_cache_api():
     return send_result({"status": True, "deleted": row_count,
                         "flushed_resolvers": flushed_resolvers})
 
-
-@system_blueprint.route("/metricscleanup", methods=['POST'])
-@admin_required
-@log_with(log)
-def metricscleanup_api():
-    """
-    Delete ``metric_aggregate`` rows older than ``older_than_hours`` hours.
-    Mirrors what the ``MetricsCleanup`` periodic task does (see
-    :ref:`taskmodule_metricscleanup`), but on demand. The metrics table backs
-    the resolver-timing and notification-delivery dashboard panels; this keeps
-    it from growing unbounded.
-
-    :jsonparam older_than_hours: retention threshold in hours. Default 24.
-                                 Values < 1 are clamped to 1 to prevent wiping
-                                 the live (in-progress) bucket.
-    :>json dict value: ``{"status": true, "deleted": <n>,
-        "older_than_hours": <hours>}`` where ``n`` is the number of rows removed.
-    :reqheader PI-Authorization: The authorization token
-    """
-    try:
-        hours = int(get_optional(request.all_data, "older_than_hours") or 24)
-    except (TypeError, ValueError):
-        hours = 24
-    if hours < 1:
-        hours = 1
-    deleted = cleanup_old_metrics(older_than_seconds=hours * 3600)
-    g.audit_object.log({"success": True,
-                        "info": f"Deleted {deleted} metric_aggregate row(s) older than {hours}h"})
-    return send_result({"status": True, "deleted": deleted, "older_than_hours": hours})

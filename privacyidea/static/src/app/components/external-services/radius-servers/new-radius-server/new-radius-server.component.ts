@@ -34,6 +34,7 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { reservedNames } from "@utils/reserved-names.utils";
 import {
   RadiusServer,
   RadiusServerService,
@@ -103,6 +104,9 @@ export class NewRadiusServerComponent implements OnDestroy {
   radiusForm = form(this.radiusModel, (f) => {
     required(f.identifier);
     pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
+    // POST /radiusserver/test_request is the connection test endpoint, and browsers drop "." and ".." from the URL,
+    // so a server with one of these names is never saved.
+    reservedNames(f.identifier, ["test_request", ".", ".."]);
     required(f.server);
     required(f.secret);
     disabled(f.identifier, () => this.isEditMode());

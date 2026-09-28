@@ -5,7 +5,7 @@
 import datetime
 import logging
 import os
-import random
+import secrets
 import string
 import traceback
 
@@ -84,8 +84,8 @@ def gen_serial(tokentype: str, prefix: str = None) -> str:
 
     if random_serial:
         def _gen_serial(_tokennum: int) -> str:
-            digit_part = random.randrange(10000)  # nosec B311
-            b32_part = "".join([random.choice(B32_ALPHABET) for _ in range(serial_len - 4)])  # nosec B311
+            digit_part = secrets.randbelow(10000)
+            b32_part = "".join([secrets.choice(B32_ALPHABET) for _ in range(serial_len - 4)])
             return f"{prefix}{digit_part:04}{b32_part}"
     else:
         def _gen_serial(_tokennum: int) -> str:

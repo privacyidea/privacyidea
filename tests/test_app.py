@@ -1,6 +1,8 @@
 """
 This testfile tests the basic app functionality of the privacyIDEA app
 """
+import copy
+import json
 import os
 import subprocess
 import sys
@@ -11,10 +13,23 @@ import inspect
 import logging
 import mock
 from testfixtures import Comparison, compare, OutputCapture
-from privacyidea.app import create_app, _setup_database_engine_options
-from privacyidea.config import config, ConfigKey, TestingConfig
+from contextlib import contextmanager
+
+from privacyidea.app import (ENV_KEY, create_app, create_docker_app,
+                             _setup_database_engine_options)
+from privacyidea.config import config, ConfigKey, DefaultConfigValues, TestingConfig
+from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 
 dirname = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+
+
+@contextmanager
+def isolated_config_file():
+    # A pi.cfg installed on the machine running the tests overwrites the values of the config
+    # class, so the tests read an empty config file instead.
+    with tempfile.NamedTemporaryFile(suffix=".cfg") as config_file:
+        with mock.patch.dict(os.environ, {ENV_KEY: config_file.name}):
+            yield
 
 
 class AppTestCase(unittest.TestCase):
@@ -30,7 +45,8 @@ class AppTestCase(unittest.TestCase):
 
     def test_01_create_default_app(self):
         # This will create the app with the 'development' configuration
-        app = create_app()
+        with isolated_config_file():
+            app = create_app()
         self.assertIsInstance(app, flask.app.Flask, app)
 #        self.assertEqual(app.env, 'production', app)
         self.assertTrue(app.debug, app)
@@ -78,7 +94,8 @@ class AppTestCase(unittest.TestCase):
         ], logger.handlers)
 
     def test_02_create_production_app(self):
-        app = create_app(config_name='production')
+        with isolated_config_file():
+            app = create_app(config_name='production')
         dc = config['production']()
         members = inspect.getmembers(dc, lambda a: not (inspect.isroutine(a)))
         conf = [m for m in members if not (m[0].startswith('__') and m[0].endswith('__'))]
@@ -175,6 +192,49 @@ class AppTestCase(unittest.TestCase):
                            level=logging.NOTSET,
                            partial=True)
             ], logger.handlers)
+
+
+class HashConfigTestCase(unittest.TestCase):
+    """
+    Both factories refuse to start with an unusable PI_HASH_ALGO_LIST or PI_HASH_ALGO_PARAMS.
+    What counts as unusable is tested against build_pass_context() in test_lib_crypto.py, so
+    only a failing configuration runs a factory here: it stops before the factory registers its
+    atexit handler.
+    """
+
+    def setUp(self):
+        self.logger = logging.getLogger()
+        self.orig_handlers = self.logger.handlers
+        self.logger.handlers = []
+        self.level = self.logger.level
+        self.pi_logger = logging.getLogger("privacyidea")
+        self.pi_state = (self.pi_logger.handlers[:], self.pi_logger.level, self.pi_logger.propagate)
+        self.logging_configs = (copy.deepcopy(DEFAULT_LOGGING_CONFIG), copy.deepcopy(DOCKER_LOGGING_CONFIG))
+
+    def tearDown(self):
+        self.logger.handlers = self.orig_handlers
+        self.logger.level = self.level
+        self.pi_logger.handlers, self.pi_logger.level, self.pi_logger.propagate = self.pi_state
+        for logging_config, saved in zip((DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG), self.logging_configs):
+            logging_config.clear()
+            logging_config.update(saved)
+
+    def test_01_create_app_refuses_to_start(self):
+        config_class = type("Config", (TestingConfig,), {"PI_HASH_ALGO_LIST": ["argon2", "nosuchscheme"]})
+        with mock.patch.dict("privacyidea.config.config", {"testing": config_class}), isolated_config_file():
+            with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_LIST.*nosuchscheme"):
+                create_app(config_name="testing", silent=True)
+
+    def test_02_create_docker_app_refuses_to_start(self):
+        env = {"PRIVACYIDEA_PI_ENCFILE": os.path.join(dirname, "tests/testdata/enckey"),
+               "PRIVACYIDEA_PI_PEPPER": "pepper",
+               "PRIVACYIDEA_SQLALCHEMY_DATABASE_URI": "sqlite://",
+               "PRIVACYIDEA_PI_HASH_ALGO_LIST": json.dumps(["nosuchscheme"])}
+        # The Docker factory also reads the pi.cfg of the machine the test runs on.
+        with mock.patch.object(DefaultConfigValues, "CFG_PATH", os.path.join(dirname, "no-such-pi.cfg")), \
+                mock.patch.dict(os.environ, env):
+            with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_LIST.*nosuchscheme"):
+                create_docker_app()
 
 
 class DatabaseEngineOptionsTestCase(unittest.TestCase):

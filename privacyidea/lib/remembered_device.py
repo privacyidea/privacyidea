@@ -236,7 +236,7 @@ def get_valid_device(cookie_value: str, client_id: str, identity: UserIdentity,
     :param identity: the resolver-stable identity the cookie must be bound to
         (see :func:`user_identity`)
     :param client_ip: the source IP of the request; used to bound the grace
-        window (a grace hit must come from the IP the device was last used from)
+        window (a grace hit must come from the IP the device was last seen at)
     :return: ``None`` if there is no live device for this cookie (unknown or
         expired); otherwise a :class:`ValidDevice` ``(device, is_grace)`` where
         ``is_grace`` is ``False`` for a fresh use (the caller should rotate the
@@ -288,7 +288,8 @@ def _is_within_grace(device: RememberedDevice, counter: int, client_ip: str) -> 
     Whether a presented ``counter`` qualifies for the grace window: it must be
     exactly the immediately-previous counter, the device must have been used
     within the grace window, and (when both are known) the source IP must match
-    the one the device was last used from.
+    the one the device was last seen at - which :func:`rotate_device` keeps current,
+    so a device that moves networks stays inside its own window.
     """
     grace = _grace_window_seconds()
     if grace <= 0 or counter != device.counter - 1 or device.last_used_at is None:
@@ -306,16 +307,23 @@ class RotatedCookie(NamedTuple):
     expires_at: datetime | None
 
 
-def rotate_device(device: RememberedDevice) -> RotatedCookie:
+def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> RotatedCookie:
     """
     Rotate a validated device: bump the counter, refresh ``last_used_at`` and
     return the new cookie value plus its expiry.
 
     :param device: a device returned by :func:`get_valid_device`
+    :param client_ip: the source of this request, recorded as where the device was last seen
     :return: a :class:`RotatedCookie` ``(value, expires_at)``
     """
     device.counter += 1
     device.last_used_at = utc_now()
+    if client_ip:
+        # Follow the device as it moves. The grace window compares the presented request's source
+        # against this, and a device that keeps the address it was first registered from would stop
+        # qualifying the moment its client changed network - turning a tolerated duplicate request
+        # into a detected theft, which revokes every remembered device that user holds.
+        device.ip_address = client_ip[:64]
     device.save()
     return RotatedCookie(build_cookie_value(device.series_id, device.counter), device.expires_at)
 
@@ -397,7 +405,7 @@ def consume_remember_device_cookie(cookie_value: str, client_id: str, identity: 
         return ConsumeResult(RememberStatus.MISS, None, None)
     if result.is_grace:
         return ConsumeResult(RememberStatus.GRACE, None, None)
-    rotated = rotate_device(result.device)
+    rotated = rotate_device(result.device, client_ip)
     return ConsumeResult(RememberStatus.RECOGNIZED, rotated.value, rotated.expires_at)
 
 

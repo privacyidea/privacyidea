@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { RemoteServer } from "@services/privacyidea-server/privacyidea-server.service";
 import { TokenDetails } from "@services/token/token.service";
 import { FourEyesApiPayloadMapper, FourEyesEnrollmentData } from "./4eyes-token-api-payload.mapper";
 import { BaseApiPayloadMapper, TokenEnrollmentData } from "./_token-api-payload.mapper";
@@ -948,7 +947,7 @@ describe("RemoteApiPayloadMapper", () => {
   const base = (): RemoteEnrollmentData => ({
     ...common,
     type: "remote",
-    remoteServer: { id: "srv1" } as RemoteServer,
+    remoteServerId: "srv1",
     remoteSerial: "RS",
     remoteUser: "ru",
     remoteRealm: "rr",
@@ -967,9 +966,15 @@ describe("RemoteApiPayloadMapper", () => {
   });
 
   it("sets server id null when server missing", () => {
-    const d = { ...base(), remoteServer: null };
+    const d = { ...base(), remoteServerId: "" };
     const p = mapper.toApiPayload(d);
     expect(p["remote.server_id"]).toBeNull();
+  });
+
+  it("fromApiPayload maps remote.server_id back and defaults a missing one to an empty id", () => {
+    const payload = mapper.toApiPayload(base());
+    expect(mapper.fromApiPayload(payload).remoteServerId).toBe("srv1");
+    expect(mapper.fromApiPayload({ ...payload, "remote.server_id": null }).remoteServerId).toBe("");
   });
 
   it("fromTokenDetailsToEnrollmentData maps TokenDetails to RemoteEnrollmentData", () => {
@@ -992,7 +997,7 @@ describe("RemoteApiPayloadMapper", () => {
     const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("remote");
     expect(result.serial).toBe("S1");
-    expect(result.remoteServer).toEqual({ id: "1234" });
+    expect(result.remoteServerId).toBe("1234");
     expect(result.remoteSerial).toBe("s1");
     expect(result.remoteUser).toBe("Alice");
     expect(result.remoteRealm).toBe("another-realm");
@@ -1017,7 +1022,7 @@ describe("RemoteApiPayloadMapper", () => {
     const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
     expect(result.type).toBe("remote");
     expect(result.serial).toBe("S1");
-    expect(result.remoteServer).toBeNull();
+    expect(result.remoteServerId).toBe("");
     expect(result.remoteSerial).toBe("");
     expect(result.remoteUser).toBe("");
     expect(result.remoteRealm).toBe("");

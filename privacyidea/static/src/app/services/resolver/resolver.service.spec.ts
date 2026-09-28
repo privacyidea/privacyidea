@@ -253,6 +253,14 @@ describe("ResolverService", () => {
     expect(resolverService.editableResolvers()).toEqual(["ldap1", "ldap2", "ldap3"]);
   });
 
+  it("should not request a single resolver without resolverread", () => {
+    (authService.actionAllowed as jest.Mock).mockImplementation((action: string) => action !== "resolverread");
+    resolverService.selectedResolverName.set("ldap/1");
+    TestBed.tick();
+
+    httpMock.expectNone((r) => r.url.endsWith(`/resolver/${encodeURIComponent("ldap/1")}`));
+  });
+
   describe("userAttributes signal", () => {
     it("should return attribute keys for ldapresolver  with stringified mapping", async () => {
       const mockResolvers = {

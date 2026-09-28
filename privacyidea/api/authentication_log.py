@@ -32,7 +32,8 @@ from privacyidea.lib.conditional_access.authentication_log_statistics import (DE
                                                                               get_authentication_log_statistics)
 from privacyidea.lib.conditional_access.conditions import AUTHENTICATING_ENDPOINTS
 from privacyidea.lib.log import log_with
-from privacyidea.lib.params import get_optional, get_optional_timestamp, get_required_timestamp
+from privacyidea.lib.params import (get_optional, get_optional_timestamp, get_required_timestamp,
+                                    MAX_PAGE_SIZE)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import get_policy_visibility_scopes, own_entries_scope
 from privacyidea.lib.utils import is_true
@@ -81,6 +82,17 @@ def _positive_int(value: int | str, default: int) -> int:
     except (TypeError, ValueError):
         return default
     return parsed if parsed >= 1 else default
+
+
+def _page_size(value: int | str, default: int) -> int:
+    """
+    Parse a ``page_size``, capped at :data:`~privacyidea.lib.params.MAX_PAGE_SIZE`.
+
+    A floor alone still lets one request ask for every row of a log that is meant to be long. The same ceiling
+    :func:`~privacyidea.lib.params.get_pagination_params` applies elsewhere, which this listing cannot use
+    directly - it spells the parameter ``page_size`` rather than ``pagesize``.
+    """
+    return min(MAX_PAGE_SIZE, _positive_int(value, default))
 
 
 def get_authentication_log_visibility_scopes() -> list[AuthenticationLogVisibilityScope] | None:
@@ -185,7 +197,7 @@ def get_authentication_log():
         case_insensitive=is_true(get_optional(params, "case_insensitive")),
         visibility_scopes=visibility_scopes,
         page=_positive_int(get_optional(params, "page"), default=1),
-        page_size=_positive_int(get_optional(params, "page_size"), default=DEFAULT_PAGE_SIZE),
+        page_size=_page_size(get_optional(params, "page_size"), default=DEFAULT_PAGE_SIZE),
         sort_column=get_optional(params, "sort_column", default="id"),
         sort_order=get_optional(params, "sort_order", default="desc"))
 

@@ -19,6 +19,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -47,6 +48,31 @@ describe("SubscriptionService", () => {
     service = TestBed.inject(SubscriptionService);
     httpMock = TestBed.inject(HttpTestingController);
     notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+  });
+
+  describe("subscriptionsResource", () => {
+    let authService: MockAuthService;
+    let contentService: MockContentService;
+
+    beforeEach(() => {
+      authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+      contentService.routeUrl.set(ROUTE_PATHS.SUBSCRIPTION);
+    });
+
+    it("requests the subscriptions with managesubscription", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["managesubscription"] });
+      TestBed.tick();
+
+      httpMock.expectOne(environment.proxyUrl + "/subscriptions/");
+    });
+
+    it("does not request the subscriptions without managesubscription", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      TestBed.tick();
+
+      httpMock.expectNone(environment.proxyUrl + "/subscriptions/");
+    });
   });
 
   it("reload() should not throw", () => {

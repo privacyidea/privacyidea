@@ -616,6 +616,46 @@ describe("TokenService", () => {
       expect(req.request.params.get("tokenrealm")).toBe("*realm1*,*realm2*");
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
+
+    it("sends a key marked exact as it is, so a realm handed over by a widget is not widened", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "tokenrealm: realm1" }).withExactKey("tokenrealm"));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("realm1");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("widens the same realm again once the user edits the filter", () => {
+      contentServiceMock.onTokens = signal(true);
+      const preset = new FilterValue({ value: "tokenrealm: realm1" }).withExactKey("tokenrealm");
+      // Any edit yields a new FilterValue, which no longer carries the marking.
+      tokenService.activeFilter.set(preset.addEntry("active", "true"));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("tokenrealm")).toBe("*realm1*");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
+    it("waits for the token table to take over a preset instead of loading without it", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.presetFilter.set(new FilterValue().addEntry("assigned", "False"));
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === "/token/");
+
+      // What the token table does once it is on screen.
+      const preset = tokenService.presetFilter()!;
+      tokenService.presetFilter.set(null);
+      tokenService.setFilter(preset);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("assigned")).toBe("False");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
   });
 
   describe("tokenTypeOptions() ordering", () => {
@@ -1153,13 +1193,15 @@ describe("TokenService", () => {
       });
       postSpy.mockReturnValue(throwError(() => boom));
 
-      tokenService.bulkUnassignTokens([{ serial: "SER" } as unknown as import("./token.service").TokenDetails]).subscribe({
-        error: (e) => {
-          expect(e).toBe(boom);
-          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign tokens. bu");
-          done();
-        }
-      });
+      tokenService
+        .bulkUnassignTokens([{ serial: "SER" } as unknown as import("./token.service").TokenDetails])
+        .subscribe({
+          error: (e) => {
+            expect(e).toBe(boom);
+            expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign tokens. bu");
+            done();
+          }
+        });
     });
   });
 
@@ -1344,6 +1386,52 @@ describe("TokenService", () => {
           done();
         }
       });
+    });
+  });
+
+  describe("GET /token/ without tokenlist", () => {
+    beforeEach(() => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist", "tokeninfo"] });
+    });
+
+    it("should not request the tokens of the user on the user details page", () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS_DETAILS + "/alice");
+      contentServiceMock.detailsUser.set({ username: "alice", realm: "realm1" });
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === environment.proxyUrl + "/token/");
+    });
+
+    it("should not request the token on the token details page", () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_DETAILS + "S1");
+      contentServiceMock.tokenSerial.set("S1");
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === environment.proxyUrl + "/token/");
+    });
+
+    it("should not request the token list on the tokens page", () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === environment.proxyUrl + "/token/");
+    });
+
+    it("should not search tokens by serial", () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      mockBackend.expectNone((r) => r.url === environment.proxyUrl + "/token/");
+    });
+
+    it("should still search tokens by serial for a self-service user", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user", rights: [] });
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      mockBackend.expectOne(
+        (r) => r.url === environment.proxyUrl + "/token/" && r.params.get("serial") === "*OATH123*"
+      );
     });
   });
 

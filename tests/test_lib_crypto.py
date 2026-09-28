@@ -28,7 +28,7 @@ from privacyidea.lib.crypto import (encryptPin, encryptPassword, decryptPin,
                                     verify_with_pepper, aes_encrypt_b64, aes_decrypt_b64,
                                     get_hsm, init_hsm, set_hsm_password, hash,
                                     encrypt, decrypt, Sign, get_sign_object, generate_keypair,
-                                    generate_password, pass_hash, verify_pass_hash, generate_keypair_ecc,
+                                    generate_password, pass_hash, verify_pass_hash, build_pass_context, generate_keypair_ecc,
                                     ecc_key_pair_to_b64url_str, b64url_str_key_pair_to_ecc_obj, sign_ecc,
                                     ecdh_key_exchange, encrypt_aes, decrypt_aes, verify_ecc)
 from privacyidea.lib.utils import to_bytes, to_unicode
@@ -36,9 +36,16 @@ from privacyidea.lib.security.default import (SecurityModule,
                                               DefaultSecurityModule)
 from privacyidea.lib.security.aeshsm import AESHardwareSecurityModule
 
-from flask import current_app
+import unittest
+from unittest import mock
+
+from flask import Flask, current_app
+from passlib.context import CryptContext
+from passlib.exc import MissingBackendError
+from passlib.handlers.argon2 import argon2
 import PyKCS11
 from PyKCS11 import PyKCS11Error
+import re
 import string
 import passlib.hash
 
@@ -1095,3 +1102,99 @@ class CustomHashAlgoListTestCase(OverrideConfigTestCase):
         self.assertRaises(passlib.exc.UnknownHashError, verify_pass_hash, password, 'password')
         # Checks if a faulty hash is failing.
         self.assertFalse(verify_pass_hash(password, argon2_fail_hash))
+
+
+class BuildPassContextTestCase(unittest.TestCase):
+    """
+    passlib accepts a PI_HASH_ALGO_LIST or PI_HASH_ALGO_PARAMS it can not hash with: a missing
+    backend only fails at the first hash or verification, an overflowing value at the first hash,
+    and a value out of range is clipped with a warning. build_pass_context() runs at startup and
+    must reject all of them.
+    """
+
+    @staticmethod
+    def _app(**config):
+        app = Flask(__name__)
+        app.config.update(config)
+        return app
+
+    def _build(self, **config):
+        with self._app(**config).app_context():
+            return build_pass_context()
+
+    def test_01_unknown_scheme(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_LIST.*nosuchscheme"):
+            self._build(PI_HASH_ALGO_LIST=["argon2", "nosuchscheme"])
+
+    def test_02_empty_list(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_LIST.*at least one hash algorithm"):
+            self._build(PI_HASH_ALGO_LIST=[])
+
+    def test_03_missing_backend(self):
+        with mock.patch.object(argon2, "get_backend",
+                               side_effect=MissingBackendError("argon2: no backends available")):
+            with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_LIST.*no backends available"):
+                self._build(PI_HASH_ALGO_LIST=["pbkdf2_sha512", "argon2"])
+
+    def test_04_failing_backend(self):
+        with mock.patch.object(argon2, "get_backend",
+                               side_effect=ValueError("password cannot be longer than 72 bytes")):
+            with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_LIST.*argon2: password cannot"):
+                self._build(PI_HASH_ALGO_LIST=["pbkdf2_sha512", "argon2"])
+
+    def test_05_unknown_parameter(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_PARAMS.*nosuchparam"):
+            self._build(PI_HASH_ALGO_PARAMS={"argon2__nosuchparam": 1})
+
+    def test_06_unusable_parameter_value(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_PARAMS.*'many'"):
+            self._build(PI_HASH_ALGO_PARAMS={"argon2__rounds": "many"})
+
+    def test_07_parameters_not_a_mapping(self):
+        for hash_algo_params, reason in [("argon2__rounds=5", "dictionary update sequence"),
+                                         (5, "'int' object is not iterable")]:
+            with self.subTest(hash_algo_params=hash_algo_params):
+                with self.assertRaisesRegex(RuntimeError, f"PI_HASH_ALGO_PARAMS.*{reason}"):
+                    self._build(PI_HASH_ALGO_PARAMS=hash_algo_params)
+
+    def test_08_clipped_parameter_value(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_PARAMS.*too low"):
+            self._build(PI_HASH_ALGO_LIST=["pbkdf2_sha512"], PI_HASH_ALGO_PARAMS={"pbkdf2_sha512__rounds": 0})
+
+    def test_09_deprecated_parameter(self):
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_PARAMS.*vary_rounds"):
+            self._build(PI_HASH_ALGO_LIST=["pbkdf2_sha512"], PI_HASH_ALGO_PARAMS={"pbkdf2_sha512__vary_rounds": 0.1})
+
+    def test_10_parameter_value_failing_at_hash(self):
+        with mock.patch.object(CryptContext, "hash", side_effect=OverflowError("iteration value is too great.")):
+            with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_PARAMS.*too great"):
+                self._build(PI_HASH_ALGO_LIST=["pbkdf2_sha512"])
+
+    def test_11_parameter_for_unlisted_scheme(self):
+        for hash_algo_params in [{"argon2id__rounds": 5}, {"bcrypt__rounds": 5}, {"admin__argon2id__rounds": 5},
+                                 {"argon2id.rounds": 5}]:
+            with self.subTest(hash_algo_params=hash_algo_params):
+                with self.assertRaisesRegex(RuntimeError, f"PI_HASH_ALGO_PARAMS.*{re.escape(next(iter(hash_algo_params)))}"):
+                    self._build(PI_HASH_ALGO_PARAMS=hash_algo_params)
+
+    def test_12_default_parameter_for_unlisted_scheme(self):
+        # DEFAULT_HASH_ALGO_PARAMS holds argon2 parameters, which must not block a list without argon2.
+        pass_ctx = self._build(PI_HASH_ALGO_LIST=["pbkdf2_sha512"], PI_HASH_ALGO_PARAMS={"pbkdf2_sha512__rounds": 1000})
+        self.assertEqual(("pbkdf2_sha512",), pass_ctx.schemes())
+
+    def test_13_valid_config_hashes_with_it_and_builds_once(self):
+        app = self._app(PI_HASH_ALGO_LIST=["pbkdf2_sha512", "argon2"],
+                        PI_HASH_ALGO_PARAMS={"pbkdf2_sha512__rounds": 1000})
+        with app.app_context():
+            build_pass_context()
+            with mock.patch("privacyidea.lib.crypto.CryptContext") as crypt_context:
+                password_hash = pass_hash("secret")
+                self.assertTrue(verify_pass_hash("secret", password_hash))
+            crypt_context.assert_not_called()
+        self.assertTrue(password_hash.startswith("$pbkdf2-sha512$1000$"), password_hash)
+
+    def test_14_parameter_pairs_for_unlisted_scheme(self):
+        # A JSON list of key-value pairs, as the Docker environment can deliver it, is checked
+        # like the mapping it spells out.
+        with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_PARAMS.*argon2id__rounds names a hash algorithm"):
+            self._build(PI_HASH_ALGO_PARAMS=[["argon2id__rounds", 5]])

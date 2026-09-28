@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from privacyidea.lib import _
 from privacyidea.lib.challengeresponsedecorators import (generic_challenge_response_reset_pin,
                                                          generic_challenge_response_resync)
+from privacyidea.lib.conditional_access.request_context import confirm_attempt_for_serials
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
                                                                            AuthEventReason, AUTH_EVENT_REASON_KEY,
                                                                            AUTH_EVENT_REASON_DETAIL_KEY,
@@ -408,6 +409,12 @@ def check_token_list(token_object_list: list[TokenClass], passw: str, user: User
     # Set when a token logged its own outcome and no terminal event should be added (push_wait timeout).
     terminal_event_suppressed = False
     num_all_tokens = len(token_object_list)
+
+    # A request answering a challenge is a request about the token that challenge was issued for. Settle the
+    # attempt it claimed in before_request if the claimed challenge belongs to one of these tokens - before they are
+    # filtered, because a revoked, disabled or otherwise unusable token still makes this a step of that attempt.
+    # A request that merely carries a transaction id it never uses matches none of them and keeps its own attempt.
+    confirm_attempt_for_serials(token.token.serial for token in token_object_list)
 
     # Remove locked tokens from token_object_list
     if len(token_object_list) > 0:

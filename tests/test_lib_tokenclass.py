@@ -1177,6 +1177,14 @@ class TokenBaseTestCase(MyTestCase):
         # clean up token
         token.delete_token()
 
+        # A token whose owner belongs to a resolver that does not exist anymore is orphaned. This is certain,
+        # unlike an error of the user store, so it does not depend on orphaned_on_error.
+        token = init_token({"type": "spass", "serial": "orphaned"})
+        TokenOwner(token_id=token.token.id, user_id="1000", resolver="deletedresolver").save()
+        self.assertTrue(token.is_orphaned(orphaned_on_error=False))
+        self.assertTrue(token.is_orphaned(orphaned_on_error=True))
+        token.delete_token()
+
     def test_38_last_auth(self):
         token = init_token({"type": "hotp", "genkey": True},
                            user=User(login="root", realm=self.realm1, resolver=self.resolvername1))

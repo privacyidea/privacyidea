@@ -30,7 +30,9 @@ import {
 } from "@services/authentication-log/authentication-log.service";
 import { AuthService } from "@services/auth/auth.service";
 import { DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
+import { UserSettingsService } from "@services/user-settings/user-settings.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockUserSettingsService } from "@testing/mock-services/mock-user-settings-service";
 import { MockAuthenticationLogService } from "@testing/mock-services/mock-authentication-log-service";
 import { MockPiResponse } from "@testing/mock-services/mock-utils";
 import { toFilterDisplay } from "@utils/date-format.utils";
@@ -107,6 +109,10 @@ describe("AuthenticationActivityWidgetComponent", () => {
       imports: [AuthenticationActivityWidgetComponent],
       providers: [
         provideZonelessChangeDetection(),
+        // The widget keeps its window in the stored dashboard layout, so the layout service - and with it the
+        // user settings document - is built as soon as the widget is. Mocked, or the settings request goes out
+        // over the wire.
+        { provide: UserSettingsService, useClass: MockUserSettingsService },
         provideRouter([{ path: "**", children: [] }]),
         { provide: AuthService, useClass: MockAuthService },
         { provide: AuthenticationLogService, useClass: MockAuthenticationLogService }

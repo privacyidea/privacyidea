@@ -31,7 +31,7 @@ delete are gated by :ref:`policy_eventhandling_write`.
 """
 from flask import (Blueprint,
                    request)
-from .lib.utils import send_result, get_required
+from .lib.utils import send_result, get_required, require_in
 from ..lib.log import log_with
 from ..lib.event import set_event, delete_event, enable_event
 from ..lib.error import ParameterError
@@ -255,11 +255,15 @@ def set_eventhandling():
     if eid:
         eid = int(eid)
     handlermodule = get_required(param, "handlermodule")
-    if get_handler_object(handlermodule) is None:
+    handler_object = get_handler_object(handlermodule)
+    if handler_object is None:
         raise ParameterError(_("Unknown handler module: {0!s}").format(handlermodule))
-    action = get_required(param, "action")
+    # The action and the position are names the handler module defines, the same lists the
+    # WebUI builds its dropdowns from. Checking them here means a binding that is stored is a
+    # binding that can fire, instead of one that fails when its event happens.
+    action = require_in(get_required(param, "action"), handler_object.actions, "action")
     ordering = param.get("ordering", 0)
-    position = param.get("position", "post")
+    position = require_in(param.get("position", "post"), handler_object.allowed_positions, "position")
     # If it is not given, an existing binding keeps its value and a new one gets the default of its handler
     # module, see :http:get:`/event/defaults/(handlermodule)`.
     abort_on_error = is_true(param.get("abort_on_error")) if "abort_on_error" in param else None

@@ -46,22 +46,26 @@ class DeleteLimit(Delete, ClauseElement):
         if limit <= 0:
             raise RuntimeError('limit must be positive')
         self.limit = limit
+        primary_key_columns = list(table.primary_key.columns)
+        if len(primary_key_columns) != 1:
+            raise RuntimeError(f'table {table.name} must have a primary key of one column')
+        self.primary_key_column = primary_key_columns[0]
 
 
 @compiles(DeleteLimit)
 def visit_delete_limit(element, compiler, **kw):
     """
     Default compiler for the DeleteLimit clause element.
-    This compiles to a DELETE statement with a SELECT subquery which
-    has a limit set::
+    This compiles to a DELETE statement with a SELECT subquery on the
+    primary key which has a limit set::
 
         DELETE FROM ... WHERE id IN
         (SELECT id FROM ... WHERE ... LIMIT ...)
 
     However, this syntax is not supported by MySQL.
     """
-    select_stmt = select(element.table.c.id).where(element.filter).limit(element.limit)
-    delete_stmt = element.table.delete().where(element.table.c.id.in_(select_stmt))
+    select_stmt = select(element.primary_key_column).where(element.filter).limit(element.limit)
+    delete_stmt = element.table.delete().where(element.primary_key_column.in_(select_stmt))
     return compiler.process(delete_stmt)
 
 

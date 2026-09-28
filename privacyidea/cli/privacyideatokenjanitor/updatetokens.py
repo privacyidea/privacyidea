@@ -43,7 +43,8 @@
 import click
 from flask.cli import AppGroup
 from yaml import safe_load as yaml_safe_load
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.token import update_token_from_export
 import sys
 
 
@@ -61,14 +62,15 @@ def updatetokens(yaml):
     click.echo("Loading YAML data. This may take a while.")
     token_list = yaml_safe_load(yaml.read())
     for tok in token_list:
-        del (tok["owner"])
         serial = tok.get("serial")
-        tok_objects = get_tokens(serial=serial)
-        if len(tok_objects) == 0:
+        if not serial:
+            sys.stderr.write("\nSkipping an entry without a serial.\n")
+            continue
+        try:
+            update_token_from_export(tok)
+        except ResourceNotFoundError:
             sys.stderr.write(f"\nCan not find token {serial}. Not updating.\n")
+        except Exception as e:
+            click.echo(f"\nFailed to update token {serial} ({e}).", err=True)
         else:
-            click.echo(f"Updating token {serial}.")
-            try:
-                tok_objects[0].update(tok)
-            except Exception as e:
-                click.echo(f"\nFailed to update token {serial} ({e}).", err=True)
+            click.echo(f"Updated token {serial}.")

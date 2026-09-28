@@ -41,6 +41,7 @@ export class SmsConfigComponent {
   formData = input.required<Record<string, string | number | undefined>>();
   formDataChange = output<Record<string, string | number | undefined>>();
   smsGateways = input.required<string[]>();
+  smsGatewaysListable = input.required<boolean>();
   expanded = input<boolean>(false);
 
   updateFormData(fieldName: string, value: string | number): void {

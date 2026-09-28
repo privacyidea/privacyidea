@@ -3,10 +3,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import pytest
+from click.testing import CliRunner
+from flask.cli import ScriptInfo
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.cli.pitokenjanitor.main import cli
+from privacyidea.cli.pitokenjanitor.utils import findusersettings
 from privacyidea.lib.auth import create_db_admin
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.realm import set_realm
@@ -120,3 +123,26 @@ class TestUserSettingsJanitor:
         assert result.exit_code == 0, result.output
         assert "some-uid" in result.output
         assert "ghost-resolver" in result.output
+
+    def test_runs_without_an_application_context(self, app):
+        """The console script starts without an application context, so the command sets one up itself."""
+        with app.app_context():
+            db.session.add(UserSetting(subject_type=SUBJECT_LOCAL_ADMIN, username="ghost-admin", settings={"a": 1}))
+            db.session.commit()
+
+        result = CliRunner().invoke(cli, ["user-settings", "list"],
+                                    obj=ScriptInfo(create_app=lambda: app))
+        assert result.exit_code == 0, result.output
+        assert "ghost-admin" in result.output
+
+    def test_delete_help_does_not_scan(self, app, monkeypatch):
+        """Asking a subcommand for help prints it without looking up any user."""
+        def fail(**kwargs):
+            raise AssertionError("the orphan scan ran")
+
+        monkeypatch.setattr(findusersettings, "find_orphaned_user_settings", fail)
+        result = CliRunner().invoke(cli, ["user-settings", "delete", "--help"],
+                                    obj=ScriptInfo(create_app=lambda: app))
+        assert result.exit_code == 0, result.output
+        assert "--yes" in result.output
+

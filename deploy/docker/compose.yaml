@@ -7,8 +7,8 @@
 #   pi-init  PI_INIT_ONLY=true  — create tables, run migrations, bootstrap admin,
 #                                 install the enckey canary, then exit
 #   pi       (default)          — gunicorn web workers
-#   pi-cron  PI_CRON_MODE=true  — maintenance scheduler (audit rotate, challenge
-#                                 cleanup, UI-configured periodic tasks)
+#   pi-cron  PI_CRON_MODE=true  — maintenance scheduler (table cleanups, audit
+#                                 rotate, UI-configured periodic tasks)
 #
 
 name: privacyIDEA
@@ -129,7 +129,7 @@ services:
       start_period: 15s
 
   # Maintenance scheduler. Runs the tasks defined in cron-runner.py's TASKS list
-  # (periodic tasks, challenge cleanup, audit rotation); toggle/tune them with the
+  # (periodic tasks, table cleanups, audit rotation); toggle/tune them with the
   # PI_CRON_* variables below. Keep this at a single instance — two would race on
   # deleting the same rows. Periodic tasks configured in the UI should target node
   # name "pi-cron" to be picked up here.
@@ -140,7 +140,7 @@ services:
       <<: *pi-common-env
       PI_CRON_MODE: "true"
       # Fixed node name so UI-configured periodic tasks (EventCounter, SimpleStats,
-      # MetricsCleanup, ...) can target this container. Those are configured in the
+      # ...) can target this container. Those are configured in the
       # web UI, not here — cron-runner.py's "periodic tasks" entry executes them.
       PRIVACYIDEA_PI_NODE: pi-cron
       # Audit rotation — defaults shown.
@@ -163,6 +163,16 @@ services:
       #PI_CRON_USERCACHE_CLEANUP: "true"
       #PI_CRON_USERCACHE_HOUR: "4"
       #PI_CRON_USERCACHE_INTERVAL: "12h"
+      # Daily at 03:00 UTC: expired remembered devices, authentication cache
+      # entries no auth_cache policy accepts any more, metric rows older than
+      # 24 hours, expired IP blocks and user locks.
+      #PI_CRON_REMEMBERED_DEVICE_CLEANUP: "true"
+      #PI_CRON_AUTHCACHE_CLEANUP: "true"
+      #PI_CRON_METRICS_CLEANUP: "true"
+      #PI_CRON_CONDITIONAL_ACCESS_PURGE: "true"
+      # Authentication log retention in days, off by default and with 0 (the
+      # log is kept forever). Runs daily at 03:00 UTC once set.
+      #PI_CRON_AUTHLOG_AGE: 90
     healthcheck:
       disable: true
     depends_on:

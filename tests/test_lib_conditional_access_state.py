@@ -279,6 +279,39 @@ class UserLockStateTestCase(MyTestCase):
         lock_user(self.user, duration_seconds=60)
         self.assertEqual(RestrictionCause.MANUAL, db.session.query(UserLockState).one().lock_cause)
 
+    def test_lock_user_drops_the_error_message_of_the_lock_it_replaces(self):
+        # The stored wording describes the lock in force. A policy's - written for its own expiry, and often
+        # carrying a {duration} countdown - describes neither the expiry nor the cause an administrator just
+        # wrote, and on a permanent lock the tag has nothing to substitute and would reach the user verbatim.
+        self._lock(utc_now() + timedelta(seconds=3600),
+                   error_message="Temporarily locked. Try again in about {duration}.")
+        lock_user(self.user)
+        self.assertIsNone(db.session.query(UserLockState).one().error_message)
+
+    def test_lock_internal_admin_drops_the_error_message_of_the_lock_it_replaces(self):
+        create_db_admin("ca_state_admin", password="adminpw")
+        try:
+            lock_internal_admin("ca_state_admin", duration_seconds=60)
+            state = db.session.query(UserLockState).one()
+            state.error_message = "Temporarily locked. Try again in about {duration}."
+            db.session.commit()
+
+            lock_internal_admin("ca_state_admin")
+
+            self.assertIsNone(db.session.query(UserLockState).one().error_message)
+        finally:
+            delete_db_admin("ca_state_admin")
+
+    def test_block_ip_drops_the_error_message_of_the_block_it_replaces(self):
+        block_ip("203.0.113.9", duration_seconds=300)
+        state = db.session.query(BlockList).one()
+        state.error_message = "Temporarily blocked. Try again in about {duration}."
+        db.session.commit()
+
+        block_ip("203.0.113.9")
+
+        self.assertIsNone(db.session.query(BlockList).one().error_message)
+
     def test_block_ip_writes_a_manual_block(self):
         entry = block_ip("203.0.113.9", duration_seconds=300)
         self.assertEqual("203.0.113.9", entry["identifier"])
@@ -539,6 +572,25 @@ class UserLockStateTestCase(MyTestCase):
         miss = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["nobody"])]
         self.assertListEqual([], list_locked_users(visibility_scopes=miss))
 
+    def test_visibility_scope_excluded_usernames_enforced(self):
+        # Every user but some: the excluded users' locks are left out, everyone else's are listed.
+        self._lock(utc_now() + timedelta(seconds=600))
+        others = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
+                                                   excluded_usernames=["nobody"])]
+        self.assertEqual(1, len(list_locked_users(visibility_scopes=others)))
+        excluded = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
+                                                     excluded_usernames=["cornelius"])]
+        self.assertListEqual([], list_locked_users(visibility_scopes=excluded))
+        excluded_in_other_case = [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
+                                                                   excluded_usernames=["CORNELIUS"],
+                                                                   username_case_insensitive=True)]
+        self.assertListEqual([], list_locked_users(visibility_scopes=excluded_in_other_case))
+        # The lock of an excluded account is left out whatever login it was recorded under.
+        excluded_account = [AuthenticationLogVisibilityScope(
+            realms=[], resolvers=[], usernames=[], excluded_usernames=["cornelius-renamed"],
+            excluded_accounts=[(self.user.resolver, str(self.user.uid))])]
+        self.assertListEqual([], list_locked_users(visibility_scopes=excluded_account))
+
     def test_visibility_scope_uid_enforced(self):
         # A lock row is keyed by the same (resolver, uid, realm) identity as an auth-log entry, so the uid dimension
         # has to be enforced here too - a scope carrying one must not fall back to matching the whole realm.
@@ -564,6 +616,25 @@ class UserLockStateTestCase(MyTestCase):
         self.assertTrue(user_matches_scopes(
             self.user, [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=["CORNELIUS"],
                                                          username_case_insensitive=True)]))
+        # Every user but some, as the SQL side answers it.
+        self.assertTrue(user_matches_scopes(
+            self.user, [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
+                                                         excluded_usernames=["someone"])]))
+        self.assertFalse(user_matches_scopes(
+            self.user, [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
+                                                         excluded_usernames=["cornelius"])]))
+        self.assertFalse(user_matches_scopes(
+            self.user, [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
+                                                         excluded_usernames=["CORNELIUS"],
+                                                         username_case_insensitive=True)]))
+        self.assertTrue(user_matches_scopes(
+            self.user, [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
+                                                         excluded_usernames=["CORNELIUS"])]))
+        self.assertFalse(user_matches_scopes(
+            self.user, [AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[],
+                                                         excluded_usernames=["cornelius-renamed"],
+                                                         excluded_accounts=[(self.user.resolver,
+                                                                             str(self.user.uid))])]))
         # The uid dimension names the account, so a scope carrying another uid must not match on the realm alone.
         self.assertTrue(user_matches_scopes(
             self.user, [AuthenticationLogVisibilityScope(realms=[self.user.realm], resolvers=[], usernames=[],

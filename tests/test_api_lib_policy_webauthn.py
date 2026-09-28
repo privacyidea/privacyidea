@@ -587,6 +587,31 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         self.assertEqual(request.all_data.get('HTTP_ORIGIN'),
                          ORIGIN)
 
+        # On a recognised request the origin comes from the environment, not from the parameter
+        request = RequestMock()
+        request.all_data = {
+            "type": WebAuthnTokenClass.get_class_type(),
+            "HTTP_ORIGIN": "https://attacker.example"
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertEqual(request.all_data.get('HTTP_ORIGIN'), ORIGIN)
+
+        # On a request this decorator does not recognise, the parameter is dropped rather than left in
+        # place: the origin of an assertion may only ever come from the request itself.
+        request = RequestMock()
+        request.all_data = {
+            "type": "footoken",
+            "HTTP_ORIGIN": "https://attacker.example"
+        }
+        request.environ = {
+            "HTTP_ORIGIN": ORIGIN
+        }
+        webauthntoken_request(request, None)
+        self.assertIsNone(request.all_data.get('HTTP_ORIGIN'))
+
         # Not a WebAuthn token
         request = RequestMock()
         request.all_data = {

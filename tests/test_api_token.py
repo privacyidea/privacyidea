@@ -42,8 +42,9 @@ from privacyidea.lib.event import set_event, delete_event, EventConfiguration
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE, enable_policy,
                                     PolicyClass)
-from privacyidea.lib.realm import set_realm
-from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import delete_realm, set_realm
+from privacyidea.lib.resolver import delete_resolver, save_resolver
+from privacyidea.lib.serviceid import set_serviceid
 from privacyidea.lib.smsprovider.SMSProvider import (set_smsgateway,
                                                      delete_smsgateway)
 from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
@@ -57,7 +58,8 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
-from privacyidea.models import db, Token
+from privacyidea.models import db, NodeName, Token
+from privacyidea.models.token import TokenOwner
 from .base import MyApiTestCase, PWFILE2
 from .mscamock import CAServiceMock
 from .test_lib_tokens_certificate import REQUEST, CERTIFICATE
@@ -957,6 +959,33 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         for serial in [lost.get_serial(), blocker.get_serial(), replacement_serial]:
             remove_token(serial)
+
+
+class APIEnrollmentCacheHeaderTestCase(MyApiTestCase):
+    """
+    The response of an enrollment carries the token seed, so it is marked "no-store" rather
+    than the "no-cache" every other response gets.
+    """
+
+    def test_01_token_init_is_no_store(self):
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "hotp", "genkey": 1,
+                                                 "serial": "NOSTORE01"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
+            # The seed really is in this response, which is what the header is about
+            self.assertIn("googleurl", res.json.get("detail"), res.json.get("detail"))
+            self.assertEqual("no-store", res.headers.get("Cache-Control"), res.headers)
+
+    def test_02_other_endpoints_stay_no_cache(self):
+        with self.app.test_request_context('/token/',
+                                           method='GET',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.data)
+            self.assertEqual("no-cache", res.headers.get("Cache-Control"), res.headers)
 
 
 class APIAttestationTestCase(MyApiTestCase):
@@ -4128,7 +4157,8 @@ class APITokenTestCase(MyApiTestCase):
             remove_token(serial)
         delete_policy("motp_genkey")
 
-        # applspec
+        # applspec, which only enrolls with a defined service ID
+        set_serviceid("123", "the service of the token below")
         set_policy("applspec_genkey", scope=SCOPE.ADMIN, action=f"applspec_{PolicyAction.FORCE_SERVER_GENERATE}")
         otpkey = "3132333435363738393031323334353637383930"
         with self.app.test_request_context('/token/init',
@@ -5759,3 +5789,133 @@ class APITokenInfoWriteTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
         self.assertIsNone(get_one_token(serial=serial).get_tokeninfo("mynote"))
         remove_token(serial)
+
+
+class APITokenListRealmPolicyTestCase(MyApiTestCase):
+    """The tokens a tokenlist policy shows, with its realm field read the way the policy engine matches it."""
+
+    def _listed(self) -> set[str]:
+        with self.app.test_request_context('/token/', method='GET', headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return {token["serial"] for token in res.json["result"]["value"]["tokens"]}
+
+    def test_01_wildcard_and_exclusions(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        in_realm1 = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        in_realm3 = init_token({"type": "spass"}, user=User("root", self.realm3)).get_serial()
+        in_no_realm = init_token({"type": "spass"}).get_serial()
+        try:
+            # "*" is a wildcard like no realm at all, and also shows the tokens that are in no realm.
+            set_policy("tokenlist_realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm="*")
+            self.assertEqual({in_realm1, in_realm3, in_no_realm}, self._listed())
+
+            # Every realm but one names the other realms, and a token in no realm is not in any of them.
+            set_policy("tokenlist_realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST,
+                       realm=f"*,!{self.realm3}")
+            self.assertEqual({in_realm1}, self._listed())
+
+            set_policy("tokenlist_realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST, realm=self.realm1)
+            self.assertEqual({in_realm1}, self._listed())
+
+            # A realm field that matches no realm shows no token.
+            set_policy("tokenlist_realms", scope=SCOPE.ADMIN, action=PolicyAction.TOKENLIST,
+                       realm=f"!{self.realm3}")
+            self.assertEqual(set(), self._listed())
+        finally:
+            delete_policy("tokenlist_realms")
+            for serial in (in_realm1, in_realm3, in_no_realm):
+                remove_token(serial)
+
+
+class APITokenListNodeTestCase(MyApiTestCase):
+    """The tokens a node lists: those of owners another node serves are left out, those that belong to no node not."""
+
+    OTHER_NODE = "11111111-2222-3333-4444-555555555555"
+    THIS_NODE = "00000000-0000-0000-0000-000000000000"
+
+    def _listed(self) -> set[str]:
+        with self.app.test_request_context('/token/', method='GET', headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        return {token["serial"] for token in res.json["result"]["value"]["tokens"]}
+
+    def _owned(self, serial: str, resolver: str, realm: str) -> str:
+        # A token with an owner row as it stays behind in the database, whatever became of the resolver since
+        token = init_token({"type": "spass", "serial": serial})
+        TokenOwner(token_id=token.token.id, user_id="1000", resolver=resolver, realmname=realm).save()
+        return serial
+
+    def test_01_tokens_of_no_node_and_of_another_node(self):
+        self.setUp_user_realms()
+        original_node = self.app.config.get("PI_NODE_UUID")
+        other_node = NodeName(id=self.OTHER_NODE, name="OtherNode")
+        db.session.add(other_node)
+        db.session.commit()
+        save_resolver({"resolver": "spareresolver", "type": "passwdresolver", "fileName": PWFILE2})
+        save_resolver({"resolver": "noderesolver", "type": "passwdresolver", "fileName": PWFILE2})
+        set_realm("noderealm", [{"name": "noderesolver", "node": self.OTHER_NODE}])
+        self.app.config["PI_NODE_UUID"] = self.THIS_NODE
+        try:
+            served = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+            resolver_deleted = self._owned("DELETEDRESOLVER", "deletedresolver", self.realm1)
+            resolver_in_no_realm = self._owned("SPARERESOLVER", "spareresolver", self.realm1)
+            other_node_token = self._owned("OTHERNODE", "noderesolver", "noderealm")
+
+            # The tokens whose owner no node serves are listed, the token of the other node is not
+            self.assertEqual({served, resolver_deleted, resolver_in_no_realm}, self._listed())
+
+            # A token of no node can be deleted
+            with self.app.test_request_context(f'/token/{resolver_deleted}', method='DELETE',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual({served, resolver_in_no_realm}, self._listed())
+
+            # On the other node its own token is listed
+            self.app.config["PI_NODE_UUID"] = self.OTHER_NODE
+            self.assertIn(other_node_token, self._listed())
+        finally:
+            if original_node is None:
+                self.app.config.pop("PI_NODE_UUID", None)
+            else:
+                self.app.config["PI_NODE_UUID"] = original_node
+            for serial in ("DELETEDRESOLVER", "SPARERESOLVER", "OTHERNODE"):
+                try:
+                    remove_token(serial)
+                except ResourceNotFoundError:
+                    pass
+            remove_token(served)
+            delete_realm("noderealm")
+            delete_resolver("noderesolver")
+            delete_resolver("spareresolver")
+            db.session.delete(other_node)
+            db.session.commit()
+
+    def test_02_realm_of_an_owner_that_can_not_be_looked_up_still_scopes_the_policies(self):
+        # The owner of the token can not be looked up, as its resolver was deleted. The realm of the owner is still
+        # what the admin policies are matched against.
+        self.setUp_user_realms()
+        self.setUp_user_realm3()
+        serial = self._owned("STRANDEDREALM1", "deletedresolver", self.realm1)
+        try:
+            set_policy("delete_realm3", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm3)
+            with self.app.test_request_context(f'/token/{serial}', method='DELETE',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+
+            set_policy("delete_realm1", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1)
+            with self.app.test_request_context(f'/token/{serial}', method='DELETE',
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+        finally:
+            delete_policy("delete_realm3")
+            delete_policy("delete_realm1")
+            try:
+                remove_token(serial)
+            except ResourceNotFoundError:
+                pass
+

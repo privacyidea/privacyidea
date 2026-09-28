@@ -1,6 +1,6 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
+import { signal, WritableSignal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute } from "@angular/router";
 import { NotificationService } from "@services/notification/notification.service";
@@ -10,6 +10,10 @@ import { SystemService } from "@services/system/system.service";
 import { MockPendingChangesService, MockPiResponse, MockSystemService } from "@testing/mock-services";
 import { Observable, of, throwError } from "rxjs";
 import { TokenTypeConfigComponent } from "./token-type-config.component";
+import { By } from "@angular/platform-browser";
+import { EmailConfigComponent } from "./token-types/email-config/email-config.component";
+import { RadiusConfigComponent } from "./token-types/radius-config/radius-config.component";
+import { SmsConfigComponent } from "./token-types/sms-config/sms-config.component";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { QUESTION_NUMBER_OF_ANSWERS, TIQR_REG_SERVER } from "@constants/token.constants";
 
@@ -36,6 +40,7 @@ describe("TokenTypeConfigComponent", () => {
           provide: SmsGatewayService,
           useValue: {
             smsGateways: signal([]),
+            canListSmsGateways: signal(true),
             smsGatewayResource: { value: () => ({ result: { value: [] } }) }
           }
         },
@@ -43,6 +48,7 @@ describe("TokenTypeConfigComponent", () => {
           provide: SmtpService,
           useValue: {
             smtpServers: signal([]),
+            canListSmtpServers: signal(true),
             smtpServerResource: { value: () => ({ result: { value: {} } }) }
           }
         },
@@ -67,6 +73,40 @@ describe("TokenTypeConfigComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  describe("list rights of the SMS, e-mail and RADIUS panels", () => {
+    const listable = () => ({
+      sms: fixture.debugElement.query(By.directive(SmsConfigComponent)).componentInstance.smsGatewaysListable(),
+      email: fixture.debugElement.query(By.directive(EmailConfigComponent)).componentInstance.smtpServersListable(),
+      radius: fixture.debugElement.query(By.directive(RadiusConfigComponent)).componentInstance.radiusServersListable()
+    });
+
+    it("should let every panel list its servers when all rights are present", () => {
+      expect(listable()).toEqual({ sms: true, email: true, radius: true });
+    });
+
+    it("should pass each service's list right to its own panel only", () => {
+      const smsService = TestBed.inject(SmsGatewayService) as unknown as {
+        canListSmsGateways: WritableSignal<boolean>;
+      };
+      const smtpService = TestBed.inject(SmtpService) as unknown as { canListSmtpServers: WritableSignal<boolean> };
+      const systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+
+      smsService.canListSmsGateways.set(false);
+      fixture.detectChanges();
+      expect(listable()).toEqual({ sms: false, email: true, radius: true });
+
+      smsService.canListSmsGateways.set(true);
+      smtpService.canListSmtpServers.set(false);
+      fixture.detectChanges();
+      expect(listable()).toEqual({ sms: true, email: false, radius: true });
+
+      smtpService.canListSmtpServers.set(true);
+      systemService.canListRadiusServers.set(false);
+      fixture.detectChanges();
+      expect(listable()).toEqual({ sms: true, email: true, radius: false });
+    });
   });
 
   it("should initialize formData from systemConfig", () => {

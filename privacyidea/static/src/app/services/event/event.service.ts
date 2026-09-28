@@ -212,7 +212,7 @@ export class EventService implements EventServiceInterface {
   // Edit functionality for event handlers
   // -------------------------------------
   readonly eventHandlerModulesResource = httpResource<PiResponse<string[]>>(() => {
-    if (!this.contentService.onEvents()) {
+    if (!this.contentService.onEvents() || !this.authService.actionAllowed("eventhandling_read")) {
       return undefined;
     }
     return {
@@ -230,7 +230,7 @@ export class EventService implements EventServiceInterface {
     return [];
   });
   readonly availableEventsResource = httpResource<PiResponse<string[]>>(() => {
-    if (!this.contentService.onEvents()) {
+    if (!this.contentService.onEvents() || !this.authService.actionAllowed("eventhandling_read")) {
       return undefined;
     }
     return {
@@ -248,7 +248,7 @@ export class EventService implements EventServiceInterface {
     return [];
   });
   readonly modulePositionsResource = httpResource<PiResponse<string[]>>(() => {
-    if (!this.selectedHandlerModule()) {
+    if (!this.selectedHandlerModule() || !this.authService.actionAllowed("eventhandling_read")) {
       return undefined;
     }
     return {
@@ -266,7 +266,7 @@ export class EventService implements EventServiceInterface {
     return [];
   });
   readonly moduleDefaultsResource = httpResource<PiResponse<EventHandlerModuleDefaults>>(() => {
-    if (!this.selectedHandlerModule()) {
+    if (!this.selectedHandlerModule() || !this.authService.actionAllowed("eventhandling_read")) {
       return undefined;
     }
     return {
@@ -284,7 +284,7 @@ export class EventService implements EventServiceInterface {
   // Get configuration for create and edit
   // -------------------------------------
   readonly moduleActionsResource = httpResource<PiResponse<EventActions>>(() => {
-    if (!this.selectedHandlerModule()) {
+    if (!this.selectedHandlerModule() || !this.authService.actionAllowed("eventhandling_read")) {
       return undefined;
     }
     return {
@@ -302,7 +302,7 @@ export class EventService implements EventServiceInterface {
     return {};
   });
   readonly moduleConditionsResource = httpResource<PiResponse<Record<string, EventCondition>>>(() => {
-    if (!this.selectedHandlerModule()) {
+    if (!this.selectedHandlerModule() || !this.authService.actionAllowed("eventhandling_read")) {
       return undefined;
     }
     return {

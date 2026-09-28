@@ -17,6 +17,18 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
+<!-- Handed to the widget frame, which renders these in the header next to the reload button. Declared outside
+     app-widget-state so the frame can read them whatever state the data is in. -->
+<ng-template #headerActions>
+  <app-widget-header-picker
+    [choices]="timeWindows"
+    [selected]="selectedTimeWindow()"
+    tooltip="Choose the time window"
+    i18n-tooltip="@@dashboard.chooseTimeWindow"
+    icon="schedule"
+    (picked)="selectTimeWindow($event)" />
+</ng-template>
+
 <app-widget-state [state]="state()">
   <div class="table-container">
     <table class="resolver-timing-table">
@@ -37,8 +49,8 @@
               i18n-label="@@dashboard.operation" />
           </th>
           <th
-            matTooltip="Number of requests within the last hour."
-            i18n-matTooltip="@@dashboard.numberRequests">
+            matTooltip="Number of requests in the selected time window."
+            i18n-matTooltip="@@dashboard.numberRequestsInWindow">
             <app-table-sort-header
               key="count"
               [sortState]="sort"
@@ -54,8 +66,8 @@
               i18n-label="@@dashboard.avgMs" />
           </th>
           <th
-            matTooltip="95% of requests within the last hour completed within this time."
-            i18n-matTooltip="@@dashboard.requestsWithin">
+            matTooltip="95% of requests in the selected time window completed within this time."
+            i18n-matTooltip="@@dashboard.requestsWithinWindow">
             <app-table-sort-header
               key="p95Ms"
               [sortState]="sort"
@@ -94,8 +106,8 @@
           <tr>
             <td
               colspan="6"
-              i18n="@@dashboard.noResolverActivity"
-              >No resolver activity in the last hour.</td
+              i18n="@@dashboard.noResolverActivityInWindow"
+              >No resolver activity in the selected time window.</td
             >
           </tr>
         }

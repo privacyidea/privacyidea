@@ -540,9 +540,10 @@ class PolicyClass:
                         if not user_resolvers:
                             user_resolvers = get_ordered_resolvers(realm)
                         for reso in user_resolvers:
-                            value_found, _v_ex = self._search_value(
+                            value_found, value_excluded = self._search_value(
                                 policy.get("resolver"), reso)
-                            if value_found:
+                            # An excluded resolver is left out, as a realm or a user excluded with "!" is.
+                            if value_found and not value_excluded:
                                 new_policies.append(policy)
                                 break
                 elif not policy.get("resolver"):
@@ -550,9 +551,9 @@ class PolicyClass:
                     # about the request value
                     new_policies.append(policy)
                 else:
-                    value_found, _v_ex = self._search_value(
+                    value_found, value_excluded = self._search_value(
                         policy.get("resolver"), resolver)
-                    if value_found:
+                    if value_found and not value_excluded:
                         new_policies.append(policy)
 
             reduced_policies = new_policies
@@ -2383,6 +2384,12 @@ def get_static_policy_definitions(scope=None):
                                                  'of his own SSH key token.'),
                                        'mainmenu': [MAIN_MENU.TOKENS],
                                        'group': GROUP.TOKEN},
+            PolicyAction.SERVICEID_LIST: {'type': 'bool',
+                                          'desc': _('The user is allowed to list the available service ID '
+                                                    'definitions, which is required to enroll an application '
+                                                    'specific password token.'),
+                                          'mainmenu': [MAIN_MENU.TOKENS],
+                                          'group': GROUP.TOKEN},
             PolicyAction.UNASSIGN: {'type': 'bool',
                                     'desc': _('The user is allowed to unassign his own tokens.'),
                                     'mainmenu': [MAIN_MENU.TOKENS],

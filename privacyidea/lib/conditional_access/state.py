@@ -32,7 +32,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import and_, delete, false, func, or_, select, ColumnElement
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthLogUserRole, RestrictionCause
-from privacyidea.lib.conditional_access.authentication_log import match_condition
+from privacyidea.lib.conditional_access.authentication_log import excluded_accounts_condition, match_condition
 from privacyidea.lib.conditional_access.engine import (LockSubject, canonical_block_identifier, get_user_lock,
                                                        is_ip_never_block)
 from privacyidea.lib.conditional_access.session import get_ca_session, guarded_write
@@ -166,7 +166,8 @@ def _visibility_condition(scopes: list) -> ColumnElement[bool]:
 
     Realm, resolver, uid and username are all enforced (username via the
     denormalized ``UserLockState.username`` column, honoring the policy's
-    ``user_case_insensitive`` option like the auth log).
+    ``user_case_insensitive`` option like the auth log), and so are the
+    excluded usernames of a policy for every user but some.
 
     A scope that names no ``user_roles`` does not reach the rows of a **local database administrator**. Realm,
     resolver and user are userstore terms, and none of them describes such an account, whose row carries a login
@@ -193,6 +194,16 @@ def _visibility_condition(scopes: list) -> ColumnElement[bool]:
                     [name.lower() for name in scope.usernames]))
             else:
                 dimensions.append(UserLockState.username.in_(scope.usernames))
+        if scope.excluded_usernames:
+            # NOT IN is not true for a NULL username either, so such a row stays out, as with every dimension.
+            if scope.username_case_insensitive:
+                dimensions.append(func.lower(UserLockState.username).not_in(
+                    [name.lower() for name in scope.excluded_usernames]))
+            else:
+                dimensions.append(UserLockState.username.not_in(scope.excluded_usernames))
+        if scope.excluded_accounts:
+            dimensions.append(excluded_accounts_condition(UserLockState.resolver, UserLockState.uid,
+                                                          scope.excluded_accounts))
         if scope.user_roles:
             dimensions.append(UserLockState.user_role.in_([str(role) for role in scope.user_roles]))
         elif dimensions:
@@ -210,24 +221,62 @@ def user_matches_scopes(user: User, scopes: list | None) -> bool:
     """
     Whether a fully-resolved *user* falls within any of the admin's visibility
     *scopes* (``None`` = unrestricted).
+
+    The predicate form of :func:`_visibility_condition`, for the one caller that has a single identity in hand
+    rather than a query to narrow. The two must answer alike, so a scope setting no dimension at all admits
+    nothing here as well: falling through to "matches" would read a boundary that names nothing as a boundary
+    that permits everything, which is not what the other form answers.
+    ``get_policy_visibility_scopes`` does not currently build such a scope - it answers ``None`` for unrestricted
+    instead - so this aligns the two rather than changing any of today's answers.
+
+    ``user_roles`` is honoured for the same reason: a scope naming roles is enforced by the SQL side, and a
+    user is only ever the ``user`` role, so a scope confined to local administrators does not contain one.
     """
     if scopes is None:
         return True
     for scope in scopes:
-        if scope.realms and user.realm not in scope.realms:
-            continue
-        if scope.resolvers and user.resolver not in scope.resolvers:
-            continue
-        if scope.uids and str(user.uid or "") not in scope.uids:
-            continue
+        dimensioned = False
+        if scope.realms:
+            dimensioned = True
+            if user.realm not in scope.realms:
+                continue
+        if scope.resolvers:
+            dimensioned = True
+            if user.resolver not in scope.resolvers:
+                continue
+        if scope.uids:
+            dimensioned = True
+            if str(user.uid or "") not in scope.uids:
+                continue
         if scope.usernames:
+            dimensioned = True
             login = user.login or ""
             if scope.username_case_insensitive:
                 if login.lower() not in [name.lower() for name in scope.usernames]:
                     continue
             elif login not in scope.usernames:
                 continue
-        return True
+        if scope.excluded_usernames:
+            dimensioned = True
+            login = user.login or ""
+            if not login:
+                # As on the SQL side, which leaves a row without a username out.
+                continue
+            if scope.username_case_insensitive:
+                if login.lower() in [name.lower() for name in scope.excluded_usernames]:
+                    continue
+            elif login in scope.excluded_usernames:
+                continue
+        if scope.excluded_accounts:
+            dimensioned = True
+            if (user.resolver, str(user.uid or "")) in [tuple(account) for account in scope.excluded_accounts]:
+                continue
+        if scope.user_roles:
+            dimensioned = True
+            if str(AuthLogUserRole.USER) not in [str(role) for role in scope.user_roles]:
+                continue
+        if dimensioned:
+            return True
     return False
 
 
@@ -419,6 +468,11 @@ def lock_user(user: User, duration_seconds: int | None = None, now: datetime | N
         state.username = user.login
         state.lock_expires_at = lock_expires_at
         state.lock_cause = RestrictionCause.MANUAL
+        # Cleared with the expiry, the way a policy write sets the two together: the stored wording describes the
+        # lock in force, and a policy's - "try again in about {duration}" - describes neither this expiry nor this
+        # cause. Left standing it would outlive its own lock, and on a permanent one the tag has nothing to
+        # substitute and reaches the user verbatim.
+        state.error_message = None
     log.info(f"Locked {user!r} by administrator decision "
              f"({'permanently' if lock_expires_at is None else f'until {lock_expires_at}'}).")
     return _locked_user_dict(state, moment)
@@ -467,6 +521,8 @@ def lock_internal_admin(login: str, duration_seconds: int | None = None, now: da
         state.username = subject.username
         state.lock_expires_at = lock_expires_at
         state.lock_cause = RestrictionCause.MANUAL
+        # Cleared with the expiry, as in lock_user.
+        state.error_message = None
     log.info(f"Locked {subject} by administrator decision "
              f"({'permanently' if lock_expires_at is None else f'until {lock_expires_at}'}).")
     return _locked_user_dict(state, moment)
@@ -571,6 +627,8 @@ def block_ip(ip: str, duration_seconds: int | None = None, now: datetime | None 
             session.add(state)
         state.block_expires_at = block_expires_at
         state.block_cause = RestrictionCause.MANUAL
+        # Cleared with the expiry, as in lock_user.
+        state.error_message = None
     log.info(f"Blocked IP {ip} by administrator decision "
              f"({'permanently' if block_expires_at is None else f'until {block_expires_at}'}).")
     return _blocklist_dict(state, moment)

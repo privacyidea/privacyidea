@@ -89,7 +89,7 @@ class IdResolver (UserIdResolver):
 
         :return: list of possible keys for searching users
         """
-        return ["username", "givenname", "surname", "phone", "email", "mobile"]
+        return ["username", "userid", "givenname", "surname", "phone", "email", "mobile"]
 
     def _fill_user_schema_1_0(self, user: dict, attributes: list[str] = None) -> dict:
         # We assume the schema:
@@ -106,6 +106,11 @@ class IdResolver (UserIdResolver):
         ret = {}
         if "username" in attributes:
             ret['username'] = user.get("userName", {})
+        if "userid" in attributes:
+            # The userName is the user id here, as in getUserId. Without it a listed user carries no
+            # id, which callers matching users against privacyIDEA's own records (e.g. token owners)
+            # need to tell them apart.
+            ret['userid'] = user.get("userName", "")
         if "givenname" in attributes:
             ret['givenname'] = user.get("name", {}).get("givenName", "")
         if "surname" in attributes:
@@ -200,11 +205,11 @@ class IdResolver (UserIdResolver):
         descriptor = {}
         typ = cls.getResolverClassType()
         descriptor['clazz'] = "useridresolver.SCIMIdResolver.IdResolver"
-        descriptor['config'] = {'authserver': 'string',
-                                'resourceserver': 'string',
-                                'authclient': 'string',
-                                'authsecret': 'string',
-                                'mapping': 'string'}
+        descriptor['config'] = {'Authserver': 'string',
+                                'Resourceserver': 'string',
+                                'Client': 'string',
+                                'Secret': 'password',
+                                'Mapping': 'string'}
         return {typ: descriptor}
 
     def loadConfig(self, config):

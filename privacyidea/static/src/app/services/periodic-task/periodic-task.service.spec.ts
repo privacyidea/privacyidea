@@ -20,6 +20,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -77,6 +78,30 @@ describe("PeriodicTaskService", () => {
 
   it("should be created", () => {
     expect(service).toBeTruthy();
+  });
+
+  describe("periodicTaskModuleResource", () => {
+    let authService: MockAuthService;
+
+    beforeEach(() => {
+      authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      contentMock.routeUrl.set(ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
+    });
+
+    it("requests the task modules with periodictask_read", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["periodictask_read"] });
+      TestBed.tick();
+
+      httpTestingController.expectOne((r) => r.url.endsWith("/periodictask/taskmodules/"));
+      httpTestingController.expectOne((r) => r.url.endsWith("/periodictask/"));
+    });
+
+    it("does not request the task modules without periodictask_read", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["periodictask_write"] });
+      TestBed.tick();
+
+      httpTestingController.expectNone((r) => r.url.endsWith("/periodictask/taskmodules/"));
+    });
   });
 
   it("should delete a periodic task on confirmation and show success notification", async () => {

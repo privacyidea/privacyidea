@@ -26,7 +26,7 @@ from enum import Enum
 from typing import Any, TYPE_CHECKING
 
 from netaddr import AddrFormatError, IPAddress
-from sqlalchemy import func, select, true
+from sqlalchemy import false, func, select, true
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnElement
 
@@ -1004,6 +1004,15 @@ def _effective_window_seconds(policy: ConditionalAccessPolicy, window_end: datet
     window_seconds = policy.time_window_seconds
     if policy.enforced_since is not None:
         elapsed = (window_end - policy.enforced_since).total_seconds()
+        if elapsed < 0:
+            # An empty window counts nothing, so every stage of this policy stays below its threshold and the
+            # policy enforces nothing until the clock passes its floor. The arithmetic is right and the outcome
+            # is not what the administrator configured, and the only way it arises is a clock that went backwards
+            # or a node whose clock disagrees with the one that wrote the floor - neither of which announces
+            # itself anywhere else.
+            log.warning(f"Policy {policy.name!r} is enforced from {policy.enforced_since}, which is in the future "
+                        f"relative to this node's clock ({window_end}): it counts nothing and so enforces nothing "
+                        f"until the clock passes that point. Check the clocks of the nodes writing this table.")
         window_seconds = max(0.0, min(window_seconds, elapsed))
     return window_seconds
 
@@ -1157,7 +1166,8 @@ def get_user_lock_by_login(login: str | None, now: datetime | None = None, *,
     Several realms can hold a user of one name, and any of their locks bars a login under the bare name, so the
     first one standing is returned. A row is not narrowed to the default realm because the realm this request would
     have resolved to is not settled at this point (``get_realm_for_authentication`` may rewrite it), and refusing
-    too widely here is a refusal, never an admission.
+    too widely here is a refusal, never an admission - as long as the principal being refused is one the operator
+    meant to be lockable at all, which is the caller's to establish (see :func:`can_be_locked`).
     """
     if not login:
         return None
@@ -1169,6 +1179,39 @@ def get_user_lock_by_login(login: str | None, now: datetime | None = None, *,
         if status is not None:
             return status
     return None
+
+
+def can_be_locked(context: CAContext) -> bool:
+    """
+    Whether any policy that is able to lock a user applies to the request *context* describes.
+
+    Asked wherever a lock row has to be weighed against a principal it was not written for - the one such place
+    being :func:`~privacyidea.api.lib.conditional_access._evaluate_rejection`, which reads a same-named user's
+    lock for a login name that is also a local database admin's. A principal every locking policy excludes has
+    been declared unlockable by the operator, and a row written for somebody else must not lock them after all:
+    an applicability condition is the only way to say "not this principal", so it has to hold on every path that
+    can refuse one, not only on the path that writes the row.
+
+    ``dry_run`` policies are left out. They enforce nothing, so a principal they cover is not thereby a principal
+    the operator meant to be lockable.
+
+    :param context: what is known about the request under evaluation
+    :return: True if some enabled, enforcing policy with a user-locking action applies to this request
+    """
+    policies = get_ca_session().scalars(
+        select(ConditionalAccessPolicy)
+        .options(selectinload(ConditionalAccessPolicy.conditions),
+                 selectinload(ConditionalAccessPolicy.stages).selectinload(ConditionalAccessPolicyStage.actions))
+        # ``== true()`` / ``== false()`` rather than ``.is_()``: Oracle has no boolean type (see
+        # evaluate_access_decision)
+        .where(ConditionalAccessPolicy.enabled == true(), ConditionalAccessPolicy.dry_run == false())).all()
+    return any(_locks_a_user(policy) and policy_matches_context(policy, context) for policy in policies)
+
+
+def _locks_a_user(policy: ConditionalAccessPolicy) -> bool:
+    """Whether any stage of *policy* carries an action that writes a user lock."""
+    return any(_restricted_target(action.action_type) is ConditionalAccessTarget.USER
+               for stage in policy.stages for action in stage.actions)
 
 
 def get_user_lock(user: "User", now: datetime | None = None, *,
@@ -2100,11 +2143,10 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
     # report; evaluate_conditional_access_policies then checks it against the restriction actually in force, which
     # decides whether the outcomes claiming it are recorded at all.
     #
-    # A write *declined as weakening* wrote nothing either, and its target still belongs here: only a stronger
-    # restriction in force declines one, and that one was written either by an earlier action here or by another
-    # policy in this same evaluation. (It cannot have been in force beforehand: the pre-check would have refused
-    # the request, and a refused request is never evaluated.) So a row a later request will be refused by does
-    # stand on that target, and the outcome describing the declined write is a thing that happened.
+    # A write *declined as weakening* is left out, and consistently so: record() runs only where the upsert
+    # reports it wrote (``write.succeeded and not declined``), so a declined action records no outcome either,
+    # and there is nothing about that target left to verify. A restriction does stand on it - only a stronger one
+    # in force declines a write - but it is the write that put it there that is listed here, not this one.
     enforced: set[ConditionalAccessTarget] = set()
 
     user = context.user
