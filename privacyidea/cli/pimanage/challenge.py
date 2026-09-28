@@ -47,8 +47,8 @@ def cleanup_challenge(chunksize: int, age: int, dryrun: bool = False) -> int:
     so this command will report 0 deletions in a fully Redis-backed
     deployment — that is expected, not a sign of a leak.
     """
-    if age:
-        # Delete challenges created earlier than age minutes ago
+    if age is not None:
+        # Delete challenges created earlier than age minutes ago, even if they are still valid
         now = datetime.datetime.utcnow() - datetime.timedelta(minutes=age)
         click.echo(f"Deleting challenges older than {now!s}")
     else:

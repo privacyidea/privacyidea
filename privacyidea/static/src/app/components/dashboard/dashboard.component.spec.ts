@@ -26,9 +26,13 @@ import { DashboardLayoutService } from "@services/dashboard/dashboard-layout.ser
 import { WidgetRegistryService } from "@services/dashboard/widget-registry.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { SubscriptionService } from "@services/subscription/subscription.service";
+import { RealmService } from "@services/realm/realm.service";
+import { UserService } from "@services/user/user.service";
 import { TokenService } from "@services/token/token.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockSubscriptionService } from "@testing/mock-services/mock-subscription-service";
+import { MockRealmService } from "@testing/mock-services/mock-realm-service";
+import { MockUserService } from "@testing/mock-services/mock-user-service";
 import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { DashboardComponent } from "./dashboard.component";
 
@@ -101,6 +105,8 @@ describe("DashboardComponent", () => {
         PendingChangesService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: TokenService, useClass: MockTokenService },
+        { provide: UserService, useClass: MockUserService },
+        { provide: RealmService, useClass: MockRealmService },
         { provide: SubscriptionService, useClass: MockSubscriptionService }
       ]
     }).compileComponents();
@@ -222,7 +228,7 @@ describe("DashboardComponent", () => {
     it("should clamp an oversized stored widget down to its max for display", () => {
       const oversized: WidgetInstance = { id: "x", type: "tokens", x: 0, y: 0, cols: 20, rows: 20 };
       expect(component['effectiveCols'](oversized)).toBe(12);
-      expect(component['effectiveRows'](oversized)).toBe(9);
+      expect(component['effectiveRows'](oversized)).toBe(11);
     });
 
     it("should clamp an undersized stored widget up to its min for display", () => {
@@ -275,12 +281,12 @@ describe("DashboardComponent", () => {
       expect(component['resizePreview']()?.rows).toBe(3);
     });
 
-    it("should clamp the height up to the widget's max (tokens: 9 rows)", () => {
+    it("should clamp the height up to the widget's max (tokens: 11 rows)", () => {
       const widget = firstWidget();
       component['onResizeStart'](widget, "s", pointerEvent({ clientY: 0 }));
       component['onResizeMove'](pointerEvent({ clientY: 100000 }));
 
-      expect(component['resizePreview']()?.rows).toBe(9);
+      expect(component['resizePreview']()?.rows).toBe(11);
     });
 
     it("should apply a valid resize to the layout on resize end", () => {
@@ -291,7 +297,7 @@ describe("DashboardComponent", () => {
       component['onResizeMove'](pointerEvent({ clientX: 100, clientY: 88 }));
       component['onResizeEnd']();
 
-      expect(resizeSpy).toHaveBeenCalledWith(widget.id, 8, 9);
+      expect(resizeSpy).toHaveBeenCalledWith(widget.id, 8, 10);
       expect(component['resizePreview']()).toBeNull();
     });
 

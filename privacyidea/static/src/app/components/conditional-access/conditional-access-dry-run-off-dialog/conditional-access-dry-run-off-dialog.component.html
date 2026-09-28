@@ -25,12 +25,12 @@
   (actionTriggered)="confirm()">
   <div class="margin-right-16 content-width">
     @if (data.policyNames.length === 1) {
-      <p i18n>
+      <p i18n="@@conditionalAccess.startsEnforcingImmediatelyCounts">
         "{{ data.policyNames[0] }}" starts enforcing immediately and counts only events from now on. Events recorded
         earlier are ignored.
       </p>
     } @else {
-      <p i18n>
+      <p i18n="@@conditionalAccess.followingPoliciesStartEnforcing">
         The following policies start enforcing immediately and count only events from now on. Events recorded earlier
         are ignored.
       </p>
@@ -43,11 +43,13 @@
     <mat-checkbox
       [checked]="countPastEvents()"
       (change)="countPastEvents.set($event.checked)">
-      <span i18n>Also count the events already in the policy's time window</span>
+      <span i18n="@@conditionalAccess.alsoCountEventsAlready"
+        >Also count the events already in the policy's time window</span
+      >
     </mat-checkbox>
     <p
       class="consequence on-surface-variant"
-      i18n>
+      i18n="@@conditionalAccess.policyMayTripOnce">
       The policy may trip at once. And a stage fires as the count reaches its threshold - if the count already sits
       above it, that stage stays silent until those events age out of the window, so a real attack may raise no alarm.
     </p>

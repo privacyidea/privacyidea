@@ -25,7 +25,7 @@
           <td>
             <a
               [routerLink]="routePaths.POLICIES_CONDITIONAL_ACCESS"
-              i18n
+              i18n="@@common.enforcingPolicies"
               >Enforcing policies</a
             >
           </td>
@@ -35,14 +35,14 @@
           <tr>
             <td
               class="ca-sub-label"
-              i18n>
+              i18n="@@common.dryRunOnly">
               dry run only
             </td>
             <td>
               <span
                 class="highlight-warning"
                 matTooltip="A dry-run policy records what it would have done, but never locks or blocks."
-                i18n-matTooltip
+                i18n-matTooltip="@@common.dryRunPolicyRecords"
                 >{{ policies.dryRun }}</span
               >
             </td>
@@ -52,7 +52,7 @@
           <tr>
             <td
               class="ca-sub-label"
-              i18n>
+              i18n="@@common.disabled">
               disabled
             </td>
             <td>
@@ -66,7 +66,7 @@
           <td>
             <a
               [routerLink]="routePaths.LOCKED_USERS"
-              i18n
+              i18n="@@common.usersLocked"
               >Users locked</a
             >
           </td>
@@ -78,7 +78,7 @@
           <tr>
             <td
               class="ca-sub-label"
-              i18n>
+              i18n="@@common.permanent">
               permanent
             </td>
             <td>{{ lockedUsers.permanent }}</td>
@@ -90,7 +90,7 @@
           <td>
             <a
               [routerLink]="routePaths.BLOCKLIST"
-              i18n
+              i18n="@@common.ipsBlocked"
               >IPs blocked</a
             >
           </td>
@@ -102,7 +102,7 @@
           <tr>
             <td
               class="ca-sub-label"
-              i18n>
+              i18n="@@common.permanent">
               permanent
             </td>
             <td>{{ blockedIps.permanent }}</td>
@@ -111,12 +111,12 @@
       }
       @if (staleRecords()) {
         <tr>
-          <td i18n>Expired records</td>
+          <td i18n="@@common.expiredRecords">Expired records</td>
           <td>
             <span
               class="highlight-disabled"
               matTooltip="Locks and blocks that have run out. They restrict nobody and can be purged on the locked-users and blocklist pages."
-              i18n-matTooltip
+              i18n-matTooltip="@@common.locksBlocksHaveRun"
               >{{ staleRecords() }}</span
             >
           </td>
@@ -127,10 +127,10 @@
 
   @if (hasHistory()) {
     <p class="ca-section-title">
-      <span i18n>Blocks and locks over time</span>
+      <span i18n="@@common.blocksLocksOverTime">Blocks and locks over time</span>
       <span
         class="ca-range-count"
-        i18n
+        i18n="@@common.range"
         >{{ restrictionsInRange() }} in range</span
       >
     </p>
@@ -141,7 +141,7 @@
           [value]="selectedRange().id"
           (change)="selectRange($event.value)"
           aria-label="Time range"
-          i18n-aria-label>
+          i18n-aria-label="@@common.timeRange">
           @for (range of ranges; track range.id) {
             <mat-button-toggle [value]="range.id">{{ range.label }}</mat-button-toggle>
           }
@@ -153,7 +153,7 @@
           [value]="shownKinds()"
           (change)="selectKinds($event.value)"
           aria-label="Restrictions to chart"
-          i18n-aria-label>
+          i18n-aria-label="@@common.restrictionsChart">
           @for (kind of restrictionKinds; track kind.id) {
             <mat-button-toggle [value]="kind.id">{{ kind.label }}</mat-button-toggle>
           }
@@ -204,7 +204,7 @@
             matSliderStartThumb
             #startThumb="matSliderRangeThumb"
             aria-label="Start of the counted span"
-            i18n-aria-label
+            i18n-aria-label="@@common.startCountedSpan"
             [attr.aria-valuetext]="rangeSummaryFrom()"
             [value]="rangeStart()"
             (input)="onRangeStartInput(startThumb.value)" />
@@ -212,7 +212,7 @@
             matSliderEndThumb
             #endThumb="matSliderRangeThumb"
             aria-label="End of the counted span"
-            i18n-aria-label
+            i18n-aria-label="@@common.endCountedSpan"
             [attr.aria-valuetext]="rangeSummaryTo()"
             [value]="rangeEnd()"
             (input)="onRangeEndInput(endThumb.value)" />
@@ -225,12 +225,12 @@
     </div>
 
     <p class="ca-section-title">
-      <span i18n>Restrictions in force</span>
+      <span i18n="@@common.restrictionsForce">Restrictions in force</span>
       <app-info-hint
         text="IPs and users still blocked or locked, restricted within the selected range. Newest first, expired ones left out."
-        i18n-text
+        i18n-text="@@common.ipsUsersStillBlocked"
         ariaLabel="About the restrictions in force"
-        i18n-ariaLabel />
+        i18n-ariaLabel="@@common.aboutRestrictionsForce" />
     </p>
     <table class="ca-table">
       <tbody>
@@ -263,14 +263,14 @@
               @if (entry.permanent) {
                 <span
                   class="highlight-false"
-                  i18n
+                  i18n="@@common.permanent2"
                   >permanent</span
                 >
               } @else {
                 <span
                   class="highlight-warning"
                   [matTooltip]="expiresTooltip(entry)"
-                  i18n
+                  i18n="@@common.temporary"
                   >temporary</span
                 >
               }
@@ -281,7 +281,7 @@
             <td
               colspan="2"
               class="ca-sub-label"
-              i18n>
+              i18n="@@common.noIpBlockedNo">
               No IP is blocked and no user locked in the selected time range.
             </td>
           </tr>
@@ -292,7 +292,7 @@
       <p class="ca-more">
         <a
           [routerLink]="routePaths.BLOCKLIST"
-          i18n
+          i18n="@@common.moreForce"
           >{{ hidden }} more in force</a
         >
       </p>

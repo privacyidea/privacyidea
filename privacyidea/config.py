@@ -58,6 +58,8 @@ class ConfigKey:
     SECRET_KEY = "SECRET_KEY"
     PEPPER = "PI_PEPPER"
     ENCFILE = "PI_ENCFILE"
+    HASH_ALGO_LIST = "PI_HASH_ALGO_LIST"
+    HASH_ALGO_PARAMS = "PI_HASH_ALGO_PARAMS"
 
     SQLALCHEMY_DATABASE_URI = "SQLALCHEMY_DATABASE_URI"
     SQLALCHEMY_ENGINE_OPTIONS = "SQLALCHEMY_ENGINE_OPTIONS"
@@ -92,6 +94,14 @@ class ConfigKey:
     AUDIT_NO_PRIVATE_KEY_CHECK = "PI_AUDIT_NO_PRIVATE_KEY_CHECK"
     AUDIT_SQL_COLUMN_LENGTH = "PI_AUDIT_SQL_COLUMN_LENGTH"
     CHECK_OLD_SIGNATURES = "PI_CHECK_OLD_SIGNATURES"
+
+    # A parameter that names a python class for the server to import is checked against the
+    # classes that ship with privacyIDEA plus the ones named here, so that an installation
+    # running its own class keeps working by naming it. MODULE_ALLOWLIST_MODE decides what
+    # happens to a class that is on neither list.
+    SMS_PROVIDER_MODULES = "PI_SMS_PROVIDER_MODULES"
+    PIN_HANDLER_MODULES = "PI_PIN_HANDLER_MODULES"
+    MODULE_ALLOWLIST_MODE = "PI_MODULE_ALLOWLIST_MODE"
 
     LOGLEVEL = "PI_LOGLEVEL"
     LOGCONFIG = "PI_LOGCONFIG"

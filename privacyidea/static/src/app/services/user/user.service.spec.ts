@@ -326,10 +326,7 @@ describe("UserService", () => {
       const result = lastValueFrom(userService.setUserAttribute("department", "finance"));
 
       const req = httpMock.expectOne((r) => r.method === "POST" && r.url.endsWith("/user/attribute"));
-      req.flush(
-        { result: { error: { message: "denied" } } },
-        { status: 500, statusText: "Server Error" }
-      );
+      req.flush({ result: { error: { message: "denied" } } }, { status: 500, statusText: "Server Error" });
 
       await expect(result).resolves.toBeUndefined();
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to set user attribute. denied");
@@ -340,10 +337,7 @@ describe("UserService", () => {
       const result = lastValueFrom(userService.deleteUserAttribute("department"));
 
       const req = httpMock.expectOne((r) => r.method === "DELETE");
-      req.flush(
-        { result: { error: { message: "denied" } } },
-        { status: 500, statusText: "Server Error" }
-      );
+      req.flush({ result: { error: { message: "denied" } } }, { status: 500, statusText: "Server Error" });
 
       await expect(result).resolves.toBeUndefined();
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete user attribute. denied");
@@ -480,6 +474,91 @@ describe("UserService", () => {
 
     const params = userService.filterParams();
     expect(params).toHaveProperty("username", "*root*");
+  });
+
+  describe("has_tokens filter", () => {
+    it("normalizes has_tokens to the backend's True/False spelling, unwrapped", () => {
+      userService.activeFilter.set(new FilterValue({ value: "has_tokens: true" }));
+      expect(userService.filterParams()).toEqual({ has_tokens: "True" });
+
+      userService.activeFilter.set(new FilterValue({ value: "has_tokens: false" }));
+      expect(userService.filterParams()).toEqual({ has_tokens: "False" });
+    });
+
+    it("sends has_tokens as typed when the value does not read as a boolean, for the backend to reject", () => {
+      userService.activeFilter.set(new FilterValue({ value: "has_tokens: maybe" }));
+      expect(userService.filterParams()).toEqual({ has_tokens: "maybe" });
+    });
+
+    it("offers has_tokens as an advanced keyword, not a plain column filter", () => {
+      expect(userService.apiFilterKeys).not.toContain("has_tokens");
+      expect(userService.advancedApiFilterKeys).toContain("has_tokens");
+      expect(userService.allFilterKeys()).toContain("has_tokens");
+    });
+  });
+
+  describe("presetFilter", () => {
+    it("starts out unset", () => {
+      expect(userService.presetFilter()).toBeNull();
+    });
+
+    it("holds whatever filter is handed to it until consumed", () => {
+      const filter = new FilterValue().addEntry("has_tokens", "True");
+      userService.presetFilter.set(filter);
+      expect(userService.presetFilter()).toBe(filter);
+    });
+
+    it("keeps the user list from loading unfiltered until the user table takes the preset over", () => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist"] });
+      realmService.realmOptions.set(["realm1"]);
+      userService.presetFilter.set(new FilterValue().addEntry("has_tokens", "False"));
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS);
+      TestBed.tick();
+
+      expect(httpMock.match((r) => r.url === environment.proxyUrl + "/user/")).toEqual([]);
+
+      // What the user table does once it is on screen.
+      const preset = userService.presetFilter()!;
+      userService.presetFilter.set(null);
+      userService.setFilter(preset);
+      TestBed.tick();
+
+      const requests = httpMock.match((r) => r.url === environment.proxyUrl + "/user/");
+      expect(requests.map((r) => r.request.params.get("has_tokens"))).toEqual(["False"]);
+      httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
+    });
+
+    it("does not hold back the user list on a route whose table does not take presets over", () => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["userlist"] });
+      realmService.realmOptions.set(["realm1"]);
+      userService.presetFilter.set(new FilterValue().addEntry("has_tokens", "False"));
+      contentServiceMock.onTokenDetails = signal(true);
+      TestBed.tick();
+
+      const requests = httpMock.match((r) => r.url === environment.proxyUrl + "/user/");
+      expect(requests.length).toBe(1);
+      expect(requests[0].request.params.has("has_tokens")).toBe(false);
+      httpMock.match(() => true).forEach((r) => r.flush({ result: {} }));
+    });
+  });
+
+  describe("fetchUserCount()", () => {
+    it("requests the user count without a realm param when none is given", async () => {
+      const promise = lastValueFrom(userService.fetchUserCount());
+      const req = httpMock.expectOne((r) => r.url === environment.proxyUrl + "/user/count");
+      expect(req.request.params.has("realm")).toBe(false);
+      req.flush(MockPiResponse.fromValue({ count: 3, with_tokens: 1 }));
+      await expect(promise).resolves.toEqual(
+        expect.objectContaining({ result: expect.objectContaining({ value: { count: 3, with_tokens: 1 } }) })
+      );
+    });
+
+    it("scopes the request to the given realm", () => {
+      userService.fetchUserCount("realm1").subscribe();
+      const req = httpMock.expectOne((r) => r.url === environment.proxyUrl + "/user/count");
+      expect(req.request.params.get("realm")).toBe("realm1");
+      req.flush(MockPiResponse.fromValue({ count: 0, with_tokens: 0 }));
+    });
   });
 
   describe("editableAttributesResource / attributePolicy", () => {

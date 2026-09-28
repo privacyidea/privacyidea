@@ -25,14 +25,14 @@
         <mat-icon
           class="ca-action-warn-icon"
           aria-label="This action needs attention"
-          i18n-aria-label>
+          i18n-aria-label="@@conditionalAccess.actionNeedsAttention">
           warning
         </mat-icon>
       } @else if (actionConflict()) {
         <mat-icon
           class="ca-action-warn-icon"
           aria-label="Action conflicts with another action on this stage"
-          i18n-aria-label>
+          i18n-aria-label="@@conditionalAccess.actionConflictsAnotherAction">
           warning
         </mat-icon>
       }
@@ -43,7 +43,7 @@
       <button
         mat-icon-button
         aria-label="Remove action"
-        i18n-aria-label
+        i18n-aria-label="@@policy.removeAction"
         (click)="$event.stopPropagation(); onRemoveAction()">
         <mat-icon>delete</mat-icon>
       </button>
@@ -55,7 +55,7 @@
       appearance="fill"
       subscriptSizing="dynamic"
       class="input-width-l margin-bottom-16">
-      <mat-label i18n>Action</mat-label>
+      <mat-label i18n="@@common.action">Action</mat-label>
       <mat-select
         [value]="action().action_type"
         (selectionChange)="onActionTypeChange($event.value)">
@@ -72,7 +72,7 @@
     @if (!isActionAllowedForTarget()) {
       <p
         class="ca-action-target-error"
-        i18n>
+        i18n="@@conditionalAccess.actionNotAllowedPolicy">
         This action is not allowed for the policy's target. Choose a different action, or change the target.
       </p>
     }
@@ -84,15 +84,15 @@
       class="margin-top-8"
       [checked]="retriggerChecked()"
       (change)="onRetriggerChange($event.checked)"
-      i18n>
+      i18n="@@conditionalAccess.reTriggerWhileAbove">
       Re-trigger while above the threshold (until escalation to the next stage)
     </mat-checkbox>
     <app-info-hint
       class="margin-top-8"
       text="When off, this action runs once, when the count reaches the stage's threshold exactly. When on, it runs again on every further tracked event while the count stays at or above the threshold, until the policy escalates to the next stage. Deny defaults to on; the lock, email and block actions default to off."
-      i18n-text
+      i18n-text="@@conditionalAccess.whenOffActionRuns"
       ariaLabel="About re-triggering"
-      i18n-ariaLabel />
+      i18n-ariaLabel="@@conditionalAccess.aboutReTriggering" />
   </div>
 
   <div class="ca-action-value">
@@ -102,7 +102,7 @@
           appearance="fill"
           subscriptSizing="dynamic"
           class="input-width-l">
-          <mat-label i18n>Duration</mat-label>
+          <mat-label i18n="@@audit.duration">Duration</mat-label>
           <input
             matInput
             type="number"
@@ -116,7 +116,7 @@
           @if (actionValueError()) {
             <mat-hint class="ca-action-stale">{{ actionValueError() }}</mat-hint>
           } @else {
-            <mat-hint i18n>How long the lock or block lasts.</mat-hint>
+            <mat-hint i18n="@@conditionalAccess.howLongLockBlock">How long the lock or block lasts.</mat-hint>
           }
         </mat-form-field>
 
@@ -124,23 +124,23 @@
           appearance="fill"
           subscriptSizing="dynamic"
           class="input-width-s">
-          <mat-label i18n>Unit</mat-label>
+          <mat-label i18n="@@common.unit">Unit</mat-label>
           <mat-select
             [value]="durationUnit()"
             (selectionChange)="onDurationUnitChange($event.value)">
             <mat-option
               value="seconds"
-              i18n
+              i18n="@@conditionalAccess.seconds"
               >Seconds
             </mat-option>
             <mat-option
               value="minutes"
-              i18n
+              i18n="@@conditionalAccess.minutes"
               >Minutes
             </mat-option>
             <mat-option
               value="hours"
-              i18n
+              i18n="@@conditionalAccess.hours"
               >Hours
             </mat-option>
           </mat-select>
@@ -183,7 +183,7 @@
                       @if (identifier === staleSmtpIdentifier()) {
                         <span
                           class="ca-action-stale-tag"
-                          i18n>
+                          i18n="@@conditionalAccess.notConfigured">
                           (not configured)
                         </span>
                       }
@@ -196,13 +196,13 @@
                 @if (staleSmtpIdentifier()) {
                   <mat-hint
                     class="ca-action-stale"
-                    i18n>
+                    i18n="@@conditionalAccess.noSmtpServerNamed">
                     No SMTP server named "{{ staleSmtpIdentifier() }}" is configured, so no email would be sent.
                   </mat-hint>
                 } @else if (smtpOptions().length === 0 && !smtpServersLoading()) {
                   <mat-hint
                     class="ca-action-stale"
-                    i18n>
+                    i18n="@@conditionalAccess.noSmtpServerChoose">
                     No SMTP server to choose from. Configure one under External Services.
                   </mat-hint>
                 } @else {
@@ -247,11 +247,13 @@
         }
 
         <details class="ca-placeholder-help margin-top-16">
-          <summary i18n>Available placeholders for subject and body</summary>
+          <summary i18n="@@conditionalAccess.availablePlaceholdersSubjectBody"
+            >Available placeholders for subject and body</summary
+          >
           <div class="margin-left-16">
             <p
               class="ca-placeholder-intro"
-              i18n>
+              i18n="@@conditionalAccess.placeholdersReplacedWhenEmail">
               Placeholders are replaced when the email is sent. Unknown placeholders are left as-is.
             </p>
             <ul class="ca-placeholder-list">
@@ -264,7 +266,7 @@
             </ul>
             <p
               class="ca-placeholder-intro"
-              i18n>
+              i18n="@@conditionalAccess.addRBeforeClosing">
               Add <code>!r</code> before the closing brace to insert the value's quoted form, e.g.
               <code>{{ "{" }} policy!r{{ "}" }}</code> renders <code>'Brute Force PIN Lock'</code> instead of
               <code>Brute Force PIN Lock</code>.

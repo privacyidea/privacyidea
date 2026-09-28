@@ -73,7 +73,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
   readonly caConnectorBaseUrl = environment.proxyUrl + "/caconnector/";
 
   caConnectorResource = httpResource<PiResponse<CaConnectors>>(() => {
-    if (!this.contentService.onExternalCaConnectors()) {
+    if (!this.contentService.onExternalCaConnectors() || !this.authService.actionAllowed("caconnectorread")) {
       return undefined;
     }
     return {

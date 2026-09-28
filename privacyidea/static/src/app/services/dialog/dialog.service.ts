@@ -47,6 +47,8 @@ export interface DialogServiceInterface {
   isDialogOpen(ref: MatDialogRef<AbstractDialogComponent>): boolean;
 
   confirm(args: { title: string; message: string; confirmButtonText: string }): Promise<boolean>;
+
+  confirmDelete(args: { title: string; items: string[]; itemType: string }): Promise<boolean>;
 }
 
 @Injectable({ providedIn: "root" })
@@ -135,6 +137,19 @@ export class DialogService implements DialogServiceInterface {
         confirmAction: { type: "confirm", label: args.confirmButtonText, value: true },
         items: [args.message],
         itemType: ""
+      }
+    });
+    return lastValueFrom(dialogRef.afterClosed()).then((result) => result === true);
+  }
+
+  async confirmDelete(args: { title: string; items: string[]; itemType: string }): Promise<boolean> {
+    const dialogRef = this.openDialog({
+      component: SimpleConfirmationDialogComponent,
+      data: {
+        title: args.title,
+        items: args.items,
+        itemType: args.itemType,
+        confirmAction: { type: "destruct", label: $localize`:@@common.delete:Delete`, value: true }
       }
     });
     return lastValueFrom(dialogRef.afterClosed()).then((result) => result === true);

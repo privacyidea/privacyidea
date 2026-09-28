@@ -21,25 +21,22 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import { RemoteServer } from "@services/privacyidea-server/privacyidea-server.service";
+import { MatSelect } from "@angular/material/select";
+import { MatTooltip } from "@angular/material/tooltip";
+import { By } from "@angular/platform-browser";
 import { EnrollRemoteComponent } from "./enroll-remote.component";
-import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
+import { PrivacyideaServer, PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
 import { MockPrivacyideaServerService, MockTokenService } from "@testing/mock-services";
 import { TokenService } from "@services/token/token.service";
 
 describe("EnrollRemoteComponent", () => {
   let component: EnrollRemoteComponent;
   let fixture: ComponentFixture<EnrollRemoteComponent>;
+  let privacyideaServerService: MockPrivacyideaServerService;
 
   const basicOptions: TokenEnrollmentData = {
     type: "remote"
   } as TokenEnrollmentData;
-
-  const mockRemoteServer: RemoteServer = {
-    identifier: "remote-1",
-    name: "remote-1",
-    url: "https://test.example"
-  } as Partial<RemoteServer> as RemoteServer;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -52,6 +49,7 @@ describe("EnrollRemoteComponent", () => {
       ]
     }).compileComponents();
 
+    privacyideaServerService = TestBed.inject(PrivacyideaServerService) as unknown as MockPrivacyideaServerService;
     fixture = TestBed.createComponent(EnrollRemoteComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -61,12 +59,77 @@ describe("EnrollRemoteComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should offer the configured servers in a select when the servers can be listed", () => {
+    privacyideaServerService.remoteServerOptions.set([
+      { id: "1", identifier: "pi-a", name: "pi-a" } as PrivacyideaServer,
+      { id: "2", identifier: "pi-b", name: "pi-b" } as PrivacyideaServer
+    ]);
+    fixture.detectChanges();
+
+    const select: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+    expect(select.options.map((option) => option.value)).toEqual(["1", "2"]);
+    expect(select.options.map((option) => option.viewValue)).toEqual(["pi-a", "pi-b"]);
+  });
+
+  describe("when the servers cannot be listed", () => {
+    beforeEach(() => {
+      privacyideaServerService.canListRemoteServers.set(false);
+      fixture.detectChanges();
+    });
+
+    it("should disable the server select and name the missing right in its tooltip", () => {
+      const select: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+      expect(select.disabled).toBe(true);
+
+      const tooltip: MatTooltip = fixture.debugElement.query(By.directive(MatTooltip)).injector.get(MatTooltip);
+      expect(tooltip.disabled).toBe(false);
+      expect(tooltip.message).toContain("privacyideaserver_read");
+    });
+
+    it("should report the enrollment as blocked, naming the missing right", () => {
+      expect(component.enrollmentBlockedReason()).toContain("privacyideaserver_read");
+    });
+
+    it("should not block the enrollment when enrollmentData already names the server", () => {
+      fixture.componentRef.setInput("enrollmentData", { type: "remote", remoteServerId: "2" });
+      component.ngOnInit();
+
+      expect(component.enrollmentBlockedReason()).toBeNull();
+    });
+
+    it("should not build enrollment data without a server", () => {
+      component.remoteSerial.set("S1");
+      component.remoteUser.set("alice");
+      component.remoteResolver.set("res1");
+
+      expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
+    });
+  });
+
+  it("should not block the enrollment when the servers can be listed", () => {
+    expect(component.enrollmentBlockedReason()).toBeNull();
+
+    const select: MatSelect = fixture.debugElement.query(By.directive(MatSelect)).componentInstance;
+    expect(select.disabled).toBe(false);
+  });
+
+  it("should show the required error for an empty server on enrollment", () => {
+    component.remoteSerial.set("S1");
+    component.remoteUser.set("alice");
+    component.remoteResolver.set("res1");
+
+    expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("mat-error")?.textContent).toContain("Remote Server is required");
+  });
+
   describe("ngOnInit with enrollmentData input", () => {
     it("should set initial values from enrollmentData", () => {
       fixture.componentRef.setInput("enrollmentData", {
         type: "remote",
         checkPinLocally: true,
-        remoteServer: mockRemoteServer,
+        remoteServerId: "remote-1",
         remoteSerial: "S1",
         remoteUser: "u",
         remoteRealm: "r",
@@ -74,7 +137,7 @@ describe("EnrollRemoteComponent", () => {
       });
       component.ngOnInit();
       expect(component.checkPinLocally()).toBe(true);
-      expect(component.remoteServer()).toEqual(mockRemoteServer);
+      expect(component.remoteServerId()).toBe("remote-1");
       expect(component.remoteSerial()).toBe("S1");
       expect(component.remoteUser()).toBe("u");
       expect(component.remoteRealm()).toBe("r");
@@ -85,7 +148,7 @@ describe("EnrollRemoteComponent", () => {
       fixture.componentRef.setInput("enrollmentData", { type: "remote" });
       component.ngOnInit();
       expect(component.checkPinLocally()).toBe(false);
-      expect(component.remoteServer()).toBeNull();
+      expect(component.remoteServerId()).toBe("");
       expect(component.remoteSerial()).toBe("");
       expect(component.remoteUser()).toBe("");
       expect(component.remoteRealm()).toBe("");
@@ -94,13 +157,17 @@ describe("EnrollRemoteComponent", () => {
   });
 
   describe("buildEnrollmentArgs", () => {
-    it("should return null when no remoteServer is selected", () => {
-      const result = component.buildEnrollmentArgs(basicOptions);
-      expect(result).toBeNull();
+    it("should return null and mark the server touched when no server is selected", () => {
+      component.remoteSerial.set("S1");
+      component.remoteUser.set("alice");
+      component.remoteResolver.set("res1");
+
+      expect(component.buildEnrollmentArgs(basicOptions)).toBeNull();
+      expect(component.remoteServerIdForm().touched()).toBe(true);
     });
 
     it("should return null and mark fields touched when required fields are empty", () => {
-      component.remoteServer.set(mockRemoteServer);
+      component.remoteServerId.set("remote-1");
       const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).toBeNull();
       expect(component.remoteSerialForm().touched()).toBe(true);
@@ -109,7 +176,7 @@ describe("EnrollRemoteComponent", () => {
     });
 
     it("should build enrollment data when all required fields are filled", () => {
-      component.remoteServer.set(mockRemoteServer);
+      component.remoteServerId.set("remote-1");
       component.remoteSerial.set("S1");
       component.remoteUser.set("alice");
       component.remoteResolver.set("res1");
@@ -119,7 +186,7 @@ describe("EnrollRemoteComponent", () => {
       const result = component.buildEnrollmentArgs(basicOptions);
       expect(result).not.toBeNull();
       expect(result!.data.type).toBe("remote");
-      expect(result!.data.remoteServer).toEqual(mockRemoteServer);
+      expect(result!.data.remoteServerId).toBe("remote-1");
       expect(result!.data.remoteSerial).toBe("S1");
       expect(result!.data.remoteUser).toBe("alice");
       expect(result!.data.remoteResolver).toBe("res1");

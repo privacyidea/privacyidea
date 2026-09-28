@@ -62,3 +62,5 @@ PostgreSQL as well.
 
 Other databases like Oracle or MSSQL are working as well but not all
 functionality can be assured, so be aware that "Your mileage may vary".
+For example, ``pi-manage backup`` does not support them, see
+:ref:`pimanage_backup`.

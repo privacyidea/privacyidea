@@ -19,8 +19,6 @@
 from datetime import datetime, timezone
 
 from sqlalchemy.dialects import sqlite, mysql
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.functions import FunctionElement
 from sqlalchemy.sql.sqltypes import BigInteger, Unicode
 
 from privacyidea.models import db
@@ -71,23 +69,6 @@ def case_sensitive_unicode(length: int):
     """
     return Unicode(length).with_variant(mysql.VARCHAR(length, charset="utf8mb4", collation="utf8mb4_bin"),
                                         "mysql", "mariadb")
-
-
-# Define a function to convert Oracle CLOBs to VARCHAR before using them in a
-# compare operation. (See https://docs.sqlalchemy.org/en/20/core/compiler.html)
-class clob_to_varchar(FunctionElement):
-    name = 'clob_to_varchar'
-    inherit_cache = True
-
-
-@compiles(clob_to_varchar)
-def fn_clob_to_varchar_default(element, compiler, **kw):
-    return compiler.process(element.clauses, **kw)
-
-
-@compiles(clob_to_varchar, 'oracle')
-def fn_clob_to_varchar_oracle(element, compiler, **kw):
-    return f"to_char({compiler.process(element.clauses, **kw)})"
 
 
 class MethodsMixin:

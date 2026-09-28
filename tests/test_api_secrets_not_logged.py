@@ -33,6 +33,7 @@ import re
 
 import pytest
 
+from privacyidea.lib.serviceid import set_serviceid
 from .base import MyApiTestCase
 
 # A value shaped like a JWT is a session credential of whoever sent the request.
@@ -209,6 +210,8 @@ CREDENTIAL_REQUESTS = [
 class SecretsNotLoggedTestCase(MyApiTestCase):
 
     def setUp(self):
+        # the application specific password token only enrolls with a defined service ID
+        set_serviceid("s", "service of the enrollment case")
         self.log_stream = io.StringIO()
         self.handler = logging.StreamHandler(self.log_stream)
         self.root_logger = logging.getLogger()

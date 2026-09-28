@@ -20,32 +20,34 @@
 <div class="reason-cell">
   <div class="reason-list">
     @for (reason of reasons() ?? []; track reason) {
-      <span class="reason-entry">{{ reason }}</span>
+    <span class="reason-entry">{{ reason }}</span>
     }
   </div>
   <!-- Only for an entry that actually recorded a detail: a button that opened an empty dialog would be a promise the
     row cannot keep. The placeholder link and the icon button, where both render, share this single tooltip host so
     hovering either - or the gap between them - reads as one target rather than two flickering separately. -->
   @if (detail(); as reasonDetail) {
-    <span
-      class="reason-detail-trigger"
-      [matTooltip]="detailLabel">
-      @if (showsPlaceholder()) {
-        <a
-          class="reason-placeholder margin-right-4"
-          href
-          [attr.aria-label]="detailLabel"
-          (click)="$event.preventDefault(); openDetail(reasonDetail)"
-          i18n>see details</a>
-      }
-      <button
-        class="reason-detail-button"
-        mat-icon-button
-        type="button"
-        [attr.aria-label]="detailLabel"
-        (click)="openDetail(reasonDetail)">
-        <mat-icon class="reason-detail-icon">help_outline</mat-icon>
-      </button>
-    </span>
+  <span
+    class="reason-detail-trigger"
+    [matTooltip]="detailLabel">
+    @if (showsPlaceholder()) {
+    <a
+      class="reason-placeholder margin-right-4"
+      href
+      [attr.aria-label]="detailLabel"
+      (click)="$event.preventDefault(); openDetail(reasonDetail)"
+      i18n="@@authLog.seeDetails"
+      >see details</a
+    >
+    }
+    <button
+      class="reason-detail-button"
+      mat-icon-button
+      type="button"
+      [attr.aria-label]="detailLabel"
+      (click)="openDetail(reasonDetail)">
+      <mat-icon class="reason-detail-icon">help_outline</mat-icon>
+    </button>
+  </span>
   }
 </div>

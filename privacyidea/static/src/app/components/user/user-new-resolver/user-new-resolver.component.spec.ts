@@ -378,6 +378,13 @@ describe("UserNewResolverComponent", () => {
     expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
   });
 
+  it.each(["test", ".", ".."])("rejects the reserved name %p", (name) => {
+    component.resolverType.set("passwdresolver");
+    component.resolverNameModel.set({ resolverName: name });
+    expect(component.resolverNameForm.resolverName().errors().some((e) => e.kind === "reservedName")).toBe(true);
+    expect(component.canSave).toBe(false);
+  });
+
   it("should include additional fields in save payload", async () => {
     component.resolverNameModel.set({ resolverName: "res" });
     component.resolverType.set("passwdresolver");
@@ -608,5 +615,60 @@ describe("UserNewResolverComponent", () => {
 
     expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
     expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  describe("deleteResolver", () => {
+    let notificationService: MockNotificationService;
+
+    beforeEach(() => {
+      notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+      resolverService.selectedResolverName.set("ldap1");
+    });
+
+    it("does nothing without a selected resolver", async () => {
+      resolverService.selectedResolverName.set("");
+      await component.deleteResolver();
+      expect(dialogService.confirmDelete).not.toHaveBeenCalled();
+      expect(resolverService.deleteResolver).not.toHaveBeenCalled();
+    });
+
+    it("does not delete when the confirmation is cancelled", async () => {
+      dialogService.confirmDelete.mockResolvedValue(false);
+      await component.deleteResolver();
+      expect(resolverService.deleteResolver).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("deletes the resolver, reloads the list and navigates back", async () => {
+      await component.deleteResolver();
+      expect(dialogService.confirmDelete).toHaveBeenCalledWith(expect.objectContaining({ items: ["ldap1"] }));
+      expect(resolverService.deleteResolver).toHaveBeenCalledWith("ldap1");
+      expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("ldap1"));
+      expect(resolverService.resolversResource.reload).toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
+    });
+
+    it.each([
+      ["a negative result", new MockPiResponse<number>({ result: { status: true, value: -1 } })],
+      ["a failed status", new MockPiResponse<number>({ result: { status: false, value: 1 } })],
+      ["a missing value", new MockPiResponse<number>({ result: { status: true, value: undefined } })]
+    ])("reports the resolver as not found on %s", async (_label, response) => {
+      resolverService.deleteResolver.mockReturnValue(of(response));
+      await component.deleteResolver();
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("ldap1"));
+      expect(notificationService.success).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("reports the server message when the deletion is rejected", async () => {
+      resolverService.deleteResolver.mockReturnValue(
+        throwError(() => ({ error: { result: { error: { message: "resolver is in use" } } } }))
+      );
+      await component.deleteResolver();
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("resolver is in use"));
+      expect(notificationService.success).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
   });
 });

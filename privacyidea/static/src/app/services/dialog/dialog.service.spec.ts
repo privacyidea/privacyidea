@@ -20,7 +20,8 @@ import { Component } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
-import { Subject } from "rxjs";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { of, Subject } from "rxjs";
 import { DialogService } from "./dialog.service";
 
 @Component({ template: "" })
@@ -198,6 +199,38 @@ describe("DialogService", () => {
     it("should return false if MatDialog.openDialogs is empty", () => {
       matDialogMock.openDialogs = [];
       expect(service.isAnyDialogOpen()).toBe(false);
+    });
+  });
+
+  describe("confirmDelete", () => {
+    const args = { title: "Delete Things", items: ["a", "b"], itemType: "thing" };
+
+    function mockClosedWith(result: unknown) {
+      matDialogMock.open.mockReturnValue({ afterClosed: () => of(result) } as MatDialogRef<AbstractDialogComponent>);
+    }
+
+    it("opens a destructive confirmation dialog for the given items", async () => {
+      mockClosedWith(true);
+      await service.confirmDelete(args);
+      expect(matDialog.open).toHaveBeenCalledWith(
+        SimpleConfirmationDialogComponent,
+        expect.objectContaining({
+          data: {
+            ...args,
+            confirmAction: { type: "destruct", label: "Delete", value: true }
+          }
+        })
+      );
+    });
+
+    it.each([
+      [true, true],
+      [false, false],
+      [undefined, false],
+      ["true", false]
+    ])("resolves a dialog result of %p to %p", async (result, expected) => {
+      mockClosedWith(result);
+      await expect(service.confirmDelete(args)).resolves.toBe(expected);
     });
   });
 });

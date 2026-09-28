@@ -322,7 +322,9 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
         catchError((error) => {
           console.error("Failed to reset the user lock.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to reset the user lock. ` + message);
+          this.notificationService.error(
+            $localize`:@@conditionalAccess.failedResetUserLock:Failed to reset the user lock. ` + message
+          );
           return of(false);
         })
       );
@@ -353,7 +355,9 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
         catchError((error) => {
           console.error("Failed to lock user.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to lock user. ` + message);
+          this.notificationService.error(
+            $localize`:@@conditionalAccess.failedLockUser:Failed to lock user. ` + message
+          );
           return of(null);
         })
       );
@@ -369,7 +373,9 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
         catchError((error) => {
           console.error("Failed to purge expired user locks.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to purge expired user locks. ` + message);
+          this.notificationService.error(
+            $localize`:@@conditionalAccess.failedPurgeExpiredUser:Failed to purge expired user locks. ` + message
+          );
           return of(0);
         })
       );
@@ -436,7 +442,9 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
         catchError((error) => {
           console.error("Failed to remove blocklist entry.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to remove blocklist entry. ` + message);
+          this.notificationService.error(
+            $localize`:@@conditionalAccess.failedRemoveBlocklistEntry:Failed to remove blocklist entry. ` + message
+          );
           return of(false);
         })
       );
@@ -458,7 +466,7 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
         catchError((error) => {
           console.error("Failed to block IP.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to block IP. ` + message);
+          this.notificationService.error($localize`:@@conditionalAccess.failedBlockIp:Failed to block IP. ` + message);
           return of(null);
         })
       );
@@ -474,7 +482,10 @@ export class ConditionalAccessStateService implements ConditionalAccessStateServ
         catchError((error) => {
           console.error("Failed to purge blocklist.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.error($localize`Failed to purge expired blocklist entries. ` + message);
+          this.notificationService.error(
+            $localize`:@@conditionalAccess.failedPurgeExpiredBlocklist:Failed to purge expired blocklist entries. ` +
+              message
+          );
           return of(0);
         })
       );

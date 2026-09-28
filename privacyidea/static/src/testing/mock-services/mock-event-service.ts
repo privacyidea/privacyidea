@@ -52,9 +52,7 @@ export class MockEventService implements EventServiceInterface {
 
   deleteEvent = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<number>(1)));
 
-  deleteWithConfirmDialog = jest.fn((_event: EventHandler, afterDelete?: () => void) => {
-    if (afterDelete) afterDelete();
-  });
+  deleteWithConfirmDialog = jest.fn().mockResolvedValue(MockPiResponse.fromValue<number>(1));
 
   readonly eventHandlerModulesResource = new MockHttpResourceRef<PiResponse<string[]>>(
     MockPiResponse.fromValue<string[]>(["mockModule"])

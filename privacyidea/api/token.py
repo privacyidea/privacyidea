@@ -85,6 +85,7 @@ from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_t
                                            hide_tokeninfo, init_ca_connector, init_ca_template,
                                            init_subject_components, require_description_on_edit, require_description,
                                            check_container_action, check_user_params,
+                                           resolver_realm_access,
                                            force_server_generate_key)
 from privacyidea.lib.challenge import (cancel_challenge, get_challenges, get_challenges_for_user,
                                        get_challenges_paginate, cleanup_expired_challenges)
@@ -779,6 +780,7 @@ def list_api():
 @prepolicy(check_max_token_realm, request)
 @prepolicy(check_max_token_user, request)
 @prepolicy(check_token_action, request, action=PolicyAction.ASSIGN)
+@prepolicy(resolver_realm_access, request, action=PolicyAction.ASSIGN)
 @prepolicy(check_user_params, request, action=PolicyAction.ASSIGN)
 @prepolicy(encrypt_pin, request)
 @prepolicy(check_otp_pin, request)

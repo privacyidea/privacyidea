@@ -234,7 +234,8 @@ class APIContainerTemplate(APIContainerTest):
                                              url="https://pi/pi",
                                              description="Hallo")
         # service id for applspec
-        service_id = set_serviceid("test", "This is an awesome test service id")
+        service_id = "test"
+        set_serviceid(service_id, "This is an awesome test service id")
 
         # Create a template with all token types allowed for the generic container template
         tokens_dict = [
@@ -341,7 +342,8 @@ class APIContainerTemplate(APIContainerTest):
                                              url="https://pi/pi",
                                              description="Hallo")
         # service id for applspec
-        service_id = set_serviceid("test", "This is an awesome test service id")
+        service_id = "test"
+        set_serviceid(service_id, "This is an awesome test service id")
 
         # Create a template with all token types allowed for the generic container template
         tokens_dict = [

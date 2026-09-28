@@ -20,6 +20,7 @@ import { Component, input, output } from "@angular/core";
 
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -29,7 +30,7 @@ import { RADIUS_SERVER } from "@constants/token.constants";
 @Component({
   selector: "app-radius-config",
   standalone: true,
-  imports: [MatExpansionModule, MatFormFieldModule, MatSelectModule, RouterLink, ClearButtonComponent],
+  imports: [MatExpansionModule, MatFormFieldModule, MatInputModule, MatSelectModule, RouterLink, ClearButtonComponent],
   templateUrl: "./radius-config.component.html"
 })
 export class RadiusConfigComponent {
@@ -39,6 +40,7 @@ export class RadiusConfigComponent {
   formData = input.required<Record<string, string | undefined>>();
   formDataChange = output<Record<string, string | undefined>>();
   radiusServers = input.required<string[]>();
+  radiusServersListable = input.required<boolean>();
   expanded = input<boolean>(false);
 
   updateFormData(fieldName: string, value: string): void {

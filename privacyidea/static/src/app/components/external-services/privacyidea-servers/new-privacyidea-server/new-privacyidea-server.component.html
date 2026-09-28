@@ -39,6 +39,15 @@
       class="header-row sticky-header"
       [appStickyHeader]="scrollContainer">
       <div class="action-buttons">
+        @if (isEditMode() && authService.actionAllowed("privacyideaserver_write")) {
+          <button
+            (click)="deleteServer()"
+            class="action-button-delete-secondary button-width-s"
+            mat-stroked-button>
+            <mat-icon>delete</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        }
         <button
           (click)="onCancel()"
           class="action-button-secondary button-width-s"
@@ -78,6 +87,9 @@
               >Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores
               and hyphens are allowed.</mat-error
             >
+          }
+          @if (privacyideaForm.identifier().errors().some(e => e.kind === 'reservedName')) {
+            <mat-error i18n="@@common.cannotBeNamed">Cannot be named "{{ privacyideaForm.identifier().value() }}".</mat-error>
           }
           <mat-hint i18n="@@piServer.uniqueIdentifying"
             >This is the unique identifying name of the privacyIDEA server definition.</mat-hint

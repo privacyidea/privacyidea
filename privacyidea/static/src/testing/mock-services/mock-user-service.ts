@@ -23,6 +23,7 @@ import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
   UserAttributePolicy,
+  UserCount,
   UserData,
   UserListResponseDetail,
   UserServiceInterface
@@ -96,7 +97,7 @@ export class MockUserService implements UserServiceInterface {
   sort = signal<Sort>({ active: "", direction: "" });
   pageSize = signal(10);
   apiFilterKeys: string[] = [];
-  advancedApiFilterKeys: string[] = [];
+  advancedApiFilterKeys: string[] = ["has_tokens"];
   hiddenApiFilterKeys: string[] = [];
   apiFilterKeyMap: Record<string, string> = {};
   exactMatchKeys = new Set<string>();
@@ -154,4 +155,6 @@ export class MockUserService implements UserServiceInterface {
   createUser = jest.fn();
   editUser = jest.fn();
   deleteUser = jest.fn();
+  fetchUserCount = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<UserCount>({ count: 0, with_tokens: 0 })));
+  presetFilter = signal<FilterValue | null>(null);
 }

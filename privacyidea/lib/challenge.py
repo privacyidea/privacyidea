@@ -41,10 +41,9 @@ from .cache import (ChallengeDTO, evict_challenge, evict_transaction,
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
-from .utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like
+from .utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like
 from ..models import Challenge, db
 from ..models.utils import utc_now
-from privacyidea.models.utils import clob_to_varchar
 
 log = logging.getLogger(__name__)
 
@@ -97,7 +96,10 @@ def get_challenges(serial: str = None, transaction_id: str = None,
     if transaction_id is not None:
         stmt = stmt.where(Challenge.transaction_id == transaction_id)
     if challenge is not None:
-        stmt = stmt.where(clob_to_varchar(Challenge.challenge) == challenge)
+        # Challenge.challenge is a CLOB on Oracle, which cannot be compared with "="
+        # (ORA-00932). LIKE works there and everywhere else; escaping the value keeps the
+        # comparison exact.
+        stmt = stmt.where(Challenge.challenge.like(escape_sql_like(challenge), escape=SQL_LIKE_ESCAPE))
 
     return db.session.execute(stmt).scalars().all()
 

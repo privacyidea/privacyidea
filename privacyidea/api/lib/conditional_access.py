@@ -24,6 +24,11 @@ rejection reaches the client:
 
 * :func:`conditional_access_gate` guards ``/validate/*`` and **returns** the rejection as a :class:`~flask.Response`:
   an ordinary ``200`` carrying ``result.value`` false and no error object, like any other failed authentication there.
+  ``/validate/remember_device`` is guarded the same way but calls :func:`conditional_access_precheck` from inside its
+  view instead of wearing the decorator, because it must first establish that the caller may ask at all: it is the one
+  ``/validate`` endpoint that requires an identified API client, and a gate above that check would let an
+  unidentified caller write a rejection - and its authentication-log classification - for any username it cares to
+  post.
 * :func:`conditional_access_login_gate` guards the JWT login ``/auth`` and **raises** an :class:`AuthError` the login
   screen renders, so a human is told what is in force instead of "Wrong credentials" for ten minutes. Its id is
   :attr:`~privacyidea.lib.error.Error.AUTHENTICATE` (``403``). An ``AuthError`` needs some message, so
@@ -64,7 +69,7 @@ survives; the rest of the detail is collapsed, which is what those actions are f
 import functools
 import logging
 from dataclasses import dataclass, replace
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from flask import request, g, Response
@@ -72,10 +77,11 @@ from flask import request, g, Response
 from privacyidea.api.lib.utils import (GENERIC_AUTH_FAILURE, log_authentication, build_ca_context,
                                       send_result, get_optional_one_of)
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
-from privacyidea.lib.conditional_access.engine import (get_subject_lock, get_user_lock_by_login, get_ip_block,
-                                                       evaluate_access_decision,
+from privacyidea.lib.conditional_access.engine import (get_subject_lock, get_user_lock, get_user_lock_by_login,
+                                                       get_ip_block, can_be_locked, evaluate_access_decision,
                                                        lock_subject, render_error_message, restriction_messages,
-                                                       AccessDecision, ConditionalAccessAction, RestrictionStatus)
+                                                       AccessDecision, ConditionalAccessAction, LockSubject,
+                                                       RestrictionStatus)
 from privacyidea.lib.conditional_access.policy import default_error_message
 from privacyidea.lib.conditional_access.session import release_ca_connection
 from privacyidea.lib.conditional_access.request_context import get_ca_context, peek_ca_context
@@ -102,20 +108,34 @@ class RejectionShape:
     :ivar rid: the response id this endpoint renders with. ``prepare_result`` adds ``result.authentication`` only
         for ``rid > 1``, so a rejection at ``/ttype/push`` - which renders with ``1`` - must not grow a field the
         endpoint never carries.
-    :ivar carries_detail: whether an ordinary failed authentication here carries a ``detail`` at all. On
-        ``/validate/*`` every failure does, so a silent rejection carries the generic failure to have one too; at
-        ``/ttype/push`` none does, so a silent rejection carries none either - the generic message would be exactly
-        the tell that including it on ``/validate`` avoids.
+    :ivar carries_message: whether an ordinary failed authentication here says anything in words. On
+        ``/validate/*`` every failure carries a message, so a silent rejection carries the generic failure to have
+        one too; at ``/ttype/push`` no failure carries a ``detail`` at all, and at ``/validate/remember_device`` the
+        answer is a bare boolean in *extra_detail*, so in both a silent rejection says nothing - the generic message
+        would be exactly the tell that including it on ``/validate/check`` avoids. This is about the wording alone:
+        an endpoint can say nothing and still carry a detail, which is what *extra_detail* is for.
+    :ivar extra_detail: fields every answer this endpoint gives carries, merged into the rejection's ``detail`` so
+        a refusal answers through them like any other failure. ``/validate/remember_device`` is the one endpoint
+        with any: its whole answer is ``detail.remembered_device``, so a rejection leaving it out would be the one
+        answer its clients cannot read.
     """
     value: Any = False
     rid: int = 2
-    carries_detail: bool = True
+    carries_message: bool = True
+    extra_detail: Mapping[str, Any] | None = None
 
 
 #: How ``/ttype/push`` answers a refused challenge answer. The push token renders its own response through
 #: ``prepare_result`` with ``rid`` 1, so it carries no ``result.authentication``, and an ordinary failed answer there
 #: carries no ``detail`` at all - both of which a rejection has to match to be indistinguishable from one.
-PUSH_ANSWER_REJECTION = RejectionShape(rid=1, carries_detail=False)
+PUSH_ANSWER_REJECTION = RejectionShape(rid=1, carries_message=False)
+
+#: How ``/validate/remember_device`` answers a refused recognition. Recognition is not an authentication, so the
+#: endpoint renders with ``rid`` 1 and reports no ``result.authentication`` verdict; and an ordinary "not recognised"
+#: answer there carries no message at all, only ``detail.remembered_device``, so a silent rejection carries none
+#: either and says ``false`` through the one field the client reads.
+REMEMBER_DEVICE_REJECTION = RejectionShape(rid=1, carries_message=False,
+                                           extra_detail={"remembered_device": False})
 
 
 def _rejected_transaction_id() -> str | None:
@@ -188,8 +208,16 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
             # to be for is written on their row and looked for on the admin's, and so never met: the name would lock
             # over and over without a single request being refused. The same ambiguity already couples the two
             # accounts in the auth_max_fail time limit (see doc/policies/authorization.rst).
-            user_lock = get_user_lock_by_login(principal.username, clear_expired=True)
-            if user_lock is not None:
+            #
+            # Only while this admin is a principal some policy can lock, though. An operator who excluded them -
+            # a USER_ROLE condition is how a local admin is kept out of a user-target policy - has said this
+            # account is not to be locked, and a row written for somebody who merely shares the name does not
+            # change that: it is the account an operator recovers a locked-out deployment with, and the name it
+            # carries is often one a directory holds a user of as well. The row is looked for first because it is
+            # almost never there, and the applicability question costs a scan of every policy.
+            namesake_lock = get_user_lock_by_login(principal.username, clear_expired=True)
+            if namesake_lock is not None and can_be_locked(ca_context):
+                user_lock = namesake_lock
                 locked = f"user named {principal.username!r}"
         ip_block = get_ip_block(source_ip, clear_expired=True)
         binding = _binding_event_type(user_lock, ip_block)
@@ -228,7 +256,7 @@ def _evaluate_rejection(user: User) -> "Rejection | None":
 
 # --- /validate/*: return the rejection as a response ---------------------------------------------------------------
 
-def conditional_access_precheck(user: User, rejection_value: Any = False) -> Response | None:
+def conditional_access_precheck(user: User, shape: RejectionShape | None = None) -> Response | None:
     """
     Reject a request pre-auth (before any token logic and before the failcounter /
     max_auth checks) when conditional-access policies forbid it. Returns the failure
@@ -246,12 +274,13 @@ def conditional_access_precheck(user: User, rejection_value: Any = False) -> Res
     outcome for it.
 
     :param user: the identity to gate on
-    :param rejection_value: what ``result.value`` says on a rejection. ``False`` everywhere except
-        ``/validate/triggerchallenge``, where the value is the *number of challenges triggered* rather than a
-        boolean - answering that endpoint with ``False`` would change the type of a field its callers may be
-        reading as a number.
+    :param shape: how this endpoint answers a refusal, defaulting to the ``/validate/*`` shape - an ordinary
+        ``200`` carrying ``result.value`` false and a message. ``/validate/triggerchallenge`` overrides the value
+        (the number of challenges triggered, where a boolean would change the type of a field its callers may be
+        reading as a number) and ``/validate/remember_device`` the whole shape, answering a recognition rather than
+        an authentication.
     """
-    shape = RejectionShape(value=rejection_value)
+    shape = shape if shape is not None else RejectionShape()
     rejection = conditional_access_rejection(user, shape)
     if rejection is None:
         return None
@@ -281,9 +310,13 @@ def conditional_access_rejection(user: User, shape: RejectionShape) -> Rejection
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return None
-    # Staged like any other event, so request teardown writes it. A rejection row *replaces* the row the request
-    # would have written anyway, which is why every gated endpoint wants one: they all log an authentication event
-    # when they succeed. The one endpoint that does not - /validate/polltransaction - is not gated at all.
+    # Staged like any other event, so request teardown writes it. On the authenticating endpoints a rejection row
+    # *replaces* the row the request would have written anyway: they all log an authentication event when they
+    # succeed. /validate/remember_device is the exception - recognition is not an authentication and logs no event
+    # of its own - so the row there is net new. It is wanted all the same, since it is the only place an admin can
+    # filter for a refusal, and it is safe: an enforcement type is excluded from the trackable vocabulary
+    # (CA_ENFORCEMENT_EVENT_TYPES), so no policy counts it and a refusal cannot feed the policy that caused it.
+    # /validate/polltransaction logs no event either and is not gated at all.
     log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
                        transaction_id=_rejected_transaction_id())
     _audit_rejection(rejection.audit_info, user)
@@ -301,16 +334,16 @@ def _rejection_wording(shape: RejectionShape, message: str | None) -> str | None
     What a rejection says on the endpoint *shape* describes, given the wording the restrictions carry.
 
     A configured message is said everywhere. A silent restriction is the interesting half: where an ordinary
-    failure carries a ``detail`` it says what every other failed authentication says, because a response *without*
-    one could only have come from conditional access; where an ordinary failure carries none - ``/ttype/push`` -
-    it says nothing, because there the generic message would be that same tell.
+    failure says something it says what every other failed authentication says, because a response *without* a
+    message could only have come from conditional access; where an ordinary failure says nothing - ``/ttype/push``,
+    ``/validate/remember_device`` - it says nothing, because there the generic message would be that same tell.
 
     :param message: the wording the restrictions in force carry, or ``None`` for the normal, silent case
     :return: the wording, or ``None`` when the rejection carries no detail at all
     """
     if message:
         return message
-    return None if not shape.carries_detail else str(GENERIC_AUTH_FAILURE)
+    return None if not shape.carries_message else str(GENERIC_AUTH_FAILURE)
 
 
 def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
@@ -330,7 +363,10 @@ def _rejection_response(shape: RejectionShape, message: str | None) -> Response:
         :func:`_rejection_wording`)
     """
     # An empty detail is dropped by prepare_result, which is exactly what an endpoint carrying none needs.
-    return send_result(shape.value, rid=shape.rid, details={"message": message} if message else {})
+    details = dict(shape.extra_detail or {})
+    if message:
+        details["message"] = message
+    return send_result(shape.value, rid=shape.rid, details=details)
 
 
 def restore_rejection_audit(response: Response) -> Response:
@@ -373,6 +409,10 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
     :func:`conditional_access_login_gate`. The exception is a pre-policy that rewrites the identity: ``set_realm``
     and ``mangle`` on ``/validate/check`` assign a new ``request.User``, and everything downstream authenticates,
     logs and counts as that one - so they run first, or the gate would check an identity that never authenticates.
+    A pre-event handler can assign one too (the RequestMangler with ``reset_user``). The event handlers stay below
+    the gate, so that none of them runs for a user it refuses; instead the gate leaves its check on the request's
+    conditional-access context, and the event decorator runs it again for the new user
+    (:func:`~privacyidea.lib.conditional_access.request_context.recheck_conditional_access_gate`).
 
     Below the response decorators because this gate *returns* its rejection rather than raising one: a failed
     authentication on ``/validate/*`` is an ordinary ``200`` carrying ``result.value`` false, not an error
@@ -394,15 +434,22 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
         omitted, ``request.User`` is used. Endpoints that must resolve the
         identity differently (a serial/credential-id request, or a transaction
         owner) pass their own resolver.
-    :param rejection_value: passed through to the pre-check; see there for the one endpoint that sets it.
+    :param rejection_value: what ``result.value`` says on a rejection, which is the whole of the refusal shape
+        for a decorated endpoint. ``False`` everywhere except ``/validate/triggerchallenge``, where the value
+        is the *number of challenges triggered* rather than a boolean - answering that endpoint with ``False``
+        would change the type of a field its callers may be reading as a number.
     """
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            user = identity_resolver() if identity_resolver is not None else request.User
-            rejection = conditional_access_precheck(user, rejection_value=rejection_value)
+            def check() -> Response | None:
+                user = identity_resolver() if identity_resolver is not None else request.User
+                return conditional_access_precheck(user, RejectionShape(value=rejection_value))
+
+            rejection = check()
             if rejection is not None:
                 return rejection
+            get_ca_context().gate_check = check
             return wrapped_function(*args, **kwargs)
         return wrapper
     return decorator
@@ -556,8 +603,53 @@ def _reject_restricted_login(user: User) -> None:
     rejection = _evaluate_rejection(user)
     if rejection is None:
         return
+    _raise_rejection(rejection, user)
+
+
+def reject_locked_fallback_user(user: User) -> None:
+    """
+    Reject an ``/auth`` login that has turned out to be for the locked *user*, after the login gate judged it a
+    local database admin's. Raises :class:`AuthError` when it must be rejected and returns ``None`` otherwise.
+
+    A login name that names both a local admin and a user is only resolved to one of them by the credential that
+    matches, which happens inside the view: the admin password is tried first, and only once it fails does the
+    view build the same-named user and authenticate them instead
+    (:func:`~privacyidea.api.auth.get_auth_token`). The gate ran before that, against the admin, so a lock
+    standing on the user it has now fallen back to has not been weighed yet - and it is this path, not the
+    admin's, that the lock was written for. Weighing it here is what lets the gate leave an unlockable local
+    admin alone (:func:`~privacyidea.lib.conditional_access.engine.can_be_locked`) without letting the locked
+    user in under the bare name.
+
+    Only the user's own lock is re-read. A source-IP block and the pre-auth ``DENY`` decision were evaluated by
+    the gate on this same request and do not change with the principal's realm - and re-running the decision
+    would buffer a second copy of its outcomes onto the row this request writes.
+
+    The caller re-points ``request.User`` and clears the local-admin flag first, the same way it reloads the
+    pre-policies, so the refusal is logged against the principal it is really about.
+    """
+    try:
+        lock = get_user_lock(user, clear_expired=True)
+    finally:
+        # Released for the reason the pre-check documents: this read is the only conditional-access work left
+        # before the request goes on, so its transaction must not hold a second connection for the duration.
+        release_ca_connection()
+    if lock is None:
+        return
+    context = get_ca_context()
+    context.use_default_error_message = show_default_ca_error_message(user)
+    log.info(f"Rejecting {request.path} for locked {LockSubject.for_user(user)}.")
+    messages = restriction_messages(lock, use_default_error_message=context.use_default_error_message)
+    _raise_rejection(Rejection(AuthEventType.USER_LOCKED, _audit_reason(lock, None),
+                               " ".join(message.text for message in messages) or None), user)
+
+
+def _raise_rejection(rejection: "Rejection", user: User) -> None:
+    """
+    Log, audit and raise *rejection* - everything that turns a decision into the 401 the login screen sees,
+    shared by the gate and by the in-view re-check so the two cannot render one differently.
+    """
     # Staged rather than written, so request teardown records it even though the AuthError below unwinds the view -
-    # and staged after _evaluate_rejection, so an enforced DENY's buffered outcome lands on this row.
+    # and staged after the decision, so an enforced DENY's buffered outcome lands on this row.
     event = log_authentication(rejection.event_type, request, user=user, other_info=rejection.other_info,
                                transaction_id=_rejected_transaction_id(),
                                internal_admin=g.get("resolved_user", {}).get("is_local_admin", False))
@@ -600,14 +692,21 @@ def conditional_access_login_gate() -> Callable[[Callable], Callable]:
     Everything it reads is ready by then - ``/auth``'s ``before_request`` sets ``g.audit_object``, ``g.client_ip`` and
     ``g.resolved_user`` and resolves ``request.User`` - and the :class:`AuthError` it raises is handled by the
     ``jwtauth`` error handler exactly as one raised from the view would be.
+
+    A pre-event handler that replaces ``request.User`` has the check run again for the new user, as on
+    ``/validate`` (see :func:`conditional_access_gate`).
     """
 
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            user = request.User or User()
-            g.audit_object.log({"user": user.login, "realm": user.realm})
-            _reject_restricted_login(user)
+            def check() -> None:
+                user = request.User or User()
+                g.audit_object.log({"user": user.login, "realm": user.realm})
+                _reject_restricted_login(user)
+
+            check()
+            get_ca_context().gate_check = check
             return wrapped_function(*args, **kwargs)
 
         return wrapper

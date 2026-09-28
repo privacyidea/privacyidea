@@ -29,6 +29,11 @@ tests/test_api_lib_policy.py
 import logging
 log = logging.getLogger(__name__)
 
+# The pin handler classes that ship with privacyIDEA. Writing an own one is a supported thing
+# to do, see the pinhandling policy - such a class is declared in PI_PIN_HANDLER_MODULES
+# rather than added here.
+PIN_HANDLERS = ["privacyidea.lib.pinhandling.base.PinHandler"]
+
 
 class PinHandler:
     """

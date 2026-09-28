@@ -612,7 +612,7 @@ export class ContainerService extends FilterableTableService implements Containe
   containerDetailsResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
     this.pollingTrigger();
-    if (serial === "") return undefined;
+    if (serial === "" || !this.authService.actionAllowed("container_list")) return undefined;
     return {
       url: this.containerBaseUrl,
       method: "GET",

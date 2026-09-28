@@ -1,13 +1,15 @@
 from unittest import mock
 
-from .base import MyApiTestCase
+from .base import MyApiTestCase, PWFILE
 
 from privacyidea.lib.clients import hash_api_key, create_client
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
 from privacyidea.lib.remembered_device import create_remembered_device, user_identity
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.params import MAX_PAGE_SIZE
-from privacyidea.lib.realm import set_realm
+from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.user import User
 from privacyidea.models import Client, RememberedDevice
 
@@ -290,7 +292,8 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
     def test_06_suspended_key_not_blocked_but_audited(self):
         # A known key whose client is suspended does not block /validate/check,
         # but its use is recorded in the audit log (a real, issued key still in
-        # use after it was disabled).
+        # use after it was disabled) and in the authentication log, as a
+        # SUSPENDED_API_KEY_USED event conditional access can lock or notify on.
         self.setUp_user_realms()
         client = self._create_client()
         with self.app.test_request_context(f'/clients/{client["id"]}',
@@ -298,6 +301,7 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
                                            headers={'Authorization': self.at}):
             self.assertEqual(200, self.app.full_dispatch_request().status_code)
 
+        logs_before = len(get_authentication_logs())
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius", "realm": self.realm1, "pass": "x"},
                                            headers={'X-API-Key': client["api_key"]}):
@@ -307,6 +311,59 @@ class APIClientAPIKeyMiddlewareTestCase(MyApiTestCase):
 
         entry = self.find_most_recent_audit_entry(action_detail="*suspended API key presented*")
         self.assertIn("suspended API key presented", entry.get("action_detail", ""))
+
+        # The suspended-key use is its own row, written as the response goes out and so behind the request's own
+        # classification of the auth attempt itself (cornelius has no token in this test fixture, so NO_TOKEN).
+        entries = get_authentication_logs()[logs_before:]
+        self.assertEqual([AuthEventType.NO_TOKEN, AuthEventType.SUSPENDED_API_KEY_USED],
+                         [entry.event_type for entry in entries])
+        self.assertEqual({"client_id": client["id"]}, entries[-1].other_info)
+
+    def test_06b_suspended_key_row_names_the_client_and_never_a_user(self):
+        # The row says which client presented the key and nothing about a user. The request was not identified by
+        # the key, so any user it carries is an unauthenticated claim the caller chose - and this event type is
+        # trackable, so attributing the row to that name would let whoever holds a disabled key write
+        # authentication-log rows against any account, which a policy counting them per user turns into a lockout.
+        self.setUp_user_realms()
+        client = self._create_client()
+        with self.app.test_request_context(f'/clients/{client["id"]}',
+                                           data={"status": "suspended"}, method='PATCH',
+                                           headers={'Authorization': self.at}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+        logs_before = len(get_authentication_logs())
+        # /validate/remember_device requires an identified client, so a suspended key is answered with a 401 by an
+        # error handler - the recording still happens, which is the case a before_request could not cover.
+        with self.app.test_request_context('/validate/remember_device', method='POST',
+                                           data={"user": "cornelius", "realm": self.realm1},
+                                           headers={'X-API-Key': client["api_key"]}):
+            self.assertEqual(401, self.app.full_dispatch_request().status_code)
+
+        entries = get_authentication_logs()[logs_before:]
+        self.assertEqual([AuthEventType.SUSPENDED_API_KEY_USED], [entry.event_type for entry in entries])
+        self.assertEqual({"client_id": client["id"]}, entries[0].other_info)
+        self.assertIsNone(entries[0].username)
+        self.assertIsNone(entries[0].resolver)
+        self.assertIsNone(entries[0].uid)
+
+    def test_06c_suspended_key_is_recorded_outside_the_validate_blueprint(self):
+        # The signal follows the key, not the blueprint: it used to be recorded only by /validate's own
+        # before_request, so a suspended key on an admin or token endpoint went unreported.
+        client = self._create_client()
+        with self.app.test_request_context(f'/clients/{client["id"]}',
+                                           data={"status": "suspended"}, method='PATCH',
+                                           headers={'Authorization': self.at}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+        logs_before = len(get_authentication_logs())
+        with self.app.test_request_context('/token/', method='GET',
+                                           headers={'Authorization': self.at,
+                                                    'X-API-Key': client["api_key"]}):
+            self.assertEqual(200, self.app.full_dispatch_request().status_code)
+
+        entries = get_authentication_logs()[logs_before:]
+        self.assertEqual([AuthEventType.SUSPENDED_API_KEY_USED], [entry.event_type for entry in entries])
+        self.assertEqual("/token", entries[0].endpoint)
 
     def test_07_unknown_key_is_not_audited(self):
         # An unknown/garbage key must NOT create an audit note (avoid flooding).
@@ -654,6 +711,97 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
         finally:
             delete_policy("clients_scoped")
 
+    def test_17b_revoke_all_for_client_respects_a_user_scoped_policy(self):
+        # An admin policy may be scoped by user or resolver instead of by realm. A realm list cannot
+        # express such a boundary, and reading "no realm on the policy" as "every realm" hands an
+        # admin granted one named user the power to revoke every user's devices: the request carries
+        # no user, and a policy dimension whose search value is None is skipped when matching.
+        client, _ = create_client("user scoped client", "privacyidea-cp")
+        keep_one = self._device(client.id, "cornelius", realm=self.realm1).series_id
+        keep_two = self._device(client.id, "hans", realm=self.realm1).series_id
+        set_policy("clients_user_scoped", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_REVOKE, user="alice")
+        try:
+            res = self._revoke_all(client.id)
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(0, res.json['result']['value'], res.json)
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_one).first())
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=keep_two).first())
+        finally:
+            delete_policy("clients_user_scoped")
+
+    def test_17c_revoke_by_user_acts_on_the_named_resolver(self):
+        # The policy is checked against request.User, which carries the request's `resolver`. If the
+        # revoke rebuilds the user from login and realm alone, the realm's resolver priority picks a
+        # resolver of its own, and the rows deleted are not the rows the check was made about.
+        from privacyidea.lib.resolver import save_resolver, delete_resolver
+        save_resolver({"resolver": "secondres", "type": "passwdresolver", "fileName": PWFILE})
+        set_realm("tworesolvers", [{"name": self.resolvername1, "priority": 1},
+                                   {"name": "secondres", "priority": 2}])
+        client, _ = create_client("two resolver client", "privacyidea-cp")
+        # bound to the LOWER priority resolver, which the priority pick would not choose
+        low = user_identity(User(login="cornelius", realm="tworesolvers", resolver="secondres"))
+        device, _cookie = create_remembered_device(low, client.id)
+        series = device.series_id      # read before the delete detaches the instance
+        try:
+            with self.app.test_request_context(
+                    f'/clients/{client.id}/remembered_devices',
+                    query_string={"realm": "tworesolvers", "user": "cornelius",
+                                  "resolver": "secondres"},
+                    method='DELETE', headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(1, res.json['result']['value'], res.json)
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=series).first())
+        finally:
+            delete_realm("tworesolvers")
+            delete_resolver("secondres")
+
+    def test_17d_wildcard_realm_grant_is_every_realm(self):
+        # The realm field of a policy is matched by the policy engine, which reads "*" as every
+        # realm. Carried out of the policy as a literal name it resolves to no realm at all, so the
+        # boundary collapses and the revoke reports success having done nothing - the worst answer
+        # for the incident-response action it is.
+        client, _ = create_client("wildcard client", "privacyidea-cp")
+        self._device(client.id, "cornelius", realm=self.realm1)
+        set_policy("clients_wildcard", scope=SCOPE.ADMIN,
+                   action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm="*")
+        try:
+            res = self._revoke_all(client.id)
+            self.assertEqual(200, res.status_code, res)
+            self.assertEqual(1, res.json['result']['value'], res.json)
+        finally:
+            delete_policy("clients_wildcard")
+
+    def test_17e_a_policy_for_some_users_of_a_realm_does_not_open_the_realm(self):
+        # The per-client and single-device paths act on every device of a realm without looking at its user, so a
+        # policy for one user of realm1 must not let them reach the devices of realm1's other users. That user's
+        # devices are still revoked by naming the user, which check_base_action holds to the policy.
+        client, _ = create_client("user of a realm client", "privacyidea-cp")
+        mine = self._device(client.id, "cornelius", realm=self.realm1)
+        theirs = self._device(client.id, "hans", realm=self.realm1)
+        mine_series, theirs_series, theirs_device = mine.series_id, theirs.series_id, theirs.device_id
+        try:
+            for realm in (self.realm1, "*"):
+                set_policy("clients_user_of_realm", scope=SCOPE.ADMIN,
+                           action=PolicyAction.REMEMBERED_DEVICE_REVOKE, realm=realm, user="cornelius")
+                res = self._revoke_all(client.id)
+                self.assertEqual(200, res.status_code, res)
+                self.assertEqual(0, res.json['result']['value'], (realm, res.json))
+                with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{theirs_device}',
+                                                   method='DELETE', headers={'Authorization': self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(404, res.status_code, (realm, res.json))
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=theirs_series).first())
+
+            # By user the revoke reaches every client, so the count also holds devices of earlier tests.
+            res = self._revoke_devices(user="cornelius", realm=self.realm1)
+            self.assertEqual(200, res.status_code, res)
+            self.assertIsNone(RememberedDevice.query.filter_by(series_id=mine_series).first())
+            self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=theirs_series).first())
+        finally:
+            delete_policy("clients_user_of_realm")
+
     def test_18_revoke_single_respects_admin_realm_scope(self):
         set_realm("xcscope", [{"name": self.resolvername1}])
         client, _ = create_client("scoped single client", "privacyidea-cp")
@@ -664,8 +812,17 @@ class APIClientRememberedDevicesTestCase(MyApiTestCase):
             with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/{device.device_id}',
                                                method='DELETE', headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
-                self.assertEqual(403, res.status_code, res)
+                self.assertEqual(404, res.status_code, res)
+                out_of_scope = res.json["result"]["error"]
             self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
+
+            # A device the admin may not revoke in answers exactly as an absent one: an admin who can
+            # tell the two apart can probe the device ids of realms they are not allowed to see.
+            with self.app.test_request_context(f'/clients/{client.id}/remembered_devices/nosuchdevice',
+                                               method='DELETE', headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(404, res.status_code, res)
+                self.assertEqual(out_of_scope["code"], res.json["result"]["error"]["code"])
         finally:
             delete_policy("clients_scoped")
 

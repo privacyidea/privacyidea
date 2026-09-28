@@ -111,7 +111,8 @@ export class RealmService implements RealmServiceInterface {
       this.contentService.onUserRealms() ||
       this.contentService.onAuthenticationLog() ||
       this.contentService.onLockedUsers() ||
-      this.contentService.onAnyContainerTemplatesRoute()
+      this.contentService.onAnyContainerTemplatesRoute() ||
+      this.contentService.onDashboard()
     );
   });
 

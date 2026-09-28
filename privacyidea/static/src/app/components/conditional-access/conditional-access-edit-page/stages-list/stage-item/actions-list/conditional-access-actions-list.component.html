@@ -19,20 +19,20 @@
 <div class="ca-actions-list">
   <p
     class="ca-actions-list-label"
-    i18n>
+    i18n="@@conditionalAccess.actionsRunWhenStage">
     Actions to run when this stage triggers
   </p>
   @for (pair of redundantRestrictionPairs(); track pair[1]) {
     <p
       class="ca-actions-list-warning"
-      i18n>
+      i18n="@@conditionalAccess.onlyTakesEffectRestriction">
       Only {{ pair[1] }} takes effect: a restriction is never weakened, so {{ pair[0] }} next to it changes nothing.
     </p>
   }
   @if (actions().length === 0) {
     <p
       class="ca-actions-list-empty"
-      i18n>
+      i18n="@@conditionalAccess.noActionsYetAdd">
       No actions yet. Add one below, e.g. lock the user or notify an admin.
     </p>
   } @else {
@@ -56,6 +56,6 @@
     class="action-button-secondary button-width-m"
     (click)="onAddAction()">
     <mat-icon>add</mat-icon>
-    <span i18n>Add Action</span>
+    <span i18n="@@conditionalAccess.addAction">Add Action</span>
   </button>
 </div>

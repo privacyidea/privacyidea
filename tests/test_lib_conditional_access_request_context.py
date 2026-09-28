@@ -64,6 +64,29 @@ class ConditionalAccessContextTestCase(MyTestCase):
     def _event(username, event_type=AuthEventType.LOGIN_SUCCESS):
         return PendingAuthEvent(event_type=event_type, username=username)
 
+    def test_00a_classifying_passes_over_a_client_signal(self):
+        # A client signal is staged on the way out, after the view has staged what the request actually was, so as
+        # the latest event it would stand in for that outcome and decide which policies are evaluated. It must not:
+        # whoever can produce one at will could otherwise keep every policy tracking their real failures from being
+        # asked about them.
+        context = ConditionalAccessContext()
+        outcome = context.stage(self._event("alice", AuthEventType.MFA_FAIL))
+        context.stage(self._event(None, AuthEventType.SUSPENDED_API_KEY_USED))
+
+        self.assertEqual(AuthEventType.SUSPENDED_API_KEY_USED, context.latest.event_type)
+        self.assertIs(outcome, context.classifying)
+
+    def test_00b_classifying_is_the_client_signal_when_it_is_all_there_is(self):
+        # Passing it over is only right while there is something to pass it over for. A request that authenticated
+        # nothing has no classification for the signal to stand in for.
+        context = ConditionalAccessContext()
+        signal = context.stage(self._event(None, AuthEventType.SUSPENDED_API_KEY_USED))
+
+        self.assertIs(signal, context.classifying)
+
+    def test_00c_classifying_is_none_with_nothing_staged(self):
+        self.assertIsNone(ConditionalAccessContext().classifying)
+
     def test_01_context_is_cached_per_app_context(self):
         context = get_ca_context()
         self.assertIs(context, get_ca_context())
@@ -574,6 +597,39 @@ class ConditionalAccessContextTestCase(MyTestCase):
             self.assertNotIn(ATTEMPT_ID_CHALLENGE_KEY, second.get_data())
         finally:
             delete_challenges(serial=serial)
+
+    def test_40a_a_claimed_attempt_is_not_joined_until_it_is_confirmed(self):
+        # Naming a transaction is a claim: it is held aside until something shows the request engaged with that
+        # challenge, so a request that merely carries a live transaction id starts an attempt of its own.
+        context = ConditionalAccessContext()
+        challenge = mock.Mock(serial="CA_ATTEMPT_TOK", **{"get_data.return_value": {ATTEMPT_ID_CHALLENGE_KEY: "aaa"}})
+        with mock.patch("privacyidea.lib.challenge.get_challenges", return_value=[challenge]):
+            context.continue_attempt("1234567890")
+
+        self.assertFalse(context.attempt_resolved)
+        context.confirm_attempt("1234567890")
+        self.assertEqual("aaa", context.attempt_id)
+
+    def test_40b_a_caller_that_resolved_the_challenge_itself_joins_the_attempt(self):
+        # The out-of-band push answer matches its challenge by verifying a signature over the nonce and only learns
+        # the transaction while logging its row, so there is no later point at which a claim could be confirmed.
+        context = ConditionalAccessContext()
+        challenge = mock.Mock(serial="CA_ATTEMPT_TOK", **{"get_data.return_value": {ATTEMPT_ID_CHALLENGE_KEY: "bbb"}})
+        with mock.patch("privacyidea.lib.challenge.get_challenges", return_value=[challenge]):
+            context.join_attempt("1234567890")
+
+        self.assertTrue(context.attempt_resolved)
+        self.assertEqual("bbb", context.attempt_id)
+
+    def test_40c_joining_leaves_an_attempt_already_settled_alone(self):
+        # A challenge created and answered inside one request (push_wait) keeps the attempt it started with.
+        context = ConditionalAccessContext()
+        own_attempt = context.attempt_id
+        challenge = mock.Mock(serial="CA_ATTEMPT_TOK", **{"get_data.return_value": {ATTEMPT_ID_CHALLENGE_KEY: "ccc"}})
+        with mock.patch("privacyidea.lib.challenge.get_challenges", return_value=[challenge]):
+            context.join_attempt("1234567890")
+
+        self.assertEqual(own_attempt, context.attempt_id)
 
     def test_42_a_request_gets_an_attempt_id(self):
         # The converse of test_41: inside a request there is an attempt to attribute a challenge to, and it is the one

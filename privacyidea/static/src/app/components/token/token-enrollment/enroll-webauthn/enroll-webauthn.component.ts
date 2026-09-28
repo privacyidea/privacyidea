@@ -108,7 +108,7 @@ export class EnrollWebauthnComponent extends EnrollTokenBase<WebAuthnEnrollmentD
     const registerRequest = webauthnEnrollmentResponse.detail.webAuthnRegisterRequest;
     if (!registerRequest?.transaction_id || !webauthnEnrollmentResponse.detail.serial) {
       this.notificationService.warning(
-        $localize`Invalid transaction ID or serial number in enrollment detail for finalization.`
+        $localize`:@@token.invalidTransaction:Invalid transaction ID or serial number in enrollment detail for finalization.`
       );
       return null;
     }

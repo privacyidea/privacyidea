@@ -32,6 +32,15 @@
   }
 
   <div class="header-row">
+    @if (isEditMode() && authService.actionAllowed("tokengroup_delete")) {
+      <button
+        (click)="deleteTokengroup()"
+        class="action-button-delete-secondary button-width-s"
+        mat-stroked-button>
+        <mat-icon>delete</mat-icon>
+        <span i18n="@@common.delete">Delete</span>
+      </button>
+    }
     <button
       (click)="onCancel()"
       class="action-button-secondary button-width-s"

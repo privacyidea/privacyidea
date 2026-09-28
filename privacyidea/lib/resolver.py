@@ -142,7 +142,13 @@ def save_resolver(params):
             continue
         if types.get(key) == "password":
             if value == CENSORED:
-                continue
+                stored_stmt = select(ResolverConfig).filter_by(resolver_id=resolver_id, Key=key)
+                stored_config = db.session.scalar(stored_stmt)
+                if not stored_config or stored_config.Type == "password":
+                    # Keep the stored secret
+                    continue
+                # Stored in plain text before the resolver class declared the entry a password: encrypt it now
+                value = encryptPassword(stored_config.Value)
             else:
                 value = encryptPassword(value)
         elif types.get(key) == "dict_with_password":
@@ -193,7 +199,12 @@ def save_resolver(params):
     # is still serving the previous configuration, misses the cache, and fills it
     # again from what it is still holding - and those entries would then outlive
     # the change by a full TTL.
-    invalidate_resolver(resolvername)
+    if not invalidate_resolver(resolvername):
+        # Redis could not be asked, so entries cached under the previous configuration may still
+        # be served until they expire. Nothing here can undo that, but an operator whose change
+        # did not take effect at once has to be able to find out why.
+        log.warning(f"The cached user entries of the resolver {resolvername!r} could not be "
+                    f"dropped. Entries from the previous configuration may be served until they expire.")
 
     # Resolver TLS endpoints may have changed - drop cached cert health.
     from privacyidea.lib.health import invalidate_certificate_cache
@@ -304,7 +315,11 @@ def delete_resolver(resolvername):
 
     # Remove corresponding entries from the user cache
     delete_user_cache(resolver=resolvername)
-    invalidate_resolver(resolvername)
+    if not invalidate_resolver(resolvername):
+        # Redis could not be asked, so entries cached for a resolver that no longer exists may
+        # still be served until they expire: until then a deleted user store can still resolve.
+        log.warning(f"The cached user entries of the deleted resolver {resolvername!r} could not "
+                    f"be dropped. Its users may still resolve until the entries expire.")
 
     # Resolver TLS endpoints may have changed - drop cached cert health.
     from privacyidea.lib.health import invalidate_certificate_cache

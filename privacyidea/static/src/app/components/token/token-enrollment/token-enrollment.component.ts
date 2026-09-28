@@ -241,8 +241,14 @@ export class TokenEnrollmentComponent implements OnInit, OnDestroy {
 
   // A PIN left over from another token type must not block a type whose PIN fields are hidden:
   // the mismatch error has nowhere to show, so the enrollment would fail without a reason.
+  enrollmentBlockedReason = computed<string | null>(
+    () => this.enrollSwitch()?.currentStrategy()?.enrollmentBlockedReason() ?? null
+  );
   isFormInvalid = computed(
-    () => !this.descriptionForm().valid() || (this.showPinFields() && !this.repeatPinForm().valid())
+    () =>
+      !this.descriptionForm().valid() ||
+      (this.showPinFields() && !this.repeatPinForm().valid()) ||
+      !!this.enrollmentBlockedReason()
   );
 
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({

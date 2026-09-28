@@ -28,9 +28,9 @@
     class="widget-header-action"
     [matMenuTriggerFor]="outcomeMenu"
     matTooltip="Choose which outcomes to chart"
-    i18n-matTooltip
+    i18n-matTooltip="@@dashboard.chooseWhichOutcomesChart"
     aria-label="Choose which outcomes to chart"
-    i18n-aria-label
+    i18n-aria-label="@@dashboard.chooseWhichOutcomesChart"
     type="button">
     <mat-icon>bar_chart</mat-icon>
   </button>
@@ -55,7 +55,7 @@
     class="widget-header-action"
     [text]="info"
     ariaLabel="About this widget"
-    i18n-ariaLabel />
+    i18n-ariaLabel="@@dashboard.aboutWidget" />
 </ng-template>
 
 <app-widget-state [state]="state()">
@@ -107,14 +107,12 @@
          of the chart, would have no equivalent. Every bucket appears here with its time span and its count. -->
     <div class="visually-hidden">
       <table>
-        <caption i18n>
-          Attempts per time bucket
-        </caption>
+        <caption i18n="@@dashboard.attemptsPerTimeBucket"> Attempts per time bucket </caption>
         <thead>
           <tr>
             <th
               scope="col"
-              i18n>
+              i18n="@@dashboard.time">
               Time
             </th>
             @for (row of visibleRows(); track row.key) {
@@ -148,7 +146,7 @@
           [value]="selectedRange().id"
           (change)="selectRange($event.value)"
           aria-label="Time range"
-          i18n-aria-label>
+          i18n-aria-label="@@common.timeRange">
           @for (range of ranges; track range.id) {
             <mat-button-toggle [value]="range.id">{{ range.label }}</mat-button-toggle>
           }
@@ -176,7 +174,7 @@
             matSliderStartThumb
             #startThumb="matSliderRangeThumb"
             aria-label="Start of the counted span"
-            i18n-aria-label
+            i18n-aria-label="@@common.startCountedSpan"
             [attr.aria-valuetext]="rangeFromLabel()"
             [value]="rangeStart()"
             (input)="onRangeStartInput(startThumb.value)" />
@@ -184,7 +182,7 @@
             matSliderEndThumb
             #endThumb="matSliderRangeThumb"
             aria-label="End of the counted span"
-            i18n-aria-label
+            i18n-aria-label="@@common.endCountedSpan"
             [attr.aria-valuetext]="rangeToLabel()"
             [value]="rangeEnd()"
             (input)="onRangeEndInput(endThumb.value)" />
@@ -203,7 +201,7 @@
 
   <p
     class="section-title"
-    i18n>
+    i18n="@@dashboard.failureReasons">
     Failure Reasons
   </p>
   <table class="reasons-table">
@@ -225,7 +223,7 @@
             colspan="2"
             class="empty">
             <mat-icon class="empty-icon">check_circle</mat-icon>
-            <span i18n>No attempt failed in this range.</span>
+            <span i18n="@@dashboard.noAttemptFailedRange">No attempt failed in this range.</span>
           </td>
         </tr>
       }

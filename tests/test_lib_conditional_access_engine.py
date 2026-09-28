@@ -237,6 +237,17 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertEqual(2, count_ip_attempts(ip, [AuthEventType.PASSWORD_FAIL], 300))
         self.assertEqual(4, count_ip_events(ip, [AuthEventType.PASSWORD_FAIL], 300))
 
+    def test_count_ip_attempts_ignores_a_client_signal_as_representative(self):
+        # A row describing the *client* a request arrived with is not an outcome the attempt reached, so it must
+        # never become the attempt's representative. Left in, it would arrive last and replace the real failure
+        # with a type the rate limit does not track - and whoever can produce one at will (the holder of a
+        # suspended API key, which is what writes SUSPENDED_API_KEY_USED) could append one to every attempt and
+        # empty the count that is supposed to stop them.
+        ip = "10.1.0.9"
+        self._seed_ip_attempt(ip, "s1", [AuthEventType.PASSWORD_FAIL, AuthEventType.SUSPENDED_API_KEY_USED])
+        self._seed_ip_attempt(ip, "s2", [AuthEventType.PASSWORD_FAIL])
+        self.assertEqual(2, count_ip_attempts(ip, [AuthEventType.PASSWORD_FAIL], 300))
+
     def test_count_ip_attempts_login_success_supersedes_failure_in_attempt(self):
         # A LOGIN_SUCCESS is terminal for its attempt (fetched even though untracked), so a failed row in the same
         # attempt does not count as a failure.

@@ -40,6 +40,8 @@ import {
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { ContainerTemplateDeleteDialogComponent } from "@components/container/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import {
@@ -71,6 +73,7 @@ export class ContainerTemplateEditPageComponent {
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly contentService: ContentServiceInterface = inject(ContentService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
+  readonly authService: AuthServiceInterface = inject(AuthService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly pendingChangesService: PendingChangesServiceInterface = inject(PendingChangesService);
   readonly router = inject(Router);
@@ -214,6 +217,26 @@ export class ContainerTemplateEditPageComponent {
           this._navigateBack();
         }
       });
+  }
+
+  async deleteTemplate(): Promise<void> {
+    const template = this.initTemplate();
+    if (!template) {
+      return;
+    }
+    const confirmed = await this.dialogService.openDialogAsync({
+      component: ContainerTemplateDeleteDialogComponent,
+      data: [template]
+    });
+    if (confirmed !== true) {
+      return;
+    }
+    try {
+      await this.containerTemplateService.deleteTemplate(template.name);
+    } catch {
+      return;
+    }
+    this._navigateBack();
   }
 
   private _navigateBack(): void {

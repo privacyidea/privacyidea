@@ -33,6 +33,7 @@ describe("ApiClientService", () => {
   let httpMock: HttpTestingController;
   let notifyMock: MockNotificationService;
   let contentService: MockContentService;
+  let authService: MockAuthService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -49,6 +50,9 @@ describe("ApiClientService", () => {
     httpMock = TestBed.inject(HttpTestingController);
     notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // The clients are only requested by an admin who may list them.
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["api_client_list"] });
   });
 
   afterEach(() => {
@@ -324,5 +328,14 @@ describe("ApiClientService", () => {
 
     expect(service.apiClients().length).toBe(1);
     expect(service.apiClients()[0].id).toBe("abc");
+  });
+
+  it("apiClientResource should not request the clients without api_client_list", () => {
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+    contentService.routeUrl.set(ROUTE_PATHS.POLICIES_API_CLIENTS);
+    TestBed.tick();
+
+    httpMock.expectNone(`${environment.proxyUrl}/clients/`);
+    expect(service.apiClients()).toEqual([]);
   });
 });

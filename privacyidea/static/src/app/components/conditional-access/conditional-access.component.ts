@@ -112,8 +112,8 @@ export class ConditionalAccessComponent implements OnDestroy {
   // Rows selected via the checkbox column; the "Delete Selected" table action acts on these.
   policySelection = signal<ConditionalAccessPolicy[]>([]);
 
-  priorityReorderHint = $localize`Move policies with the arrows in the Priority column to change the order they are evaluated in. Priority only decides which DENY policy is named when a request is refused; lock, block and email actions all run regardless of it.`;
-  priorityReorderHintAriaLabel = $localize`About rearranging priorities`;
+  priorityReorderHint = $localize`:@@conditionalAccess.movePoliciesArrowsPriority:Move policies with the arrows in the Priority column to change the order they are evaluated in. Priority only decides which DENY policy is named when a request is refused; lock, block and email actions all run regardless of it.`;
+  priorityReorderHintAriaLabel = $localize`:@@conditionalAccess.aboutRearrangingPriorities:About rearranging priorities`;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -235,9 +235,9 @@ export class ConditionalAccessComponent implements OnDestroy {
   async cancelReorder(): Promise<void> {
     if (this.hasOrderChanges()) {
       const discard = await this.dialogService.confirm({
-        title: $localize`Discard the new order?`,
-        message: $localize`The rearranged evaluation order has not been saved. Discard the changes?`,
-        confirmButtonText: $localize`Discard`
+        title: $localize`:@@conditionalAccess.discardNewOrder:Discard the new order?`,
+        message: $localize`:@@conditionalAccess.rearrangedEvaluationOrderHas:The rearranged evaluation order has not been saved. Discard the changes?`,
+        confirmButtonText: $localize`:@@common.discard:Discard`
       });
       if (!discard) {
         return;
@@ -292,11 +292,11 @@ export class ConditionalAccessComponent implements OnDestroy {
   }
 
   moveUpLabel(policy: ConditionalAccessPolicy): string {
-    return $localize`Move ${policy.name} up, so it is evaluated earlier`;
+    return $localize`:@@conditionalAccess.moveUpSoEvaluated:Move ${policy.name} up, so it is evaluated earlier`;
   }
 
   moveDownLabel(policy: ConditionalAccessPolicy): string {
-    return $localize`Move ${policy.name} down, so it is evaluated later`;
+    return $localize`:@@conditionalAccess.moveDownSoEvaluated:Move ${policy.name} down, so it is evaluated later`;
   }
 
   moveUp(policy: ConditionalAccessPolicy): void {
@@ -315,7 +315,9 @@ export class ConditionalAccessComponent implements OnDestroy {
   private announceMove(policy: ConditionalAccessPolicy): void {
     const position = this.draftIndex(policy) + 1;
     const total = this.draftOrder().length;
-    this.liveAnnouncer.announce($localize`${policy.name} moved to position ${position} of ${total}`);
+    this.liveAnnouncer.announce(
+      $localize`:@@conditionalAccess.movedPosition:${policy.name} moved to position ${position} of ${total}`
+    );
   }
 
   // The priority shown per row while reordering: the draft position takes the priority
@@ -361,7 +363,7 @@ export class ConditionalAccessComponent implements OnDestroy {
     return this.policyService.staleConditionValues(policy.conditions).length > 0;
   }
 
-  staleConditionsTooltip = $localize`This policy has conditions that are no longer valid.`;
+  staleConditionsTooltip = $localize`:@@conditionalAccess.policyHasConditionsNo:This policy has conditions that are no longer valid.`;
 
   isAllSelected(): boolean {
     const rows = this.policyDataSource().data;
@@ -417,10 +419,10 @@ export class ConditionalAccessComponent implements OnDestroy {
       .openDialog({
         component: ConditionalAccessToggleDialogComponent,
         data: {
-          title: $localize`(De)activate Selected Policies`,
-          intro: $localize`The following policies will be toggled:`,
-          onWord: $localize`enabled`,
-          offWord: $localize`disabled`,
+          title: $localize`:@@conditionalAccess.deActivateSelectedPolicies:(De)activate Selected Policies`,
+          intro: $localize`:@@conditionalAccess.followingPoliciesWillToggled:The following policies will be toggled:`,
+          onWord: $localize`:@@conditionalAccess.enabled:enabled`,
+          offWord: $localize`:@@conditionalAccess.disabled:disabled`,
           items: selected.map((policy) => ({ label: policy.name, state: policy.enabled }))
         }
       })
@@ -449,10 +451,10 @@ export class ConditionalAccessComponent implements OnDestroy {
       .openDialog({
         component: ConditionalAccessToggleDialogComponent,
         data: {
-          title: $localize`Toggle Dry Run For Selected Policies`,
-          intro: $localize`The dry-run mode of the following policies will be toggled:`,
-          onWord: $localize`dry-run`,
-          offWord: $localize`enforce`,
+          title: $localize`:@@conditionalAccess.toggleDryRunSelected:Toggle Dry Run For Selected Policies`,
+          intro: $localize`:@@conditionalAccess.dryRunModeFollowing:The dry-run mode of the following policies will be toggled:`,
+          onWord: $localize`:@@conditionalAccess.dryRun:dry-run`,
+          offWord: $localize`:@@conditionalAccess.enforce:enforce`,
           items: selected.map((policy) => ({ label: policy.name, state: policy.dry_run }))
         }
       })

@@ -28,12 +28,14 @@ session it writes on.
 import logging
 import secrets
 from dataclasses import dataclass, field
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from flask import has_request_context
 
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            CA_ENFORCEMENT_EVENT_TYPES,
+                                                                           CLIENT_SIGNAL_EVENT_TYPES,
                                                                            REASON_DETAIL_INFO_KEY)
 from privacyidea.lib.conditional_access.authentication_log import (PendingAuthEvent, update_authentication_events,
                                                                    write_authentication_events)
@@ -90,6 +92,12 @@ class ConditionalAccessContext:
         self.source_ip: str | None = None
         # The attempt this request belongs to, once it is known (see attempt_id).
         self._attempt_id: str | None = None
+        # The attempt a transaction *claims* to continue, and the transaction it was read from. Kept
+        # apart from _attempt_id until something shows the request really is continuing it; see
+        # continue_attempt and confirm_attempt.
+        self._claimed_attempt_id: str | None = None
+        self._claimed_transaction_id: str | None = None
+        self._claimed_serial: str | None = None
         # Outcomes produced before any event was staged (the pre-auth decision), taken over by the first event
         # staged afterward (see stage), because that is the row they belong to.
         self.pending_outcomes: list[ConditionalAccessOutcome] = []
@@ -106,6 +114,9 @@ class ConditionalAccessContext:
         # way out, because the gate does not have the last word on it: /ttype/push runs a view afterwards that logs
         # success and the identity itself (see _audit_rejection).
         self.rejection_audit: dict | None = None
+        # The check of the gate this request passed, kept so it can be run again for a user that replaces
+        # request.User after the gate (see recheck_conditional_access_gate).
+        self.gate_check: Callable[[], Any] | None = None
 
     def claim_message(self, message: str) -> None:
         """
@@ -142,6 +153,30 @@ class ConditionalAccessContext:
         one.
         """
         return self.pending[-1] if self.pending else None
+
+    @property
+    def classifying(self) -> PendingAuthEvent | None:
+        """
+        The staged event that classifies what this request *authenticated*, or ``None`` if nothing was staged.
+
+        :attr:`latest`, except that a
+        :data:`~privacyidea.lib.conditional_access.authentication_event_types.CLIENT_SIGNAL_EVENT_TYPES` event is
+        passed over while any other staged event remains. Such an event describes the client a request arrived with,
+        not an outcome the request reached, and it is staged on the way out - after the view has staged the real
+        outcome - so as ``latest`` it would stand in for that outcome and decide which policies are evaluated
+        (:meth:`run_post_eval` asks the engine about one event type). A caller able to produce one at will could then
+        keep every policy tracking its actual failures from ever being asked about them, which is the same hazard
+        :data:`~privacyidea.lib.conditional_access.authentication_event_types.NON_REPRESENTATIVE_EVENT_TYPES`
+        already keeps off the counting side.
+
+        A client signal is still returned when it is all there is - a request that authenticated nothing has no
+        classification for it to stand in for, so a policy tracking it can fire there and nowhere is it hiding
+        anything.
+        """
+        for event in reversed(self.pending):
+            if event.event_type not in CLIENT_SIGNAL_EVENT_TYPES:
+                return event
+        return self.latest
 
     @property
     def amendable(self) -> PendingAuthEvent | None:
@@ -212,8 +247,14 @@ class ConditionalAccessContext:
 
     def continue_attempt(self, transaction_id: str | None) -> None:
         """
-        Join the attempt the challenge *transaction_id* was triggered for, so this request's rows are grouped with it
-        instead of starting an attempt of their own.
+        Note the attempt the challenge *transaction_id* was triggered for, so this request's rows can be grouped with
+        it instead of starting an attempt of their own.
+
+        **Claimed, not joined.** Naming a transaction is not the same as continuing it: a request may carry a
+        ``transaction_id`` it never uses - ``/auth`` reads it only on the passkey branch, and echoes it onto the row
+        either way - so anyone holding any live transaction id could otherwise have an unlimited number of failures
+        counted as one attempt, which is what a PER_ATTEMPT threshold counts. The claim is therefore held aside until
+        :meth:`confirm_attempt` is told the request actually engaged with that challenge, and dropped otherwise.
 
         The attempt id is stored in the challenge's own data when the challenge is created
         (:func:`~privacyidea.lib.token.auth.create_challenge`), which is why this reads the challenge rather than the
@@ -230,7 +271,7 @@ class ConditionalAccessContext:
         which case :attr:`attempt_id` mints a fresh id and the row is at worst grouped as its own attempt rather than
         left ungrouped.
         """
-        if self._attempt_id is not None or not transaction_id:
+        if self._attempt_id is not None or self._claimed_attempt_id is not None or not transaction_id:
             return
         # Deferred import: lib.challenge pulls in the ORM models and the challenge cache, so importing it at module
         # level would risk an import-order cycle during app startup.
@@ -239,11 +280,67 @@ class ConditionalAccessContext:
             for challenge in get_challenges(transaction_id=transaction_id):
                 attempt_id = challenge.get_data().get(ATTEMPT_ID_CHALLENGE_KEY)
                 if attempt_id:
-                    self._attempt_id = attempt_id
+                    self._claimed_attempt_id = attempt_id
+                    self._claimed_transaction_id = transaction_id
+                    self._claimed_serial = challenge.serial or None
                     return
         except Exception as ex:
             # Correlating an attempt must never break the authentication it is describing.
             log.debug(f"Could not read the attempt id of transaction {transaction_id}: {ex!r}")
+
+    def confirm_attempt(self, transaction_id: str | None = None) -> None:
+        """
+        Settle on the attempt claimed by :meth:`continue_attempt`, because this request has been shown to be
+        continuing that challenge rather than merely naming it.
+
+        Called from the places that consume a challenge: the challenge-response branch of the token layer, which only
+        reaches it for a token that actually holds a challenge for the presented transaction, the passkey branch of
+        ``/auth``, and the out-of-band push answer. Answering wrongly still counts as continuing - a fumbled step of a
+        chain belongs to the attempt it is a step of - so this deliberately does not wait for success.
+
+        A no-op once the attempt is settled, and when there is nothing claimed. *transaction_id*, when given, has to
+        be the transaction the claim was read from, so a request that consumes one challenge cannot settle on an
+        attempt it borrowed from another.
+        """
+        if self._attempt_id is not None or self._claimed_attempt_id is None:
+            return
+        if transaction_id and transaction_id != self._claimed_transaction_id:
+            return
+        self._attempt_id = self._claimed_attempt_id
+
+    def join_attempt(self, transaction_id: str | None) -> None:
+        """
+        Join the attempt of the challenge *transaction_id* outright, for a caller that resolved that challenge
+        itself rather than being handed its id by the client.
+
+        :meth:`continue_attempt` withholds the claim because a transaction id arriving in the request proves
+        nothing: anyone can name a live transaction. That reasoning does not apply where the server found the
+        challenge on its own - the out-of-band push answer matches one by verifying a signature over its nonce,
+        the client having sent no transaction id at all - and there the engagement with the challenge *is* the
+        thing that produced the id. Nothing further can confirm it, either: such a caller only learns the
+        transaction while logging the row, at which point a claim left unsettled would already have been minted
+        into an attempt of its own.
+
+        A no-op once this request has settled on an attempt, so a challenge created and answered inside one
+        request keeps the attempt it started with.
+        """
+        self.continue_attempt(transaction_id)
+        self.confirm_attempt(transaction_id)
+
+    def confirm_attempt_for_serials(self, serials: Iterable[str]) -> None:
+        """
+        Settle on the claimed attempt when its challenge belongs to one of *serials* - the tokens this request is
+        authenticating against.
+
+        The link the claim was missing. A request that is answering a challenge is a request about the token that
+        challenge was issued for, whatever becomes of the answer: the token may be disabled, out of its validity
+        period or otherwise unusable, and the row still belongs to the attempt it is a step of. A request that merely
+        carries someone's transaction id is about no such token, and keeps an attempt of its own.
+        """
+        if self._attempt_id is not None or not self._claimed_serial:
+            return
+        if self._claimed_serial in set(serials):
+            self._attempt_id = self._claimed_attempt_id
 
     def add_outcomes(self, outcomes: list[ConditionalAccessOutcome]) -> None:
         """
@@ -346,12 +443,12 @@ class ConditionalAccessContext:
         whatever it had coming.
 
         Nothing has to be scheduled: staging an authentication event *is* the signal, and everything the engine needs
-        is already recorded - the classification comes from the latest staged event, the principal and source IP from
-        the request's :class:`AuthPrincipal` and :attr:`source_ip`. That removes the second copy of those values that
-        a separate "schedule" step would keep, and with it any chance of the two disagreeing after a
+        is already recorded - the classification comes from the request's :attr:`classifying` event, the principal and
+        source IP from the request's :class:`AuthPrincipal` and :attr:`source_ip`. That removes the second copy of
+        those values that a separate "schedule" step would keep, and with it any chance of the two disagreeing after a
         :meth:`reclassify`.
 
-        Only the latest event is evaluated, which is one evaluation per request. Where a request stages several
+        Only the classifying event is evaluated, which is one evaluation per request. Where a request stages several
         (``push_wait``: the challenge trigger, then the terminal outcome) the earlier ones are still counted - counts
         are taken over the stored rows - they just do not each provoke their own evaluation.
 
@@ -390,8 +487,12 @@ class ConditionalAccessContext:
         also absent from the trackable vocabulary, so no policy could match one anyway - this saves the query and keeps
         the guarantee readable where the evaluation happens
         (:data:`~privacyidea.lib.conditional_access.authentication_event_types.CA_ENFORCEMENT_EVENT_TYPES`).
+
+        What is evaluated is the request's :attr:`classifying` event rather than simply the last one staged, because
+        the engine is asked about a single event type and a client signal staged on the way out would otherwise be
+        it - see there.
         """
-        event = self.latest
+        event = self.classifying
         if event is None or event.event_type == self._evaluated_as:
             return
         if event.event_type in CA_ENFORCEMENT_EVENT_TYPES:
@@ -455,6 +556,39 @@ def continue_attempt(transaction_id: str | None) -> None:
         get_ca_context().continue_attempt(transaction_id)
 
 
+def join_attempt(transaction_id: str | None) -> None:
+    """
+    Join the attempt of a challenge this caller resolved itself
+    (:meth:`ConditionalAccessContext.join_attempt`).
+    """
+    if not has_request_context() or not transaction_id:
+        return
+    get_ca_context().join_attempt(transaction_id)
+
+
+def confirm_attempt_for_serials(serials: Iterable[str]) -> None:
+    """
+    Settle on the claimed attempt when its challenge belongs to one of *serials*
+    (:meth:`ConditionalAccessContext.confirm_attempt_for_serials`).
+    """
+    if not has_request_context():
+        return
+    get_ca_context().confirm_attempt_for_serials(serials)
+
+
+def confirm_attempt(transaction_id: str | None = None) -> None:
+    """
+    Settle on the attempt this request claimed, because it has been shown to be continuing that challenge
+    (:meth:`ConditionalAccessContext.confirm_attempt`).
+
+    Safe to call outside a request: there is then no attempt to speak of, and none is created here - a request that
+    claimed nothing has nothing to settle, and giving it a buffer to establish that would be pointless.
+    """
+    if not has_request_context():
+        return
+    get_ca_context().confirm_attempt(transaction_id)
+
+
 def current_attempt_id() -> str | None:
     """
     The attempt id of the request in progress, or ``None`` when there is no request to attribute anything to.
@@ -488,6 +622,28 @@ def claimed_ca_message() -> str | None:
     """
     context = peek_ca_context()
     return context.own_message if context else None
+
+
+def recheck_conditional_access_gate() -> Any:
+    """
+    Run the conditional-access gate this request passed again, because the user it authenticates has changed since.
+
+    The gates sit above the pre-policies and the event handlers, so nothing runs for a locked user before the request
+    is refused. A pre-event handler can replace ``request.User`` after that - the RequestMangler does with
+    ``reset_user`` - so the event decorator calls this as soon as a handler has done so, before any later handler or
+    the view acts for the new user. Every user the request acts for is thereby one the gate has checked.
+
+    The decision the first check buffered is dropped: it was about a user this request no longer authenticates, and
+    the row it would be recorded on is the new user's.
+
+    :return: what the gate returns for a refused request - the rejection response on ``/validate/*``, while ``/auth``
+        raises instead - or ``None`` when the request may continue or passed no gate
+    """
+    context = peek_ca_context()
+    if context is None or context.gate_check is None:
+        return None
+    context.pending_outcomes.clear()
+    return context.gate_check()
 
 
 def peek_ca_context() -> ConditionalAccessContext | None:

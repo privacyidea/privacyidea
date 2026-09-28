@@ -284,6 +284,19 @@ The public key of an SSH key token is stored encrypted and is therefore only
 contained in encrypted form in the token list, so this action is the way to
 retrieve it. Only active tokens hand out their key. See :ref:`sshkey_token`.
 
+.. _user_policy_serviceid_list:
+
+serviceid_list
+~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The user is allowed to list the available service ID definitions via
+``GET /serviceid/``. This is required to enroll an application specific
+password token, since the enrollment form needs to offer the defined
+service IDs to choose from. Defining, changing and deleting a service ID
+stays with the administrator. See :ref:`serviceids`.
+
 revoke
 ~~~~~~
 

@@ -37,6 +37,7 @@ from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (create_tokenclass_object, get_tokens, get_serial_by_otp_list,
                                    get_tokens_from_serial_or_user)
 from privacyidea.lib.tokenclass import TokenClass, ChallengeSession
+from privacyidea.lib.resolver import get_resolver_type
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
@@ -417,6 +418,30 @@ class TokenContainerClass:
 
         return users
 
+    def is_orphaned(self) -> bool:
+        """
+        Return True if the container is orphaned: it is assigned to users, but none of them exists in the user store
+        any more. As for TokenClass.is_orphaned(), a user does not exist if the user store returns no login name for
+        the user id, or if the realm or the resolver of the user is gone.
+
+        Unlike get_users(), an error of the user store is not hidden: it is raised, e.g. if the user store can not
+        be reached, since the container can then neither be called orphaned nor not orphaned.
+
+        :return: True if the container has owners and none of them exists
+        """
+        db_container_owners = self._db_container.owners.all()
+        if not db_container_owners:
+            return False
+        for owner in db_container_owners:
+            if owner.resolver and not get_resolver_type(owner.resolver):
+                # The resolver of the owner was deleted, so this user can not exist any more
+                continue
+            realm_name = owner.realm.name if owner.realm else None
+            user = User(uid=owner.user_id, realm=realm_name, resolver=owner.resolver)
+            if user.login and user.realm:
+                return False
+        return True
+
     def get_states(self) -> list[str]:
         """
         Returns the states of the container as a list of strings.
@@ -688,17 +713,17 @@ class TokenContainerClass:
         """
         raise NotImplementedError("Registration is not implemented for this container type.")
 
-    def check_challenge_response(self, params: dict):
+    def check_challenge_response(self, params: dict) -> bool:
         """
         Checks if the response to a challenge is valid.
         """
-        return False
+        raise NotImplementedError("Challenge-response is not implemented for this container type.")
 
     def create_challenge(self, scope, validity_time=2):
         """
         Create a challenge for the container.
         """
-        return {}
+        raise NotImplementedError("Challenge-response is not implemented for this container type.")
 
     def validate_challenge(self, signature: bytes, public_key: EllipticCurvePublicKey, scope: str,
                            transaction_id: str = None, key: str = None, container: str = None, device_brand: str = None,

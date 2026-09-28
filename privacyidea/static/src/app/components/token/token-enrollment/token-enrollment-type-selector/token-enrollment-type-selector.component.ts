@@ -58,6 +58,7 @@ export class TokenEnrollmentTypeSelectorComponent {
 
   scrollContainer = input.required<HTMLElement>();
   formInvalid = input<boolean>(false);
+  enrollBlockedReason = input<string | null>(null);
   canReopenDialog = input<boolean>(false);
   reopenDialog = output<void>();
 }

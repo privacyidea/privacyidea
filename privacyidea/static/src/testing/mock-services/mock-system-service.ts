@@ -79,6 +79,7 @@ export class MockSystemService implements SystemServiceInterface {
     this.nodes = signal<NodeInfo[]>(mockNodes);
   }
   radiusServers = signal<string[]>([]);
+  canListRadiusServers = signal<boolean>(true);
 
   caConnectorResource?: HttpResourceRef<PiResponse<CaConnectors> | undefined>;
   caConnectors?: WritableSignal<CaConnectors>;

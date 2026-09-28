@@ -21,12 +21,11 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_object
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like
+from privacyidea.lib.utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like
 from privacyidea.models.token import TOKENINFO_TYPE_SUFFIX
 from privacyidea.lib.user import User
 from privacyidea.models import (db, Token, Realm, TokenRealm, TokenInfo, TokenOwner, TokenContainer,
                                 TokenContainerToken)
-from privacyidea.models.utils import clob_to_varchar
 
 log = logging.getLogger(__name__)
 
@@ -261,7 +260,11 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
         key, value = list(tokeninfo.items())[0]
         sql_query = sql_query.join(TokenInfo, TokenInfo.token_id == Token.id)
         sql_query = sql_query.where(TokenInfo.Key == key)
-        sql_query = sql_query.where(clob_to_varchar(TokenInfo.Value) == value)
+        # TokenInfo.Value is a CLOB on Oracle, where it can be neither compared with "="
+        # (ORA-00932) nor converted to a string beyond 4000 bytes (ORA-22835, and token info
+        # holds certificates). LIKE has neither limit and matches exactly once the value's
+        # own metacharacters are escaped.
+        sql_query = sql_query.where(TokenInfo.Value.like(escape_sql_like(value), escape=SQL_LIKE_ESCAPE))
 
     # Filtering by container_serial
     if container_serial is not None:
@@ -279,27 +282,32 @@ def _create_token_query(tokentype: str | None = None, token_type_list: list[str]
             )
             sql_query = sql_query.where(Token.id.in_(subquery))
 
-    # Node-specific resolver and realm configuration.
+    # Node-specific resolver and realm configuration: the tokens of owners that another node serves are left out.
+    # A token belongs to no node if the resolver of its owner is in no realm at all, e.g. because the resolver was
+    # deleted, or if the realm of its owner has no resolver. Such a token is shown on every node, as it could
+    # otherwise neither be found nor deleted anywhere.
     if not all_nodes:
         local_node_uuid = get_app_config_value("PI_NODE_UUID")
         realms = get_realms()
         resolvers = []
+        resolvers_of_any_node = set()
         realms_to_filter = []
 
         for realm_name, realm_data in realms.items():
-            added = False
-            for res in realm_data.get("resolver", []):
-                if res.get("name"):
-                    if not res.get("node") or res["node"] == local_node_uuid:
-                        resolvers.append(res["name"])
-                        added = True
-            if not added:
+            realm_resolvers = [res for res in realm_data.get("resolver", []) if res.get("name")]
+            resolvers_on_this_node = [res["name"] for res in realm_resolvers
+                                      if not res.get("node") or res["node"] == local_node_uuid]
+            resolvers.extend(resolvers_on_this_node)
+            resolvers_of_any_node.update(res["name"] for res in realm_resolvers)
+            if realm_resolvers and not resolvers_on_this_node:
+                # Only other nodes serve this realm
                 realms_to_filter.append(realm_name)
 
         # Build the resolver filter condition
         resolver_filter = or_(
             TokenOwner.id.is_(None),
             TokenOwner.resolver.in_(resolvers),
+            TokenOwner.resolver.not_in(sorted(resolvers_of_any_node)),
         )
 
         # Re-join realm and explicitly include the join conditions in the filter to handle unassigned tokens
@@ -988,6 +996,43 @@ def get_num_tokens_in_realm(realm: str, active: bool = True) -> int:
 
 
 @log_with(log)
+def get_token_owner_keys(resolvers: list[str] | None = None,
+                         user_ids: list[str] | None = None) -> set[tuple[str, str, str]]:
+    """
+    Return the (realm, resolver, user id) triples that own at least one token.
+
+    A user of a resolver shared by several realms only owns a token in the realm it was assigned in,
+    so a caller holding the user records of one realm can tell which of them own a token there.
+    Tokens that are not assigned do not contribute, and neither do revoked ones, which can never be
+    used again. A disabled token does, as it can be enabled again, and so does every token type. An
+    assignment without a realm - a token given to a user that has none - yields the empty realm and
+    therefore matches no user of any realm.
+
+    A failing query is not caught as in :func:`_read_page_rows`: a set missing the triples of one
+    chunk would silently report their users as owning no token.
+
+    :param resolvers: Only return the triples of these resolvers. None returns the triples of every
+        resolver, an empty list returns nothing.
+    :param user_ids: Only return the triples of these user ids, however many. None returns the
+        triples of every user, an empty list returns nothing.
+    :return: A set of (lowercase realm name, resolver name, user id) triples
+    """
+    # Compared with false() rather than negated, so that it also reads on Oracle, which has no boolean type.
+    # The column is nullable, and a token that was never revoked may hold NULL.
+    owners = (select(Realm.name, TokenOwner.resolver, TokenOwner.user_id).select_from(TokenOwner)
+              .join(Token, Token.id == TokenOwner.token_id)
+              .outerjoin(Realm, Realm.id == TokenOwner.realm_id)
+              .where(or_(Token.revoked == false(), Token.revoked.is_(None)))
+              .distinct())
+    if resolvers is not None:
+        owners = owners.where(TokenOwner.resolver.in_(resolvers))
+    queries = [owners] if user_ids is None else [owners.where(TokenOwner.user_id.in_(chunk))
+                                                 for chunk in _chunked(user_ids)]
+    return {((realm or "").lower(), resolver or "", user_id or "")
+            for query in queries for realm, resolver, user_id in db.session.execute(query)}
+
+
+@log_with(log)
 def get_realms_of_token(serial: str, only_first_realm: bool = False) -> list[str] | str | None:
     """
     This function returns a list of the realms of a token
@@ -1055,6 +1100,22 @@ def get_token_owner(serial: str) -> User | None:
     """
     token = get_one_token(serial=serial)
     return token.user
+
+
+def get_token_owner_without_lookup(serial: str) -> User:
+    """
+    The owner of a token as far as the database knows it, without asking the user store: a user object with the
+    realm and the resolver of the owner, but without a login name or user ID. For an owner that can not be looked
+    up, e.g. because the resolver of the owner was deleted, while the realm of the owner is still what the policies
+    are matched against. An empty user object if the token has no owner.
+
+    :param serial: serial number of the token
+    :return: the owner without the information of the user store
+    """
+    owner = get_one_token(serial=serial).token.first_owner
+    if not owner:
+        return User()
+    return User(realm=owner.realm.name if owner.realm else "", resolver=owner.resolver)
 
 
 @log_with(log)

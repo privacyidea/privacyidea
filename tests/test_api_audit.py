@@ -1,12 +1,13 @@
 # SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime, timedelta, timezone
 
 import mock
 
 from privacyidea.lib.auditmodules.base import Audit as BaseAudit
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.realm import set_realm
@@ -246,7 +247,7 @@ class APIAuditTestCase(MyApiTestCase):
         set_policy("audit01", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, adminrealm="adminrealm",
                    realm=self.realm1a)
         # Test admin is allowed to view unrestricted logs!
-        set_policy("audit02", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, user="testadmin")
+        set_policy("audit02", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, adminuser="testadmin")
 
         rid = save_resolver({"resolver": self.resolvername1,
                              "type": "passwdresolver",
@@ -617,3 +618,52 @@ class APIAuditTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             value = res.json.get("result").get("value")
             self.assertEqual(1, value.get("count"), value)
+
+    def test_08_an_audit_policy_is_read_with_its_wildcard_and_exclusions(self):
+        self.setUp_user_realms()
+        Audit.query.delete()
+        for realm in (self.realm1a, self.realm1a, self.realm2b):
+            Audit(action="enroll", success=1, realm=realm).save()
+
+        def enroll_realms() -> list[str]:
+            with self.app.test_request_context('/audit/', method='GET', query_string={"action": "enroll"},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return sorted(entry["realm"] for entry in res.json["result"]["value"]["auditdata"])
+
+        every_entry = [self.realm1a, self.realm1a, self.realm2b]
+        try:
+            set_policy("audit_realms", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, realm="*")
+            self.assertEqual(every_entry, enroll_realms())
+
+            set_policy("audit_realms", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, realm=f"*,!{self.realm2b}")
+            self.assertEqual([self.realm1a, self.realm1a], enroll_realms())
+
+            # A policy with no target scope at all grants every realm, whatever another policy names.
+            set_policy("audit_every_realm", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT)
+            self.assertEqual(every_entry, enroll_realms())
+            delete_policy("audit_every_realm")
+
+            # A policy scoped by user grants no realm, since the audit log can not show just that user: next to
+            # another policy it adds nothing, and on its own it leaves the admin's own entries only.
+            set_policy("audit_one_user", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, user="cornelius")
+            self.assertEqual([self.realm1a, self.realm1a], enroll_realms())
+            for realm in ("*", self.realm2b):
+                set_policy("audit_one_user", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, user="cornelius",
+                           realm=realm)
+                self.assertEqual([self.realm1a, self.realm1a], enroll_realms(), realm)
+            delete_policy("audit_realms")
+            for realm in (None, "*", self.realm2b):
+                set_policy("audit_one_user", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, user="cornelius",
+                           realm=realm)
+                self.assertEqual([], enroll_realms(), realm)
+            delete_policy("audit_one_user")
+
+            # A realm field that matches no realm grants no realm.
+            set_policy("audit_realms", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT, realm=f"!{self.realm2b}")
+            self.assertEqual([], enroll_realms())
+        finally:
+            for name in ("audit_realms", "audit_every_realm", "audit_one_user"):
+                with suppress(ResourceNotFoundError):
+                    delete_policy(name)

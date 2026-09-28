@@ -89,6 +89,56 @@
   your admin policies that reference `getchallenges`
   and decide whether each admin should also get `cancelchallenge`.
 
+* **Self-registration is deprecated.** The `register` policy scope and the anonymous
+  `GET`/`POST /register` endpoints — which let a visitor create their own account in an editable
+  resolver and have the registration key mailed to them — are deprecated and will be removed in a
+  future release. Its only user interface is the "Register" link of the old WebUI, which is being
+  removed, and the new WebUI does not offer registration at all.
+
+  Nothing stops working in this release: if you have a `register` policy, registration keeps
+  behaving exactly as before. Both endpoints now write one warning to the log per process when
+  they are used **and the feature is configured** — probing the endpoint of an installation that
+  never enabled registration leaves no line, so the warning really does mean "this installation
+  uses self-registration". Grep your logs for `is deprecated` if you are unsure. **If your installation relies on self-registration, tell us before it is removed** —
+  we have had no reports about it, which is the reason for retiring it rather than extending it.
+
+  These endpoints are anonymous by design. For the remainder of their life, treat them like any
+  other anonymous endpoint you expose, and set the `requiredemail` action so that the
+  registration mail can only go to addresses you accept.
+
+* **A python class named by configuration is checked against an allowlist, which only warns by
+  default.** Two pieces of configuration name a python class for privacyIDEA to import: the
+  `module` of an SMS gateway definition and the value of the `pinhandling` policy action. Both are
+  now checked against the classes that ship with privacyIDEA before the class is imported.
+
+  **Nothing changes for you on this upgrade.** The default mode is `warn`: a class that is on
+  neither list is used exactly as before, and a line is written to the log naming it and the
+  setting to declare it in. So an installation that runs its own SMS provider or its own pin
+  handler — which is a supported thing to do — keeps working without any configuration change.
+
+  If you want the check to actually refuse an undeclared class, declare the classes you use and
+  then switch the mode on::
+
+      PI_SMS_PROVIDER_MODULES = ["mycompany.smsprovider.MyProvider"]
+      PI_PIN_HANDLER_MODULES = ["mycompany.pinhandler.LetterPinHandler"]
+      PI_MODULE_ALLOWLIST_MODE = "enforce"
+
+  The recommended order is to leave the default in place for a while first, read the log for the
+  warnings, declare what appears there, and only then set `enforce` — that way the strict mode
+  cannot take a working gateway or pin handler out of service. Note that the classes privacyIDEA
+  ships never need declaring, and that `privacyidea.lib.smsprovider.SMSProvider.ISMSProvider` is
+  the abstract base class rather than a usable provider, so a gateway pointing at it needs
+  declaring like any other non-shipped class.
+
+* **The action and the position of an event handler definition are now checked when it is
+  saved.** `POST /event` previously accepted any string for `action` and `position` and stored
+  the binding, which then failed when its event occurred. Both are now checked against the
+  actions and positions the chosen handler module defines, and a definition naming something else
+  is refused with an error that lists the valid values. The WebUI only ever offers valid values,
+  so this is only visible to a script or an integration that posts event definitions itself.
+  Importing an event configuration (`pi-manage config import`) is **not** affected — it does not
+  go through this endpoint.
+
 * **A new policy action `token_rollover` is required to roll a token over.** `POST /token/init` updates a token when it
   is called with the serial of a token that already exists. While the enrollment of that token is still under way — the
   second request of a two-step or a FIDO2 enrollment, a token waiting to be verified — that is part of the enrollment
@@ -105,6 +155,31 @@
   Note that an action of the same name already exists in the `webui` scope. That one only decides for which token types
   the WebUI offers a rollover button; the new one decides whether the request is carried out. The WebUI now checks both,
   so an administrator who does not hold the new action no longer sees a button that would fail.
+
+* **Application specific password tokens can be enrolled in self-service, which needs the new user policy action
+  `serviceid_list`.** The enrollment offers the service IDs defined on the server as a choice, and reading them through
+  `GET /serviceid/` was reserved for administrators — a user who held `enrollAPPLSPEC` got an empty choice and could
+  never submit the enrollment. The endpoint now answers users as well, gated by `serviceid_list` in the `user` scope.
+  Defining, changing and deleting a service ID stays with the administrator.
+
+  **If you have any user policies defined**, grant `serviceid_list` alongside `enrollAPPLSPEC` to the users who should
+  enroll such a token; without it the WebUI keeps reporting that the service IDs are unavailable. Installations without
+  any policy in the `user` scope need no configuration: an unconfigured scope allows every action, so the enrollment
+  works right away — and there, as with every other user-scope action, the names and descriptions of your service IDs
+  are readable by every self-service user.
+
+* **An application specific password token is only enrolled with a service ID that is defined.** `POST /token/init`
+  with `type=applspec` stored whatever `service_id` was sent, including a name that no service ID definition carries.
+  Such a token could never authenticate, because a service sends the service ID it belongs to and only a token with
+  the same one answers for it. The service ID is now looked up among the defined ones — case-insensitively, the way
+  the authentication compares it — and the request is refused with a 400 if it does not exist. **If you enroll these
+  tokens through a script**, make sure the service IDs it passes are defined under *Config -> Service IDs*. Rolling
+  such a token over needs a defined service ID as well. Existing tokens keep the service ID they were enrolled with.
+
+  **Review your container templates** under *Config -> Container Templates* for an application specific password
+  token: a container is created without any token that could not be initialized, and the reason is only written to
+  the log, so a template naming a service ID that is no longer defined silently produces a container with one token
+  missing.
 
 * **Token info that a token type maintains itself is no longer writable through the generic token info endpoints.** A
   token info entry can hold what a token authenticates with — the public key of a passkey, the server a RADIUS token
@@ -198,6 +273,23 @@
   remote system's replay protection does not apply for the duration of the policy. Keep the interval short if you
   combine the two.
 
+* **Admin policies with `userlist`: `user` and `resolver` now limit the user list** — An administrator only sees
+  the users and resolvers named in these fields. They name the users, not the administrator, who is set with
+  `adminuser`. If you entered an administrator's own login name in `user`, move it to `adminuser`, otherwise that
+  administrator only sees the user with that name. Such a policy never applied to that administrator alone: with
+  `adminuser` left empty, it gave the user list to every administrator.
+
+* **Admin policies with `auditlog` that name users or resolvers now grant no realm** — The audit log can only be
+  restricted by realm, so such a policy showed every entry of its realms, or of every realm. Now the administrator
+  only sees their own entries, unless another policy grants realms. To keep the previous visibility, grant the
+  realms in a policy without users or resolvers. If `user` holds the administrator's own login name, move it to
+  `adminuser`, as above.
+
+* **Excluded resolvers in policies are enforced** — A resolver written with a leading `!` or `-`, for example
+  `*, !ldap`, was ignored when policies were matched, so the policy still applied to that resolver. It is now left
+  out, as an excluded realm or user always was. Check your policies with such resolver exclusions: they now apply to
+  fewer users.
+
 * **`clientapplication.lastseen` is written again.** Since 3.13 the column was only ever set when a client's row was
   first created: the update path assigned an attribute that is not the column, so the client list in the WebUI and the
   metering of plugin traffic showed when each client was *first* seen rather than last. This is fixed. Expect the
@@ -248,11 +340,11 @@
   overwritten). To set a new secret, supply the actual new value.
 
 * A new pre-aggregated `metric_aggregate` table backs the *Resolver Timing* and *Notification Delivery*
-  dashboard panels. The schema migration creates the table empty; nothing breaks if you skip the next step, but the
-  table grows unbounded over time. After the upgrade, go to *Config -> Tasks* and schedule the new **MetricsCleanup**
-  periodic task (option `older_than_hours`, default `24`; daily cadence recommended). If you prefer not to record
-  metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` - the dashboard panels will show no data and the table
-  stays empty. The dashboard panels read the last hour by default, so anything older than ~24 h is dead weight.
+  dashboard panels. The schema migration creates the table empty. Without a cleanup the table grows unbounded, so
+  `pi-manage config metrics cleanup` has to run regularly: it deletes the rows older than 24 hours, the most the
+  dashboard panels show. The Ubuntu packages and the Docker image schedule it daily; on an installation from PyPI add
+  it to your crontab. If you prefer not to record metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` - the
+  dashboard panels will show no data and the table stays empty.
 
 * The `/validate/samlcheck` endpoint has been removed (deprecated in 3.11). The
   `ReturnSamlAttributes` and `ReturnSamlAttributesOnFail` system configuration options are removed along with it; the
@@ -435,6 +527,37 @@
   code or status are unaffected. Only clients that match on the literal message string need updating — and the specific
   reason is still available where it always was: in `detail.message` (unless the `hide_specific_error_message` policy
   masks it) and, for an admin, in the authentication log's event type.
+
+* **`pi-manage config export`** — The password entries of the global configuration are now exported decrypted, like
+  every other secret in the export, so the importing instance can encrypt them with its own key. `--censor` now also
+  censors the client secret of a SCIM resolver. An export written by an earlier version contains the password entries
+  encrypted with the key of its instance, and importing it stores them unusable: set them again after importing such
+  a file.
+
+* **Token janitors** — `privacyidea-token-janitor find --orphaned-on-error` now defaults to `False`: a token whose
+  user lookup fails with an error, e.g. because the LDAP server cannot be reached, no longer counts as orphaned
+  unless you pass `--orphaned-on-error True`. In both token janitors `--orphaned`, `--active` and `--assigned` accept
+  `true`/`false`, `1`/`0`, `yes`/`no` and `on`/`off` and reject any other value instead of reading it as false.
+  `update` keeps the OTP counter, the fail counter and the token kind of each token.
+
+* **`pi-manage audit rotate`** with watermarks now keeps exactly `--lowwatermark` entries. It used to count back from
+  the id of the newest entry, which kept one entry more, and on Galera, which increments the ids by more than one,
+  only a fraction of them, e.g. a third with an increment of 3: there the audit table keeps more entries after the
+  update. A negative `--lowwatermark` is rejected.
+
+* **`privacyidea-pip-update -f`** only skips the confirmation question and runs the database schema upgrade as well;
+  pass `-n` to skip the schema upgrade.
+
+* **Tokens of a deleted resolver** — A token whose owner belongs to a resolver that is in no realm any more, e.g.
+  because the resolver was deleted, was left out of every token list and could neither be found nor deleted through
+  the WebUI, the API or the token janitors, while the subscription still counted it. Such a token belongs to no node
+  and is now listed on every node, so the token lists can show tokens that were not visible before. The token janitors
+  find them as orphaned, e.g. `pi-tokenjanitor find --orphaned true list`.
+
+* **Removed scripts** — `reset-privacyidea`, `privacyidea-create-certificate`, `privacyidea-export-linotp-counter.py`,
+  `privacyidea-export-privacyidea-counter.py`, `privacyidea-migrate-linotp.py`, `privacyidea-sync-owncloud.py`,
+  `creategoogleauthenticator-file` and `getgooglecodes` are no longer installed. They did not work with the current
+  dependencies, and `reset-privacyidea` deleted the encryption key and dropped the database without asking.
 
 ## Update from 3.12 to 3.13
 

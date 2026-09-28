@@ -3,7 +3,7 @@ from email import message_from_string
 from privacyidea.lib.resolver import delete_resolver, save_resolver
 from privacyidea.lib.realm import delete_realm, set_realm, set_default_realm
 from .base import MyApiTestCase, PristineSqliteFixtures
-from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
+from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, set_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
 from privacyidea.lib.smtpserver import delete_smtpserver, add_smtpserver
@@ -12,6 +12,8 @@ from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.passwordreset import create_recoverycode
 from privacyidea.lib.user import User
 from privacyidea.lib.error import Error
+from unittest import mock
+from privacyidea.api import register
 
 
 class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
@@ -261,6 +263,34 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
 
         # test the new password
 
+
+    def test_04_deprecation_is_logged_only_where_the_feature_is_configured(self):
+        # The log line is evidence that an installation relies on self-registration, so it is
+        # written where the feature is configured and not where the endpoint is merely probed.
+        def deprecation_warnings(method):
+            register._deprecation_warned.clear()
+            with mock.patch("privacyidea.api.register.log") as mock_log:
+                with self.app.test_request_context('/register', method=method):
+                    self.app.full_dispatch_request()
+                # Called twice, to pin that the line is written once per process
+                with self.app.test_request_context('/register', method=method):
+                    self.app.full_dispatch_request()
+            return [call[0][0] for call in mock_log.warning.call_args_list
+                    if "deprecated" in call[0][0]]
+
+        # Configured, as the preceding tests left it: the status endpoint answers True and
+        # leaves the line once, however often it is called.
+        warnings = deprecation_warnings('GET')
+        self.assertEqual(1, len(warnings), warnings)
+        self.assertIn("GET /register", warnings[0])
+
+        # Not configured: the endpoint is merely being probed, which says nothing about whether
+        # this installation uses self-registration, so it must leave no trace.
+        register_policies = [policy["name"] for policy
+                             in PolicyClass().list_policies(scope=SCOPE.REGISTER)]
+        for name in register_policies:
+            delete_policy(name)
+        self.assertEqual([], deprecation_warnings('GET'))
 
     def test_99_delete_users(self):
         self.test_00_delete_users()

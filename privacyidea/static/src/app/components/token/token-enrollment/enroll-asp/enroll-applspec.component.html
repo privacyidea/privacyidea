@@ -40,13 +40,12 @@
       </mat-form-field>
     }
 
-    <mat-form-field class="input-width-l">
+    <mat-form-field
+      class="input-width-l"
+      [matTooltip]="enrollmentBlockedReason() ?? ''"
+      [matTooltipDisabled]="!enrollmentBlockedReason()">
       <mat-label i18n="@@common.serviceId">Service ID</mat-label>
-      <mat-select
-        [value]="serviceId()"
-        (selectionChange)="serviceId.set($event.value)"
-        [disabled]="disabled()"
-        required>
+      <mat-select [formField]="serviceIdForm">
         @for (option of serviceIdOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }

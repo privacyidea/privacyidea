@@ -154,7 +154,7 @@ export class EnrollPushComponent extends EnrollTokenBase<PushEnrollmentData> {
         enrollmentResponse,
         showCancelButton: canCancel,
         showCloseButton: true,
-        cancelConfirmationMessage: $localize`When canceling the rollout the token will be deleted even when the QR code was scanned.`
+        cancelConfirmationMessage: $localize`:@@token.whenCancelingRolloutToken:When canceling the rollout the token will be deleted even when the QR code was scanned.`
       },
       configOverride: { disableClose: true }
     });

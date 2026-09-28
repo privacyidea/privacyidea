@@ -10,6 +10,14 @@ Register Policy
 User registration
 .................
 
+.. deprecated:: 3.14
+   Self-registration is deprecated and will be removed in a future release,
+   together with this policy scope and the ``/register`` endpoints. Its only
+   user interface is the registration link of the old WebUI, which is being
+   removed, and the new WebUI does not offer registration. The endpoints log a
+   warning when they are used - if your installation relies on
+   self-registration, please let us know before it is removed.
+
 Starting with privacyIDEA 2.10 users are allowed to register with privacyIDEA.
 I.e. a user that does not exist in a given realm and resolver can create a
 new account.

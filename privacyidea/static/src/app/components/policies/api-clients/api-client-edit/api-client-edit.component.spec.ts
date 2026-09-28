@@ -416,4 +416,45 @@ describe("ApiClientEditComponent", () => {
     expect(success).toBe(false);
     expect(apiClientServiceMock.createClient).not.toHaveBeenCalled();
   });
+
+  describe("deleteClient", () => {
+    it("does nothing in create mode", async () => {
+      await setup();
+      await component.deleteClient();
+      expect(dialogService.confirmDelete).not.toHaveBeenCalled();
+      expect(apiClientServiceMock.deleteClient).not.toHaveBeenCalled();
+    });
+
+    it("asks with the display name, deletes by id and navigates back", async () => {
+      await setupEditMode();
+      await component.deleteClient();
+      expect(dialogService.confirmDelete).toHaveBeenCalledWith(expect.objectContaining({ items: ["Existing Client"] }));
+      expect(apiClientServiceMock.deleteClient).toHaveBeenCalledWith("abc");
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_API_CLIENTS);
+    });
+
+    it("falls back to the id when the client is not in the list", async () => {
+      await setupEditMode();
+      apiClientServiceMock.apiClients.set([]);
+      await component.deleteClient();
+      expect(dialogService.confirmDelete).toHaveBeenCalledWith(expect.objectContaining({ items: ["abc"] }));
+    });
+
+    it("does not delete when the confirmation is cancelled", async () => {
+      await setupEditMode();
+      dialogService.confirmDelete.mockResolvedValue(false);
+      await component.deleteClient();
+      expect(apiClientServiceMock.deleteClient).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+
+    it("stays on the page when the deletion fails", async () => {
+      await setupEditMode();
+      apiClientServiceMock.deleteClient.mockRejectedValue(new Error("delete failed"));
+      await component.deleteClient();
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
+    });
+  });
 });

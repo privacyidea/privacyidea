@@ -21,7 +21,7 @@
 """
 This module is used to modify counters in the database
 """
-from sqlalchemy import func, update, select, exists
+from sqlalchemy import func, update, select
 
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.models import EventCounter, db
@@ -93,8 +93,10 @@ def reset(counter_name):
     :return:
     """
     node = get_privacyidea_node()
-    stmt = select(exists().where(EventCounter.counter_name == counter_name))
-    counter_exist = db.session.scalar(stmt)
+    # A probe for one row rather than SELECT EXISTS(...): Oracle has no boolean type and
+    # rejects EXISTS in the select list (ORA-00936).
+    stmt = select(EventCounter.id).where(EventCounter.counter_name == counter_name).limit(1)
+    counter_exist = db.session.scalar(stmt) is not None
     if not counter_exist:
         counter = EventCounter(counter_name, 0, node=node)
         counter.save()

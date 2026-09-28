@@ -4,14 +4,27 @@
 .SH NAME
 privacyidea-pip-update \- updates a pip installation, e.g. in a virtualenv.
 .SH SYNOPSIS
-privacyidea-convert-token [\-f] [\-\-force]
+privacyidea-pip-update [\-f] [\-s] [\-n]
 .SH DESCRIPTION
-This tool updates all packages via pip install \-\-update.
+This tool upgrades privacyIDEA and its dependencies via pip and then upgrades
+the database schema with privacyidea\-schema\-upgrade.
 .SH COMMON OPTIONS
 .PP
 \fB\-f, \-\-force \fR
 .RS 4
-Do not ask. Just do it.
+Do not ask for confirmation.
+.RE
+
+.PP
+\fB\-s, \-\-skipstamp \fR
+.RS 4
+Do not stamp a database that has no version stamp yet.
+.RE
+
+.PP
+\fB\-n, \-\-noschema \fR
+.RS 4
+Do not upgrade the database schema.
 .RE
 
 .PP

@@ -90,19 +90,19 @@ export class ConditionalAccessStageItemComponent {
 
   // One string for the reset button's tooltip and its accessible name: a sighted user hovering and a
   // screen-reader user tabbing must be told the same thing, and two literals would drift apart.
-  readonly resetErrorMessageLabel = $localize`Replace with the suggested wording for this stage's actions`;
+  readonly resetErrorMessageLabel = $localize`:@@conditionalAccess.replaceSuggestedWordingStage:Replace with the suggested wording for this stage's actions`;
 
-  readonly durationTagUnusableHint = $localize`{duration} needs a temporary lock or block to count down. This stage \
+  readonly durationTagUnusableHint = $localize`:@@conditionalAccess.durationNeedsTemporaryLock:{duration} needs a temporary lock or block to count down. This stage \
 has none, so it would be shown to the user as written - remove the tag, or add a temporary action.`;
 
-  readonly errorMessageHint = $localize`Shown to the user on a request this stage turns away before the password \
+  readonly errorMessageHint = $localize`:@@conditionalAccess.shownUserRequestStage:Shown to the user on a request this stage turns away before the password \
 or OTP is checked: while a lock or block written by this stage is in force, or when this stage denies access. Not \
 on the request that trips the stage - that one gets the answer it had coming, and the restriction applies from the \
 next request. It applies to this stage only. Left empty, the user is told only "Authentication failed.", so a \
 rejection cannot be told apart from any other failed authentication - unless the \
 "show_default_ca_error_message" policy is set, which fills in the default wording for this stage's actions.`;
 
-  readonly messageUnreachableHint = $localize`This stage neither restricts access nor denies it, so no request is \
+  readonly messageUnreachableHint = $localize`:@@conditionalAccess.stageNeitherRestrictsAccess:This stage neither restricts access nor denies it, so no request is \
 ever turned away while it applies and this message would never be shown. Add a lock, block or deny action, or \
 leave the message empty.`;
 

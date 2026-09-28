@@ -56,6 +56,9 @@ FAMILY_NAMES = {SQLITE: "SQLite", MYSQL: "MySQL/MariaDB", POSTGRESQL: "PostgreSQ
 # The client packages providing the dump/restore commands, used in error messages.
 CLIENT_PACKAGES = {MYSQL: "mariadb-client (or mysql-client)", POSTGRESQL: "postgresql-client"}
 
+# The command that replays a dump, checked for before a restore changes anything.
+RESTORE_CLIENTS = {MYSQL: "mysql", POSTGRESQL: "psql"}
+
 # Suffix of the database dump inside the backup archive. The suffix records which
 # engine wrote the dump, so a restore can refuse to feed it to a different one.
 # ".sql" and ".sqlite" are the names earlier versions wrote and stay unchanged.
@@ -108,12 +111,12 @@ backup_cli = AppGroup("backup", help="Create/Restore database backup of privacyI
 def backup_create(backup_dir, config_dir, radius_dir, enckey):
     """
     Create a new backup of the database and the configuration. By default,
-    the encryption key is not included. Use the 'enckey' option to also
+    the encryption key is not included. Use the '--enckey' option to also
     add the encryption key to the backup. In this case make sure, that the
     backups are stored securely.
 
     You can also include a given FreeRADIUS configuration into the backup.
-    Just specify a directory using 'radius_dir'.
+    Just specify a directory using '--radius_dir'.
 
     SQLite, MySQL/MariaDB and PostgreSQL databases are supported. Dumping a
     MySQL/MariaDB or a PostgreSQL database requires the client commands of the
@@ -190,6 +193,10 @@ def backup_restore(backup_file, keep_db_uri):
     The contents of the target database are overwritten. The database itself is
     not created: the database and the role connecting to it have to exist
     already, as they do on a regular privacyIDEA installation.
+
+    Everything that can refuse the restore - a missing file in the archive, a
+    database engine other than the one the dump was taken with, a missing client
+    command - is checked before the first file is extracted.
     """
     # TODO: Also allow to specify a target directory, otherwise it will always
     #  extract to the base /
@@ -197,22 +204,27 @@ def backup_restore(backup_file, keep_db_uri):
     #  files in the archive
 
     config_file = None
+    archived_config = None
     sqlfile = None
     dump_family = None
     enckey_contained = False
 
     try:
         with tarfile.open(backup_file, "r:gz") as tf:
+            config_member = None
             for member in tf:
                 member_name = member.name
                 dump_match = DUMP_FILE_PATTERN.search(member_name)
                 if re.search(r"/pi.cfg$", member_name):
                     config_file = f"/{member_name}"
+                    config_member = member
                 elif dump_match:
                     sqlfile = f"/{member_name}"
                     dump_family = DUMP_FAMILIES[dump_match.group("suffix")]
                 elif re.search(r"/enc[kK]ey", member_name):
                     enckey_contained = True
+            if config_member is not None:
+                archived_config = _read_archived_file(tf, config_member)
     except (tarfile.TarError, OSError) as e:
         click.secho(f"Unable to open backup file {backup_file}: {e}", fg="red")
         sys.exit(2)
@@ -256,16 +268,30 @@ def backup_restore(backup_file, keep_db_uri):
                     fg="yellow",
                 )
 
+    if keep_db_uri and current_sqluri:
+        sqluri = current_sqluri
+    else:
+        sqluri = _archived_database_uri(archived_config, config_file)
+
+    url = _database_url(sqluri)
+    family = _backend_family(url)
+    if family != dump_family:
+        # A dump replayed against another engine fails with syntax errors at
+        # best and writes a partial schema at worst.
+        click.secho(f"The backup contains a {FAMILY_NAMES[dump_family]} dump, but the database URI "
+                    f"points to {FAMILY_NAMES[family]}. Restoring across database engines is not "
+                    "supported. Nothing was restored.", fg="red")
+        sys.exit(2)
+    restore_client = RESTORE_CLIENTS.get(family)
+    if restore_client and not shutil.which(restore_client):
+        _missing_client(restore_client, family)
+
     with tarfile.open(backup_file, "r:gz") as tf:
         if sys.version_info >= (3, 12):
             tf.extractall(path="/", filter="data")
         else:
             tf.extractall(path="/", members=_safe_members(tf, "/"))
     click.echo(60 * "=")
-
-    # use Flask config to read in the config file (now restored from backup)
-    cfg = Config(config_file.parent)
-    cfg.from_pyfile(config_file)
 
     if keep_db_uri and current_sqluri:
         # Patch the restored pi.cfg to keep the original DB URI in-place.
@@ -284,25 +310,6 @@ def backup_restore(backup_file, keep_db_uri):
         else:
             cfg_text += f'\n{new_line}\n'
         config_file.write_text(cfg_text)
-        sqluri = current_sqluri
-    else:
-        sqluri = cfg["SQLALCHEMY_DATABASE_URI"]
-
-    if sqluri is None:
-        click.secho(f"No SQLALCHEMY_DATABASE_URI found in {config_file}",
-                    fg="red")
-        sys.exit(2)
-
-    url = _database_url(sqluri)
-    family = _backend_family(url)
-    if family != dump_family:
-        # A dump replayed against another engine fails with syntax errors at
-        # best and writes a partial schema at worst.
-        click.secho(f"The backup contains a {FAMILY_NAMES[dump_family]} dump, but the database URI "
-                    f"points to {FAMILY_NAMES[family]}. Restoring across database engines is not "
-                    f"supported. The configuration was restored and the dump was kept at {sqlfile}; "
-                    "the database was not touched.", fg="red")
-        sys.exit(2)
 
     if family == SQLITE:
         _restore_sqlite(url, sqlfile)
@@ -352,6 +359,52 @@ def _backend_family(url: URL) -> str:
     return family
 
 
+def _read_archived_file(archive: tarfile.TarFile, member: tarfile.TarInfo) -> bytes | None:
+    """Return the content of a file in the archive without extracting it.
+
+    A link is followed within the archive. A link to a file outside the archive,
+    or a member that is no file at all, has no content here and gives None.
+    """
+    try:
+        archived_file = archive.extractfile(member)
+    except KeyError:
+        return None
+    return archived_file.read() if archived_file else None
+
+
+def _archived_database_uri(config_content: bytes | None, config_file: pathlib.Path) -> str:
+    """Return the SQLALCHEMY_DATABASE_URI of the pi.cfg in the archive, or exit.
+
+    The file is parsed from a temporary copy instead of from its place on disk,
+    so that a restore which has to be refused leaves the configuration untouched.
+    """
+    if config_content is None:
+        click.secho(f"The config file {config_file} in the backup file cannot be read.", fg="red")
+        sys.exit(2)
+    try:
+        with tempfile.TemporaryDirectory() as config_dir:
+            config_copy = pathlib.Path(config_dir).joinpath(config_file.name)
+            config_copy.write_bytes(config_content)
+            archived_config = Config(config_file.parent)
+            archived_config.from_pyfile(config_copy)
+    except Exception as e:
+        click.secho(f"The config file {config_file} in the backup file cannot be read: {e}", fg="red")
+        sys.exit(2)
+    sqluri = archived_config.get("SQLALCHEMY_DATABASE_URI")
+    if not sqluri:
+        click.secho(f"No SQLALCHEMY_DATABASE_URI found in {config_file} in the backup file.", fg="red")
+        sys.exit(2)
+    return sqluri
+
+
+def _missing_client(binary: str, family: str) -> NoReturn:
+    """Report a database client command that is not installed, naming the package to install, and exit."""
+    click.secho(f"Could not find the '{binary}' command, which is needed to dump and restore a "
+                f"{FAMILY_NAMES[family]} database. Install the {CLIENT_PACKAGES[family]} package.",
+                fg="red")
+    sys.exit(2)
+
+
 def _run_client(cmd: list[str], family: str, env: dict[str, str] | None = None,
                 stdin: IO[bytes] | None = None) -> subprocess.CompletedProcess:
     """Run a database client command, turning a missing binary into a clear error.
@@ -367,10 +420,7 @@ def _run_client(cmd: list[str], family: str, env: dict[str, str] | None = None,
     try:
         return subprocess.run(cmd, env=env, stdin=stdin)  # nosec B603 - fixed argv, no shell
     except FileNotFoundError:
-        click.secho(f"Could not find the '{cmd[0]}' command, which is needed to dump and restore a "
-                    f"{FAMILY_NAMES[family]} database. Install the {CLIENT_PACKAGES[family]} package.",
-                    fg="red")
-        sys.exit(2)
+        _missing_client(cmd[0], family)
 
 
 def _dump_failed(binary: str, returncode: int, sqlfile: pathlib.Path, hint: str | None = None) -> NoReturn:

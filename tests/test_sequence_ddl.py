@@ -242,3 +242,64 @@ def test_build_restart_sequence_sql_per_dialect():
         f"ALTER SEQUENCE RESTART on Oracle must be 'RESTART START WITH n' "
         f"('RESTART WITH n' is a syntax error there), got: {oracle_sql!r}"
     )
+
+def test_is_operator_is_only_used_with_null():
+    """
+    ``column.is_(value)`` compiles to ``column IS <value>``, which SQL only accepts for
+    NULL. On MySQL, PostgreSQL and SQLite "IS true" happens to be valid as well, so the
+    spelling passes everywhere except Oracle, where a Boolean column is a NUMBER(1) and
+    "IS 1" fails with ORA-00908.
+
+    Comparing with ``==`` renders "= 1" there and "= true" elsewhere, so this guards
+    against the spelling coming back - ruff's E712 fix suggests exactly it.
+    """
+    import ast
+
+    offenders = []
+    for path in sorted(pathlib.Path("privacyidea").rglob("*.py")):
+        tree = ast.parse(path.read_text(), filename=str(path))
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                    and node.func.attr in ("is_", "is_not", "isnot") and node.args):
+                continue
+            argument = node.args[0]
+            if isinstance(argument, ast.Constant) and argument.value is None:
+                continue
+            offenders.append(f"{path}:{node.lineno}: {ast.unparse(node)}")
+
+    assert not offenders, (
+        "is_() is only portable with None; compare with == instead:\n  " + "\n  ".join(offenders)
+    )
+
+
+def test_every_integer_primary_key_declares_its_generator():
+    """
+    A single integer primary key fills itself on MySQL (AUTO_INCREMENT) and PostgreSQL
+    (SERIAL) without the model saying anything, but Oracle has no such convention: unless
+    the model declares a Sequence or an Identity, ``db.create_all()`` leaves the column a
+    plain NOT NULL number and every insert fails with ORA-01400.
+
+    Composite and string primary keys are filled by the caller and are not covered.
+    """
+    from sqlalchemy import BigInteger, Integer, Sequence, SmallInteger
+    from sqlalchemy.dialects import oracle
+    from sqlalchemy.schema import CreateTable
+
+    from privacyidea.models import db
+
+    offenders = []
+    for name, table in sorted(db.metadata.tables.items()):
+        primary_key_columns = list(table.primary_key.columns)
+        if len(primary_key_columns) != 1:
+            continue
+        column = primary_key_columns[0]
+        if not isinstance(column.type, (Integer, BigInteger, SmallInteger)):
+            continue
+        oracle_ddl = str(CreateTable(table).compile(dialect=oracle.dialect())).upper()
+        if not (isinstance(column.default, Sequence) or "IDENTITY" in oracle_ddl):
+            offenders.append(name)
+
+    assert not offenders, (
+        "these tables have an integer primary key that nothing generates on Oracle; "
+        f"declare a Sequence or an Identity on the model: {offenders}"
+    )

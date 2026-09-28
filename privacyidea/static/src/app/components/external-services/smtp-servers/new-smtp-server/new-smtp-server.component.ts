@@ -34,8 +34,10 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { reservedNames } from "@utils/reserved-names.utils";
 
 interface SmtpFormModel {
   identifier: string;
@@ -99,6 +101,7 @@ export class NewSmtpServerComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected data: SmtpServer | null = null;
   isEditMode = signal(false);
@@ -111,6 +114,9 @@ export class NewSmtpServerComponent implements OnDestroy {
   smtpForm = form(this.smtpModel, (f) => {
     required(f.identifier);
     pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
+    // POST /smtpserver/send_test_email sends a test email, and browsers drop "." and ".." from the URL,
+    // so a server with one of these names is never saved.
+    reservedNames(f.identifier, ["send_test_email", ".", ".."]);
     required(f.server);
     required(f.sender);
     email(f.sender);
@@ -216,6 +222,28 @@ export class NewSmtpServerComponent implements OnDestroy {
       await this.smtpService.testSmtpServer(params);
       this.isTesting.set(false);
     }
+  }
+
+  async deleteServer(): Promise<void> {
+    const identifier = this.editIdentifier;
+    if (!identifier) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@smtpServer.deleteSmtpServer:Delete SMTP Server`,
+      items: [identifier],
+      itemType: $localize`:@@smtpServer.smtpServer:SMTP server`
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.smtpService.deleteSmtpServer(identifier);
+    } catch {
+      return;
+    }
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
   }
 
   onCancel(): void {

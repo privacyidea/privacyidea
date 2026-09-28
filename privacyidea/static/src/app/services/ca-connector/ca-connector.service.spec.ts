@@ -32,6 +32,7 @@ describe("CaConnectorService", () => {
   let httpMock: HttpTestingController;
   let notifyMock: MockNotificationService;
   let contentService: MockContentService;
+  let authService: MockAuthService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -49,6 +50,9 @@ describe("CaConnectorService", () => {
     notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     contentService.onExternalCaConnectors = signal(true);
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // The connectors are only requested by an admin who may read them.
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["caconnectorread"] });
   });
 
   afterEach(() => {
@@ -163,6 +167,14 @@ describe("CaConnectorService", () => {
     req = httpMock.expectOne((req) => req.url.includes(service.caConnectorBaseUrl));
     req.flush("Error", { status: 500, statusText: "Unexpected error occurred" });
     await Promise.resolve();
+    expect(service.caConnectors()).toEqual([]);
+  });
+
+  it("should not request the connectors without caconnectorread", () => {
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+    TestBed.tick();
+
+    httpMock.expectNone((req) => req.url === service.caConnectorBaseUrl);
     expect(service.caConnectors()).toEqual([]);
   });
 

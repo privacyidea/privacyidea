@@ -886,6 +886,36 @@ class AuthenticationLogPaginateTestCase(MyTestCase):
         restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
         self.assertEqual(2, restricted.count)
 
+    def test_visibility_scope_excluded_usernames(self):
+        # A scope for every user but some leaves these users out, and, as every restricting dimension does, an
+        # entry without a username as well.
+        for username in ("alice", "Alice", "bob", None):
+            log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", realm="realm1",
+                                     username=username)
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[], excluded_usernames=["alice"])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual({"Alice", "bob"}, {entry.username for entry in restricted.auth_logs})
+
+        scope.username_case_insensitive = True
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual({"bob"}, {entry.username for entry in restricted.auth_logs})
+
+    def test_visibility_scope_excluded_accounts(self):
+        # The account of an excluded login is left out under whatever login its entries were recorded, and an entry
+        # without a uid names no account.
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u-alice",
+                                 realm="realm1", username="alice.before-rename")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res2", uid="u-alice",
+                                 realm="realm1", username="alice-in-another-resolver")
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="res1", uid="u-bob",
+                                 realm="realm1", username="bob")
+        log_authentication_event(event_type=AuthEventType.USER_UNKNOWN, realm="realm1", username="nobody")
+        scope = AuthenticationLogVisibilityScope(realms=[], resolvers=[], usernames=[], excluded_usernames=["alice"],
+                                                 excluded_accounts=[("res1", "u-alice")])
+        restricted = get_authentication_logs_paginate(visibility_scopes=[scope])
+        self.assertEqual({"alice-in-another-resolver", "bob", "nobody"},
+                         {entry.username for entry in restricted.auth_logs})
+
     def test_visibility_scope_uid_dimension(self):
         # The uid dimension is what a principal's own entries are matched by: it follows the account, so an entry
         # recorded under a former login name is included and one carrying the same login name for another uid is not.

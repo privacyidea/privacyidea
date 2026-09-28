@@ -271,7 +271,9 @@ policy will look for it.
    also exempts everyone who merely **claims** to be an internal administrator.
    The role is read from the login name before any password is checked, so a
    login naming a local administrator is exempt whoever sent it, and the
-   attempts made under that name are neither refused nor counted by the policy.
+   attempts made under that name are neither refused nor counted by the policy -
+   unless a user of that name exists, in which case they are counted against
+   that user, whom they can lock out (see :ref:`conditional_access_local_admins`).
    The most guessable account in the installation is then the one account the
    policy does not protect. Write the exemption only on the policies that need
    it, and where an address will do, exempt the address in

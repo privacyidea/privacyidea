@@ -73,7 +73,7 @@ def upgrade():
     bind = op.get_bind()
     session = orm.Session(bind=bind)
     if session.query(Policy.id).filter(Policy.scope == f"{SCOPE.ADMIN!s}",
-                                       Policy.active.is_(True)).all():
+                                       Policy.active == sa.true()).all():
 
         if session.query(Policy.id).filter_by(name=POLICYNAME).first() is None:
             # add policy

@@ -18,22 +18,22 @@ export const USER_ROLE_CONFIG: readonly {
   filterLabel: string;
   badge?: UserRoleBadge;
 }[] = [
-  { value: "user", filterLabel: $localize`User` },
+  { value: "user", filterLabel: $localize`:@@common.user:User` },
   {
     value: "admin-internal",
-    filterLabel: $localize`Internal Admin`,
+    filterLabel: $localize`:@@userRole.internalAdmin2:Internal Admin`,
     badge: {
-      label: $localize`internal admin`,
-      tooltip: $localize`Local database administrator.`,
+      label: $localize`:@@userRole.internalAdmin:internal admin`,
+      tooltip: $localize`:@@userRole.localDatabaseAdministrator:Local database administrator.`,
       class: "role-badge-admin-internal"
     }
   },
   {
     value: "admin-external",
-    filterLabel: $localize`External Admin`,
+    filterLabel: $localize`:@@userRole.externalAdmin2:External Admin`,
     badge: {
-      label: $localize`external admin`,
-      tooltip: $localize`Administrator from an admin realm.`,
+      label: $localize`:@@userRole.externalAdmin:external admin`,
+      tooltip: $localize`:@@userRole.administratorAdminRealm:Administrator from an admin realm.`,
       class: "role-badge-admin-external"
     }
   }

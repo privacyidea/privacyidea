@@ -94,7 +94,7 @@
     }
     @if (authService.rights().includes("authentication_log_read")) {
       <app-navigation-self-service-button
-        i18n-title
+        i18n-title="@@nav.authenticationLog"
         key="{{ this.ROUTE_PATHS.AUTHENTICATION_LOG }}"
         matIconClass="mdi--list-lock"
         title="Authentication Log" />

@@ -26,14 +26,14 @@ from enum import Enum
 from typing import Any, TYPE_CHECKING
 
 from netaddr import AddrFormatError, IPAddress
-from sqlalchemy import func, select
+from sqlalchemy import false, func, select, true
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnElement
 
 from privacyidea.lib import _
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType,
                                                                            AuthLogUserRole,
-                                                                           CA_ENFORCEMENT_EVENT_TYPES,
+                                                                           NON_REPRESENTATIVE_EVENT_TYPES,
                                                                            CountMode,
                                                                            RestrictionCause)
 from privacyidea.lib.conditional_access.authentication_log import naive_utc
@@ -777,10 +777,11 @@ def _count_matching_attempts(rows: Sequence[AuthenticationLog], tracked_types: s
     # First pass: for each row, track its attempt's latest row, its latest success row, and the newest LOGIN_SUCCESS
     # position (the since_last_success reset point).
     for row in rows:
-        if row.event_type in CA_ENFORCEMENT_EVENT_TYPES:
-            # A row conditional access wrote for its own rejection must never classify the attempt: as the latest row
-            # it would replace a real tracked failure with an untracked type and drop an already-counted attempt,
-            # stalling an escalation once the lock expires.
+        if row.event_type in NON_REPRESENTATIVE_EVENT_TYPES:
+            # A row conditional access wrote for its own rejection, or one describing the client a request arrived
+            # with, must never classify the attempt: as the latest row it would replace a real tracked failure with
+            # an untracked type and drop an already-counted attempt, stalling an escalation once the lock expires -
+            # or, for a client signal, letting whoever can produce one at will hide every failed attempt behind it.
             continue
         order = _row_order(row)
         if row.event_type == AuthEventType.LOGIN_SUCCESS:
@@ -820,9 +821,10 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
     fetching full :class:`AuthenticationLog` objects (rather than columns) is negligible and keeps the reduction working
     on named attributes.
 
-    The one exception is :data:`CA_ENFORCEMENT_EVENT_TYPES`: those rows classify a request conditional access itself
-    rejected, they can never be an attempt's representative (see :func:`_count_matching_attempts`), and excluding them
-    here rather than in Python means they cost neither a row over the wire nor an ORM object. It is an extra predicate
+    The one exception is :data:`NON_REPRESENTATIVE_EVENT_TYPES`: a row conditional access wrote for its own
+    rejection, or one describing the client a request arrived with, can never be an attempt's representative (see
+    :func:`_count_matching_attempts`), and excluding them here rather than in Python means they cost neither a row
+    over the wire nor an ORM object. It is an extra predicate
     on the same index range scan, not a different plan.
 
     *subject* deliberately carries no condition predicates - unlike the row counters, which take them as
@@ -841,7 +843,7 @@ def _count_attempts(subject: Sequence[ColumnElement[bool]], event_types: list[st
     conditions = [*subject,
                  AuthenticationLog.timestamp >= window_start,
                  AuthenticationLog.timestamp <= window_end,
-                 AuthenticationLog.event_type.notin_(sorted(str(event) for event in CA_ENFORCEMENT_EVENT_TYPES))]
+                 AuthenticationLog.event_type.notin_(sorted(str(event) for event in NON_REPRESENTATIVE_EVENT_TYPES))]
     if exclude_row_ids:
         conditions.append(AuthenticationLog.id.notin_(exclude_row_ids))
     rows = get_ca_session().scalars(select(AuthenticationLog).where(*conditions)).all()
@@ -1002,6 +1004,15 @@ def _effective_window_seconds(policy: ConditionalAccessPolicy, window_end: datet
     window_seconds = policy.time_window_seconds
     if policy.enforced_since is not None:
         elapsed = (window_end - policy.enforced_since).total_seconds()
+        if elapsed < 0:
+            # An empty window counts nothing, so every stage of this policy stays below its threshold and the
+            # policy enforces nothing until the clock passes its floor. The arithmetic is right and the outcome
+            # is not what the administrator configured, and the only way it arises is a clock that went backwards
+            # or a node whose clock disagrees with the one that wrote the floor - neither of which announces
+            # itself anywhere else.
+            log.warning(f"Policy {policy.name!r} is enforced from {policy.enforced_since}, which is in the future "
+                        f"relative to this node's clock ({window_end}): it counts nothing and so enforces nothing "
+                        f"until the clock passes that point. Check the clocks of the nodes writing this table.")
         window_seconds = max(0.0, min(window_seconds, elapsed))
     return window_seconds
 
@@ -1155,7 +1166,8 @@ def get_user_lock_by_login(login: str | None, now: datetime | None = None, *,
     Several realms can hold a user of one name, and any of their locks bars a login under the bare name, so the
     first one standing is returned. A row is not narrowed to the default realm because the realm this request would
     have resolved to is not settled at this point (``get_realm_for_authentication`` may rewrite it), and refusing
-    too widely here is a refusal, never an admission.
+    too widely here is a refusal, never an admission - as long as the principal being refused is one the operator
+    meant to be lockable at all, which is the caller's to establish (see :func:`can_be_locked`).
     """
     if not login:
         return None
@@ -1167,6 +1179,39 @@ def get_user_lock_by_login(login: str | None, now: datetime | None = None, *,
         if status is not None:
             return status
     return None
+
+
+def can_be_locked(context: CAContext) -> bool:
+    """
+    Whether any policy that is able to lock a user applies to the request *context* describes.
+
+    Asked wherever a lock row has to be weighed against a principal it was not written for - the one such place
+    being :func:`~privacyidea.api.lib.conditional_access._evaluate_rejection`, which reads a same-named user's
+    lock for a login name that is also a local database admin's. A principal every locking policy excludes has
+    been declared unlockable by the operator, and a row written for somebody else must not lock them after all:
+    an applicability condition is the only way to say "not this principal", so it has to hold on every path that
+    can refuse one, not only on the path that writes the row.
+
+    ``dry_run`` policies are left out. They enforce nothing, so a principal they cover is not thereby a principal
+    the operator meant to be lockable.
+
+    :param context: what is known about the request under evaluation
+    :return: True if some enabled, enforcing policy with a user-locking action applies to this request
+    """
+    policies = get_ca_session().scalars(
+        select(ConditionalAccessPolicy)
+        .options(selectinload(ConditionalAccessPolicy.conditions),
+                 selectinload(ConditionalAccessPolicy.stages).selectinload(ConditionalAccessPolicyStage.actions))
+        # ``== true()`` / ``== false()`` rather than ``.is_()``: Oracle has no boolean type (see
+        # evaluate_access_decision)
+        .where(ConditionalAccessPolicy.enabled == true(), ConditionalAccessPolicy.dry_run == false())).all()
+    return any(_locks_a_user(policy) and policy_matches_context(policy, context) for policy in policies)
+
+
+def _locks_a_user(policy: ConditionalAccessPolicy) -> bool:
+    """Whether any stage of *policy* carries an action that writes a user lock."""
+    return any(_restricted_target(action.action_type) is ConditionalAccessTarget.USER
+               for stage in policy.stages for action in stage.actions)
 
 
 def get_user_lock(user: "User", now: datetime | None = None, *,
@@ -1433,7 +1478,8 @@ def evaluate_access_decision(context: CAContext, now: datetime | None = None) ->
     policies = get_ca_session().scalars(
         select(ConditionalAccessPolicy)
         .options(selectinload(ConditionalAccessPolicy.conditions))
-        .where(ConditionalAccessPolicy.enabled.is_(True))
+        # ``== true()`` rather than ``.is_(True)``: Oracle has no boolean type and "IS 1" is not valid SQL there
+        .where(ConditionalAccessPolicy.enabled == true())
         .order_by(ConditionalAccessPolicy.priority.asc())
     ).all()
     outcomes: list[ConditionalAccessOutcome] = []
@@ -1646,7 +1692,8 @@ def evaluate_conditional_access_policies(context: CAContext, event_type: AuthEve
         select(ConditionalAccessPolicy)
         .options(selectinload(ConditionalAccessPolicy.conditions))
         .join(ConditionalAccessPolicy.counter_types)
-        .where(ConditionalAccessPolicy.enabled.is_(True),
+        # ``== true()`` rather than ``.is_(True)``: Oracle has no boolean type and "IS 1" is not valid SQL there
+        .where(ConditionalAccessPolicy.enabled == true(),
                ConditionalAccessPolicyCounterType.counter_type == event_type)
         .order_by(ConditionalAccessPolicy.priority.asc())
     ).all()
@@ -2096,11 +2143,10 @@ def _execute_stage_actions(policy: ConditionalAccessPolicy, stage: ConditionalAc
     # report; evaluate_conditional_access_policies then checks it against the restriction actually in force, which
     # decides whether the outcomes claiming it are recorded at all.
     #
-    # A write *declined as weakening* wrote nothing either, and its target still belongs here: only a stronger
-    # restriction in force declines one, and that one was written either by an earlier action here or by another
-    # policy in this same evaluation. (It cannot have been in force beforehand: the pre-check would have refused
-    # the request, and a refused request is never evaluated.) So a row a later request will be refused by does
-    # stand on that target, and the outcome describing the declined write is a thing that happened.
+    # A write *declined as weakening* is left out, and consistently so: record() runs only where the upsert
+    # reports it wrote (``write.succeeded and not declined``), so a declined action records no outcome either,
+    # and there is nothing about that target left to verify. A restriction does stand on it - only a stronger one
+    # in force declines a write - but it is the write that put it there that is listed here, not this one.
     enforced: set[ConditionalAccessTarget] = set()
 
     user = context.user

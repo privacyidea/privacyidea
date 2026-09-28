@@ -23,7 +23,7 @@
     <mat-form-field
       class="blocklist-table-filter"
       subscriptSizing="dynamic">
-      <mat-label i18n>Filter Blocklist ...</mat-label>
+      <mat-label i18n="@@blocklist.filterBlocklist">Filter Blocklist ...</mat-label>
       <app-clearable-input
         (clearButtonClick)="clearFilter()"
         [showClearButton]="filterText().length > 0">
@@ -32,12 +32,12 @@
           (input)="handleFilterInput($event)"
           [value]="filterText()"
           aria-label="Filter Input"
-          i18n-aria-label
-          i18n-placeholder
+          i18n-aria-label="@@common.filterInput"
+          i18n-placeholder="@@blocklist.ipState"
           matInput
           placeholder="IP, state, ..." />
       </app-clearable-input>
-      <mat-hint i18n>Search across all columns (case-insensitive).</mat-hint>
+      <mat-hint i18n="@@blocklist.searchAcrossAllColumns">Search across all columns (case-insensitive).</mat-hint>
     </mat-form-field>
   </div>
 
@@ -48,7 +48,7 @@
         class="action-button-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>lock</mat-icon>
-        <span i18n>Block IP</span>
+        <span i18n="@@blocklist.blockIp">Block IP</span>
       </button>
     }
     @if (authService.actionAllowed("blocklist_reset")) {
@@ -58,14 +58,14 @@
         class="action-button-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>lock_open</mat-icon>
-        <span i18n>Unblock</span>
+        <span i18n="@@blocklist.unblock">Unblock</span>
       </button>
       <button
         (click)="cleanUpExpired()"
         class="action-button-delete-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
-        <span i18n>Delete Expired</span>
+        <span i18n="@@token.deleteExpired">Delete Expired</span>
       </button>
     }
   </div>
@@ -77,7 +77,7 @@
       [dataSource]="dataSource()"
       aria-label="Blocklist Table"
       class="blocklist-table"
-      i18n-aria-label
+      i18n-aria-label="@@blocklist.blocklistTable"
       mat-table>
       <!-- Selection column -->
       <ng-container matColumnDef="select">
@@ -107,12 +107,12 @@
           *matHeaderCellDef
           mat-header-cell>
           <div class="header-cell">
-            <span i18n>Source IP</span>
+            <span i18n="@@common.sourceIp">Source IP</span>
             <button
               (click)="onSortEvent('identifier')"
               aria-label="Sort by source IP"
               class="sort-button"
-              i18n-aria-label
+              i18n-aria-label="@@blocklist.sortSourceIp"
               mat-icon-button
               type="button">
               <mat-icon>{{ getSortIcon("identifier") }}</mat-icon>
@@ -130,8 +130,8 @@
                 [routerLink]="[ROUTE_PATHS.AUTHENTICATION_LOG]"
                 aria-label="Show authentication log of this IP"
                 class="auth-log-button"
-                i18n-aria-label
-                i18n-matTooltip
+                i18n-aria-label="@@blocklist.showAuthenticationLogIp"
+                i18n-matTooltip="@@blocklist.showAuthenticationLogIp"
                 matTooltip="Show authentication log of this IP"
                 type="button">
                 <mat-icon class="mdi--list-lock auth-log-icon"></mat-icon>
@@ -147,12 +147,12 @@
           *matHeaderCellDef
           mat-header-cell>
           <div class="header-cell">
-            <span i18n>State</span>
+            <span i18n="@@common.state">State</span>
             <button
               (click)="onSortEvent('state')"
               aria-label="Sort by state"
               class="sort-button"
-              i18n-aria-label
+              i18n-aria-label="@@blocklist.sortState"
               mat-icon-button
               type="button">
               <mat-icon>{{ getSortIcon("state") }}</mat-icon>
@@ -174,12 +174,12 @@
           *matHeaderCellDef
           mat-header-cell>
           <div class="header-cell">
-            <span i18n>Cause</span>
+            <span i18n="@@common.cause">Cause</span>
             <button
               (click)="onSortEvent('cause')"
               aria-label="Sort by cause"
               class="sort-button"
-              i18n-aria-label
+              i18n-aria-label="@@blocklist.sortCause"
               mat-icon-button
               type="button">
               <mat-icon>{{ getSortIcon("cause") }}</mat-icon>
@@ -199,12 +199,12 @@
           *matHeaderCellDef
           mat-header-cell>
           <div class="header-cell">
-            <span i18n>Expiry</span>
+            <span i18n="@@blocklist.expiry">Expiry</span>
             <button
               (click)="onSortEvent('block_expires_at')"
               aria-label="Sort by expiry"
               class="sort-button"
-              i18n-aria-label
+              i18n-aria-label="@@blocklist.sortExpiry"
               mat-icon-button
               type="button">
               <mat-icon>{{ getSortIcon("block_expires_at") }}</mat-icon>
@@ -230,12 +230,12 @@
           *matHeaderCellDef
           mat-header-cell>
           <div class="header-cell">
-            <span i18n>Blocked</span>
+            <span i18n="@@blocklist.blocked">Blocked</span>
             <button
               (click)="onSortEvent('blocked_at')"
               aria-label="Sort by blocked time"
               class="sort-button"
-              i18n-aria-label
+              i18n-aria-label="@@blocklist.sortBlockedTime"
               mat-icon-button
               type="button">
               <mat-icon>{{ getSortIcon("blocked_at") }}</mat-icon>
@@ -256,7 +256,7 @@
           *matHeaderCellDef
           mat-header-cell>
           <span class="header-cell">
-            <span i18n>Error Message</span>
+            <span i18n="@@common.errorMessage">Error Message</span>
           </span>
         </th>
         <td
@@ -276,12 +276,12 @@
       <tr
         *matNoDataRow
         aria-label="No Data Row"
-        i18n-aria-label>
+        i18n-aria-label="@@common.noDataRow">
         <td
           [attr.colspan]="displayedColumns.length"
           aria-label="No Data Cell"
-          i18n
-          i18n-aria-label>
+          i18n="@@blocklist.noBlocklistEntriesFound"
+          i18n-aria-label="@@common.noDataCell">
           No blocklist entries found.
         </td>
       </tr>

@@ -171,8 +171,8 @@ class AuthEventType(str, Enum):
     UNKNOWN_FAIL_REASON = "UNKNOWN_FAIL_REASON"
 
     # --- written by conditional access itself, before any credential check ---------------------------------------
-    # These three classify a request the conditional-access pre-check turned away, which is why they are the only
-    # members no token flow ever produces (see CA_ENFORCEMENT_EVENT_TYPES). Each names the condition that ended the
+    # These three classify a request the conditional-access pre-check turned away, which is why none of them is ever
+    # produced by a token flow (see CA_ENFORCEMENT_EVENT_TYPES). Each names the condition that ended the
     # request, like USER_UNKNOWN or NO_TOKEN above.
     #
     # A user lock in force turned the request away. Note the word order: USER_LOCKED is the rejection, while the
@@ -183,6 +183,19 @@ class AuthEventType(str, Enum):
     # A conditional-access policy's DENY action decided this single request. Named after the effect rather than the
     # action, because DENY is a ConditionalAccessAction value stored in the adjacent outcome table.
     ACCESS_DENIED = "ACCESS_DENIED"
+
+    # --- written by the remembered-device and API-client layers, outside any token flow ----------------------------
+    # Unlike the three above, these are trackable: they are signals about the request's *client*, not a rejection
+    # conditional access itself issued, so a policy counting them (e.g. a threshold of one, to lock or notify
+    # immediately) does not feed itself.
+    #
+    # A presented remember-device cookie carried a stale counter beyond the grace window - the rotating-token scheme's
+    # definition of a stolen cookie (see privacyidea.lib.remembered_device). The whole device series has already been
+    # deleted by the time this is logged.
+    DEVICE_TOKEN_REUSED = "DEVICE_TOKEN_REUSED"
+    # A request carried a valid API key (correct secret) whose client is suspended. The request was not identified
+    # by it (g.client_id stays None), so whatever the request does otherwise proceeds unauthenticated by that key.
+    SUSPENDED_API_KEY_USED = "SUSPENDED_API_KEY_USED"
 
     def __str__(self) -> str:
         return self.value
@@ -377,6 +390,8 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.USER_LOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.IP_BLOCKED: AuthEventOutcome.FAILURE,
     AuthEventType.ACCESS_DENIED: AuthEventOutcome.FAILURE,
+    AuthEventType.DEVICE_TOKEN_REUSED: AuthEventOutcome.FAILURE,
+    AuthEventType.SUSPENDED_API_KEY_USED: AuthEventOutcome.FAILURE,
 }
 
 
@@ -399,11 +414,46 @@ CA_ENFORCEMENT_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
     AuthEventType.ACCESS_DENIED,
 })
 
+#: Event types that describe the *client* a request arrived with rather than the outcome of an authentication.
+#: They are written to the log and can be filtered and reported on there - which is what they are for - but a policy
+#: cannot count them, and they must never be the row that classifies an attempt (see
+#: :func:`~privacyidea.lib.conditional_access.engine._count_matching_attempts`), nor stand in for a request that
+#: reached an outcome of its own (see
+#: :attr:`~privacyidea.lib.conditional_access.request_context.ConditionalAccessContext.classifying`).
+#:
+#: Both exclusions are about interference: such a row is staged after the outcome it sits beside, so left in it
+#: would replace that outcome - dropping an already-counted failure out of a rate limit, and standing in for the
+#: request's classification so the policies tracking its real outcome are never asked about it.
+#:
+#: They are kept out of the trackable vocabulary because no way of counting one does what an administrator would
+#: expect. These rows name no user, so a ``user`` target never sees them and the default ``DISTINCT_USERS`` mode of
+#: a ``source_ip`` target collapses any number of them into one; ``PER_ATTEMPT`` is excluded by the rule above. That
+#: leaves ``source_ip`` with ``PER_REQUEST`` as the single working combination out of five, and it is the default of
+#: neither axis - a policy configured any other way would save, show its events accumulating in the log, and never
+#: fire. Offering a vocabulary entry that behaves like that is worse than not offering it, so until such an event
+#: can be evaluated in its own right, it is a signal to look at rather than one to count.
+CLIENT_SIGNAL_EVENT_TYPES: frozenset[AuthEventType] = frozenset({
+    AuthEventType.SUSPENDED_API_KEY_USED,
+})
+
+#: Every event type that must never be an attempt's representative - the row whose type classifies the whole
+#: attempt: the rejections conditional access wrote itself, and the signals about the request's client. What they
+#: have in common is that neither is an outcome the attempt reached.
+NON_REPRESENTATIVE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+
+#: Every event type a conditional-access policy may not count: the rejections conditional access wrote itself, and
+#: the signals about the request's client. Neither is an outcome an authentication attempt reached, which is also
+#: why neither may represent one - see :data:`NON_REPRESENTATIVE_EVENT_TYPES`, the same membership seen from the
+#: other side. The two sets are equal today and are kept apart because they answer different questions: one what a
+#: policy may count, the other what may stand for an attempt.
+UNTRACKABLE_EVENT_TYPES: frozenset[AuthEventType] = CA_ENFORCEMENT_EVENT_TYPES | CLIENT_SIGNAL_EVENT_TYPES
+
 # The event types a conditional-access policy may count, i.e. everything an authentication attempt itself can produce.
 # This is what the policy CRUD validates against and what the policy editor offers; the authentication log's own
-# event-type endpoint still lists *all* types, because an admin must be able to filter for a rejection.
+# event-type endpoint still lists *all* types, because an admin must be able to filter for a rejection - or for a
+# client signal, which is the whole point of recording one.
 TRACKABLE_EVENT_TYPES: list[AuthEventType] = [event_type for event_type in AuthEventType
-                                              if event_type not in CA_ENFORCEMENT_EVENT_TYPES]
+                                              if event_type not in UNTRACKABLE_EVENT_TYPES]
 
 
 def outcome_of(event_type: AuthEventType) -> AuthEventOutcome:
@@ -477,9 +527,12 @@ class RestrictionCause(str, Enum):
         return self.value
 
 
-# Request-level precedence, highest signal first. Only the event types a token flow can produce appear here: the
-# CA_ENFORCEMENT_EVENT_TYPES classify a request the pre-check rejected before any token logic ran, so they never reach
-# reduce_request_events.
+# Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the
+# handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, DEVICE_TOKEN_REUSED,
+# SUSPENDED_API_KEY_USED - that never actually reach reduce_request_events, which reduces the per-token outcomes of
+# one token flow and none of these comes from one. The CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
+# classify a request the pre-check rejected before any token logic ran, so they never reach reduce_request_events
+# either, and are excluded from the trackable vocabulary anyway (see CA_ENFORCEMENT_EVENT_TYPES).
 #: Request-level precedence, highest signal first: which staged event classifies a request that
 #: produced several (see :func:`reduce_request_events`).
 REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
@@ -510,7 +563,15 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     # classify a request with a single event - and they are listed here because every non-enforcement type must be.
     AuthEventType.CHALLENGE_TRIGGER_FAIL,
     AuthEventType.INVALID_TOKEN_TYPE,
-    AuthEventType.UNKNOWN_FAIL_REASON
+    AuthEventType.UNKNOWN_FAIL_REASON,
+    # Neither of these is produced by a token flow at all - they come from the remembered-device and API-client
+    # layers respectively - so, like the three above, they are listed only to satisfy the invariant that every
+    # trackable type has a rank, and reduce_request_events never sees one. SUSPENDED_API_KEY_USED is not even
+    # alone on its request: it is logged on the way out of *every* endpoint, beside whatever that endpoint
+    # classified the request as, which is why it is a CLIENT_SIGNAL_EVENT_TYPES member and neither classifies an
+    # attempt nor stands in for a request's own outcome.
+    AuthEventType.DEVICE_TOKEN_REUSED,
+    AuthEventType.SUSPENDED_API_KEY_USED,
 ]
 
 # Precedence rank of each event.

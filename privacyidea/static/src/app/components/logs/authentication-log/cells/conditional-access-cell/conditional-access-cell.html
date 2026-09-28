@@ -19,71 +19,78 @@
 
 <ul class="info-list">
   @for (outcome of views(); track outcome.key) {
-    <li class="info-group">
-      <div class="outcome-summary">
-        <button
-          class="outcome-toggle"
-          type="button"
-          [attr.aria-controls]="'ca-outcome-' + outcome.key"
-          [attr.aria-expanded]="isExpanded(outcome.key)"
-          [attr.aria-label]="toggleLabel(outcome)"
-          matTooltip="Expand/Collapse details"
-          i18n-matTooltip
-          (click)="toggle(outcome.key)">
-          <mat-icon>{{ isExpanded(outcome.key) ? "expand_less" : "expand_more" }}</mat-icon>
-        </button>
-        <span>
-          @if (outcome.dryRun) {
-            <span
-              class="info-key info-group-prefix"
-              i18n>Dry Run:</span>
-          }
-          @if (outcome.policyLink) {
-            <a
-              [routerLink]="outcome.policyLink"
-              matTooltip="Navigate to policy"
-              i18n-matTooltip>{{ outcome.policy }}</a>
-          } @else {
-            {{ outcome.policy }}
-          }
-        </span>
+  <li class="info-group">
+    <div class="outcome-summary">
+      <button
+        class="outcome-toggle"
+        type="button"
+        [attr.aria-controls]="'ca-outcome-' + outcome.key"
+        [attr.aria-expanded]="isExpanded(outcome.key)"
+        [attr.aria-label]="toggleLabel(outcome)"
+        matTooltip="Expand/Collapse details"
+        i18n-matTooltip="@@common.expandCollapseDetails"
+        (click)="toggle(outcome.key)">
+        <mat-icon>{{ isExpanded(outcome.key) ? "expand_less" : "expand_more" }}</mat-icon>
+      </button>
+      <span>
+        @if (outcome.dryRun) {
+        <span
+          class="info-key info-group-prefix"
+          i18n="@@common.dryRun"
+          >Dry Run:</span
+        >
+        } @if (outcome.policyLink) {
+        <a
+          [routerLink]="outcome.policyLink"
+          matTooltip="Navigate to policy"
+          i18n-matTooltip="@@common.navigatePolicy"
+          >{{ outcome.policy }}</a
+        >
+        } @else { {{ outcome.policy }} }
+      </span>
+    </div>
+    @if (isExpanded(outcome.key)) {
+    <div
+      class="outcome-details"
+      [id]="'ca-outcome-' + outcome.key">
+      <div class="info-group-row">
+        <span
+          class="info-key"
+          i18n="@@common.action2"
+          >Action:</span
+        >
+        {{ outcome.action }}
       </div>
-      @if (isExpanded(outcome.key)) {
-        <div
-          class="outcome-details"
-          [id]="'ca-outcome-' + outcome.key">
-          <div class="info-group-row">
-            <span
-              class="info-key"
-              i18n>Action:</span>
-            {{ outcome.action }}
-          </div>
-          @if (outcome.stage) {
-            <div class="info-group-row">
-              <span
-                class="info-key"
-                i18n>Stage:</span>
-              {{ outcome.stage }}
-            </div>
-          }
-          @if (outcome.threshold !== undefined) {
-            <div class="info-group-row">
-              <span
-                class="info-key"
-                i18n>Threshold:</span>
-              {{ outcome.threshold }}
-            </div>
-          }
-          @if (outcome.expiresAt) {
-            <div class="info-group-row">
-              <span
-                class="info-key"
-                i18n>Until:</span>
-              {{ outcome.expiresAt | date: "yyyy-MM-dd HH:mm:ss" }}
-            </div>
-          }
-        </div>
+      @if (outcome.stage) {
+      <div class="info-group-row">
+        <span
+          class="info-key"
+          i18n="@@common.stage"
+          >Stage:</span
+        >
+        {{ outcome.stage }}
+      </div>
+      } @if (outcome.threshold !== undefined) {
+      <div class="info-group-row">
+        <span
+          class="info-key"
+          i18n="@@common.threshold"
+          >Threshold:</span
+        >
+        {{ outcome.threshold }}
+      </div>
+      } @if (outcome.expiresAt) {
+      <div class="info-group-row">
+        <span
+          class="info-key"
+          i18n="@@common.until"
+          >Until:</span
+        >
+        {{ outcome.expiresAt | date: "yyyy-MM-dd HH:mm:ss" }}
+      </div>
       }
-    </li>
+    </div>
+    }
+  </li>
   }
 </ul>

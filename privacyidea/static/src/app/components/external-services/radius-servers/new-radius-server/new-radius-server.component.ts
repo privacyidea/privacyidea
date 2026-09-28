@@ -34,6 +34,7 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { reservedNames } from "@utils/reserved-names.utils";
 import {
   RadiusServer,
   RadiusServerService,
@@ -92,7 +93,7 @@ export class NewRadiusServerComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   isEditMode = signal(false);
   isTesting = signal(false);
@@ -103,6 +104,9 @@ export class NewRadiusServerComponent implements OnDestroy {
   radiusForm = form(this.radiusModel, (f) => {
     required(f.identifier);
     pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
+    // POST /radiusserver/test_request is the connection test endpoint, and browsers drop "." and ".." from the URL,
+    // so a server with one of these names is never saved.
+    reservedNames(f.identifier, ["test_request", ".", ".."]);
     required(f.server);
     required(f.secret);
     disabled(f.identifier, () => this.isEditMode());
@@ -210,6 +214,28 @@ export class NewRadiusServerComponent implements OnDestroy {
         this.isTesting.set(false);
       });
     }
+  }
+
+  async deleteServer(): Promise<void> {
+    const identifier = this.editIdentifier;
+    if (!identifier) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@radiusServer.deleteRadiusServer:Delete RADIUS Server`,
+      items: [identifier],
+      itemType: $localize`:@@radiusServer.radiusServer:RADIUS server`
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.radiusService.deleteRadiusServer(identifier);
+    } catch {
+      return;
+    }
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
   }
 
   onCancel(): void {

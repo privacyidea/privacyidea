@@ -28,7 +28,9 @@ from privacyidea.api.lib import conditional_access as ca_gate
 from privacyidea.lib.conditional_access import engine as ca_engine
 from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.lib.auth import create_db_admin, delete_db_admin
+from privacyidea.lib.counter import read as read_counter
 from privacyidea.lib.error import Error
+from privacyidea.lib.event import delete_event, set_event
 from privacyidea.lib.conditional_access.conditions import ConditionOperator, ConditionType
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole, CountMode
 from privacyidea.lib.conditional_access.authentication_log import (get_authentication_logs,
@@ -40,13 +42,16 @@ from privacyidea.lib.conditional_access.engine import LockSubject, _upsert_user_
 from privacyidea.lib.conditional_access.policy import create_conditional_access_policy, default_error_message
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
-from privacyidea.lib.conditional_access.state import lock_internal_admin, lock_user
+from privacyidea.lib.conditional_access.state import (lock_internal_admin, lock_user,
+                                                      unlock_user_by_username)
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, AUTHORIZED, set_policy, delete_policy
 from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.challenge import get_challenges, delete_challenges
+from privacyidea.lib.clients import create_client, update_client
+from privacyidea.lib.remembered_device import create_remembered_device, user_identity, PERSISTENT_COOKIE_NAME
 from privacyidea.lib.token import init_token, remove_token, get_tokens, revoke_token
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
@@ -96,6 +101,17 @@ def _counter_types(counter_type):
     return [str(t) for t in values]
 
 
+def _rewrite_realm_by_request_mangler(event_name: str, named_realm: str, rewritten_realm: str) -> int:
+    """
+    Configure a RequestMangler pre-handler on *event_name* that rewrites the realm *named_realm* to *rewritten_realm*
+    and replaces the user of the request with the one in the rewritten realm (``reset_user``). Returns its id.
+    """
+    return set_event(f"rewrite_{named_realm}", event=[event_name], handlermodule="RequestMangler", action="set",
+                     position="pre", conditions={},
+                     options={"parameter": "realm", "value": rewritten_realm, "match_parameter": "realm",
+                              "match_pattern": named_realm, "reset_user": "1"})
+
+
 def _seed_ip_spray(user: "User", event_type: AuthEventType, source_ip: str, n_users: int,
                    timestamp: datetime | None = None):
     """Seed *n_users* distinct users failing from *source_ip* (the spraying shape a
@@ -139,12 +155,26 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
             db.session.query(model).delete()
         db.session.commit()
 
-    def _check(self, data: dict, remote_addr: str | None = None) -> dict:
+    def _check(self, data: dict, remote_addr: str | None = None, headers: dict | None = None) -> dict:
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
+        if headers:
+            kwargs["headers"] = headers
         with self.app.test_request_context('/validate/check', method='POST', data=data, **kwargs):
             response = self.app.full_dispatch_request()
             self.assertEqual(200, response.status_code, response)
             return response.json
+
+    def _recognise_device(self, api_key: str, cookie: str, remote_addr: str | None = None):
+        """Present *cookie* at /validate/remember_device as the API client holding *api_key*."""
+        kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
+        with self.app.test_request_context('/validate/remember_device', method='POST',
+                                           data={"user": "cornelius", "realm": self.realm1},
+                                           headers={"X-API-Key": api_key,
+                                                    "Cookie": f"{PERSISTENT_COOKIE_NAME}={cookie}"},
+                                           **kwargs):
+            response = self.app.full_dispatch_request()
+            self.assertEqual(200, response.status_code, response)
+            return response
 
     def _radiuscheck(self, data: dict) -> int:
         """The status code is the whole answer at /validate/radiuscheck: 204 authenticated, 400 anything else."""
@@ -743,6 +773,212 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         entries = assert_authentication_log([AuthEventType.MFA_FAIL] * 3 + [AuthEventType.USER_LOCKED],
                                             same_attempt=False)
         assert_authentication_log_entry(entries.all[-1], user=self.user, endpoint='/validate/check')
+
+    def test_device_token_reuse_locks_the_user(self):
+        # A stolen remember-device cookie is itself a DEVICE_TOKEN_REUSED event a LOCK_USER policy can act on - end
+        # to end over the real /validate/remember_device endpoint and the real engine, not just the log row.
+        self._make_lock_policy(counter_type=AuthEventType.DEVICE_TOKEN_REUSED, threshold=1, duration=600)
+        set_policy(name="ca_remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        self.app.config["PI_REMEMBER_DEVICE_GRACE_SECONDS"] = 0  # strict: no tolerated one-behind replay
+        try:
+            client, api_key = create_client("ca reuse client", "privacyidea-cp")
+            _device, cookie = create_remembered_device(user_identity(self.user), client.id)
+
+            def _recognise():
+                with self.app.test_request_context('/validate/remember_device', method='POST',
+                                                   data={"user": "cornelius", "realm": self.realm1},
+                                                   headers={"X-API-Key": api_key,
+                                                            "Cookie": f"{PERSISTENT_COOKIE_NAME}={cookie}"}):
+                    return self.app.full_dispatch_request()
+
+            self.assertEqual(200, _recognise().status_code)  # fresh use, rotates the cookie to counter 2
+            self.assertEqual(200, _recognise().status_code)  # stale counter 1 replayed -> theft
+
+            self.assertEqual([AuthEventType.DEVICE_TOKEN_REUSED],
+                             [entry.event_type for entry in get_authentication_logs()])
+            self.assertTrue(is_user_locked(self.user))
+        finally:
+            self.app.config.pop("PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
+            delete_policy("ca_remember")
+
+    def _remembered_client(self):
+        """An API client plus a live remembered device for self.user, with the remember_device policy in force."""
+        set_policy(name="ca_remember", scope=SCOPE.AUTH, action=PolicyAction.REMEMBER_DEVICE)
+        # Strict: with no tolerated one-behind replay, a cookie a refused request had spent would come back as
+        # theft rather than as a recognition, which is what these tests assert it does not do.
+        self.app.config["PI_REMEMBER_DEVICE_GRACE_SECONDS"] = 0
+        self.addCleanup(self.app.config.pop, "PI_REMEMBER_DEVICE_GRACE_SECONDS", None)
+        self.addCleanup(delete_policy, "ca_remember")
+        client, api_key = create_client("ca recognition client", "privacyidea-cp")
+        _device, cookie = create_remembered_device(user_identity(self.user), client.id)
+        return api_key, cookie
+
+    @staticmethod
+    def _remember_cookie_headers(response) -> list:
+        return [value for key, value in response.headers
+                if key == "Set-Cookie" and value.startswith(PERSISTENT_COOKIE_NAME + "=")]
+
+    def test_a_locked_user_is_not_recognised_and_the_cookie_survives(self):
+        # Recognition is what lets a client skip the second factor, so a lock has to reach it: the answer is the
+        # same "not recognised" a device that was never remembered gets. The cookie is neither cleared nor spent -
+        # a refused request never reads it at all - so the device still works once the lock lifts, which is what
+        # distinguishes gating recognition from revoking the device.
+        api_key, cookie = self._remembered_client()
+        self._lock_user(utc_now() + timedelta(seconds=600))
+
+        refused = self._recognise_device(api_key, cookie)
+        self.assertFalse(refused.json["result"]["value"], refused.json)
+        self.assertFalse(refused.json["detail"]["remembered_device"], refused.json)
+        # Recognition is not an authentication, and a refusal must not become one: no ACCEPT/REJECT verdict, and no
+        # Set-Cookie at all (the client keeps exactly the cookie it sent).
+        self.assertNotIn("authentication", refused.json["result"], refused.json)
+        self.assertEqual([], self._remember_cookie_headers(refused), refused.headers)
+
+        unlock_user_by_username(self.user.login, self.user.realm)
+        recognised = self._recognise_device(api_key, cookie)
+        self.assertTrue(recognised.json["result"]["value"], recognised.json)
+
+    def test_a_refusal_and_a_dead_cookie_differ_only_in_the_clearing_header(self):
+        # A known and accepted limit, pinned here so it is a decision rather than a surprise. The bodies match
+        # exactly, which is the property that matters: a caller cannot read a lock out of the answer. The headers
+        # do not - a dead cookie is cleared, a refusal leaves the cookie alone - so a caller that already holds a
+        # valid API key can distinguish the two by presenting a junk cookie. Closing that would mean clearing the
+        # cookie on every refusal, costing the user their device on every temporary lock, against a party already
+        # trusted with a key that can learn the same from /validate/check. If this ever changes, change it
+        # deliberately.
+        api_key, _cookie = self._remembered_client()
+
+        missed = self._recognise_device(api_key, "deadbeef:1")
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        refused = self._recognise_device(api_key, "deadbeef:1")
+
+        self.assertEqual(self._body(missed), self._body(refused))
+        self.assertEqual(1, len(self._remember_cookie_headers(missed)), missed.headers)
+        self.assertEqual([], self._remember_cookie_headers(refused), refused.headers)
+
+    @staticmethod
+    def _body(response) -> dict:
+        """The response's answer, without the envelope fields that differ between any two requests."""
+        envelope = {"id", "jsonrpc", "signature", "time", "version", "versionnumber"}
+        body = {key: value for key, value in response.json.items() if key not in envelope}
+        body.get("detail", {}).pop("threadid", None)
+        return body
+
+    def test_a_blocked_source_ip_is_not_recognised(self):
+        # The other half of the pre-check reaches recognition too: the device is the user's own and the cookie is
+        # valid, but the address it arrives from is blocked.
+        api_key, cookie = self._remembered_client()
+        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
+        db.session.commit()
+
+        refused = self._recognise_device(api_key, cookie, remote_addr="203.0.113.7")
+        self.assertFalse(refused.json["result"]["value"], refused.json)
+        # From an address that is not blocked the very same cookie is still recognised, so the refusal was the
+        # block and not the cookie.
+        self.assertTrue(self._recognise_device(api_key, cookie).json["result"]["value"])
+
+    def test_a_refused_recognition_says_only_what_an_admin_configured(self):
+        # An ordinary "not recognised" answer here carries no message at all, so a silent rejection carries none
+        # either - otherwise the message would be the tell. A configured one is said, as everywhere else.
+        api_key, cookie = self._remembered_client()
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        self.assertNotIn("message", self._recognise_device(api_key, cookie).json["detail"])
+
+        self._lock_user(utc_now() + timedelta(seconds=600), error_message="LOCK-TEXT")
+        self.assertEqual("LOCK-TEXT", self._recognise_device(api_key, cookie).json["detail"]["message"])
+
+    def test_a_refused_recognition_is_classified_in_the_authentication_log(self):
+        # Recognition logs no authentication event of its own, so this row is net new rather than a replacement -
+        # and it is the only place an admin can filter for a recognition the lock turned away.
+        api_key, cookie = self._remembered_client()
+        self._lock_user(utc_now() + timedelta(seconds=600))
+
+        self._recognise_device(api_key, cookie)
+
+        entries = get_authentication_logs()
+        self.assertEqual([AuthEventType.USER_LOCKED], [entry.event_type for entry in entries])
+        self.assertEqual("/validate/remember_device", entries[0].endpoint)
+
+    def test_an_unidentified_caller_is_refused_before_conditional_access_runs(self):
+        # The API-key requirement comes first, so a caller who may not ask at all cannot write a rejection - nor
+        # the authentication-log row classifying it - for any username it cares to post. This is the one /validate
+        # endpoint that can insist on that, and the reason the pre-check sits in the view rather than above it.
+        _api_key, cookie = self._remembered_client()
+        self._lock_user(utc_now() + timedelta(seconds=600))
+
+        with self.app.test_request_context('/validate/remember_device', method='POST',
+                                           data={"user": "cornelius", "realm": self.realm1},
+                                           headers={"Cookie": f"{PERSISTENT_COOKIE_NAME}={cookie}"}):
+            self.assertEqual(401, self.app.full_dispatch_request().status_code)
+
+        self.assertEqual([], get_authentication_logs())
+
+    def test_device_token_reuse_locks_the_user_out_of_recognition(self):
+        # The two halves of this branch meeting: the stolen cookie is the DEVICE_TOKEN_REUSED event that locks the
+        # user, and the lock then refuses recognition for a device registered *after* the theft. The device has to
+        # be a fresh one: the theft escalation revokes every device the user had at the time, so recognising one of
+        # those would answer false whether or not the lock is enforced, and would prove nothing about the lock.
+        self._make_lock_policy(counter_type=AuthEventType.DEVICE_TOKEN_REUSED, threshold=1, duration=600)
+        api_key, cookie = self._remembered_client()
+
+        self.assertTrue(self._recognise_device(api_key, cookie).json["result"]["value"])
+        self._recognise_device(api_key, cookie)  # stale counter replayed -> theft
+        self.assertTrue(is_user_locked(self.user))
+
+        fresh_client, fresh_key = create_client("ca post-theft client", "privacyidea-keycloak")
+        _fresh_device, fresh_cookie = create_remembered_device(user_identity(self.user), fresh_client.id)
+        refused = self._recognise_device(fresh_key, fresh_cookie)
+        self.assertFalse(refused.json["result"]["value"], refused.json)
+        # And it is the lock that refused it, not the cookie: the same cookie is recognised once the lock is gone.
+        unlock_user_by_username(self.user.login, self.user.realm)
+        self.assertTrue(self._recognise_device(fresh_key, fresh_cookie).json["result"]["value"])
+
+    def _suspended_key(self) -> str:
+        """An API key whose client an administrator has suspended - real and well-formed, but not identifying."""
+        client, api_key = create_client("ca suspended client", "privacyidea-cp")
+        update_client(client.id, status="suspended")
+        return api_key
+
+    def test_a_suspended_api_key_does_not_suppress_the_policy_on_the_real_outcome(self):
+        # A suspended key is reported on the way out of every endpoint, after the view has staged what the request
+        # actually was. If that client signal were taken as the request's classification, the engine would be asked
+        # about it instead of about the failure - and whoever still holds a disabled key could switch conditional
+        # access off for any account by sending the header with every guess. Suspending a key is an administrator's
+        # revocation, so it must not hand its holder a capability the active key never had.
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=3, duration=600)
+        headers = {"X-API-Key": self._suspended_key()}
+
+        for _ in range(3):
+            self._check({"user": "cornelius", "pass": "pin000000"}, headers=headers)
+
+        self.assertTrue(is_user_locked(self.user))
+        # The signal is still recorded beside each failure, which is the point of it - it just does not classify.
+        self.assertEqual(3, sum(1 for entry in get_authentication_logs()
+                                if entry.event_type == AuthEventType.SUSPENDED_API_KEY_USED))
+
+    def test_a_suspended_api_key_does_not_suppress_a_source_ip_block(self):
+        # The same for the per-IP half, which is the only conditional-access control covering password guessing that
+        # never names a token. Threshold 1 because a source-IP policy counts DISTINCT_USERS by default and one user
+        # guessing is one of them; the point here is that the policy is asked about the failure at all.
+        self._make_block_ip_policy(counter_type=AuthEventType.MFA_FAIL, threshold=1, duration=600)
+        headers = {"X-API-Key": self._suspended_key()}
+
+        self._check({"user": "cornelius", "pass": "pin000000"}, remote_addr="203.0.113.9", headers=headers)
+
+        self.assertTrue(is_ip_blocked("203.0.113.9"))
+
+    def test_a_suspended_api_key_is_still_recorded_on_a_request_that_authenticated_nothing(self):
+        # The signal is written wherever a disabled key is presented, including where the endpoint refuses the
+        # request outright - that visibility is what it is for, now that no policy can count it.
+        api_key = self._suspended_key()
+
+        with self.app.test_request_context('/validate/capabilities', method='GET',
+                                           environ_base={"REMOTE_ADDR": "203.0.113.10"},
+                                           headers={"X-API-Key": api_key}):
+            self.assertEqual(401, self.app.full_dispatch_request().status_code)
+
+        self.assertEqual([AuthEventType.SUSPENDED_API_KEY_USED],
+                         [entry.event_type for entry in get_authentication_logs()])
 
     def test_a_lock_that_was_never_written_does_not_refuse_its_own_request(self):
         # A restricting action that did not restrict anything must not turn its own request into a rejection: the
@@ -1557,7 +1793,7 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         body = self._check({"user": "cornelius", "pass": "wrongpin"}, remote_addr=BLOCKED_IP)
         self.assertEqual("Blocked for a while.", body["detail"]["message"], body)
 
-    # --- identity rewriting (legacy setrealm / mangle) --------------------------
+    # --- identity rewriting (legacy setrealm / mangle, RequestMangler) ----------
 
     def _setrealm_to_realm2(self) -> User:
         """Rewrite realm1 -> realm2 for cornelius via the legacy AUTHZ setrealm action, and return the identity
@@ -1604,6 +1840,71 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
         finally:
             remove_token("CA_HOTP2")
             delete_policy("ca_setrealm")
+
+    def test_user_rewritten_by_a_pre_event_handler_is_gated(self):
+        # The request names cornelius in realm2, whom nothing restricts, and a RequestMangler pre-handler rewrites it to
+        # the locked cornelius in realm1 after the gate checked the named user. The gate is run again for the new user,
+        # before the handler ordered after the rewrite and before the token logic.
+        self.setUp_user_realm2()
+        self.addCleanup(delete_event, _rewrite_realm_by_request_mangler("validate_check", self.realm2, self.realm1))
+        self.addCleanup(delete_event, set_event("count_checks", event=["validate_check"], handlermodule="Counter",
+                                                action="increase_counter", position="pre", ordering=1, conditions={},
+                                                options={"counter_name": "rewritten_checks"}))
+        counted_before = read_counter("rewritten_checks") or 0
+        # The rewritten user can authenticate with the token of cornelius in realm1, so the rejection below is the lock.
+        body = self._check({"user": "cornelius", "realm": self.realm2, "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+        self.assertEqual(counted_before + 1, read_counter("rewritten_checks"))
+
+        self._lock_user(utc_now() + timedelta(seconds=600))
+        body = self._check({"user": "cornelius", "realm": self.realm2, "pass": "pin287082"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(str(GENERIC_AUTH_FAILURE), body["detail"]["message"], body)
+        self.assertEqual(counted_before + 1, read_counter("rewritten_checks"))
+        self.assertEqual(0, self._failcount())
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS, AuthEventType.USER_LOCKED],
+                                            same_attempt=False)
+        assert_authentication_log_entry(entries[AuthEventType.USER_LOCKED], user=self.user, endpoint='/validate/check')
+
+    def test_deny_is_decided_for_the_user_a_pre_event_handler_rewrites_to(self):
+        # A DENY scoped to realm1 refuses a request that names realm2 and is rewritten to realm1.
+        self.setUp_user_realm2()
+        self.addCleanup(delete_event, _rewrite_realm_by_request_mangler("validate_check", self.realm2, self.realm1))
+        create_conditional_access_policy(
+            name="ca_deny_realm1", time_window_seconds=3600,
+            counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
+            stages=[{"failure_threshold": 0,
+                     "actions": [{"action_type": str(ConditionalAccessAction.DENY), "action_value": None}]}],
+            conditions=[{"condition_type": str(ConditionType.USER_REALM),
+                         "operator": str(ConditionOperator.IN),
+                         "value": [self.realm1]}],
+            target=ConditionalAccessTarget.USER, priority=1)
+        body = self._check({"user": "cornelius", "realm": self.realm2, "pass": "pin755224"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertEqual(0, self._failcount())
+        entries = assert_authentication_log([AuthEventType.ACCESS_DENIED])
+        self.assertEqual(self.realm1, entries[AuthEventType.ACCESS_DENIED].realm)
+
+    def test_row_of_a_rewritten_user_carries_only_the_decision_for_that_user(self):
+        # Two dry-run DENY policies, one for the realm the request names and one for the realm it is rewritten to. The
+        # request authenticates the rewritten user, so its row records the decision for realm1 alone.
+        self.setUp_user_realm2()
+        self.addCleanup(delete_event, _rewrite_realm_by_request_mangler("validate_check", self.realm2, self.realm1))
+        for priority, realm in enumerate((self.realm1, self.realm2), start=1):
+            create_conditional_access_policy(
+                name=f"ca_dry_deny_{realm}", time_window_seconds=3600,
+                counter_types_to_track=_counter_types(AuthEventType.MFA_FAIL),
+                stages=[{"failure_threshold": 0,
+                         "actions": [{"action_type": str(ConditionalAccessAction.DENY), "action_value": None}]}],
+                conditions=[{"condition_type": str(ConditionType.USER_REALM),
+                             "operator": str(ConditionOperator.IN),
+                             "value": [realm]}],
+                target=ConditionalAccessTarget.USER, dry_run=True, priority=priority)
+        body = self._check({"user": "cornelius", "realm": self.realm2, "pass": "pin755224"})
+        self.assertTrue(body["result"]["value"], body)
+        entries = assert_authentication_log([AuthEventType.LOGIN_SUCCESS])
+        self.assertListEqual([f"ca_dry_deny_{self.realm1}"],
+                             [outcome.policy_name for outcome in get_outcomes(entries[AuthEventType.LOGIN_SUCCESS].id)])
 
     # --- deferred write: one row per request, written at teardown ---------------
 
@@ -1733,6 +2034,18 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
             stages=[{"failure_threshold": threshold,
                      "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": duration}]}],
+            target=ConditionalAccessTarget.USER, priority=priority)
+
+    @staticmethod
+    def _make_password_policy_exempting_local_admins(*, threshold, duration=600, window=3600, priority=1):
+        create_conditional_access_policy(
+            name="ca_pw_no_admins", time_window_seconds=window,
+            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
+            stages=[{"failure_threshold": threshold,
+                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": duration}]}],
+            conditions=[{"condition_type": str(ConditionType.USER_ROLE),
+                         "operator": str(ConditionOperator.NOT_IN),
+                         "value": [str(AuthLogUserRole.ADMIN_INTERNAL)]}],
             target=ConditionalAccessTarget.USER, priority=priority)
 
     @staticmethod
@@ -2184,6 +2497,24 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         message = res.json["result"]["error"]["message"]
         self.assertEqual("MSG-ALPHA MSG-BETA", message)
 
+    def test_user_rewritten_by_a_pre_event_handler_is_gated_at_auth(self):
+        # The login names cornelius in realm2, whom nothing restricts, and a RequestMangler pre-handler rewrites it to
+        # the locked cornelius in realm1 after the login gate checked the named user. The gate is run again for the
+        # new user and refuses the login with the lock's message.
+        self.setUp_user_realm2()
+        self.addCleanup(delete_event, _rewrite_realm_by_request_mangler("auth", self.realm2, self.realm1))
+        data = {"username": "cornelius", "realm": self.realm2, "password": "test"}
+        with self.app.test_request_context('/auth', method='POST', data=data):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertEqual(self.realm1, res.json["result"]["value"]["realm"], res.json)
+
+        self._lock_user(error_message="MSG-ALPHA")
+        with self.app.test_request_context('/auth', method='POST', data=data):
+            res = self.app.full_dispatch_request()
+        self.assertEqual(401, res.status_code, res.json)
+        self.assertEqual("MSG-ALPHA", res.json["result"]["error"]["message"])
+
     def test_permanent_ip_block_is_reported_before_a_timed_lock(self):
         # Escalation case: the user is temp-locked (1 min) AND their IP is now
         # permanently blocked. The rejection must report the permanent block - the
@@ -2389,20 +2720,85 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
     def test_a_name_that_is_both_a_local_admin_and_a_user_is_refused_on_the_users_lock(self):
         # /auth takes a bare login name and only learns which principal it named by seeing which credential
         # matches: the local admin's password is tried first, and a same-named user in the default realm is the
-        # fallback. The pre-check runs before that, so it refuses on either one's lock. The failures of such a name
-        # land on the user's row, so looking only under the admin's would let the name be locked over and over
-        # while every request went through - here, with the admin's own password, as a successful login.
+        # fallback. A lock on the user refuses that fallback - the half of the request that turns out to be
+        # theirs - so the bare name is no way in for them while they are locked.
         self.assertEqual(self.realm1, get_default_realm(),
                          "the collision needs the user's realm to be the one a bare login name resolves to")
         create_db_admin(self.user.login, password="adminpw")
         try:
             lock_user(self.user)
 
-            res = self._auth(self.user.login, "adminpw")
+            res = self._auth(self.user.login, "test")
 
             self.assertEqual(401, res.status_code, res.json)
             entries = get_authentication_logs()
             self.assertEqual(str(AuthEventType.USER_LOCKED), entries[-1].event_type)
+            self.assertEqual(str(AuthLogUserRole.USER), entries[-1].user_role)
+        finally:
+            delete_db_admin(self.user.login)
+
+    def test_a_locked_user_does_not_lock_out_the_local_admin_of_the_same_name(self):
+        # The other half of the collision: the two accounts are separate principals, and the one an operator
+        # recovers a deployment with is not locked by a row written for somebody who merely shares its name.
+        create_db_admin(self.user.login, password="adminpw")
+        try:
+            lock_user(self.user)
+
+            res = self._auth(self.user.login, "adminpw")
+
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"]["token"], res.json)
+        finally:
+            delete_db_admin(self.user.login)
+
+    def test_a_namesakes_lock_refuses_a_local_admin_a_lock_policy_covers(self):
+        # Where a policy does lock local admins, the name stays ambiguous until a credential matches, and the
+        # failures of such a name land on the user's row: looking only under the admin's own key would let the
+        # name be locked over and over while every request went through. So the user's row refuses them too.
+        self._make_password_policy(threshold=1)
+        create_db_admin(self.user.login, password="adminpw")
+        try:
+            self.assertEqual(401, self._auth(self.user.login, "wrongpass").status_code)
+            self.assertTrue(is_user_locked(self.user))
+
+            res = self._auth(self.user.login, "adminpw")
+
+            self.assertEqual(401, res.status_code, res.json)
+            self.assertEqual(str(AuthEventType.USER_LOCKED), get_authentication_logs()[-1].event_type)
+        finally:
+            delete_db_admin(self.user.login)
+
+    def test_a_namesakes_lock_lets_through_a_local_admin_every_lock_policy_exempts(self):
+        # A USER_ROLE exemption says this account is not to be locked, and a namesake's row cannot lock it after
+        # all: the name a local admin carries is often one a directory holds a user of as well, and that user's
+        # failures are driven by whoever can reach the login screen.
+        self._make_password_policy_exempting_local_admins(threshold=1)
+        create_db_admin(self.user.login, password="adminpw")
+        try:
+            self.assertEqual(401, self._auth(self.user.login, "wrongpass").status_code)
+            self.assertTrue(is_user_locked(self.user), "the namesake user is not exempt and should be locked")
+            self.assertIsNone(self._admin_lock(self.user.login))
+
+            res = self._auth(self.user.login, "adminpw")
+
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertTrue(res.json["result"]["value"]["token"], res.json)
+        finally:
+            delete_db_admin(self.user.login)
+
+    def test_a_namesake_in_another_realm_does_not_lock_out_an_exempt_local_admin(self):
+        # A lock is looked for under the bare name in every realm, so scoping the policy away from the default
+        # realm does not settle it either: the exemption has to hold wherever the namesake lives.
+        self.setUp_user_realm2()
+        self._make_password_policy_exempting_local_admins(threshold=1)
+        create_db_admin(self.user.login, password="adminpw")
+        try:
+            self.assertEqual(401, self._auth(f"{self.user.login}@{self.realm2}", "wrongpass").status_code)
+            self.assertTrue(is_user_locked(User(self.user.login, self.realm2)))
+
+            res = self._auth(self.user.login, "adminpw")
+
+            self.assertEqual(200, res.status_code, res.json)
         finally:
             delete_db_admin(self.user.login)
 
@@ -2422,17 +2818,9 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertTrue(res.json["result"]["value"]["token"], res.json)
 
     def test_a_user_policy_condition_exempts_the_local_admin(self):
-        # Break glass for a user-target policy, which now reaches local admins too: the same USER_ROLE condition
+        # Break glass for a user-target policy, which reaches local admins too: the same USER_ROLE condition
         # that exempts them from a source-IP DENY keeps the emergency account out of a lock policy.
-        create_conditional_access_policy(
-            name="ca_pw_no_admins", time_window_seconds=3600,
-            counter_types_to_track=_counter_types(AuthEventType.PASSWORD_FAIL),
-            stages=[{"failure_threshold": 1,
-                     "actions": [{"action_type": str(ConditionalAccessAction.LOCK_USER), "action_value": 600}]}],
-            conditions=[{"condition_type": str(ConditionType.USER_ROLE),
-                         "operator": str(ConditionOperator.NOT_IN),
-                         "value": [str(AuthLogUserRole.ADMIN_INTERNAL)]}],
-            target=ConditionalAccessTarget.USER, priority=1)
+        self._make_password_policy_exempting_local_admins(threshold=1)
 
         self.assertEqual(401, self._auth(self.testadmin, "wrongpass").status_code)
         self.assertIsNone(self._admin_lock(self.testadmin))

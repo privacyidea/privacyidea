@@ -32,6 +32,7 @@ export class MockSmsGatewayService implements SmsGatewayServiceInterface {
   );
 
   smsGateways = signal<SmsGateway[]>([]);
+  canListSmsGateways = signal<boolean>(true);
   postSmsGateway = jest.fn(async (): Promise<void> => Promise.resolve());
   deleteSmsGateway = jest.fn(async (): Promise<void> => Promise.resolve());
   listSmsGateways = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<SmsGateway[]>([])));

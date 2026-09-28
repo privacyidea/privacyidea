@@ -37,6 +37,8 @@ import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
 from ..lib.crypto import censor_dict
+from ..config import ConfigKey
+from ..lib.utils import check_module_allowed
 from privacyidea.lib.smsprovider.SMSProvider import (SMS_PROVIDERS,
                                                      get_smsgateway,
                                                      set_smsgateway,
@@ -136,6 +138,10 @@ def set_gateway():
     param = request.all_data
     identifier = get_required(param, "name")
     providermodule = get_required(param, "module")
+    # The module is a dotted path privacyIDEA imports when the gateway sends a message, so it
+    # is checked here, where it enters, rather than at send time.
+    check_module_allowed(providermodule, SMS_PROVIDERS, ConfigKey.SMS_PROVIDER_MODULES,
+                         "SMS provider class")
     description = get_optional(param, "description")
     options = {}
     headers = {}

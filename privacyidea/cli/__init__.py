@@ -20,7 +20,7 @@
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """Utility functions for CLI tools"""
 import click
-from flask.cli import FlaskGroup
+from flask.cli import AppGroup, FlaskGroup
 import importlib
 import platform
 
@@ -37,7 +37,10 @@ def create_silent_app():
 
 # Don't load plugin commands
 class NoPluginsFlaskGroup(FlaskGroup):
-    """A FlaskGroup class which does not load commands from plugins"""
+    """
+    A FlaskGroup class which only offers the commands defined on the group itself. It neither loads commands
+    from plugins nor the commands the app registers on ``app.cli``, like the ``db`` command of Flask-Migrate.
+    """
 
     def __init__(self, *args, **kwargs):
         # Hide the app option, we already hardcode the app in the CLI
@@ -48,6 +51,12 @@ class NoPluginsFlaskGroup(FlaskGroup):
 
     def _load_plugin_commands(self):
         pass
+
+    def get_command(self, ctx: click.Context, name: str) -> click.Command | None:
+        return AppGroup.get_command(self, ctx, name)
+
+    def list_commands(self, ctx: click.Context) -> list[str]:
+        return AppGroup.list_commands(self, ctx)
 
 
 def get_version(ctx, param, value):

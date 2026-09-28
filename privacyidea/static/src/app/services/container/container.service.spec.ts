@@ -904,6 +904,15 @@ describe("ContainerService", () => {
       });
     });
 
+    it("should not request the container details without container_list", () => {
+      authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);
+      containerService.containerSerial.set("c1");
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/container/" && r.params.get("container_serial") === "c1");
+    });
+
     it("should update containerDetail from containerDetailResource when not yet present", async () => {
       authServiceMock.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["container_list"] });
       contentServiceMock.routeUrl.set(ROUTE_PATHS.CONTAINERS);

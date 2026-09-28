@@ -56,4 +56,6 @@ export class MockDialogService implements DialogServiceInterface {
   });
 
   confirm = jest.fn().mockResolvedValue(true);
+
+  confirmDelete = jest.fn().mockResolvedValue(true);
 }

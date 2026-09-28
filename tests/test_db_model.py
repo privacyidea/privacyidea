@@ -290,6 +290,35 @@ class TokenModelTestCase(MyTestCase):
         q = Realm.query.filter_by(name=realmname).all()
         self.assertTrue(len(q) == 0)
 
+    def test_04_legacy_pin_hash_is_upgraded_on_a_successful_check(self):
+        token = Token(serial="serial_legacy_pin", tokentype="hmac")
+        token.save()
+        pin = "legacyPIN"
+        # A PIN stored in the legacy format is a plain hash of the PIN and the pin_seed,
+        # which the current verification does not recognize.
+        legacy_hash = token.get_hashed_pin(pin)
+        token.pin_hash = legacy_hash
+        token.save()
+
+        # The PIN verifies against the legacy hash, and the stored hash is rewritten in the
+        # current format, which is also what ends up in the database.
+        self.assertTrue(token.check_pin(pin))
+        self.assertNotEqual(legacy_hash, token.pin_hash)
+        stored = Token.query.filter_by(serial="serial_legacy_pin").first()
+        self.assertEqual(token.pin_hash, stored.pin_hash)
+
+        # The rewritten hash accepts the same PIN and nothing else.
+        self.assertTrue(token.check_pin(pin))
+        self.assertFalse(token.check_pin("wrongPIN"))
+
+        # A failed check against a legacy hash leaves the stored hash alone.
+        token.pin_hash = legacy_hash
+        token.save()
+        self.assertFalse(token.check_pin("wrongPIN"))
+        self.assertEqual(legacy_hash, token.pin_hash)
+
+        token.delete()
+
     def test_05_get_set_realm(self):
         t1 = Token(serial="serial1123")
         t1.save()
@@ -535,11 +564,13 @@ class TokenModelTestCase(MyTestCase):
         self.assertFalse(find_user)
 
     def test_25_eventcounter(self):
-        counter = EventCounter("test_counter", 10)
+        # A node name rather than the empty default: node is NOT NULL, and Oracle stores
+        # an empty string as NULL, so an empty node cannot be written there at all
+        counter = EventCounter("test_counter", 10, "Node1")
         counter.save()
         counter2 = EventCounter.query.filter_by(counter_name="test_counter").first()
         self.assertEqual(counter2.counter_value, 10)
-        self.assertEqual(counter2.node, "")
+        self.assertEqual(counter2.node, "Node1")
 
         counter2.increase()
         counter2.increase()

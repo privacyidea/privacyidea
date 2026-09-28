@@ -28,8 +28,10 @@ def get_fido2_token_by_credential_id(credential_id: str) -> TokenClass | None:
                 return create_tokenclass_object(db_token)
         else:
             log.debug(f"TokenCredentialIdHash entry not found for credential_id {credential_id}. Trying token info...")
+            # TokenInfo.Value is a CLOB on Oracle, which cannot be compared with "=" (ORA-00932).
+            # LIKE works on every dialect, and the hash is a hex digest, so it carries no wildcards.
             token_id_stmt = select(TokenInfo.token_id).where(TokenInfo.Key == "credential_id_hash",
-                                                             TokenInfo.Value == credential_id_hash)
+                                                             TokenInfo.Value.like(credential_id_hash))
             token_id = db.session.scalar(token_id_stmt)
             db_token = db.session.get(Token, token_id) if token_id else None
             if db_token:

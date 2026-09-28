@@ -45,6 +45,7 @@ from privacyidea.api.lib.utils import (get_all_params, get_optional, map_error_t
                                        log_authentication)
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.clientapplication import save_clientapplication
+from privacyidea.lib.conditional_access.request_context import join_attempt
 from privacyidea.lib.config import (get_token_class, get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.error import ParameterError
@@ -174,8 +175,13 @@ def token(ttype=None):
     if push_auth_event:
         # The smartphone's request carries only the serial and no user, so the row's user is the token owner
         # log_authentication resolves from that serial - which is what makes the per-user failure counts add up.
+        push_transaction_id = getattr(g, PUSH_AUTH_TRANSACTION_ID, None)
+        # The token class matched that challenge by verifying a signature over its nonce, the smartphone having
+        # sent no transaction id at all, so this request is continuing that attempt as a matter of record rather
+        # than of what it claimed - which is what join_attempt is for.
+        join_attempt(push_transaction_id)
         log_authentication(push_auth_event, request, serial=serial,
-                           transaction_id=getattr(g, PUSH_AUTH_TRANSACTION_ID, None),
+                           transaction_id=push_transaction_id,
                            reasons=getattr(g, PUSH_AUTH_REASON, None) or [])
 
     if res[0] == "json":

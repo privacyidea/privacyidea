@@ -33,6 +33,7 @@ describe("TokengroupService", () => {
   let httpMock: HttpTestingController;
   let notificationService: NotificationService;
   let contentService: MockContentService;
+  let authService: MockAuthService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -49,6 +50,9 @@ describe("TokengroupService", () => {
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService);
     contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // The token groups are only requested by an admin who may list them.
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["tokengroup_list"] });
   });
 
   afterEach(() => {
@@ -158,6 +162,15 @@ describe("TokengroupService", () => {
       req.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
 
+      expect(service.tokengroups()).toEqual([]);
+    });
+
+    it("should not request the token groups without tokengroup_list", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      contentService.onExternalTokenGroups = signal(true);
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/tokengroup/");
       expect(service.tokengroups()).toEqual([]);
     });
   });

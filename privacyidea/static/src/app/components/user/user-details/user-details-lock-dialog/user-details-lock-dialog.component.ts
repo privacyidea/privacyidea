@@ -87,7 +87,7 @@ export class UserDetailsLockDialogComponent extends AbstractDialogComponent<
 
   readonly dialogActions = computed((): DialogAction<string>[] => [
     {
-      label: $localize`Lock`,
+      label: $localize`:@@user.lock:Lock`,
       value: "confirm",
       type: "confirm",
       disabled: !this.canConfirm(),

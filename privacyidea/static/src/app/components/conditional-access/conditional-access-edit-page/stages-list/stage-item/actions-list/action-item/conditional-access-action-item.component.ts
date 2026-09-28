@@ -40,13 +40,13 @@ import { InfoHintComponent } from "@components/shared/info-hint/info-hint.compon
 
 // One-line explanation of what each action does, shown under the action select.
 const ACTION_DESCRIPTIONS: Record<ConditionalAccessActionType, string> = {
-  LOCK_USER: $localize`Temporarily lock the user out for the duration below.`,
-  PERMANENT_LOCK_USER: $localize`Lock the user out until an administrator unlocks them.`,
-  BLOCK_IP: $localize`Temporarily block the request's source IP for the duration below.`,
-  PERMANENT_BLOCK_IP: $localize`Block the request's source IP until an administrator unblocks it.`,
-  EMAIL_ADMIN: $localize`Send a notification email to an admin recipient group.`,
-  EMAIL_USER: $localize`Send a notification email to the affected user.`,
-  DENY: $localize`Reject the request; it clears itself as failures age out of the window.`
+  LOCK_USER: $localize`:@@conditionalAccess.temporarilyLockUserOut:Temporarily lock the user out for the duration below.`,
+  PERMANENT_LOCK_USER: $localize`:@@conditionalAccess.lockUserOutUntil:Lock the user out until an administrator unlocks them.`,
+  BLOCK_IP: $localize`:@@conditionalAccess.temporarilyBlockRequestS:Temporarily block the request's source IP for the duration below.`,
+  PERMANENT_BLOCK_IP: $localize`:@@conditionalAccess.blockRequestSSource:Block the request's source IP until an administrator unblocks it.`,
+  EMAIL_ADMIN: $localize`:@@conditionalAccess.sendNotificationEmailAdmin:Send a notification email to an admin recipient group.`,
+  EMAIL_USER: $localize`:@@conditionalAccess.sendNotificationEmailAffected:Send a notification email to the affected user.`,
+  DENY: $localize`:@@conditionalAccess.rejectRequestClearsItself:Reject the request; it clears itself as failures age out of the window.`
 };
 
 // How a given action type's action_value is edited:
@@ -82,38 +82,43 @@ interface EmailField {
 
 // Shown for the identifier when it must stay a free-text input because this admin lacks the right
 // to list configured servers (see emailFields).
-const SMTP_TEXT_HINT = $localize`Type the name: listing the servers needs the smtpserver_read right.`;
+const SMTP_TEXT_HINT = $localize`:@@conditionalAccess.typeNameListingServers:Type the name: listing the servers needs the smtpserver_read right.`;
 
 // Order matters for layout: the three short fields come first to share one wrapping row, then the
 // wide subject/body textareas flow onto their own rows.
 const EMAIL_FIELDS: readonly EmailField[] = [
   {
     key: "smtp_identifier",
-    label: $localize`SMTP server`,
+    label: $localize`:@@conditionalAccess.smtpServer:SMTP server`,
     kind: "smtp",
-    hint: $localize`The configured SMTP server that sends the email.`
+    hint: $localize`:@@conditionalAccess.configuredSmtpServerSends:The configured SMTP server that sends the email.`
   },
   {
     key: "recipient_group",
-    label: $localize`Recipient group`,
+    label: $localize`:@@conditionalAccess.recipientGroup:Recipient group`,
     kind: "text",
     onlyAdmin: true,
-    hint: $localize`Admin group to notify, e.g. internal_admins.`
+    hint: $localize`:@@conditionalAccess.adminGroupNotifyE:Admin group to notify, e.g. internal_admins.`
   },
-  { key: "mimetype", label: $localize`MIME type`, kind: "select", options: ["plain", "html"] },
+  {
+    key: "mimetype",
+    label: $localize`:@@conditionalAccess.mimeType:MIME type`,
+    kind: "select",
+    options: ["plain", "html"]
+  },
   {
     key: "subject",
-    label: $localize`Subject`,
+    label: $localize`:@@conditionalAccess.subject:Subject`,
     kind: "textarea",
     rows: 2,
-    hint: $localize`Plain text with {placeholders}. See the list below.`
+    hint: $localize`:@@conditionalAccess.plainTextPlaceholdersSee:Plain text with {placeholders}. See the list below.`
   },
   {
     key: "body",
-    label: $localize`Body`,
+    label: $localize`:@@conditionalAccess.body:Body`,
     kind: "textarea",
     rows: 4,
-    hint: $localize`Supports {placeholders}. See the list below.`
+    hint: $localize`:@@conditionalAccess.supportsPlaceholdersSeeList:Supports {placeholders}. See the list below.`
   }
 ];
 
@@ -125,19 +130,34 @@ export interface EmailPlaceholder {
 }
 
 const EMAIL_PLACEHOLDERS: readonly EmailPlaceholder[] = [
-  { tag: "{username}", description: $localize`Login name of the affected user` },
-  { tag: "{realm}", description: $localize`Realm of the user` },
-  { tag: "{resolver}", description: $localize`Resolver of the user` },
-  { tag: "{client_ip}", description: $localize`IP address the request came from` },
-  { tag: "{count}", description: $localize`Number of matching events in the time window` },
-  { tag: "{threshold}", description: $localize`The stage's failure threshold` },
-  { tag: "{event_type}", description: $localize`The tracked event type that tripped the stage` },
-  { tag: "{stage_id}", description: $localize`ID of the stage that triggered` },
-  { tag: "{policy}", description: $localize`Name of the policy` },
-  { tag: "{time}", description: $localize`Time the policy tripped (UTC)` },
-  { tag: "{email}", description: $localize`Email address of the user` },
-  { tag: "{givenname}", description: $localize`Given name of the user` },
-  { tag: "{surname}", description: $localize`Surname of the user` }
+  {
+    tag: "{username}",
+    description: $localize`:@@conditionalAccess.loginNameAffectedUser:Login name of the affected user`
+  },
+  { tag: "{realm}", description: $localize`:@@conditionalAccess.realmUser:Realm of the user` },
+  { tag: "{resolver}", description: $localize`:@@conditionalAccess.resolverUser:Resolver of the user` },
+  {
+    tag: "{client_ip}",
+    description: $localize`:@@conditionalAccess.ipAddressRequestCame:IP address the request came from`
+  },
+  {
+    tag: "{count}",
+    description: $localize`:@@conditionalAccess.numberMatchingEventsTime:Number of matching events in the time window`
+  },
+  {
+    tag: "{threshold}",
+    description: $localize`:@@conditionalAccess.stageSFailureThreshold:The stage's failure threshold`
+  },
+  {
+    tag: "{event_type}",
+    description: $localize`:@@conditionalAccess.trackedEventTypeTripped:The tracked event type that tripped the stage`
+  },
+  { tag: "{stage_id}", description: $localize`:@@conditionalAccess.idStageTriggered:ID of the stage that triggered` },
+  { tag: "{policy}", description: $localize`:@@conditionalAccess.namePolicy:Name of the policy` },
+  { tag: "{time}", description: $localize`:@@conditionalAccess.timePolicyTrippedUtc:Time the policy tripped (UTC)` },
+  { tag: "{email}", description: $localize`:@@conditionalAccess.emailAddressUser:Email address of the user` },
+  { tag: "{givenname}", description: $localize`:@@conditionalAccess.givenNameUser:Given name of the user` },
+  { tag: "{surname}", description: $localize`:@@conditionalAccess.surnameUser:Surname of the user` }
 ];
 
 @Component({
@@ -214,9 +234,9 @@ export class ConditionalAccessActionItemComponent {
   readonly conflictMessage = computed<string>(() => {
     switch (this.actionConflict()) {
       case "duplicate":
-        return $localize`This action is already on this stage. Only the email actions may be added more than once.`;
+        return $localize`:@@conditionalAccess.actionAlreadyStageOnly:This action is already on this stage. Only the email actions may be added more than once.`;
       case "exclusive":
-        return $localize`This action contradicts another action on this stage. Remove one of them.`;
+        return $localize`:@@conditionalAccess.actionContradictsAnotherAction:This action contradicts another action on this stage. Remove one of them.`;
       default:
         return "";
     }

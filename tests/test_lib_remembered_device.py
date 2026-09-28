@@ -245,17 +245,40 @@ class RememberedDeviceLibTestCase(MyTestCase):
         self.assertIsNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
 
     def test_grace_without_stored_ip_is_not_ip_bound(self):
-        # When the device has no recorded source IP, the grace window cannot be
-        # IP-bound, so a previous-counter duplicate is tolerated regardless of the
-        # request IP (it stays single-step and time-bounded). This pins that IP is
-        # only enforced when it is actually known.
+        # Until the device has been seen once there is no IP to bind to, so a previous-counter
+        # duplicate is tolerated whatever its source: the window stays single-step and time-bounded.
         client_id = self._client_id()
         liam = self._identity("liam")
         device, cookie = create_remembered_device(liam, client_id)   # no ip_address recorded
-        consume_remember_device_cookie(cookie, client_id, liam, "10.0.0.1")   # -> counter 2
         result = consume_remember_device_cookie(cookie, client_id, liam, "9.9.9.9")
+        self.assertEqual("recognized", result.status)
+        self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
+
+    def test_grace_follows_the_device_as_it_moves(self):
+        # A device keeps being used as its client changes network. The grace window compares against
+        # where the device was last seen, not where it was first registered, so a duplicate from the
+        # current network is tolerated. Binding to the registration address would make every benign
+        # duplicate after a network change a detected theft - which revokes every device of that user.
+        client_id = self._client_id()
+        mia = self._identity("mia")
+        device, cookie = create_remembered_device(mia, client_id, ip_address="10.0.0.1")
+        rotated = consume_remember_device_cookie(cookie, client_id, mia, "203.0.113.7")
+        self.assertEqual("recognized", rotated.status)
+        # the duplicate of that request, from the same (new) network
+        result = consume_remember_device_cookie(cookie, client_id, mia, "203.0.113.7")
         self.assertEqual("grace", result.status)
         self.assertIsNotNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
+
+    def test_grace_is_refused_from_a_different_network(self):
+        # The counterpart: once the device has been seen, a previous-counter presentation from
+        # somewhere else is not a duplicate of the last request and stays a theft.
+        client_id = self._client_id()
+        noah = self._identity("noah")
+        device, cookie = create_remembered_device(noah, client_id, ip_address="10.0.0.1")
+        consume_remember_device_cookie(cookie, client_id, noah, "10.0.0.1")
+        result = consume_remember_device_cookie(cookie, client_id, noah, "9.9.9.9")
+        self.assertEqual("theft", result.status)
+        self.assertIsNone(RememberedDevice.query.filter_by(series_id=device.series_id).first())
 
     def test_wrong_client_does_not_match(self):
         client_id_a = self._client_id()

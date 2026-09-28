@@ -39,7 +39,7 @@ from privacyidea.lib.containers.container_info import (PI_INTERNAL, TokenContain
                                                        SERVER_URL, CHALLENGE_TTL)
 from privacyidea.lib.containertemplate.containertemplatebase import ContainerTemplateBase
 from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, EnrollmentError, UserError, PolicyError,
-                                   ContainerNotRegistered, ContainerError)
+                                   ContainerNotRegistered, ContainerError, ContainerInvalidChallenge)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (get_tokens_from_serial_or_user, get_tokens,
@@ -468,22 +468,30 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
 
 def get_container_generator(pagesize: int = 10, **kwargs) -> Generator[list[TokenContainerClass], None, None]:
     """
-    Generator that yields pages of containers.
+    Generator that yields pages of containers, ordered by their id.
 
-    :param page_size: Number of containers per page
-    :param kwargs: Filter arguments for get_all_containers
+    A page starts after the highest id of the previous page instead of at an offset. So the caller can delete the
+    containers of a page, or change them so that they no longer match the filter, before it requests the next page,
+    without containers being skipped.
+
+    :param pagesize: Number of containers per page
+    :param kwargs: Filter arguments of get_all_containers, except the sorting and the pagination
     :yield: List of TokenContainerClass objects for each page
     """
-    page = 1
+    if pagesize < 1:
+        pagesize = 10
+    sql_query = _create_container_query(sortby="id", sortdir="asc", **kwargs)
+    last_id = None
     while True:
-        result = get_all_containers(page=page, pagesize=pagesize, **kwargs)
-        containers = result.get("containers", [])
-        if not containers:
+        page_query = sql_query if last_id is None else sql_query.where(TokenContainer.id > last_id)
+        # A join of the filter can return a container in several rows, so a page can hold fewer containers than
+        # pagesize: only an empty page ends the iteration.
+        db_containers = db.session.scalars(page_query.limit(pagesize)).unique().all()
+        if not db_containers:
             break
-        yield containers
-        if not result.get("next"):
-            break
-        page += 1
+        last_id = db_containers[-1].id
+        containers = [create_container_from_db_object(db_container) for db_container in db_containers]
+        yield [container for container in containers if container]
 
 
 def create_pagination(page: int, pagesize: int, sql_query: Select,
@@ -1470,7 +1478,8 @@ def init_container_rollover(container: TokenContainerClass, server_url: str, cha
     # Check challenge if rollover is allowed
     rollover_scope = create_endpoint_url(server_url, "container/rollover")
     params.update({"scope": rollover_scope})
-    container.check_challenge_response(params)
+    if not container.check_challenge_response(params):
+        raise ContainerInvalidChallenge("The container challenge response could not be verified!")
 
     registration_scope = create_endpoint_url(server_url, "container/register/finalize")
     params.update({"scope": registration_scope})

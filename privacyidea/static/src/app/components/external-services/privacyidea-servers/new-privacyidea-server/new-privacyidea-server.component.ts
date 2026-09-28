@@ -35,6 +35,7 @@ import { StickyHeaderDirective } from "@components/shared/directives/sticky-head
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { reservedNames } from "@utils/reserved-names.utils";
 import {
   PrivacyideaServer,
   PrivacyideaServerService,
@@ -94,6 +95,9 @@ export class NewPrivacyideaServerComponent implements OnDestroy {
   privacyideaForm = form(this.privacyideaModel, (f) => {
     required(f.identifier);
     pattern(f.identifier, /^[a-zA-Z0-9._-]*$/);
+    // POST /privacyideaserver/test_request is the connection test endpoint, and browsers drop "." and ".."
+    // from the URL, so a server with one of these names is never saved.
+    reservedNames(f.identifier, ["test_request", ".", ".."]);
     required(f.url);
     disabled(f.identifier, () => this.isEditMode());
   });
@@ -177,6 +181,28 @@ export class NewPrivacyideaServerComponent implements OnDestroy {
         this.isTesting.set(false);
       });
     }
+  }
+
+  async deleteServer(): Promise<void> {
+    const identifier = this.editIdentifier;
+    if (!identifier) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@piServer.deletePrivacyideaServer:Delete privacyIDEA Server`,
+      items: [identifier],
+      itemType: $localize`:@@piServer.privacyideaServer:privacyIDEA server`
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.privacyideaServerService.deletePrivacyideaServer(identifier);
+    } catch {
+      return;
+    }
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
   }
 
   onCancel(): void {

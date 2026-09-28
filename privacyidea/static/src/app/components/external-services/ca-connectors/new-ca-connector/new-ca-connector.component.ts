@@ -39,6 +39,7 @@ import {
   CaConnectorServiceInterface,
   CaSpecificOptionsParams
 } from "@services/ca-connector/ca-connector.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
@@ -117,6 +118,7 @@ export class NewCaConnectorComponent implements OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   isEditMode = signal(false);
   availableCas = signal<string[]>([]);
@@ -309,6 +311,28 @@ export class NewCaConnectorComponent implements OnDestroy {
     } catch {
       return false;
     }
+  }
+
+  async deleteConnector(): Promise<void> {
+    const identifier = this.editConnectorName;
+    if (!identifier) {
+      return;
+    }
+    const confirmed = await this.dialogService.confirmDelete({
+      title: $localize`:@@caConnector.deleteCaConnector:Delete CA Connector`,
+      items: [identifier],
+      itemType: $localize`:@@caConnector.caConnector:CA connector`
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await this.caConnectorService.deleteCaConnector(identifier);
+    } catch {
+      return;
+    }
+    this.pendingChangesService.clearAllRegistrations();
+    await this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
   }
 
   onCancel(): void {

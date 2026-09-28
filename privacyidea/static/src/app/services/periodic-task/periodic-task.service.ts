@@ -134,7 +134,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     };
   });
   periodicTaskModuleResource = httpResource<PiResponse<PeriodicTaskModule[]>>(() => {
-    if (!this.contentService.onConfigurationPeriodicTasks()) {
+    if (!this.contentService.onConfigurationPeriodicTasks() || !this.authService.actionAllowed("periodictask_read")) {
       return undefined;
     }
     return {

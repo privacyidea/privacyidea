@@ -69,9 +69,9 @@ export class ConditionalAccessToggleDialogComponent extends AbstractDialogCompon
   }
 
   actions: DialogAction<ConditionalAccessToggleAction>[] = [
-    { label: $localize`Activate`, value: "activate", type: "confirm", primary: false },
-    { label: $localize`Deactivate`, value: "deactivate", type: "destruct", primary: false },
-    { label: $localize`Toggle`, value: "toggle", type: "confirm", primary: true }
+    { label: $localize`:@@token.activate:Activate`, value: "activate", type: "confirm", primary: false },
+    { label: $localize`:@@token.deactivate:Deactivate`, value: "deactivate", type: "destruct", primary: false },
+    { label: $localize`:@@token.toggle:Toggle`, value: "toggle", type: "confirm", primary: true }
   ];
 
   onAction(value: ConditionalAccessToggleAction): void {

@@ -34,5 +34,5 @@ import { MatTooltip } from "@angular/material/tooltip";
 })
 export class InfoHintComponent {
   readonly text = input.required<string>();
-  readonly ariaLabel = input<string>($localize`More information`);
+  readonly ariaLabel = input<string>($localize`:@@common.moreInformation:More information`);
 }

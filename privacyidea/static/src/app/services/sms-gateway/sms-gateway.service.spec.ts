@@ -32,6 +32,7 @@ describe("SmsGatewayService", () => {
   let httpMock: HttpTestingController;
   let notifyMock: MockNotificationService;
   let contentServiceMock: MockContentService;
+  let authService: MockAuthService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -48,6 +49,9 @@ describe("SmsGatewayService", () => {
     httpMock = TestBed.inject(HttpTestingController);
     notifyMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    // The gateways and providers are only requested by an admin who may read them.
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["smsgateway_read"] });
   });
 
   afterEach(() => {
@@ -151,6 +155,16 @@ describe("SmsGatewayService", () => {
       expect(service.smsGateways()).toEqual([]);
 
       httpMock.expectOne((r) => r.url === "/smsgateway/providers");
+    });
+
+    it("should not request the gateways or providers without smsgateway_read", () => {
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: [] });
+      contentServiceMock.onExternalSms = signal(true);
+      TestBed.tick();
+
+      httpMock.expectNone((r) => r.url === "/smsgateway/");
+      httpMock.expectNone((r) => r.url === "/smsgateway/providers");
+      expect(service.smsGateways()).toEqual([]);
     });
   });
 });
