@@ -33,6 +33,7 @@ import netaddr
 from sqlalchemy import select
 
 from privacyidea.lib.applications.base import get_auth_item, get_machine_application_class_dict
+from privacyidea.lib.error import PrivacyIDEAError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import fetch_one_resource, convert_column_to_unicode
 from privacyidea.models import (MachineToken, db, MachineTokenOptions,
@@ -496,13 +497,20 @@ def get_auth_items(hostname=None, application=None, serial=None, challenge=None,
                                          filter_params=filter_param)
 
     for machine_token in machine_tokens:
-        auth_item = get_auth_item(machine_token.get("application"),
-                                  machine_token.get("type"),
-                                  machine_token.get("serial"),
-                                  challenge,
-                                  options=machine_token.get("options"),
-                                  filter_param=filter_param,
-                                  user_agent=user_agent)
+        try:
+            auth_item = get_auth_item(machine_token.get("application"),
+                                      machine_token.get("type"),
+                                      machine_token.get("serial"),
+                                      challenge,
+                                      options=machine_token.get("options"),
+                                      filter_param=filter_param,
+                                      user_agent=user_agent)
+        except PrivacyIDEAError as error:
+            # A token that refuses to hand out its item, e.g. an SSH key that fails its integrity check, must not
+            # take the items of the other tokens with it: an SSH server would lose every authorized key at once.
+            log.error(f"Skipping the {machine_token.get('application')} authentication item of the token "
+                      f"{machine_token.get('serial')}: {error}")
+            continue
         if auth_item:
             if machine_token.get("application") not in auth_items:
                 # we create a new empty list for the new application type

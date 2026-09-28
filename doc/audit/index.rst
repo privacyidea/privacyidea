@@ -61,7 +61,11 @@ during the logging process.
 
 But you can set up a cron job to clean up old audit entries. Since version
 2.19 audit entries can be either cleaned up based on the number of entries or
-based on on the age. Cleaning based on the age takes precedence.
+based on the age. A config file (``--config``) takes precedence over the age,
+and the age takes precedence over the number of entries.
+
+The Ubuntu packages ship such a job commented out; the Docker image rotates by
+the number of entries, see :ref:`cleanup_jobs`.
 
 .. versionadded:: 2.22 The ``--chunksize`` parameter allows cleaning up audit
     entries in chunks to avoid exzessive memory usage.
@@ -131,7 +135,8 @@ privacyIDEA iterates over *all* audit entries. The first matching rule for an en
 If the rule matches, the audit entry is deleted if the entry is older than the days
 specified in "rotate".
 
-If is a good idea to have a *catch-all* rule at the end.
+It is a good idea to have a *catch-all* rule at the end. A rule needs at least one condition besides
+"rotate", a rule without one matches no entry. The catch-all rule above uses ``action: .*``.
 
 .. note:: The keys "user", "action"... correspond to the column names of the audit table.
    You can use any column name here like "date", "action", "action_detail", "success", "serial", "administrator",
@@ -144,9 +149,10 @@ You can then add a call like::
 
 in your crontab.
 
-.. note:: The cleaning based on a config file currently does **not** work with
-    the ``--chunksize`` parameter. If the audit-table is too big, consider
-    cleaning based on the age or number of entries first.
+With a config file, the matching entries are deleted in slices of ``--chunksize`` entries, or
+of 1000 entries without it. The command reads all audit entries to match them against the
+rules, so if the audit table is very big, consider cleaning based on the age or number of
+entries first.
 
 
 Access rights

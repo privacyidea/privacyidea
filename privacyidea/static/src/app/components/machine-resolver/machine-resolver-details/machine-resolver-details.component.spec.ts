@@ -120,6 +120,12 @@ describe("MachineResolverDetailsComponent", () => {
       expect(component.canSaveMachineResolver()).toBe(false);
     });
 
+    it.each(["test", ".", ".."])("rejects the reserved name %p", (name) => {
+      component.onResolvernameChange(name);
+      expect(component.nameIsReserved()).toBe(true);
+      expect(component.canSaveMachineResolver()).toBe(false);
+    });
+
     it("onMachineResolverTypeChange resets data for the new type", () => {
       component.onResolvernameChange("res1");
       component.onMachineResolverTypeChange("ldap");

@@ -51,7 +51,8 @@
 import click
 from flask.cli import with_appcontext
 from yaml import safe_load as yaml_safe_load
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.error import ResourceNotFoundError
+from privacyidea.lib.token import update_token_from_export
 import sys
 
 
@@ -63,18 +64,20 @@ def updatetokens(yaml_file):
     Update existing tokens in the privacyIDEA system. You must specify a YAML
     file with the tokendata.
     Can be used to reencrypt data, when changing the encryption key.
+    The OTP counter and the fail counter of the tokens are kept.
     """
     click.echo("Loading YAML data. This may take a while.")
     token_list = yaml_safe_load(yaml_file.read())
     for tok in token_list:
-        del (tok["owner"])
         serial = tok.get("serial")
-        tok_objects = get_tokens(serial=serial)
-        if len(tok_objects) == 0:
+        if not serial:
+            sys.stderr.write("\nSkipping an entry without a serial.\n")
+            continue
+        try:
+            update_token_from_export(tok)
+        except ResourceNotFoundError:
             sys.stderr.write(f"\nCan not find token {serial}. Not updating.\n")
+        except Exception as e:
+            click.echo(f"\nFailed to update token {serial} ({e}).", err=True)
         else:
-            click.echo(f"Updating token {serial}.")
-            try:
-                tok_objects[0].update(tok)
-            except Exception as e:
-                click.echo(f"\nFailed to update token {serial} ({e}).", err=True)
+            click.echo(f"Updated token {serial}.")

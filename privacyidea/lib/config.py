@@ -51,7 +51,7 @@ from privacyidea.lib.framework import get_request_local_store, get_app_config_va
 from privacyidea.lib.utils import to_list, censor_connect_string
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .caconnectors.baseca import BaseCAConnector
-from .crypto import decryptPassword
+from .crypto import decryptPassword, FAILED_TO_DECRYPT_PASSWORD
 from .crypto import encryptPassword
 from .crypto import CENSORED, is_censored
 from .log import log_with
@@ -160,6 +160,10 @@ class SharedConfigClass:
                                 value = rconf.Value
                         else:
                             value = rconf.Value
+                            if class_descriptor_config.get(rconf.Key) == "password":
+                                # Stored in plain text before the resolver class declared the entry a password, it
+                                # is encrypted the next time the resolver is saved and censored until then as well.
+                                resolverdef["censor_keys"].append(rconf.Key)
                         data[rconf.Key] = value
                     resolverdef["data"] = data
                     resolverconfig[resolver.name] = resolverdef
@@ -1186,9 +1190,26 @@ def check_node_uuid_exists(node_uuid) -> bool:
     return db.session.scalars(stmt).first() is not None
 
 
+def _export_password(key: str, encrypted_value: str) -> str:
+    """
+    The value of a password-type entry of the global configuration as it goes into an export: decrypted, as the
+    importing instance encrypts it with its own encryption key, like the secrets of every other exported object.
+    A value that can not be decrypted is exported as the ``__CENSORED__`` placeholder, so that an import does not
+    store the error text as the password.
+    """
+    value = decryptPassword(encrypted_value)
+    if value == FAILED_TO_DECRYPT_PASSWORD:
+        log.warning(f"Could not decrypt the configuration entry {key!r}, it is exported censored.")
+        return CENSORED
+    return value
+
+
 @register_export()
 def export_config(name=None, censor=False):
     """Export the global configuration
+
+    The value of a password-type entry is exported decrypted, so that the importing
+    instance can encrypt it with its own encryption key.
 
     :param censor: If True, the value of password-type entries is replaced with
         the ``__CENSORED__`` placeholder instead of being exported.
@@ -1196,13 +1217,12 @@ def export_config(name=None, censor=False):
     c = copy.copy(get_config_object().config)
     if name:
         c = {name: c[name]} if name in c.keys() else {}
-    if censor:
-        # copy.copy is shallow, so build new dicts for the censored entries
-        # instead of mutating the cached config object
-        c = {key: ({**values, "Value": CENSORED}
-                   if isinstance(values, dict) and values.get("Type") == "password"
-                   else values)
-             for key, values in c.items()}
+    # copy.copy is shallow, so build new dicts for the password-type entries
+    # instead of mutating the cached config object
+    c = {key: ({**values, "Value": CENSORED if censor else _export_password(key, values.get("Value"))}
+               if isinstance(values, dict) and values.get("Type") == "password"
+               else values)
+         for key, values in c.items()}
     return c
 
 

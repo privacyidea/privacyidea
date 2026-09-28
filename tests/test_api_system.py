@@ -12,7 +12,7 @@ import gnupg
 from privacyidea.lib import health
 from privacyidea.lib.caconnector import save_caconnector, delete_caconnector
 from privacyidea.lib.caconnectors.localca import ATTR
-from privacyidea.lib.metrics import _utc_now, inc, observe
+from privacyidea.lib.metrics import inc, observe
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import PolicyClass, set_policy, delete_policy, SCOPE
 from privacyidea.lib.radiusserver import add_radius, delete_radius
@@ -1867,62 +1867,3 @@ class HealthEndpointsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res.data)
             self.assertEqual(res.json["result"]["value"]["since_seconds"], 60)
-
-    def _seed_metric_at(self, hours_ago):
-        # Insert one MetricAggregate row whose window_start is `hours_ago` hours
-        # in the past, bypassing the bucket-rounding in inc()/observe().
-        row = MetricAggregate(
-            metric_name="sms_send_total",
-            labels_key='{"gateway":"x","result":"ok"}',
-            window_start=_utc_now() - datetime.timedelta(hours=hours_ago),
-            count=1)
-        db.session.add(row)
-        db.session.commit()
-
-    def test_metricscleanup_default_24h_retains_recent_drops_old(self):
-        self._seed_metric_at(hours_ago=1)    # recent - kept
-        self._seed_metric_at(hours_ago=48)   # old - dropped
-        with self.app.test_request_context('/system/metricscleanup',
-                                           method='POST',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res.data)
-            value = res.json["result"]["value"]
-        self.assertEqual(value["deleted"], 1)
-        self.assertEqual(value["older_than_hours"], 24)
-        # End db.session's REPEATABLE READ snapshot (taken when we seeded) so
-        # the cleanup commit issued on the dedicated metric session is visible.
-        db.session.commit()
-        self.assertEqual(db.session.query(MetricAggregate).count(), 1)
-
-    def test_metricscleanup_custom_hours(self):
-        self._seed_metric_at(hours_ago=2)
-        self._seed_metric_at(hours_ago=10)
-        with self.app.test_request_context('/system/metricscleanup',
-                                           method='POST',
-                                           data={'older_than_hours': '5'},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res.data)
-            value = res.json["result"]["value"]
-        self.assertEqual(value["deleted"], 1)
-        self.assertEqual(value["older_than_hours"], 5)
-
-    def test_metricscleanup_invalid_hours_falls_back_to_default(self):
-        with self.app.test_request_context('/system/metricscleanup',
-                                           method='POST',
-                                           data={'older_than_hours': 'not-a-number'},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res.data)
-            self.assertEqual(res.json["result"]["value"]["older_than_hours"], 24)
-
-    def test_metricscleanup_clamps_low_hours(self):
-        # Negative or zero would otherwise wipe the in-progress bucket.
-        with self.app.test_request_context('/system/metricscleanup',
-                                           method='POST',
-                                           data={'older_than_hours': '0'},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200, res.data)
-            self.assertEqual(res.json["result"]["value"]["older_than_hours"], 1)

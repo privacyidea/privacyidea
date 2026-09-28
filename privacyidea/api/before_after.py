@@ -47,7 +47,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.log import redact_url
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
-from privacyidea.lib.token import get_token_type, get_token_owner
+from privacyidea.lib.token import get_token_type, get_token_owner, get_token_owner_without_lookup
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.validate import validate_blueprint
 from .resolver import resolver_blueprint
@@ -474,6 +474,11 @@ def before_request():
             except ResourceNotFoundError:
                 # The serial might not exist! This would raise an exception
                 pass
+            except UserError as error:
+                # The owner can not be looked up, e.g. because the resolver of the owner was deleted. The token can
+                # still be managed, and the policies of the realm of the owner still apply to it.
+                log.info(f"The owner of the token {serial} can not be looked up: {error}")
+                request.User = get_token_owner_without_lookup(serial)
 
     else:
         g.serial = None

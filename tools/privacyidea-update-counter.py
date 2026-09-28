@@ -11,7 +11,9 @@ script to update them in the new privacyIDEA database.
 
 You can update counters like
 
-privacyidea-export-linotp-counter.py -c MIGRATION/linotp.ini  | ./tools/privacyidea-update-counter.py -c /etc/privacyidea/pi.cfg -i -
+privacyidea-update-counter.py -c /etc/privacyidea/pi.cfg -i counters.csv
+
+The file contains one serial and counter per line, separated by a comma.
 """
 
 from privacyidea.models import Token

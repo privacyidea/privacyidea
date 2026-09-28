@@ -21,6 +21,7 @@
 #
 import datetime
 import logging
+import re
 
 from passlib.exc import PasswordSizeError
 from sqlalchemy import update, select, delete
@@ -29,8 +30,50 @@ from ..models import AuthCache, db
 from ..models.utils import utc_now
 from .cache import auth as redis_auth_cache
 from .crypto import pass_hash, verify_pass_hash
+from .utils import parse_timedelta
 
 log = logging.getLogger(__name__)
+
+
+def parse_auth_cache_value(value: str) -> tuple[datetime.timedelta, datetime.timedelta | None, int]:
+    """
+    Split the value of an ``auth_cache`` policy, like ``4h``, ``4h/5m`` or ``2m/3``.
+
+    :param value: the policy value
+    :return: how long after its first authentication an entry can be used, how long
+        after its last one (``None`` if the policy does not limit that) and how often it
+        can be used (``0`` for no limit)
+    :raises TypeError: if a time in the value can not be parsed
+    """
+    auth_times = value.split("/")
+    first_offset = parse_timedelta(auth_times[0])
+    last_offset = None
+    max_auths = 0
+    if len(auth_times) == 2:
+        if re.match(r"^\d+$", auth_times[1]):
+            max_auths = int(auth_times[1])
+        else:
+            last_offset = parse_timedelta(auth_times[1])
+    return first_offset, last_offset, max_auths
+
+
+def get_idle_limit(value: str) -> datetime.timedelta:
+    """
+    How long an entry can go unused before an ``auth_cache`` policy with this value
+    stops accepting it for good.
+
+    An entry is accepted while its first authentication lies within the first interval
+    of the policy and, for a value like ``4h/5m``, its last one within the second. The
+    last authentication is never older than the first, so an entry unused for longer
+    than the shorter of the two intervals can not be accepted any more.
+
+    :param value: the policy value
+    :raises TypeError: if a time in the value can not be parsed
+    """
+    first_offset, last_offset, _max_auths = parse_auth_cache_value(value)
+    if last_offset is None:
+        return first_offset
+    return min(first_offset, last_offset)
 
 
 def _hash_password(password):

@@ -8,7 +8,7 @@ from .base import MyTestCase
 from privacyidea.lib.authcache import (add_to_cache, delete_from_cache,
                                        update_cache, verify_in_cache,
                                        _hash_password,
-                                       cleanup)
+                                       cleanup, get_idle_limit, parse_auth_cache_value)
 from passlib.hash import argon2, pbkdf2_sha512
 from privacyidea.lib.crypto import (DEFAULT_HASH_ALGO_LIST, DEFAULT_HASH_ALGO_PARAMS,
                                     verify_pass_hash)
@@ -284,3 +284,24 @@ class AuthCacheTestCase(MyTestCase):
 
         auth = AuthCache.query.filter(AuthCache.username == self.username).first()
         self.assertEqual(auth, None)
+
+
+class AuthCachePolicyValueTestCase(MyTestCase):
+    """
+    Reading the value of an auth_cache policy.
+    """
+
+    def test_01_parse_the_value(self):
+        self.assertEqual((datetime.timedelta(hours=4), None, 0), parse_auth_cache_value("4h"))
+        self.assertEqual((datetime.timedelta(hours=4), datetime.timedelta(minutes=5), 0),
+                         parse_auth_cache_value("4h/5m"))
+        self.assertEqual((datetime.timedelta(minutes=2), None, 3), parse_auth_cache_value("2m/3"))
+        self.assertRaises(TypeError, parse_auth_cache_value, "forever")
+        self.assertRaises(TypeError, parse_auth_cache_value, "4h/soon")
+
+    def test_02_idle_limit(self):
+        # An entry is dead once it has been unused for longer than the shorter of the two intervals.
+        self.assertEqual(datetime.timedelta(days=2), get_idle_limit("2d"))
+        self.assertEqual(datetime.timedelta(minutes=5), get_idle_limit("4h/5m"))
+        self.assertEqual(datetime.timedelta(hours=1), get_idle_limit("1h/2h"))
+        self.assertEqual(datetime.timedelta(hours=8), get_idle_limit("8h/3"))

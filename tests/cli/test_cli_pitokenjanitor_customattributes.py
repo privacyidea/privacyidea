@@ -3,10 +3,13 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import pytest
+from click.testing import CliRunner
+from flask.cli import ScriptInfo
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
 from privacyidea.cli.pitokenjanitor.main import cli
+from privacyidea.cli.pitokenjanitor.utils import findcustomattributes
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
@@ -128,3 +131,27 @@ class TestCustomAttributes:
         assert result.exit_code == 0, result.output
         assert "some-uid" in result.output
         assert "ghost-resolver" in result.output
+
+    def test_runs_without_an_application_context(self, app):
+        """The console script starts without an application context, so the command sets one up itself."""
+        with app.app_context():
+            db.session.add(CustomUserAttribute(user_id="some-uid", resolver="ghost-resolver", realm_id=None,
+                                               Key="some_key", Value="v"))
+            db.session.commit()
+
+        result = CliRunner().invoke(cli, ["custom-attributes", "list"],
+                                    obj=ScriptInfo(create_app=lambda: app))
+        assert result.exit_code == 0, result.output
+        assert "ghost-resolver" in result.output
+
+    def test_delete_help_does_not_scan(self, app, monkeypatch):
+        """Asking a subcommand for help prints it without looking up any user."""
+        def fail(**kwargs):
+            raise AssertionError("the orphan scan ran")
+
+        monkeypatch.setattr(findcustomattributes, "find_orphaned_custom_attributes", fail)
+        result = CliRunner().invoke(cli, ["custom-attributes", "delete", "--help"],
+                                    obj=ScriptInfo(create_app=lambda: app))
+        assert result.exit_code == 0, result.output
+        assert "--yes" in result.output
+

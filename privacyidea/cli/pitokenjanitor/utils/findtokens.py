@@ -51,12 +51,14 @@ from privacyidea.lib.error import PolicyError, ResolverError
 from privacyidea.lib.importotp import export_pskc
 from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator, export_tokens
 from privacyidea.lib.tokenclass import TokenClass
-from privacyidea.lib.utils import parse_legacy_time, is_true
+from privacyidea.lib.utils import parse_legacy_time, parse_timedelta
 from privacyidea.models import Token, TokenContainer
 
 allowed_tokenattributes = [col.key for col in Token.__table__.columns]
 
 comparator_pattern = re.compile(r"^\s*([^!=<>]+?)\s*([!=<>])\s*([^!=<>]+?)\s*$")
+# A signed time span like "-180d", read as a point in time relative to now
+relative_time_pattern = re.compile(r"^[+-]\d+[smhdy]$")
 
 
 def _try_convert_to_integer(given_value_string: str) -> int:
@@ -64,6 +66,29 @@ def _try_convert_to_integer(given_value_string: str) -> int:
         return int(given_value_string)
     except ValueError:
         raise click.ClickException(f'Not an integer: {given_value_string}')
+
+
+def _is_stdout(file) -> bool:
+    """
+    Whether the export goes to stdout. click can hand out its own wrapper of stdout instead of sys.stdout itself,
+    e.g. under a C or POSIX locale, so the stream is recognized by its name.
+    """
+    return getattr(file, "name", None) == "<stdout>"
+
+
+def _is_interactive() -> bool:
+    """Whether a user can answer questions on the terminal."""
+    return sys.stdin.isatty()
+
+
+def _try_convert_to_point_in_time(given_value_string: str) -> datetime:
+    """
+    Read the value of a < or > comparison as a point in time: either relative to now, given as a signed time span
+    like "-180d" (units s, m, h, d and y), or as a date and time.
+    """
+    if relative_time_pattern.match(given_value_string):
+        return datetime.now(tzlocal()) + parse_timedelta(given_value_string)
+    return _try_convert_to_datetime(given_value_string)
 
 
 def _try_convert_to_datetime(given_value_string: str) -> datetime:
@@ -194,7 +219,7 @@ def build_filter(filter_string: str, allowed_keys: list[str] = None) -> tuple[st
             return match.group(1), _compare_less_than(given_value)
         except ValueError:
             try:  # then we try to parse as a datetime object
-                given_value = _try_convert_to_datetime(match.group(3))
+                given_value = _try_convert_to_point_in_time(match.group(3))
                 return match.group(1), _compare_before(given_value)
             except ValueError:
                 raise click.ClickException(f"Unable to find a comparator for {filter_string}")
@@ -204,7 +229,7 @@ def build_filter(filter_string: str, allowed_keys: list[str] = None) -> tuple[st
             return match.group(1), _compare_greater_than(given_value)
         except ValueError:
             try:  # try to convert the given value to datetime
-                given_value = _try_convert_to_datetime(match.group(3))
+                given_value = _try_convert_to_point_in_time(match.group(3))
                 return match.group(1), _compare_after(given_value)
             except ValueError:
                 raise click.ClickException(f"Unable to find a comparator for {filter_string}")
@@ -260,7 +285,7 @@ def export_token_data(token_list: list, token_attributes: list = None,
     for token_obj in token_list:
         token_data = {"serial": f'{token_obj.token.serial}',
                       "tokentype": f'{token_obj.token.tokentype}',
-                      "realms": f'{token_obj.get_realms()}'}
+                      "realms": token_obj.get_realms()}
         token_info = token_obj.get_tokeninfo()
         export_ti = {}
         if token_attributes:
@@ -297,14 +322,14 @@ def export_token_data(token_list: list, token_attributes: list = None,
     return tokens
 
 
-def export_user_data(token_list: list, user_attributes: list = None) -> dict:
+def export_user_data(token_list: list, user_attributes: list = None) -> dict[tuple, list[str]]:
     """
-    Returns a list of users with the information how many tokens this user has assigned
+    Returns the owners of the tokens with the serials of the tokens each owner has assigned
 
-    :param token_list:
-    :param user_attributes: display additional user attributes
-    :return:
-    :rtype: dict
+    :param token_list: the tokens
+    :param user_attributes: additional user attributes to return
+    :return: the serials of the tokens by owner. An owner is a tuple of (name, value) pairs of the user
+        attributes, the empty tuple stands for the tokens without an owner.
     """
     users = {}
     for token_obj in token_list:
@@ -314,20 +339,24 @@ def export_user_data(token_list: list, user_attributes: list = None) -> dict:
             sys.stderr.write(f"Failed to determine user for token {token_obj.token.serial} ({e}.\n")
             user = None
         if user:
-            uid = (f"'{user.info.get('username', '')}','{user.info.get('givenname', '')}',"
-                   f"'{user.info.get('surname', '')}','{user.uid}','{user.resolver}','{user.realm}'")
-            if user_attributes:
-                for att in user_attributes:
-                    uid += f",'{user.info.get(att, '')}'"
+            owner = (("username", user.info.get('username', '')), ("givenname", user.info.get('givenname', '')),
+                     ("surname", user.info.get('surname', '')), ("uid", user.uid), ("resolver", user.resolver),
+                     ("realm", user.realm))
+            owner += tuple((att, user.info.get(att, '')) for att in user_attributes or [])
+            # The owner is a dictionary key, so an attribute with several values, e.g. the mobile numbers from an
+            # LDAP resolver, is kept as a tuple instead of a list
+            owner = tuple((name, tuple(value) if isinstance(value, list) else value) for name, value in owner)
         else:
-            uid = "N/A" + ", " * 5
-
-        if uid in users.keys():
-            users[uid].append(token_obj.token.serial)
-        else:
-            users[uid] = [token_obj.token.serial]
-
+            owner = ()
+        users.setdefault(owner, []).append(token_obj.token.serial)
     return users
+
+
+def _format_owner(owner: tuple) -> str:
+    """The text form of an owner returned by export_user_data."""
+    if not owner:
+        return "N/A" + ", " * 5
+    return ",".join(f"'{list(value) if isinstance(value, tuple) else value}'" for _name, value in owner)
 
 
 def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial: str,
@@ -335,11 +364,6 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                     tokenowner_filter, tokencontainer_filter, tokentype, realm, resolver, rollout_state,
                     orphaned: bool | None, chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
                     orphaned_on_error: bool = False) -> Generator[TokenClass, None, None]:
-    if assigned is not None:
-        assigned = is_true(assigned)
-    if active is not None:
-        active = is_true(active)
-
     iterable = get_tokens_paginated_generator(tokentype=tokentype,
                                               realm=realm,
                                               resolver=resolver,
@@ -408,7 +432,7 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                     else:
                         add = False
             if orphaned is not None:
-                if token_obj.is_orphaned(orphaned_on_error) != is_true(orphaned):
+                if token_obj.is_orphaned(orphaned_on_error) != orphaned:
                     add = False
 
 
@@ -437,11 +461,11 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                    'Example: user_id=642cf598-d9cf-1037-8083-a1df7d38c897.')
 @click.option('--tokencontainer', 'tokencontainers', multiple=True,
               help='Match for certain information of tokencontainer from the database. Example: type=smartphone.')
-@click.option('--assigned',
+@click.option('--assigned', type=click.BOOL,
               help='Whether the token is assigned to a user. Can be "True" or "False"')
-@click.option('--active',
-              help='Whether to token is active/enabled. Can be "True" or "False"')
-@click.option('--orphaned',
+@click.option('--active', type=click.BOOL,
+              help='Whether the token is active/enabled. Can be "True" or "False"')
+@click.option('--orphaned', type=click.BOOL,
               help='Whether the token is an orphaned token. Can be "True" or "False"')
 @click.option('--orphaned-on-error', is_flag=True, default=False,
               help="Mark token as orphaned if an error occurred when resolving user.")
@@ -500,8 +524,10 @@ def findtokens(ctx, chunksize, has_not_tokeninfo_key, has_tokeninfo_key,
                    'multiple times). The default is to show all tokeninfo values.')
 @click.option('-s', '--summarize', 'sum_tokens', is_flag=True, default=False,
               help='Reduce the output to show only the number of tokens owned by each user.')
+@click.option('--format', 'output_format', type=click.Choice(['text', 'json']), default='text', show_default=True,
+              help='The output format. json writes one JSON object per line.')
 @click.pass_context
-def list_cmd(ctx, user_attributes, token_attributes, sum_tokens):
+def list_cmd(ctx, user_attributes, token_attributes, sum_tokens, output_format):
     """
     List all found tokens.
     """
@@ -511,14 +537,17 @@ def list_cmd(ctx, user_attributes, token_attributes, sum_tokens):
             tokens = export_token_data(tlist, token_attributes=token_attributes,
                                        user_attributes=user_attributes)
             for token in tokens:
-                click.echo(token)
+                click.echo(json.dumps(token, default=str) if output_format == 'json' else token)
         else:
             users = export_user_data(tlist, user_attributes)
-            for user, tokens in users.items():
-                users_sum[user] += len(tokens)
+            for owner, tokens in users.items():
+                users_sum[owner] += len(tokens)
     if sum_tokens:
-        for user, count in users_sum.items():
-            click.echo(f"{user},{count}")
+        for owner, count in users_sum.items():
+            if output_format == 'json':
+                click.echo(json.dumps({"user": dict(owner) if owner else None, "tokens": count}, default=str))
+            else:
+                click.echo(f"{_format_owner(owner)},{count}")
 
 
 @findtokens.command('export')
@@ -530,7 +559,7 @@ def list_cmd(ctx, user_attributes, token_attributes, sum_tokens):
 @click.option('--b32', is_flag=True,
               help="In case of exporting tokens to CSV or YAML, the seed is "
                    "written as base32 encoded instead of hex.")
-@click.option('--file', required=False, type=click.File('w'), default=sys.stdout,
+@click.option('--file', required=False, type=click.File('w'), default="-",
               show_default="<stdout>",
               help='The file to export the tokens to.')
 @click.option('--user/--no-user', default=True,
@@ -569,17 +598,17 @@ def export(ctx, export_format, b32, file, user):
         file.write('\n'.join(exported_tokens))
 
     elif export_format == "yaml":
-        token_list = []
+        exported_tokens = []
         for token_list in ctx.obj['tokens']:
             for token in token_list:
                 try:
                     token_dict = token._to_dict(b32=b32)
                     token_dict["owner"] = f"{token.user.login}@{token.user.realm}" if (
                             token.user and user) else "n/a"
-                    token_list.append(token_dict)
+                    exported_tokens.append(token_dict)
                 except Exception as e:
                     sys.stderr.write(f"\nFailed to export token {token.get_serial()} ({e}).\n")
-        file.write(yaml_safe_dump(token_list))
+        file.write(yaml_safe_dump(exported_tokens))
 
     elif export_format == "pi":
         key = Fernet.generate_key().decode()
@@ -592,26 +621,28 @@ def export(ctx, export_format, b32, file, user):
         list_of_exported_tokens = json.dumps(exported_tokens, default=repr, indent=2)
         f = Fernet(key)
         file.write(f.encrypt(list_of_exported_tokens.encode()).decode())
-        if file == sys.stdout:
-            click.echo("\n\n")
-        click.echo(f"Successfully exported {len(exported_tokens)} tokens.")
+        # Only the export goes to stdout, so that it can be redirected to a file and imported from there
+        if _is_stdout(file):
+            click.echo("\n\n", err=True)
+        click.echo(f"Successfully exported {len(exported_tokens)} tokens.", err=True)
         if failed_exports:
-            click.echo(f"Failed to export {len(failed_exports)} tokens:")
+            click.echo(f"Failed to export {len(failed_exports)} tokens:", err=True)
             for serial in failed_exports:
-                click.echo(f"{serial}")
-            click.echo("Check the logfile for the cause of the failures.")
+                click.echo(f"{serial}", err=True)
+            click.echo("Check the logfile for the cause of the failures.", err=True)
 
         click.secho(f'\nThe key to import the tokens is:\n\n\t{key}\n\n', fg='red', err=True)
-        if file != sys.stdout:
+        if not _is_stdout(file):
             click.echo(f'You can use this key to import the tokens with the command:\n'
                        f'pi-tokenjanitor import privacyidea {file.name} --key {key}\n', err=True)
-        if click.confirm('Do you want to save the key to a file?', default=False, err=True):
+        # Without a terminal, e.g. in a cron job, there is nobody to answer the question
+        if _is_interactive() and click.confirm('Do you want to save the key to a file?', default=False, err=True):
             key_file = click.prompt('Please enter the file name to save the key to',
                                     type=click.File('w'), err=True)
             key_file.write(key)
             click.echo(f'The export encryption key has been saved to "{key_file.name}"', err=True)
 
-    if file != sys.stdout:
+    if not _is_stdout(file):
         click.echo(f'The tokens have been exported to "{file.name}".\n')
 
 
@@ -705,12 +736,13 @@ def set_tokeninfo(ctx, tokeninfo):
     token itself and are skipped here. The type specific ones can be set at enrollment or with the
     /token/set endpoint.
     """
-    match = re.match(r"\s*(\w+)\s*(=)\s*(\w+)\s*$", tokeninfo)
+    # The value is everything after the first "=", so it can hold dates, spaces or further "=" characters
+    match = re.match(r"\s*(\w+)\s*=\s*(\S.*?)\s*$", tokeninfo)
     if not match:
         raise click.ClickException(f"Can not parse tokeninfo to set. It should "
                                    f"be given as \"<key> = <value>\". (actual: {tokeninfo})")
     tokeninfo_key = match.group(1)
-    tokeninfo_value = match.group(3)
+    tokeninfo_value = match.group(2)
     for tlist in ctx.obj['tokens']:
         for token_obj in tlist:
             try:

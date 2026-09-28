@@ -624,25 +624,28 @@ dependent on the clients IP address and the user agent.
 .. note:: Cache entries are written to the database table ``authcache``. Please note
    that expired entries are automatically deleted only when the user
    attempts to log in with the same expired credentials again. In all other cases,
-   expired entries need to be deleted from this table manually by running::
+   expired entries need to be deleted from this table by running::
 
-      pi-manage config authcache cleanup --minutes MIN
+      pi-manage config authcache cleanup
 
-   which deletes all cache entries whose last authentication has occurred at least
-   ``MIN`` minutes ago. As an example::
+   which deletes the entries no active ``auth_cache`` policy accepts any more: those
+   not used for longer than the most generous policy allows, or all of them if there
+   is no such policy. With ``4h/5m`` that is every entry unused for 5 minutes, with
+   ``2d`` every entry unused for two days. The Ubuntu packages and the Docker image run
+   this daily, see :ref:`cleanup_jobs`.
+
+   To delete by a fixed age instead, pass ``--minutes``::
 
       pi-manage config authcache cleanup --minutes 300
 
-   will delete all authentication cache entries whose last authentication happened more
+   deletes all authentication cache entries whose last authentication happened more
    than 5 hours ago.
-
-   It may make sense to create a cronjob that periodically cleans up old authentication cache entries.
 
 .. note:: With :ref:`redis_auth_cache` enabled, cache entries live in Redis
    instead of the ``authcache`` table. They then carry the lifetime this policy
-   grants and expire on their own, so neither the cleanup command nor a cronjob
-   for it is needed - and the authentication path stops writing to the database
-   altogether.
+   grants and expire on their own, and the authentication path stops writing to
+   the database - except while Redis cannot be reached. The entries written then
+   are only removed by the cleanup command, so keep its cron job.
 
 .. note:: The AuthCache only works for user authentication, not for
    authentication with serials.
@@ -1163,6 +1166,57 @@ It is advised to use a condition with this policy, for example on the user-agent
 .. note:: Make sure the user only has a WebAuthn **or** Passkey token assigned when using this policy.
     Triggering both types at the same time will probably result in a failed authentication because challenges are
     currently encoded differently for each token of these token types.
+
+.. _policy_passkey_authn_allowed_authenticator_device_types:
+
+passkey_allowed_authenticator_device_types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+Only allow authentication with passkeys that report one of the given device types, as a space-separated list of
+``single_device`` and ``multi_device``. See :ref:`passkey_device_type` for what the two types mean. If several
+policies match, the values of all of them are allowed. Any other value matches no passkey, so every passkey
+authentication fails. If the policy is not set, both types are accepted.
+
+The device type is taken from each authentication response, not from the value stored at enrollment. The policy
+therefore also applies to passkeys that were enrolled before it was set: their users can no longer log in with
+them. To find the passkeys that a policy would refuse, list them with
+``GET /token/?type=passkey&infokey=device_type&infovalue=multi_device`` (or ``single_device``).
+
+This policy is independent of the
+:ref:`enrollment policy of the same name <policy_passkey_enroll_allowed_authenticator_device_types>`. For example,
+you can allow the enrollment of both types but only allow ``single_device`` passkeys for a specific realm.
+
+.. warning:: The device type is reported by the authenticator and is not backed by a verified attestation. The
+    policy keeps out honest synced passkeys, but not an authenticator that reports a wrong device type. See
+    :ref:`passkey_device_type`.
+
+.. versionadded:: 3.14
+
+.. _policy_passkey_enforce_user_handle:
+
+passkey_enforce_user_handle
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+When a passkey is enrolled, privacyIDEA passes the FIDO2 user ID of the user to the authenticator. The same ID is
+used for all passkeys of a user. The authenticator stores it with the credential and returns it as ``userHandle``
+on every authentication. By default, privacyIDEA ignores the ``userHandle`` and identifies the user only by the
+credential ID and the user the passkey token is assigned to. If a passkey token is unassigned and then assigned to
+a different user, whoever holds the passkey can log in as that user.
+
+If this policy is set, the ``userHandle`` must match the FIDO2 user ID recorded for the user the passkey token is
+assigned to, otherwise the authentication fails. This detects a passkey that was reassigned to a different user.
+
+.. note:: A passkey can no longer authenticate if no FIDO2 user ID is recorded for its user.
+
+.. note:: Unlike the device type, the ``userHandle`` is not covered by the signature of the authenticator. A
+    client that deliberately sends a forged value is not detected. The policy protects against a passkey being
+    reassigned by mistake, not against a manipulated client.
+
+.. versionadded:: 3.14
 
 .. _policy_hide_specific_error_message:
 

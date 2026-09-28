@@ -67,7 +67,7 @@ msgstr ""
 #: api/event.py:259
 #, fuzzy, python-brace-format
 msgid "Unknown handler module: {0!s}"
-msgstr "Onbekende taakmodule: {!r}"
+msgstr "Onbekende taakmodule: {0!r}"
 
 #: api/event.py:276 api/event.py:278
 msgid "The 'conditions' parameter must be a dictionary."
@@ -79,13 +79,13 @@ msgstr ""
 
 #: api/periodictask.py:208
 #, python-brace-format
-msgid "Unknown task module: {!r}"
-msgstr "Onbekende taakmodule: {!r}"
+msgid "Unknown task module: {0!r}"
+msgstr "Onbekende taakmodule: {0!r}"
 
 #: api/periodictask.py:216
 #, python-brace-format
-msgid "options: expected dictionary, got {!r}"
-msgstr "options: dict verwacht, {!r} ontvangen"
+msgid "options: expected dictionary, got {0!r}"
+msgstr "options: dict verwacht, {0!r} ontvangen"
 
 #: api/policy.py:479 api/token.py:1484
 msgid "Unable to convert file contents. Binary data is not supported"

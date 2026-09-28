@@ -38,7 +38,7 @@ setup_cli = AppGroup("setup", short_help="privacyIDEA server setup",
 
 @setup_cli.command("encrypt_enckey", short_help="Additionally encrypt the encryption key")
 @click.argument("encfile", type=click.File("rb"))
-@click.option("-o", "--outfile", type=click.File("w"), default=sys.stdout,
+@click.option("-o", "--outfile", type=click.File("w"), default=sys.stdout, show_default=False,
               help="The file to which the encrypted encryption key will be "
                    "written to (default: stdout)")
 @click.password_option(help="The password to encrypt the encryption key. "
@@ -49,7 +49,7 @@ def encrypt_enckey(encfile, outfile, password):
     You will be asked for a password and the given encryption key in the specified
     file will be encrypted with an AES key derived from your password.
 
-    The encryption key in the file is a 96 bit binary key.
+    The encryption key in the file is a 96 byte binary key.
 
     The password based encrypted encryption key is a hex combination of an IV
     and the encrypted data.
@@ -102,7 +102,7 @@ def create_enckey(ctx, enckey_b64):
 
 @setup_cli.command("create_pgp_keys")
 @click.option("-f", "--force", is_flag=True,
-              help="Overwrite existing PGP keys")
+              help="Generate a new PGP key even if there already is one. The existing keys are kept.")
 @click.option("-k", "--keysize", type=int, default=2048, show_default=True,
               help="Size of the generated PGP keys (in bits)")
 @click.pass_context
@@ -125,8 +125,8 @@ def create_pgp_keys(ctx, keysize, force):
                     "new private key, use the parameter --force.", fg="yellow")
         click.echo(f"uids: {keys[0]['uids']}\t fingerprint: {keys[0]['fingerprint']}")
         ctx.exit(1)
-    else:
-        click.secho("Overwriting existing PGP keys!", fg="yellow")
+    elif len(keys):
+        click.secho("Generating a new PGP key, the existing keys are kept.", fg="yellow")
     input_data = gpg.gen_key_input(key_type="RSA", key_length=keysize,
                                    name_real="privacyIDEA Server",
                                    name_comment="Import")
@@ -204,13 +204,13 @@ def create_tables(no_stamp, stamp):
 
 @setup_cli.command("drop_tables")
 @click.option("-d", "--dropit", type=str,
-              help="If You are sure to drop the tables, pass the parameter \"yes\"")
+              help="If you are sure to drop the tables, pass the parameter \"yes\"")
 def drop_tables(dropit):
     """
     This drops all the privacyIDEA database tables.
     Use with caution! All data will be lost!
 
-    For safety reason you need to pass "--dropit==yes",
+    For safety reason you need to pass "--dropit yes",
     otherwise the command will not drop anything.
     """
     if dropit == "yes":
