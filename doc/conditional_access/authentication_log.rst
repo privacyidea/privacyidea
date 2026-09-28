@@ -171,7 +171,7 @@ The state of a token
      the token excluded itself from this request, for example an
      application-specific password whose service does not match.
 
-A policy refusing an otherwise valid authentication
+A policy refusing the request
    ``AUTHORIZATION_DENIED``
      an authorization policy turned the request away outright
      (``authorized=deny``); the three below are authorization decisions too,
