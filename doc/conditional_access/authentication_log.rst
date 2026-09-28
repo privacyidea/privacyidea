@@ -183,6 +183,9 @@ A policy refusing an otherwise valid authentication
      too many successful authentications inside the policy's time limit.
    ``LAST_AUTH_TOO_OLD``
      the token's last successful authentication is too long ago.
+   ``LOGIN_MODE_DISABLED``
+     the login to the WebUI is disabled for the user, see
+     :ref:`policy_login_mode`.
 
 The credentials
    ``WRONG_OTP``

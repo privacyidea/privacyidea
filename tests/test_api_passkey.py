@@ -29,7 +29,7 @@ from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, LOGINMODE
 from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_token
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
@@ -1986,6 +1986,42 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(200, res.status_code, res.json)
             self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
             self.assertEqual(self.realm2, res.json["result"]["value"]["realm"], res.json)
+        remove_token(serial)
+
+    def test_38_auth_login_mode(self):
+        """
+        login_mode=disable also blocks the passkey login. The other login modes only decide how a password is
+        checked, so they do not affect it.
+        """
+        serial = self._enroll_static_passkey()
+        self.set_policy_with_cleanup("login_mode", scope=SCOPE.WEBUI,
+                                     action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = dict(self.authentication_response_uv)
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertFalse(res.json["result"]["status"], res.json)
+            self.assertEqual("The login for this user is disabled.", res.json["result"]["error"]["message"])
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        serials={serial}, transaction_id=transaction_id, endpoint='/auth',
+                                        reason=AuthEventReason.LOGIN_MODE_DISABLED, policies=["login_mode"])
+
+        for login_mode in [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA]:
+            set_policy("login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={login_mode}")
+            get_one_token(serial=serial).write_tokeninfo("sign_count", 0)
+            passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+            data["transaction_id"] = passkey_challenge["transaction_id"]
+            with self.app.test_request_context('/auth', method='POST', data=data,
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
         remove_token(serial)
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):

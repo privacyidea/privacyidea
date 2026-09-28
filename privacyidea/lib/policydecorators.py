@@ -48,6 +48,7 @@ from typing import TYPE_CHECKING
 
 import pyrad
 from dateutil.tz import tzlocal
+from flask_babel import lazy_gettext
 
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache, parse_auth_cache_value
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AUTH_EVENT_TYPE_KEY,
@@ -73,6 +74,9 @@ log = logging.getLogger(__name__)
 # so that :func:`auth_cache` does not store that credential. Set in the reply dictionary of the
 # deciding decorator and removed again by :func:`auth_cache`, which is the outermost one.
 AUTH_CACHE_EXCLUDE = "auth_cache_exclude"
+
+# The error message of a login refused by login_mode=disable
+LOGIN_DISABLED_MESSAGE = lazy_gettext("The login for this user is disabled.")
 
 
 class libpolicy:
@@ -546,7 +550,7 @@ def login_mode(wrapped_function, *args, **kwds):
 
             if list(login_mode_dict)[0] == LOGINMODE.DISABLE:
                 # The login to the webui is disabled
-                raise PolicyError("The login for this user is disabled.")
+                raise PolicyError(str(LOGIN_DISABLED_MESSAGE))
 
     return wrapped_function(*args, **kwds)
 

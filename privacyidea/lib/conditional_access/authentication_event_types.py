@@ -256,6 +256,8 @@ class AuthEventReason(str, Enum):
     AUTH_MAX_SUCCESS = "AUTH_MAX_SUCCESS"
     # The token's last successful authentication is too long ago (last_auth).
     LAST_AUTH_TOO_OLD = "LAST_AUTH_TOO_OLD"
+    # The WebUI login is disabled for the user (login_mode=disable).
+    LOGIN_MODE_DISABLED = "LOGIN_MODE_DISABLED"
 
     # --- the credentials themselves ------------------------------------------------------------------------------
     # The first factor was right (or not required) but the OTP was not. There is deliberately no reason for a wrong

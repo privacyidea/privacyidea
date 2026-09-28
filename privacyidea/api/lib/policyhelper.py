@@ -31,7 +31,7 @@ from privacyidea.lib.error import PolicyError, ResourceNotFoundError, UserError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
-from privacyidea.lib.policy import Match, SCOPE
+from privacyidea.lib.policy import Match, SCOPE, LOGINMODE
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.tokens.push_types import PushAction
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner, get_token_owner_without_lookup
@@ -424,6 +424,20 @@ def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
             return True, []
         return False, last_auth_policy[timeframe]
     return True, []
+
+
+def get_login_disabled_policies(g, user: User) -> list[str]:
+    """
+    Names of the ``login_mode=disable`` policies that disable the WebUI login for *user*.
+
+    The other login modes only decide which credential a password login is checked against, so they do not apply to
+    a login that carries no password, such as a passkey login.
+
+    :return: the deciding policies; empty if the login is not disabled
+    """
+    login_mode = Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGINMODE,
+                            user_object=user).action_values(unique=True)
+    return login_mode.get(LOGINMODE.DISABLE, [])
 
 
 def get_realm_for_authentication(g, username: str, realm: str) -> str:
