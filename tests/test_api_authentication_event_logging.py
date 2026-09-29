@@ -1354,6 +1354,20 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
         self.assertEqual([], list(entry.reasons), entry.reasons)
         self.assertIsNone(entry.other_info, entry.other_info)
 
+    def test_auth_endpoint_login_mode_disable_logs_failed_local_admin(self):
+        # A global login_mode=disable does not apply to local admins, so a wrong password stays their password failure
+        set_policy("authlog_login_disabled", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        try:
+            res = self._auth({"username": self.testadmin, "password": "wrong"}, status=401)
+            self.assertEqual(4031, res.json["result"]["error"]["code"], res.json)
+        finally:
+            delete_policy("authlog_login_disabled")
+        entries = assert_authentication_log([AuthEventType.PASSWORD_FAIL])
+        entry = entries[AuthEventType.PASSWORD_FAIL]
+        assert_authentication_log_entry(entry, user=User(self.testadmin), user_role=AuthLogUserRole.ADMIN_INTERNAL,
+                                        endpoint=self.endpoint_path)
+        self.assertListEqual([], list(entry.reasons))
+
     def test_auth_endpoint_failed_login_prefers_realm_user_over_local_admin(self):
         # Edge case: a username that is BOTH a local admin and a user in the default realm. A wrong password is
         # attributed to the realm user (resolved identity, regular role), not the internal admin

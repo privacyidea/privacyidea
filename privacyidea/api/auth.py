@@ -550,7 +550,11 @@ def get_auth_token():
                     increase_failcounter_on_challenge(request, None)
                     disabled_token_types(request, None)
 
-            login_mode = get_login_mode(g, request, user)
+            if local_admin_exist and not user.exist():
+                # Only a local admin's wrong password is left, and the WebUI login mode does not apply to local admins
+                login_mode = LOGINMODE.USERSTORE
+            else:
+                login_mode = get_login_mode(g, request, user)
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
                 # Never copy internal keys
