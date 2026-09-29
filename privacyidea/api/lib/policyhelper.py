@@ -26,18 +26,12 @@ import logging
 from dataclasses import dataclass
 from datetime import timedelta, datetime, timezone
 
-from flask import Request
-from flask_babel import lazy_gettext
-
-from privacyidea.api.lib.utils import log_authentication
-from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
-                                                                          build_reason_detail)
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
 from privacyidea.lib.error import PolicyError, ResourceNotFoundError, UserError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
-from privacyidea.lib.policy import Match, SCOPE, LOGINMODE
+from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.tokens.push_types import PushAction
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner, get_token_owner_without_lookup
@@ -432,27 +426,22 @@ def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
     return True, []
 
 
-def get_login_mode(g, request: Request, user: User, serial: str | None = None,
-                   transaction_id: str | None = None) -> str:
+def get_login_mode_values(g, user: User) -> dict[str, list[str]]:
     """
-    The WebUI login mode of *user*: whether a password login is checked against the user store or against
-    privacyIDEA. A ``login_mode=disable`` policy refuses the login instead, which is logged.
+    The WebUI login modes of *user*, set by the matching ``login_mode`` policies of the highest priority. Policies of
+    that priority may set different modes. Whether that is a conflict depends on the login: a password login needs
+    exactly one mode, while a passkey login only has to know whether one of them is ``disable``.
 
-    The mode only decides which credential a password is checked against, so a login that carries no password, such
-    as a passkey login, only has to respect the refusal.
+    The names of the returned policies are added to the audit entry.
 
-    :return: ``LOGINMODE.USERSTORE`` or ``LOGINMODE.PRIVACYIDEA``
-    :raises PolicyError: if the login is disabled
+    :return: a dictionary mapping each login mode to the names of the policies that set it, empty if no policy matches
     """
-    login_mode = Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGINMODE,
-                            user_object=user).action_values(unique=True)
-    login_disabled_policies = login_mode.get(LOGINMODE.DISABLE)
-    if login_disabled_policies:
-        log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, serial=serial,
-                           transaction_id=transaction_id, reasons=[AuthEventReason.LOGIN_MODE_DISABLED],
-                           reason_detail=build_reason_detail(policies=login_disabled_policies))
-        raise PolicyError(str(lazy_gettext("The login for this user is disabled.")))
-    return next(iter(login_mode), LOGINMODE.USERSTORE)
+    policies = Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGINMODE,
+                          user_object=user).policies(write_to_audit_log=False)
+    prioritized_policies = [policy for policy in policies if policy["priority"] == policies[0]["priority"]]
+    login_mode_values = g.policy_object.extract_action_values(prioritized_policies, PolicyAction.LOGINMODE)
+    g.audit_object.add_policy({name for names in login_mode_values.values() for name in names})
+    return login_mode_values
 
 
 def get_realm_for_authentication(g, username: str, realm: str) -> str:

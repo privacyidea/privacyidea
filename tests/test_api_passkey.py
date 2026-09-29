@@ -36,7 +36,7 @@ from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
-from privacyidea.models import db
+from privacyidea.models import db, TokenOwner
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.authentication_log_reason import AuthenticationLogReason
 from privacyidea.models.conditional_access_policy import UserLockState
@@ -2013,6 +2013,12 @@ class PasskeyAPITest(PasskeyAPITestBase):
         assert_authentication_log_entry(auth_log_entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
                                         serials={serial}, transaction_id=transaction_id, endpoint='/auth',
                                         reason=AuthEventReason.LOGIN_MODE_DISABLED, policies=["login_mode"])
+        audit_entry = self.find_most_recent_audit_entry(action="POST /auth")
+        self.assertEqual(self.user.login, audit_entry["user"], audit_entry)
+        self.assertEqual(self.user.realm, audit_entry["realm"], audit_entry)
+        self.assertEqual(serial, audit_entry["serial"], audit_entry)
+        self.assertEqual(PasskeyTokenClass.get_class_type(), audit_entry["token_type"], audit_entry)
+        self.assertEqual(AUTH_RESPONSE.REJECT, audit_entry["authentication"], audit_entry)
 
         for login_mode in [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA]:
             set_policy("login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={login_mode}")
@@ -2167,6 +2173,70 @@ class PasskeyAPITest(PasskeyAPITestBase):
         # The enrollment can still be completed at /token/init
         self._token_init_step_two(transaction_id, serial)
         self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        remove_token(serial)
+
+    def test_43_auth_login_mode_of_the_named_user(self):
+        """
+        login_mode is decided for the user the passkey login is for: the named user, or the token owner if no user is
+        named. The named user may be another owner of the token than the first one.
+        """
+        self.setUp_user_realm2()
+        serial = self._enroll_static_passkey()
+        user_realm2 = User(login=self.user.login, realm=self.realm2, resolver=self.resolvername1)
+        TokenOwner(token_id=get_one_token(serial=serial).token.id, user_id=str(user_realm2.uid),
+                   resolver=user_realm2.resolver, realmname=self.realm2).save()
+        self.set_policy_with_cleanup("login_mode", scope=SCOPE.WEBUI, realm=self.realm2,
+                                     action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        data = dict(self.authentication_response_uv)
+        requests = {
+            "named user in realm2": ({"username": user_realm2.login, "realm": self.realm2}, 403),
+            "named user in realm1": ({"username": self.user.login, "realm": self.realm1}, 200),
+            "no named user": ({}, 200),
+        }
+        for name, (user_parameters, status_code) in requests.items():
+            with self.subTest(name):
+                get_one_token(serial=serial).write_tokeninfo("sign_count", 0)
+                passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+                request_data = {**data, **user_parameters, "transaction_id": passkey_challenge["transaction_id"]}
+                with self.app.test_request_context('/auth', method='POST', data=request_data,
+                                                   headers={"Origin": self.expected_origin}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(status_code, res.status_code, res.json)
+        remove_token(serial)
+
+    def test_44_auth_login_mode_policies_of_same_priority(self):
+        """
+        Of the login_mode policies of the highest priority, the passkey login only asks whether one of them disables
+        the login. Policies that disagree on the other modes do not refuse it.
+        """
+        serial = self._enroll_static_passkey()
+        data = dict(self.authentication_response_uv)
+        cases = {
+            "userstore and privacyIDEA, same priority": ({LOGINMODE.USERSTORE: 1, LOGINMODE.PRIVACYIDEA: 1}, True),
+            "disable and userstore, same priority": ({LOGINMODE.DISABLE: 1, LOGINMODE.USERSTORE: 1}, False),
+            "disable with a lower priority than userstore": ({LOGINMODE.DISABLE: 10, LOGINMODE.USERSTORE: 1}, True),
+        }
+        for name, (priorities, login_allowed) in cases.items():
+            with self.subTest(name):
+                for login_mode, priority in priorities.items():
+                    set_policy(f"login_mode_{login_mode}", scope=SCOPE.WEBUI, priority=priority,
+                               action=f"{PolicyAction.LOGINMODE}={login_mode}")
+                try:
+                    get_one_token(serial=serial).write_tokeninfo("sign_count", 0)
+                    passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+                    request_data = {**data, "transaction_id": passkey_challenge["transaction_id"]}
+                    with self.app.test_request_context('/auth', method='POST', data=request_data,
+                                                       headers={"Origin": self.expected_origin}):
+                        res = self.app.full_dispatch_request()
+                    if login_allowed:
+                        self.assertEqual(200, res.status_code, res.json)
+                    else:
+                        self.assertEqual(403, res.status_code, res.json)
+                        self.assertEqual("The login for this user is disabled.",
+                                         res.json["result"]["error"]["message"])
+                finally:
+                    for login_mode in priorities:
+                        delete_policy(f"login_mode_{login_mode}")
         remove_token(serial)
 
 

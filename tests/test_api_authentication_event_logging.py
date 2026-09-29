@@ -1414,6 +1414,50 @@ class AuthEndpointAuthLogTestCase(_AuthLogContractTests, AuthLogTestCase):
                                         endpoint=self.endpoint_path, reason=AuthEventReason.LOGIN_MODE_DISABLED,
                                         policies=["authlog_login_disabled"])
 
+    def test_login_mode_disable_with_other_mode_of_same_priority_logs_not_authorized(self):
+        # A disable policy refuses the login although a policy of the same priority sets another login mode
+        set_policy("authlog_login_disabled", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        set_policy("authlog_login_userstore", scope=SCOPE.WEBUI,
+                   action=f"{PolicyAction.LOGINMODE}={LOGINMODE.USERSTORE}")
+        try:
+            res = self._auth({"username": self.username, "realm": self.realm1, "password": "test"}, status=403)
+            self.assertEqual("The login for this user is disabled.", res.json["result"]["error"]["message"])
+        finally:
+            delete_policy("authlog_login_disabled")
+            delete_policy("authlog_login_userstore")
+        entries = assert_authentication_log([AuthEventType.NOT_AUTHORIZED])
+        assert_authentication_log_entry(entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        endpoint=self.endpoint_path, reason=AuthEventReason.LOGIN_MODE_DISABLED,
+                                        policies=["authlog_login_disabled"])
+
+    def test_login_mode_disable_logs_unknown_user(self):
+        # An unknown user gets the same refusal as a known one, but is logged as USER_UNKNOWN
+        set_policy("authlog_login_disabled", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        try:
+            res = self._auth({"username": "doesnotexist", "realm": self.realm1, "password": "test"}, status=403)
+            self.assertEqual("The login for this user is disabled.", res.json["result"]["error"]["message"])
+        finally:
+            delete_policy("authlog_login_disabled")
+        entries = assert_authentication_log([AuthEventType.USER_UNKNOWN])
+        assert_authentication_log_entry(entries[AuthEventType.USER_UNKNOWN], user=User("doesnotexist", self.realm1),
+                                        endpoint=self.endpoint_path, reason=AuthEventReason.LOGIN_MODE_DISABLED,
+                                        policies=["authlog_login_disabled"])
+
+    def test_login_mode_conflict_refuses_password_login(self):
+        # A password login needs exactly one login mode, so policies of the same priority that disagree refuse it
+        set_policy("authlog_login_privacyidea", scope=SCOPE.WEBUI,
+                   action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
+        set_policy("authlog_login_userstore", scope=SCOPE.WEBUI,
+                   action=f"{PolicyAction.LOGINMODE}={LOGINMODE.USERSTORE}")
+        try:
+            res = self._auth({"username": self.username, "realm": self.realm1, "password": "test"}, status=403)
+        finally:
+            delete_policy("authlog_login_privacyidea")
+            delete_policy("authlog_login_userstore")
+        self.assertEqual("There are policies with conflicting actions: "
+                         "['authlog_login_privacyidea', 'authlog_login_userstore']",
+                         res.json["result"]["error"]["message"])
+
     def test_revoked_token_logs_no_usable_token(self):
         # All of the user's tokens are revoked, so check_user_pass raises TOKEN_LOCKED before it can classify the
         # request. /auth keeps its generic "Wrong credentials" (4031) response, but the log still records

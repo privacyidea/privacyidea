@@ -174,7 +174,7 @@ The state of a token
 A policy refusing the request
    ``AUTHORIZATION_DENIED``
      an authorization policy turned the request away outright
-     (``authorized=deny``); the three below are authorization decisions too,
+     (``authorized=deny``); the next three are authorization decisions too,
      each naming the specific limit that was hit.
    ``AUTH_MAX_FAIL``
      too many failed attempts inside the policy's time limit, see

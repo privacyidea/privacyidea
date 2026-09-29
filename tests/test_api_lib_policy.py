@@ -11,13 +11,13 @@ from datetime import datetime, timedelta
 from unittest import mock
 
 from dateutil.tz import tzlocal
-from flask import Request, g, current_app, jsonify, request
+from flask import Request, g, current_app, jsonify
 from passlib.hash import pbkdf2_sha512
 from testfixtures import log_capture, LogCapture
 from werkzeug.datastructures.headers import Headers
 from werkzeug.test import EnvironBuilder
 
-from privacyidea.api.lib.policyhelper import get_realm_for_authentication, get_login_mode
+from privacyidea.api.lib.policyhelper import get_realm_for_authentication, get_login_mode_values
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             check_tokeninfo,
                                             no_detail_on_success,
@@ -32,7 +32,6 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             multichallenge_enroll_via_validate,
                                             postpolicy, postrequest)
 from privacyidea.api.lib.prepolicy import (init_token_defaults, verify_enrollment)
-from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
                                        get_all_containers, delete_container_template)
@@ -2275,21 +2274,26 @@ class PolicyHelperTestCase(MyApiTestCase):
 
         delete_policy("auth_realm")
 
-    def test_02_get_login_mode(self):
+    def test_02_get_login_mode_values(self):
         self.setUp_user_realms()
         user = User("cornelius", self.realm1)
         with self.app.test_request_context('/auth', method='POST'):
-            self.assertEqual(LOGINMODE.USERSTORE, get_login_mode(g, request, user))
+            self.assertDictEqual({}, get_login_mode_values(g, user))
 
-            set_policy("login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
-            self.assertEqual(LOGINMODE.PRIVACYIDEA, get_login_mode(g, request, user))
+            try:
+                set_policy("login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
+                self.assertDictEqual({LOGINMODE.PRIVACYIDEA: ["login_mode"]}, get_login_mode_values(g, user))
 
-            set_policy("login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
-            with mock.patch("privacyidea.api.lib.policyhelper.log_authentication") as log_authentication:
-                with self.assertRaises(PolicyError) as error:
-                    get_login_mode(g, request, user)
-            self.assertEqual("The login for this user is disabled.", error.exception.message)
-            log_authentication.assert_called_once()
-            self.assertEqual(AuthEventType.NOT_AUTHORIZED, log_authentication.call_args.args[0])
-            self.assertListEqual([AuthEventReason.LOGIN_MODE_DISABLED], log_authentication.call_args.kwargs["reasons"])
-        delete_policy("login_mode")
+                # Policies of the same priority that set different modes are all returned
+                set_policy("login_mode_disable", scope=SCOPE.WEBUI,
+                           action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+                self.assertDictEqual({LOGINMODE.PRIVACYIDEA: ["login_mode"], LOGINMODE.DISABLE: ["login_mode_disable"]},
+                                     get_login_mode_values(g, user))
+
+                # A policy of a lower priority is not returned
+                set_policy("login_mode_disable", scope=SCOPE.WEBUI,
+                           action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}", priority=2)
+                self.assertDictEqual({LOGINMODE.PRIVACYIDEA: ["login_mode"]}, get_login_mode_values(g, user))
+            finally:
+                delete_policy("login_mode")
+                delete_policy("login_mode_disable")
