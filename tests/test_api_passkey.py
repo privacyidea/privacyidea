@@ -2149,6 +2149,26 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(spass_token.get_serial())
 
+    def test_42_token_init_enrollment_is_not_completed_by_validate_check(self):
+        """
+        A passkey enrollment started at /token/init is only completed at /token/init. The registration sent to
+        /validate/check with the serial and the transaction id of that enrollment is rejected and does not log the user
+        in.
+        """
+        detail = self._token_init_step_one()["detail"]
+        serial = detail["serial"]
+        transaction_id = detail["transaction_id"]
+        data = {"attestationObject": self.registration_attestation, "clientDataJSON": self.registration_client_data,
+                "credential_id": self.credential_id, "rawId": self.credential_id,
+                "authenticatorAttachment": self.authenticator_attachment, "transaction_id": transaction_id,
+                "serial": serial}
+        self._assert_registration_data_rejected(data, serial)
+        self._assert_persisted_state(serial, RolloutState.CLIENTWAIT, False)
+        # The enrollment can still be completed at /token/init
+        self._token_init_step_two(transaction_id, serial)
+        self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        remove_token(serial)
+
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """

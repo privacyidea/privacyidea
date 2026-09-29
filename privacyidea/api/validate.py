@@ -737,10 +737,12 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
 
     if attestation_object:
-        # The registration has to answer the enrollment challenge of a token that waits for it
+        # The registration has to answer the enroll_via_multichallenge challenge of a token that waits for it. An
+        # enrollment started at /token/init is completed there.
         enrollment_challenges = [challenge for challenge in
                                  get_challenges(serial=token.get_serial(), transaction_id=transaction_id)
-                                 if challenge.is_valid()]
+                                 if challenge.is_valid()
+                                 and challenge.get_data().get(PolicyAction.ENROLL_VIA_MULTICHALLENGE)]
         if (token.get_type() != PasskeyTokenClass.get_class_type()
                 or token.rollout_state != RolloutState.CLIENTWAIT or not enrollment_challenges):
             log.warning(f"Registration data for token {token.get_serial()} does not answer a pending enrollment.")
