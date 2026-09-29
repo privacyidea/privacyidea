@@ -3,15 +3,17 @@
 
 .container-templates-layout {
   @include styles.main-component-style;
-  @include table.paginator-range-floor;
+  // Sized from the col-width-* tiers the columns below use (select checkbox + name m +
+  // container_type s + default s), plus a flat 600px for "tokens" (see columns in the .ts), sized
+  // to fit its content instead of a tier, so the panel is not narrower than the real table. Also
+  // narrower than the default paginator-range floor, or filter-actions-group (table-global.scss)
+  // would stretch the filter field into dead white space above a narrower table.
+  @include table.paginator-range-floor(calc(#{table.table-width(checkbox, m, s, s)} + 600px));
   @include table.base-table-structure(
     ".container-templates-table",
     ".container-templates-table-filter",
     ".container-templates-scroll-container"
   );
-  // Sized from the col-width-* tiers the columns below use (select checkbox + name m +
-  // container_type s + default s), plus a flat 600px for "tokens" (see columns in the .ts), sized
-  // to fit its content instead of a tier, so the panel is not narrower than the real table.
   @include table.page-table-state-size(calc(#{table.table-width(checkbox, m, s, s)} + 600px));
 
   & {

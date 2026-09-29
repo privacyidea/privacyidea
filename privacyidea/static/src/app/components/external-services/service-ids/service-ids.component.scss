@@ -4,10 +4,12 @@
 
 .service-ids-container {
   @include styles.main-component-style;
-  @include table.paginator-range-floor;
-  @include table.base-table-structure(".service-ids-table", ".table-filter", ".table-scroll-container");
   // Sized from the same col-width-* tiers the columns below use (select checkbox + id s + servicename m
-  // + description xl).
+  // + description xl) - narrower than the default floor, or filter-actions-group
+  // (table-global.scss) would stretch the filter field into dead white space above a much
+  // narrower table.
+  @include table.paginator-range-floor(table.table-width(checkbox, s, m, xl));
+  @include table.base-table-structure(".service-ids-table", ".table-filter", ".table-scroll-container");
   @include table.page-table-state-size(table.table-width(checkbox, s, m, xl));
 
   // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead

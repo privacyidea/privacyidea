@@ -4,10 +4,12 @@
 
 .smtp-servers-container {
   @include styles.main-component-style;
-  @include table.paginator-range-floor;
-  @include table.base-table-structure(".smtp-servers-table", ".smtp-table-filter", ".table-scroll-container");
   // Sized from the same col-width-* tiers the columns below use (select checkbox + identifier m +
-  // server l + sender l + tls s + description xl).
+  // server l + sender l + tls s + description xl) - narrower than the default floor, or
+  // filter-actions-group (table-global.scss) would stretch the filter field into dead white space
+  // above a much narrower table.
+  @include table.paginator-range-floor(table.table-width(checkbox, m, l, l, s, xl));
+  @include table.base-table-structure(".smtp-servers-table", ".smtp-table-filter", ".table-scroll-container");
   @include table.page-table-state-size(table.table-width(checkbox, m, l, l, s, xl));
 
   // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead

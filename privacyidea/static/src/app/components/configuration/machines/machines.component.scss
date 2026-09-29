@@ -4,7 +4,10 @@
 
 .machines-container {
   @include styles.main-component-style;
-  @include table.paginator-range-floor;
+  // Narrower than the default floor: with only 4 narrow columns (l + m + s + m), the default
+  // 1520px left filter-actions-group (table-global.scss) with far more room than its content
+  // needed, stretching the filter field into dead white space above a much narrower table.
+  @include table.paginator-range-floor(table.table-width(l, m, s, m));
   display: flex;
   flex-direction: column;
   overflow: hidden;

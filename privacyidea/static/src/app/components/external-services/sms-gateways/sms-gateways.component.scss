@@ -4,10 +4,12 @@
 
 .sms-gateways-container {
   @include styles.main-component-style;
-  @include table.paginator-range-floor;
-  @include table.base-table-structure(".sms-gateways-table", ".table-filter", ".table-scroll-container");
   // Sized from the same col-width-* tiers the columns below use (select checkbox + name m +
-  // description xl + providermodule s).
+  // description xl + providermodule s) - narrower than the default floor, or filter-actions-group
+  // (table-global.scss) would stretch the filter field into dead white space above a much
+  // narrower table.
+  @include table.paginator-range-floor(table.table-width(checkbox, m, xl, l));
+  @include table.base-table-structure(".sms-gateways-table", ".table-filter", ".table-scroll-container");
   @include table.page-table-state-size(table.table-width(checkbox, m, xl, l));
 
   // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead
