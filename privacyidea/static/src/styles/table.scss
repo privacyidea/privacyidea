@@ -376,3 +376,41 @@ $checkbox-column-width: 72px;
     margin-top: $realm-list-margin-top;
   }
 }
+
+// Collapses a table's own action-button row into a single "more actions" menu trigger once the
+// table has scrolled, mirroring the token table's sticky-header treatment (see
+// token-table.component.scss): the full row only fits above the table, so once scrolled it would
+// sit under the sticky header and cover rows, and is swapped for a compact trigger instead of also
+// being made sticky. $row-class is the wrapping row div, $inner-class its content wrapper - a grid
+// track (1fr -> 0fr) collapses smoothly regardless of the row's actual content height, unlike
+// max-height, which needs that height guessed up front. $trigger-class is the icon button that
+// opens the equivalent actions as a mat-menu, placed next to the table's filter.
+@mixin actions-row-collapse($row-class, $inner-class, $trigger-class: ".table-actions-trigger") {
+  #{$trigger-class} {
+    display: none;
+  }
+
+  #{$row-class} {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition:
+      grid-template-rows 200ms ease,
+      margin-bottom 200ms ease;
+
+    #{$inner-class} {
+      min-height: 0;
+      overflow: hidden;
+    }
+  }
+
+  &:has(.table-scroll-region.scrolled-from-top) {
+    #{$row-class} {
+      grid-template-rows: 0fr;
+      margin-bottom: 0;
+    }
+
+    #{$trigger-class} {
+      display: inline-flex;
+    }
+  }
+}

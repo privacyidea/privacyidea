@@ -21,6 +21,7 @@ import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, 
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -53,6 +54,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatPaginator,
     MatSortModule,
     MatIconModule,
+    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
     MatTooltipModule,

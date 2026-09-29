@@ -42,6 +42,16 @@
               placeholder="Filter by name or type" />
           </app-clearable-input>
         </mat-form-field>
+        <button
+          [matMenuTriggerFor]="tableActionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <mat-icon>menu</mat-icon>
+        </button>
       </div>
       <mat-paginator
         appPaginatorCompactRange
@@ -50,25 +60,29 @@
         [pageSize]="pageSizeOptions()[1]"
         showFirstLastButtons />
     </div>
-    <div class="actions-container">
-      <button
-        (click)="onCreateNewServer()"
-        class="action-button-primary button-width-l"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="padding-right-3">email</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@common.createSmtpServer">Create SMTP Server</span>
-      </button>
-      <button
-        (click)="deleteSelected()"
-        [disabled]="!selector.hasSelection()"
-        class="action-button-delete-secondary button-width-l"
-        mat-stroked-button>
-        <mat-icon>delete_sweep</mat-icon>
-        <span i18n="@@common.delete">Delete</span>
-      </button>
+    <div class="actions-row margin-bottom-16">
+      <div class="actions-row-inner">
+        <div class="actions-container">
+          <button
+            (click)="onCreateNewServer()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="padding-right-3">email</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n="@@common.createSmtpServer">Create SMTP Server</span>
+          </button>
+          <button
+            (click)="deleteSelected()"
+            [disabled]="!selector.hasSelection()"
+            class="action-button-delete-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>delete_sweep</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        </div>
+      </div>
     </div>
     <div
       appScrollEdges
@@ -235,3 +249,19 @@
     </app-table-state>
   }
 </div>
+
+<mat-menu #tableActionsMenu="matMenu">
+  <button
+    (click)="onCreateNewServer()"
+    mat-menu-item>
+    <mat-icon>email</mat-icon>
+    <span i18n="@@common.createSmtpServer">Create SMTP Server</span>
+  </button>
+  <button
+    (click)="deleteSelected()"
+    [disabled]="!selector.hasSelection()"
+    mat-menu-item>
+    <mat-icon>delete_sweep</mat-icon>
+    <span i18n="@@common.delete">Delete</span>
+  </button>
+</mat-menu>

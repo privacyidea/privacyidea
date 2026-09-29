@@ -21,6 +21,7 @@ import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, 
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
@@ -53,6 +54,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatPaginator,
     MatSortModule,
     MatIconModule,
+    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
     MatTooltipModule,

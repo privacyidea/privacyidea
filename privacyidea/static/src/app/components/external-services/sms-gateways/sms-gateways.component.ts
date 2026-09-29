@@ -29,6 +29,7 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 import { MatIconModule } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -55,6 +56,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatPaginator,
     MatSortModule,
     MatIconModule,
+    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
     MatTooltipModule,

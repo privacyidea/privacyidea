@@ -18,6 +18,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .actions-container {
@@ -26,7 +28,6 @@
   justify-content: flex-start;
   gap: 16px;
   width: 100%;
-  margin-bottom: 16px;
 }
 
 .clickable {

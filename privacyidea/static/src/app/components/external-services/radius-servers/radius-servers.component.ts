@@ -34,6 +34,7 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 import { MatIconModule } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -59,6 +60,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatPaginator,
     MatSortModule,
     MatIconModule,
+    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
     MatTooltipModule,
