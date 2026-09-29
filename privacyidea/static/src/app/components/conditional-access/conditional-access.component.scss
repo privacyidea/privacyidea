@@ -3,6 +3,7 @@
 
 .conditional-access-container {
   @include styles.main-component-style;
+  @include table.paginator-range-floor;
   display: flex;
   flex-direction: column;
   overflow: hidden;

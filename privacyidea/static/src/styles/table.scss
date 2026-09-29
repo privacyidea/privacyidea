@@ -377,6 +377,22 @@ $checkbox-column-width: 72px;
   }
 }
 
+// A routed page's own table rows (.filter-paginator-container) need genuine room to show their
+// full "of Z" total rather than getting squeezed into it - and squeezing them below this is never
+// actually necessary on any desktop-sized viewport this app targets: even the narrowest realistic
+// one (a laptop screen, or a full HD monitor at up to ~150% browser zoom) still leaves this much
+// width to spare. Past that - a deliberately much narrower window or a heavier zoom - the page is
+// meant to horizontally scroll rather than let this floor keep shrinking, so
+// PaginatorCompactRangeDirective's own resize watch still gets a real "not enough room" signal
+// instead of one manufactured by this wrapper collapsing out from under it. Included by a table
+// page's own root selector rather than applied globally to every routed page, so a page with no
+// paginator (or no compact-range paginator) is never forced into a horizontal scrollbar it has no
+// content to fill; the same include also reaches the self-service variant of a table page for free,
+// since those share the admin variant's component stylesheet.
+@mixin paginator-range-floor {
+  min-width: 1520px;
+}
+
 // Collapses a table's own action-button row into a single "more actions" menu trigger once the
 // table has scrolled, mirroring the token table's sticky-header treatment (see
 // token-table.component.scss): the full row only fits above the table, so once scrolled it would

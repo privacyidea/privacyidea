@@ -3,6 +3,7 @@
 
 .token-table-layout {
   @include styles.main-component-style;
+  @include table.paginator-range-floor;
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;

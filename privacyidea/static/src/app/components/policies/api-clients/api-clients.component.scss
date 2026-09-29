@@ -3,6 +3,7 @@
 
 .api-clients-container {
   @include styles.main-component-style;
+  @include table.paginator-range-floor;
   @include table.base-table-structure(".api-clients-table", ".table-filter", ".table-scroll-container");
   // Sized from the same col-width-* tiers the columns below use (select checkbox + display_name l +
   // client_type m + status s + key_id s + created_at m + last_used_at m + actions s), so the

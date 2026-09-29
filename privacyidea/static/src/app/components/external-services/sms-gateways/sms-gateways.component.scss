@@ -4,6 +4,7 @@
 
 .sms-gateways-container {
   @include styles.main-component-style;
+  @include table.paginator-range-floor;
   @include table.base-table-structure(".sms-gateways-table", ".table-filter", ".table-scroll-container");
   // Sized from the same col-width-* tiers the columns below use (select checkbox + name m +
   // description xl + providermodule s).

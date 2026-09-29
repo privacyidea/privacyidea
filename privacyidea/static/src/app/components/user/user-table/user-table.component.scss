@@ -4,6 +4,7 @@
 .user-layout {
   display: flex;
   justify-content: center;
+  @include table.paginator-range-floor;
 }
 
 .user-table-container {

@@ -425,15 +425,6 @@ $corner-radii: (
 .admin-content > *:not(router-outlet) {
   height: 100%;
   min-height: 0;
-  // A routed page's own table rows (.filter-paginator-container) need genuine room to show their
-  // full "of Z" total rather than getting squeezed into it - and squeezing them below this is never
-  // actually necessary on any desktop-sized viewport this app targets: even the narrowest realistic
-  // one (a laptop screen, or a full HD monitor at up to ~150% browser zoom) still leaves this much
-  // width to spare. Past that - a deliberately much narrower window or a heavier zoom - the page is
-  // meant to horizontally scroll rather than let this floor keep shrinking, so
-  // PaginatorCompactRangeDirective's own resize watch still gets a real "not enough room" signal
-  // instead of one manufactured by this wrapper collapsing out from under it.
-  min-width: 1520px;
 }
 
 .selfservice-content-container > *:not(router-outlet) {
