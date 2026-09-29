@@ -223,6 +223,15 @@ td.cell-info {
     --mat-slider-value-indicator-transform-origin: center bottom;
   }
 
+  // The copy in the "More Filter" menu: a panel of its own under the menu items, rather than squeezed into the row.
+  &.menu-time-range {
+    width: auto;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 8px 16px 12px;
+  }
+
   .range-summary {
     display: flex;
     align-items: center;

@@ -44,15 +44,16 @@
           colons or spaces.
         </mat-hint>
       </mat-form-field>
+      <!-- Everything in the action row below is a filter, so its scroll-collapsed trigger is a "More Filter" one. -->
       <button
         [matMenuTriggerFor]="tableActionsMenu"
-        aria-label="Actions"
+        aria-label="More Filter"
         class="table-actions-trigger margin-left-8"
-        i18n-aria-label="@@common.actions"
-        i18n-matTooltip="@@common.actions"
+        i18n-aria-label="@@common.moreFilter"
+        i18n-matTooltip="@@common.moreFilter"
         mat-icon-button
-        matTooltip="Actions">
-        <mat-icon>menu</mat-icon>
+        matTooltip="More Filter">
+        <mat-icon>filter_list</mat-icon>
       </button>
     </div>
     <mat-paginator
@@ -111,46 +112,10 @@
             #rangePicker
             panelClass="auth-log-datepicker" />
         </div>
-        <!-- Custom range slider, shown inline (not behind a trigger) so the range is always adjustable. -->
+        <!-- Custom range slider, shown inline (not behind a trigger) so the range is adjustable without opening
+          anything. -->
         <div class="time-filter-custom-range margin-left-16">
-          <div class="slider-with-histogram">
-            <!-- Activity behind the slider; decorative, hidden from assistive tech. -->
-            <div
-              class="activity-histogram"
-              [attr.aria-hidden]="true">
-              @for (bar of activityHistogram(); track $index) {
-              <div
-                class="activity-bar"
-                [style.height.%]="bar * 100"></div>
-              }
-            </div>
-            <mat-slider
-              class="time-range-slider"
-              [min]="0"
-              [max]="rangeSliderSteps"
-              step="1"
-              discrete
-              [displayWith]="formatSliderThumb">
-              <input
-                matSliderStartThumb
-                aria-label="Range start"
-                i18n-aria-label="@@authLog.rangeStart"
-                [value]="rangeStart()"
-                (valueChange)="onRangeStartInput($event)"
-                (change)="commitTimeRange()" />
-              <input
-                matSliderEndThumb
-                aria-label="Range end"
-                i18n-aria-label="@@authLog.rangeEnd"
-                [value]="rangeEnd()"
-                (valueChange)="onRangeEndInput($event)"
-                (change)="commitTimeRange()" />
-            </mat-slider>
-          </div>
-          <div class="range-summary">
-            <span>{{ rangeSummaryFrom() }}</span>
-            <span>{{ rangeSummaryTo() }}</span>
-          </div>
+          <ng-container *ngTemplateOutlet="timeRangeSlider; context: { discrete: true }" />
         </div>
       </div>
     </div>
@@ -489,9 +454,11 @@
   </div>
 </div>
 
-<!-- The action row's filters as menu items, for the compact trigger shown next to the filter once the
-     table is scrolled and that row is hidden. The time range slider has no menu form, so it is only in the row. -->
-<mat-menu #tableActionsMenu="matMenu">
+<!-- The action row's filters as a menu, for the compact "More Filter" trigger shown next to the filter once the
+     table is scrolled and that row is hidden. -->
+<mat-menu
+  #tableActionsMenu="matMenu"
+  class="auth-log-filter-menu">
   @if (!authService.isSelfServiceUser()) {
     <button
       [matMenuTriggerFor]="userRoleMenu.matMenu"
@@ -506,6 +473,22 @@
     <mat-icon>date_range</mat-icon>
     <span>{{ dateRangeLabel() }}</span>
   </button>
+  <mat-divider />
+  <!-- Not a menu item: a presentational wrapper that keeps the slider's clicks and keys from reaching the menu,
+    which would close or move focus on them - the slider's own thumbs are the focusable controls. Without the
+    thumb's value bubble, which the menu panel would clip - the summary under the slider shows the exact range. -->
+  <div
+    (click)="$event.stopPropagation()"
+    (keydown)="keepSliderKeysInMenu($event)"
+    class="time-filter-custom-range menu-time-range"
+    role="presentation">
+    <span
+      class="custom-range-label"
+      i18n="@@authLog.customRange"
+      >Custom range</span
+    >
+    <ng-container *ngTemplateOutlet="timeRangeSlider; context: { discrete: false }" />
+  </div>
 </mat-menu>
 
 <!-- Declared out here rather than next to its button so the menu above can open it as a submenu too. -->
@@ -514,3 +497,48 @@
   [options]="userRoleOptions"
   [selected]="selectedFilterValues('user_role')"
   (selectionChange)="setFilterValues('user_role', $event)" />
+
+<!-- The custom range slider over its activity histogram, shared by the action row and the scroll-collapsed
+     "More Filter" menu. -->
+<ng-template
+  #timeRangeSlider
+  let-discrete="discrete">
+  <div class="slider-with-histogram">
+    <!-- Activity behind the slider; decorative, hidden from assistive tech. -->
+    <div
+      class="activity-histogram"
+      [attr.aria-hidden]="true">
+      @for (bar of activityHistogram(); track $index) {
+      <div
+        class="activity-bar"
+        [style.height.%]="bar * 100"></div>
+      }
+    </div>
+    <mat-slider
+      class="time-range-slider"
+      [min]="0"
+      [max]="rangeSliderSteps"
+      step="1"
+      [discrete]="discrete"
+      [displayWith]="formatSliderThumb">
+      <input
+        matSliderStartThumb
+        aria-label="Range start"
+        i18n-aria-label="@@authLog.rangeStart"
+        [value]="rangeStart()"
+        (valueChange)="onRangeStartInput($event)"
+        (change)="commitTimeRange()" />
+      <input
+        matSliderEndThumb
+        aria-label="Range end"
+        i18n-aria-label="@@authLog.rangeEnd"
+        [value]="rangeEnd()"
+        (valueChange)="onRangeEndInput($event)"
+        (change)="commitTimeRange()" />
+    </mat-slider>
+  </div>
+  <div class="range-summary">
+    <span>{{ rangeSummaryFrom() }}</span>
+    <span>{{ rangeSummaryTo() }}</span>
+  </div>
+</ng-template>

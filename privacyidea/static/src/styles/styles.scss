@@ -1076,6 +1076,18 @@ $corner-radii: (
   max-width: min(90vw, 480px);
 }
 
+// The authentication log's scroll-collapsed "More Filter" menu holds the custom range slider, which needs more
+// track than the default 280px panel leaves it.
+.auth-log-filter-menu.mat-mdc-menu-panel {
+  width: min(90vw, 400px);
+  max-width: min(90vw, 400px);
+
+  // Keeps the slider's end thumb and the range summary clear of the panel's right edge.
+  .mat-mdc-menu-content {
+    margin-right: 8px;
+  }
+}
+
 mat-chip.mat-mdc-chip {
   &.clickable-chip {
     .mdc-evolution-chip__action--presentational {

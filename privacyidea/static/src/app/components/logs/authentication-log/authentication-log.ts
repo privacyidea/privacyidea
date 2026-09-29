@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { DatePipe, formatDate, NgClass } from "@angular/common";
+import { DatePipe, formatDate, NgClass, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   computed,
@@ -293,6 +293,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatTable,
     MatCellDef,
     NgClass,
+    NgTemplateOutlet,
     MatHeaderRowDef,
     MatHeaderRow,
     MatRowDef,
@@ -747,6 +748,14 @@ export class AuthenticationLog {
   // Apply the slider's current [start, end] thumbs as the time filter, on thumb release / keyboard commit.
   commitTimeRange(): void {
     this.applyTimeRange(this.sliderPosToIso(this.rangeStart(), false), this.sliderPosToIso(this.rangeEnd(), true));
+  }
+
+  // The slider inside the "More Filter" menu: its arrow/Home/End/Page keys move a thumb rather than the menu's
+  // focus. Escape and Tab still reach the menu, so it closes as usual.
+  keepSliderKeysInMenu(event: KeyboardEvent): void {
+    if (event.key !== "Escape" && event.key !== "Tab") {
+      event.stopPropagation();
+    }
   }
 
   // Thumb value indicator: the format tracks the window's zoom - time-of-day for short windows, day for medium, month
