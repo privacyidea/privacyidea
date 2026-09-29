@@ -25,6 +25,7 @@ from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.config import TestingConfig
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
@@ -2238,6 +2239,57 @@ class PasskeyAPITest(PasskeyAPITestBase):
                     for login_mode in priorities:
                         delete_policy(f"login_mode_{login_mode}")
         remove_token(serial)
+
+    def _list_challenges(self, path: str, **params: str) -> list[dict]:
+        with self.app.test_request_context(path, method='GET', query_string=params,
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json["result"]["value"]["challenges"]
+
+    def _assert_listed_nonces(self, serial: str, censored: bool, user: User | None = None) -> None:
+        listings = {"by serial": self._list_challenges(f"/token/challenges/{serial}")}
+        if user:
+            listings["by user"] = self._list_challenges("/token/challenges/", user=user.login, realm=user.realm)
+        for listing, challenges in listings.items():
+            with self.subTest(listing=listing, serial=serial):
+                token_challenges = [challenge for challenge in challenges if challenge["serial"] == serial]
+                self.assertEqual(1, len(token_challenges), challenges)
+                if censored:
+                    self.assertEqual(CENSORED, token_challenges[0]["challenge"], token_challenges)
+                else:
+                    self.assertNotIn(token_challenges[0]["challenge"], (CENSORED, None, ""), token_challenges)
+
+    def test_45_challenge_listing_censors_registration_nonce(self):
+        """
+        The challenge listing censors the nonce of a passkey that waits for its registration, whether the enrollment
+        was started with enroll_via_multichallenge or at /token/init. The nonce of an authentication challenge is
+        listed.
+        """
+        spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
+        set_policy("enroll_passkey", scope=SCOPE.AUTH, action="enroll_via_multichallenge=PASSKEY")
+        try:
+            with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+                get_nonce.return_value = self.registration_challenge
+                with self.app.test_request_context('/validate/check', method='POST',
+                                                   data={"user": self.user.login, "pass": "1"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+                    enroll_via_multichallenge_serial = res.json["detail"]["serial"]
+        finally:
+            delete_policy("enroll_passkey")
+        self._assert_listed_nonces(enroll_via_multichallenge_serial, censored=True, user=self.user)
+        remove_token(enroll_via_multichallenge_serial)
+        remove_token(spass_token.get_serial())
+
+        token_init_serial = self._token_init_step_one()["detail"]["serial"]
+        self._assert_listed_nonces(token_init_serial, censored=True, user=self.user)
+        remove_token(token_init_serial)
+
+        enrolled_serial = self._enroll_static_passkey()
+        self._trigger_passkey_challenge_with_pin(self.authentication_challenge_uv)
+        self._assert_listed_nonces(enrolled_serial, censored=False, user=self.user)
+        remove_token(enrolled_serial)
 
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
