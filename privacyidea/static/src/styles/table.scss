@@ -381,22 +381,27 @@ $checkbox-column-width: 72px;
 // full "of Z" total rather than getting squeezed into it - and squeezing them below this is never
 // actually necessary on any desktop-sized viewport this app targets: even the narrowest realistic
 // one (a laptop screen, or a full HD monitor at up to ~150% browser zoom) still leaves this much
-// width to spare. Past that - a deliberately much narrower window or a heavier zoom - the page is
-// meant to horizontally scroll rather than let this floor keep shrinking, so
-// PaginatorCompactRangeDirective's own resize watch still gets a real "not enough room" signal
-// instead of one manufactured by this wrapper collapsing out from under it. Included by a table
-// page's own root selector rather than applied globally to every routed page, so a page with no
-// paginator (or no compact-range paginator) is never forced into a horizontal scrollbar it has no
-// content to fill; the same include also reaches the self-service variant of a table page for free,
-// since those share the admin variant's component stylesheet.
+// width to spare. Included by a table page's own root selector rather than applied globally to
+// every routed page, so a page with no paginator (or no compact-range paginator) never carries it;
+// the same include also reaches the self-service variant of a table page for free, since those
+// share the admin variant's component stylesheet.
 //
 // $min-width defaults to a wide table's usual footprint, but a table with only a handful of narrow
 // columns (e.g. machines) should pass its own table-width() sum instead: filter-actions-group
 // (table-global.scss) grows to fill whatever room this floor leaves it, up to its own 932px+96px
 // cap, so a floor wider than the table itself just stretches the filter field into dead white space
 // rather than the table ever actually needing that width.
+//
+// Capped at 100cqw (the container's own available width - see main-component-style, which caps
+// this same element's max-width against it): past that point, the floor would win the maximum's
+// tug of war and force the page wider than the viewport, which sent the whole page off-screen to
+// the right at a heavy browser zoom with no visible way back. Capping it here instead hands the
+// squeeze to filter-actions-group's own flex-shrink and the filter field's own min-width
+// (table-global.scss / base-table-structure above) - so the filter field visibly shrinks first, and
+// only past its own floor does .table-scroll-region's independent horizontal scroll (not the whole
+// page's) take over.
 @mixin paginator-range-floor($min-width: 1520px) {
-  min-width: $min-width;
+  min-width: min($min-width, 100cqw);
 }
 
 // Collapses a table's own action-button row into a single "more actions" menu trigger once the
