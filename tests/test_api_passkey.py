@@ -31,6 +31,8 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, LOGINMODE
 from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_token
+from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
@@ -2023,6 +2025,130 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertEqual(200, res.status_code, res.json)
                 self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
         remove_token(serial)
+
+    def _assert_registration_data_rejected(self, data: dict, serial: str):
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+            self.assertNotIn("username", res.json["detail"], res.json)
+        auth_log_entries = assert_authentication_log([AuthEventType.MFA_FAIL],
+                                                     transaction_id=data["transaction_id"])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user, serials={serial},
+                                        transaction_id=data["transaction_id"], endpoint='/validate/check')
+
+    def _assert_persisted_state(self, serial: str, rollout_state: str, active: bool):
+        # Read the state from the database, not from the objects the request changed
+        db.session.rollback()
+        db.session.expire_all()
+        token = get_one_token(serial=serial)
+        self.assertEqual(rollout_state, token.token.rollout_state)
+        self.assertEqual(active, token.is_active())
+
+    def test_38_registration_for_enrolled_passkey(self):
+        """
+        An enrolled passkey does not take another registration at /validate/check and stays as it is.
+        """
+        serial = self._enroll_static_passkey()
+        registration = {"attestationObject": self.registration_attestation,
+                        "clientDataJSON": self.registration_client_data, "credential_id": self.credential_id,
+                        "rawId": self.credential_id, "authenticatorAttachment": self.authenticator_attachment}
+        requests = {
+            "token by credential id": registration,
+            "token by serial, other credential": {**registration, "serial": serial,
+                                                  "credential_id": self.credential_id_multi_device,
+                                                  "rawId": self.credential_id_multi_device},
+            "incomplete registration": {"attestationObject": self.registration_attestation,
+                                        "credential_id": self.credential_id},
+        }
+        for index, (name, data) in enumerate(requests.items()):
+            with self.subTest(name):
+                data["transaction_id"] = f"38{index:018d}"
+                self._assert_registration_data_rejected(data, serial)
+                self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        remove_token(serial)
+
+    def test_39_replayed_registration(self):
+        """
+        Replaying a genuine registration response after the enrollment is completed is rejected: the token is
+        enrolled and its enrollment challenge is gone.
+        """
+        detail = self._token_init_step_one()["detail"]
+        serial = detail["serial"]
+        transaction_id = detail["transaction_id"]
+        self._token_init_step_two(transaction_id, serial)
+        data = {"attestationObject": self.registration_attestation, "clientDataJSON": self.registration_client_data,
+                "credential_id": self.credential_id, "rawId": self.credential_id,
+                "authenticatorAttachment": self.authenticator_attachment, "transaction_id": transaction_id,
+                "serial": serial}
+        self._assert_registration_data_rejected(data, serial)
+        self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        remove_token(serial)
+
+    def test_40_registration_data_needs_the_challenge_of_the_token(self):
+        """
+        Registration data is only accepted with the enrollment challenge of the token it names: neither another
+        transaction id for a pending passkey nor the pending challenge of another passkey.
+        """
+        enrolled_serial = self._enroll_static_passkey()
+        detail = self._token_init_step_one(exclude_credentials_size=1, multi_device=True)["detail"]
+        pending_serial = detail["serial"]
+        pending_transaction_id = detail["transaction_id"]
+        registration = {"attestationObject": self.registration_attestation_multi_device,
+                        "clientDataJSON": self.registration_client_data_multi_device,
+                        "credential_id": self.credential_id_multi_device, "rawId": self.credential_id_multi_device,
+                        "authenticatorAttachment": self.authenticator_attachment_multi_device}
+
+        self._assert_registration_data_rejected({**registration, "serial": pending_serial,
+                                                 "transaction_id": "40" + "0" * 18}, pending_serial)
+        self._assert_registration_data_rejected({**registration, "serial": enrolled_serial,
+                                                 "transaction_id": pending_transaction_id}, enrolled_serial)
+        self._assert_persisted_state(enrolled_serial, RolloutState.ENROLLED, True)
+        self._assert_persisted_state(pending_serial, RolloutState.CLIENTWAIT, False)
+        # The pending enrollment is untouched and can still be completed
+        self._token_init_step_two(pending_transaction_id, pending_serial, multi_device=True)
+        remove_token(enrolled_serial)
+        remove_token(pending_serial)
+
+    def test_41_enroll_via_multichallenge_needs_enrolled_passkey(self):
+        """
+        Answering the enroll_via_multichallenge challenge only logs the user in once the passkey is enrolled.
+        """
+        spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
+        self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH, action="enroll_via_multichallenge=PASSKEY")
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.registration_challenge
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": self.user.login, "pass": "1"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+                serial = res.json["detail"]["serial"]
+                transaction_id = res.json["detail"]["transaction_id"]
+
+        data = {"attestationObject": self.registration_attestation, "clientDataJSON": self.registration_client_data,
+                "credential_id": self.credential_id, "rawId": self.credential_id,
+                "authenticatorAttachment": self.authenticator_attachment, "transaction_id": transaction_id,
+                "serial": serial}
+        # A registration that leaves the token waiting
+        with patch.object(PasskeyTokenClass, "update", return_value={}):
+            with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertFalse(res.json["result"]["value"], res.json)
+                self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+        self._assert_persisted_state(serial, RolloutState.CLIENTWAIT, False)
+
+        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json["result"]["authentication"], res.json)
+        self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.MFA_FAIL,
+                                   AuthEventType.LOGIN_SUCCESS], transaction_id=transaction_id)
+        remove_token(serial)
+        remove_token(spass_token.get_serial())
+
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """
