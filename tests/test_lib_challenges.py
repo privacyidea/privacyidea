@@ -4,6 +4,7 @@ This test file tests the lib.challange methods.
 This tests the token functions on an interface level
 """
 import json
+from datetime import timedelta
 
 from privacyidea.lib.crypto import get_rand_digit_str
 from .base import MyTestCase
@@ -13,6 +14,7 @@ from privacyidea.lib.cache import redis_feature_enabled
 from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.models import Challenge, db
+from privacyidea.models.utils import utc_now
 from privacyidea.lib.token import init_token, check_serial_pass
 from privacyidea.lib import _
 
@@ -73,6 +75,28 @@ class ChallengeTestCase(MyTestCase):
 
         delete_challenges(serial="ESC_01")
         delete_challenges(serial="ESCX01")
+
+    def test_01b_get_challenges_paginate_sort_columns(self):
+        # The serials sort the other way round than the timestamps, so the order tells which one was used
+        now = utc_now()
+        serials = ["SORT_C", "SORT_B", "SORT_A"]
+        for offset, serial in enumerate(serials):
+            challenge = Challenge(serial=serial, transaction_id=f"txn_sort_{serial}", challenge=serial,
+                                  data={"serial": serial})
+            challenge.timestamp = now + timedelta(seconds=offset)
+            challenge.save()
+
+        result = get_challenges_paginate(serial="SORT_*", sortby="serial")
+        self.assertListEqual(sorted(serials), [challenge["serial"] for challenge in result["challenges"]])
+
+        # Neither the challenge nor its data can be sorted by, they sort by the timestamp like an unknown column
+        for sortby in ["challenge", "data", "_data", Challenge._data, "unknown"]:
+            with self.subTest(sortby=sortby), self.assertLogs("privacyidea.lib.challenge", level="WARNING"):
+                result = get_challenges_paginate(serial="SORT_*", sortby=sortby)
+                self.assertListEqual(serials, [challenge["serial"] for challenge in result["challenges"]])
+
+        for serial in serials:
+            delete_challenges(serial=serial)
 
     def test_02_extract_answered_challenges(self):
         token = init_token({"genkey": 1, "serial": "CHAL2", "pin": "pin"})
