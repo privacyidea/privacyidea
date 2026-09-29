@@ -17,6 +17,7 @@
     table-layout: fixed;
     width: auto;
   }
+  @include table.scroll-region-fits-table;
   display: flex;
   flex-direction: column;
   overflow: hidden;

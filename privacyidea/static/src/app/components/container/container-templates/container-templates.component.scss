@@ -42,6 +42,7 @@
       width: 600px;
     }
   }
+  @include table.scroll-region-fits-table;
 
   .table-header-container {
     display: flex;

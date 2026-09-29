@@ -18,6 +18,7 @@
     table-layout: fixed;
     width: auto;
   }
+  @include table.scroll-region-fits-table;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -32,14 +33,13 @@
   gap: 16px;
   width: 100%;
 
-  // Without a cap, this hint text's own single-line max-content width becomes the widest thing in
-  // the card (wider than the table itself, which has its own tiered column widths) - the card has no
-  // explicit width of its own, so its shrink-to-fit sizing would follow this paragraph instead of the
-  // table, stretching the whole card far past the narrow table it is meant to fit. flex-wrap lets it
-  // wrap onto more lines within that width rather than truncating.
+  // This hint text wraps within whatever width the buttons beside it leave over. contain:
+  // inline-size keeps its own single-line width (wider than the table itself) from counting toward
+  // the card's width at all - the card has no explicit width of its own, so its shrink-to-fit sizing
+  // would otherwise follow this paragraph instead of the table and its filter row.
   p {
-    max-width: 200px;
-    flex: 1 1 auto;
+    contain: inline-size;
+    flex: 1 1 0;
     min-width: 0;
   }
 }

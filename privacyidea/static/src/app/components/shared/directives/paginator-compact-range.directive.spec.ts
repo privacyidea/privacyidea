@@ -79,6 +79,31 @@ class HostComponent {
 })
 class HostWithoutScrollRegionComponent {}
 
+// A table's own filter component standing in for a bare mat-form-field (e.g. the container
+// templates filter), next to a plain trigger button.
+@Component({
+  standalone: true,
+  imports: [MatPaginatorModule, PaginatorCompactRangeDirective],
+  template: `
+    <div class="page-root">
+      <div class="filter-paginator-container">
+        <div class="filter-actions-group">
+          <div class="custom-filter"></div>
+          <button class="trigger">More</button>
+        </div>
+        <mat-paginator
+          appPaginatorCompactRange
+          [length]="10189"
+          [pageIndex]="0"
+          [pageSize]="10"
+          [pageSizeOptions]="[10, 20]"></mat-paginator>
+      </div>
+      <div class="table-scroll-region"></div>
+    </div>
+  `
+})
+class HostWithWrappedFilterComponent {}
+
 // Fixed reference widths the gap is computed from: containerWidth - groupWidth - paginatorWidth.
 // Only the group's width is varied per test to land on a desired gap; the other two stay constant.
 const CONTAINER_WIDTH = 1000;
@@ -110,12 +135,14 @@ describe("PaginatorCompactRangeDirective", () => {
   };
 
   // Sets up the three measured widths so that containerWidth - minGroupWidth - paginatorWidth
-  // equals the given gap, holding the container and paginator widths fixed. minGroupWidth reads the
-  // filter field's own CSS min-width (see the directive's own comment on why), which jsdom resolves
-  // correctly from an inline style even without a stylesheet behind it.
+  // equals the given gap, holding the container and paginator widths fixed. minGroupWidth reads a
+  // flex-growing filter field's own CSS min-width (see the directive's own comment on why), which
+  // jsdom resolves correctly from an inline style even without a stylesheet behind it - flex-grow
+  // included, which the app's stylesheet gives the real filter field.
   const setGap = (gap: number) => {
     jest.spyOn(container(), "getBoundingClientRect").mockReturnValue({ width: CONTAINER_WIDTH } as DOMRect);
     jest.spyOn(paginatorHost(), "getBoundingClientRect").mockReturnValue({ width: PAGINATOR_WIDTH } as DOMRect);
+    filterField().style.flexGrow = "7";
     filterField().style.minWidth = `${CONTAINER_WIDTH - PAGINATOR_WIDTH - gap}px`;
   };
 
@@ -257,5 +284,58 @@ describe("PaginatorCompactRangeDirective", () => {
 
     const label = otherFixture.nativeElement.querySelector(".mat-mdc-paginator-range-label");
     expect(label.textContent?.trim()).toBe("1 – 10 of 10189");
+  });
+
+  describe("with a filter component wrapping the filter field", () => {
+    let wrappedFixture: ComponentFixture<HostWithWrappedFilterComponent>;
+    const query = (selector: string): HTMLElement => wrappedFixture.nativeElement.querySelector(selector);
+
+    // A grown filter component reports its full grown width, not its min-width, and the trigger
+    // is the given width; container and paginator stay at the same reference widths as above.
+    const layOut = (triggerWidth: number) => {
+      const filter = query(".custom-filter");
+      filter.style.flexGrow = "7";
+      filter.style.minWidth = "300px";
+      jest.spyOn(filter, "getBoundingClientRect").mockReturnValue({ width: 690 } as DOMRect);
+      jest.spyOn(query(".trigger"), "getBoundingClientRect").mockReturnValue({ width: triggerWidth } as DOMRect);
+      jest
+        .spyOn(query(".filter-paginator-container"), "getBoundingClientRect")
+        .mockReturnValue({ width: CONTAINER_WIDTH } as DOMRect);
+      jest
+        .spyOn(query("mat-paginator"), "getBoundingClientRect")
+        .mockReturnValue({ width: PAGINATOR_WIDTH } as DOMRect);
+      const observer = resizeObservers.find((o) => o.observed[0] === query(".filter-paginator-container"))!;
+      observer.cb([], observer as unknown as ResizeObserver);
+    };
+
+    beforeEach(async () => {
+      await TestBed.resetTestingModule()
+        .configureTestingModule({ imports: [HostWithWrappedFilterComponent] })
+        .compileComponents();
+      wrappedFixture = TestBed.createComponent(HostWithWrappedFilterComponent);
+      wrappedFixture.detectChanges();
+    });
+
+    it("counts the grown filter component at its min-width, not its grown width", () => {
+      // 1000 - (300 + 48) - 300 leaves plenty of gap; the grown 690px would have left none.
+      layOut(48);
+
+      expect(query(".mat-mdc-paginator-range-label").textContent?.trim()).toBe("1 – 10 of 10189");
+    });
+
+    it("counts the filter at its flex-basis when that is wider than its min-width", () => {
+      // 1000 - (700 + 48) - 300 leaves no gap, though min-width alone (300px) would have left plenty.
+      query(".custom-filter").style.flexBasis = "700px";
+      layOut(48);
+
+      expect(query(".mat-mdc-paginator-range-label").textContent?.trim()).toBe("1 – 10");
+    });
+
+    it("counts a non-growing child at its rendered width", () => {
+      // 1000 - (300 + 400) - 300 leaves no gap at all.
+      layOut(400);
+
+      expect(query(".mat-mdc-paginator-range-label").textContent?.trim()).toBe("1 – 10");
+    });
   });
 });

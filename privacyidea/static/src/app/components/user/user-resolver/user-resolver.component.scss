@@ -21,6 +21,7 @@
     table-layout: fixed;
     width: auto;
   }
+  @include table.scroll-region-fits-table;
 }
 
 .new-resolver-footer-row {

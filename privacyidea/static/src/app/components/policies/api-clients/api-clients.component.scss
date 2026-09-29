@@ -22,6 +22,7 @@
     table-layout: fixed;
     width: auto;
   }
+  @include table.scroll-region-fits-table;
 }
 
 .actions-container {

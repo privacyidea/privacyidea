@@ -20,10 +20,18 @@
     table-layout: fixed;
     width: auto;
   }
+  @include table.scroll-region-fits-table;
 }
 
 .header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  // Spans the card like on every other table page, so the filter field gets the row's room instead
+  // of sitting at its min-width next to a content-sized paginator.
+  > .filter-paginator-container {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }

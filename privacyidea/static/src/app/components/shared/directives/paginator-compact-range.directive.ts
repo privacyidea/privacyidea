@@ -67,7 +67,11 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
   ngAfterViewInit(): void {
     const label = this.host.nativeElement.querySelector<HTMLElement>(".mat-mdc-paginator-range-label");
     const container = this.host.nativeElement.closest<HTMLElement>(".filter-paginator-container");
-    const scrollRegion = container?.parentElement?.querySelector(":scope > .table-scroll-region");
+    // The table's region is a sibling of the row or of one of its wrappers (e.g. machines' header-row).
+    let scrollRegion: Element | null = null;
+    for (let scope = container?.parentElement; scope && !scrollRegion; scope = scope.parentElement) {
+      scrollRegion = scope.querySelector(":scope > .table-scroll-region");
+    }
     if (!label || !container || !scrollRegion) {
       return;
     }
@@ -158,11 +162,14 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
     return gap < threshold;
   }
 
-  // The group's own minimum width: its filter field's CSS min-width (300px - see the filter class
-  // rule in table.scss's base-table-structure) rather than the field's own current, flex-grown
-  // width, plus the full current width of every other child (a "More Filter" trigger, the
-  // scroll-collapsed actions-menu trigger, ...) - those are plain buttons with no flex-grow of
-  // their own, so their current rendered width already is their minimum.
+  // The group's own minimum width: every child that flex-grows - the filter field, whether a bare
+  // mat-form-field or a table's own filter component wrapping one - counts at the larger of its
+  // flex-basis and its CSS min-width (616px / 300px - see the filter class rule in table.scss's
+  // base-table-structure) rather than its own current, grown width. The flex-basis is the width the
+  // field keeps as long as the row has room for it; it only shrinks toward min-width once the row
+  // runs short, and by then the full label has to go first. Every other child (a "More Filter"
+  // trigger, the scroll-collapsed actions-menu trigger, ...) is a plain button with no flex-grow of
+  // its own, so its current rendered width already is its minimum.
   private minGroupWidth(): number {
     if (!this.filterActionsGroup) {
       return 0;
@@ -170,13 +177,22 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
     let total = 0;
     for (const child of Array.from(this.filterActionsGroup.children)) {
       const el = child as HTMLElement;
-      if (el.tagName === "MAT-FORM-FIELD") {
-        const minWidth = parseFloat(getComputedStyle(el).minWidth);
-        total += Number.isFinite(minWidth) ? minWidth : el.getBoundingClientRect().width;
+      const style = getComputedStyle(el);
+      if (parseFloat(style.flexGrow) > 0) {
+        const floor = Math.max(
+          PaginatorCompactRangeDirective.px(style.minWidth),
+          PaginatorCompactRangeDirective.px(style.flexBasis)
+        );
+        total += floor > 0 ? floor : el.getBoundingClientRect().width;
       } else {
         total += el.getBoundingClientRect().width;
       }
     }
     return total;
+  }
+
+  // A computed length in px, or 0 for anything else ("auto", a percentage basis, ...).
+  private static px(value: string): number {
+    return value.endsWith("px") ? parseFloat(value) : 0;
   }
 }

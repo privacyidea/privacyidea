@@ -20,6 +20,7 @@
     table-layout: fixed;
     width: auto;
   }
+  @include table.scroll-region-fits-table;
 
   @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }

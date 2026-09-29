@@ -311,11 +311,15 @@ $checkbox-column-width: 72px;
     }
   }
 
+  // At least an input-width-xl field wherever the row has room for one (flex-basis), grown from there
+  // up to its max-width - but shrinking below it, down to min-width, once the row runs short (e.g. a
+  // heavy browser zoom), so the row never overflows the card. PaginatorCompactRangeDirective counts
+  // the field at its flex-basis, so the range label gives up its total before the field shrinks.
   #{$filter-class} {
     max-width: var(--input-width-xxl);
     min-width: 300px;
     width: 100%;
-    flex: 7 1;
+    flex: 7 1 var(--input-width-xl);
 
     @media (max-width: 600px) {
       min-width: 0;
@@ -377,6 +381,28 @@ $checkbox-column-width: 72px;
   }
 }
 
+// For a table sized from its own column tiers (width: auto) rather than stretched across its card:
+// shrinks .table-scroll-region (base-table-structure above) to that table's own width, so the
+// dividers the region paints once scrolled (its border-top / border-bottom) end at the table's right
+// edge. The card is as wide as its widest row, which for a narrow table is the filter/paginator row
+// above it rather than the table, so a region left to stretch across the card draws those dividers
+// out past the table into empty space. max-width keeps a table wider than the card (e.g. at a heavy
+// browser zoom) scrolling inside the region instead of widening the page.
+@mixin scroll-region-fits-table {
+  .table-scroll-region {
+    width: fit-content;
+    max-width: 100%;
+  }
+}
+
+// The narrowest a table page's filter/paginator row can be while still fitting everything it shows
+// at once: the filter field at its own flex-basis (616px - base-table-structure's filter class), the
+// scroll-collapsed actions trigger beside it (40px icon button + 8px margin - actions-row-collapse),
+// and the paginator with its full range label (475px fits "11 – 20 of 250" or "1 – 10 of 1234"), plus
+// PaginatorCompactRangeDirective's 8px engage margin and the card's own 2 * 16px padding
+// (main-component-style).
+$filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
+
 // A routed page's own table rows (.filter-paginator-container) need genuine room to show their
 // full "of Z" total rather than getting squeezed into it - and squeezing them below this is never
 // actually necessary on any desktop-sized viewport this app targets: even the narrowest realistic
@@ -401,29 +427,15 @@ $checkbox-column-width: 72px;
 // only past its own floor does .table-scroll-region's independent horizontal scroll (not the whole
 // page's) take over.
 //
-// No separate absolute floor beneath $min-width for PaginatorCompactRangeDirective's sake: it reads
-// the filter field's own CSS min-width (300px), not its current flex-grown width, so a table narrow
-// enough to pass a $min-width well under that still leaves it enough of a signal to show the full
-// "of Z" total whenever the row genuinely has the room, without forcing this card any wider than the
-// table itself needs.
-//
-// Also shrinks .filter-actions-group's own max-width cap (table-global.scss: 932px filter field +
-// 2 * 48px surrounding buttons) down to $min-width, when that is smaller. This card has no explicit
-// width of its own, so its shrink-to-fit sizing follows the widest flex child's own max-content
-// contribution - for the filter row that contribution is its max-width cap, since flex-grow items
-// are sized as if fully grown for that calculation regardless of any other child's actual size. Left
-// at its default 1028px cap, a narrow table's card would size itself to fit that instead of the
-// table, undoing the point of sizing this floor from the table at all - and simply capping this
-// mixin's own min/max-width instead, without also shrinking the row's cap, clips the row's content
-// against the card's edge rather than letting the row's own children shrink to fit it.
-// min() rather than a flat override, so a wide table's $min-width (the 1520px default, or one
-// larger than the row's own default cap) leaves that default cap untouched.
+// Never below $filter-row-min-width, though, however narrow the table: this card has no explicit
+// width of its own, so without that floor it shrinks to fit its filter row at the row's bare minimum,
+// leaving PaginatorCompactRangeDirective no slack at all - it would show the compact range with no
+// total even on a full HD screen with plenty of room to spare - and it would widen the card as soon
+// as the table scrolled, when the actions trigger appears in that row, shifting the whole table
+// sideways mid-scroll. Only the card grows for it: the table's own scroll region keeps to the table's
+// width (scroll-region-fits-table above).
 @mixin paginator-range-floor($min-width: 1520px) {
-  min-width: min($min-width, 100cqw);
-
-  .filter-actions-group {
-    max-width: min($min-width, calc(932px + 48px + 48px));
-  }
+  min-width: min(max($min-width, $filter-row-min-width), 100cqw);
 }
 
 // Collapses a table's own action-button row into a single "more actions" menu trigger once the

@@ -92,10 +92,8 @@ table.mat-mdc-table .mat-mdc-header-cell {
   &::before {
     content: "";
     position: absolute;
-    // Overhang the bottom edge only. The top needs none: a sliver can only appear there once the
-    // rows have scrolled, and that is exactly when .scrolled-from-top paints the region's
-    // border-top over that pixel - a scroll container's own border is never covered by the
-    // content it clips. Overhanging the top as well would hide that border.
+    // Overhangs the bottom edge; the top edge only once scrolled (below). At rest, the cell's top
+    // border is the table's own top edge, which an overhang there would paint over.
     inset: 0 0 -1px;
     // --surface-raised is the ancestor card's depth-tinted gradient, so the header tracks the
     // Depth setting instead of being pinned to one swatch.
@@ -118,6 +116,15 @@ table.mat-mdc-table .mat-mdc-header-cell {
     height: 1px;
     background: var(--mat-sys-outline-variant);
   }
+}
+
+// Once scrolled, the sticky cell sits flush with the top of the region's scrollport, and its top
+// border - the strip between that edge and the cell's padding box, where the fill starts - is not
+// painted on a sticky cell either (as with its border-bottom above), so the rows scrolling beneath
+// show through it. Overhanging the fill across it closes that strip; anything above the scrollport
+// is clipped, so the region's own border-top divider (outside the scrollport) stays visible.
+.table-scroll-region.scrolled-from-top table.mat-mdc-table .mat-mdc-header-cell::before {
+  top: -1px;
 }
 
 // Elevate the header once rows have scrolled under it, so it reads as raised above them rather
