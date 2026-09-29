@@ -488,6 +488,7 @@ class PasskeyTokenClass(TokenClass):
                             self.set_description(attributes[0].value)
             self.add_tokeninfo_dict(token_info)
             self.token.active = True
+            self.token.save()
             # Remove the challenge
             challenges[0].delete()
         return response_detail
