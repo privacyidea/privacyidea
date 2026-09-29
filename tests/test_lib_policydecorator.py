@@ -15,12 +15,12 @@ from privacyidea.lib.error import UserError, PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE,
-                                    ACTIONVALUE, LOGINMODE)
+                                    ACTIONVALUE)
 from privacyidea.lib.policydecorators import (auth_otppin,
                                               auth_user_does_not_exist,
                                               auth_user_passthru,
                                               auth_user_has_no_token,
-                                              login_mode, config_lost_token,
+                                              config_lost_token,
                                               auth_cache,
                                               auth_lastauth, reset_all_user_tokens, auth_user_timelimit)
 from privacyidea.lib.radiusserver import add_radius
@@ -305,61 +305,6 @@ class LibPolicyTestCase(MyTestCase):
         remove_token("PTHRU")
         delete_policy("pol1")
         self.set_default_g_variables()
-
-    def test_07_login_mode(self):
-        # a realm: cornelius@r1: PW: test
-
-        def check_webui_user_userstore(user_obj, password,
-                                       options=None, superuser_realms=None,
-                                       check_otp=False):
-            self.assertEqual(check_otp, False)
-
-        def check_webui_user_privacyidea(user_obj, password,
-                                         options=None, superuser_realms=None,
-                                         check_otp=False):
-            self.assertEqual(check_otp, True)
-
-        user_obj = User("cornelius", "r1")
-
-        g = FakeFlaskG()
-        P = PolicyClass()
-        g.policy_object = P
-        g.audit_object = FakeAudit()
-        options = {"g": g}
-
-        # No policy, the function is called with check_otp=False
-        login_mode(check_webui_user_userstore, user_obj, "",
-                   options=options, superuser_realms="", check_otp=False)
-
-        set_policy(name="pol2",
-                   scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
-        g = FakeFlaskG()
-        P = PolicyClass()
-        g.policy_object = P
-        g.audit_object = FakeAudit()
-        options = {"g": g}
-
-        # Policy is set, the function is called with check_otp=True
-        login_mode(check_webui_user_privacyidea, user_obj, "",
-                   options=options, superuser_realms="", check_otp=False)
-
-        # Set policy, so that the user is not allowed to login at all
-        set_policy(name="pol2",
-                   scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(PolicyAction.LOGINMODE, LOGINMODE.DISABLE))
-        g = FakeFlaskG()
-        P = PolicyClass()
-        g.policy_object = P
-        g.audit_object = FakeAudit()
-        options = {"g": g}
-
-        # Policy is set. Trying to login raises a policy error
-        self.assertRaises(PolicyError, login_mode,
-                          check_webui_user_privacyidea, user_obj, "",
-                          options=options, superuser_realms="",
-                          check_otp=False)
-        delete_policy("pol2")
 
     def test_08_config_lost_token_policy(self):
         def func1(serial, validity=10, contents="Ccns", pw_len=16,

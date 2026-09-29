@@ -59,7 +59,7 @@ from privacyidea.lib.error import PolicyError, UserError, AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success
 from privacyidea.lib.policy import Match
-from privacyidea.lib.policy import SCOPE, ACTIONVALUE, LOGINMODE
+from privacyidea.lib.policy import SCOPE, ACTIONVALUE
 from privacyidea.lib.radiusserver import get_radius
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import split_pin_pass
@@ -514,41 +514,6 @@ def auth_lastauth(wrapped_function, user_or_serial, passw, options=None):
                 token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth.strftime(AUTH_DATE_FORMAT))
 
     return res, reply_dict
-
-
-def login_mode(wrapped_function, *args, **kwds):
-    """
-    Decorator to decorate the lib.auth.check_webui_user function.
-    Depending on ACTION.LOGINMODE it sets the check_otp parameter, to signal
-    that the authentication should be performed against privacyIDEA.
-
-    :param wrapped_function: Usually the function check_webui_user
-    :param args: arguments user_obj and password
-    :param kwds: keyword arguments like options and !check_otp!
-        kwds["options"] contains the flask g
-    :return: calls the original function with the modified "check_otp" argument
-    """
-    # If tokenclass.check_pin is called in any other way, options may be None
-    # or have no element "g".
-    options = kwds.get("options") or {}
-    g = options.get("g")
-    if g:
-        # We need the user, but we do not need the password
-        user_object = args[0]
-        # Get the policy
-        login_mode_dict = Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGINMODE,
-                                     user_object=user_object).action_values(unique=True)
-        if login_mode_dict:
-            # There is a login mode policy
-            if list(login_mode_dict)[0] == LOGINMODE.PRIVACYIDEA:
-                # The original function should check against privacyidea!
-                kwds["check_otp"] = True
-
-            if list(login_mode_dict)[0] == LOGINMODE.DISABLE:
-                # The login to the webui is disabled
-                raise PolicyError("The login for this user is disabled.")
-
-    return wrapped_function(*args, **kwds)
 
 
 def auth_otppin(wrapped_function, *args, **kwds):
