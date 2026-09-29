@@ -27,7 +27,10 @@ Meaning they can not login with their domain password anymore but need to
 authenticate with one of their tokens.
 
 If set to *login_mode=disable* the users and administrators of the specified
-realms can not login to the UI anymore.
+realms can not login to the UI anymore. This includes the login with a
+passkey. The other two values only decide what a password is checked against,
+so they do not affect the passkey login. A *disable* policy also refuses the
+login if a policy with the same priority sets another login mode.
 
 .. warning:: If you set this to `privacyIDEA` and the user deletes or disables
    all of their tokens, they will not be able to login anymore.

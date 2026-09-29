@@ -4,6 +4,7 @@ from mock.mock import patch
 from webauthn.helpers import bytes_to_base64url
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
+from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.util import hash_credential_id
@@ -939,6 +940,23 @@ class WebAuthn(MyApiTestCase):
                 self.assertNotEqual(RolloutState.ENROLLED, tok.rollout_state)
         finally:
             delete_policy("wan_aaguid_block")
+            remove_token(serial)
+
+    def test_44_challenge_listing_censors_registration_nonce(self):
+        """
+        The challenge listing censors the nonce of a WebAuthn token that waits for its registration.
+        """
+        serial = "WAN_LISTING_NONCE"
+        try:
+            transaction_id = self._do_first_enrollment_step(serial)
+            with self.app.test_request_context(f'/token/challenges/{serial}', method='GET',
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                challenges = res.json["result"]["value"]["challenges"]
+            self.assertEqual([transaction_id], [challenge["transaction_id"] for challenge in challenges])
+            self.assertEqual(CENSORED, challenges[0]["challenge"], challenges)
+        finally:
             remove_token(serial)
 
     def test_32_authenticate_wrong_uv(self):
