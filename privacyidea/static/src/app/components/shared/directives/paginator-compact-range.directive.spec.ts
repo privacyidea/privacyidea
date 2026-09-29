@@ -92,7 +92,7 @@ describe("PaginatorCompactRangeDirective", () => {
   const rangeLabel = (): HTMLElement => fixture.nativeElement.querySelector(".mat-mdc-paginator-range-label");
   const scrollRegion = (): HTMLElement => fixture.nativeElement.querySelector(".table-scroll-region");
   const container = (): HTMLElement => fixture.nativeElement.querySelector(".filter-paginator-container");
-  const group = (): HTMLElement => fixture.nativeElement.querySelector(".filter-actions-group");
+  const filterField = (): HTMLElement => fixture.nativeElement.querySelector("mat-form-field");
   const paginatorHost = (): HTMLElement => fixture.nativeElement.querySelector("mat-paginator");
 
   // The directive creates exactly one MutationObserver: the class-attribute watcher on
@@ -109,14 +109,14 @@ describe("PaginatorCompactRangeDirective", () => {
     observer.cb([], observer as unknown as ResizeObserver);
   };
 
-  // Sets up the three measured widths so that containerWidth - groupWidth - paginatorWidth equals
-  // the given gap, holding the container and paginator widths fixed.
+  // Sets up the three measured widths so that containerWidth - minGroupWidth - paginatorWidth
+  // equals the given gap, holding the container and paginator widths fixed. minGroupWidth reads the
+  // filter field's own CSS min-width (see the directive's own comment on why), which jsdom resolves
+  // correctly from an inline style even without a stylesheet behind it.
   const setGap = (gap: number) => {
     jest.spyOn(container(), "getBoundingClientRect").mockReturnValue({ width: CONTAINER_WIDTH } as DOMRect);
     jest.spyOn(paginatorHost(), "getBoundingClientRect").mockReturnValue({ width: PAGINATOR_WIDTH } as DOMRect);
-    jest
-      .spyOn(group(), "getBoundingClientRect")
-      .mockReturnValue({ width: CONTAINER_WIDTH - PAGINATOR_WIDTH - gap } as DOMRect);
+    filterField().style.minWidth = `${CONTAINER_WIDTH - PAGINATOR_WIDTH - gap}px`;
   };
 
   beforeEach(async () => {
@@ -175,28 +175,21 @@ describe("PaginatorCompactRangeDirective", () => {
     expect(rangeLabel().textContent?.trim()).toBe("1 – 3 of 3");
   });
 
-  it("collapses to just the range once the sibling scroll region is scrolled from the top", () => {
+  it("keeps the full range label once scrolled from the top, as long as the row still has room", () => {
+    // Scrolling is not by itself a "not enough room" signal - at a normal desktop width there is
+    // plenty of room for the full label whether or not the table happens to be scrolled.
     scrollRegion().classList.add("scrolled-from-top");
-    triggerClassChange();
-
-    expect(rangeLabel().textContent?.trim()).toBe("1 – 10");
-  });
-
-  it("restores the full range label once scrolled back to the top", () => {
-    scrollRegion().classList.add("scrolled-from-top");
-    triggerClassChange();
-
-    scrollRegion().classList.remove("scrolled-from-top");
     triggerClassChange();
 
     expect(rangeLabel().textContent?.trim()).toBe("1 – 10 of 10189");
   });
 
   it("does nothing when re-triggered with no actual change", () => {
-    scrollRegion().classList.add("scrolled-from-top");
-    triggerClassChange();
+    setGap(0);
+    triggerResize();
     expect(rangeLabel().textContent?.trim()).toBe("1 – 10");
 
+    scrollRegion().classList.add("scrolled-from-top");
     triggerClassChange();
     expect(rangeLabel().textContent?.trim()).toBe("1 – 10");
   });
@@ -232,8 +225,8 @@ describe("PaginatorCompactRangeDirective", () => {
   });
 
   it("does not re-enter itself across repeated change-detection passes (regression: a measure-by-mutating design looped here)", () => {
-    scrollRegion().classList.add("scrolled-from-top");
-    triggerClassChange();
+    setGap(0);
+    triggerResize();
     expect(rangeLabel().textContent?.trim()).toBe("1 – 10");
 
     // Simulates Angular re-running change detection for unrelated reasons, exactly as a real app

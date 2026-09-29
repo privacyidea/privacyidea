@@ -31,4 +31,15 @@
   justify-content: flex-start;
   gap: 16px;
   width: 100%;
+
+  // Without a cap, this hint text's own single-line max-content width becomes the widest thing in
+  // the card (wider than the table itself, which has its own tiered column widths) - the card has no
+  // explicit width of its own, so its shrink-to-fit sizing would follow this paragraph instead of the
+  // table, stretching the whole card far past the narrow table it is meant to fit. flex-wrap lets it
+  // wrap onto more lines within that width rather than truncating.
+  p {
+    max-width: 200px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }

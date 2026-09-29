@@ -400,8 +400,30 @@ $checkbox-column-width: 72px;
 // (table-global.scss / base-table-structure above) - so the filter field visibly shrinks first, and
 // only past its own floor does .table-scroll-region's independent horizontal scroll (not the whole
 // page's) take over.
+//
+// No separate absolute floor beneath $min-width for PaginatorCompactRangeDirective's sake: it reads
+// the filter field's own CSS min-width (300px), not its current flex-grown width, so a table narrow
+// enough to pass a $min-width well under that still leaves it enough of a signal to show the full
+// "of Z" total whenever the row genuinely has the room, without forcing this card any wider than the
+// table itself needs.
+//
+// Also shrinks .filter-actions-group's own max-width cap (table-global.scss: 932px filter field +
+// 2 * 48px surrounding buttons) down to $min-width, when that is smaller. This card has no explicit
+// width of its own, so its shrink-to-fit sizing follows the widest flex child's own max-content
+// contribution - for the filter row that contribution is its max-width cap, since flex-grow items
+// are sized as if fully grown for that calculation regardless of any other child's actual size. Left
+// at its default 1028px cap, a narrow table's card would size itself to fit that instead of the
+// table, undoing the point of sizing this floor from the table at all - and simply capping this
+// mixin's own min/max-width instead, without also shrinking the row's cap, clips the row's content
+// against the card's edge rather than letting the row's own children shrink to fit it.
+// min() rather than a flat override, so a wide table's $min-width (the 1520px default, or one
+// larger than the row's own default cap) leaves that default cap untouched.
 @mixin paginator-range-floor($min-width: 1520px) {
   min-width: min($min-width, 100cqw);
+
+  .filter-actions-group {
+    max-width: min($min-width, calc(932px + 48px + 48px));
+  }
 }
 
 // Collapses a table's own action-button row into a single "more actions" menu trigger once the

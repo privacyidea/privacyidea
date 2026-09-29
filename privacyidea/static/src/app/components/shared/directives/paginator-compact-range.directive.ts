@@ -21,11 +21,13 @@ import { MatPaginator, MatPaginatorIntl } from "@angular/material/paginator";
 import { getCompactRangeLabel } from "@app/paginator-intl";
 
 // Of the full "1,066 - 1,080 of 10,189" range label, the current page's own position
-// ("1,066 - 1,080") is what the user is actually tracking - the total is the part safe to drop
-// under either of two conditions: once the table's header is stuck (.table-scroll-region
-// scrolled-from-top, a sibling of this paginator's own .filter-paginator-container), or - just as
-// much a "not enough room" signal - whenever the row is tight enough that the filter field next to
-// it (inside .filter-actions-group, the container's other child) has no slack left. Material renders
+// ("1,066 - 1,080") is what the user is actually tracking - the total is the part safe to drop, but
+// only once the row is actually tight: the filter field next to it (inside .filter-actions-group,
+// the container's other child) has no slack left. A scrolled table (.table-scroll-region
+// scrolled-from-top) is not by itself a "not enough room" signal - at a normal desktop width there
+// is plenty of room for the full label whether or not the table happens to be scrolled - so scroll
+// state does not force compact mode on its own; it only changes what counts as tight, since the
+// collapsed action row also frees up width the label could use. Material renders
 // the whole phrase as one interpolated text node with no separate markup for the range and the
 // total, so it can't be trimmed with CSS alone; this rewrites the node by hand instead, in either
 // direction, so it stays correct whether the rewrite runs during ngDoCheck (a genuine page change)
@@ -108,8 +110,7 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
     if (this.writingBack || !this.label || !this.scrollRegion) {
       return;
     }
-    const scrolled = this.scrollRegion.classList.contains("scrolled-from-top");
-    this.compact = scrolled || this.isRowTight();
+    this.compact = this.isRowTight();
     const text = this.compact
       ? getCompactRangeLabel(this.paginator.pageIndex, this.paginator.pageSize, this.paginator.length)
       : this.intl.getRangeLabel(this.paginator.pageIndex, this.paginator.pageSize, this.paginator.length);
@@ -128,17 +129,20 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
   // defeats its own guard - every call then looks like a change, every call rewrites the label, and
   // every rewrite runs straight back into ngDoCheck on the next change-detection pass, forever.
   //
-  // Measures the gap between the filter field's group and this paginator, not the group's (or the
-  // filter field's) own width against its max-width: both are capped by CSS, so once either is fully
-  // grown, its width sits at that cap and can never report the row having any further slack beyond
-  // it, however wide the viewport actually is - checking a capped value against itself can only ever
-  // detect "squeezed" and would latch compact permanently the first time it engaged.
+  // Measures the gap between the filter field's group and this paginator - but against the group's
+  // own minimum possible width (minGroupWidth below), not its current rendered one. The group's
+  // filter field has flex: 7 1: it grows to claim 100% of whatever room the row is not otherwise
+  // using, up to its own max-width cap - a cap several times wider than any realistic paginator
+  // range label, and one a table narrowed to its own column footprint (table.scss's
+  // paginator-range-floor) never gets remotely close to. Reading the group's live width would then
+  // read as "no slack" on every single call regardless of how much genuinely idle width the
+  // container has, because the filter field itself is always the one spending it.
   private isRowTight(): boolean {
     if (!this.container || !this.filterActionsGroup) {
       return false;
     }
     const containerWidth = this.container.getBoundingClientRect().width;
-    const groupWidth = this.filterActionsGroup.getBoundingClientRect().width;
+    const groupWidth = this.minGroupWidth();
     const paginatorWidth = this.host.nativeElement.getBoundingClientRect().width;
     // A real, rendered row is never literally zero-width on every one of its three measured
     // elements at once - that combination only happens where no layout engine ran at all (unit
@@ -152,5 +156,27 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
       ? PaginatorCompactRangeDirective.RELEASE_GAP_PX
       : PaginatorCompactRangeDirective.ENGAGE_GAP_PX;
     return gap < threshold;
+  }
+
+  // The group's own minimum width: its filter field's CSS min-width (300px - see the filter class
+  // rule in table.scss's base-table-structure) rather than the field's own current, flex-grown
+  // width, plus the full current width of every other child (a "More Filter" trigger, the
+  // scroll-collapsed actions-menu trigger, ...) - those are plain buttons with no flex-grow of
+  // their own, so their current rendered width already is their minimum.
+  private minGroupWidth(): number {
+    if (!this.filterActionsGroup) {
+      return 0;
+    }
+    let total = 0;
+    for (const child of Array.from(this.filterActionsGroup.children)) {
+      const el = child as HTMLElement;
+      if (el.tagName === "MAT-FORM-FIELD") {
+        const minWidth = parseFloat(getComputedStyle(el).minWidth);
+        total += Number.isFinite(minWidth) ? minWidth : el.getBoundingClientRect().width;
+      } else {
+        total += el.getBoundingClientRect().width;
+      }
+    }
+    return total;
   }
 }

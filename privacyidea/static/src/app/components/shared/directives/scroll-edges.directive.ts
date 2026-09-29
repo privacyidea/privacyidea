@@ -30,11 +30,15 @@ import { AfterViewInit, Directive, ElementRef, inject, OnDestroy, Renderer2 } fr
  *
  *   <div class="table-scroll-region" appScrollEdges>...</div>
  *
- * It also tracks the height of a sticky `.mat-mdc-header-row`, if the host has one, as the
- * `--sticky-header-height` custom property on the host. table-global.scss reads that property to
- * size a single `.sticky-header-shadow` layer spanning the whole row, so the elevation under the
- * sticky header is cast once rather than once per header cell (which seams at every column
- * boundary where two adjacent cells' shadows overlap).
+ * It also tracks the size of a sticky `.mat-mdc-header-row`, if the host has one, as the
+ * `--sticky-header-height` / `--sticky-header-width` custom properties on the host.
+ * table-global.scss reads them to size a single `.sticky-header-shadow` layer spanning the row, so
+ * the elevation under the sticky header is cast once rather than once per header cell (which seams
+ * at every column boundary where two adjacent cells' shadows overlap). The width is tracked
+ * explicitly rather than left at the host's own 100% - a narrow table (e.g. external-services,
+ * col-width-* tiers well short of the row) sets its own table width to auto instead of 100% so its
+ * columns do not stretch, and the shadow div is this host's flex child, not the table's, so it would
+ * otherwise stretch to the full flex width regardless and cast past the table's real right edge.
  */
 @Directive({
   selector: "[appScrollEdges]",
@@ -71,6 +75,7 @@ export class ScrollEdgesDirective implements AfterViewInit, OnDestroy {
 
       this.headerResizeObserver = new ResizeObserver(() => {
         root.style.setProperty("--sticky-header-height", `${headerRow.offsetHeight}px`);
+        root.style.setProperty("--sticky-header-width", `${headerRow.offsetWidth}px`);
       });
       this.headerResizeObserver.observe(headerRow);
     }

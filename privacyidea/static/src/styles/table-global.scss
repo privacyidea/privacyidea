@@ -139,6 +139,12 @@ table.mat-mdc-table .mat-mdc-header-cell {
     top: 0;
     z-index: 90;
     height: var(--sticky-header-height, 0);
+    // Matches the actual header row's rendered width (see scroll-edges.directive.ts) rather than
+    // stretching to this flex column's full width: a narrow table sets its own width to auto so its
+    // columns do not stretch to fill the row, and this div is the region's flex child, not the
+    // table's, so without this it would cast its shadow (and, before there was anything to clip it,
+    // read as a bare bordered box) past the table's real right edge.
+    width: var(--sticky-header-width, 100%);
     margin-bottom: calc(-1 * var(--sticky-header-height, 0px));
     pointer-events: none;
   }
