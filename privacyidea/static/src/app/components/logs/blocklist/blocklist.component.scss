@@ -3,14 +3,12 @@
 
 .blocklist-table-container {
   @include styles.main-component-style;
-  @include table.base-table-structure(
-    ".blocklist-table",
-    ".blocklist-table-filter",
-    ".table-scroll-container"
-  );
+  @include table.base-table-structure(".blocklist-table", ".blocklist-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .toolbar {
@@ -69,10 +67,6 @@
   &:focus-within {
     --filter-button-opacity: 1;
   }
-}
-
-.filter-container {
-  margin-bottom: 16px;
 }
 
 .table-checkbox {

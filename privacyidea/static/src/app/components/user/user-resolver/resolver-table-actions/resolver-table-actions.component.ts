@@ -17,9 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject } from "@angular/core";
+import { Component, inject, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatMenu, MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
@@ -28,11 +29,12 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
 @Component({
   selector: "app-resolver-table-actions",
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, OverflowNavDirective],
+  imports: [MatButtonModule, MatIconModule, MatMenuModule, OverflowNavDirective],
   templateUrl: "./resolver-table-actions.component.html",
   styleUrl: "./resolver-table-actions.component.scss"
 })
 export class ResolverTableActionsComponent {
+  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
   protected readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 

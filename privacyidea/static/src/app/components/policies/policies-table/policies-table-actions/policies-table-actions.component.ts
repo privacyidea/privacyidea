@@ -17,10 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, input } from "@angular/core";
+import { Component, computed, inject, input, ViewChild } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatMenu, MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
@@ -34,11 +35,12 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
 @Component({
   selector: "app-policies-table-actions",
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, OverflowNavDirective],
+  imports: [MatIconModule, MatButtonModule, MatMenuModule, OverflowNavDirective],
   templateUrl: "./policies-table-actions.component.html",
   styleUrl: "./policies-table-actions.component.scss"
 })
 export class PoliciesTableActionsComponent {
+  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
   readonly policySelection = input.required<PolicyDetail[]>();
   readonly selectedPolicyNames = computed(() => this.policySelection().map((policy) => policy.name));
 

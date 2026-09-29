@@ -28,6 +28,7 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ExpandableMessageComponent } from "@components/shared/expandable-message/expandable-message.component";
 import { Sort } from "@angular/material/sort";
+import { MatMenuModule } from "@angular/material/menu";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -74,7 +75,8 @@ import { concatMap, reduce } from "rxjs/operators";
     RouterLink,
     DatePipe,
     TitleCasePipe,
-    NgClass
+    NgClass,
+    MatMenuModule
   ]
 })
 export class BlocklistComponent {

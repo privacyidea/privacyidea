@@ -19,55 +19,73 @@
 <div
   appScrollToTop
   class="blocklist-table-container">
-  <div class="filter-container">
-    <mat-form-field
-      class="blocklist-table-filter"
-      subscriptSizing="dynamic">
-      <mat-label i18n="@@blocklist.filterBlocklist">Filter Blocklist ...</mat-label>
-      <app-clearable-input
-        (clearButtonClick)="clearFilter()"
-        [showClearButton]="filterText().length > 0">
-        <input
-          [appRefocusAfterReload]="casService.blocklistResource.isLoading()"
-          (input)="handleFilterInput($event)"
-          [value]="filterText()"
-          aria-label="Filter Input"
-          i18n-aria-label="@@common.filterInput"
-          i18n-placeholder="@@blocklist.ipState"
-          matInput
-          placeholder="IP, state, ..." />
-      </app-clearable-input>
-      <mat-hint i18n="@@blocklist.searchAcrossAllColumns">Search across all columns (case-insensitive).</mat-hint>
-    </mat-form-field>
+  <div class="filter-paginator-container">
+    <div class="filter-actions-group">
+      <mat-form-field
+        class="blocklist-table-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n="@@blocklist.filterBlocklist">Filter Blocklist ...</mat-label>
+        <app-clearable-input
+          (clearButtonClick)="clearFilter()"
+          [showClearButton]="filterText().length > 0">
+          <input
+            [appRefocusAfterReload]="casService.blocklistResource.isLoading()"
+            (input)="handleFilterInput($event)"
+            [value]="filterText()"
+            aria-label="Filter Input"
+            i18n-aria-label="@@common.filterInput"
+            i18n-placeholder="@@blocklist.ipState"
+            matInput
+            placeholder="IP, state, ..." />
+        </app-clearable-input>
+        <mat-hint i18n="@@blocklist.searchAcrossAllColumns">Search across all columns (case-insensitive).</mat-hint>
+      </mat-form-field>
+      @if (authService.oneActionAllowed(["blocklist_set", "blocklist_reset"])) {
+        <button
+          [matMenuTriggerFor]="tableActionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+    </div>
   </div>
 
-  <div class="toolbar">
-    @if (authService.actionAllowed("blocklist_set")) {
-      <button
-        (click)="blockIp()"
-        class="action-button-secondary button-width-m"
-        mat-stroked-button>
-        <mat-icon>lock</mat-icon>
-        <span i18n="@@blocklist.blockIp">Block IP</span>
-      </button>
-    }
-    @if (authService.actionAllowed("blocklist_reset")) {
-      <button
-        (click)="removeSelected()"
-        [disabled]="selection().length === 0"
-        class="action-button-secondary button-width-m"
-        mat-stroked-button>
-        <mat-icon>lock_open</mat-icon>
-        <span i18n="@@blocklist.unblock">Unblock</span>
-      </button>
-      <button
-        (click)="cleanUpExpired()"
-        class="action-button-delete-secondary button-width-m"
-        mat-stroked-button>
-        <mat-icon>delete_sweep</mat-icon>
-        <span i18n="@@token.deleteExpired">Delete Expired</span>
-      </button>
-    }
+  <div class="actions-row">
+    <div class="actions-row-inner">
+      <div class="toolbar">
+        @if (authService.actionAllowed("blocklist_set")) {
+          <button
+            (click)="blockIp()"
+            class="action-button-secondary button-width-m"
+            mat-stroked-button>
+            <mat-icon>lock</mat-icon>
+            <span i18n="@@blocklist.blockIp">Block IP</span>
+          </button>
+        }
+        @if (authService.actionAllowed("blocklist_reset")) {
+          <button
+            (click)="removeSelected()"
+            [disabled]="selection().length === 0"
+            class="action-button-secondary button-width-m"
+            mat-stroked-button>
+            <mat-icon>lock_open</mat-icon>
+            <span i18n="@@blocklist.unblock">Unblock</span>
+          </button>
+          <button
+            (click)="cleanUpExpired()"
+            class="action-button-delete-secondary button-width-m"
+            mat-stroked-button>
+            <mat-icon>delete_sweep</mat-icon>
+            <span i18n="@@token.deleteExpired">Delete Expired</span>
+          </button>
+        }
+      </div>
+    </div>
   </div>
 
   <div
@@ -288,3 +306,31 @@
     </table>
   </div>
 </div>
+
+<!-- The action row's controls as menu items, for the compact trigger shown next to the filter once the
+     table is scrolled and that row is hidden. -->
+<mat-menu #tableActionsMenu="matMenu">
+  @if (authService.actionAllowed("blocklist_set")) {
+    <button
+      (click)="blockIp()"
+      mat-menu-item>
+      <mat-icon>lock</mat-icon>
+      <span i18n="@@blocklist.blockIp">Block IP</span>
+    </button>
+  }
+  @if (authService.actionAllowed("blocklist_reset")) {
+    <button
+      (click)="removeSelected()"
+      [disabled]="selection().length === 0"
+      mat-menu-item>
+      <mat-icon>lock_open</mat-icon>
+      <span i18n="@@blocklist.unblock">Unblock</span>
+    </button>
+    <button
+      (click)="cleanUpExpired()"
+      mat-menu-item>
+      <mat-icon>delete_sweep</mat-icon>
+      <span i18n="@@token.deleteExpired">Delete Expired</span>
+    </button>
+  }
+</mat-menu>

@@ -17,9 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input } from "@angular/core";
+import { Component, inject, input, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatMenu, MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTemplateCopyDialogComponent } from "@components/container/container-templates/dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
@@ -37,9 +38,10 @@ import { OverflowNavDirective } from "@components/shared/directives/overflow-nav
   standalone: true,
   templateUrl: "./container-templates-table-actions.component.html",
   styleUrl: "./container-templates-table-actions.component.scss",
-  imports: [MatButtonModule, MatIconModule, OverflowNavDirective]
+  imports: [MatButtonModule, MatIconModule, MatMenuModule, OverflowNavDirective]
 })
 export class ContainerTemplatesTableActionsComponent {
+  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly router = inject(Router);

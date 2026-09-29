@@ -28,6 +28,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -72,7 +73,8 @@ const columnKeysMap = [
     ResolverTableActionsComponent,
     TableStateComponent,
     RouterLink,
-    ScrollEdgesDirective
+    ScrollEdgesDirective,
+    MatMenuModule
   ],
   templateUrl: "./user-resolver.component.html",
   styleUrl: "./user-resolver.component.scss"

@@ -30,10 +30,29 @@
         [initialFilter]="filter()"
         [isLoading]="policyService.allPoliciesResource.isLoading()"
         [unfilteredPolicies]="policyService.allPolicies()"
-        class="policies-table-filter"></app-policy-filter>
+        class="policies-table-filter">
+        @if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
+          <button
+            [matMenuTriggerFor]="policiesTableActions.actionsMenu"
+            aria-label="Actions"
+            class="table-actions-trigger margin-left-8"
+            i18n-aria-label="@@common.actions"
+            i18n-matTooltip="@@common.actions"
+            mat-icon-button
+            matTooltip="Actions">
+            <mat-icon>menu</mat-icon>
+          </button>
+        }
+      </app-policy-filter>
     }
 
-    <app-policies-table-actions [policySelection]="selector.selectedRows()" />
+    <div class="actions-row">
+      <div class="actions-row-inner">
+        <app-policies-table-actions
+          #policiesTableActions
+          [policySelection]="selector.selectedRows()" />
+      </div>
+    </div>
 
     <div
       appScrollEdges

@@ -27,6 +27,7 @@ import { MatInput } from "@angular/material/input";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { ExpandableMessageComponent } from "@components/shared/expandable-message/expandable-message.component";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -89,7 +90,8 @@ import { concatMap, reduce } from "rxjs/operators";
     NgClass,
     DatePipe,
     PaginatorPageSizeTooltipDirective,
-    PaginatorCompactRangeDirective
+    PaginatorCompactRangeDirective,
+    MatMenuModule
   ]
 })
 export class LockedUsersComponent {

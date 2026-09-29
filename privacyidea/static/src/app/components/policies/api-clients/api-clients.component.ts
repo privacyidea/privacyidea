@@ -26,6 +26,7 @@ import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ApiClientIssuedKeyBannerComponent } from "@components/policies/api-clients/api-client-issued-key-banner/api-client-issued-key-banner.component";
@@ -67,7 +68,8 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     DatePipe,
     TableStateComponent,
     ScrollEdgesDirective,
-    PaginatorCompactRangeDirective
+    PaginatorCompactRangeDirective,
+    MatMenuModule
   ],
   templateUrl: "./api-clients.component.html",
   styleUrl: "./api-clients.component.scss"

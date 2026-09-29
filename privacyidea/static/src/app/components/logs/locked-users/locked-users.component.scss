@@ -4,11 +4,7 @@
 .locked-users-table-container {
   @include styles.main-component-style;
   @include table.paginator-range-floor;
-  @include table.base-table-structure(
-    ".locked-users-table",
-    ".locked-users-table-filter",
-    ".table-scroll-container"
-  );
+  @include table.base-table-structure(".locked-users-table", ".locked-users-table-filter", ".table-scroll-container");
   // Flex column so the title/description, filter+paginator row and the actions
   // stay pinned and only the .table-scroll-region (flex: 1 1 auto, overflow: auto)
   // scrolls. overflow: hidden hands scrolling to that inner region.
@@ -21,6 +17,8 @@
   &:has(.table-scroll-region.scrolled-from-top) .locked-users-table-filter mat-hint {
     display: none;
   }
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .toolbar {
@@ -95,4 +93,3 @@
 a[role="button"] {
   cursor: pointer;
 }
-

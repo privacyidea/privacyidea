@@ -56,6 +56,8 @@ import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -132,7 +134,9 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
     ScrollEdgesDirective,
     TableStateComponent,
     PaginatorPageSizeTooltipDirective,
-    PaginatorCompactRangeDirective
+    PaginatorCompactRangeDirective,
+    MatMenuModule,
+    MatTooltipModule
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"

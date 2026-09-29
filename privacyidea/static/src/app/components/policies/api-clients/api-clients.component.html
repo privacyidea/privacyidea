@@ -44,6 +44,18 @@
               placeholder="Filter by name or type" />
           </app-clearable-input>
         </mat-form-field>
+        @if (authService.oneActionAllowed(["api_client_add", "api_client_delete"])) {
+          <button
+            [matMenuTriggerFor]="tableActionsMenu"
+            aria-label="Actions"
+            class="table-actions-trigger margin-left-8"
+            i18n-aria-label="@@common.actions"
+            i18n-matTooltip="@@common.actions"
+            mat-icon-button
+            matTooltip="Actions">
+            <mat-icon>menu</mat-icon>
+          </button>
+        }
       </div>
       <mat-paginator
         appPaginatorCompactRange
@@ -51,36 +63,40 @@
         [pageSize]="pageSizeOptions()[1]"
         showFirstLastButtons />
     </div>
-    <div class="actions-container margin-bottom-16">
-      @if (authService.actionAllowed("api_client_add")) {
-        <button
-          (click)="onCreateNewApiClient()"
-          class="action-button-primary button-width-l"
-          mat-stroked-button>
-          <span class="icon-badge">
-            <mat-icon class="padding-right-3">vpn_key</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-          </span>
-          <span i18n="@@apiClient.createApiClient">Create API Client</span>
-        </button>
-      }
-      @if (authService.actionAllowed("api_client_delete")) {
-        <button
-          (click)="deleteSelected()"
-          [disabled]="!selector.hasSelection()"
-          class="action-button-delete-secondary button-width-l"
-          mat-stroked-button>
-          <mat-icon>delete_sweep</mat-icon>
-          <span i18n="@@common.delete">Delete</span>
-        </button>
-      }
+    <div class="actions-row">
+      <div class="actions-row-inner">
+        <div class="actions-container margin-bottom-16">
+          @if (authService.actionAllowed("api_client_add")) {
+            <button
+              (click)="onCreateNewApiClient()"
+              class="action-button-primary button-width-l"
+              mat-stroked-button>
+              <span class="icon-badge">
+                <mat-icon class="padding-right-3">vpn_key</mat-icon>
+                <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+              </span>
+              <span i18n="@@apiClient.createApiClient">Create API Client</span>
+            </button>
+          }
+          @if (authService.actionAllowed("api_client_delete")) {
+            <button
+              (click)="deleteSelected()"
+              [disabled]="!selector.hasSelection()"
+              class="action-button-delete-secondary button-width-l"
+              mat-stroked-button>
+              <mat-icon>delete_sweep</mat-icon>
+              <span i18n="@@common.delete">Delete</span>
+            </button>
+          }
 
-      <p
-        class="margin-bottom-0 margin-top-0"
-        i18n="@@apiClient.apiClientsIntro">
-        API clients authenticate against privacyIDEA with an API key sent in the
-        <code>X-API-Key</code> header. Click on a client to see its remembered devices and the users behind them.
-      </p>
+          <p
+            class="margin-bottom-0 margin-top-0"
+            i18n="@@apiClient.apiClientsIntro">
+            API clients authenticate against privacyIDEA with an API key sent in the
+            <code>X-API-Key</code> header. Click on a client to see its remembered devices and the users behind them.
+          </p>
+        </div>
+      </div>
     </div>
 
     <div
@@ -300,3 +316,25 @@
     </app-table-state>
   }
 </div>
+
+<!-- The action row's controls as menu items, for the compact trigger shown next to the filter once the
+     table is scrolled and that row is hidden. -->
+<mat-menu #tableActionsMenu="matMenu">
+  @if (authService.actionAllowed("api_client_add")) {
+    <button
+      (click)="onCreateNewApiClient()"
+      mat-menu-item>
+      <mat-icon>vpn_key</mat-icon>
+      <span i18n="@@apiClient.createApiClient">Create API Client</span>
+    </button>
+  }
+  @if (authService.actionAllowed("api_client_delete")) {
+    <button
+      (click)="deleteSelected()"
+      [disabled]="!selector.hasSelection()"
+      mat-menu-item>
+      <mat-icon>delete_sweep</mat-icon>
+      <span i18n="@@common.delete">Delete</span>
+    </button>
+  }
+</mat-menu>

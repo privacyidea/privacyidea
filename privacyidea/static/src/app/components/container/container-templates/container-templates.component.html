@@ -29,6 +29,16 @@
           [isLoading]="containerTemplateService.templatesResource.isLoading()"
           (filterChange)="onFilterChange($event)">
         </app-container-templates-filter>
+        <button
+          [matMenuTriggerFor]="containerTemplatesTableActions.actionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <mat-icon>menu</mat-icon>
+        </button>
       </div>
       <mat-paginator
         appPaginatorCompactRange
@@ -40,8 +50,14 @@
         showFirstLastButtons />
     </div>
 
-    <app-container-templates-table-actions [selectedTemplates]="selector.selectedRows()">
-    </app-container-templates-table-actions>
+    <div class="actions-row">
+      <div class="actions-row-inner">
+        <app-container-templates-table-actions
+          #containerTemplatesTableActions
+          [selectedTemplates]="selector.selectedRows()">
+        </app-container-templates-table-actions>
+      </div>
+    </div>
 
     <div
       appScrollEdges

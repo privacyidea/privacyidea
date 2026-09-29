@@ -20,4 +20,6 @@
   &:has(.table-scroll-region.scrolled-from-top) .challenges-table-filter mat-hint {
     display: none;
   }
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }

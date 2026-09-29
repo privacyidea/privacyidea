@@ -20,6 +20,8 @@
   &:has(.table-scroll-region.scrolled-from-top) .token-table-filter mat-hint {
     display: none;
   }
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .resolver-warning {

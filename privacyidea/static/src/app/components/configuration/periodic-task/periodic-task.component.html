@@ -25,53 +25,69 @@
 
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        appearance="fill"
-        class="periodic-task-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@periodicTask.filterPeriodic">Filter Periodic Tasks ...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="periodicTaskService.periodicTasksResource.isLoading()"
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            matInput />
-        </app-clearable-input>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          appearance="fill"
+          class="periodic-task-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@periodicTask.filterPeriodic">Filter Periodic Tasks ...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="resetFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="periodicTaskService.periodicTasksResource.isLoading()"
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              matInput />
+          </app-clearable-input>
+        </mat-form-field>
+        <button
+          [matMenuTriggerFor]="tableActionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <mat-icon>menu</mat-icon>
+        </button>
+      </div>
     </div>
-    <div class="actions-container">
-      @if (authService.actionAllowed("periodictask_write")) {
-        <button
-          (click)="onCreateNewTask()"
-          class="action-button-primary button-width-l"
-          mat-stroked-button>
-          <span class="icon-badge">
-            <mat-icon>event_repeat</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-          </span>
-          <span i18n="@@common.createPeriodic">Create Periodic Task</span>
-        </button>
-        <button
-          (click)="deleteSelected()"
-          [disabled]="!selector.hasSelection()"
-          class="action-button-secondary button-width-l"
-          color="warn"
-          mat-stroked-button>
-          <mat-icon>delete</mat-icon>
-          <span i18n="@@periodicTask.deleteSelected">Delete Selected</span>
-        </button>
-      }
-      <mat-slide-toggle
-        (change)="toggleDetailedView()"
-        [checked]="detailedView()"
-        i18n="@@common.detailedView"
-        >Detailed View</mat-slide-toggle
-      >
+    <div class="actions-row">
+      <div class="actions-row-inner">
+        <div class="actions-container">
+          @if (authService.actionAllowed("periodictask_write")) {
+            <button
+              (click)="onCreateNewTask()"
+              class="action-button-primary button-width-l"
+              mat-stroked-button>
+              <span class="icon-badge">
+                <mat-icon>event_repeat</mat-icon>
+                <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+              </span>
+              <span i18n="@@common.createPeriodic">Create Periodic Task</span>
+            </button>
+            <button
+              (click)="deleteSelected()"
+              [disabled]="!selector.hasSelection()"
+              class="action-button-secondary button-width-l"
+              color="warn"
+              mat-stroked-button>
+              <mat-icon>delete</mat-icon>
+              <span i18n="@@periodicTask.deleteSelected">Delete Selected</span>
+            </button>
+          }
+          <mat-slide-toggle
+            (change)="toggleDetailedView()"
+            [checked]="detailedView()"
+            i18n="@@common.detailedView"
+            >Detailed View</mat-slide-toggle
+          >
+        </div>
+      </div>
     </div>
 
     <div
@@ -278,3 +294,29 @@
     </app-table-state>
   }
 </div>
+
+<!-- The action row's controls as menu items, for the compact trigger shown next to the filter once the
+     table is scrolled and that row is hidden. -->
+<mat-menu #tableActionsMenu="matMenu">
+  @if (authService.actionAllowed("periodictask_write")) {
+    <button
+      (click)="onCreateNewTask()"
+      mat-menu-item>
+      <mat-icon>event_repeat</mat-icon>
+      <span i18n="@@common.createPeriodic">Create Periodic Task</span>
+    </button>
+    <button
+      (click)="deleteSelected()"
+      [disabled]="!selector.hasSelection()"
+      mat-menu-item>
+      <mat-icon>delete</mat-icon>
+      <span i18n="@@periodicTask.deleteSelected">Delete Selected</span>
+    </button>
+  }
+  <button
+    (click)="toggleDetailedView()"
+    mat-menu-item>
+    <mat-icon>{{ detailedView() ? "check_box" : "check_box_outline_blank" }}</mat-icon>
+    <span i18n="@@common.detailedView">Detailed View</span>
+  </button>
+</mat-menu>

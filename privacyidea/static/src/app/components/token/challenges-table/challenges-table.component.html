@@ -41,6 +41,16 @@
           </app-clearable-input>
           <mat-hint>{{ filterHint }}</mat-hint>
         </mat-form-field>
+        <button
+          [matMenuTriggerFor]="challengesTableActions.actionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <mat-icon>menu</mat-icon>
+        </button>
       </div>
       <mat-paginator
         appPaginatorPageSizeTooltip
@@ -53,8 +63,10 @@
         [pageSize]="pageSize()"
         showFirstLastButtons></mat-paginator>
     </div>
-    <div class="margin-bottom-16">
-      <app-challenges-table-actions />
+    <div class="actions-row margin-bottom-16">
+      <div class="actions-row-inner">
+        <app-challenges-table-actions #challengesTableActions />
+      </div>
     </div>
     <div
       class="table-scroll-region"

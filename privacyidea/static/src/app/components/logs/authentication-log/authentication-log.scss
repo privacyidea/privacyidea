@@ -14,9 +14,7 @@
   // transaction_id m + conditional_access_outcomes xl), plus a flat 300px for other_info, which claims
   // that width only once the current page has something to show (see columnWidthClass) and is
   // deliberately left without a static tier.
-  @include table.page-table-state-size(
-    calc(#{table.table-width(m, s, l, l, m, s, m, l, m, m, m, xl)} + 300px)
-  );
+  @include table.page-table-state-size(calc(#{table.table-width(m, s, l, l, m, s, m, l, m, m, m, xl)} + 300px));
   // Flex column so the filter row + paginator stay pinned and only the
   // .table-scroll-region (flex: 1 1 auto, overflow: auto) scrolls — both
   // vertically (with a sticky header row) and horizontally, as one unit.
@@ -37,6 +35,8 @@
   &:has(.table-scroll-region.scrolled-from-top) .authentication-log-table-filter mat-hint {
     display: none;
   }
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .cell-scroll {

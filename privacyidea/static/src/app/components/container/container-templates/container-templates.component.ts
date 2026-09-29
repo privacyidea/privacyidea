@@ -25,6 +25,8 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
@@ -102,7 +104,9 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     TableStateComponent,
     RouterLink,
     ScrollEdgesDirective,
-    PaginatorCompactRangeDirective
+    PaginatorCompactRangeDirective,
+    MatMenuModule,
+    MatTooltipModule
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"

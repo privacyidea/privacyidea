@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject } from "@angular/core";
+import { Component, inject, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
+import { MatMenu, MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -35,6 +35,7 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
   templateUrl: "./challenges-table-actions.component.html"
 })
 export class ChallengesTableActionsComponent {
+  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly challengesService: ChallengesServiceInterface = inject(ChallengesService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);

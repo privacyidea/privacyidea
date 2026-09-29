@@ -44,6 +44,16 @@
           colons or spaces.
         </mat-hint>
       </mat-form-field>
+      <button
+        [matMenuTriggerFor]="tableActionsMenu"
+        aria-label="Actions"
+        class="table-actions-trigger margin-left-8"
+        i18n-aria-label="@@common.actions"
+        i18n-matTooltip="@@common.actions"
+        mat-icon-button
+        matTooltip="Actions">
+        <mat-icon>menu</mat-icon>
+      </button>
     </div>
     <mat-paginator
       appPaginatorPageSizeTooltip
@@ -57,92 +67,91 @@
       showFirstLastButtons />
   </div>
   <!-- Filters that have no table column of their own live in the action row under the filter input. -->
-  <div class="actions-container">
-    @if (!authService.isSelfServiceUser()) {
-    <button
-      [matMenuTriggerFor]="userRoleMenu.matMenu"
-      class="action-button-secondary button-width-m"
-      mat-stroked-button>
-      <mat-icon>filter_list</mat-icon>
-      <span i18n="@@authLog.userRole">User Role</span>
-      <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
-    </button>
-    <app-multi-select-menu
-      #userRoleMenu
-      [options]="userRoleOptions"
-      [selected]="selectedFilterValues('user_role')"
-      (selectionChange)="setFilterValues('user_role', $event)" />
-    }
-    <!-- Opens the range picker, whose selection sets the custom range below; the hidden range input only holds the
-      picker's model and anchors its overlay to the button. -->
-    <div class="date-range-trigger">
-      <button
-        (click)="rangePicker.open()"
-        class="action-button-secondary button-width-m"
-        mat-stroked-button>
-        <mat-icon>date_range</mat-icon>
-        <span>{{ dateRangeLabel() }}</span>
-        <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
-      </button>
-      <mat-date-range-input
-        [rangePicker]="rangePicker"
-        class="date-range-hidden-input">
-        <input
-          matStartDate
-          (dateChange)="onRangeStartDateChange($event.value)"
-          [value]="rangePickerStart()"
-          aria-label="Start date"
-          i18n-aria-label="@@authLog.startDate" />
-        <input
-          matEndDate
-          (dateChange)="onRangeEndDateChange($event.value)"
-          [value]="rangePickerEnd()"
-          aria-label="End date"
-          i18n-aria-label="@@authLog.endDate" />
-      </mat-date-range-input>
-      <mat-date-range-picker
-        #rangePicker
-        panelClass="auth-log-datepicker" />
-    </div>
-    <!-- Custom range slider, shown inline (not behind a trigger) so the range is always adjustable. -->
-    <div class="time-filter-custom-range margin-left-16">
-      <div class="slider-with-histogram">
-        <!-- Activity behind the slider; decorative, hidden from assistive tech. -->
-        <div
-          class="activity-histogram"
-          [attr.aria-hidden]="true">
-          @for (bar of activityHistogram(); track $index) {
-          <div
-            class="activity-bar"
-            [style.height.%]="bar * 100"></div>
-          }
+  <div class="actions-row">
+    <div class="actions-row-inner">
+      <div class="actions-container">
+        @if (!authService.isSelfServiceUser()) {
+        <button
+          [matMenuTriggerFor]="userRoleMenu.matMenu"
+          class="action-button-secondary button-width-m"
+          mat-stroked-button>
+          <mat-icon>filter_list</mat-icon>
+          <span i18n="@@authLog.userRole">User Role</span>
+          <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+        </button>
+        }
+        <!-- Opens the range picker, whose selection sets the custom range below; the hidden range input only holds the
+          picker's model and anchors its overlay to the button. -->
+        <div class="date-range-trigger">
+          <button
+            (click)="rangePicker.open()"
+            class="action-button-secondary button-width-m"
+            mat-stroked-button>
+            <mat-icon>date_range</mat-icon>
+            <span>{{ dateRangeLabel() }}</span>
+            <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+          </button>
+          <mat-date-range-input
+            [rangePicker]="rangePicker"
+            class="date-range-hidden-input">
+            <input
+              matStartDate
+              (dateChange)="onRangeStartDateChange($event.value)"
+              [value]="rangePickerStart()"
+              aria-label="Start date"
+              i18n-aria-label="@@authLog.startDate" />
+            <input
+              matEndDate
+              (dateChange)="onRangeEndDateChange($event.value)"
+              [value]="rangePickerEnd()"
+              aria-label="End date"
+              i18n-aria-label="@@authLog.endDate" />
+          </mat-date-range-input>
+          <mat-date-range-picker
+            #rangePicker
+            panelClass="auth-log-datepicker" />
         </div>
-        <mat-slider
-          class="time-range-slider"
-          [min]="0"
-          [max]="rangeSliderSteps"
-          step="1"
-          discrete
-          [displayWith]="formatSliderThumb">
-          <input
-            matSliderStartThumb
-            aria-label="Range start"
-            i18n-aria-label="@@authLog.rangeStart"
-            [value]="rangeStart()"
-            (valueChange)="onRangeStartInput($event)"
-            (change)="commitTimeRange()" />
-          <input
-            matSliderEndThumb
-            aria-label="Range end"
-            i18n-aria-label="@@authLog.rangeEnd"
-            [value]="rangeEnd()"
-            (valueChange)="onRangeEndInput($event)"
-            (change)="commitTimeRange()" />
-        </mat-slider>
-      </div>
-      <div class="range-summary">
-        <span>{{ rangeSummaryFrom() }}</span>
-        <span>{{ rangeSummaryTo() }}</span>
+        <!-- Custom range slider, shown inline (not behind a trigger) so the range is always adjustable. -->
+        <div class="time-filter-custom-range margin-left-16">
+          <div class="slider-with-histogram">
+            <!-- Activity behind the slider; decorative, hidden from assistive tech. -->
+            <div
+              class="activity-histogram"
+              [attr.aria-hidden]="true">
+              @for (bar of activityHistogram(); track $index) {
+              <div
+                class="activity-bar"
+                [style.height.%]="bar * 100"></div>
+              }
+            </div>
+            <mat-slider
+              class="time-range-slider"
+              [min]="0"
+              [max]="rangeSliderSteps"
+              step="1"
+              discrete
+              [displayWith]="formatSliderThumb">
+              <input
+                matSliderStartThumb
+                aria-label="Range start"
+                i18n-aria-label="@@authLog.rangeStart"
+                [value]="rangeStart()"
+                (valueChange)="onRangeStartInput($event)"
+                (change)="commitTimeRange()" />
+              <input
+                matSliderEndThumb
+                aria-label="Range end"
+                i18n-aria-label="@@authLog.rangeEnd"
+                [value]="rangeEnd()"
+                (valueChange)="onRangeEndInput($event)"
+                (change)="commitTimeRange()" />
+            </mat-slider>
+          </div>
+          <div class="range-summary">
+            <span>{{ rangeSummaryFrom() }}</span>
+            <span>{{ rangeSummaryTo() }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -479,3 +488,29 @@
     </table>
   </div>
 </div>
+
+<!-- The action row's filters as menu items, for the compact trigger shown next to the filter once the
+     table is scrolled and that row is hidden. The time range slider has no menu form, so it is only in the row. -->
+<mat-menu #tableActionsMenu="matMenu">
+  @if (!authService.isSelfServiceUser()) {
+    <button
+      [matMenuTriggerFor]="userRoleMenu.matMenu"
+      mat-menu-item>
+      <mat-icon>filter_list</mat-icon>
+      <span i18n="@@authLog.userRole">User Role</span>
+    </button>
+  }
+  <button
+    (click)="rangePicker.open()"
+    mat-menu-item>
+    <mat-icon>date_range</mat-icon>
+    <span>{{ dateRangeLabel() }}</span>
+  </button>
+</mat-menu>
+
+<!-- Declared out here rather than next to its button so the menu above can open it as a submenu too. -->
+<app-multi-select-menu
+  #userRoleMenu
+  [options]="userRoleOptions"
+  [selected]="selectedFilterValues('user_role')"
+  (selectionChange)="setFilterValues('user_role', $event)" />

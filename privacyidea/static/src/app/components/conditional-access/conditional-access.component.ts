@@ -37,6 +37,7 @@ import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -87,7 +88,8 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     InfoHintComponent,
     TableStateComponent,
     ScrollEdgesDirective,
-    PaginatorCompactRangeDirective
+    PaginatorCompactRangeDirective,
+    MatMenuModule
   ],
   templateUrl: "./conditional-access.component.html",
   styleUrl: "./conditional-access.component.scss"

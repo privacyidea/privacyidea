@@ -45,3 +45,35 @@
     </button>
   }
 </div>
+
+<!-- Same actions as menu items, for the compact trigger shown next to the filter once the table is
+     scrolled and this component's own row is hidden. -->
+<mat-menu #actionsMenu="matMenu">
+  <button
+    [matMenuTriggerFor]="realmMenu"
+    mat-menu-item>
+    <mat-icon>public</mat-icon>
+    <span i18n="@@user.selectRealm">Select Realm</span>
+  </button>
+  @if (showCreateUser() && authService.actionAllowed("adduser") && anyEditableResolver()) {
+    <button
+      (click)="navigateToCreateUser()"
+      mat-menu-item>
+      <mat-icon>person_add</mat-icon>
+      <span i18n="@@common.createUser">Create User</span>
+    </button>
+  }
+</mat-menu>
+
+<mat-menu #realmMenu="matMenu">
+  @for (option of realmService.realmOptions(); track option) {
+    <button
+      (click)="userService.selectedUserRealm.set(option)"
+      mat-menu-item>
+      <mat-icon>{{
+        option === userService.selectedUserRealm() ? "radio_button_checked" : "radio_button_unchecked"
+      }}</mat-icon>
+      <span>{{ option }}</span>
+    </button>
+  }
+</mat-menu>

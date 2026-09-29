@@ -43,6 +43,18 @@
           Use * as a wildcard. Wrap the filter value in quotation marks if it contains colons or spaces.
         </mat-hint>
       </mat-form-field>
+      @if (authService.actionAllowed("user_lock_reset")) {
+        <button
+          [matMenuTriggerFor]="tableActionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
     </div>
     <mat-paginator
       appPaginatorPageSizeTooltip
@@ -56,24 +68,28 @@
       showFirstLastButtons />
   </div>
 
-  <div class="toolbar">
-    @if (authService.actionAllowed("user_lock_reset")) {
-      <button
-        (click)="resetSelected()"
-        [disabled]="selection().length === 0"
-        class="action-button-secondary button-width-m"
-        mat-stroked-button>
-        <mat-icon>lock_open</mat-icon>
-        <span i18n="@@common.unlock">Unlock</span>
-      </button>
-      <button
-        (click)="deleteExpired()"
-        class="action-button-delete-secondary button-width-m"
-        mat-stroked-button>
-        <mat-icon>delete_sweep</mat-icon>
-        <span i18n="@@token.deleteExpired">Delete Expired</span>
-      </button>
-    }
+  <div class="actions-row">
+    <div class="actions-row-inner">
+      <div class="toolbar">
+        @if (authService.actionAllowed("user_lock_reset")) {
+          <button
+            (click)="resetSelected()"
+            [disabled]="selection().length === 0"
+            class="action-button-secondary button-width-m"
+            mat-stroked-button>
+            <mat-icon>lock_open</mat-icon>
+            <span i18n="@@common.unlock">Unlock</span>
+          </button>
+          <button
+            (click)="deleteExpired()"
+            class="action-button-delete-secondary button-width-m"
+            mat-stroked-button>
+            <mat-icon>delete_sweep</mat-icon>
+            <span i18n="@@token.deleteExpired">Delete Expired</span>
+          </button>
+        }
+      </div>
+    </div>
   </div>
 
   <div
@@ -390,3 +406,21 @@
     </table>
   </div>
 </div>
+
+<!-- The action row's controls as menu items, for the compact trigger shown next to the filter once the
+     table is scrolled and that row is hidden. -->
+<mat-menu #tableActionsMenu="matMenu">
+  <button
+    (click)="resetSelected()"
+    [disabled]="selection().length === 0"
+    mat-menu-item>
+    <mat-icon>lock_open</mat-icon>
+    <span i18n="@@common.unlock">Unlock</span>
+  </button>
+  <button
+    (click)="deleteExpired()"
+    mat-menu-item>
+    <mat-icon>delete_sweep</mat-icon>
+    <span i18n="@@token.deleteExpired">Delete Expired</span>
+  </button>
+</mat-menu>

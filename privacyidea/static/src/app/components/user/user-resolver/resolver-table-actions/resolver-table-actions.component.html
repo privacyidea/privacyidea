@@ -32,3 +32,16 @@
     </button>
   }
 </div>
+
+<!-- Same actions as menu items, for the compact trigger shown next to the filter once the table is
+     scrolled and this component's own button row is hidden. -->
+<mat-menu #actionsMenu="matMenu">
+  @if (authService.actionAllowed("resolverwrite")) {
+    <button
+      (click)="onNewResolver()"
+      mat-menu-item>
+      <mat-icon class="ms--database"></mat-icon>
+      <span i18n="@@resolver.newResolver">New Resolver</span>
+    </button>
+  }
+</mat-menu>

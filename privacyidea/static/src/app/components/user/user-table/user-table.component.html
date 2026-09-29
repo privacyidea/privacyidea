@@ -70,6 +70,16 @@
             </app-clearable-input>
             <mat-hint>{{ filterHint }}</mat-hint>
           </mat-form-field>
+          <button
+            [matMenuTriggerFor]="userTableActions.actionsMenu"
+            aria-label="Actions"
+            class="table-actions-trigger margin-left-8"
+            i18n-aria-label="@@common.actions"
+            i18n-matTooltip="@@common.actions"
+            mat-icon-button
+            matTooltip="Actions">
+            <mat-icon>menu</mat-icon>
+          </button>
         </div>
         <mat-paginator
           appPaginatorPageSizeTooltip
@@ -80,7 +90,11 @@
           [pageSize]="userService.pageSize()"
           showFirstLastButtons></mat-paginator>
       </div>
-      <app-user-table-actions />
+      <div class="actions-row">
+        <div class="actions-row-inner">
+          <app-user-table-actions #userTableActions />
+        </div>
+      </div>
       <div
         appScrollEdges
         class="table-scroll-region">
