@@ -26,6 +26,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config, SYSCONF)
+from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
                                        delete_container_by_serial, delete_container_template)
 from privacyidea.lib.error import Error
@@ -62,6 +63,7 @@ from . import smtpmock, ldap3mock, radiusmock
 from .base import MyApiTestCase
 from .test_lib_tokencontainer import MockSmartphone
 
+from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from .api_validate_common import LDAPDirectory, OTPs, HOSTSFILE, DICT_FILE, setup_sms_gateway
 
 
@@ -1153,6 +1155,12 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         self.reset_flask_g()
         self.assertEqual(1, len(get_tokens(serial=serial)))
         self.assertEqual(0, len(get_tokens(user=User("bob", "ldaprealm"))))
+        auth_log_entries = assert_authentication_log(
+            [AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.ENROLLMENT_CANCELED_FAIL], transaction_id=transaction_id,
+            same_attempt=False)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.ENROLLMENT_CANCELED_FAIL],
+                                        user=User("bob", "ldaprealm"), transaction_id=transaction_id,
+                                        endpoint='/validate/check')
 
         # The user the enrollment was created for can still cancel it
         with self.app.test_request_context('/validate/check', method='POST',

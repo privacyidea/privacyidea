@@ -644,6 +644,8 @@ def _handle_enrollment_cancellation(data: dict) -> Response:
     # A request that names a different user than the one the enrollment was created for does not act on this
     # enrollment.
     if request.User and request.User.login and challenge_user and request.User != challenge_user:
+        log_authentication(AuthEventType.ENROLLMENT_CANCELED_FAIL, request, user=request.User,
+                           transaction_id=transaction_id)
         raise PolicyError(_("The user does not match the enrollment."))
 
     user = challenge_user or request.User
