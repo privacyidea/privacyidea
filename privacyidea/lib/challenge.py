@@ -288,10 +288,11 @@ def delete_challenges(serial: str = None, transaction_id: str = None,
             if isinstance(cached, list):
                 if serial is not None:
                     # Deleting one specific challenge within the transaction:
-                    # drop just that token's field.
+                    # drop just that token's field. Only count the field if
+                    # this call removed it, not a concurrent one that read the
+                    # same cached challenge.
                     for dto in (c for c in cached if c.serial == serial):
-                        evict_challenge(dto.transaction_id, dto.serial)
-                        removed += 1
+                        removed += evict_challenge(dto.transaction_id, dto.serial)
                 else:
                     # Cancelling the whole transaction: drop the entire hash in
                     # a single op rather than looping one HDEL per field, and
