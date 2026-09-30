@@ -906,7 +906,7 @@ def _handle_standard_auth(context: dict):
     Handles username+otp/password authentication, or container challenges.
     """
     transaction_id = request.all_data.get("transaction_id")
-    container_result = check_container_challenge(transaction_id)
+    container_result = check_container_challenge(transaction_id, context["user"])
 
     success = container_result.get("success", False)
     details = container_result.get("details", {})
