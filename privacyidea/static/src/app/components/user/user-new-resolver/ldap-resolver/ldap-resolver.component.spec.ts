@@ -142,6 +142,7 @@ describe("LdapResolverComponent", () => {
 
     const passwordInput: HTMLInputElement = fixture.nativeElement.querySelector("input[type='password']");
     expect(passwordInput.value).toBe("secret");
+    expect(passwordInput.getAttribute("autocomplete")).toBe("new-password");
   });
 
   it("should apply LDAP presets", () => {
