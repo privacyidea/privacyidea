@@ -38,6 +38,7 @@ interface LdapFormModel {
   TLS_CA_FILE: string;
   AUTHTYPE: BindType;
   BINDPW: string;
+  KEYTABFILE: string;
   BINDDN: string;
   TIMEOUT: number;
   CACHE_TIMEOUT: number;
@@ -114,6 +115,7 @@ export class LdapResolverComponent {
     TLS_CA_FILE: "",
     AUTHTYPE: "Simple",
     BINDPW: "",
+    KEYTABFILE: "",
     BINDDN: "",
     TIMEOUT: 5,
     CACHE_TIMEOUT: 120,
@@ -160,6 +162,7 @@ export class LdapResolverComponent {
         ...(initial.TLS_CA_FILE !== undefined ? { TLS_CA_FILE: initial.TLS_CA_FILE } : {}),
         ...(initial.AUTHTYPE !== undefined ? { AUTHTYPE: initial.AUTHTYPE } : {}),
         ...(initial.BINDPW !== undefined ? { BINDPW: initial.BINDPW } : {}),
+        ...(initial.KEYTABFILE !== undefined ? { KEYTABFILE: initial.KEYTABFILE } : {}),
         ...(initial.BINDDN !== undefined ? { BINDDN: initial.BINDDN } : {}),
         ...(initial.TIMEOUT !== undefined ? { TIMEOUT: Number(initial.TIMEOUT) } : {}),
         ...(initial.CACHE_TIMEOUT !== undefined ? { CACHE_TIMEOUT: Number(initial.CACHE_TIMEOUT) } : {}),
