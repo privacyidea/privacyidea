@@ -57,6 +57,7 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              [ngClass]="'col-width-' + column.width"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
@@ -75,7 +76,7 @@
             </th>
             <td
               *matCellDef="let element; let row"
-              class="max-width-300"
+              [ngClass]="'col-width-' + column.width"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {

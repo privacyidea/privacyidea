@@ -75,17 +75,17 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   });
   columnKeysMapSelfService = computed(() => {
     const columnKeys = [
-      { key: "serial", label: $localize`:@@common.serial:Serial` },
-      { key: "tokentype", label: $localize`:@@common.type:Type` },
-      { key: "description", label: $localize`:@@common.description:Description` },
-      { key: "container_serial", label: $localize`:@@common.container:Container` },
-      { key: "active", label: $localize`:@@common.active:Active` },
-      { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter` }
+      { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+      { key: "tokentype", label: $localize`:@@common.type:Type`, width: "s" },
+      { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+      { key: "container_serial", label: $localize`:@@common.container:Container`, width: "m" },
+      { key: "active", label: $localize`:@@common.active:Active`, width: "s" },
+      { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter`, width: "s" }
     ];
     if (this.authService.actionAllowed("revoke"))
-      columnKeys.push({ key: "revoke", label: $localize`:@@token.revoke:Revoke` });
+      columnKeys.push({ key: "revoke", label: $localize`:@@token.revoke:Revoke`, width: "s" });
     if (this.authService.actionAllowed("delete"))
-      columnKeys.push({ key: "delete", label: $localize`:@@common.delete:Delete` });
+      columnKeys.push({ key: "delete", label: $localize`:@@common.delete:Delete`, width: "s" });
 
     return columnKeys;
   });

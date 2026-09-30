@@ -20,7 +20,6 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -55,7 +54,6 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
     MatPaginatorModule,
     NgClass,
     CopyableComponent,
-    MatCheckboxModule,
     MatIcon,
     MatButtonModule,
     ScrollToTopDirective,
@@ -94,11 +92,11 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   }
 
   readonly columnKeysMapSelfService = [
-    { key: "serial", label: $localize`:@@common.serial:Serial` },
-    { key: "type", label: $localize`:@@common.type:Type` },
-    { key: "states", label: $localize`:@@common.status:Status` },
-    { key: "description", label: $localize`:@@common.description:Description` },
-    { key: "delete", label: $localize`:@@common.delete:Delete` }
+    { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+    { key: "type", label: $localize`:@@common.type:Type`, width: "s" },
+    { key: "states", label: $localize`:@@common.status:Status`, width: "m" },
+    { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+    { key: "delete", label: $localize`:@@common.delete:Delete`, width: "s" }
   ];
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
     (column: { key: string; label: string }) => column.key
