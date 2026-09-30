@@ -1981,7 +1981,32 @@ class PolicyTestCase(MyTestCase):
             for name in ("disable_but_resolver3", "disable_but_resolver1", "disable_only_exclusion"):
                 delete_policy(name)
 
-    def test_41c_list_policies_unknown_login(self):
+    def test_41c_list_policies_realm_exclusion_with_additional_realms(self):
+        # A realm excluded with "!" or "-" is left out, also from "*", when the realms are matched as a list
+        # (additional_realms), as they are for the realms of a token or container.
+        set_policy(name="disable_but_realm2", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE,
+                   realm=f"*,!{self.realm2}")
+        set_policy(name="disable_only_realm_exclusion", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE,
+                   realm=f"!{self.realm2}")
+        policy_class = PolicyClass()
+
+        def matching(realms: list) -> set[str]:
+            return {policy["name"] for policy in policy_class.list_policies(action=PolicyAction.DISABLE,
+                                                                            additional_realms=list(realms))}
+
+        try:
+            self.assertIn("disable_but_realm2", matching([self.realm1]))
+            self.assertNotIn("disable_but_realm2", matching([self.realm2]))
+            # A set of realms that contains the excluded realm is left out as well.
+            self.assertNotIn("disable_but_realm2", matching([self.realm1, self.realm2]))
+            # A field of nothing but exclusions matches no realm.
+            self.assertNotIn("disable_only_realm_exclusion", matching([self.realm1]))
+            self.assertNotIn("disable_only_realm_exclusion", matching([self.realm2]))
+        finally:
+            for name in ("disable_but_realm2", "disable_only_realm_exclusion"):
+                delete_policy(name)
+
+    def test_41d_list_policies_unknown_login(self):
         # Whether a policy names a user whose login is unknown can not be checked, so only the policies without a
         # user and those for every user are left. Matched with the empty login alone, "*" also matches the
         # exclusion and the regular expression.

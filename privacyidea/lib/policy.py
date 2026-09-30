@@ -387,9 +387,16 @@ class PolicyClass:
         value_found = False
         value_excluded = False
         for value in policy_attributes:
-            if value and value[0] in ["!", "-"] and \
-                    searchvalue == value[1:]:
-                value_excluded = True
+            if value and value[0] in ["!", "-"]:
+                # A leading "!" or "-" marks the remaining string as excluded. The searchvalue can be a single
+                # value or a list of values (for example the realms of a token). It counts as excluded if it
+                # equals the excluded value or, for a list, if it contains the excluded value.
+                excluded_value = value[1:]
+                if isinstance(searchvalue, list):
+                    if excluded_value in searchvalue:
+                        value_excluded = True
+                elif searchvalue == excluded_value:
+                    value_excluded = True
             elif isinstance(searchvalue, list) and value in searchvalue + ["*"]:
                 value_found = True
             elif value in [searchvalue, "*"]:

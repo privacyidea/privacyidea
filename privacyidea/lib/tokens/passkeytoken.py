@@ -371,14 +371,20 @@ class PasskeyTokenClass(TokenClass):
         attestation = get_optional(param, "attestationObject")
         client_data = get_optional(param, "clientDataJSON")
 
-        if not (attestation and client_data) and not self.token.rollout_state == RolloutState.CLIENTWAIT:
-            self.token.rollout_state = RolloutState.CLIENTWAIT
-            self.token.active = False
-            # Set the description in the first enrollment step
-            if "description" in param:
-                self.set_description(param["description"])
+        if not attestation and not client_data:
+            # First enrollment step, or a new enrollment of an enrolled token: wait for the registration data
+            if self.token.rollout_state != RolloutState.CLIENTWAIT:
+                self.token.rollout_state = RolloutState.CLIENTWAIT
+                self.token.active = False
+                # Set the description in the first enrollment step
+                if "description" in param:
+                    self.set_description(param["description"])
 
-        elif attestation and client_data and self.token.rollout_state == RolloutState.CLIENTWAIT:
+        elif not (attestation and client_data and self.token.rollout_state == RolloutState.CLIENTWAIT):
+            # A registration is only taken complete and for a token that waits for it
+            raise EnrollmentError(f"The token {self.token.serial} is not waiting for this registration data.")
+
+        else:
             # Finalize the registration by verifying the registration data from the authenticator
             credential_id = get_required(param, "credential_id")
             credential_id_raw = get_required(param, "rawId")
@@ -482,6 +488,7 @@ class PasskeyTokenClass(TokenClass):
                             self.set_description(attributes[0].value)
             self.add_tokeninfo_dict(token_info)
             self.token.active = True
+            self.token.save()
             # Remove the challenge
             challenges[0].delete()
         return response_detail
