@@ -432,7 +432,10 @@ def get_challenges_api(serial=None):
     :param serial: optional path component, the token serial.
     :query user: optional username - switches to user-aggregation mode.
     :query realm: optional realm for the user lookup.
-    :query sortby: sort column, default ``timestamp`` (paginated mode only).
+    :query sortby: sort column, one of ``timestamp`` (default), ``serial``,
+        ``transaction_id``, ``expiration``, ``received_count``, ``otp_valid``
+        or ``session`` (paginated mode only). Any other value sorts by
+        ``timestamp``.
     :query sortdir: ``asc`` (default) or ``desc``.
     :query page: 1-indexed page number; values below 1 are treated as 1.
     :query pagesize: page size (default ``15``), capped at ``1000``.
