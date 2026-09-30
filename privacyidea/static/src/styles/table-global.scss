@@ -93,11 +93,19 @@ table.mat-mdc-table .mat-mdc-header-cell {
     content: "";
     position: absolute;
     // Overhangs the bottom edge; the top edge only once scrolled (below). At rest, the cell's top
-    // border is the table's own top edge, which an overhang there would paint over.
-    inset: 0 0 -1px;
+    // border is the table's own top edge, which an overhang there would paint over. It overhangs
+    // both sides too: the table paints a sticky cell's collapsed borders where the cell sits
+    // unscrolled, so once scrolled, the border strip between two header cells is a see-through
+    // gap onto the rows passing underneath. The later cell's fill covers the overlap.
+    inset: 0 -1px -1px;
     // --surface-raised is the ancestor card's depth-tinted gradient, so the header tracks the
     // Depth setting instead of being pinned to one swatch.
     background: var(--surface-raised);
+    // The column line the overhang covers, redrawn on the fill: each cell draws its left one, the
+    // last cell its right one as well (below). A border rather than an inset box-shadow: borders
+    // snap to whole device pixels, a shadow blurs or drops out on a fractional zoom.
+    box-sizing: border-box;
+    border-left: 1px solid var(--mat-sys-outline-variant);
     // Behind the cell's own content, still inside the sticky cell's stacking context (Material
     // gives it z-index 100), so it stays above the rows scrolling underneath.
     z-index: -1;
@@ -107,11 +115,16 @@ table.mat-mdc-table .mat-mdc-header-cell {
   // top of it. It doubles as the divider against the rows once they scroll under the header: a
   // border-bottom is not painted on a position:sticky cell under border-collapse:collapse
   // (Material tables), and a box-shadow would land under the fill rather than over it.
+  &:last-child::before {
+    border-right: 1px solid var(--mat-sys-outline-variant);
+  }
+
   &::after {
     content: "";
     position: absolute;
-    left: 0;
-    right: 0;
+    // As wide as the fill, so the line runs on under the column lines.
+    left: -1px;
+    right: -1px;
     bottom: -1px;
     height: 1px;
     background: var(--mat-sys-outline-variant);
@@ -156,8 +169,14 @@ table.mat-mdc-table .mat-mdc-header-cell {
     pointer-events: none;
   }
 
+  // Follows the UI settings' depth like every other shadow (--depth-scale, see html.depth-* in
+  // styles.scss), measured against the default level's 0.6 so that level casts exactly this shadow:
+  // subtle halves it, very strong doubles it, and flat (0) casts none - the header's own bottom
+  // border is then all that separates it from the rows, as on every other flat surface.
   &.scrolled-from-top .sticky-header-shadow {
-    box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+    --sticky-header-shadow-scale: calc(var(--depth-scale) / 0.6);
+    box-shadow: 0 calc(4px * var(--sticky-header-shadow-scale)) calc(6px * var(--sticky-header-shadow-scale))
+      calc(-2px * var(--sticky-header-shadow-scale)) rgba(0, 0, 0, 0.4);
   }
 }
 
