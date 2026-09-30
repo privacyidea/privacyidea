@@ -1518,30 +1518,25 @@ class PasskeyAPITest(PasskeyAPITestBase):
         """
         On /auth, answering with a transaction_id that has no challenge makes verification
         raise (challenge not found), which propagates as a failure; this must still log MFA_FAIL.
-        Answering without any transaction_id is logged as MFA_FAIL as well, with its own reason.
+        A request without any transaction_id is malformed and leaves no authentication-log row.
         """
         serial = self._enroll_static_passkey()
         self._clear_authentication_log()
         transaction_id = "passkey-auth-missing-challenge"
-        data = self.authentication_response_uv
-        data["transaction_id"] = transaction_id
+        data = {**self.authentication_response_uv, "transaction_id": transaction_id}
         with self.app.test_request_context('/auth', method='POST', data=data,
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self.assertNotEqual(200, res.status_code, res.json)
 
-        data = dict(self.authentication_response_uv)
-        data.pop("transaction_id")
-        with self.app.test_request_context('/auth', method='POST', data=data,
+        with self.app.test_request_context('/auth', method='POST', data=dict(self.authentication_response_uv),
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self.assertEqual(400, res.status_code, res.json)
 
-        unknown, missing = assert_authentication_log([AuthEventType.MFA_FAIL, AuthEventType.MFA_FAIL],
-                                                     same_attempt=False).all
-        assert_authentication_log_entry(unknown, user=self.user, transaction_id=transaction_id, endpoint='/auth')
-        assert_authentication_log_entry(missing, user=self.user, endpoint='/auth',
-                                        reason=AuthEventReason.CHALLENGE_MISSING_TRANSACTION)
+        auth_log_entries = assert_authentication_log([AuthEventType.MFA_FAIL])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user,
+                                        transaction_id=transaction_id, endpoint='/auth')
         remove_token(serial)
 
     def test_22_reset_all_user_tokens(self):
@@ -2327,18 +2322,19 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         endpoint='/validate/check')
         remove_token(serial)
 
-    def test_47_validate_check_missing_transaction_id_is_logged(self):
+    def test_47_validate_check_missing_transaction_id_is_not_logged(self):
+        """
+        A passkey request without a transaction_id is malformed. It is rejected without an authentication-log row, so
+        it does not count against the user it names.
+        """
         serial = self._enroll_static_passkey()
         self._clear_authentication_log()
-        data = dict(self.authentication_response_no_uv)
-        data.pop("transaction_id", None)
+        data = {**self.authentication_response_no_uv, "user": self.user.login, "realm": self.user.realm}
         with self.app.test_request_context('/validate/check', method='POST', data=data,
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self.assertEqual(400, res.status_code, res.json)
-        auth_log_entries = assert_authentication_log([AuthEventType.MFA_FAIL])
-        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], endpoint='/validate/check',
-                                        reason=AuthEventReason.CHALLENGE_MISSING_TRANSACTION)
+        assert_authentication_log([])
         remove_token(serial)
 
     def test_48_enroll_via_multichallenge_failure_is_logged(self):

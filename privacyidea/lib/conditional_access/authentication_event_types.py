@@ -274,8 +274,6 @@ class AuthEventReason(str, Enum):
     # --- challenge-response --------------------------------------------------------------------------------------
     # The response did not match the challenge.
     CHALLENGE_WRONG_RESPONSE = "CHALLENGE_WRONG_RESPONSE"
-    # The response names no transaction at all. Unlike an unknown transaction, this is almost always a broken client.
-    CHALLENGE_MISSING_TRANSACTION = "CHALLENGE_MISSING_TRANSACTION"
     # The transaction the response names holds no challenge for this token: already consumed, belonging to another
     # token, never issued - or expired and no longer stored (see CHALLENGE_EXPIRED).
     CHALLENGE_UNKNOWN_TRANSACTION = "CHALLENGE_UNKNOWN_TRANSACTION"

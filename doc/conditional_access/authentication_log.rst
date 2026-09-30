@@ -206,8 +206,6 @@ The credentials
 Challenge-response
    ``CHALLENGE_WRONG_RESPONSE``
      the response did not match the challenge.
-   ``CHALLENGE_MISSING_TRANSACTION``
-     the response named no transaction at all.
    ``CHALLENGE_UNKNOWN_TRANSACTION``
      the transaction holds no challenge for this token: already consumed,
      belonging to another token, or never issued.
