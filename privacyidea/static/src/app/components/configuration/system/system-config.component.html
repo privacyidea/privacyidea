@@ -166,15 +166,17 @@
             <mat-select
               [value]="params()['recovery.identifier']"
               (selectionChange)="updateParam('recovery.identifier', $event.value)">
-              <mat-option
-                [value]="''"
-                i18n="@@systemConfig.none"
-                >None</mat-option
-              >
               @for (identifier of smtpIdentifiers(); track identifier) {
                 <mat-option [value]="identifier">{{ identifier }}</mat-option>
               }
             </mat-select>
+            @if (params()["recovery.identifier"]) {
+              <app-clear-button
+                matSuffix
+                (clearButtonClick)="updateParam('recovery.identifier', ''); $event.stopPropagation()"
+                i18n-toolTipText="@@common.clearInput"
+                toolTipText="Clear Input" />
+            }
             <mat-hint i18n="@@systemConfig.selectPredefined"
               >Select a predefined
               <a [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]"

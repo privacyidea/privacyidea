@@ -113,6 +113,22 @@ describe("SystemConfigComponent", () => {
     expect(component.smtpIdentifiers()).toStrictEqual(["myServer", "otherServer"]);
   });
 
+  it("should offer to clear the SMTP identifier only while one is selected", () => {
+    const smtpField = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll("mat-form-field")).find((field) =>
+      field.querySelector("mat-select")
+    )!;
+    expect(smtpField.querySelector("app-clear-button")).toBeNull();
+
+    component.updateParam("recovery.identifier", "myServer");
+    fixture.detectChanges();
+    expect(smtpField.querySelector("app-clear-button")).not.toBeNull();
+
+    smtpField.querySelector<HTMLButtonElement>("app-clear-button button")!.click();
+    fixture.detectChanges();
+    expect(component.params()["recovery.identifier"]).toBe("");
+    expect(smtpField.querySelector("app-clear-button")).toBeNull();
+  });
+
   it("should save system config successfully", () => {
     const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
     const notificationSpy = jest.spyOn(notificationService, "success");
