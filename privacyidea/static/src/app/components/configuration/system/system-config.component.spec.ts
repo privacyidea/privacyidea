@@ -28,7 +28,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
-import { SmtpService } from "@services/smtp/smtp.service";
+import { SmtpServer, SmtpService } from "@services/smtp/smtp.service";
 import { SystemService } from "@services/system/system.service";
 import { MockContentService, MockNotificationService, MockPiResponse, MockSmtpService } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
@@ -104,9 +104,13 @@ describe("SystemConfigComponent", () => {
     expect(component.params().UiLoginDisplayRealmBox).toBe(true);
   });
 
-  it("should load SMTP identifiers on init", () => {
-    expect(component.smtpIdentifiers).toBeDefined();
-    expect(Array.isArray(component.smtpIdentifiers)).toBe(true);
+  it("should derive SMTP identifiers from the configured servers", () => {
+    expect(component.smtpIdentifiers()).toStrictEqual([]);
+
+    const smtpService = TestBed.inject(SmtpService) as unknown as MockSmtpService;
+    smtpService.smtpServers.set([{ identifier: "myServer" }, { identifier: "otherServer" }] as SmtpServer[]);
+
+    expect(component.smtpIdentifiers()).toStrictEqual(["myServer", "otherServer"]);
   });
 
   it("should save system config successfully", () => {
@@ -152,9 +156,7 @@ describe("SystemConfigComponent", () => {
   it("should handle delete user cache error", () => {
     jest
       .spyOn(systemService, "deleteUserCache")
-      .mockReturnValueOnce(
-        of(new MockPiResponse<{ status: boolean; deleted: number }>({ result: { status: false } }))
-      );
+      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean; deleted: number }>({ result: { status: false } })));
     const notificationSpy = jest.spyOn(notificationService, "error");
 
     component.deleteUserCache();

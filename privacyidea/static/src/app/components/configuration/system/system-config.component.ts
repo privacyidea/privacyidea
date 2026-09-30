@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
+import { Component, computed, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDialog } from "@angular/material/dialog";
@@ -89,7 +89,9 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
 
   params = signal<SystemConfigParams>({});
   isDirty = signal(false);
-  smtpIdentifiers: string[] = [];
+  readonly smtpIdentifiers = computed<string[]>(() =>
+    this.smtpService.smtpServers().map((server) => server.identifier)
+  );
 
   constructor() {
     effect(() => {
@@ -113,12 +115,6 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
         this.params.set(newParams as SystemConfigParams);
         this.isDirty.set(false);
       }
-    });
-
-    // Keep SMTP identifiers in sync with the SMTP servers service
-    effect(() => {
-      const servers = this.smtpService.smtpServers();
-      this.smtpIdentifiers = servers.map((s) => s.identifier);
     });
   }
 
