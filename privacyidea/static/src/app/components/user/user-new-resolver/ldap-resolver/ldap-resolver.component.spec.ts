@@ -110,6 +110,41 @@ describe("LdapResolverComponent", () => {
     expect(component.model().TLS_VERSION).toBe("5");
   });
 
+  it("should show the keytab path of a SASL Kerberos bind in a plain text field", () => {
+    componentRef.setInput("data", { AUTHTYPE: "SASL Kerberos", KEYTABFILE: "/etc/krb5/privacyidea.keytab" });
+
+    fixture.detectChanges();
+
+    const inputs: HTMLInputElement[] = Array.from(fixture.nativeElement.querySelectorAll("input"));
+    const keytabInput = inputs.find((input) => input.value === "/etc/krb5/privacyidea.keytab");
+    expect(keytabInput?.type).toBe("text");
+    expect(fixture.nativeElement.querySelector("input[type='password']")).toBeNull();
+  });
+
+  it("should store a keytab path entered for a SASL Kerberos bind as KEYTABFILE", () => {
+    componentRef.setInput("data", { AUTHTYPE: "SASL Kerberos" });
+    fixture.detectChanges();
+
+    const keytabInput: HTMLInputElement = fixture.nativeElement.querySelector(
+      "input[placeholder='/etc/privacyidea/ldap.keytab']"
+    );
+    keytabInput.value = "/etc/krb5/privacyidea.keytab";
+    keytabInput.dispatchEvent(new Event("input"));
+
+    expect(component.getValue().KEYTABFILE).toBe("/etc/krb5/privacyidea.keytab");
+    expect(component.getValue().BINDPW).toBe("");
+  });
+
+  it("should keep the bind password of a simple bind in a password field", () => {
+    componentRef.setInput("data", { AUTHTYPE: "Simple", BINDPW: "secret" });
+
+    fixture.detectChanges();
+
+    const passwordInput: HTMLInputElement = fixture.nativeElement.querySelector("input[type='password']");
+    expect(passwordInput.value).toBe("secret");
+    expect(passwordInput.getAttribute("autocomplete")).toBe("new-password");
+  });
+
   it("should apply LDAP presets", () => {
     const preset = component.ldapPresets[0];
     component.applyLdapPreset(preset);
