@@ -21,177 +21,201 @@
   class="privacyidea-servers-container">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        appearance="fill"
-        class="table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@piServer.filterPrivacyidea">Filter privacyIDEA Servers...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="privacyideaServerService.remoteServerResource.isLoading()"
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@piServer.filterByIdentifier"
-            matInput
-            placeholder="Filter by identifier or URL" />
-        </app-clearable-input>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          appearance="fill"
+          class="table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@piServer.filterPrivacyidea">Filter privacyIDEA Servers...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="resetFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="privacyideaServerService.remoteServerResource.isLoading()"
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@piServer.filterByIdentifier"
+              matInput
+              placeholder="Filter by identifier or URL" />
+          </app-clearable-input>
+        </mat-form-field>
+        <button
+          [matMenuTriggerFor]="tableActionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <span class="icon-badge">
+            <mat-icon>menu</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+          </span>
+        </button>
+      </div>
       <mat-paginator
+        appPaginatorCompactRange
         [length]="totalLength()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSizeOptions()[1]"
         showFirstLastButtons />
     </div>
-    <div class="actions-container">
-      <button
-        (click)="openEditDialog()"
-        class="action-button-primary button-width-l"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="mdi--pi-logo padding-right-3"></mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@common.createPrivacyidea">Create PrivacyIDEA Server</span>
-      </button>
-      <button
-        (click)="deleteSelected()"
-        [disabled]="!selector.hasSelection()"
-        class="action-button-delete-secondary button-width-l"
-        mat-stroked-button>
-        <mat-icon>delete_sweep</mat-icon>
-        <span i18n="@@common.delete">Delete</span>
-      </button>
+    <div class="actions-row margin-bottom-16">
+      <div class="actions-row-inner">
+        <div class="actions-container">
+          <button
+            (click)="openEditDialog()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="mdi--pi-logo padding-right-3"></mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n="@@common.createPrivacyidea">Create PrivacyIDEA Server</span>
+          </button>
+          <button
+            (click)="deleteSelected()"
+            [disabled]="!selector.hasSelection()"
+            class="action-button-delete-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>delete_sweep</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        </div>
+      </div>
     </div>
-    <table
-      [dataSource]="privacyideaDataSource()"
-      class="privacyidea-servers-table"
-      mat-table
-      matSort>
-      <ng-container matColumnDef="select">
-        <th
-          *matHeaderCellDef
-          class="table-checkbox"
-          mat-header-cell>
-          <mat-checkbox
-            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
-            [checked]="selector.allRowsSelected()"
-            [disabled]="!selector.hasVisibleRows()"
-            [indeterminate]="selector.someRowsSelected()" />
-        </th>
-        <td
-          *matCellDef="let row"
-          class="table-checkbox"
-          mat-cell>
-          <mat-checkbox
-            (change)="selector.setRowSelected(row, $event.checked)"
-            (click)="$event.stopPropagation()"
-            [checked]="selector.isRowSelected(row)" />
-        </td>
-      </ng-container>
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="privacyideaDataSource()"
+        class="privacyidea-servers-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="select">
+          <th
+            *matHeaderCellDef
+            class="table-checkbox"
+            mat-header-cell>
+            <mat-checkbox
+              (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+              [checked]="selector.allRowsSelected()"
+              [disabled]="!selector.hasVisibleRows()"
+              [indeterminate]="selector.someRowsSelected()" />
+          </th>
+          <td
+            *matCellDef="let row"
+            class="table-checkbox"
+            mat-cell>
+            <mat-checkbox
+              (change)="selector.setRowSelected(row, $event.checked)"
+              (click)="$event.stopPropagation()"
+              [checked]="selector.isRowSelected(row)" />
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="identifier">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-m'"
-          i18n="@@common.identifier"
-          mat-header-cell
-          mat-sort-header
-          >Identifier</th
-        >
-        <td
-          *matCellDef="let server"
-          [ngClass]="'col-width-m'"
-          mat-cell>
-          <app-copyable [copyText]="server.identifier">
-            <a
-              role="button"
-              tabindex="0"
-              (click)="openEditDialog(server)"
-              (keydown.enter)="openEditDialog(server)"
-              class="flex ali-center">
-              {{ server.identifier }}
-            </a>
-          </app-copyable>
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="identifier">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-m'"
+            i18n="@@common.identifier"
+            mat-header-cell
+            mat-sort-header
+            >Identifier</th
+          >
+          <td
+            *matCellDef="let server"
+            [ngClass]="'col-width-m'"
+            mat-cell>
+            <app-copyable [copyText]="server.identifier">
+              <a
+                role="button"
+                tabindex="0"
+                (click)="openEditDialog(server)"
+                (keydown.enter)="openEditDialog(server)"
+                class="flex ali-center">
+                {{ server.identifier }}
+              </a>
+            </app-copyable>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="url">
-        <th
-          *matHeaderCellDef
-          class="col-width-flex"
-          i18n="@@piServer.url"
-          mat-header-cell
-          mat-sort-header
-          >URL</th
-        >
-        <td
-          *matCellDef="let server"
-          class="col-width-flex"
-          mat-cell>
-          {{ server.url }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="url">
+          <th
+            *matHeaderCellDef
+            class="col-width-flex"
+            i18n="@@piServer.url"
+            mat-header-cell
+            mat-sort-header
+            >URL</th
+          >
+          <td
+            *matCellDef="let server"
+            class="col-width-flex"
+            mat-cell>
+            {{ server.url }}
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="tls">
-        <th
-          *matHeaderCellDef
-          [ngClass]="'col-width-s'"
-          i18n="@@piServer.verifyTls"
-          mat-header-cell
-          mat-sort-header
-          >Verify TLS</th
-        >
-        <td
-          *matCellDef="let server"
-          [ngClass]="'col-width-s'"
-          mat-cell>
-          <div class="flex just-center">
-            @if (server.tls) {
-              <mat-icon>check</mat-icon>
-            } @else {
-              <mat-icon>close</mat-icon>
-            }
-          </div>
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="tls">
+          <th
+            *matHeaderCellDef
+            [ngClass]="'col-width-s'"
+            i18n="@@piServer.verifyTls"
+            mat-header-cell
+            mat-sort-header
+            >Verify TLS</th
+          >
+          <td
+            *matCellDef="let server"
+            [ngClass]="'col-width-s'"
+            mat-cell>
+            <div class="flex just-center">
+              @if (server.tls) {
+                <mat-icon>check</mat-icon>
+              } @else {
+                <mat-icon>close</mat-icon>
+              }
+            </div>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="description">
-        <th
-          *matHeaderCellDef
-          class="col-width-flex"
-          i18n="@@common.description"
-          mat-header-cell
-          mat-sort-header
-          >Description</th
-        >
-        <td
-          *matCellDef="let server"
-          class="col-width-flex"
-          mat-cell>
-          {{ server.description }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="description">
+          <th
+            *matHeaderCellDef
+            class="col-width-flex"
+            i18n="@@common.description"
+            mat-header-cell
+            mat-sort-header
+            >Description</th
+          >
+          <td
+            *matCellDef="let server"
+            class="col-width-flex"
+            mat-cell>
+            {{ server.description }}
+          </td>
+        </ng-container>
 
-      <tr
-        *matHeaderRowDef="displayedColumns"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: displayedColumns"
-        mat-row></tr>
+        <tr
+          *matHeaderRowDef="displayedColumns; sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: displayedColumns"
+          mat-row></tr>
 
-      <tr *matNoDataRow>
-        <td colspan="5">
-          <app-table-state
-            [status]="tableState.rowStatus()"
-            [table]="tableState" />
-        </td>
-      </tr>
-    </table>
+        <tr *matNoDataRow>
+          <td colspan="5">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"
@@ -213,3 +237,19 @@
     </app-table-state>
   }
 </div>
+
+<mat-menu #tableActionsMenu="matMenu">
+  <button
+    (click)="openEditDialog()"
+    mat-menu-item>
+    <mat-icon class="mdi--pi-logo"></mat-icon>
+    <span i18n="@@common.createPrivacyidea">Create PrivacyIDEA Server</span>
+  </button>
+  <button
+    (click)="deleteSelected()"
+    [disabled]="!selector.hasSelection()"
+    mat-menu-item>
+    <mat-icon>delete_sweep</mat-icon>
+    <span i18n="@@common.delete">Delete</span>
+  </button>
+</mat-menu>

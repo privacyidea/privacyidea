@@ -26,6 +26,7 @@ import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -43,6 +44,7 @@ import {
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { lastValueFrom } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so table.page-table-state-size(table.table-width(...)) in the .scss (see table-width()
@@ -70,7 +72,9 @@ const columnKeysMap = [
     ClearableInputComponent,
     ScrollToTopDirective,
     RouterLink,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective,
+    MatMenuModule
   ]
 })
 export class MachineResolverComponent {

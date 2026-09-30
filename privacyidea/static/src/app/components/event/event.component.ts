@@ -38,10 +38,12 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -51,6 +53,7 @@ import { NotificationService } from "@services/notification/notification.service
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { of } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-event",
@@ -69,7 +72,10 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     MatPaginator,
     HighlightPipe,
     MatTooltip,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective,
+    MatMenuModule
   ],
   standalone: true,
   templateUrl: "./event.component.html",

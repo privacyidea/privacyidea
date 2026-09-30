@@ -21,28 +21,33 @@
   class="audit-table-container">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        class="audit-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@audit.filterAuditLog">Filter Audit Log...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="auditService.clearFilter()"
-          [showClearButton]="auditService.filterDraft().isNotEmpty">
-          <input
-            #filterHTMLInputElement
-            [appFilterAutocomplete]="auditService.apiFilterKeys"
-            (input)="auditService.handleFilterInput($event)"
-            [value]="auditService.filterDraft().value"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@audit.exampleQueryAction"
-            matInput
-            placeholder="Example query: 'action: GET success: false'" />
-        </app-clearable-input>
-        <mat-hint>{{ filterHint }}</mat-hint>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          class="audit-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@audit.filterAuditLog">Filter Audit Log...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="auditService.clearFilter()"
+            [showClearButton]="auditService.filterDraft().isNotEmpty">
+            <input
+              #filterHTMLInputElement
+              [appFilterAutocomplete]="auditService.apiFilterKeys"
+              (input)="auditService.handleFilterInput($event)"
+              [value]="auditService.filterDraft().value"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@audit.exampleQueryAction"
+              matInput
+              placeholder="Example query: 'action: GET success: false'" />
+          </app-clearable-input>
+          <mat-hint>{{ filterHint }}</mat-hint>
+        </mat-form-field>
+      </div>
       <mat-paginator
+        appPaginatorPageSizeTooltip
+        appPaginatorCompactRange
         (page)="onPageEvent($event)"
+        class="hide-page-size-label"
         [length]="totalLength()"
         [pageIndex]="auditService.pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"

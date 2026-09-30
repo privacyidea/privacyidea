@@ -82,47 +82,6 @@ function gap(body: string): number {
   return Number(match[1]);
 }
 
-/** The compact breakpoint is a SCSS variable, not a literal, in the source (the 1600px one is a
- * literal) — read it out instead of hardcoding it a second time here, so a future rename of the
- * variable's value is what's under test rather than a copy of it. */
-function compactBreakpointPx(): number {
-  const match = scss.match(/\$breakpoint-compact:\s*(\d+)px/);
-  if (!match) {
-    throw new Error("Could not find $breakpoint-compact in navigation.component.scss");
-  }
-  return Number(match[1]);
-}
-
-const NARROW_BREAKPOINT_PX = 1600;
-
-/** Bucket of the three `.version-text` rules that applies at a given effective (post-zoom) CSS
- * viewport width, mirroring the `max-width` cascade in the SCSS (last matching media query wins). */
-type Bucket = "wide" | "compact" | "narrow";
-
-function bucketFor(effectiveWidthPx: number, compactBreakpoint: number): Bucket {
-  if (effectiveWidthPx <= NARROW_BREAKPOINT_PX) return "narrow";
-  if (effectiveWidthPx <= compactBreakpoint) return "compact";
-  return "wide";
-}
-
-/** Pinned margin-right values per bucket, as `{ base, nodeShown }`, kept in sync with the
- * individual pinning tests below. */
-const EXPECTED_MARGINS: Record<Bucket, { base: number; nodeShown: number }> = {
-  wide: { base: 34, nodeShown: 99 },
-  compact: { base: 208, nodeShown: 272 },
-  narrow: { base: 113, nodeShown: 113 }
-};
-
-/** Common laptop/external-monitor CSS viewport widths (at 100% zoom / 1x). Browser zoom does not
- * change the physical screen, it changes how many CSS px the layout viewport reports, so zooming
- * in on any of these is equivalent to laying out a narrower physical screen — that's the effective
- * width the media queries actually see. */
-const REFERENCE_VIEWPORT_WIDTHS_PX = [1280, 1366, 1440, 1536, 1600, 1680, 1728, 1792, 1920, 2048, 2560];
-
-/** Zoom levels a low-vision user is realistically going to reach for, per WCAG 1.4.4 (Resize
- * Text) which requires content and functionality to keep working up to 200% zoom. */
-const ZOOM_LEVELS_PERCENT = [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200];
-
 describe("navigation toolbar layout (pinned SCSS values)", () => {
   it("keeps the secondary toolbar's item gap at 4px", () => {
     const body = ruleBody(scss, ".secondary-toolbar {");
@@ -137,7 +96,29 @@ describe("navigation toolbar layout (pinned SCSS values)", () => {
     expect(marginRight(nodeShown)).toBe(99);
   });
 
-  it("widens .version-text below the compact breakpoint ($breakpoint-compact = 1822px)", () => {
+  // .profile-hidden is applied from the template (navigation.component.html), driven by
+  // NavigationComponent's ViewChild read of UserUtilsPanelComponent.isLargeScreen() — not by a
+  // media query of its own. That's what keeps this margin's switch exactly in step with the
+  // username/realm text disappearing: both react to the very same signal, so there is no second,
+  // independently-tuned width for the two to drift apart at. See
+  // navigation.component.spec.ts for the behavioral test of that class binding.
+  it("narrows .version-text once .profile-hidden is applied", () => {
+    const versionText = ruleBody(scss, ".version-text {");
+    const profileHidden = ruleBody(versionText, "&.profile-hidden {");
+    expect(profileHidden).toMatch(/\.version-prefix\s*\{\s*display:\s*none;/);
+    expect(marginRight(profileHidden)).toBe(113);
+
+    // The plain and node-shown margins converge here: at this width the node name sits in the
+    // same now-hidden profile-text block, so there is nothing left for the two states to differ
+    // over.
+    const nodeShown = ruleBody(profileHidden, "&.node-shown {");
+    expect(marginRight(nodeShown)).toBe(113);
+  });
+
+  // A plain width breakpoint, separate from .profile-hidden: the support/documentation buttons
+  // drop their text at $breakpoint-compact well before the username/realm text disappears, and
+  // .version-text takes up the slack they free up on the same row to stay visually balanced.
+  it("widens .version-text below $breakpoint-compact, while the username/realm text is still visible", () => {
     const media = ruleBody(scss, "@media (max-width: $breakpoint-compact)");
     const versionText = ruleBody(media, ".version-text {");
     expect(marginRight(versionText)).toBe(208);
@@ -146,59 +127,11 @@ describe("navigation toolbar layout (pinned SCSS values)", () => {
     expect(marginRight(nodeShown)).toBe(272);
   });
 
-  it("narrows .version-text again below 1600px, where node name and version text no longer coexist", () => {
-    const media = ruleBody(scss, "@media (max-width: 1600px)");
-    const versionText = ruleBody(media, ".version-text {");
-    expect(marginRight(versionText)).toBe(113);
-
-    // Below 1600px the plain and node-shown margins converge: at that width the node name is
-    // hidden already, so there is nothing left for the two states to differ over.
-    const nodeShown = ruleBody(versionText, "&.node-shown {");
-    expect(marginRight(nodeShown)).toBe(113);
-  });
-
-  it("keeps the narrow breakpoint strictly below the compact one", () => {
-    // If these two ever cross, bucketFor()'s "last max-width wins" assumption -- and the
-    // cascade in the SCSS itself, which relies on the narrower query appearing after the wider
-    // one -- both silently stop matching what the browser actually renders.
-    expect(NARROW_BREAKPOINT_PX).toBeLessThan(compactBreakpointPx());
-  });
-
-  describe("WCAG 1.4.4 zoom coverage (100%-200%, common viewport widths)", () => {
-    const cases = REFERENCE_VIEWPORT_WIDTHS_PX.flatMap((viewportWidth) =>
-      ZOOM_LEVELS_PERCENT.map((zoom) => ({
-        viewportWidth,
-        zoom,
-        effectiveWidth: Math.round(viewportWidth / (zoom / 100))
-      }))
-    );
-
-    it("builds a non-empty zoom x viewport matrix", () => {
-      // Guards the test.each below against a silently-empty matrix (e.g. a typo turning
-      // REFERENCE_VIEWPORT_WIDTHS_PX or ZOOM_LEVELS_PERCENT into `[]`), which would otherwise
-      // report as "0 tests, all green" instead of failing.
-      expect(cases.length).toBe(REFERENCE_VIEWPORT_WIDTHS_PX.length * ZOOM_LEVELS_PERCENT.length);
-    });
-
-    test.each(cases)(
-      "$viewportWidth px @ $zoom% zoom (effective $effectiveWidth px) resolves to a pinned bucket",
-      ({ effectiveWidth }) => {
-        const compactBreakpoint = compactBreakpointPx();
-        const bucket = bucketFor(effectiveWidth, compactBreakpoint);
-        const expected = EXPECTED_MARGINS[bucket];
-
-        const media =
-          bucket === "narrow"
-            ? ruleBody(scss, `@media (max-width: ${NARROW_BREAKPOINT_PX}px)`)
-            : bucket === "compact"
-              ? ruleBody(scss, "@media (max-width: $breakpoint-compact)")
-              : scss;
-        const versionText = ruleBody(media, ".version-text {");
-        const nodeShown = ruleBody(versionText, "&.node-shown {");
-
-        expect(marginRight(versionText)).toBe(expected.base);
-        expect(marginRight(nodeShown)).toBe(expected.nodeShown);
-      }
-    );
+  it("keeps .profile-hidden's selector specificity above the $breakpoint-compact rule's, so it still wins once both apply", () => {
+    // .version-text.profile-hidden (two classes) must outrank plain .version-text from the
+    // media query above on specificity alone - source order can't be relied on here since the
+    // class-based rule is written before the media query in this file.
+    const versionText = ruleBody(scss, ".version-text {");
+    expect(versionText).toMatch(/&\.profile-hidden\s*\{/);
   });
 });

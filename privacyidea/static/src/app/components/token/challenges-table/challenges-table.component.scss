@@ -5,10 +5,15 @@
   @include styles.main-component-style;
   // Sized from the same col-width-* tiers the columns below use (timestamp l + serial m +
   // transaction_id l + expiration l + otp_received s), so the empty/error state is as wide as
-  // the table it stands in for, not the unrelated 44rem default.
+  // the table it stands in for, not the unrelated 44rem default. Also narrower than the default
+  // paginator-range floor, or filter-actions-group (table-global.scss) would stretch the filter
+  // field into dead white space above a narrower table.
+  @include table.paginator-range-floor(table.table-width(l, m, l, l, s));
   @include table.page-table-state-size(table.table-width(l, m, l, l, s));
   @include table.base-table-structure(".challenges-table", ".challenges-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }

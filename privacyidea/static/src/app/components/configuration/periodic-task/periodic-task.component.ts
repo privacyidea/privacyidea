@@ -26,6 +26,7 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -47,6 +48,7 @@ import {
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { firstValueFrom, lastValueFrom } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-periodic-task",
@@ -67,7 +69,9 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     ClearableInputComponent,
     CopyableComponent,
     ScrollToTopDirective,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective,
+    MatMenuModule
   ],
   templateUrl: "./periodic-task.component.html",
   styleUrls: ["./periodic-task.component.scss"]

@@ -111,6 +111,10 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   private itemWidths = new Map<string, number>();
   private resizeObserver: ResizeObserver | null = null;
   @ViewChild("mainNavRef", { static: false }) mainNavRef!: ElementRef<HTMLElement>;
+  // .version-text's own margin has to shrink in the same instant this panel hides the
+  // username/realm text, not at some independently-tuned width of its own - a plain media query
+  // drifted out of sync with this signal's actual breakpoint and made the two rows misalign.
+  @ViewChild(UserUtilsPanelComponent) userUtilsPanel!: UserUtilsPanelComponent;
   primaryNavItems: NavItem[] = [
     {
       icon: "dashboard",

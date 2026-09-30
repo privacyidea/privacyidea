@@ -311,11 +311,15 @@ $checkbox-column-width: 72px;
     }
   }
 
+  // At least an input-width-xl field wherever the row has room for one (flex-basis), grown from there
+  // up to its max-width - but shrinking below it, down to min-width, once the row runs short (e.g. a
+  // heavy browser zoom), so the row never overflows the card. PaginatorCompactRangeDirective counts
+  // the field at its flex-basis, so the range label gives up its total before the field shrinks.
   #{$filter-class} {
     max-width: var(--input-width-xxl);
     min-width: 300px;
     width: 100%;
-    flex: 7 1;
+    flex: 7 1 var(--input-width-xl);
 
     @media (max-width: 600px) {
       min-width: 0;
@@ -346,6 +350,13 @@ $checkbox-column-width: 72px;
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
+    // Whether the table overflows at all changes with its rows (a filter, a page change) and with the
+    // space it gets, and overflow: auto adds or drops the scrollbar to match. Without a reserved
+    // gutter, that also takes the scrollbar's width from the content or hands it back, so every
+    // column jumps a few pixels at once. scrollbar-gutter keeps that width reserved regardless of
+    // whether a scrollbar is actually needed right now, so only the scrollbar itself appears or
+    // disappears - nothing else about the table's layout moves.
+    scrollbar-gutter: stable;
 
     // Flush with the top of the region: the cover each edge needs comes from the ::before below,
     // which overhangs without moving the cell, so neither edge is uncovered to pay for the other.
@@ -366,5 +377,100 @@ $checkbox-column-width: 72px;
 
   .realm-list {
     margin-top: $realm-list-margin-top;
+  }
+}
+
+// For a table sized from its own column tiers (width: auto) rather than stretched across its card:
+// shrinks .table-scroll-region (base-table-structure above) to that table's own width, so the
+// dividers the region paints once scrolled (its border-top / border-bottom) end at the table's right
+// edge. The card is as wide as its widest row, which for a narrow table is the filter/paginator row
+// above it rather than the table, so a region left to stretch across the card draws those dividers
+// out past the table into empty space. max-width keeps a table wider than the card (e.g. at a heavy
+// browser zoom) scrolling inside the region instead of widening the page.
+@mixin scroll-region-fits-table {
+  .table-scroll-region {
+    width: fit-content;
+    max-width: 100%;
+  }
+}
+
+// The narrowest a table page's filter/paginator row can be while still fitting everything it shows
+// at once: the filter field at its own flex-basis (616px - base-table-structure's filter class), the
+// scroll-collapsed actions trigger beside it (40px icon button + 8px margin - actions-row-collapse),
+// and the paginator with its full range label (475px fits "11 – 20 of 250" or "1 – 10 of 1234"), plus
+// PaginatorCompactRangeDirective's 8px engage margin and the card's own 2 * 16px padding
+// (main-component-style).
+$filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
+
+// A routed page's own table rows (.filter-paginator-container) need genuine room to show their
+// full "of Z" total rather than getting squeezed into it - and squeezing them below this is never
+// actually necessary on any desktop-sized viewport this app targets: even the narrowest realistic
+// one (a laptop screen, or a full HD monitor at up to ~150% browser zoom) still leaves this much
+// width to spare. Included by a table page's own root selector rather than applied globally to
+// every routed page, so a page with no paginator (or no compact-range paginator) never carries it;
+// the same include also reaches the self-service variant of a table page for free, since those
+// share the admin variant's component stylesheet.
+//
+// $min-width defaults to a wide table's usual footprint, but a table with only a handful of narrow
+// columns (e.g. machines) should pass its own table-width() sum instead: filter-actions-group
+// (table-global.scss) grows to fill whatever room this floor leaves it, up to its own 932px+96px
+// cap, so a floor wider than the table itself just stretches the filter field into dead white space
+// rather than the table ever actually needing that width.
+//
+// Capped at 100cqw (the container's own available width - see main-component-style, which caps
+// this same element's max-width against it): past that point, the floor would win the maximum's
+// tug of war and force the page wider than the viewport, which sent the whole page off-screen to
+// the right at a heavy browser zoom with no visible way back. Capping it here instead hands the
+// squeeze to filter-actions-group's own flex-shrink and the filter field's own min-width
+// (table-global.scss / base-table-structure above) - so the filter field visibly shrinks first, and
+// only past its own floor does .table-scroll-region's independent horizontal scroll (not the whole
+// page's) take over.
+//
+// Never below $filter-row-min-width, though, however narrow the table: this card has no explicit
+// width of its own, so without that floor it shrinks to fit its filter row at the row's bare minimum,
+// leaving PaginatorCompactRangeDirective no slack at all - it would show the compact range with no
+// total even on a full HD screen with plenty of room to spare - and it would widen the card as soon
+// as the table scrolled, when the actions trigger appears in that row, shifting the whole table
+// sideways mid-scroll. Only the card grows for it: the table's own scroll region keeps to the table's
+// width (scroll-region-fits-table above).
+@mixin paginator-range-floor($min-width: 1520px) {
+  min-width: min(max($min-width, $filter-row-min-width), 100cqw);
+}
+
+// Collapses a table's own action-button row into a single "more actions" menu trigger once the
+// table has scrolled far enough that collapsing it keeps the table scrollable (controls-collapsed -
+// see ScrollEdgesDirective): the full row only fits above the table, so once scrolled it would sit
+// under the sticky header and cover rows, and is swapped for a compact trigger instead of also
+// being made sticky. $row-class is the wrapping row div, $inner-class its content wrapper - a grid
+// track (1fr -> 0fr) collapses smoothly regardless of the row's actual content height, unlike
+// max-height, which needs that height guessed up front. $trigger-class is the icon button that
+// opens the equivalent actions as a mat-menu, placed next to the table's filter.
+@mixin actions-row-collapse($row-class, $inner-class, $trigger-class: ".table-actions-trigger") {
+  #{$trigger-class} {
+    display: none;
+  }
+
+  #{$row-class} {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition:
+      grid-template-rows 200ms ease,
+      margin-bottom 200ms ease;
+
+    #{$inner-class} {
+      min-height: 0;
+      overflow: hidden;
+    }
+  }
+
+  &:has(.table-scroll-region.controls-collapsed) {
+    #{$row-class} {
+      grid-template-rows: 0fr;
+      margin-bottom: 0;
+    }
+
+    #{$trigger-class} {
+      display: inline-flex;
+    }
   }
 }

@@ -130,6 +130,16 @@ describe("AuthenticationLog", () => {
     expect(keys).toContain("source_ip");
   });
 
+  it("shows the empty panel instead of the table when the log has no entries", () => {
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({ auth_logs: [], count: 0, current: 1, prev: null, next: null })
+    );
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain("No authentication log entries yet");
+    expect(fixture.nativeElement.querySelector(".table-scroll-region")).toBeNull();
+  });
+
   it("renders one row per returned entry", () => {
     service.authenticationLogResource.set(
       MockPiResponse.fromValue({
@@ -266,6 +276,17 @@ describe("AuthenticationLog", () => {
   });
 
   it("shows the User Role filter button for an admin and hides it in self-service", () => {
+    // The filter row and header only render with at least one entry; an empty log shows the empty panel.
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({
+        auth_logs: [{ id: 1, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:00:00+00:00" }],
+        count: 1,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    fixture.detectChanges();
     // fixture.nativeElement is typed `any`, so it is cast to HTMLElement here: an untyped call cannot take a type
     // argument, and without the cast the found element would be `unknown`.
     const userRoleButton = () =>
@@ -545,12 +566,23 @@ describe("AuthenticationLog", () => {
   });
 
   it("renders the Conditional access filter as one menu of its three keys, behind the shared filter icon", () => {
+    // The filter row and header only render with at least one entry; an empty log shows the empty panel.
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({
+        auth_logs: [{ id: 1, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:00:00+00:00" }],
+        count: 1,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    fixture.detectChanges();
     policyService.actionTypes.set(["LOCK_USER"] as never);
     fixture.detectChanges();
     const header: HTMLElement = fixture.nativeElement.querySelector("th.mat-column-conditional_access_outcomes");
     const trigger: HTMLButtonElement = header.querySelector("button.filter-button")!;
     // The same icon as the other selection filters: this menu sets several keys, so it has no set/not-set state.
-    expect(trigger.querySelector("mat-icon")?.textContent?.trim()).toBe("filter_list");
+    expect(trigger.querySelector("mat-icon")?.classList).toContain("ms--filter-list");
 
     // The rule governing how these filters combine is stated in the menu, not left to a hover tooltip, and repeated on
     // the trigger so it is announced before the menu is even opened.
@@ -714,6 +746,17 @@ describe("AuthenticationLog", () => {
   });
 
   it("onAddCustomFilter adds the key to the main filter and focuses the input for free-text entry", () => {
+    // The filter row and header only render with at least one entry; an empty log shows the empty panel.
+    service.authenticationLogResource.set(
+      MockPiResponse.fromValue({
+        auth_logs: [{ id: 1, event_type: "LOGIN_SUCCESS", timestamp: "2026-06-22T10:00:00+00:00" }],
+        count: 1,
+        current: 1,
+        prev: null,
+        next: null
+      })
+    );
+    fixture.detectChanges();
     jest.useFakeTimers();
     const focusSpy = jest.spyOn(component.filterInput.nativeElement, "focus");
 

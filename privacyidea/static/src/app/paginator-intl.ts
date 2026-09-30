@@ -41,3 +41,19 @@ export function createPaginatorIntl(): MatPaginatorIntl {
   };
   return intl;
 }
+
+/**
+ * The range half of getRangeLabel's phrase ("1,066 – 1,080"), without the trailing total - used by
+ * PaginatorCompactRangeDirective, which needs to keep the current page's position visible while
+ * dropping the least useful part of the phrase (the total) to save space. Mirrors getRangeLabel's
+ * own start/end math so both stay in agreement.
+ */
+export function getCompactRangeLabel(page: number, pageSize: number, length: number): string {
+  if (length === 0 || pageSize === 0) {
+    return $localize`:@@nav.pageRangeCompact.zero:0`;
+  }
+  length = Math.max(length, 0);
+  const startIndex = page * pageSize;
+  const endIndex = startIndex < length ? Math.min(startIndex + pageSize, length) : startIndex + pageSize;
+  return $localize`:@@nav.pageRangeCompact:${startIndex + 1}:START: – ${endIndex}:END:`;
+}

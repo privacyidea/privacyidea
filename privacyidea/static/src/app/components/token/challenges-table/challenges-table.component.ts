@@ -23,11 +23,15 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -69,13 +73,17 @@ const columnKeysMap = [
     MatInputModule,
     MatIconModule,
     MatButtonModule,
+    MatMenuModule,
+    MatTooltipModule,
     NgClass,
     CopyableComponent,
     ScrollToTopDirective,
     ClearableInputComponent,
     ChallengesTableActionsComponent,
     ScrollEdgesDirective,
-    TableStateComponent
+    TableStateComponent,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./challenges-table.component.html",
   styleUrls: ["./challenges-table.component.scss"]

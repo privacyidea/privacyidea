@@ -23,27 +23,32 @@
   i18n-aria-label="@@container.containerTable">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <h3
-        class="selfservice-paginator-label"
-        i18n="@@container.yourContainers"
-        >Your Containers</h3
-      >
-      @if (authService.rights().includes("container_create")) {
-        <button
-          mat-stroked-button
-          class="action-button-primary button-width-m"
-          (click)="navigateToCreate()"
-          aria-label="Create Container"
-          i18n-aria-label="@@common.createContainer">
-          <span class="icon-badge">
-            <mat-icon class="padding-right-3">folder</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-          </span>
-          <span i18n="@@common.createContainer">Create Container</span>
-        </button>
-      }
+      <div class="filter-actions-group">
+        <h3
+          class="selfservice-paginator-label"
+          i18n="@@container.yourContainers"
+          >Your Containers</h3
+        >
+        @if (authService.rights().includes("container_create")) {
+          <button
+            mat-stroked-button
+            class="action-button-primary button-width-m"
+            (click)="navigateToCreate()"
+            aria-label="Create Container"
+            i18n-aria-label="@@common.createContainer">
+            <span class="icon-badge">
+              <mat-icon class="padding-right-3">folder</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n="@@common.createContainer">Create Container</span>
+          </button>
+        }
+      </div>
       <mat-paginator
+        appPaginatorPageSizeTooltip
+        appPaginatorCompactRange
         (page)="onPageEvent($event)"
+        class="hide-page-size-label"
         [length]="total()"
         [pageIndex]="pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"

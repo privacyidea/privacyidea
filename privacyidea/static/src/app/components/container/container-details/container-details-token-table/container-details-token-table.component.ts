@@ -35,6 +35,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatFormField, MatLabel } from "@angular/material/select";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { Sort } from "@angular/material/sort";
 import {
   MatCell,
@@ -92,7 +93,8 @@ interface ContainerDetailTokenData {
     MatInput,
     ClearableInputComponent,
     ContainerDetailsTokenActionsComponent,
-    TableStateComponent
+    TableStateComponent,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"

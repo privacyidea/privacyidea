@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AfterViewInit, Directive, ElementRef, inject, OnDestroy, Renderer2 } from "@angular/core";
+import { AfterViewInit, Directive, ElementRef, inject, input, OnDestroy, Renderer2 } from "@angular/core";
 
 const GAP = 8;
 const PADDING = 16;
@@ -48,6 +48,12 @@ function getOuterWidth(el: HTMLElement): number {
   standalone: true
 })
 export class OverflowNavDirective implements AfterViewInit, OnDestroy {
+  // Ligature of the "More" button's icon, and of an optional badge on it. A table's action row
+  // passes "menu" with a "build" badge, the same icon as the actions trigger that replaces the row
+  // once the table scrolls.
+  readonly overflowNavIcon = input("more_horiz");
+  readonly overflowNavBadgeIcon = input<string>();
+
   private el = inject(ElementRef<HTMLElement>);
   private renderer = inject(Renderer2);
   private resizeObserver: ResizeObserver | null = null;
@@ -103,7 +109,17 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       this.renderer.addClass(this.moreButton, cls);
     }
 
-    this.renderer.appendChild(this.moreButton, this.createMatIcon("more_horiz"));
+    const icon = this.createMatIcon(this.overflowNavIcon());
+    const badgeIcon = this.overflowNavBadgeIcon();
+    if (badgeIcon) {
+      const badge = this.renderer.createElement("span");
+      this.renderer.addClass(badge, "icon-badge");
+      this.renderer.appendChild(badge, icon);
+      this.renderer.appendChild(badge, this.createMatIcon(badgeIcon, ["icon-badge-overlay", "icon-badge-corner"]));
+      this.renderer.appendChild(this.moreButton, badge);
+    } else {
+      this.renderer.appendChild(this.moreButton, icon);
+    }
 
     const label = this.renderer.createElement("span");
     label.textContent = $localize`:@@common.more:More`;

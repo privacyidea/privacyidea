@@ -56,6 +56,8 @@ import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -100,7 +102,9 @@ const columnsKeyMap = [
     MatDividerModule,
     ScrollEdgesDirective,
     TableStateComponent,
-    RouterLink
+    RouterLink,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss"

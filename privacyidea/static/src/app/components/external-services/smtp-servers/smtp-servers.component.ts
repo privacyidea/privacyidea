@@ -21,6 +21,7 @@ import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, 
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
@@ -28,7 +29,9 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SmtpServer, SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { Router } from "@angular/router";
@@ -51,6 +54,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatPaginator,
     MatSortModule,
     MatIconModule,
+    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
     MatTooltipModule,
@@ -60,7 +64,9 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     ClearableInputComponent,
     MatInput,
     CopyableComponent,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./smtp-servers.component.html",
   styleUrl: "./smtp-servers.component.scss"

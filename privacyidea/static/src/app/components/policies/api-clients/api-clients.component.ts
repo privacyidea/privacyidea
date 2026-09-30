@@ -26,6 +26,7 @@ import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ApiClientIssuedKeyBannerComponent } from "@components/policies/api-clients/api-client-issued-key-banner/api-client-issued-key-banner.component";
@@ -42,6 +43,8 @@ import { IntegrationsService, IntegrationsServiceInterface } from "@services/int
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-api-clients",
@@ -63,7 +66,10 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     CopyableComponent,
     ApiClientIssuedKeyBannerComponent,
     DatePipe,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective,
+    MatMenuModule
   ],
   templateUrl: "./api-clients.component.html",
   styleUrl: "./api-clients.component.scss"

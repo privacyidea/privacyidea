@@ -27,6 +27,7 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -45,6 +46,7 @@ import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { StringUtils } from "@utils/string.utils";
 import { POLICY_VOCABULARY_ACTIONS, valueDisplayLabel } from "@utils/value-label.utils";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
@@ -72,7 +74,9 @@ import { ViewConditionsColumnComponent } from "./view-conditions-column/view-con
     HighlightPipe,
     TableStateComponent,
     MultiSelectFilterComponent,
-    RouterLink
+    RouterLink,
+    ScrollEdgesDirective,
+    MatMenuModule
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"

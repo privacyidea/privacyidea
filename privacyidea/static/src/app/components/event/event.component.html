@@ -23,58 +23,81 @@
   i18n-aria-label="@@event.eventHandlers">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        class="event-handler-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@event.filterEventHandlers">Filter Event Handlers ...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="onClearFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="eventService.allEventsResource.isLoading()"
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@common.exampleQueryUsername"
-            matInput
-            placeholder="Example query: 'username: root'" />
-        </app-clearable-input>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          class="event-handler-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@event.filterEventHandlers">Filter Event Handlers ...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="onClearFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="eventService.allEventsResource.isLoading()"
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@common.exampleQueryUsername"
+              matInput
+              placeholder="Example query: 'username: root'" />
+          </app-clearable-input>
+        </mat-form-field>
+        <button
+          [matMenuTriggerFor]="tableActionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <span class="icon-badge">
+            <mat-icon>menu</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+          </span>
+        </button>
+      </div>
       <mat-paginator
+        appPaginatorCompactRange
         [length]="eventHandlerDataSource().data.length"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSizeOptions()[1]"
         showFirstLastButtons></mat-paginator>
     </div>
 
-    <div class="actions-container">
-      @if (authService.actionAllowed("eventhandling_write")) {
-        <button
-          (click)="onCreateNewEventHandler()"
-          class="action-button-primary button-width-xl"
-          mat-stroked-button>
-          <span class="icon-badge">
-            <mat-icon class="padding-right-3">flag</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-          </span>
-          <span i18n="@@event.createNewEvent">Create New Event Handler</span>
-        </button>
-      }
-      <mat-slide-toggle
-        (change)="toggleDetailedView()"
-        [checked]="detailedView()"
-        i18n="@@common.detailedView"
-        >Detailed View</mat-slide-toggle
-      >
+    <div class="actions-row">
+      <div class="actions-row-inner">
+        <div class="actions-container">
+          @if (authService.actionAllowed("eventhandling_write")) {
+            <button
+              (click)="onCreateNewEventHandler()"
+              class="action-button-primary button-width-xl"
+              mat-stroked-button>
+              <span class="icon-badge">
+                <mat-icon class="padding-right-3">flag</mat-icon>
+                <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+              </span>
+              <span i18n="@@event.createNewEvent">Create New Event Handler</span>
+            </button>
+          }
+          <mat-slide-toggle
+            (change)="toggleDetailedView()"
+            [checked]="detailedView()"
+            i18n="@@common.detailedView"
+            >Detailed View</mat-slide-toggle
+          >
+        </div>
+      </div>
     </div>
 
-    <table
-      [dataSource]="eventHandlerDataSource()"
-      class="event-handler-table row-striped"
-      mat-table>
-      @for (column of Object.keys(columnKeysMap); track column) {
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="eventHandlerDataSource()"
+        class="event-handler-table row-striped"
+        mat-table>
+        @for (column of Object.keys(columnKeysMap); track column) {
         @if (column !== "delete" || authService.actionAllowed("eventhandling_write")) {
           <ng-container [matColumnDef]="column">
             <th
@@ -218,23 +241,24 @@
         }
       }
 
-      <tr
-        *matHeaderRowDef="columnKeys()"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: columnKeys()"
-        [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"
-        class="example-element-row"
-        mat-row></tr>
+        <tr
+          *matHeaderRowDef="columnKeys(); sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: columnKeys()"
+          [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"
+          class="example-element-row"
+          mat-row></tr>
 
-      <tr *matNoDataRow>
-        <td [attr.colspan]="columnKeys().length">
-          <app-table-state
-            [status]="tableState.rowStatus()"
-            [table]="tableState" />
-        </td>
-      </tr>
-    </table>
+        <tr *matNoDataRow>
+          <td [attr.colspan]="columnKeys().length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"
@@ -258,3 +282,22 @@
     </app-table-state>
   }
 </div>
+
+<!-- The action row's controls as menu items, for the compact trigger shown next to the filter once the
+     table is scrolled and that row is hidden. -->
+<mat-menu #tableActionsMenu="matMenu">
+  @if (authService.actionAllowed("eventhandling_write")) {
+    <button
+      (click)="onCreateNewEventHandler()"
+      mat-menu-item>
+      <mat-icon>flag</mat-icon>
+      <span i18n="@@event.createNewEvent">Create New Event Handler</span>
+    </button>
+  }
+  <button
+    (click)="toggleDetailedView()"
+    mat-menu-item>
+    <mat-icon>{{ detailedView() ? "check_box" : "check_box_outline_blank" }}</mat-icon>
+    <span i18n="@@common.detailedView">Detailed View</span>
+  </button>
+</mat-menu>
