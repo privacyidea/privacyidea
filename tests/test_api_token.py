@@ -5975,7 +5975,7 @@ class APITokenListNodeTestCase(MyApiTestCase):
                   mock.patch.object(PasswdIdResolver, "get_user_info", side_effect=unreachable)):
                 set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm3)
                 self.assertEqual(403, delete_single().status_code)
-                with self.assertLogs("privacyidea.api.lib.policyhelper", level="WARNING") as captured:
+                with self.assertLogs("privacyidea.api.lib.utils", level="WARNING") as captured:
                     self.assertEqual(403, delete_bulk().status_code)
                 self.assertIn(f"The owner of the token {bulk} can not be looked up", captured.output[0])
 
@@ -6088,3 +6088,56 @@ class APITokenListNodeTestCase(MyApiTestCase):
                 remove_token(serial)
             except ResourceNotFoundError:
                 pass
+
+    def test_06_owner_lookup_error_is_audited(self):
+        # The request is recorded with an empty user name next to the realm and the resolver of the owner, which
+        # looks like a token without an owner. The audit entry has to say why the owner is missing. The owner is
+        # looked up by the request hook and by the policy check, but the error is reported once.
+        self.setUp_user_realms()
+        single = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        bulk = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        unreachable = ResolverError("Error performing bind operation: unreachable")
+
+        def assert_audited(action: str, serial: str):
+            with self.app.test_request_context('/audit/', method='GET',
+                                               query_string={"action": action, "serial": serial,
+                                                             "sortorder": "desc"},
+                                               headers={"Authorization": self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            entries = res.json["result"]["value"]["auditdata"]
+            self.assertEqual(1, len(entries), entries)
+            entry = entries[0]
+            self.assertEqual("", entry["user"], entry)
+            info = entry["info"]
+            self.assertIn(f"The owner of the token {serial} can not be looked up", info, info)
+            self.assertIn("Error performing bind operation: unreachable", info, info)
+            self.assertEqual(1, info.count("can not be looked up"), info)
+
+        try:
+            set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1, user="*")
+            # Reading the audit log is an admin action of its own once admin policies are defined
+            set_policy("audit", scope=SCOPE.ADMIN, action=PolicyAction.AUDIT)
+            with (mock.patch.object(PasswdIdResolver, "getUsername", side_effect=unreachable),
+                  mock.patch.object(PasswdIdResolver, "getUserId", side_effect=unreachable),
+                  mock.patch.object(PasswdIdResolver, "get_user_info", side_effect=unreachable)):
+                with self.app.test_request_context(f'/token/{single}', method='DELETE',
+                                                   headers={'Authorization': self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                # A list of serials is not looked up by the request hook, only by the policy check
+                with self.app.test_request_context('/token/', method='DELETE', json={"serials": [bulk]},
+                                                   headers={'Authorization': self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+
+            assert_audited("DELETE /token/<serial>", single)
+            assert_audited("DELETE /token/", bulk)
+        finally:
+            for name in ("delete", "audit"):
+                delete_policy(name)
+            for serial in (single, bulk):
+                try:
+                    remove_token(serial)
+                except ResourceNotFoundError:
+                    pass

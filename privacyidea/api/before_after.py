@@ -32,7 +32,8 @@ import copy
 
 from .lib.utils import (get_all_params, get_before_request_config, get_optional, map_error_to_code,
                         get_auth_error_status_code, send_error, verify_auth_token, get_auth_token_from_request,
-                        logged_in_user_from_token, hide_specific_error_message, construct_radius_response)
+                        logged_in_user_from_token, hide_specific_error_message, construct_radius_response,
+                        report_owner_lookup_error)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from .lib.conditional_access import restore_rejection_audit
@@ -464,6 +465,7 @@ def before_request():
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
     serial = get_optional(request.all_data, "serial")
+    owner_lookup_error = None
     if serial and "*" not in serial and "," not in serial:
         g.serial = serial
         tokentype = get_token_type(serial)
@@ -476,8 +478,9 @@ def before_request():
                 pass
             except (UserError, ResolverError) as error:
                 # The owner can not be looked up, because the resolver of the owner was deleted or is unreachable. The
-                # token can still be managed, and the policies of the realm of the owner still apply to it.
-                log.warning(f"The owner of the token {serial} can not be looked up: {error}")
+                # token can still be managed, and the policies of the realm of the owner still apply to it. It is
+                # reported below, once the audit entry of the request exists.
+                owner_lookup_error = error
                 request.User = get_token_owner_without_lookup(serial)
 
     else:
@@ -541,6 +544,9 @@ def before_request():
                         "action_detail": "",
                         "thread_id": f"{threading.current_thread().ident!s}",
                         "info": ""})
+
+    if owner_lookup_error:
+        report_owner_lookup_error(serial, owner_lookup_error)
 
     if g.logged_in_user.get("role") == "admin":
         # An administrator is calling this API

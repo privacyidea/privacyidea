@@ -688,6 +688,29 @@ def get_before_request_config():
     g.policies = {}
 
 
+def report_owner_lookup_error(serial: str, error: Exception) -> None:
+    """
+    Report that the owner of a token can not be looked up, because their resolver was deleted or is unreachable.
+
+    Without this, the request is only recorded with an empty user name next to the realm and the resolver of the
+    owner, which looks exactly like a token without an owner. Writing the error to the audit entry lets the empty
+    user explain itself where administrators look for it, so a misconfigured resolver - a wrong bind password or
+    duplicate user ids raise the same ResolverError as an unreachable one - is not mistaken for a token that was
+    never assigned.
+
+    The owner is looked up more than once per request, so the error is only reported once per token.
+
+    :param serial: serial number of the token whose owner can not be looked up
+    :param error: the error the lookup failed with
+    """
+    if serial in g.setdefault("reported_owner_lookup_errors", set()):
+        return
+    g.reported_owner_lookup_errors.add(serial)
+    message = f"The owner of the token {serial} can not be looked up: {error}"
+    log.warning(message)
+    g.audit_object.add_to_log({"info": message}, add_with_comma=True)
+
+
 def get_priority_from_param(param):
     """
     Return a dictionary of priorities as int from params like

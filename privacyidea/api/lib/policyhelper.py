@@ -26,6 +26,7 @@ import logging
 from dataclasses import dataclass
 from datetime import timedelta, datetime, timezone
 
+from privacyidea.api.lib.utils import report_owner_lookup_error
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
 from privacyidea.lib.error import PolicyError, ResourceNotFoundError, UserError, ResolverError
 from privacyidea.lib.log import log_with
@@ -164,7 +165,7 @@ def get_token_user_attributes(serial: str):
     except (UserError, ResolverError) as error:
         # The owner can not be looked up, because the resolver of the owner was deleted or is unreachable. The
         # policies are matched against the realm and the resolver of the owner then, as there is no login name.
-        log.warning(f"The owner of the token {serial} can not be looked up: {error}")
+        report_owner_lookup_error(serial, error)
         token_owner = get_token_owner_without_lookup(serial)
     if token_owner:
         user_attributes.username = token_owner.login
