@@ -81,14 +81,14 @@ describe("filterColumnHint", () => {
 describe("filterMatchTooltip", () => {
   const isExact = (key: string) => ["type", "user"].includes(key);
 
-  it("lists the partial and the exact keywords in the given order", () => {
-    expect(filterMatchTooltip(["serial", "type", "description", "user"], isExact)).toBe(
-      "Partial match: serial, description\nExact match: type, user"
+  it("leads the partial keywords with the table name and lists the exact ones below", () => {
+    expect(filterMatchTooltip("Tokens", ["serial", "type", "description", "user"], isExact)).toBe(
+      "Tokens partial match: serial, description\nExact match: type, user"
     );
   });
 
   it("leaves out a group without keywords", () => {
-    expect(filterMatchTooltip(["serial"], isExact)).toBe("Partial match: serial");
-    expect(filterMatchTooltip(["user"], isExact)).toBe("Exact match: user");
+    expect(filterMatchTooltip("Tokens", ["serial"], isExact)).toBe("Tokens partial match: serial");
+    expect(filterMatchTooltip("Tokens", ["user"], isExact)).toBe("Tokens exact match: user");
   });
 });

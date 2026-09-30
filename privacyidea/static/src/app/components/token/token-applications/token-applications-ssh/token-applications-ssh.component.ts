@@ -92,8 +92,10 @@ export class TokenApplicationsSshComponent {
   sort = this.machineService.sort;
   readonly filterHint = inlineFilterHint();
   readonly filterMatchInfo = computed(() =>
-    filterMatchTooltip([...this.machineService.apiFilterKeys, ...this.machineService.advancedApiFilterKeys], (key) =>
-      this.machineService.isExactMatchKey(key)
+    filterMatchTooltip(
+      $localize`:@@token.sshMachines:SSH machines`,
+      [...this.machineService.apiFilterKeys, ...this.machineService.advancedApiFilterKeys],
+      (key) => this.machineService.isExactMatchKey(key)
     )
   );
 

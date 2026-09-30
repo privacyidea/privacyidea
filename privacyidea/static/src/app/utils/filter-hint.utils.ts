@@ -46,17 +46,18 @@ export function filterInputHint(options: FilterInputHintOptions = {}): string {
 
 /**
  * The text of the info icon on a filter input: the offered keywords, grouped by whether the table matches a value
- * anywhere in the field or only in full. A group without keywords is left out.
+ * anywhere in the field or only in full, the first group led by the table's name. A group without keywords is left
+ * out.
  */
-export function filterMatchTooltip(keys: readonly string[], isExact: (key: string) => boolean): string {
-  const partial = keys.filter((key) => !isExact(key));
-  const exact = keys.filter((key) => isExact(key));
-  const lines: string[] = [];
-  if (partial.length) {
-    lines.push($localize`:@@common.partialMatchKeys:Partial match: ${partial.join(", ")}:keys:`);
+export function filterMatchTooltip(table: string, keys: readonly string[], isExact: (key: string) => boolean): string {
+  const partial = keys.filter((key) => !isExact(key)).join(", ");
+  const exact = keys.filter((key) => isExact(key)).join(", ");
+  if (!partial) {
+    return $localize`:@@common.tableExactMatchKeys:${table}:table: exact match: ${exact}:keys:`;
   }
-  if (exact.length) {
-    lines.push($localize`:@@common.exactMatchKeys:Exact match: ${exact.join(", ")}:keys:`);
+  const lines = [$localize`:@@common.tablePartialMatchKeys:${table}:table: partial match: ${partial}:keys:`];
+  if (exact) {
+    lines.push($localize`:@@common.exactMatchKeys:Exact match: ${exact}:keys:`);
   }
   return lines.join("\n");
 }

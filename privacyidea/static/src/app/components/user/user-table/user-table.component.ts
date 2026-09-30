@@ -167,8 +167,10 @@ export class UserTableComponent implements OnDestroy {
   });
   readonly filterHint = inlineFilterHint();
   readonly filterMatchInfo = computed(() =>
-    filterMatchTooltip([...this.userService.apiFilterKeys, ...this.userService.advancedApiFilterKeys], (key) =>
-      this.userService.exactMatchKeys.has(key)
+    filterMatchTooltip(
+      $localize`:@@nav.users:Users`,
+      [...this.userService.apiFilterKeys, ...this.userService.advancedApiFilterKeys],
+      (key) => this.userService.exactMatchKeys.has(key)
     )
   );
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];

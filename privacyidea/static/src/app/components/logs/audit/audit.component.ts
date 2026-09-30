@@ -190,8 +190,10 @@ export class AuditComponent {
   readonly apiFilterKeyMap = this.auditService.apiFilterKeyMap;
   readonly filterHint = inlineFilterHint();
   readonly filterMatchInfo = computed(() =>
-    filterMatchTooltip([...this.auditService.apiFilterKeys, ...this.auditService.advancedApiFilterKeys], (key) =>
-      this.auditService.exactMatchKeys.has(key)
+    filterMatchTooltip(
+      $localize`:@@nav.audit:Audit`,
+      [...this.auditService.apiFilterKeys, ...this.auditService.advancedApiFilterKeys],
+      (key) => this.auditService.exactMatchKeys.has(key)
     )
   );
   sort = this.auditService.sort;

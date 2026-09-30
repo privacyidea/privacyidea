@@ -69,8 +69,10 @@ export class PolicyFilterComponent implements AfterViewInit {
   // The policies are filtered in the browser: priority compares numbers and active reads true or false, every other
   // keyword matches anywhere in the field.
   readonly filterMatchInfo = computed(() =>
-    filterMatchTooltip(["name", "scope", "description", "actions", "conditions", "priority", "active"], (key) =>
-      ["priority", "active"].includes(key)
+    filterMatchTooltip(
+      $localize`:@@common.policies:Policies`,
+      ["name", "scope", "description", "actions", "conditions", "priority", "active"],
+      (key) => ["priority", "active"].includes(key)
     )
   );
 
