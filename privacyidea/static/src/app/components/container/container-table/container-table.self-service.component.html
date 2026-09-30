@@ -83,6 +83,7 @@
             } @else {
               <th
                 *matHeaderCellDef
+                [ngClass]="'col-width-' + column.width"
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
@@ -102,10 +103,8 @@
             }
             <td
               *matCellDef="let element; let row"
-              [ngClass]="{
-                'input-width-l': column.key === 'description',
-                'table-checkbox': column.key === 'select'
-              }"
+              [class.table-checkbox]="column.key === 'select'"
+              [ngClass]="column.key === 'select' ? null : 'col-width-' + column.width"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {

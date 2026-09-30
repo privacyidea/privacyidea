@@ -94,11 +94,11 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   }
 
   readonly columnKeysMapSelfService = [
-    { key: "serial", label: $localize`:@@common.serial:Serial` },
-    { key: "type", label: $localize`:@@common.type:Type` },
-    { key: "states", label: $localize`:@@common.status:Status` },
-    { key: "description", label: $localize`:@@common.description:Description` },
-    { key: "delete", label: $localize`:@@common.delete:Delete` }
+    { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+    { key: "type", label: $localize`:@@common.type:Type`, width: "s" },
+    { key: "states", label: $localize`:@@common.status:Status`, width: "m" },
+    { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+    { key: "delete", label: $localize`:@@common.delete:Delete`, width: "s" }
   ];
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
     (column: { key: string; label: string }) => column.key
