@@ -4,9 +4,11 @@ This test file tests the lib.resolvers.py
 The lib.resolvers.py only depends on the database model.
 """
 import uuid
+from unittest import mock
 
-from privacyidea.lib.container import init_container, unassign_user, delete_container_by_serial, get_container_realms
-from privacyidea.lib.error import Error, UserError
+from privacyidea.lib.container import (init_container, unassign_user, delete_container_by_serial,
+                                       get_container_realms, find_container_by_serial)
+from privacyidea.lib.error import Error, ResolverError, UserError
 from privacyidea.lib.realm import (set_realm,
                                    get_realms,
                                    get_default_realm,
@@ -18,7 +20,7 @@ from privacyidea.lib.resolver import (save_resolver,
                                       delete_resolver)
 from privacyidea.lib.token import init_token, unassign_token
 from privacyidea.lib.user import User
-from privacyidea.models import CustomUserAttribute, NodeName, db
+from privacyidea.models import CustomUserAttribute, NodeName, TokenContainerOwner, TokenOwner, db
 from .base import MyTestCase
 
 
@@ -141,6 +143,51 @@ class ResolverTestCase(MyTestCase):
         delete_resolver(self.resolvername2)
         realms = get_realms()
         self.assertTrue(len(realms) == 0, realms)
+
+    def test_11_delete_realm_owner_check(self):
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver", "fileName": "/etc/passwd"})
+        set_realm("realm3", [{"name": self.resolvername1}])
+        set_realm("realm4", [{"name": self.resolvername1}])
+        unreachable = mock.patch.object(User, "_get_user_from_userstore",
+                                        side_effect=ResolverError("Failed to perform http request"))
+
+        # the owner check does not query the resolver
+        token = init_token({"type": "hotp"}, User("root", "realm3"))
+        with unreachable:
+            self.assertRaises(UserError, delete_realm, "realm3")
+        unassign_token(token.get_serial())
+
+        # a second owner in the realm is found, although the token is not in the realm
+        token = init_token({"type": "hotp"}, User("root", "realm4"))
+        self.assertSetEqual({"realm4"}, set(token.get_realms()))
+        owner = TokenOwner(token_id=token.token.id, user_id="0", resolver=self.resolvername1,
+                           realmname="realm3").save()
+        with self.assertRaises(UserError) as cm:
+            delete_realm("realm3")
+        self.assertIn("assigned to a token", cm.exception.message)
+        db.session.delete(db.session.get(TokenOwner, owner))
+        db.session.commit()
+        token.delete_token()
+
+        # a container owner in the realm is found, although the container is not in the realm
+        container_serial = init_container({"type": "generic"})["container_serial"]
+        container = find_container_by_serial(container_serial)
+        db.session.add(TokenContainerOwner(container_id=container._db_container.id, user_id="0",
+                                           resolver=self.resolvername1, realm_name="realm3"))
+        db.session.commit()
+        self.assertListEqual([], get_container_realms(container_serial))
+        with self.assertRaises(UserError) as cm:
+            delete_realm("realm3")
+        self.assertIn("assigned to a container", cm.exception.message)
+        delete_container_by_serial(container_serial)
+
+        # without assignments the realm is deleted although the resolver is unreachable
+        with unreachable:
+            delete_realm("realm3")
+        self.assertNotIn("realm3", get_realms())
+
+        delete_realm("realm4")
+        delete_resolver(self.resolvername1)
 
     def test_20_realms_with_nodes(self):
         nd1_uuid = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"

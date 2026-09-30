@@ -1,13 +1,21 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import json
+from unittest import mock
 
-from privacyidea.lib.container import (create_container_template, get_template_obj)
-from privacyidea.lib.container import (init_container, find_container_by_serial)
-from privacyidea.lib.containers.container_info import PI_INTERNAL, TokenContainerInfoData, RegistrationState
+from privacyidea.lib.container import (
+    create_container_template,
+    find_container_by_serial,
+    get_template_obj,
+    init_container,
+)
+from privacyidea.lib.containers.container_info import PI_INTERNAL, RegistrationState, TokenContainerInfoData
+from privacyidea.lib.error import ResolverError
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policy import SCOPE, delete_policy, set_policy
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.token import init_token
+
 from .api_container_common import (
     APIContainerAuthorization,
 )
@@ -504,4 +512,25 @@ class APIContainerAuthorizationAdmin(APIContainerAuthorization):
                                        method="DELETE")
         self.assert_audit_entry('DELETE /container/<string:container_serial>/info/delete/<key>', success=0,
                                 info=self.NOT_EMPTY)
+        delete_policy("policy")
+
+    def test_42_admin_delete_owner_behind_an_unreachable_resolver(self):
+        # Without the login name of the owner it can not be checked whether a policy names the owner, not even one
+        # that excludes the owner
+        container_serial = self.create_container_for_user()
+        # Created up front, the user can not log in with the resolver unreachable
+        other_container_serial = self.create_container_for_user()
+        unreachable = ResolverError("Error performing bind operation: unreachable")
+        with (mock.patch.object(PasswdIdResolver, "getUsername", side_effect=unreachable),
+              mock.patch.object(PasswdIdResolver, "getUserId", side_effect=unreachable),
+              mock.patch.object(PasswdIdResolver, "get_user_info", side_effect=unreachable)):
+            set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE, user="*,!selfservice")
+            self.request_denied_assert_403(f"/container/{container_serial}", {}, self.at, method='DELETE')
+
+            set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE, user="*")
+            self.request_assert_success(f"/container/{container_serial}", {}, self.at, method='DELETE')
+
+            # set_policy keeps the user of the existing policy unless it is passed
+            set_policy("policy", scope=SCOPE.ADMIN, action=PolicyAction.CONTAINER_DELETE)
+            self.request_assert_success(f"/container/{other_container_serial}", {}, self.at, method='DELETE')
         delete_policy("policy")

@@ -48,6 +48,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
 from privacyidea.lib.conditional_access.authentication_log import (ClientLabelSource,
                                                                     PendingAuthEvent)
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context, claimed_ca_message
+from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.user import User
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_from_config, SYSCONF
@@ -686,6 +687,58 @@ def get_before_request_config():
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
     g.policies = {}
+    # The owners of the tokens of this request and the errors their lookup failed with, see resolve_token_owner()
+    g.token_owners = {}
+    g.token_owner_errors = {}
+
+
+def resolve_token_owner(serial: str) -> User | None:
+    """
+    The owner of a token, or the owner as far as the database knows them - the realm and the resolver, but no
+    login name - if they can not be looked up because their resolver was deleted or is unreachable.
+
+    Looking an owner up queries the user store and waits out the timeout of an unreachable resolver, while the
+    request hook and every policy check of one request ask for the same owner. The result is therefore kept for
+    the rest of the request. A failed lookup is kept as well, to be reported by
+    :func:`report_owner_lookup_error` once the audit entry of the request exists.
+
+    :param serial: serial number of the token
+    :return: the owner of the token, or None if the token has no owner
+    :raises ResourceNotFoundError: if the token does not exist
+    """
+    # privacyidea.lib.token imports this module
+    from privacyidea.lib.token import get_token_owner, get_token_owner_without_lookup
+
+    owners = g.setdefault("token_owners", {})
+    if serial not in owners:
+        try:
+            owners[serial] = get_token_owner(serial)
+        except (UserError, ResolverError) as error:
+            g.setdefault("token_owner_errors", {})[serial] = error
+            owners[serial] = get_token_owner_without_lookup(serial)
+    return owners[serial]
+
+
+def report_owner_lookup_error(serial: str) -> None:
+    """
+    Report that the owner of a token could not be looked up by :func:`resolve_token_owner`, if that happened and
+    was not reported yet. Does nothing otherwise.
+
+    Without this, the request is only recorded with an empty user name next to the realm and the resolver of the
+    owner, which looks exactly like a token without an owner. Writing the error to the audit entry lets the empty
+    user explain itself where administrators look for it, so a misconfigured resolver - a wrong bind password or
+    duplicate user ids raise the same ResolverError as an unreachable one - is not mistaken for a token that was
+    never assigned.
+
+    :param serial: serial number of the token whose owner was resolved
+    """
+    error = g.get("token_owner_errors", {}).pop(serial, None)
+    if error is None:
+        return
+    message = f"The owner of the token {serial} can not be looked up: {error}"
+    # A deleted resolver leaves a token orphaned for good, an unreachable one is a problem of its own
+    log.log(logging.WARNING if isinstance(error, ResolverError) else logging.INFO, message)
+    g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
 
 def get_priority_from_param(param):
@@ -737,11 +790,12 @@ def verify_auth_token(auth_token, required_role=None):
                     j = jwt.decode(auth_token, trusted_jwt.get("public_key"), algorithms=[trusted_jwt.get("algorithm")])
                     if (dict((k, j.get(k)) for k in ("role", "resolver", "realm")) ==
                             dict((k, trusted_jwt.get(k)) for k in ("role", "resolver", "realm"))):
-                        if re.match(trusted_jwt.get("username") + "$", j.get("username")):
+                        username = j.get("username")
+                        if isinstance(username, str) and re.match(trusted_jwt.get("username") + "$", username):
                             r = j
                             break
                         else:
-                            r = wrong_username = j.get("username")
+                            r = wrong_username = username
                 else:
                     log.warning("Unsupported JWT algorithm in PI_TRUSTED_JWT.")
             except jwt.ExpiredSignatureError as err:
@@ -769,6 +823,11 @@ def verify_auth_token(auth_token, required_role=None):
     if wrong_username:
         raise AuthError(_("Authentication failure. The username {wrong_username} "
                           "is not allowed to impersonate via JWT.").format(wrong_username=wrong_username))
+    # Without a login name the user object of the request only restricts to a realm, or to nothing at all
+    username = r.get("username")
+    if not isinstance(username, str) or not username:
+        raise AuthError(_("Authentication failure. The Authorization token does not name a user."),
+                        id=Error.AUTHENTICATE_MISSING_USERNAME)
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match

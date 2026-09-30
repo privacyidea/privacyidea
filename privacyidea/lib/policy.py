@@ -416,7 +416,7 @@ class PolicyClass:
                       client: str | None = None, action: str | None = None, pinode: str | None = None,
                       adminrealm: str | None = None, adminuser: str | None = None,
                       sort_by_priority: bool = True, additional_realms: list | None = None,
-                      user_agent: str | None = None) -> list[dict]:
+                      user_agent: str | None = None, unknown_login: bool = False) -> list[dict]:
         """
         Return the policies, filtered by the given values.
 
@@ -458,6 +458,9 @@ class PolicyClass:
             than matching a request - an export, the configuration report, or the check whether a
             scope is configured at all. Pass the empty string to match only the policies that carry
             no user agent restriction.
+        :param unknown_login: The user exists, but their login name could not be looked up. A policy that names
+            users can not be checked then, so only the policies without a user and those for every user (``*``)
+            are returned.
         :return: list of policies
         :rtype: list of dicts
         """
@@ -502,6 +505,10 @@ class PolicyClass:
                 reduced_policies = new_policies
                 log.debug("Policies after matching {!s}={!s}: {!s}".format(
                     searchkey, searchvalue, [p.get('name') for p in reduced_policies]))
+
+        if unknown_login:
+            reduced_policies = [policy for policy in reduced_policies
+                                if all(value == "*" for value in policy.get("user") or [])]
 
         for searchkey, searchvalue in q:
             if searchvalue is not None:
@@ -703,6 +710,8 @@ class PolicyClass:
             user = user_object.login
             realm = user_object.realm
             resolver = user_object.resolver
+        # An owner that can not be looked up has a resolver, but no login name
+        unknown_login = user_object is not None and bool(user_object.resolver) and not user_object.login
 
         log.debug("Trying to match policy for action \"{!s}\". Policies: {!s}".format(
             action, [p.get("name") for p in self.policies]))
@@ -710,7 +719,7 @@ class PolicyClass:
                                               resolver=resolver, user=user, client=client, action=action,
                                               adminrealm=adminrealm, adminuser=adminuser, pinode=pinode,
                                               sort_by_priority=sort_by_priority, additional_realms=additional_realms,
-                                              user_agent=user_agent)
+                                              user_agent=user_agent, unknown_login=unknown_login)
 
         # filter policy for time. If no time is set or if a time is set, and
         # it matches the time_range, then we add this policy
