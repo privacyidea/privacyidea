@@ -1117,3 +1117,52 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         delete_policy("pol_passthru")
         delete_policy("pol_multienroll")
         remove_token(serial)
+
+    @ldap3mock.activate
+    def test_11_cancel_enroll_HOTP_rejects_other_user(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_default_realm("ldaprealm")
+
+        set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
+        set_policy("pol_multienroll", scope=SCOPE.AUTH,
+                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+        set_policy("pol_multienroll_optional", scope=SCOPE.AUTH,
+                   action="{0!s}=true".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+
+        # alice starts her own optional enrollment and receives the transaction
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "alice", "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            serial = detail.get("serial")
+        self.reset_flask_g()
+        self.assertEqual(1, len(get_tokens(serial=serial)))
+
+        # A cancellation that names a different user does not act on the enrollment: it is refused, the rollout
+        # token stays, and no token is enrolled for the named user.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"user": "bob", "transaction_id": transaction_id,
+                                                 "cancel_enrollment": True}):
+            res = self.app.full_dispatch_request()
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), res.json)
+            self.assertNotEqual(AUTH_RESPONSE.ACCEPT, result.get("authentication"), res.json)
+        self.reset_flask_g()
+        self.assertEqual(1, len(get_tokens(serial=serial)))
+        self.assertEqual(0, len(get_tokens(user=User("bob", "ldaprealm"))))
+
+        # The user the enrollment was created for can still cancel it
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"transaction_id": transaction_id, "cancel_enrollment": True}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("value"), res.json)
+        self.reset_flask_g()
+        self.assertEqual(0, len(get_tokens(serial=serial)))
+
+        delete_policy("pol_passthru")
+        delete_policy("pol_multienroll")
+        delete_policy("pol_multienroll_optional")
