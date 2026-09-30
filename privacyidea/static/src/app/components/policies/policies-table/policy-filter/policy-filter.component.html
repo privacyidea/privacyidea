@@ -37,6 +37,9 @@
           matInput
           placeholder="Example query: 'scope: enrollment, active: true'" />
       </app-clearable-input>
+      <app-info-hint
+        matSuffix
+        [text]="filterMatchInfo()" />
       <mat-hint>{{ filterHint }}</mat-hint>
     </mat-form-field>
     <!-- Controls the table keeps beside its filter field, such as its scroll-collapsed actions trigger. -->

@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { NgClass } from "@angular/common";
 import { Component } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -53,6 +55,8 @@ import { AuditComponent } from "./audit.component";
 @Component({
   selector: "app-audit-self-service",
   imports: [
+    InfoHintComponent,
+    MatSuffix,
     FilterAutocompleteDirective,
     MatCardModule,
     MatCell,

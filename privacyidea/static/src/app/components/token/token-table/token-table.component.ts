@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
   Component,
   computed,
@@ -61,7 +63,7 @@ import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { filterColumnHint, inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterColumnHint, filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { withDefaultRealm, withUser } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
 import { ROLLOUT_STATE_VALUES, valueDisplayLabel } from "@utils/value-label.utils";
@@ -88,6 +90,8 @@ const columnKeysMap = [
   selector: "app-token-table",
   standalone: true,
   imports: [
+    InfoHintComponent,
+    MatSuffix,
     RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,
@@ -142,6 +146,13 @@ export class TokenTableComponent implements OnDestroy {
     (keyword) => !keyword.includes(" ")
   );
   readonly filterHint = inlineFilterHint();
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      $localize`:@@common.token:Token`,
+      [...this.tokenService.apiFilterKeys, ...this.tokenService.advancedApiFilterKeys],
+      (key) => this.tokenService.exactMatchKeys.has(key)
+    )
+  );
   readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
   readonly rolloutStateFilterOptions = ROLLOUT_STATE_VALUES.map((value) => ({
     value,

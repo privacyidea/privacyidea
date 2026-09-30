@@ -18826,12 +18826,68 @@
           <context context-type="linenumber">135</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.valuesMatchPartially" datatype="html">
-        <source>Values match partially by default.</source>
-        <target state="new">Values match partially by default.</target>
+      <trans-unit id="common.tablePartialMatchKeys" datatype="html">
+        <source><x id="table" equiv-text="table"/> partial match: <x id="keys" equiv-text="partial"/></source>
+        <target state="new"><x id="table" equiv-text="table"/> partial match: <x id="keys" equiv-text="partial"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
-          <context context-type="linenumber">30</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.tableExactMatchKeys" datatype="html">
+        <source><x id="table" equiv-text="table"/> exact match: <x id="keys" equiv-text="exact"/></source>
+        <target state="new"><x id="table" equiv-text="table"/> exact match: <x id="keys" equiv-text="exact"/></target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.challenge" datatype="html">
+        <source>Challenge</source>
+        <target state="new">Challenge</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="token.sshMachine" datatype="html">
+        <source>SSH machine</source>
+        <target state="new">SSH machine</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="token.offlineMachine" datatype="html">
+        <source>Offline machine</source>
+        <target state="new">Offline machine</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.exactMatchKeys" datatype="html">
+        <source>Exact match: <x id="keys" equiv-text="exact"/></source>
+        <target state="new">Exact match: <x id="keys" equiv-text="exact"/></target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">59</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="lockedUsers.lockedUser" datatype="html">
+        <source>Locked user</source>
+        <target state="new">Locked user</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/locked-users/locked-users.component.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.containerTemplate" datatype="html">
+        <source>Container template</source>
+        <target state="new">Container template</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-filter/container-templates-filter.component.ts</context>
+          <context context-type="linenumber">60</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.wildcardOrExactMatch" datatype="html">
@@ -18840,14 +18896,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
           <context context-type="linenumber">32</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="common.someColumnsMatchExactly" datatype="html">
-        <source>Some columns always match exactly; hover a column's filter icon to see which.</source>
-        <target state="new">Some columns always match exactly; hover a column's filter icon to see which.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
-          <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.quoteValuesContain" datatype="html" xml:space="preserve">

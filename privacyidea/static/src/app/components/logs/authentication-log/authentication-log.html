@@ -40,6 +40,9 @@
               matInput
               placeholder="Example query: 'username: alice event_type: LOGIN_SUCCESS'" />
           </app-clearable-input>
+          <app-info-hint
+            matSuffix
+            [text]="filterMatchInfo()" />
           <mat-hint i18n="@@authLog.searchCaseInsensitiveUse"
             >The search is case-insensitive. Use * as a wildcard. Wrap the filter value in quotation marks if it contains
             colons or spaces.

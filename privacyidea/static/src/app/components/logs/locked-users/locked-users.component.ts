@@ -16,6 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
+import { filterMatchTooltip } from "@utils/filter-hint.utils";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { DatePipe, NgClass } from "@angular/common";
@@ -49,7 +52,8 @@ import {
   ConditionalAccessStateService,
   ConditionalAccessStateServiceInterface,
   LockedUserEntry,
-  LockedUsersPage
+  LockedUsersPage,
+  LOCKED_USERS_FILTER_KEYS
 } from "@services/conditional-access-state/conditional-access-state.service";
 import {
   AuthenticationLogService,
@@ -71,6 +75,8 @@ import { concatMap, reduce } from "rxjs/operators";
   templateUrl: "./locked-users.component.html",
   styleUrl: "./locked-users.component.scss",
   imports: [
+    InfoHintComponent,
+    MatSuffix,
     TableStateComponent,
     RefocusAfterReloadDirective,
     ScrollToTopDirective,
@@ -98,6 +104,11 @@ import { concatMap, reduce } from "rxjs/operators";
   ]
 })
 export class LockedUsersComponent {
+  // Every keyword is sent plain and the backend matches it exactly, unless the value itself contains a *.
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip($localize`:@@lockedUsers.lockedUser:Locked user`, LOCKED_USERS_FILTER_KEYS, () => true)
+  );
+
   protected readonly casService: ConditionalAccessStateServiceInterface = inject(ConditionalAccessStateService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);

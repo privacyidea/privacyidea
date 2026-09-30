@@ -45,6 +45,9 @@
               matInput
               placeholder="Example query: 'type: generic'" />
           </app-clearable-input>
+          <app-info-hint
+            matSuffix
+            [text]="filterMatchInfo()" />
           <mat-hint>{{ filterHint }}</mat-hint>
           @if (showFilterHint()) {
             <mat-hint
