@@ -337,17 +337,21 @@ def get_auth_token():
     credential_id = get_optional(request.all_data, "credential_id")
     passkey_login_success = False
     if credential_id:
+        # A passkey request without its transaction_id is malformed, not an authentication attempt: nothing was
+        # checked, so the parameter error is not logged as an authentication event.
         transaction_id: str = get_required(request.all_data, "transaction_id")
+        # The passkey branch is the only one that consumes the transaction it was given, so it is where the
+        # attempt claimed in before_request is settled. The password branch below never reads it, and echoes
+        # it onto its row regardless, which is why naming a transaction cannot settle an attempt by itself.
+        confirm_attempt(transaction_id)
         # A challenge from /validate/initialize starts a passkey login without a username, which
         # WEBUI_PASSKEY_LOGIN_ENABLED switches off. Challenges bound to a token were triggered with the PIN or password.
         usernameless_login = has_unbound_challenge(transaction_id)
         if usernameless_login and not get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True):
             log.debug("WebUI passkey login disabled in pi.cfg!")
+            log_authentication(AuthEventType.NOT_AUTHORIZED, request, user=user, transaction_id=transaction_id,
+                               reasons=[AuthEventReason.WEBUI_PASSKEY_LOGIN_DISABLED])
             raise AuthError(_("Authentication with passkey disabled."), id=Error.AUTHENTICATE_ILLEGAL_METHOD)
-        # The passkey branch is the only one that consumes the transaction it was given, so it is where the
-        # attempt claimed in before_request is settled. The password branch below never reads it, and echoes
-        # it onto its row regardless, which is why naming a transaction cannot settle an attempt by itself.
-        confirm_attempt(transaction_id)
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
             log_authentication(AuthEventType.NO_TOKEN, request, user=user, transaction_id=transaction_id)
