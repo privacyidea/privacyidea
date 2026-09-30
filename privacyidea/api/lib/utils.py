@@ -790,11 +790,12 @@ def verify_auth_token(auth_token, required_role=None):
                     j = jwt.decode(auth_token, trusted_jwt.get("public_key"), algorithms=[trusted_jwt.get("algorithm")])
                     if (dict((k, j.get(k)) for k in ("role", "resolver", "realm")) ==
                             dict((k, trusted_jwt.get(k)) for k in ("role", "resolver", "realm"))):
-                        if re.match(trusted_jwt.get("username") + "$", j.get("username")):
+                        username = j.get("username")
+                        if isinstance(username, str) and re.match(trusted_jwt.get("username") + "$", username):
                             r = j
                             break
                         else:
-                            r = wrong_username = j.get("username")
+                            r = wrong_username = username
                 else:
                     log.warning("Unsupported JWT algorithm in PI_TRUSTED_JWT.")
             except jwt.ExpiredSignatureError as err:
