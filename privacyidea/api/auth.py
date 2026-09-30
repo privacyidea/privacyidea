@@ -37,7 +37,8 @@ authentication paths are supported:
   admin database, then against the user store. Token authentication
   may be required on top by the WebUI ``login_mode`` policy.
 * **FIDO2 / Passkey** — ``credential_id`` plus ``transaction_id``
-  from a prior call to :http:post:`/validate/initialize`.
+  from a prior call to :http:post:`/validate/initialize`. A
+  ``login_mode=disable`` policy refuses it like the password login.
 * **REMOTE_USER** — when an upstream web server (Apache, nginx) has
   already authenticated the request, ``REMOTE_USER`` is honored if
   the WebUI ``remote_user`` policy is active.
@@ -65,6 +66,7 @@ import threading
 import traceback
 from datetime import (datetime, timezone)
 from functools import wraps
+from typing import NoReturn
 
 import jwt
 from flask import (Blueprint, request, current_app, g)
@@ -72,7 +74,8 @@ from flask_babel import _
 
 from privacyidea.api.lib.conditional_access import (conditional_access_login_gate,
                                                     reject_locked_fallback_user)
-from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
+from privacyidea.api.lib.policyhelper import (check_last_auth_policy, get_realm_for_authentication,
+                                              get_login_mode_values)
 from privacyidea.api.lib.postpolicy import (postpolicy, add_user_detail_to_response, check_tokentype,
                                             check_tokeninfo, check_serial, no_detail_on_success,
                                             get_webui_settings)
@@ -101,7 +104,7 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import UserVerificationLevel
 from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.policy import PolicyClass, REMOTE_USER
+from privacyidea.lib.policy import PolicyClass, REMOTE_USER, LOGINMODE
 from privacyidea.lib.policydecorators import reset_all_user_tokens_active, reset_token_failcounters
 from privacyidea.lib.realm import get_default_realm, realm_is_defined
 from privacyidea.lib.token import get_tokens
@@ -184,6 +187,22 @@ def before_request():
             request.User = token.user
 
 
+def _refuse_disabled_login(login_disabled_policies: list[str], user: User, serial: str | None = None,
+                           transaction_id: str | None = None) -> NoReturn:
+    """
+    Refuse a WebUI login that a ``login_mode=disable`` policy disables. A user who does not exist gets the same
+    response as one who does, only the authentication log tells them apart: ``USER_UNKNOWN`` instead of
+    ``NOT_AUTHORIZED``.
+
+    :raises PolicyError: always
+    """
+    event_type = AuthEventType.NOT_AUTHORIZED if user.exist() else AuthEventType.USER_UNKNOWN
+    log_authentication(event_type, request, user=user, serial=serial, transaction_id=transaction_id,
+                       reasons=[AuthEventReason.LOGIN_MODE_DISABLED],
+                       reason_detail=build_reason_detail(policies=login_disabled_policies))
+    raise PolicyError(_("The login for this user is disabled."))
+
+
 @jwtauth.route('', methods=['POST'])
 # The conditional-access gate sits above the pre-policies (decorators run top-down) so it can refuse a locked user
 # before auth_timelimit logs a trackable event for them; see conditional_access_login_gate.
@@ -254,6 +273,8 @@ def get_auth_token():
         step.
     :status 401: authentication failed (wrong or missing credentials,
         unknown realm, expired token).
+    :status 403: the login is disabled for the user by the
+        :ref:`policy_login_mode` policy.
 
     **Example request**:
 
@@ -376,6 +397,17 @@ def get_auth_token():
                 _("Authentication failure. The token type {token_type} is disabled.").format(
                     token_type=token.get_type()),
                 id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
+        # The login is for the named user, or for the token owner if no user is named
+        login_user = user if username else token.user
+        # A passkey login carries no password, so of the login modes only disable applies to it, and policies that
+        # disagree on the other modes do not affect it.
+        login_disabled_policies = get_login_mode_values(g, login_user).get(LOGINMODE.DISABLE)
+        if login_disabled_policies:
+            g.audit_object.log({"user": login_user.login, "realm": login_user.realm,
+                                "authentication": AUTH_RESPONSE.REJECT, "serial": token.get_serial(),
+                                "token_type": token.get_type()})
+            _refuse_disabled_login(login_disabled_policies, login_user, serial=token.get_serial(),
+                                   transaction_id=transaction_id)
         last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
         if not last_auth_ok:
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
@@ -409,7 +441,7 @@ def get_auth_token():
                                transaction_id=transaction_id)
             raise
         if passkey_login_result.success > 0:
-            user = user if username else token.user
+            user = login_user
             login_name = user.login
             realm = user.realm
             username = user.login
@@ -554,13 +586,27 @@ def get_auth_token():
                     increase_failcounter_on_challenge(request, None)
                     disabled_token_types(request, None)
 
+            if local_admin_exist and not user.exist():
+                # Only a local admin's wrong password is left, and the WebUI login mode does not apply to local admins
+                login_mode = LOGINMODE.USERSTORE
+            else:
+                login_mode_values = get_login_mode_values(g, user)
+                # A disable policy refuses the login, also when a policy of the same priority sets another mode
+                login_disabled_policies = login_mode_values.get(LOGINMODE.DISABLE)
+                if login_disabled_policies:
+                    _refuse_disabled_login(login_disabled_policies, user)
+                if len(login_mode_values) > 1:
+                    policy_names = sorted({name for names in login_mode_values.values() for name in names})
+                    raise PolicyError(f"There are policies with conflicting actions: {policy_names!r}")
+                login_mode = next(iter(login_mode_values), LOGINMODE.USERSTORE)
             options = {"g": g, "clientip": g.client_ip}
             for key, value in request.all_data.items():
                 # Never copy internal keys
                 if value and key not in ["g", "clientip"] and key not in INTERNAL_OPTION_KEYS:
                     options[key] = value
             user_auth, role, details = check_webui_user(user, password, options=options,
-                                                        superuser_realms=superuser_realms)
+                                                        superuser_realms=superuser_realms,
+                                                        check_otp=login_mode == LOGINMODE.PRIVACYIDEA)
             details = details or {}
             # The lib layer stashes the classification in details; capture it for the authentication log, then
             # pop it so it never reaches the client.

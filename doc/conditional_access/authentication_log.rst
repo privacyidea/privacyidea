@@ -176,7 +176,7 @@ The state of a token
      the token excluded itself from this request, for example an
      application-specific password whose service does not match.
 
-A policy or the server configuration refusing an otherwise valid authentication
+A policy or the server configuration refusing the request
    ``AUTHORIZATION_DENIED``
      an authorization policy turned the request away outright
      (``authorized=deny``); the next three are authorization decisions too,
@@ -188,6 +188,9 @@ A policy or the server configuration refusing an otherwise valid authentication
      too many successful authentications inside the policy's time limit.
    ``LAST_AUTH_TOO_OLD``
      the token's last successful authentication is too long ago.
+   ``LOGIN_MODE_DISABLED``
+     the login to the WebUI is disabled for the user, see
+     :ref:`policy_login_mode`.
    ``WEBUI_PASSKEY_LOGIN_DISABLED``
      a login to the WebUI without a username was refused because
      ``WEBUI_PASSKEY_LOGIN_ENABLED`` is switched off in the :ref:`cfgfile`.

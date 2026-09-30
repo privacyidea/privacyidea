@@ -48,7 +48,7 @@ class Challenge(MethodsMixin, db.Model):
     __tablename__ = "challenge"
     id: Mapped[int] = mapped_column(Integer, Sequence("challenge_seq"), primary_key=True, nullable=False)
     transaction_id: Mapped[str] = mapped_column(Unicode(64), nullable=False, index=True)
-    _data: Mapped[str | None] = mapped_column("data", Unicode(2000), default='')
+    _data: Mapped[str | None] = mapped_column("data", Text, default='')
     challenge: Mapped[str | None] = mapped_column(Text, default='')
     session: Mapped[str | None] = mapped_column(Unicode(512), default='', quote=True, name="session")
     # The token serial number

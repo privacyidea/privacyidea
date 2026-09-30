@@ -249,7 +249,7 @@ class AuthEventReason(str, Enum):
     # application-specific password whose service_id does not match the one the request names.
     TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
 
-    # --- authorization, i.e. a policy or the server configuration refusing an otherwise valid authentication ----
+    # --- authorization, i.e. a policy or the server configuration refusing the request ---------------------------
     # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The next three are
     # authorization decisions too, each naming the specific limit that was hit; this one is the plain deny.
     AUTHORIZATION_DENIED = "AUTHORIZATION_DENIED"
@@ -259,6 +259,8 @@ class AuthEventReason(str, Enum):
     AUTH_MAX_SUCCESS = "AUTH_MAX_SUCCESS"
     # The token's last successful authentication is too long ago (last_auth).
     LAST_AUTH_TOO_OLD = "LAST_AUTH_TOO_OLD"
+    # The WebUI login is disabled for the user (login_mode=disable), for the password and the passkey login alike.
+    LOGIN_MODE_DISABLED = "LOGIN_MODE_DISABLED"
     # A WebUI login without a username was refused because WEBUI_PASSKEY_LOGIN_ENABLED is off in pi.cfg.
     WEBUI_PASSKEY_LOGIN_DISABLED = "WEBUI_PASSKEY_LOGIN_DISABLED"
 
