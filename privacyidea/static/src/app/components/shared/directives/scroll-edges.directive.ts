@@ -116,16 +116,32 @@ export class ScrollEdgesDirective implements AfterViewInit, OnDestroy {
 
   // Collapsing the controls above the host hands their height to the host. Content that overflows
   // by no more than that then fits: scrollTop clamps back to 0, the top sentinel comes back into view
-  // and the controls expand again, undoing the scroll that collapsed them. They can free at most
-  // everything above the host inside its parent, so only an overflow larger than that collapses them.
+  // and the controls expand again, undoing the scroll that collapsed them. So they only collapse when
+  // the overflow outlasts what collapsing frees: every action row above the host (its height and
+  // bottom margin) and every filter hint above it - see actions-row-collapse in table.scss and the
+  // hint rule in table-global.scss for what collapses.
   private overflowOutlastsControlsAbove(root: HTMLElement): boolean {
     const parent = root.parentElement;
     if (!parent) {
       return false;
     }
-    const above = root.getBoundingClientRect().top - parent.getBoundingClientRect().top;
-    return root.scrollHeight - root.clientHeight > above;
+    const above = (el: Element) => el.compareDocumentPosition(root) & Node.DOCUMENT_POSITION_FOLLOWING;
+    let freed = 0;
+    for (const row of Array.from(parent.querySelectorAll<HTMLElement>(ScrollEdgesDirective.COLLAPSING_ROWS))) {
+      if (above(row)) {
+        freed += row.getBoundingClientRect().height + (parseFloat(getComputedStyle(row).marginBottom) || 0);
+      }
+    }
+    for (const hint of Array.from(parent.querySelectorAll(".filter-paginator-container mat-hint"))) {
+      if (above(hint)) {
+        freed += hint.getBoundingClientRect().height;
+      }
+    }
+    return root.scrollHeight - root.clientHeight > freed;
   }
+
+  // The action rows the table pages collapse on scroll (table.scss's actions-row-collapse).
+  private static readonly COLLAPSING_ROWS = ".actions-row, .token-actions-row, .container-actions-row";
 
   ngOnDestroy(): void {
     this.topObserver?.disconnect();

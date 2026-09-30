@@ -80,7 +80,8 @@ class HostWithHeaderRowComponent {
     <div
       #card
       class="card">
-      <div class="controls"></div>
+      <div class="filter-paginator-container"></div>
+      <div class="actions-row"></div>
       <div
         #region
         class="table-scroll-region"
@@ -207,17 +208,16 @@ describe("ScrollEdgesDirective below a page's controls", () => {
     return fixture.componentInstance.region.nativeElement;
   }
 
-  // Places the region `above` px below its card's top and gives it `overflow` px of hidden content.
-  function layOut(above: number, overflow: number): void {
-    jest.spyOn(fixture.componentInstance.card.nativeElement, "getBoundingClientRect").mockReturnValue({
-      top: 100
-    } as DOMRect);
-    jest.spyOn(regionEl(), "getBoundingClientRect").mockReturnValue({ top: 100 + above } as DOMRect);
+  // Gives the card's action row `rowHeight` px (what collapsing frees) and the region `overflow` px
+  // of hidden content.
+  function layOut(rowHeight: number, overflow: number): void {
+    const row = fixture.nativeElement.querySelector(".actions-row") as HTMLElement;
+    jest.spyOn(row, "getBoundingClientRect").mockReturnValue({ height: rowHeight } as DOMRect);
     Object.defineProperty(regionEl(), "clientHeight", { value: 500, configurable: true });
     Object.defineProperty(regionEl(), "scrollHeight", { value: 500 + overflow, configurable: true });
   }
 
-  it("collapses the controls once scrolled when the overflow outlasts everything above the region", () => {
+  it("collapses the controls once scrolled when the overflow outlasts what collapsing frees", () => {
     layOut(150, 151);
 
     topObserver.cb([{ isIntersecting: false }]);
