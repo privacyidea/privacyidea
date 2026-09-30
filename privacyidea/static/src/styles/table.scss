@@ -347,6 +347,15 @@ $checkbox-column-width: 72px;
     min-height: 0;
     overflow: auto;
 
+    // The cells are capped by their col-width-* tier, so a value without a break opportunity (a long
+    // user name, a serial) is clipped by the cell rather than widening the table, and the scrolling
+    // here cannot reach it. Breaking anywhere keeps it readable in the width the column has.
+    // Values only: a header is a known short label, and breaking one anywhere would let the flex row
+    // it shares with the sort button shrink it to one character per line.
+    td {
+      overflow-wrap: anywhere;
+    }
+
     // Flush with the top of the region: the cover each edge needs comes from the ::before below,
     // which overhangs without moving the cell, so neither edge is uncovered to pay for the other.
     .mat-mdc-header-cell {
