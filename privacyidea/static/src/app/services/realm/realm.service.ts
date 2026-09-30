@@ -101,6 +101,7 @@ export class RealmService implements RealmServiceInterface {
   private onAllowedRoute = computed(() => {
     return (
       this.contentService.onTokenDetails() ||
+      this.contentService.onContainers() ||
       this.contentService.onContainersDetails() ||
       this.contentService.onTokens() ||
       this.contentService.onAnyUsersRoute() ||

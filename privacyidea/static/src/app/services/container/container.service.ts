@@ -55,7 +55,7 @@ const advancedApiFilterKeys = ["token_serial", "template", "assigned"];
 // stays out of `apiFilterKeys` and is not offered as a keyword.
 const hiddenApiFilterKeys = ["realm"];
 
-const exactMatchKeys = new Set(["user", "realm", "type", "state", "assigned"]);
+const exactMatchKeys = new Set(["user", "realm", "container_realm", "type", "state", "assigned"]);
 
 // Filter keywords, a single value maps to the `type` query param, multiple to `type_list`.
 // TODO(4.0.0): send a single list-only `types` param once the backend drops the type/type_list split.

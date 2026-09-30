@@ -16638,12 +16638,28 @@
           <context context-type="linenumber">68</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.useAsWildcard" datatype="html">
-        <source>Use * as a wildcard.</source>
-        <target>Verwenden Sie * als Platzhalter.</target>
+      <trans-unit id="common.valuesMatchPartially" datatype="html">
+        <source>Values match partially by default.</source>
+        <target>Werte werden standardmäßig teilweise abgeglichen.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
-          <context context-type="linenumber">29</context>
+          <context context-type="linenumber">30</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.wildcardOrExactMatch" datatype="html">
+        <source>Use * as a wildcard, or start a value with = to match it exactly.</source>
+        <target>Verwenden Sie * als Platzhalter oder beginnen Sie einen Wert mit =, um ihn exakt abzugleichen.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">32</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.someColumnsMatchExactly" datatype="html">
+        <source>Some columns always match exactly; hover a column's filter icon to see which.</source>
+        <target>Einige Spalten werden immer exakt abgeglichen; fahren Sie über das Filtersymbol einer Spalte, um zu sehen, welche.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.quoteValuesContain" datatype="html">

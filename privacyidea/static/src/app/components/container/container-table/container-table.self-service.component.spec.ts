@@ -26,6 +26,7 @@ import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
@@ -39,6 +40,7 @@ import {
   MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockRealmService } from "@testing/mock-services/mock-realm-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 import { of, Subject } from "rxjs";
 import { ContainerTableSelfServiceComponent } from "./container-table.self-service.component";
@@ -63,6 +65,7 @@ describe("ContainerTableSelfServiceComponent", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: RealmService, useClass: MockRealmService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: MAT_DIALOG_DATA, useValue: {} },

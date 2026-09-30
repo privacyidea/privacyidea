@@ -21,25 +21,25 @@ import { filterColumnHint, filterInputHint } from "./filter-hint.utils";
 describe("filterInputHint", () => {
   it("only states what the placeholder does not already show", () => {
     expect(filterInputHint()).toBe(
-      'Use * as a wildcard.\nQuote values that contain spaces or a colon, e.g. description: "my note".\nCase-insensitive'
+      `Values match partially by default.\nUse * as a wildcard, or start a value with = to match it exactly.\nSome columns always match exactly; hover a column's filter icon to see which.\nQuote values that contain spaces or a colon, e.g. description: "my note".\nCase-insensitive`
     );
   });
 
   it("hedges the case note where the backend does not normalise case", () => {
     expect(filterInputHint({ mayBeCaseSensitive: true })).toBe(
-      'Use * as a wildcard.\nQuote values that contain spaces or a colon, e.g. description: "my note".\nMostly case-insensitive'
+      `Values match partially by default.\nUse * as a wildcard, or start a value with = to match it exactly.\nSome columns always match exactly; hover a column's filter icon to see which.\nQuote values that contain spaces or a colon, e.g. description: "my note".\nMostly case-insensitive`
     );
   });
 
   it("omits the case note when not requested", () => {
     expect(filterInputHint({ includeCaseNote: false })).toBe(
-      'Use * as a wildcard.\nQuote values that contain spaces or a colon, e.g. description: "my note".'
+      `Values match partially by default.\nUse * as a wildcard, or start a value with = to match it exactly.\nSome columns always match exactly; hover a column's filter icon to see which.\nQuote values that contain spaces or a colon, e.g. description: "my note".`
     );
   });
 
   it("joins the sentences on one line with a custom separator", () => {
     expect(filterInputHint({ includeCaseNote: false, separator: " " })).toBe(
-      'Use * as a wildcard. Quote values that contain spaces or a colon, e.g. description: "my note".'
+      `Values match partially by default. Use * as a wildcard, or start a value with = to match it exactly. Some columns always match exactly; hover a column's filter icon to see which. Quote values that contain spaces or a colon, e.g. description: "my note".`
     );
   });
 });

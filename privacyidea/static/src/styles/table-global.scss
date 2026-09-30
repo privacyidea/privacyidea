@@ -152,8 +152,12 @@ table.mat-mdc-table .mat-mdc-header-cell {
 // content the hint describes is already scrolled out of view. Global and keyed off the table's card
 // (the scroll region's parent), so it reaches every table, including a filter row drawn by its own
 // component (e.g. the policies filter).
+// Collapsed to no height rather than display: none, so the hint still counts towards the width the filter row asks for
+// and the table does not shrink when the header turns sticky.
 :has(> .table-scroll-region.controls-collapsed) .filter-paginator-container mat-hint {
-  display: none;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
 }
 
 // Elevate the header once rows have scrolled under it, so it reads as raised above them rather

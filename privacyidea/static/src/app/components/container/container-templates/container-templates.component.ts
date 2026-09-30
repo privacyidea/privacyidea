@@ -21,11 +21,12 @@ import { CommonModule, KeyValuePipe } from "@angular/common";
 import { Component, computed, inject, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
+import { MatDividerModule } from "@angular/material/divider";
 import { MatIconModule } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -67,6 +68,16 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   new FilterOption<ContainerTemplate>({
     key: "default",
     label: $localize`:@@common.default:Default`,
+    toggle: (filter) => {
+      const v = filter.getFilterOfKey("default")?.toLowerCase();
+      if (v === "true") return filter.setValueOfKey("default", "false");
+      if (v === "false") return filter.removeKey("default");
+      return filter.setValueOfKey("default", "true");
+    },
+    getActionType: (filter) => {
+      const v = filter.getFilterOfKey("default")?.toLowerCase();
+      return v === "true" ? "change" : v === "false" ? "remove" : "add";
+    },
     matches: (item, filter) => {
       const filterValue = filter.getFilterOfKey("default");
       return !filterValue || (filterValue === "true" ? item.default === true : item.default === false);
@@ -94,6 +105,8 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     KeyValuePipe,
     MatIconModule,
     MatButtonModule,
+    MatMenuModule,
+    MatDividerModule,
     MatTableModule,
     MatSortModule,
     ContainerTemplatesFilterComponent,
@@ -105,7 +118,6 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     RouterLink,
     ScrollEdgesDirective,
     PaginatorCompactRangeDirective,
-    MatMenuModule,
     MatTooltipModule
   ],
   templateUrl: "./container-templates.component.html",
@@ -240,8 +252,14 @@ export class ContainerTemplatesComponent {
   }
 
   onClickFilter(filterKey: string): void {
-    this.onFilterChange(this.filter().toggleKey(filterKey));
+    const option = containerTemplateFilterOptions.find((o) => o.key === filterKey);
+    this.onFilterChange(option?.toggle ? option.toggle(this.filter()) : this.filter().toggleKey(filterKey));
     this.filterComponent()?.focusInput();
+  }
+
+  onContainerTypeSelected(type: string | undefined): void {
+    const current = this.filter();
+    this.onFilterChange(type ? current.setValueOfKey("container_type", type) : current.removeKey("container_type"));
   }
 
   getFilterIconName(columnKey: string): string {

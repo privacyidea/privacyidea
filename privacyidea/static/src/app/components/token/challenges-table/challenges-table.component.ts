@@ -29,6 +29,7 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
@@ -47,6 +48,7 @@ import {
 } from "@services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
@@ -77,6 +79,7 @@ const columnKeysMap = [
     MatTooltipModule,
     NgClass,
     CopyableComponent,
+    FilterValueButtonComponent,
     ScrollToTopDirective,
     ClearableInputComponent,
     ChallengesTableActionsComponent,
@@ -164,6 +167,11 @@ export class ChallengesTableComponent {
   getFilterIconName(keyword: string): string {
     const isSelected = this.isFilterSelected(keyword, this.challengesService.activeFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  // A clicked cell value names one entry, so it is matched in full rather than anywhere in the column.
+  addFilterValue(keyword: string, value: string): void {
+    this.challengesService.updateFilter((current) => current.addEntry(keyword, exactMatch(value)));
   }
 
   onKeywordClick(filterKeyword: string): void {

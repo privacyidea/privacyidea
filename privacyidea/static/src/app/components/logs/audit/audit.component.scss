@@ -26,11 +26,36 @@
     table-layout: fixed;
 
     .col-width-flex {
-      width: 200px;
+      width: 300px;
+    }
+
+    // Values that still do not fit are truncated, so the copy and filter buttons stay inside the cell.
+    app-copyable span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    app-copyable app-filter-value-button {
+      flex-shrink: 0;
     }
   }
 }
 
 .filter-action-button {
   margin-left: 8px;
+}
+
+.audit-table {
+  // The scroll region wraps anywhere, so below this width the date breaks mid-value.
+  th.mat-mdc-header-cell.mat-column-startdate,
+  td.mat-mdc-cell.mat-column-startdate {
+    min-width: 10rem;
+  }
+}
+
+.date-cell {
+  display: flex;
+  flex-direction: column;
 }

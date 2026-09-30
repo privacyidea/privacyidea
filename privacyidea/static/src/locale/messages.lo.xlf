@@ -18826,12 +18826,28 @@
           <context context-type="linenumber">135</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.useAsWildcard" datatype="html">
-        <source>Use * as a wildcard.</source>
-        <target>ໃຊ້ * ເປັນຕົວແທນ (wildcard).</target>
+      <trans-unit id="common.valuesMatchPartially" datatype="html">
+        <source>Values match partially by default.</source>
+        <target state="new">Values match partially by default.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
-          <context context-type="linenumber">29</context>
+          <context context-type="linenumber">30</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.wildcardOrExactMatch" datatype="html">
+        <source>Use * as a wildcard, or start a value with = to match it exactly.</source>
+        <target state="new">Use * as a wildcard, or start a value with = to match it exactly.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">32</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.someColumnsMatchExactly" datatype="html">
+        <source>Some columns always match exactly; hover a column's filter icon to see which.</source>
+        <target state="new">Some columns always match exactly; hover a column's filter icon to see which.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.quoteValuesContain" datatype="html" xml:space="preserve">
