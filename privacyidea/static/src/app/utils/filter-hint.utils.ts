@@ -26,8 +26,13 @@ export interface FilterInputHintOptions {
 
 export function filterInputHint(options: FilterInputHintOptions = {}): string {
   const lines: string[] = [];
-  lines.push($localize`:@@common.useAsWildcard:Use * as a wildcard.`);
-  lines.push($localize`:@@common.startValueWithMatch:Start a value with = to match it exactly.`);
+  lines.push($localize`:@@common.valuesMatchPartially:Values match partially by default.`);
+  lines.push(
+    $localize`:@@common.wildcardOrExactMatch:Use * as a wildcard, or start a value with = to match it exactly.`
+  );
+  lines.push(
+    $localize`:@@common.someColumnsMatchExactly:Some columns always match exactly; hover a column's filter icon to see which.`
+  );
   if (options.supportsKeywords ?? true) {
     lines.push(
       $localize`:@@common.quoteValuesContain:Quote values that contain spaces or a colon, e.g. description: "my note".`
