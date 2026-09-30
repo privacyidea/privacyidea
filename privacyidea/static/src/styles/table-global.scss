@@ -89,6 +89,13 @@ table.mat-mdc-table .mat-mdc-header-cell {
   // straight back. Nothing in a header cell relies on being clipped: the label wraps.
   overflow: visible;
 
+  // The fill below is positioned against the cell. A sticky cell is already positioned; a header
+  // that does not stick needs it too, or the fill spans the nearest positioned ancestor instead and
+  // its side overhang widens the whole page by a pixel.
+  &:not(.mat-mdc-table-sticky) {
+    position: relative;
+  }
+
   &::before {
     content: "";
     position: absolute;
