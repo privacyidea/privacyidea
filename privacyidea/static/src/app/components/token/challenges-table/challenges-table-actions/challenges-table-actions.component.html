@@ -18,6 +18,8 @@
 -->
 <div
   appOverflowNav
+  overflowNavIcon="menu"
+  overflowNavBadgeIcon="build"
   class="flex-row gap-8">
   <button
     data-overflow-pinned
@@ -37,7 +39,7 @@
       mat-stroked-button
       matTooltip="More Filter"
       type="submit">
-      <mat-icon>filter_alt</mat-icon>
+      <mat-icon class="ms--filter-list"></mat-icon>
       <span i18n="@@common.moreFilter">More Filter</span>
     </button>
   }
@@ -67,7 +69,7 @@
     <button
       [matMenuTriggerFor]="advancedFilterMenu"
       mat-menu-item>
-      <mat-icon>filter_alt</mat-icon>
+      <mat-icon class="ms--filter-list"></mat-icon>
       <span i18n="@@common.moreFilter">More Filter</span>
     </button>
   }

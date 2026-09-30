@@ -53,7 +53,7 @@
         i18n-matTooltip="@@common.moreFilter"
         mat-icon-button
         matTooltip="More Filter">
-        <mat-icon>filter_alt</mat-icon>
+        <mat-icon class="ms--filter-list"></mat-icon>
       </button>
     </div>
     <mat-paginator
@@ -76,7 +76,7 @@
           [matMenuTriggerFor]="userRoleMenu.matMenu"
           class="action-button-secondary button-width-m"
           mat-stroked-button>
-          <mat-icon>filter_list</mat-icon>
+          <mat-icon class="ms--filter-list"></mat-icon>
           <span i18n="@@authLog.userRole">User Role</span>
           <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
         </button>
@@ -192,7 +192,7 @@
                 mat-icon-button>
                 <!-- Reuses the same icon as the other selection filters, even though this menu sets several
                           filter keys at once, so there is no single "set / not set" state to show. -->
-                <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
+                <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
               </button>
               <mat-menu #outcomeFilterMenu>
                 <!-- Hint on how the filter behaves -->
@@ -463,7 +463,7 @@
     <button
       [matMenuTriggerFor]="userRoleMenu.matMenu"
       mat-menu-item>
-      <mat-icon>filter_list</mat-icon>
+      <mat-icon class="ms--filter-list"></mat-icon>
       <span i18n="@@authLog.userRole">User Role</span>
     </button>
   }

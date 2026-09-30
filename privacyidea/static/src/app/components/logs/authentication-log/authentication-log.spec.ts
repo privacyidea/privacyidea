@@ -550,7 +550,7 @@ describe("AuthenticationLog", () => {
     const header: HTMLElement = fixture.nativeElement.querySelector("th.mat-column-conditional_access_outcomes");
     const trigger: HTMLButtonElement = header.querySelector("button.filter-button")!;
     // The same icon as the other selection filters: this menu sets several keys, so it has no set/not-set state.
-    expect(trigger.querySelector("mat-icon")?.textContent?.trim()).toBe("filter_list");
+    expect(trigger.querySelector("mat-icon")?.classList).toContain("ms--filter-list");
 
     // The rule governing how these filters combine is stated in the menu, not left to a hover tooltip, and repeated on
     // the trigger so it is announced before the menu is even opened.

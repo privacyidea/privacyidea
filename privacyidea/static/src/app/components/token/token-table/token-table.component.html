@@ -63,7 +63,7 @@
           i18n-matTooltip="@@common.moreFilter"
           mat-icon-button
           matTooltip="More Filter">
-          <mat-icon>filter_alt</mat-icon>
+          <mat-icon class="ms--filter-list"></mat-icon>
         </button>
         <button
           [matMenuTriggerFor]="tokenTableActions.actionsMenu"
@@ -73,7 +73,10 @@
           i18n-matTooltip="@@common.actions"
           mat-icon-button
           matTooltip="Actions">
-          <mat-icon>build</mat-icon>
+          <span class="icon-badge">
+            <mat-icon>menu</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+          </span>
         </button>
       </div>
       <mat-paginator
@@ -147,7 +150,7 @@
                           i18n-aria-label="@@common.filterBy"
                           class="filter-button"
                           mat-icon-button>
-                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
+                          <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
                         </button>
                       } @else {
                         <button
