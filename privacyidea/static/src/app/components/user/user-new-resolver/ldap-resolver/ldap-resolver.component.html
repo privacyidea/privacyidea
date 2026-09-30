@@ -153,13 +153,21 @@
           </mat-select>
         </mat-form-field>
 
-        @if (model().AUTHTYPE !== "Anonymous") {
+        @if (model().AUTHTYPE === "SASL Kerberos") {
           <mat-form-field class="input-width-l">
-            @if (model().AUTHTYPE === "SASL Kerberos") {
-              <mat-label i18n="@@resolver.keyfilePath">Keyfile Path</mat-label>
-            } @else {
-              <mat-label i18n="@@resolver.bindPassword">Bind password</mat-label>
-            }
+            <mat-label i18n="@@resolver.keyfilePath">Keyfile Path</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="model.update(m => ({ ...m, KEYTABFILE: '' }))"
+              [showClearButton]="!!model().KEYTABFILE">
+              <input
+                [formField]="ldapForm.KEYTABFILE"
+                matInput
+                placeholder="/etc/privacyidea/ldap.keytab" />
+            </app-clearable-input>
+          </mat-form-field>
+        } @else if (model().AUTHTYPE !== "Anonymous") {
+          <mat-form-field class="input-width-l">
+            <mat-label i18n="@@resolver.bindPassword">Bind password</mat-label>
             <app-clearable-input
               (clearButtonClick)="model.update(m => ({ ...m, BINDPW: '' }))"
               [showClearButton]="!!model().BINDPW">
