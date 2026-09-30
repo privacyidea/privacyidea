@@ -15,7 +15,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, SCOPE)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.models import Challenge, db
 from privacyidea.models.utils import utc_now
-from privacyidea.lib.token import init_token, check_serial_pass
+from privacyidea.lib.token import init_token, check_serial_pass, get_tokens, remove_token
 from privacyidea.lib import _
 
 
@@ -206,6 +206,35 @@ class ChallengeTestCase(MyTestCase):
         ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)
         self.assertFalse(ret)
         c1.delete()
+
+    def test_05_cancel_enrollment_keeps_answered_enrollment(self):
+        enroll_data = {"type": "token",
+                       PolicyAction.ENROLL_VIA_MULTICHALLENGE: True,
+                       PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: True}
+
+        # An enrollment whose challenge has not been answered yet is still in progress and is cancelled:
+        # the token is removed.
+        token = init_token({"type": "hotp", "genkey": 1})
+        serial = token.get_serial()
+        transaction_id = get_rand_digit_str()
+        c1 = Challenge(serial=serial, transaction_id=transaction_id, data=enroll_data)
+        c1.save()
+        ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)
+        self.assertTrue(ret)
+        self.assertEqual(0, len(get_tokens(serial=serial)))
+
+        # An enrollment whose challenge has already been answered belongs to a finished enrollment and is
+        # kept: the token remains.
+        token = init_token({"type": "hotp", "genkey": 1})
+        serial = token.get_serial()
+        transaction_id = get_rand_digit_str()
+        c1 = Challenge(serial=serial, transaction_id=transaction_id, data=enroll_data)
+        c1.set_otp_status(True)
+        c1.save()
+        ret = cancel_enrollment_via_multichallenge(transaction_id=transaction_id)
+        self.assertFalse(ret)
+        self.assertEqual(1, len(get_tokens(serial=serial)))
+        remove_token(serial)
 
 
 class ChallengeDataEncryptionTestCase(MyTestCase):

@@ -22,7 +22,7 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        create_container_template_from_db_object, compare_template_dicts,
                                        set_default_template, compare_template_with_container,
                                        finalize_registration, finalize_container_rollover, init_container_rollover,
-                                       unassign_user, get_container_generator)
+                                       unassign_user, get_container_generator, check_container_challenge)
 from privacyidea.lib.container import get_container_classes, unregister
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL, RegistrationState
@@ -38,7 +38,7 @@ from privacyidea.lib.error import (ResourceNotFoundError, ParameterError, Enroll
                                    ResolverError)
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
-from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, TokenContainerOwner, db
+from privacyidea.models import TokenContainer, Token, TokenContainerTemplate, TokenContainerOwner, Challenge, db
 from .base import MyTestCase
 
 
@@ -2314,6 +2314,22 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertIn(hotp_token.get_serial(), server_serials)
         self.assertIn(totp_token.get_serial(), server_serials)
 
+
+    def test_22_check_container_challenge_rejects_missing_owner(self):
+        self.setUp_user_realms()
+        container_serial = init_container({"type": "smartphone", "user": "cornelius",
+                                           "realm": self.realm1})["container_serial"]
+        for serial, user in [(container_serial, User()), ("SMPH_UNKNOWN", User("cornelius", self.realm1))]:
+            with self.subTest(serial=serial, user=user):
+                challenge = Challenge(serial=serial, data={"type": "container"})
+                challenge.set_otp_status(True)
+                challenge.save()
+
+                result = check_container_challenge(challenge.transaction_id, user)
+                self.assertDictEqual({"success": False, "details": {}}, result)
+                self.assertEqual(1, len(get_challenges(serial=serial, transaction_id=challenge.transaction_id)))
+                challenge.delete()
+        delete_container_by_serial(container_serial)
 
     def test_99_container_without_challenge_response_raises(self):
         # A container type that implements no challenge-response protocol can not authenticate an anonymous

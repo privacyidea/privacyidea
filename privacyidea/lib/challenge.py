@@ -429,6 +429,15 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
         )
         return False
 
+    # An enrollment that the client has already completed must not be removed here. Once the challenge has
+    # been answered, the token or container belongs to the finished enrollment rather than to one that is
+    # still in progress, so it is kept.
+    _, answered = challenge.get_otp_status()
+    if answered:
+        log.info("Challenge for transaction_id %s has already been answered; the enrollment is kept.",
+                 transaction_id)
+        return False
+
     # If we reach this point, we can cancel the enrollment, depending on the type.
     # The challenges will be cleaned up by either function
     if "type" in data and data["type"] == "container":

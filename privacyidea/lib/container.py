@@ -1823,14 +1823,15 @@ def get_offline_token_serials(container: TokenContainerClass) -> list[str]:
     return offline_serials
 
 
-def check_container_challenge(transaction_id: str) -> dict:
+def check_container_challenge(transaction_id: str, user: User) -> dict:
     """
-    Check if the challenge for the given transaction_id belongs to a container.
+    Check if the challenge for the given transaction_id belongs to a container of the given user.
     If this is the case it checks if the challenge is valid and was already answered. Then it deletes the challenge
     and returns a successful authentication response.
     This function is used as last step during enroll via multi challenge.
 
     :param transaction_id: The transaction ID of the challenge
+    :param user: The user to authenticate, who has to be an owner of the container
     :return: A dictionary with the success state and details of the authentication in the format
 
         ::
@@ -1853,10 +1854,24 @@ def check_container_challenge(transaction_id: str) -> dict:
             if challenge_type and challenge_type == "container":
                 # The challenge belongs to a container, if the challenge is already answered, we can delete it and
                 # return a successful authentication
-                if challenge.is_valid():
-                    _, status = challenge.get_otp_status()
-                    success = status
+                _, answered = challenge.get_otp_status()
+                if challenge.is_valid() and answered and _is_container_owner(challenge.serial, user):
+                    # Only one request may use the challenge
+                    removed = delete_challenges(serial=challenge.serial, transaction_id=transaction_id).removed
+                    success = removed > 0
                     if success:
                         details = {"serial": challenge.serial, "message": "Found matching challenge"}
-                        challenge.delete()
     return {"success": success, "details": details}
+
+
+def _is_container_owner(container_serial: str, user: User) -> bool:
+    if not user:
+        return False
+    try:
+        container = find_container_by_serial(container_serial)
+    except ResourceNotFoundError:
+        return False
+    if user in container.get_users():
+        return True
+    log.warning(f"User {user} is not an owner of the container {container_serial}.")
+    return False
