@@ -52,7 +52,7 @@ from privacyidea.lib.cache.redis import (
     get_challenges_from_cache,
     get_redis,
 )
-from privacyidea.lib.challenge import get_challenges, get_challenges_paginate
+from privacyidea.lib.challenge import delete_challenges, get_challenges, get_challenges_paginate
 from privacyidea.lib.crypto import decryptPassword
 from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_local_store
@@ -784,6 +784,18 @@ class TestCreateChallengeIntegration(_RealRedisBase):
 
         # Cache miss -> falls back to DB -> also nothing there.
         self.assertEqual(len(after), 0)
+
+    def test_delete_challenges_counts_only_what_it_removed_redis(self):
+        """Of two requests that read the same cached challenge, only the one
+        that removes it from Redis counts it as removed."""
+        with redis_in_store(self._real_client):
+            ch = create_challenge(self.serial, challenge='single_use', validitytime=120)
+            txn_id = ch.transaction_id
+            read_before_removal = get_challenges(serial=self.serial, transaction_id=txn_id)
+
+            self.assertEqual(1, delete_challenges(serial=self.serial, transaction_id=txn_id).removed)
+            with patch('privacyidea.lib.challenge.get_challenges_from_cache', return_value=read_before_removal):
+                self.assertEqual(0, delete_challenges(serial=self.serial, transaction_id=txn_id).removed)
 
     def test_multiple_challenges_same_serial_redis(self):
         with redis_in_store(self._real_client):

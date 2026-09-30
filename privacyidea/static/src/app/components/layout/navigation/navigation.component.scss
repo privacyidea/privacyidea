@@ -286,6 +286,41 @@ $bar-gradient-end-dark: #464646;
   &.node-shown {
     margin-right: 99px;
   }
+
+  // Set from NavigationComponent's own ViewChild read of UserUtilsPanelComponent's isLargeScreen
+  // signal, rather than a media query of its own: the two rows only stay aligned if this margin
+  // shrinks in the very same instant that panel hides its username/realm text, and a
+  // separately-tuned width threshold here inevitably drifts out of sync with that signal's actual
+  // one, especially once browser zoom is in the mix. Its selector (.version-text.profile-hidden)
+  // outweighs the plain `.version-text` in the $breakpoint-compact query below on specificity
+  // alone, so it still wins once the viewport is narrow enough for both to apply at once.
+  &.profile-hidden {
+    margin-right: 113px;
+
+    .version-prefix {
+      display: none;
+    }
+
+    &.node-shown {
+      margin-right: 113px;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-compact) {
+  // The support/documentation buttons drop their text at this same width (see the
+  // .docs-button-full / .docs-button-icon swap below), which frees up room on their side of the
+  // row - .version-text sits on the opposite side of that same row, so it takes up the slack to
+  // keep the row visually balanced. This is a plain width threshold, unrelated to (and narrower
+  // than) UserUtilsPanelComponent's own breakpoint above: the username/realm text is still visible
+  // through this whole range.
+  .version-text {
+    margin-right: 208px;
+
+    &.node-shown {
+      margin-right: 272px;
+    }
+  }
 }
 
 .docs-button-icon {
@@ -350,29 +385,7 @@ $bar-gradient-end-dark: #464646;
     }
   }
 
-  .version-prefix {
-    display: none;
-  }
-
-  .version-text {
-    margin-right: 208px;
-
-    &.node-shown {
-      margin-right: 272px;
-    }
-  }
-
   :host.has-custom-logo .secondary-toolbar {
     padding-left: 104px;
-  }
-}
-
-@media (max-width: 1600px) {
-  .version-text {
-    margin-right: 113px;
-
-    &.node-shown {
-      margin-right: 113px;
-    }
   }
 }

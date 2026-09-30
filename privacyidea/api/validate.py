@@ -622,27 +622,37 @@ def _handle_enrollment_cancellation(data: dict) -> Response:
     Returns the Flask response object directly.
     """
     transaction_id = get_required(data, "transaction_id")
+
+    # The enrollment challenge belongs to the user it was created for. Resolve that owner from the challenge, so
+    # the cancellation, its response and its log entry are tied to that user rather than to a user named in the
+    # request.
+    challenge_user = None
+    challenges = get_challenges(transaction_id=transaction_id)
+    if challenges:
+        serial = challenges[0].serial
+        token = get_one_token(serial=serial, silent_fail=True)
+        if token and token.user:
+            challenge_user = token.user
+        else:
+            try:
+                owners = find_container_by_serial(serial).get_users()
+                if owners:
+                    challenge_user = owners[0]
+            except Exception as ex:
+                log.debug(f"Could not resolve the container owner for the cancellation: {ex!r}")
+
+    # A request that names a different user than the one the enrollment was created for does not act on this
+    # enrollment.
+    if request.User and request.User.login and challenge_user and request.User != challenge_user:
+        log_authentication(AuthEventType.ENROLLMENT_CANCELED_FAIL, request, user=request.User,
+                           transaction_id=transaction_id)
+        raise PolicyError(_("The user does not match the enrollment."))
+
+    user = challenge_user or request.User
+
     # Cancelling the enrollment step of a chain is a step of that chain: the request acts on this very
     # transaction, so it settles the attempt claimed for it rather than starting one of its own.
     confirm_attempt(transaction_id)
-
-    # Resolve the user from the open enrollment challenge before cancelling, so the cancellation is logged
-    # against the right user.
-    user = request.User
-    if not user or not user.login:
-        challenges = get_challenges(transaction_id=transaction_id)
-        if challenges:
-            serial = challenges[0].serial
-            token = get_one_token(serial=serial, silent_fail=True)
-            if token and token.user:
-                user = token.user
-            else:
-                try:
-                    owners = find_container_by_serial(serial).get_users()
-                    if owners:
-                        user = owners[0]
-                except Exception as ex:
-                    log.debug(f"Could not resolve the container owner for the cancel-enrollment log: {ex!r}")
 
     success = cancel_enrollment_via_multichallenge(transaction_id)
 
@@ -676,6 +686,8 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     Handles FIDO2/Passkey authentication and enroll_via_multichallenge of passkeys.
     Updates the context with the result.
     """
+    # A request without its transaction_id is malformed, not an authentication attempt, so it is rejected before
+    # anything classifies it and leaves no authentication event.
     transaction_id = get_required(request.all_data, "transaction_id")
     # A passkey answer is verified against this very transaction, so it continues that attempt. The token layer's
     # own settling does not apply here: this path resolves and checks the token itself.
@@ -684,7 +696,12 @@ def _handle_fido2_auth(context: dict, credential_id: str):
 
     # Resolve Token
     if serial:
-        token = get_one_token(serial=serial)
+        try:
+            token = get_one_token(serial=serial)
+        except ResourceNotFoundError:
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_TOKEN
+            context[AUTH_EVENT_SERIALS_KEY] = [serial]
+            raise
     else:
         token = get_fido2_token_by_credential_id(credential_id)
 
@@ -752,6 +769,8 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             return  # Result remains False
 
         # Enrollment
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.ENROLLMENT_FAIL
+        context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
         request.all_data.update({"type": "passkey"})
         fido2_enroll(request, None)
         try:
@@ -849,7 +868,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     else:
         context["details"]["message"] = _("Authentication failed.")
 
-    context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if context["result"] else AuthEventType.MFA_FAIL
+    if context["result"]:
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
+    elif not attestation_object:
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
 
 
 def _handle_serial_auth(context: dict, serial: str):

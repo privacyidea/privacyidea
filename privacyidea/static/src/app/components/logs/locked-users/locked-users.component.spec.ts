@@ -218,7 +218,18 @@ describe("LockedUsersComponent", () => {
     expect(casService.lockedUsersFilter()).toBe(toggled);
   });
 
+  it("shows the empty panel instead of the table when no user is locked", () => {
+    casService.setLockedUsers([]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain("No locked users");
+    expect(fixture.nativeElement.querySelector(".table-scroll-region")).toBeNull();
+  });
+
   it("onKeywordClick focuses the filter input so the value can be typed right away", () => {
+    // The filter input only renders with at least one locked user; none shows the empty panel.
+    casService.setLockedUsers([adminEntry]);
+    fixture.detectChanges();
     (tableUtilsService.toggleKeywordInFilter as jest.Mock).mockReturnValue(new FilterValue({ value: "usernames: " }));
     const focusSpy = jest.spyOn(component.filterInput.nativeElement, "focus");
 
@@ -316,6 +327,14 @@ describe("LockedUsersComponent", () => {
     component.addFilterValue("usernames", "alice");
     component.addFilterValue("usernames", "bob");
     expect(component.selectedFilterValues("usernames")).toEqual(["alice", "bob"]);
+  });
+
+  it("filterByErrorMessage keeps a message with commas whole and replaces the previous one", () => {
+    component.filterByErrorMessage("Locked.");
+    component.filterByErrorMessage("Your account is locked, please contact the helpdesk.");
+    expect(casService.lockedUsersFilter().getValueOfKey("error_message")).toBe(
+      "Your account is locked, please contact the helpdesk."
+    );
   });
 
   it("onSortClick delegates to the table-utils sort cycler", () => {

@@ -29,6 +29,7 @@ import { MatCell, MatCellDef, MatTableDataSource, MatTableModule } from "@angula
 import { MatTabsModule } from "@angular/material/tabs";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { TokenApplicationsActionsComponent } from "@components/token/token-applications/token-applications-actions/token-applications-actions.component";
@@ -38,7 +39,9 @@ import { MachineService, MachineServiceInterface, TokenApplication } from "@serv
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 @Component({
   selector: "app-token-applications-ssh",
@@ -55,11 +58,13 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     MatPaginatorModule,
     NgClass,
     CopyableComponent,
+    FilterValueButtonComponent,
     ClearableInputComponent,
     MatIconModule,
     MatButtonModule,
     TokenApplicationsActionsComponent,
-    TableStateComponent
+    TableStateComponent,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./token-applications-ssh.component.html",
   styleUrls: ["./token-applications-ssh.component.scss"]
@@ -106,6 +111,11 @@ export class TokenApplicationsSshComponent {
 
   getFilterIconName(keyword: string): string {
     return this.machineService.getFilterIconName(keyword);
+  }
+
+  // A clicked cell value names one entry, so it is matched in full rather than anywhere in the column.
+  addFilterValue(keyword: string, value: string): void {
+    this.machineService.updateFilter((current) => current.addEntry(keyword, exactMatch(value)));
   }
 
   onKeywordClick(filterKeyword: string): void {

@@ -52,16 +52,11 @@
 }
 
 .container-actions-bar {
-  position: sticky;
-  top: 0;
-  z-index: 2;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 16px;
-  padding: 8px 0;
-  background: var(--mat-sys-surface-container-lowest);
 
   ::ng-deep .actions-otp-container {
     display: flex;

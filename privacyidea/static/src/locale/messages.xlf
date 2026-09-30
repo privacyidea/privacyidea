@@ -14529,11 +14529,25 @@
           <context context-type="linenumber">49</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.useAsWildcard" datatype="html">
-        <source>Use * as a wildcard.</source>
+      <trans-unit id="common.valuesMatchPartially" datatype="html">
+        <source>Values match partially by default.</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
-          <context context-type="linenumber">29</context>
+          <context context-type="linenumber">30</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.wildcardOrExactMatch" datatype="html">
+        <source>Use * as a wildcard, or start a value with = to match it exactly.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">32</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.someColumnsMatchExactly" datatype="html">
+        <source>Some columns always match exactly; hover a column's filter icon to see which.</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.usuallyCaseInsensitive" datatype="html">

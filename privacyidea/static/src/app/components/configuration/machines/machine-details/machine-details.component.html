@@ -79,23 +79,29 @@
     </div>
 
     <div class="filter-paginator-container">
-      <h3
-        class="margin-0"
-        i18n="@@machine.tokensApplications"
-        >Tokens and Applications</h3
-      >
+      <div class="filter-actions-group">
+        <h3
+          class="margin-0"
+          i18n="@@machine.tokensApplications"
+          >Tokens and Applications</h3
+        >
+      </div>
       <mat-paginator
+        appPaginatorCompactRange
         [pageSizeOptions]="[5, 10, 20]"
         [pageSize]="5"
         showFirstLastButtons />
     </div>
 
     <div class="machines-container">
-      <table
-        [dataSource]="dataSource"
-        class="tokens-table"
-        mat-table>
-        <ng-container matColumnDef="serial">
+      <div
+        appScrollEdges
+        class="table-scroll-region">
+        <table
+          [dataSource]="dataSource"
+          class="tokens-table"
+          mat-table>
+          <ng-container matColumnDef="serial">
           <th
             *matHeaderCellDef
             i18n="@@common.serial"
@@ -230,12 +236,13 @@
         </ng-container>
 
         <tr
-          *matHeaderRowDef="displayedColumns"
+          *matHeaderRowDef="displayedColumns; sticky: true"
           mat-header-row></tr>
         <tr
           *matRowDef="let row; columns: displayedColumns"
           mat-row></tr>
-      </table>
+        </table>
+      </div>
     </div>
 
     <div>

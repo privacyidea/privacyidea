@@ -211,6 +211,20 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         ).json["result"]["value"]["locked_users"]
         self.assertListEqual([], hidden)
 
+    def test_list_locked_users_error_message_filter_takes_the_whole_message(self):
+        # A message is prose: a comma in it is part of the message and does not start a second one.
+        for uid, username, message in (("7", "hans", "Your account is locked, please contact the helpdesk."),
+                                       ("8", "gerda", "Your account is locked")):
+            db.session.add(UserLockState(resolver="r", uid=uid, realm="realm2", username=username,
+                                         error_message=message, lock_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        page = self._request("lock/users", query_string={
+            "error_message": "Your account is locked, please contact the helpdesk."}).json["result"]["value"]
+        self.assertEqual(1, page["count"])
+        self.assertEqual("hans", page["locked_users"][0]["username"])
+        wildcard = self._request("lock/users", query_string={"error_message": "*locked*"}).json["result"]["value"]
+        self.assertEqual(2, wildcard["count"])
+
     def test_purge_user_locks(self):
         self._lock_user(utc_now() - timedelta(seconds=60))  # expired -> purged
         db.session.add(UserLockState(resolver="r", uid="2", realm="realm2",

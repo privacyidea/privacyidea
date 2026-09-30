@@ -23,15 +23,18 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { exactMatch, matchesFilterTerm, splitExactMatch } from "@utils/filter.utils";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -39,6 +42,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-machines",
@@ -56,7 +60,10 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatInputModule,
     ClearableInputComponent,
     CopyableComponent,
-    TableStateComponent
+    FilterValueButtonComponent,
+    TableStateComponent,
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./machines.component.html",
   styleUrl: "./machines.component.scss"
@@ -92,6 +99,14 @@ export class MachinesComponent {
     const dataSource = new MatTableDataSource(machines);
     dataSource.paginator = this.paginator() ?? null;
     dataSource.sort = this.sort;
+    // A term that asks for an exact match compares with each field in full; any other searches all of them at once.
+    const searchAllFields = dataSource.filterPredicate;
+    dataSource.filterPredicate = (machine, filter) =>
+      splitExactMatch(filter).exact
+        ? [...(machine.hostname ?? []), machine.ip, String(machine.id), machine.resolver_name].some((field) =>
+            matchesFilterTerm(field ?? "", filter)
+          )
+        : searchAllFields(machine, filter);
     return dataSource;
   });
 
@@ -107,6 +122,11 @@ export class MachinesComponent {
 
     const ds = this.machineDataSource();
     ds.filter = trimmed.toLowerCase();
+  }
+
+  // A clicked resolver names one resolver, so it is matched in full rather than anywhere in a machine.
+  filterByResolver(resolver: string): void {
+    this.onFilterInput(exactMatch(resolver));
   }
 
   resetFilter(): void {

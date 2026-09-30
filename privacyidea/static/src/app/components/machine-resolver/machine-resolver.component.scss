@@ -19,6 +19,12 @@
     table-layout: fixed;
     width: auto;
   }
+  @include table.scroll-region-fits-table;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .name-actions-container {

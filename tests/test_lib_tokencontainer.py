@@ -5,7 +5,7 @@ from datetime import datetime, timezone, timedelta
 import mock
 from sqlalchemy import select
 
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import (delete_container_by_id, find_container_by_id, find_container_by_serial,
                                        init_container, get_all_containers, _gen_serial, find_container_for_token,
@@ -22,7 +22,8 @@ from privacyidea.lib.container import (delete_container_by_id, find_container_by
                                        create_container_template_from_db_object, compare_template_dicts,
                                        set_default_template, compare_template_with_container,
                                        finalize_registration, finalize_container_rollover, init_container_rollover,
-                                       unassign_user, get_container_generator, check_container_challenge)
+                                       unassign_user, get_container_generator, check_container_challenge,
+                                       get_container_challenge_user)
 from privacyidea.lib.container import get_container_classes, unregister
 from privacyidea.lib.containerclass import TokenContainerClass
 from privacyidea.lib.containers.container_info import TokenContainerInfoData, PI_INTERNAL, RegistrationState
@@ -2315,20 +2316,56 @@ class TokenContainerSynchronization(MyTestCase):
         self.assertIn(totp_token.get_serial(), server_serials)
 
 
-    def test_22_check_container_challenge_rejects_missing_owner(self):
+    def test_22_check_container_challenge(self):
         self.setUp_user_realms()
+        self.setUp_user_realm2()
+        owner = User("cornelius", self.realm1)
+        other_user = User("selfservice", self.realm1)
+        owner_in_realm2 = User("cornelius", self.realm2)
         container_serial = init_container({"type": "smartphone", "user": "cornelius",
                                            "realm": self.realm1})["container_serial"]
-        for serial, user in [(container_serial, User()), ("SMPH_UNKNOWN", User("cornelius", self.realm1))]:
-            with self.subTest(serial=serial, user=user):
-                challenge = Challenge(serial=serial, data={"type": "container"})
-                challenge.set_otp_status(True)
-                challenge.save()
 
+        def create_container_challenge(serial: str = container_serial, challenge_user: User | None = owner,
+                                       answered: bool = True, transaction_id: str | None = None) -> Challenge:
+            data = {"type": "container"}
+            if challenge_user:
+                data["user"] = get_container_challenge_user(challenge_user)
+            challenge = Challenge(serial=serial, transaction_id=transaction_id, data=data)
+            challenge.set_otp_status(answered)
+            challenge.save()
+            return challenge
+
+        rejected = {"empty user": ({}, User()),
+                    "unknown container": ({"serial": "SMPH_UNKNOWN"}, owner),
+                    "not answered": ({"answered": False}, owner),
+                    "challenge without user": ({"challenge_user": None}, owner),
+                    "challenge of another user": ({"challenge_user": other_user}, owner),
+                    "user is not the challenge user": ({}, other_user),
+                    "challenge user is not an owner": ({"challenge_user": other_user}, other_user),
+                    "challenge user is an owner in another realm": ({"challenge_user": owner_in_realm2},
+                                                                    owner_in_realm2)}
+        for description, (challenge_kwargs, user) in rejected.items():
+            with self.subTest(description):
+                challenge = create_container_challenge(**challenge_kwargs)
                 result = check_container_challenge(challenge.transaction_id, user)
                 self.assertDictEqual({"success": False, "details": {}}, result)
-                self.assertEqual(1, len(get_challenges(serial=serial, transaction_id=challenge.transaction_id)))
+                self.assertEqual(1, len(get_challenges(serial=challenge.serial,
+                                                       transaction_id=challenge.transaction_id)))
                 challenge.delete()
+
+        # A token challenge that comes first in the transaction does not hide the container challenge
+        token_challenge = Challenge(serial="HOTP_OTHER", data={"type": "hotp"})
+        token_challenge.save()
+        challenge = create_container_challenge(transaction_id=token_challenge.transaction_id)
+        self.assertEqual("HOTP_OTHER", get_challenges(transaction_id=challenge.transaction_id)[0].serial)
+        result = check_container_challenge(challenge.transaction_id, owner)
+        self.assertDictEqual({"success": True, "details": {"serial": container_serial,
+                                                           "message": "Found matching challenge"}}, result)
+        self.assertListEqual([], get_challenges(serial=container_serial, transaction_id=challenge.transaction_id))
+        # The challenge can only be used once
+        self.assertFalse(check_container_challenge(challenge.transaction_id, owner)["success"])
+
+        delete_challenges(transaction_id=challenge.transaction_id)
         delete_container_by_serial(container_serial)
 
     def test_99_container_without_challenge_response_raises(self):

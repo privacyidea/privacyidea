@@ -4,6 +4,13 @@
 
 .machines-container {
   @include styles.main-component-style;
+  // Narrower than the default floor: with only 4 narrow columns (l + m + s + m), the default
+  // 1520px left filter-actions-group (table-global.scss) with far more room than its content
+  // needed, stretching the filter field into dead white space above a much narrower table.
+  @include table.paginator-range-floor(table.table-width(l, m, s, m));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   @include table.base-table-structure(".machines-table", ".table-filter", ".table-scroll-container");
   @include table.page-table-state-size(table.table-width(l, m, s, m));
 
@@ -13,10 +20,18 @@
     table-layout: fixed;
     width: auto;
   }
+  @include table.scroll-region-fits-table;
 }
 
 .header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
+  // Spans the card like on every other table page, so the filter field gets the row's room instead
+  // of sitting at its min-width next to a content-sized paginator.
+  > .filter-paginator-container {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }

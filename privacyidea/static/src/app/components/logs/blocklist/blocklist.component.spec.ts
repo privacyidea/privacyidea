@@ -106,6 +106,14 @@ describe("BlocklistComponent", () => {
     jest.clearAllMocks();
   });
 
+  it("shows the empty panel instead of the table when no IP is blocked", () => {
+    casService.setBlocklistEntries([]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain("No blocked IP addresses");
+    expect(fixture.nativeElement.querySelector(".table-scroll-region")).toBeNull();
+  });
+
   it("should be created", () => {
     expect(component).toBeTruthy();
   });

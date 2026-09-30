@@ -3,11 +3,18 @@
 
 .api-clients-container {
   @include styles.main-component-style;
-  @include table.base-table-structure(".api-clients-table", ".table-filter", ".table-scroll-container");
   // Sized from the same col-width-* tiers the columns below use (select checkbox + display_name l +
   // client_type m + status s + key_id s + created_at m + last_used_at m + actions s), so the
   // empty/error state is as wide as the table it stands in for, not the unrelated 44rem default.
+  // Also narrower than the default paginator-range floor, or filter-actions-group
+  // (table-global.scss) would stretch the filter field into dead white space above a narrower table.
+  @include table.paginator-range-floor(table.table-width(checkbox, l, m, s, s, m, m, s));
+  @include table.base-table-structure(".api-clients-table", ".table-filter", ".table-scroll-container");
   @include table.page-table-state-size(table.table-width(checkbox, l, m, s, s, m, m, s));
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 
   // table-layout: auto would resize a col-width-* tier based on each render's actual cell content instead
   // of holding it steady; fixed makes the header row's declared widths authoritative.
@@ -15,6 +22,9 @@
     table-layout: fixed;
     width: auto;
   }
+  @include table.scroll-region-fits-table;
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .actions-container {

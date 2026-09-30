@@ -39,26 +39,29 @@
     @if (tableState.showTable()) {
       <div class="flex-row filter-paginator-container ali-center margin-top-16">
         @if (dataSource().data.length > 1) {
-          <mat-form-field
-            class="container-details-token-table-filter width-50"
-            subscriptSizing="dynamic">
-            <mat-label i18n="@@container.filterToken">Filter Token...</mat-label>
-            <app-clearable-input
-              (clearButtonClick)="clearFilter()"
-              [showClearButton]="filterInput.value !== ''">
-              <input
-                #filterInput
-                (keyup)="handleFilterInput($event)"
-                aria-label="Filter Input"
-                i18n-aria-label="@@common.filterInput"
-                i18n-placeholder="@@common.filterAcrossAll"
-                matInput
-                placeholder="Filter across all columns." />
-            </app-clearable-input>
-          </mat-form-field>
+          <div class="filter-actions-group">
+            <mat-form-field
+              class="container-details-token-table-filter width-50"
+              subscriptSizing="dynamic">
+              <mat-label i18n="@@container.filterToken">Filter Token...</mat-label>
+              <app-clearable-input
+                (clearButtonClick)="clearFilter()"
+                [showClearButton]="filterInput.value !== ''">
+                <input
+                  #filterInput
+                  (keyup)="handleFilterInput($event)"
+                  aria-label="Filter Input"
+                  i18n-aria-label="@@common.filterInput"
+                  i18n-placeholder="@@common.filterAcrossAll"
+                  matInput
+                  placeholder="Filter across all columns." />
+              </app-clearable-input>
+            </mat-form-field>
+          </div>
 
           <div class="flex-row ali-center margin-left-auto">
             <mat-paginator
+              appPaginatorCompactRange
               [hidePageSize]="true"
               [pageSize]="pageSize" />
           </div>

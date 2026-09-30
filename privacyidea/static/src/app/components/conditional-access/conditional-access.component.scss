@@ -3,6 +3,10 @@
 
 .conditional-access-container {
   @include styles.main-component-style;
+  @include table.paginator-range-floor;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   @include table.base-table-structure(
     ".conditional-access-table",
     ".conditional-access-table-filter",
@@ -18,6 +22,8 @@
         var(--column-width-l) + 91px + 91px
     )
   );
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .actions-container {

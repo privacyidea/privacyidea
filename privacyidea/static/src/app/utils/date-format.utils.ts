@@ -39,18 +39,35 @@ export function normalizeDateTimeString(value: string): string {
   return `${datePart}T${timePart}${milliseconds}${normalizedOffset ?? ""}`;
 }
 
-let localDateTimeFormatter: Intl.DateTimeFormat | undefined;
-function getLocalDateTimeFormatter(): Intl.DateTimeFormat {
-  localDateTimeFormatter ??= new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "medium" });
-  return localDateTimeFormatter;
+const localFormatters = new Map<string, Intl.DateTimeFormat>();
+function getLocalFormatter(options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = JSON.stringify(options);
+  let formatter = localFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(undefined, options);
+    localFormatters.set(key, formatter);
+  }
+  return formatter;
 }
 
-export function formatLocalDateTime(value: string | number | Date | null | undefined): string {
+function formatLocal(value: string | number | Date | null | undefined, options: Intl.DateTimeFormatOptions): string {
   if (value === null || value === undefined || value === "") return "";
   const normalized = typeof value === "string" ? normalizeDateTimeString(value) : value;
   const date = normalized instanceof Date ? normalized : new Date(normalized);
   if (Number.isNaN(date.getTime())) return String(value);
-  return getLocalDateTimeFormatter().format(date);
+  return getLocalFormatter(options).format(date);
+}
+
+export function formatLocalDateTime(value: string | number | Date | null | undefined): string {
+  return formatLocal(value, { dateStyle: "medium", timeStyle: "medium" });
+}
+
+export function formatLocalDate(value: string | number | Date | null | undefined): string {
+  return formatLocal(value, { dateStyle: "medium" });
+}
+
+export function formatLocalTime(value: string | number | Date | null | undefined): string {
+  return formatLocal(value, { timeStyle: "medium" });
 }
 
 /**

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { createPaginatorIntl } from "./paginator-intl";
+import { createPaginatorIntl, getCompactRangeLabel } from "./paginator-intl";
 
 describe("createPaginatorIntl", () => {
   it("sets the localized static labels", () => {
@@ -59,6 +59,24 @@ describe("createPaginatorIntl", () => {
       const label = intl.getRangeLabel(5, 10, 25);
       expect(label).toContain("51");
       expect(label).toContain("60");
+    });
+  });
+
+  describe("getCompactRangeLabel", () => {
+    it("returns just 0 when length is 0", () => {
+      expect(getCompactRangeLabel(0, 10, 0)).toBe("0");
+    });
+
+    it("returns just 0 when pageSize is 0", () => {
+      expect(getCompactRangeLabel(0, 0, 5)).toBe("0");
+    });
+
+    it("computes the same range as getRangeLabel, without the total", () => {
+      expect(getCompactRangeLabel(0, 10, 25)).toBe("1 – 10");
+    });
+
+    it("clamps the end index to the total length on the last page", () => {
+      expect(getCompactRangeLabel(2, 10, 25)).toBe("21 – 25");
     });
   });
 });

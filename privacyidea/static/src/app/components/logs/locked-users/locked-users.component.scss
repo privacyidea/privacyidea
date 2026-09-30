@@ -3,17 +3,18 @@
 
 .locked-users-table-container {
   @include styles.main-component-style;
-  @include table.base-table-structure(
-    ".locked-users-table",
-    ".locked-users-table-filter",
-    ".table-scroll-container"
-  );
+  @include table.paginator-range-floor;
+  // The empty/error/loading panel fills the page like on every other table page.
+  @include table.page-table-state-size;
+  @include table.base-table-structure(".locked-users-table", ".locked-users-table-filter", ".table-scroll-container");
   // Flex column so the title/description, filter+paginator row and the actions
   // stay pinned and only the .table-scroll-region (flex: 1 1 auto, overflow: auto)
   // scrolls. overflow: hidden hands scrolling to that inner region.
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .toolbar {
@@ -61,18 +62,6 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
-// Reveal the inline row actions (filter button + auth-log shortcut) only while the row is
-// hovered or holds focus, to keep dense rows calm. Both read the inherited
-// --filter-button-opacity custom property; :focus-within keeps them reachable for keyboard/AT users.
-.locked-users-table tr.mat-mdc-row {
-  --filter-button-opacity: 0;
-
-  &:hover,
-  &:focus-within {
-    --filter-button-opacity: 1;
-  }
-}
-
 // Placeholder shown in the Lock Expiry column for permanent locks (no expiry).
 .lock-date {
   color: var(--mat-sys-on-surface-variant);
@@ -88,4 +77,3 @@
 a[role="button"] {
   cursor: pointer;
 }
-

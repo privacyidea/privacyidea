@@ -150,11 +150,11 @@ describe("ConditionalAccessStateService", () => {
     });
   });
 
-  it("passes an error_messages filter through", () => {
+  it("passes an error_message filter through", () => {
     // Wording is stored per row, so an admin who rewrites a stage's text needs a way to find the locks still
     // quoting the old one - those users go on reading it until the lock is rewritten.
-    service.lockedUsersFilter.set(new FilterValue({ value: "error_messages: *administrator*" }));
-    expect(service.lockedUsersFilterParams()).toEqual({ error_messages: "*administrator*" });
+    service.lockedUsersFilter.set(new FilterValue({ value: "error_message: *administrator*" }));
+    expect(service.lockedUsersFilterParams()).toEqual({ error_message: "*administrator*" });
   });
 
   it("resets pageIndex to 1 when the filter changes", () => {

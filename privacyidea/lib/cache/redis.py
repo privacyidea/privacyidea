@@ -572,7 +572,7 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
     # the row is ever written.
 
 
-def evict_challenge(transaction_id: str, serial: str):
+def evict_challenge(transaction_id: str, serial: str) -> int:
     """
     Remove a single challenge (one ``serial`` within ``transaction_id``) from
     Redis. Called from ChallengeDTO.delete() and on explicit invalidation.
@@ -585,10 +585,15 @@ def evict_challenge(transaction_id: str, serial: str):
     returns None (cooldown after a recent failure). The unified retry
     cooldown means a temporarily-disabled worker will pick the cache back
     up automatically once Redis is available again.
+
+    :return: the number of challenges removed from Redis, 0 or 1. Of two
+        workers that evict the same challenge at the same time, only one
+        gets 1, so a caller can use it to let only one request use the
+        challenge.
     """
     r = redis_client_for_feature("challenges")
     if r is None:
-        return
+        return 0
     try:
         pipe = r.pipeline()
         pipe.hdel(_TXN_KEY.format(transaction_id), serial)
@@ -596,9 +601,10 @@ def evict_challenge(transaction_id: str, serial: str):
         # so don't try to remove from it otherwise - it doesn't exist.
         if serial:
             pipe.srem(_SERIAL_KEY.format(serial), transaction_id)
-        pipe.execute()
+        return pipe.execute()[0]
     except redis_lib.exceptions.RedisError as e:
         _disable_redis(e)
+        return 0
 
 
 def evict_transaction(transaction_id: str, serials: "list[str]"):

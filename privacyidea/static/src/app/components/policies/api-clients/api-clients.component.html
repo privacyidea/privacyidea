@@ -23,69 +23,94 @@
 
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        appearance="fill"
-        class="table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@apiClient.filterApiClients">Filter API Clients...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="apiClientService.apiClientResource.isLoading()"
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@common.filterByNameType"
-            matInput
-            placeholder="Filter by name or type" />
-        </app-clearable-input>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          appearance="fill"
+          class="table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@apiClient.filterApiClients">Filter API Clients...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="resetFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="apiClientService.apiClientResource.isLoading()"
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@common.filterByNameType"
+              matInput
+              placeholder="Filter by name or type" />
+          </app-clearable-input>
+        </mat-form-field>
+        @if (authService.oneActionAllowed(["api_client_add", "api_client_delete"])) {
+          <button
+            [matMenuTriggerFor]="tableActionsMenu"
+            aria-label="Actions"
+            class="table-actions-trigger margin-left-8"
+            i18n-aria-label="@@common.actions"
+            i18n-matTooltip="@@common.actions"
+            mat-icon-button
+            matTooltip="Actions">
+            <span class="icon-badge">
+              <mat-icon>menu</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+            </span>
+          </button>
+        }
+      </div>
       <mat-paginator
+        appPaginatorCompactRange
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSizeOptions()[1]"
         showFirstLastButtons />
     </div>
-    <div class="actions-container margin-bottom-16">
-      @if (authService.actionAllowed("api_client_add")) {
-        <button
-          (click)="onCreateNewApiClient()"
-          class="action-button-primary button-width-l"
-          mat-stroked-button>
-          <span class="icon-badge">
-            <mat-icon class="padding-right-3">vpn_key</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-          </span>
-          <span i18n="@@apiClient.createApiClient">Create API Client</span>
-        </button>
-      }
-      @if (authService.actionAllowed("api_client_delete")) {
-        <button
-          (click)="deleteSelected()"
-          [disabled]="!selector.hasSelection()"
-          class="action-button-delete-secondary button-width-l"
-          mat-stroked-button>
-          <mat-icon>delete_sweep</mat-icon>
-          <span i18n="@@common.delete">Delete</span>
-        </button>
-      }
+    <div class="actions-row">
+      <div class="actions-row-inner">
+        <div class="actions-container margin-bottom-16">
+          @if (authService.actionAllowed("api_client_add")) {
+            <button
+              (click)="onCreateNewApiClient()"
+              class="action-button-primary button-width-l"
+              mat-stroked-button>
+              <span class="icon-badge">
+                <mat-icon class="padding-right-3">vpn_key</mat-icon>
+                <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+              </span>
+              <span i18n="@@apiClient.createApiClient">Create API Client</span>
+            </button>
+          }
+          @if (authService.actionAllowed("api_client_delete")) {
+            <button
+              (click)="deleteSelected()"
+              [disabled]="!selector.hasSelection()"
+              class="action-button-delete-secondary button-width-l"
+              mat-stroked-button>
+              <mat-icon>delete_sweep</mat-icon>
+              <span i18n="@@common.delete">Delete</span>
+            </button>
+          }
 
-      <p
-        class="margin-bottom-0 margin-top-0"
-        i18n="@@apiClient.apiClientsIntro">
-        API clients authenticate against privacyIDEA with an API key sent in the
-        <code>X-API-Key</code> header. Click on a client to see its remembered devices and the users behind them.
-      </p>
+          <p
+            class="margin-bottom-0 margin-top-0"
+            i18n="@@apiClient.apiClientsIntro">
+            API clients authenticate against privacyIDEA with an API key sent in the
+            <code>X-API-Key</code> header. Click on a client to see its remembered devices and the users behind them.
+          </p>
+        </div>
+      </div>
     </div>
 
-    <table
-      [dataSource]="apiClientDataSource()"
-      class="api-clients-table"
-      mat-table
-      matSort>
-      <ng-container matColumnDef="select">
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="apiClientDataSource()"
+        class="api-clients-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="select">
         <th
           *matHeaderCellDef
           class="table-checkbox"
@@ -256,7 +281,7 @@
       </ng-container>
 
       <tr
-        *matHeaderRowDef="displayedColumns"
+        *matHeaderRowDef="displayedColumns; sticky: true"
         mat-header-row></tr>
       <tr
         *matRowDef="let row; columns: displayedColumns"
@@ -269,7 +294,8 @@
             [table]="tableState" />
         </td>
       </tr>
-    </table>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"
@@ -293,3 +319,25 @@
     </app-table-state>
   }
 </div>
+
+<!-- The action row's controls as menu items, for the compact trigger shown next to the filter once the
+     table is scrolled and that row is hidden. -->
+<mat-menu #tableActionsMenu="matMenu">
+  @if (authService.actionAllowed("api_client_add")) {
+    <button
+      (click)="onCreateNewApiClient()"
+      mat-menu-item>
+      <mat-icon>vpn_key</mat-icon>
+      <span i18n="@@apiClient.createApiClient">Create API Client</span>
+    </button>
+  }
+  @if (authService.actionAllowed("api_client_delete")) {
+    <button
+      (click)="deleteSelected()"
+      [disabled]="!selector.hasSelection()"
+      mat-menu-item>
+      <mat-icon>delete_sweep</mat-icon>
+      <span i18n="@@common.delete">Delete</span>
+    </button>
+  }
+</mat-menu>

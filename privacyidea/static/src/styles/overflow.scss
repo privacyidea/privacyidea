@@ -150,9 +150,10 @@
     color: var(--mat-sys-primary-base-active) !important;
   }
 
-  .material-icons,
-  .mat-icon,
-  mat-icon {
+  // A badge on the icon (see .icon-badge in icon.scss) keeps its own, smaller size.
+  .material-icons:not(.icon-badge-overlay),
+  .mat-icon:not(.icon-badge-overlay),
+  mat-icon:not(.icon-badge-overlay) {
     font-size: 24px !important;
     width: 24px !important;
     height: 24px !important;

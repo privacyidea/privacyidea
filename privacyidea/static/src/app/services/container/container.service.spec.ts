@@ -491,7 +491,7 @@ describe("ContainerService", () => {
   it("filterParams keeps realm and container_realm apart", () => {
     containerService.activeFilter.set(new FilterValue({ value: "realm: realm1 container_realm: realm2" }));
 
-    expect(containerService.filterParams()).toEqual({ realm: "realm1", container_realm: "*realm2*" });
+    expect(containerService.filterParams()).toEqual({ realm: "realm1", container_realm: "realm2" });
   });
 
   it("pageSize falls back to 10 for invalid eventPageSize", () => {

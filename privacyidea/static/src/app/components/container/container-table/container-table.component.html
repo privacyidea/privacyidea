@@ -23,53 +23,75 @@
   i18n-aria-label="@@container.containerTable">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        class="container-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@common.filterContainers">Filter Containers...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="containerService.clearFilter()"
-          [showClearButton]="containerService.filterDraft().isNotEmpty">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="containerResource.isLoading()"
-            [appFilterAutocomplete]="filterKeywords"
-            (input)="onFilterInput($event)"
-            (keyup.enter)="containerService.applyFilterInput($event)"
-            [value]="containerService.filterDraft().filterString"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@container.exampleQueryType"
-            id="container-filter-input"
-            matInput
-            placeholder="Example query: 'type: generic'" />
-        </app-clearable-input>
-        <mat-hint>{{ filterHint }}</mat-hint>
-        @if (showFilterHint()) {
-          <mat-hint
-            align="end"
-            i18n="@@common.pressEnterApply"
-            >Press enter to apply the filter</mat-hint
-          >
-        }
-      </mat-form-field>
-      <button
-        [matMenuTriggerFor]="advancedFilterMenu"
-        class="margin-left-8"
-        i18n-matTooltip="@@common.moreFilter"
-        mat-icon-button
-        matTooltip="More Filter">
-        <mat-icon>filter_list</mat-icon>
-      </button>
+      <div class="filter-actions-group">
+        <mat-form-field
+          class="container-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@common.filterContainers">Filter Containers...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="containerService.clearFilter()"
+            [showClearButton]="containerService.filterDraft().isNotEmpty">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="containerResource.isLoading()"
+              [appFilterAutocomplete]="filterKeywords"
+              (input)="onFilterInput($event)"
+              (keyup.enter)="containerService.applyFilterInput($event)"
+              [value]="containerService.filterDraft().filterString"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@container.exampleQueryType"
+              id="container-filter-input"
+              matInput
+              placeholder="Example query: 'type: generic'" />
+          </app-clearable-input>
+          <mat-hint>{{ filterHint }}</mat-hint>
+          @if (showFilterHint()) {
+            <mat-hint
+              align="end"
+              i18n="@@common.pressEnterApply"
+              >Press enter to apply the filter</mat-hint
+            >
+          }
+        </mat-form-field>
+        <button
+          [matMenuTriggerFor]="advancedFilterMenu"
+          class="margin-left-8"
+          i18n-matTooltip="@@common.moreFilter"
+          mat-icon-button
+          matTooltip="More Filter">
+          <mat-icon class="ms--filter-list"></mat-icon>
+        </button>
+        <button
+          [matMenuTriggerFor]="containerTableActions.actionsMenu()"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <span class="icon-badge">
+            <mat-icon>menu</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+          </span>
+        </button>
+      </div>
       <mat-paginator
+        appPaginatorPageSizeTooltip
+        appPaginatorCompactRange
         (page)="onPageEvent($event)"
+        class="hide-page-size-label"
         [length]="total()"
         [pageIndex]="pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSize()"
         showFirstLastButtons />
     </div>
-    <app-container-table-actions />
+    <div class="container-actions-row">
+      <div class="container-actions-row-inner">
+        <app-container-table-actions #containerTableActions />
+      </div>
+    </div>
     <div
       class="table-scroll-region"
       appScrollEdges>
@@ -116,12 +138,25 @@
                           class="filter-button"
                           mat-icon-button
                           type="button">
-                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
+                          <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
                         </button>
                       } @else if (apiFilterKeyMap[column.key] === "state") {
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="statesMenu"
+                          aria-label="Filter by {{ column.label }}"
+                          i18n-aria-label="@@common.filterBy"
+                          class="filter-button"
+                          mat-icon-button
+                          type="button">
+                          <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
+                        </button>
+                      } @else if (
+                        apiFilterKeyMap[column.key] === "realm" || apiFilterKeyMap[column.key] === "container_realm"
+                      ) {
+                        <button
+                          [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                          [matMenuTriggerFor]="realmMenu"
                           aria-label="Filter by {{ column.label }}"
                           i18n-aria-label="@@common.filterBy"
                           class="filter-button"
@@ -232,6 +267,11 @@
                         tabindex="0">
                         {{ element[column.key] }}
                       </a>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        [column]="column.key"
+                        [value]="element[column.key]"
+                        (filterValue)="filterByUser($event, element['user_realm'])" />
                     </app-copyable>
                   }
                   @default {
@@ -387,6 +427,27 @@
         (click)="onItemSelected(keyword, type.containerType)"
         mat-menu-item>
         {{ type.containerType }}
+      </button>
+    }
+  </ng-template>
+</mat-menu>
+
+<mat-menu #realmMenu="matMenu">
+  <ng-template
+    let-keyword="keyword"
+    matMenuContent>
+    <button
+      (click)="onItemSelected(keyword, undefined)"
+      mat-menu-item>
+      <mat-icon>filter_alt_off</mat-icon>
+      <span i18n="@@common.clearFilter">Clear Filter</span>
+    </button>
+    <mat-divider />
+    @for (realm of realmService.realmOptions(); track realm) {
+      <button
+        (click)="onItemSelected(keyword, realm)"
+        mat-menu-item>
+        {{ realm }}
       </button>
     }
   </ng-template>

@@ -18,14 +18,23 @@
  **/
 
 import { Pipe, PipeTransform } from "@angular/core";
-import { formatLocalDateTime } from "@utils/date-format.utils";
+import { formatLocalDate, formatLocalDateTime, formatLocalTime } from "@utils/date-format.utils";
+
+export type LocalDateTimePart = "dateTime" | "date" | "time";
 
 @Pipe({
   name: "localDateTime",
   standalone: true
 })
 export class LocalDateTimePipe implements PipeTransform {
-  transform(value: string | number | Date | null | undefined): string {
-    return formatLocalDateTime(value);
+  transform(value: string | number | Date | null | undefined, part: LocalDateTimePart = "dateTime"): string {
+    switch (part) {
+      case "date":
+        return formatLocalDate(value);
+      case "time":
+        return formatLocalTime(value);
+      default:
+        return formatLocalDateTime(value);
+    }
   }
 }

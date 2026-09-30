@@ -514,6 +514,18 @@ describe("TokenService", () => {
       req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
     });
 
+    it("sends a value that asks for an exact match without wildcards or its prefix", () => {
+      contentServiceMock.onTokens = signal(true);
+      tokenService.activeFilter.set(new FilterValue({ value: "serial: =OATH0001 user: =alice type: =hotp" }));
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.params.get("serial")).toBe("OATH0001");
+      expect(req.request.params.get("user")).toBe("alice");
+      expect(req.request.params.get("type")).toBe("hotp");
+      req.flush(MockPiResponse.fromValue({ count: 0, current: 1, tokens: [] }));
+    });
+
     it("omits empty / wildcard-only filter values from the outgoing request", () => {
       contentServiceMock.onTokens = signal(true);
       tokenService.activeFilter.set(

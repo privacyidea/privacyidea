@@ -22,13 +22,29 @@
   i18n-aria-label="@@container.containerTemplates">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <app-container-templates-filter
-        class="container-templates-table-filter"
-        [initialFilter]="filter()"
-        [isLoading]="containerTemplateService.templatesResource.isLoading()"
-        (filterChange)="onFilterChange($event)">
-      </app-container-templates-filter>
+      <div class="filter-actions-group">
+        <app-container-templates-filter
+          class="container-templates-table-filter"
+          [initialFilter]="filter()"
+          [isLoading]="containerTemplateService.templatesResource.isLoading()"
+          (filterChange)="onFilterChange($event)">
+        </app-container-templates-filter>
+        <button
+          [matMenuTriggerFor]="containerTemplatesTableActions.actionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <span class="icon-badge">
+            <mat-icon>menu</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+          </span>
+        </button>
+      </div>
       <mat-paginator
+        appPaginatorCompactRange
         (page)="onPageEvent($event)"
         [length]="totalLength()"
         [pageIndex]="pageIndex()"
@@ -37,16 +53,25 @@
         showFirstLastButtons />
     </div>
 
-    <app-container-templates-table-actions [selectedTemplates]="selector.selectedRows()">
-    </app-container-templates-table-actions>
+    <div class="actions-row">
+      <div class="actions-row-inner">
+        <app-container-templates-table-actions
+          #containerTemplatesTableActions
+          [selectedTemplates]="selector.selectedRows()">
+        </app-container-templates-table-actions>
+      </div>
+    </div>
 
-    <table
-      mat-table
-      matSort
-      (matSortChange)="onSortChange($event)"
-      [dataSource]="pagedContainerTemplates()"
-      class="container-templates-table">
-      <ng-container matColumnDef="select">
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        mat-table
+        matSort
+        (matSortChange)="onSortChange($event)"
+        [dataSource]="pagedContainerTemplates()"
+        class="container-templates-table">
+        <ng-container matColumnDef="select">
         <th
           mat-header-cell
           *matHeaderCellDef
@@ -89,15 +114,29 @@
               }
               @if (column.value.filterable) {
                 <div class="flex">
-                  <button
-                    mat-icon-button
-                    class="filter-button"
-                    [disabled]="containerTemplateService.templates().length === 0"
-                    (click)="$event.stopPropagation(); onClickFilter(column.key)">
-                    <mat-icon class="keyword-button-icon margin-left-0">
-                      {{ getFilterIconName(column.key) }}
-                    </mat-icon>
-                  </button>
+                  @if (column.key === "container_type") {
+                    <button
+                      mat-icon-button
+                      class="filter-button"
+                      [disabled]="containerTemplateService.templates().length === 0"
+                      [matMenuTriggerFor]="containerTypeMenu"
+                      aria-label="Filter by {{ column.value.label }}"
+                      i18n-aria-label="@@common.filterBy"
+                      type="button"
+                      (click)="$event.stopPropagation()">
+                      <mat-icon class="keyword-button-icon margin-left-0">filter_list</mat-icon>
+                    </button>
+                  } @else {
+                    <button
+                      mat-icon-button
+                      class="filter-button"
+                      [disabled]="containerTemplateService.templates().length === 0"
+                      (click)="$event.stopPropagation(); onClickFilter(column.key)">
+                      <mat-icon class="keyword-button-icon margin-left-0">
+                        {{ getFilterIconName(column.key) }}
+                      </mat-icon>
+                    </button>
+                  }
                 </div>
               }
             </div>
@@ -140,7 +179,7 @@
 
       <tr
         mat-header-row
-        *matHeaderRowDef="columnKeys()"></tr>
+        *matHeaderRowDef="columnKeys(); sticky: true"></tr>
       <tr
         mat-row
         *matRowDef="let row; columns: columnKeys()"></tr>
@@ -165,7 +204,8 @@
           </app-table-state>
         </td>
       </tr>
-    </table>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"
@@ -184,3 +224,20 @@
     </app-table-state>
   }
 </div>
+
+<mat-menu #containerTypeMenu="matMenu">
+  <button
+    (click)="onContainerTypeSelected(undefined)"
+    mat-menu-item>
+    <mat-icon>filter_alt_off</mat-icon>
+    <span i18n="@@common.clearFilter">Clear Filter</span>
+  </button>
+  <mat-divider />
+  @for (type of containerTemplateService.availableContainerTypes(); track type) {
+    <button
+      (click)="onContainerTypeSelected(type)"
+      mat-menu-item>
+      {{ type }}
+    </button>
+  }
+</mat-menu>
