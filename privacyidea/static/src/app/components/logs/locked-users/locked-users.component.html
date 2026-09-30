@@ -40,6 +40,9 @@
               matInput
               placeholder="Example query: 'usernames: alice realms: myrealm'" />
           </app-clearable-input>
+          <app-info-hint
+            matSuffix
+            [text]="filterMatchInfo()" />
           <mat-hint i18n="@@lockedUsers.useWildcardWrapFilter">
             Use * as a wildcard. Wrap the filter value in quotation marks if it contains colons or spaces.
           </mat-hint>

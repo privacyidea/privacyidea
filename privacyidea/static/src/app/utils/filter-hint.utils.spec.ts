@@ -16,30 +16,30 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { filterColumnHint, filterInputHint } from "./filter-hint.utils";
+import { filterColumnHint, filterInputHint, filterMatchTooltip } from "./filter-hint.utils";
 
 describe("filterInputHint", () => {
   it("only states what the placeholder does not already show", () => {
     expect(filterInputHint()).toBe(
-      `Values match partially by default.\nUse * as a wildcard, or start a value with = to match it exactly.\nSome columns always match exactly; hover a column's filter icon to see which.\nQuote values that contain spaces or a colon, e.g. description: "my note".\nCase-insensitive`
+      `Use * as a wildcard, or start a value with = to match it exactly.\nQuote values that contain spaces or a colon, e.g. description: "my note".\nCase-insensitive`
     );
   });
 
   it("hedges the case note where the backend does not normalise case", () => {
     expect(filterInputHint({ mayBeCaseSensitive: true })).toBe(
-      `Values match partially by default.\nUse * as a wildcard, or start a value with = to match it exactly.\nSome columns always match exactly; hover a column's filter icon to see which.\nQuote values that contain spaces or a colon, e.g. description: "my note".\nMostly case-insensitive`
+      `Use * as a wildcard, or start a value with = to match it exactly.\nQuote values that contain spaces or a colon, e.g. description: "my note".\nMostly case-insensitive`
     );
   });
 
   it("omits the case note when not requested", () => {
     expect(filterInputHint({ includeCaseNote: false })).toBe(
-      `Values match partially by default.\nUse * as a wildcard, or start a value with = to match it exactly.\nSome columns always match exactly; hover a column's filter icon to see which.\nQuote values that contain spaces or a colon, e.g. description: "my note".`
+      `Use * as a wildcard, or start a value with = to match it exactly.\nQuote values that contain spaces or a colon, e.g. description: "my note".`
     );
   });
 
   it("joins the sentences on one line with a custom separator", () => {
     expect(filterInputHint({ includeCaseNote: false, separator: " " })).toBe(
-      `Values match partially by default. Use * as a wildcard, or start a value with = to match it exactly. Some columns always match exactly; hover a column's filter icon to see which. Quote values that contain spaces or a colon, e.g. description: "my note".`
+      `Use * as a wildcard, or start a value with = to match it exactly. Quote values that contain spaces or a colon, e.g. description: "my note".`
     );
   });
 });
@@ -75,5 +75,20 @@ describe("filterColumnHint", () => {
 
   it("describes boolean keywords as true/false only", () => {
     expect(filterColumnHint("Active", { exactMatch: false, isBoolean: true })).toBe("Filter by Active\ntrue or false");
+  });
+});
+
+describe("filterMatchTooltip", () => {
+  const isExact = (key: string) => ["type", "user"].includes(key);
+
+  it("leads the partial keywords with the table name and lists the exact ones below", () => {
+    expect(filterMatchTooltip("Token", ["serial", "type", "description", "user"], isExact)).toBe(
+      "Token partial match: serial, description\nExact match: type, user"
+    );
+  });
+
+  it("leaves out a group without keywords", () => {
+    expect(filterMatchTooltip("Token", ["serial"], isExact)).toBe("Token partial match: serial");
+    expect(filterMatchTooltip("Token", ["user"], isExact)).toBe("Token exact match: user");
   });
 });

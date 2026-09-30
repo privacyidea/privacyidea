@@ -57,6 +57,9 @@
                 matInput
                 placeholder="Example query: 'service_id: myService'" />
             </app-clearable-input>
+            <app-info-hint
+              matSuffix
+              [text]="filterMatchInfo()" />
             <mat-hint>{{ filterHint }}</mat-hint>
           </mat-form-field>
         </div>

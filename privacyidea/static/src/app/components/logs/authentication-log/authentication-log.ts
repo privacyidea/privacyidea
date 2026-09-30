@@ -16,6 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
+import { filterMatchTooltip } from "@utils/filter-hint.utils";
 import { DatePipe, formatDate, NgClass, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
@@ -276,6 +279,8 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
 @Component({
   selector: "app-authentication-log",
   imports: [
+    InfoHintComponent,
+    MatSuffix,
     TableStateComponent,
     RefocusAfterReloadDirective,
     MatCell,
@@ -326,6 +331,15 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
   styleUrl: "./authentication-log.scss"
 })
 export class AuthenticationLog {
+  // Every keyword is sent verbatim and the backend matches it exactly (see AuthenticationLogService.filterParams).
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      $localize`:@@nav.authenticationLog:Authentication Log`,
+      [...this.authenticationLogService.apiFilter, ...this.authenticationLogService.advancedApiFilter],
+      () => true
+    )
+  );
+
   readonly columnKeysMap = columnKeysMap;
   // Cells whose content can grow tall (stacked serials, long JSON) get a capped, scrollable cell.
   readonly scrollableColumnKeys = ["serial", ...INFO_COLUMN_KEYS];

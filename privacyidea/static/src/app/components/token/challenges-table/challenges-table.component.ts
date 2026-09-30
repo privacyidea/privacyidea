@@ -17,8 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { NgClass } from "@angular/common";
-import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal, computed } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -47,7 +49,7 @@ import {
   ChallengesServiceInterface
 } from "@services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
@@ -68,6 +70,8 @@ const columnKeysMap = [
   selector: "app-challenges-table",
   standalone: true,
   imports: [
+    InfoHintComponent,
+    MatSuffix,
     RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginatorModule,
@@ -104,6 +108,13 @@ export class ChallengesTableComponent {
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   apiFilterKeys = this.challengesService.apiFilterKeys;
   readonly filterHint = inlineFilterHint();
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      $localize`:@@common.challenge:Challenge`,
+      [...this.challengesService.apiFilterKeys, ...this.challengesService.advancedApiFilterKeys],
+      (key) => this.challengesService.exactMatchKeys.has(key)
+    )
+  );
   advancedApiFilterKeys = this.challengesService.advancedApiFilterKeys;
   tokenSerial = this.tokenService.tokenSerial;
   pageSize = this.challengesService.pageSize;

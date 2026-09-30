@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -38,7 +40,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { MachineService, MachineServiceInterface, TokenApplication } from "@services/machine/machine.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
@@ -47,6 +49,8 @@ import { PaginatorCompactRangeDirective } from "@components/shared/directives/pa
   selector: "app-token-applications-ssh",
   standalone: true,
   imports: [
+    InfoHintComponent,
+    MatSuffix,
     RefocusAfterReloadDirective,
     MatTabsModule,
     MatCell,
@@ -87,6 +91,13 @@ export class TokenApplicationsSshComponent {
   displayedColumns: string[] = this.columnsKeyMap.map((column) => column.key);
   sort = this.machineService.sort;
   readonly filterHint = inlineFilterHint();
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      $localize`:@@token.sshMachine:SSH machine`,
+      [...this.machineService.apiFilterKeys, ...this.machineService.advancedApiFilterKeys],
+      (key) => this.machineService.isExactMatchKey(key)
+    )
+  );
 
   dataSource = computed(() => {
     const data = this.machineService.tokenApplications();

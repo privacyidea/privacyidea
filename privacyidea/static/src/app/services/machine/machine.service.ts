@@ -67,6 +67,7 @@ export interface MachineServiceInterface extends FilterableTableServiceInterface
   tokenApplications: Signal<TokenApplications | undefined>;
   readonly canListTokenApplications: Signal<boolean>;
   selectedApplicationType: WritableSignal<"ssh" | "offline">;
+  isExactMatchKey(key: string): boolean;
   machinesResource: HttpResourceRef<PiResponse<Machines> | undefined>;
   tokenApplicationResource: HttpResourceRef<PiResponse<TokenApplications> | undefined>;
 
@@ -180,13 +181,25 @@ export class MachineService extends FilterableTableService implements MachineSer
 
   // Which keywords are wrapped in wildcards and which are sent plain depends on the
   // application, so the keys cannot come from a static exactMatchKeys set.
+  private plainKeys(): Set<string> {
+    return new Set(
+      this.selectedApplicationType() === "ssh"
+        ? ["hostname", "machineid", "resolver"]
+        : ["hostname", "machineid", "resolver", "count", "rounds"]
+    );
+  }
+
+  /** Whether a keyword is sent plain; a combined keyword like "machineid & resolver" is when all its parts are. */
+  isExactMatchKey(key: string): boolean {
+    const plainKeys = this.plainKeys();
+    return key.split(" & ").every((part) => plainKeys.has(part));
+  }
+
   override readonly filterParams = computed<Record<string, string>>(
     () => {
       const isSSH = this.selectedApplicationType() === "ssh";
       const wrapKeys = new Set(isSSH ? ["serial", "service_id"] : ["serial"]);
-      const plainKeys = new Set(
-        isSSH ? ["hostname", "machineid", "resolver"] : ["hostname", "machineid", "resolver", "count", "rounds"]
-      );
+      const plainKeys = this.plainKeys();
 
       return buildFilterParams(
         this.activeFilter().filterMap,
