@@ -32,7 +32,8 @@ import copy
 
 from .lib.utils import (get_all_params, get_before_request_config, get_optional, map_error_to_code,
                         get_auth_error_status_code, send_error, verify_auth_token, get_auth_token_from_request,
-                        logged_in_user_from_token, hide_specific_error_message, construct_radius_response)
+                        logged_in_user_from_token, hide_specific_error_message, construct_radius_response,
+                        resolve_token_owner, report_owner_lookup_error)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from .lib.conditional_access import restore_rejection_audit
@@ -47,7 +48,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.log import redact_url
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
-from privacyidea.lib.token import get_token_type, get_token_owner, get_token_owner_without_lookup
+from privacyidea.lib.token import get_token_type
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.validate import validate_blueprint
 from .resolver import resolver_blueprint
@@ -468,17 +469,15 @@ def before_request():
         g.serial = serial
         tokentype = get_token_type(serial)
         if not request.User:
-            # We determine the user object by the given serial number
+            # We determine the user object by the given serial number. If the owner can not be looked up, because
+            # the resolver of the owner was deleted or is unreachable, this is the owner as far as the database
+            # knows them: the token can still be managed, and the policies of the realm of the owner still apply
+            # to it. The failed lookup is reported below, once the audit entry of the request exists.
             try:
-                request.User = get_token_owner(serial) or User()
+                request.User = resolve_token_owner(serial) or User()
             except ResourceNotFoundError:
                 # The serial might not exist! This would raise an exception
                 pass
-            except UserError as error:
-                # The owner can not be looked up, e.g. because the resolver of the owner was deleted. The token can
-                # still be managed, and the policies of the realm of the owner still apply to it.
-                log.info(f"The owner of the token {serial} can not be looked up: {error}")
-                request.User = get_token_owner_without_lookup(serial)
 
     else:
         g.serial = None
@@ -541,6 +540,9 @@ def before_request():
                         "action_detail": "",
                         "thread_id": f"{threading.current_thread().ident!s}",
                         "info": ""})
+
+    if serial:
+        report_owner_lookup_error(serial)
 
     if g.logged_in_user.get("role") == "admin":
         # An administrator is calling this API
