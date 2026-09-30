@@ -6039,3 +6039,52 @@ class APITokenListNodeTestCase(MyApiTestCase):
                     remove_token(serial)
                 except ResourceNotFoundError:
                     pass
+
+    def test_05_owner_with_unknown_login_outside_the_token_action_check(self):
+        # Policies that are not matched through check_token_action treat an owner whose login is unknown the same
+        # way: a policy naming users can not be checked against them, not even one that excludes them.
+        self.setUp_user_realms()
+        token = init_token({"type": "spass"}, user=User("cornelius", self.realm1))
+        serial = token.get_serial()
+        add_tokeninfo(serial, "blabla", value="SomeValue")
+
+        def rollover() -> Response:
+            with self.app.test_request_context('/token/init', method='POST',
+                                               data={"type": "spass", "serial": serial},
+                                               headers={'Authorization': self.at}):
+                return self.app.full_dispatch_request()
+
+        def listed_tokeninfo() -> dict:
+            with self.app.test_request_context('/token/', method='GET', query_string={"serial": serial},
+                                               headers={'Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json["result"]["value"]["tokens"][0]["info"]
+
+        try:
+            # Enrolling and listing stay allowed throughout, so that only the rollover and the hidden token info
+            # depend on the policies naming the owner
+            set_policy("enroll", scope=SCOPE.ADMIN, action=f"enrollSPASS,{PolicyAction.TOKENLIST}")
+            with mock.patch.object(PasswdIdResolver, "getUsername", return_value=""):
+                for user in ("cornelius", "*,!cornelius"):
+                    set_policy("rollover", scope=SCOPE.ADMIN, realm=self.realm1, user=user,
+                               action=PolicyAction.TOKENROLLOVER)
+                    set_policy("hide", scope=SCOPE.ADMIN, realm=self.realm1, user=user,
+                               action=f"{PolicyAction.HIDE_TOKENINFO}=blabla")
+                    self.assertEqual(403, rollover().status_code, user)
+                    self.assertIn("blabla", listed_tokeninfo(), user)
+
+                set_policy("rollover", scope=SCOPE.ADMIN, realm=self.realm1, user="*",
+                           action=PolicyAction.TOKENROLLOVER)
+                set_policy("hide", scope=SCOPE.ADMIN, realm=self.realm1, user="*",
+                           action=f"{PolicyAction.HIDE_TOKENINFO}=blabla")
+                res = rollover()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertNotIn("blabla", listed_tokeninfo())
+        finally:
+            for name in ("enroll", "rollover", "hide"):
+                delete_policy(name)
+            try:
+                remove_token(serial)
+            except ResourceNotFoundError:
+                pass

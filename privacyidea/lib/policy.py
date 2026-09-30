@@ -652,8 +652,7 @@ class PolicyClass:
                        audit_data: dict | None = None, request_headers: EnvironHeaders | None = None,
                        serial: str | None = None, extended_condition_check: int | list[str] | None = None,
                        additional_realms: list | None = None, container_serial: str | None = None,
-                       request_data: dict | None = None, user_agent: str | None = None,
-                       unknown_login: bool = False) -> list[dict]:
+                       request_data: dict | None = None, user_agent: str | None = None) -> list[dict]:
         """
         Return all policies matching the given context.
         Optionally, write the matching policies to the audit log.
@@ -693,7 +692,6 @@ class PolicyClass:
         :param container_serial: The container serial from the request if available
         :param request_data: The request data as dictionary
         :param user_agent: The user agent of the request
-        :param unknown_login: see ``list_policies``
         :return: a list of policy dictionaries
         """
         if user_object is not None:
@@ -712,6 +710,8 @@ class PolicyClass:
             user = user_object.login
             realm = user_object.realm
             resolver = user_object.resolver
+        # An owner that can not be looked up has a resolver, but no login name
+        unknown_login = user_object is not None and bool(user_object.resolver) and not user_object.login
 
         log.debug("Trying to match policy for action \"{!s}\". Policies: {!s}".format(
             action, [p.get("name") for p in self.policies]))
@@ -3790,8 +3790,7 @@ class Match:
                 user_object: User = None, client: str = None, action: str = None, adminrealm: str = None,
                 adminuser: str = None, time: datetime = None, active: bool = True, sort_by_priority: bool = True,
                 serial: str = None, extended_condition_check: list[str] | int | None = None,
-                additional_realms: list = None, container_serial: str = None,
-                unknown_login: bool = False) -> "Match":
+                additional_realms: list = None, container_serial: str = None) -> "Match":
         """
         Low-level legacy policy matching interface: Search for active policies and return
         them sorted by priority. All parameters that should be used for matching have to
@@ -3811,7 +3810,7 @@ class Match:
                    adminuser=adminuser, time=time, serial=serial,
                    sort_by_priority=sort_by_priority, extended_condition_check=extended_condition_check,
                    additional_realms=additional_realms, container_serial=container_serial,
-                   user_agent=g.get("user_agent"), unknown_login=unknown_login)
+                   user_agent=g.get("user_agent"))
 
 
 def get_allowed_custom_attributes(g, user_obj):
