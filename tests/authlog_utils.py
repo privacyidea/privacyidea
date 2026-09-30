@@ -40,6 +40,18 @@ from privacyidea.models.utils import utc_now
 from .base import MyApiTestCase
 
 
+def clear_authentication_log() -> None:
+    """
+    Delete every authentication-log entry together with its reasons.
+    """
+    # The reasons go first: a bulk delete runs no ORM cascade and SQLite does not enforce the foreign key, so
+    # orphaned reason rows would be picked up by the next entry that reuses the freed id (SQLite hands out
+    # max(rowid)+1).
+    db.session.query(AuthenticationLogReason).delete()
+    db.session.query(AuthenticationLog).delete()
+    db.session.commit()
+
+
 class AuthLogTestCase(MyApiTestCase):
     """
     Shared fixture for the authentication-log tests: a resolvable user ``cornelius`` with one HOTP token, a clean
@@ -73,12 +85,7 @@ class AuthLogTestCase(MyApiTestCase):
 
     @staticmethod
     def _clear_log() -> None:
-        # The reasons go first: a bulk delete runs no ORM cascade and SQLite does not enforce the foreign key, so
-        # orphaned reason rows would be picked up by the next entry that reuses the freed id (SQLite hands out
-        # max(rowid)+1).
-        db.session.query(AuthenticationLogReason).delete()
-        db.session.query(AuthenticationLog).delete()
-        db.session.commit()
+        clear_authentication_log()
 
     @staticmethod
     def _clear_audit_log() -> None:

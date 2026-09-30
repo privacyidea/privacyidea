@@ -38,11 +38,9 @@ from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import db, TokenOwner
-from privacyidea.models.authentication_log import AuthenticationLog
-from privacyidea.models.authentication_log_reason import AuthenticationLogReason
 from privacyidea.models.conditional_access_policy import UserLockState
 from privacyidea.models.utils import utc_now
-from tests.authlog_utils import assert_authentication_log, assert_authentication_log_entry
+from tests.authlog_utils import assert_authentication_log, assert_authentication_log_entry, clear_authentication_log
 from tests.base import MyApiTestCase, OverrideConfigTestCase
 from tests.passkey_base import PasskeyTestBase
 
@@ -68,15 +66,8 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
             remove_token(t.get_serial())
 
     def tearDown(self):
-        self._clear_authentication_log()
+        clear_authentication_log()
         super().tearDown()
-
-    @staticmethod
-    def _clear_authentication_log():
-        # The reasons go first: a bulk delete runs no ORM cascade and SQLite does not enforce the foreign key
-        db.session.query(AuthenticationLogReason).delete()
-        db.session.query(AuthenticationLog).delete()
-        db.session.commit()
 
     def safe_delete_policy(self, name):
         try:
@@ -1521,7 +1512,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         A request without any transaction_id is malformed and leaves no authentication-log row.
         """
         serial = self._enroll_static_passkey()
-        self._clear_authentication_log()
+        clear_authentication_log()
         transaction_id = "passkey-auth-missing-challenge"
         data = {**self.authentication_response_uv, "transaction_id": transaction_id}
         with self.app.test_request_context('/auth', method='POST', data=data,
@@ -1731,7 +1722,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
                                         realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
-        self._clear_authentication_log()
+        clear_authentication_log()
         try:
             with self.app.test_request_context('/validate/check', method='POST',
                                                data={"credential_id": self.credential_id,
@@ -1942,7 +1933,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
                                      realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
-        self._clear_authentication_log()
+        clear_authentication_log()
         try:
             with self.app.test_request_context('/validate/check', method='POST',
                                                data={"credential_id": self.credential_id,
@@ -2328,7 +2319,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         it does not count against the user it names.
         """
         serial = self._enroll_static_passkey()
-        self._clear_authentication_log()
+        clear_authentication_log()
         data = {**self.authentication_response_no_uv, "user": self.user.login, "realm": self.user.realm}
         with self.app.test_request_context('/validate/check', method='POST', data=data,
                                            headers={"Origin": self.expected_origin}):
