@@ -127,8 +127,8 @@ DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
 MAX_CLIENT_TAG_LENGTH = 256
 MAX_STORED_QUESTION_LENGTH = 512
 MAX_STORED_TITLE_LENGTH = 128
-# Budget for len(json.dumps(data)): Challenge._data holds 2000 hex chars (32-char IV + ':' +
-# 2 hex/byte), leaving ~970 plaintext bytes. kept lower for the fixed fields and AES padding.
+# Budget for len(json.dumps(data)), the challenge data that holds the notification. The same
+# notification is sent in the push message, so the budget bounds the size of the push message too.
 MAX_NOTIFICATION_JSON_LENGTH = 900
 # The decline reasons this server version understands. A signed but unrecognized
 # reason still declines, but is logged as app/server vocabulary drift.

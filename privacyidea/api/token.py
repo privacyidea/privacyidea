@@ -99,6 +99,7 @@ from privacyidea.lib.tokenrolloutstate import RolloutState
 from .lib.utils import send_result, send_csv_result, get_optional, get_required
 from privacyidea.lib.params import get_pagination_params
 from ..lib.container import find_container_by_serial, add_token_to_container
+from ..lib.crypto import CENSORED
 from ..lib.fido2.util import get_credential_ids_for_user
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
@@ -431,12 +432,17 @@ def get_challenges_api(serial=None):
     :param serial: optional path component, the token serial.
     :query user: optional username - switches to user-aggregation mode.
     :query realm: optional realm for the user lookup.
-    :query sortby: sort column, default ``timestamp`` (paginated mode only).
+    :query sortby: sort column, one of ``timestamp`` (default), ``serial``,
+        ``transaction_id``, ``expiration``, ``received_count``, ``otp_valid``
+        or ``session`` (paginated mode only). Any other value sorts by
+        ``timestamp``.
     :query sortdir: ``asc`` (default) or ``desc``.
     :query page: 1-indexed page number; values below 1 are treated as 1.
     :query pagesize: page size (default ``15``), capped at ``1000``.
     :query transaction_id: restrict to challenges with this transaction id.
-    :status 200: challenge list in ``result.value``.
+    :status 200: challenge list in ``result.value``. The ``challenge`` of a
+        passkey or WebAuthn token that waits for its registration is
+        returned as ``__CENSORED__``.
     """
     param = request.all_data
     # user-aggregation mode kicks in only when the caller explicitly passes
@@ -462,7 +468,7 @@ def get_challenges_api(serial=None):
         from privacyidea.lib.cache import redis_feature_enabled
         challenges = get_challenges_for_user(user)
         payload = {
-            "challenges": [c.get() for c in challenges],
+            "challenges": _censor_registration_nonces([c.get() for c in challenges]),
             "count": len(challenges),
             "redis_cache_enabled": redis_feature_enabled("challenges"),
         }
@@ -490,8 +496,32 @@ def get_challenges_api(serial=None):
     challenges = get_challenges_paginate(serial=serial, sortby=sort,
                                          transaction_id=transaction_id,
                                          sortdir=sdir, page=page, psize=psize)
+    _censor_registration_nonces(challenges["challenges"])
     g.audit_object.log({"success": True})
     return send_result(challenges)
+
+
+def _censor_registration_nonces(challenges: list[dict]) -> list[dict]:
+    """
+    Censor the nonce of the challenges that wait for the registration of a passkey or WebAuthn token. The nonce of a
+    pending registration is only meant for the client that enrolls the token, so the challenge listing leaves it out.
+
+    :param challenges: the challenges as their ``get()`` representation, changed in place
+    :return: the same list
+    """
+    serials = sorted({challenge["serial"] for challenge in challenges if challenge.get("serial")})
+    if not serials:
+        return challenges
+    # Serials cannot contain a comma, so get_tokens looks them up as a list
+    registering_serials = {token.get_serial() for token in
+                           get_tokens(serial=",".join(serials),
+                                      token_type_list=[PasskeyTokenClass.get_class_type(),
+                                                       WebAuthnTokenClass.get_class_type()],
+                                      rollout_state=RolloutState.CLIENTWAIT, all_nodes=True)}
+    for challenge in challenges:
+        if challenge.get("serial") in registering_serials:
+            challenge["challenge"] = CENSORED
+    return challenges
 
 
 def _pack_serials(serials: list, limit: int) -> tuple:

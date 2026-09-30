@@ -939,6 +939,76 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         delete_container_template("test")
 
     @ldap3mock.activate
+    def test_08b_enroll_smartphone_challenge_bound_to_owner(self):
+        """
+        The answered registration challenge only completes the authentication of the container owner.
+        """
+        create_container_template(container_type="smartphone", template_name="test",
+                                  options={"tokens": [{"type": "hotp", "genkey": True}]})
+        self.addCleanup(delete_container_template, "test")
+        set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH, user="alice",
+                   action={PolicyAction.ENROLL_VIA_MULTICHALLENGE: "smartphone",
+                           PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test",
+                           PolicyAction.PASSTHRU: True})
+        self.addCleanup(delete_policy, "enroll_via_multichallenge")
+        set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        self.addCleanup(delete_policy, "registration")
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
+        set_realm("ldaprealm2", resolvers=[{'name': "catchall"}])
+        self.addCleanup(delete_realm, "ldaprealm2")
+        set_default_realm("ldaprealm")
+
+        with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "alicepw"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"])
+            transaction_id = res.json["detail"]["transaction_id"]
+            serial = res.json["detail"]["serial"]
+        self.reset_flask_g()
+        container = find_container_by_serial(serial)
+        self.addCleanup(self._delete_container_with_tokens, serial)
+
+        mock_smph = MockSmartphone()
+        params = mock_smph.register_finalize("123456", datetime.datetime.now(),
+                                             "https://pi.net/container/register/finalize", serial)
+        with mock.patch('privacyidea.lib.containerclass.verify_ecc',
+                        return_value={"valid": True, "hash_algorithm": "SHA256"}):
+            container.finalize_registration(params)
+
+        for data in [{"user": "bob"}, {"user": "alice", "realm": "ldaprealm2"}]:
+            with self.subTest(data=data):
+                with self.app.test_request_context('/validate/check', method='POST',
+                                                   data={**data, "pass": "", "transaction_id": transaction_id}):
+                    res = self.app.full_dispatch_request()
+                    self.assertFalse(res.json["result"]["value"], res.json)
+                    self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"])
+                self.reset_flask_g()
+        self.assertEqual(1, len(get_challenges(serial=serial, transaction_id=transaction_id)))
+
+        with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "",
+                                                                                   "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.json["result"]["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json["result"]["authentication"])
+            self.assertEqual(serial, res.json["detail"]["serial"])
+        self.reset_flask_g()
+        self.assertListEqual([], get_challenges(serial=serial, transaction_id=transaction_id))
+
+        # The challenge can only be used once
+        with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "",
+                                                                                   "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertFalse(res.json["result"]["value"], res.json)
+        self.reset_flask_g()
+
+    @staticmethod
+    def _delete_container_with_tokens(container_serial: str):
+        for token in find_container_by_serial(container_serial).tokens:
+            remove_token(token.get_serial())
+        delete_container_by_serial(container_serial)
+
+    @ldap3mock.activate
     def test_09_cancel_enroll_HOTP(self):
         # Init LDAP
         ldap3mock.setLDAPDirectory(LDAPDirectory)

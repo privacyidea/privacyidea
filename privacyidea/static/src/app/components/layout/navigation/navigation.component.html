@@ -249,6 +249,14 @@
             <mat-icon>cancel</mat-icon>
             <span i18n="@@common.cancel">Cancel</span>
           </button>
+          <button
+            mat-stroked-button
+            type="button"
+            class="action-button-secondary button-width-s"
+            (click)="dashboardLayoutService.resetLayout()">
+            <mat-icon>restart_alt</mat-icon>
+            <span i18n="@@common.reset">Reset</span>
+          </button>
           <app-widget-palette />
         } @else {
           <button

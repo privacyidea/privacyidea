@@ -175,8 +175,8 @@ class SecretObj:
         '''
         self._setupKey_()
         backend = default_backend()
-        cipher = Cipher(algorithms.AES(self.bkey), modes.ECB(),
-                        backend=backend)  # nosec B305 # part of Yubikey specification
+        cipher = Cipher(algorithms.AES(self.bkey), modes.ECB(),  # nosec B305 # part of Yubikey specification
+                        backend=backend)
         decryptor = cipher.decryptor()
         msg_bin = decryptor.update(enc_data) + decryptor.finalize()
         self._clearKey_(preserve=self.preserve)

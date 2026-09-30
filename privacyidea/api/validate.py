@@ -127,7 +127,7 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
-                                   TokenAdminError)
+                                   TokenAdminError, EnrollmentError)
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
@@ -138,6 +138,9 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
+from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
+from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass
 from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
@@ -153,7 +156,8 @@ from ..lib.conditional_access.request_context import continue_attempt, confirm_a
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
-from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
+from ..lib.fido2.util import (get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id,
+                              token_belongs_to_user)
 from ..lib.framework import get_app_config_value
 from ..lib.policies.actions import PolicyAction
 from ..lib.realm import get_default_realm
@@ -320,10 +324,10 @@ def _conditional_access_identity():
     instead of a user: ``/validate/check`` and ``/validate/triggerchallenge``.
 
     ``before_request`` builds ``request.User`` from the ``user`` parameter only, so a username-less passkey request
-    (identified by ``credential_id``) or a serial-only request arrives with an empty user — and the user-lock / DENY
-    checks would be silently skipped, letting a locked user authenticate by credential id or serial, or an admin
-    trigger a challenge that pushes a prompt to a locked user's phone. Resolve the token owner in that case so the
-    lock is enforced before any token work runs.
+    (identified by ``credential_id``) or a serial-only request arrives without a login name, at most with a realm —
+    and the user-lock / DENY checks would be silently skipped, letting a locked user authenticate by credential id or
+    serial, or an admin trigger a challenge that pushes a prompt to a locked user's phone. Resolve the token owner in
+    that case so the lock is enforced before any token work runs.
 
     Both endpoints require a ``user``, a ``serial`` or a ``credential_id``
     (:class:`~privacyidea.lib.decorators.check_user_serial_or_cred_id_in_request`), so between them these three
@@ -334,7 +338,7 @@ def _conditional_access_identity():
     raises there instead of authenticating - and the authentication-log row resolves the owner from the serial
     itself, so an attempt that does reach a token is still counted.
     """
-    if request.User:
+    if request.User and request.User.login:
         return request.User
     credential_id = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
     serial = get_optional(request.all_data, "serial")
@@ -698,8 +702,21 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         context[AUTH_EVENT_TYPE_KEY] = AuthEventType.USER_UNKNOWN
         return  # Result remains False
 
+    # A request that names a user authenticates that user, so the token has to be one of theirs. A request without a
+    # user is a usernameless login, which authenticates the token owner.
+    if request.User and request.User.login:
+        if not token_belongs_to_user(token, request.User):
+            log.warning(f"The token {token.get_serial()} does not belong to the user {request.User} named in the "
+                        "request.")
+            context["details"]["message"] = _("Authentication failed.")
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_TOKEN
+            context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+            return  # Result remains False
+        user = request.User
+    else:
+        user = token.user
+
     # Update User in Context
-    user = token.user
     request.User = user
     context["user"] = user
     context["options"]["user"] = user
@@ -720,11 +737,28 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
 
     if attestation_object:
+        # The registration has to answer the enroll_via_multichallenge challenge of a token that waits for it. An
+        # enrollment started at /token/init is completed there.
+        enrollment_challenges = [challenge for challenge in
+                                 get_challenges(serial=token.get_serial(), transaction_id=transaction_id)
+                                 if challenge.is_valid()
+                                 and challenge.get_data().get(PolicyAction.ENROLL_VIA_MULTICHALLENGE)]
+        if (token.get_type() != PasskeyTokenClass.get_class_type()
+                or token.rollout_state != RolloutState.CLIENTWAIT or not enrollment_challenges):
+            log.warning(f"Registration data for token {token.get_serial()} does not answer a pending enrollment.")
+            context["details"]["message"] = _("Authentication failed.")
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+            context["serial_list"].append(token.get_serial())
+            return  # Result remains False
+
         # Enrollment
         request.all_data.update({"type": "passkey"})
         fido2_enroll(request, None)
         try:
             registration_details = token.update(request.all_data)
+            # Double-check the enrollment was successful
+            if token.rollout_state != RolloutState.ENROLLED:
+                raise EnrollmentError(f"The registration data did not enroll the token {token.get_serial()}.")
             evm = registration_details.pop(PolicyAction.ENROLL_VIA_MULTICHALLENGE, None)
 
             # Check if offline data should be appended here already (policy)
@@ -749,6 +783,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
         # matched unscoped policies. Re-run it now that request.User is set, mirroring fido2_enroll
         # above for the enrollment branch.
         fido2_auth(request, None)
+        # The same applies to the authorization restrictions of WebAuthn tokens
+        if token.get_type() == WebAuthnTokenClass.get_class_type():
+            webauthntoken_request(request, None)
+            webauthntoken_authz(request, None)
 
         last_auth_ok, last_auth_policies = check_last_auth_policy(g, token)
         if not last_auth_ok:
@@ -784,12 +822,19 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
             context["serial_list"].append(token.get_serial())
             raise
+        except PolicyError:
+            # An authorization policy does not allow this authenticator. The refusal counts as a failed login.
+            g.audit_object.log({"authentication": AUTH_RESPONSE.REJECT, "serial": token.get_serial(),
+                                "token_type": token.get_type()})
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NOT_AUTHORIZED
+            context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
+            raise
         context["result"] = fido_verification_result.success > 0
 
     # Success Handling
     if context["result"]:
         context["details"].update({
-            "username": token.user.login,
+            "username": user.login,
             "message": _("Found matching challenge"),
             "serial": token.get_serial()
         })
@@ -861,7 +906,7 @@ def _handle_standard_auth(context: dict):
     Handles username+otp/password authentication, or container challenges.
     """
     transaction_id = request.all_data.get("transaction_id")
-    container_result = check_container_challenge(transaction_id)
+    container_result = check_container_challenge(transaction_id, context["user"])
 
     success = container_result.get("success", False)
     details = container_result.get("details", {})

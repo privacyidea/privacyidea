@@ -25,16 +25,19 @@ from privacyidea.api.lib.utils import GENERIC_AUTH_FAILURE
 from privacyidea.config import TestingConfig
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventReason, AuthEventType
 from privacyidea.lib.conditional_access.authentication_log import get_authentication_logs
+from privacyidea.lib.crypto import CENSORED
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy, LOGINMODE
 from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_token
+from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
-from privacyidea.models import db
+from privacyidea.models import db, TokenOwner
 from privacyidea.models.authentication_log import AuthenticationLog
 from privacyidea.models.authentication_log_reason import AuthenticationLogReason
 from privacyidea.models.conditional_access_policy import UserLockState
@@ -74,9 +77,11 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
         set_policy(name, **kwargs)
         self.addCleanup(self.safe_delete_policy, name)
 
-    def _token_init_step_one(self, exclude_credentials_size: int = 0):
+    def _token_init_step_one(self, exclude_credentials_size: int = 0, multi_device: bool = False):
+        registration_challenge = (self.registration_challenge_multi_device if multi_device
+                                  else self.registration_challenge)
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
-            get_nonce.return_value = self.registration_challenge
+            get_nonce.return_value = registration_challenge
 
             with self.app.test_request_context('/token/init',
                                                method='POST',
@@ -88,7 +93,7 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                 self.assertIn("detail", res.json)
                 detail = res.json["detail"]
                 self.assertIn("passkey_registration", detail)
-                self.validate_default_passkey_registration(detail["passkey_registration"])
+                self.validate_default_passkey_registration(detail["passkey_registration"], registration_challenge)
                 self.assertIn("rollout_state", detail)
                 self.assertEqual("clientwait", detail["rollout_state"])
                 passkey_registration = detail["passkey_registration"]
@@ -110,13 +115,25 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
 
                 return res.json
 
-    def _token_init_step_two(self, transaction_id, serial):
+    def _token_init_step_two(self, transaction_id, serial, multi_device: bool = False):
+        if multi_device:
+            registration = {
+                "attestationObject": self.registration_attestation_multi_device,
+                "clientDataJSON": self.registration_client_data_multi_device,
+                "credential_id": self.credential_id_multi_device,
+                "rawId": self.credential_id_multi_device,
+                "authenticatorAttachment": self.authenticator_attachment_multi_device,
+            }
+        else:
+            registration = {
+                "attestationObject": self.registration_attestation,
+                "clientDataJSON": self.registration_client_data,
+                "credential_id": self.credential_id,
+                "rawId": self.credential_id,
+                "authenticatorAttachment": self.authenticator_attachment,
+            }
         data = {
-            "attestationObject": self.registration_attestation,
-            "clientDataJSON": self.registration_client_data,
-            "credential_id": self.credential_id,
-            "rawId": self.credential_id,
-            "authenticatorAttachment": self.authenticator_attachment,
+            **registration,
             FIDO2PolicyAction.RELYING_PARTY_ID: self.rp_id,
             "transaction_id": transaction_id,
             "type": "passkey",
@@ -129,15 +146,16 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
             self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
 
-    def _enroll_static_passkey(self, exclude_credentials_size: int = 0) -> str:
+    def _enroll_static_passkey(self, exclude_credentials_size: int = 0, multi_device: bool = False) -> str:
         """
-        Returns the serial of the enrolled passkey token
+        Returns the serial of the enrolled passkey token. With multi_device, the second fixture credential is
+        registered, so that a user can have two passkeys at the same time.
         """
-        data = self._token_init_step_one(exclude_credentials_size)
+        data = self._token_init_step_one(exclude_credentials_size, multi_device)
         detail = data["detail"]
         serial = detail["serial"]
         transaction_id = detail["transaction_id"]
-        self._token_init_step_two(transaction_id, serial)
+        self._token_init_step_two(transaction_id, serial, multi_device)
         return serial
 
     def _trigger_passkey_challenge(self, mock_nonce: str) -> dict:
@@ -163,6 +181,21 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
             assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                             transaction_id=passkey["transaction_id"], endpoint='/validate/initialize')
             return passkey
+
+    def _trigger_passkey_challenge_with_pin(self, mock_nonce: str) -> str:
+        """
+        Triggers a challenge bound to the passkey with the user and the empty PIN, returns the transaction_id
+        """
+        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH,
+                                     action=f"{PasskeyAction.EnableTriggerByPIN}=true")
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = mock_nonce
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": self.user.login, "pass": ""}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual("CHALLENGE", res.json["result"]["authentication"], res.json)
+                return res.json["detail"]["transaction_id"]
 
     def _assert_result_value_true(self, response_json):
         self.assertIn("result", response_json)
@@ -512,7 +545,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                      action=f"{PasskeyAction.EnableTriggerByPIN}=true")
         serial1 = self._enroll_static_passkey()
         # Enroll a second passkey, set the expected size of excludeCredentials to 1, because the user already has one
-        serial2 = self._enroll_static_passkey(1)
+        serial2 = self._enroll_static_passkey(1, multi_device=True)
 
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
@@ -1236,12 +1269,13 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertTrue(detail["message"])
             self.assertNotIn("auth_items", res.json)
 
-        # Trigger new challenge for auth
-        token.write_tokeninfo("sign_count", int(token.get_tokeninfo("sign_count")) - 1)
-        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
-        data["transaction_id"] = passkey_challenge["transaction_id"]
+        # Trigger new challenge for auth, which requires user verification
+        token.write_tokeninfo("sign_count", 0)
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data_uv = dict(self.authentication_response_uv)
+        data_uv["transaction_id"] = passkey_challenge["transaction_id"]
         with self.app.test_request_context('/auth', method='POST',
-                                           data=data,
+                                           data=data_uv,
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
@@ -1254,7 +1288,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth_date.isoformat(timespec="seconds"))
 
         # Authentication will fail because the last_auth predates the policy time window
-        token.write_tokeninfo("sign_count", int(token.get_tokeninfo("sign_count")) - 1)
+        token.write_tokeninfo("sign_count", 0)
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         data["transaction_id"] = passkey_challenge["transaction_id"]
         with self.app.test_request_context('/validate/check', method='POST',
@@ -1297,11 +1331,11 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertNotIn("auth_items", res.json)
 
         # Trigger new challenge for auth
-        token.write_tokeninfo("sign_count", int(token.get_tokeninfo("sign_count")) - 1)
-        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
-        data["transaction_id"] = passkey_challenge["transaction_id"]
+        token.write_tokeninfo("sign_count", 0)
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data_uv["transaction_id"] = passkey_challenge["transaction_id"]
         with self.app.test_request_context('/auth', method='POST',
-                                           data=data,
+                                           data=data_uv,
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res.json)
@@ -1761,6 +1795,503 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
 
 
+    def test_31_auth_requires_uv_for_initialize_challenge(self):
+        """
+        A challenge from /validate/initialize is answered with the passkey alone. Without any policy, /auth refuses
+        an assertion without user verification, while /validate/check accepts it, because there the policy default
+        "preferred" applies.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        self.assertEqual("preferred", passkey_challenge["user_verification"])
+        transaction_id = passkey_challenge["transaction_id"]
+        data = dict(self.authentication_response_no_uv)
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._verify_auth_fail_with_error(res, 4031)
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.MFA_FAIL],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user,
+                                        transaction_id=transaction_id, endpoint='/auth')
+
+        # The challenge was not used up, and /validate/check accepts the same assertion
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json["result"]["authentication"], res.json)
+        remove_token(serial)
+
+    def test_32_validate_check_rejects_passkey_of_other_user(self):
+        """
+        A request that names a user is rejected when the passkey belongs to someone else. The failure is logged for
+        the named user. Naming the owner of the passkey succeeds.
+        """
+        serial = self._enroll_static_passkey()
+        other_user = User(login="cornelius", realm=self.realm1)
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = dict(self.authentication_response_no_uv)
+        data.update({"transaction_id": transaction_id, "user": other_user.login, "realm": self.realm1})
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            result = res.json["result"]
+            self.assertFalse(result["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, result["authentication"], res.json)
+            self.assertNotIn("username", res.json["detail"], res.json)
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_TOKEN],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_TOKEN], user=other_user,
+                                        serials={serial}, transaction_id=transaction_id,
+                                        endpoint='/validate/check')
+
+        # The same serial in the request does not change the result
+        data["serial"] = serial
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+
+        data.pop("serial")
+        data["user"] = self.user.login
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json["result"]["authentication"], res.json)
+            self.assertEqual(self.user.login, res.json["detail"]["username"], res.json)
+        remove_token(serial)
+
+    def test_33_auth_rejects_passkey_of_other_user(self):
+        """
+        /auth with a username only accepts a passkey of that user; without a username, the owner is logged in.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = dict(self.authentication_response_uv)
+        data.update({"transaction_id": transaction_id, "username": "cornelius"})
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._verify_auth_fail_with_error(res, 4031)
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_TOKEN],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NO_TOKEN],
+                                        user=User(login="cornelius", realm=self.realm1), serials={serial},
+                                        transaction_id=transaction_id, endpoint='/auth')
+
+        data["username"] = self.user.login
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
+        remove_token(serial)
+
+    def test_34_auth_requires_uv_for_challenge_bound_to_passkey(self):
+        """
+        A passkey answering a challenge that was triggered with the user and PIN also has to verify the user at /auth.
+        """
+        serial = self._enroll_static_passkey()
+        transaction_id = self._trigger_passkey_challenge_with_pin(self.authentication_challenge_no_uv)
+        data = dict(self.authentication_response_no_uv)
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._verify_auth_fail_with_error(res, 4031)
+
+        transaction_id = self._trigger_passkey_challenge_with_pin(self.authentication_challenge_uv)
+        data = dict(self.authentication_response_uv)
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
+        remove_token(serial)
+
+    def test_35_locked_owner_rejected_when_request_has_only_a_realm(self):
+        """
+        A username-less passkey request that carries a realm is gated on the owner of the passkey, not on a user
+        without a login name.
+        """
+        serial = self._enroll_static_passkey()
+        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
+                                     realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
+        db.session.commit()
+        db.session.query(AuthenticationLogReason).delete()
+        db.session.query(AuthenticationLog).delete()
+        db.session.commit()
+        try:
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"credential_id": self.credential_id,
+                                                     "transaction_id": "1" * 20,
+                                                     "realm": self.realm1},
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertListEqual([AuthEventType.USER_LOCKED],
+                                 [entry.event_type for entry in get_authentication_logs()])
+        finally:
+            db.session.query(UserLockState).delete()
+            db.session.commit()
+            remove_token(serial)
+
+    def test_36_validate_check_rejects_user_that_does_not_resolve(self):
+        """
+        A request that names a user who cannot be found, for example the user label of the passkey instead of the
+        login name, is rejected. The passkey owner is not authenticated in place of the named user.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = dict(self.authentication_response_no_uv)
+        data.update({"transaction_id": transaction_id, "user": "Hans Meier", "realm": self.realm1})
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+            self.assertNotIn("username", res.json["detail"], res.json)
+        assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NO_TOKEN],
+                                  transaction_id=transaction_id)
+        remove_token(serial)
+
+    def test_37_auth_with_username_of_other_realm(self):
+        """
+        /auth builds the named user from the username and the realm parameter, the way the WebUI sends them. For a user
+        outside the default realm, the passkey only belongs to the named user when the realm is given.
+        """
+        self.setUp_user_realm2()
+        self.user = User(login="hans", realm=self.realm2, resolver=self.resolvername1)
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = dict(self.authentication_response_uv)
+        data.update({"transaction_id": passkey_challenge["transaction_id"], "username": self.user.login})
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self._verify_auth_fail_with_error(res, 4031)
+
+        data["realm"] = self.realm2
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
+            self.assertEqual(self.realm2, res.json["result"]["value"]["realm"], res.json)
+        remove_token(serial)
+
+    def test_38_auth_login_mode(self):
+        """
+        login_mode=disable also blocks the passkey login. The other login modes only decide how a password is
+        checked, so they do not affect it.
+        """
+        serial = self._enroll_static_passkey()
+        self.set_policy_with_cleanup("login_mode", scope=SCOPE.WEBUI,
+                                     action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        transaction_id = passkey_challenge["transaction_id"]
+        data = dict(self.authentication_response_uv)
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code, res.json)
+            self.assertFalse(res.json["result"]["status"], res.json)
+            self.assertEqual("The login for this user is disabled.", res.json["result"]["error"]["message"])
+        auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED, AuthEventType.NOT_AUTHORIZED],
+                                                     transaction_id=transaction_id)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.NOT_AUTHORIZED], user=self.user,
+                                        serials={serial}, transaction_id=transaction_id, endpoint='/auth',
+                                        reason=AuthEventReason.LOGIN_MODE_DISABLED, policies=["login_mode"])
+        audit_entry = self.find_most_recent_audit_entry(action="POST /auth")
+        self.assertEqual(self.user.login, audit_entry["user"], audit_entry)
+        self.assertEqual(self.user.realm, audit_entry["realm"], audit_entry)
+        self.assertEqual(serial, audit_entry["serial"], audit_entry)
+        self.assertEqual(PasskeyTokenClass.get_class_type(), audit_entry["token_type"], audit_entry)
+        self.assertEqual(AUTH_RESPONSE.REJECT, audit_entry["authentication"], audit_entry)
+
+        for login_mode in [LOGINMODE.USERSTORE, LOGINMODE.PRIVACYIDEA]:
+            set_policy("login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={login_mode}")
+            get_one_token(serial=serial).write_tokeninfo("sign_count", 0)
+            passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+            data["transaction_id"] = passkey_challenge["transaction_id"]
+            with self.app.test_request_context('/auth', method='POST', data=data,
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
+        remove_token(serial)
+
+    def _assert_registration_data_rejected(self, data: dict, serial: str):
+        with self.app.test_request_context('/validate/check', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertFalse(res.json["result"]["value"], res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+            self.assertNotIn("username", res.json["detail"], res.json)
+        auth_log_entries = assert_authentication_log([AuthEventType.MFA_FAIL],
+                                                     transaction_id=data["transaction_id"])
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.MFA_FAIL], user=self.user, serials={serial},
+                                        transaction_id=data["transaction_id"], endpoint='/validate/check')
+
+    def _assert_persisted_state(self, serial: str, rollout_state: str, active: bool):
+        # Read the state from the database, not from the objects the request changed
+        db.session.rollback()
+        db.session.expire_all()
+        token = get_one_token(serial=serial)
+        self.assertEqual(rollout_state, token.token.rollout_state)
+        self.assertEqual(active, token.is_active())
+
+    def test_38_registration_for_enrolled_passkey(self):
+        """
+        An enrolled passkey does not take another registration at /validate/check and stays as it is.
+        """
+        serial = self._enroll_static_passkey()
+        registration = {"attestationObject": self.registration_attestation,
+                        "clientDataJSON": self.registration_client_data, "credential_id": self.credential_id,
+                        "rawId": self.credential_id, "authenticatorAttachment": self.authenticator_attachment}
+        requests = {
+            "token by credential id": registration,
+            "token by serial, other credential": {**registration, "serial": serial,
+                                                  "credential_id": self.credential_id_multi_device,
+                                                  "rawId": self.credential_id_multi_device},
+            "incomplete registration": {"attestationObject": self.registration_attestation,
+                                        "credential_id": self.credential_id},
+        }
+        for index, (name, data) in enumerate(requests.items()):
+            with self.subTest(name):
+                data["transaction_id"] = f"38{index:018d}"
+                self._assert_registration_data_rejected(data, serial)
+                self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        remove_token(serial)
+
+    def test_39_replayed_registration(self):
+        """
+        Replaying a genuine registration response after the enrollment is completed is rejected: the token is
+        enrolled and its enrollment challenge is gone.
+        """
+        detail = self._token_init_step_one()["detail"]
+        serial = detail["serial"]
+        transaction_id = detail["transaction_id"]
+        self._token_init_step_two(transaction_id, serial)
+        data = {"attestationObject": self.registration_attestation, "clientDataJSON": self.registration_client_data,
+                "credential_id": self.credential_id, "rawId": self.credential_id,
+                "authenticatorAttachment": self.authenticator_attachment, "transaction_id": transaction_id,
+                "serial": serial}
+        self._assert_registration_data_rejected(data, serial)
+        self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        remove_token(serial)
+
+    def test_40_registration_data_needs_the_challenge_of_the_token(self):
+        """
+        Registration data is only accepted with the enrollment challenge of the token it names: neither another
+        transaction id for a pending passkey nor the pending challenge of another passkey.
+        """
+        enrolled_serial = self._enroll_static_passkey()
+        detail = self._token_init_step_one(exclude_credentials_size=1, multi_device=True)["detail"]
+        pending_serial = detail["serial"]
+        pending_transaction_id = detail["transaction_id"]
+        registration = {"attestationObject": self.registration_attestation_multi_device,
+                        "clientDataJSON": self.registration_client_data_multi_device,
+                        "credential_id": self.credential_id_multi_device, "rawId": self.credential_id_multi_device,
+                        "authenticatorAttachment": self.authenticator_attachment_multi_device}
+
+        self._assert_registration_data_rejected({**registration, "serial": pending_serial,
+                                                 "transaction_id": "40" + "0" * 18}, pending_serial)
+        self._assert_registration_data_rejected({**registration, "serial": enrolled_serial,
+                                                 "transaction_id": pending_transaction_id}, enrolled_serial)
+        self._assert_persisted_state(enrolled_serial, RolloutState.ENROLLED, True)
+        self._assert_persisted_state(pending_serial, RolloutState.CLIENTWAIT, False)
+        # The pending enrollment is untouched and can still be completed
+        self._token_init_step_two(pending_transaction_id, pending_serial, multi_device=True)
+        remove_token(enrolled_serial)
+        remove_token(pending_serial)
+
+    def test_41_enroll_via_multichallenge_needs_enrolled_passkey(self):
+        """
+        Answering the enroll_via_multichallenge challenge only logs the user in once the passkey is enrolled.
+        """
+        spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
+        self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH, action="enroll_via_multichallenge=PASSKEY")
+        with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+            get_nonce.return_value = self.registration_challenge
+            with self.app.test_request_context('/validate/check', method='POST',
+                                               data={"user": self.user.login, "pass": "1"}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+                serial = res.json["detail"]["serial"]
+                transaction_id = res.json["detail"]["transaction_id"]
+
+        data = {"attestationObject": self.registration_attestation, "clientDataJSON": self.registration_client_data,
+                "credential_id": self.credential_id, "rawId": self.credential_id,
+                "authenticatorAttachment": self.authenticator_attachment, "transaction_id": transaction_id,
+                "serial": serial}
+        # A registration that leaves the token waiting
+        with patch.object(PasskeyTokenClass, "update", return_value={}):
+            with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertFalse(res.json["result"]["value"], res.json)
+                self.assertEqual(AUTH_RESPONSE.REJECT, res.json["result"]["authentication"], res.json)
+        self._assert_persisted_state(serial, RolloutState.CLIENTWAIT, False)
+
+        with self.app.test_request_context('/validate/check', method='POST', data=data, headers=self.pk_headers):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json["result"]["authentication"], res.json)
+        self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        assert_authentication_log([AuthEventType.ENROLLMENT_TRIGGERED, AuthEventType.MFA_FAIL,
+                                   AuthEventType.LOGIN_SUCCESS], transaction_id=transaction_id)
+        remove_token(serial)
+        remove_token(spass_token.get_serial())
+
+    def test_42_token_init_enrollment_is_not_completed_by_validate_check(self):
+        """
+        A passkey enrollment started at /token/init is only completed at /token/init. The registration sent to
+        /validate/check with the serial and the transaction id of that enrollment is rejected and does not log the user
+        in.
+        """
+        detail = self._token_init_step_one()["detail"]
+        serial = detail["serial"]
+        transaction_id = detail["transaction_id"]
+        data = {"attestationObject": self.registration_attestation, "clientDataJSON": self.registration_client_data,
+                "credential_id": self.credential_id, "rawId": self.credential_id,
+                "authenticatorAttachment": self.authenticator_attachment, "transaction_id": transaction_id,
+                "serial": serial}
+        self._assert_registration_data_rejected(data, serial)
+        self._assert_persisted_state(serial, RolloutState.CLIENTWAIT, False)
+        # The enrollment can still be completed at /token/init
+        self._token_init_step_two(transaction_id, serial)
+        self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
+        remove_token(serial)
+
+    def test_43_auth_login_mode_of_the_named_user(self):
+        """
+        login_mode is decided for the user the passkey login is for: the named user, or the token owner if no user is
+        named. The named user may be another owner of the token than the first one.
+        """
+        self.setUp_user_realm2()
+        serial = self._enroll_static_passkey()
+        user_realm2 = User(login=self.user.login, realm=self.realm2, resolver=self.resolvername1)
+        TokenOwner(token_id=get_one_token(serial=serial).token.id, user_id=str(user_realm2.uid),
+                   resolver=user_realm2.resolver, realmname=self.realm2).save()
+        self.set_policy_with_cleanup("login_mode", scope=SCOPE.WEBUI, realm=self.realm2,
+                                     action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+        data = dict(self.authentication_response_uv)
+        requests = {
+            "named user in realm2": ({"username": user_realm2.login, "realm": self.realm2}, 403),
+            "named user in realm1": ({"username": self.user.login, "realm": self.realm1}, 200),
+            "no named user": ({}, 200),
+        }
+        for name, (user_parameters, status_code) in requests.items():
+            with self.subTest(name):
+                get_one_token(serial=serial).write_tokeninfo("sign_count", 0)
+                passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+                request_data = {**data, **user_parameters, "transaction_id": passkey_challenge["transaction_id"]}
+                with self.app.test_request_context('/auth', method='POST', data=request_data,
+                                                   headers={"Origin": self.expected_origin}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(status_code, res.status_code, res.json)
+        remove_token(serial)
+
+    def test_44_auth_login_mode_policies_of_same_priority(self):
+        """
+        Of the login_mode policies of the highest priority, the passkey login only asks whether one of them disables
+        the login. Policies that disagree on the other modes do not refuse it.
+        """
+        serial = self._enroll_static_passkey()
+        data = dict(self.authentication_response_uv)
+        cases = {
+            "userstore and privacyIDEA, same priority": ({LOGINMODE.USERSTORE: 1, LOGINMODE.PRIVACYIDEA: 1}, True),
+            "disable and userstore, same priority": ({LOGINMODE.DISABLE: 1, LOGINMODE.USERSTORE: 1}, False),
+            "disable with a lower priority than userstore": ({LOGINMODE.DISABLE: 10, LOGINMODE.USERSTORE: 1}, True),
+        }
+        for name, (priorities, login_allowed) in cases.items():
+            with self.subTest(name):
+                for login_mode, priority in priorities.items():
+                    set_policy(f"login_mode_{login_mode}", scope=SCOPE.WEBUI, priority=priority,
+                               action=f"{PolicyAction.LOGINMODE}={login_mode}")
+                try:
+                    get_one_token(serial=serial).write_tokeninfo("sign_count", 0)
+                    passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+                    request_data = {**data, "transaction_id": passkey_challenge["transaction_id"]}
+                    with self.app.test_request_context('/auth', method='POST', data=request_data,
+                                                       headers={"Origin": self.expected_origin}):
+                        res = self.app.full_dispatch_request()
+                    if login_allowed:
+                        self.assertEqual(200, res.status_code, res.json)
+                    else:
+                        self.assertEqual(403, res.status_code, res.json)
+                        self.assertEqual("The login for this user is disabled.",
+                                         res.json["result"]["error"]["message"])
+                finally:
+                    for login_mode in priorities:
+                        delete_policy(f"login_mode_{login_mode}")
+        remove_token(serial)
+
+    def _list_challenges(self, path: str, **params: str) -> list[dict]:
+        with self.app.test_request_context(path, method='GET', query_string=params,
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            return res.json["result"]["value"]["challenges"]
+
+    def _assert_listed_nonces(self, serial: str, censored: bool, user: User | None = None) -> None:
+        listings = {"by serial": self._list_challenges(f"/token/challenges/{serial}")}
+        if user:
+            listings["by user"] = self._list_challenges("/token/challenges/", user=user.login, realm=user.realm)
+        for listing, challenges in listings.items():
+            with self.subTest(listing=listing, serial=serial):
+                token_challenges = [challenge for challenge in challenges if challenge["serial"] == serial]
+                self.assertEqual(1, len(token_challenges), challenges)
+                if censored:
+                    self.assertEqual(CENSORED, token_challenges[0]["challenge"], token_challenges)
+                else:
+                    self.assertNotIn(token_challenges[0]["challenge"], (CENSORED, None, ""), token_challenges)
+
+    def test_45_challenge_listing_censors_registration_nonce(self):
+        """
+        The challenge listing censors the nonce of a passkey that waits for its registration, whether the enrollment
+        was started with enroll_via_multichallenge or at /token/init. The nonce of an authentication challenge is
+        listed.
+        """
+        spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
+        set_policy("enroll_passkey", scope=SCOPE.AUTH, action="enroll_via_multichallenge=PASSKEY")
+        try:
+            with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
+                get_nonce.return_value = self.registration_challenge
+                with self.app.test_request_context('/validate/check', method='POST',
+                                                   data={"user": self.user.login, "pass": "1"}):
+                    res = self.app.full_dispatch_request()
+                    self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json["result"]["authentication"], res.json)
+                    enroll_via_multichallenge_serial = res.json["detail"]["serial"]
+        finally:
+            delete_policy("enroll_passkey")
+        self._assert_listed_nonces(enroll_via_multichallenge_serial, censored=True, user=self.user)
+        remove_token(enroll_via_multichallenge_serial)
+        remove_token(spass_token.get_serial())
+
+        token_init_serial = self._token_init_step_one()["detail"]["serial"]
+        self._assert_listed_nonces(token_init_serial, censored=True, user=self.user)
+        remove_token(token_init_serial)
+
+        enrolled_serial = self._enroll_static_passkey()
+        self._trigger_passkey_challenge_with_pin(self.authentication_challenge_uv)
+        self._assert_listed_nonces(enrolled_serial, censored=False, user=self.user)
+        remove_token(enrolled_serial)
+
+
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """
     Test if the feature switch for passkey usage with /auth works.
@@ -1787,4 +2318,20 @@ class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
         auth_log_entries = assert_authentication_log([AuthEventType.CHALLENGE_TRIGGERED], transaction_id=transaction_id)
         assert_authentication_log_entry(auth_log_entries[AuthEventType.CHALLENGE_TRIGGERED],
                                         transaction_id=transaction_id, endpoint='/validate/initialize')
+        remove_token(serial)
+
+    def test_02_challenge_bound_to_passkey_not_affected(self):
+        """
+        The switch covers the login without a username. A passkey answering a challenge that was triggered with the
+        user and PIN can still log in.
+        """
+        serial = self._enroll_static_passkey()
+        transaction_id = self._trigger_passkey_challenge_with_pin(self.authentication_challenge_uv)
+        data = dict(self.authentication_response_uv)
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/auth', method='POST', data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
         remove_token(serial)

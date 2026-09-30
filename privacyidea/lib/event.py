@@ -27,6 +27,7 @@ import traceback
 from sqlalchemy import select, delete
 
 from privacyidea.lib.audit import getAudit
+from privacyidea.lib.conditional_access.request_context import recheck_conditional_access_gate
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.error import HandlerAbortError
 from privacyidea.lib.utils import fetch_one_resource, is_true
@@ -201,7 +202,14 @@ class event:
                 # The action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
                 options = {"request": self.request, "g": self.g, "handler_def": e_handler_def}
+                user_before_handler = getattr(self.request, "User", None)
                 self._run_handler(event_handler, e_handler_def, options, "PRE-EVENT")
+                if getattr(self.request, "User", None) != user_before_handler:
+                    # The handler replaced the user after the conditional-access gate checked the one the request
+                    # named, so the new user is gated before any later handler or the view acts for them.
+                    rejection = recheck_conditional_access_gate()
+                    if rejection is not None:
+                        return rejection
 
             f_result = func(*args, **kwds)
 

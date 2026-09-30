@@ -45,7 +45,8 @@ from privacyidea.lib.error import EnrollmentError, ParameterError, Error, Policy
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
-from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
+from privacyidea.lib.fido2.util import (hash_credential_id, save_credential_id_hash,
+                                        credential_id_is_registered_to_other_token)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required, get_required_one_of, get_optional_one_of
 from privacyidea.lib.policies.actions import PolicyAction
@@ -370,14 +371,20 @@ class PasskeyTokenClass(TokenClass):
         attestation = get_optional(param, "attestationObject")
         client_data = get_optional(param, "clientDataJSON")
 
-        if not (attestation and client_data) and not self.token.rollout_state == RolloutState.CLIENTWAIT:
-            self.token.rollout_state = RolloutState.CLIENTWAIT
-            self.token.active = False
-            # Set the description in the first enrollment step
-            if "description" in param:
-                self.set_description(param["description"])
+        if not attestation and not client_data:
+            # First enrollment step, or a new enrollment of an enrolled token: wait for the registration data
+            if self.token.rollout_state != RolloutState.CLIENTWAIT:
+                self.token.rollout_state = RolloutState.CLIENTWAIT
+                self.token.active = False
+                # Set the description in the first enrollment step
+                if "description" in param:
+                    self.set_description(param["description"])
 
-        elif attestation and client_data and self.token.rollout_state == RolloutState.CLIENTWAIT:
+        elif not (attestation and client_data and self.token.rollout_state == RolloutState.CLIENTWAIT):
+            # A registration is only taken complete and for a token that waits for it
+            raise EnrollmentError(f"The token {self.token.serial} is not waiting for this registration data.")
+
+        else:
             # Finalize the registration by verifying the registration data from the authenticator
             credential_id = get_required(param, "credential_id")
             credential_id_raw = get_required(param, "rawId")
@@ -416,6 +423,17 @@ class PasskeyTokenClass(TokenClass):
                 log.error(f"Invalid JSON structure: {ex}")
                 raise EnrollmentError(f"Invalid JSON structure: {ex}")
 
+            # The credential that is registered is the one in the attestation, and the credential_id of the request
+            # has to match it.
+            attested_credential_id = registration_verification.credential_id
+            if credential_id != bytes_to_base64url(attested_credential_id):
+                log.warning(f"The credential_id of the request does not match the attested credential of the "
+                            f"passkey {serial}.")
+                raise EnrollmentError("The credential_id does not match the attested credential.")
+            if credential_id_is_registered_to_other_token(attested_credential_id, self.token.id):
+                log.warning(f"The credential of the passkey {serial} is already registered to another token.")
+                raise EnrollmentError("The credential is already registered to another token.")
+
             # Checking policy scope=SCOPE.ENROLL, action=PasskeyAction.AllowedAuthenticatorDeviceTypes.
             # The device type (single_device/multi_device) is derived from the backup-eligible flag in the
             # signed authenticatorData, it can only be known once the authenticator has responded, not requested
@@ -437,10 +455,10 @@ class PasskeyTokenClass(TokenClass):
             # Verification successful, set the token to enrolled and save information returned by the authenticator
             self.token.rollout_state = RolloutState.ENROLLED
             # Protect the credential_id by setting it as the token secret
-            self.set_otpkey(bytes_to_base64url(registration_verification.credential_id))
+            self.set_otpkey(bytes_to_base64url(attested_credential_id))
 
             # Token Info
-            credential_id_hash = hash_credential_id(credential_id)
+            credential_id_hash = hash_credential_id(attested_credential_id)
             token_info: dict = {
                 FIDO2TokenInfo.DEVICE_TYPE: registration_verification.credential_device_type,
                 FIDO2TokenInfo.BACKED_UP: registration_verification.credential_backed_up,
@@ -470,6 +488,7 @@ class PasskeyTokenClass(TokenClass):
                             self.set_description(attributes[0].value)
             self.add_tokeninfo_dict(token_info)
             self.token.active = True
+            self.token.save()
             # Remove the challenge
             challenges[0].delete()
         return response_detail

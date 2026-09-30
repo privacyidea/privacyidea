@@ -263,7 +263,7 @@ class Token(MethodsMixin, db.Model):
         seed_str = self._fix_spaces(self.pin_seed)
         seed = binascii.unhexlify(seed_str)
         hashed_pin = hash(pin, seed)
-        log.debug(f"hashed_pin: {hashed_pin}, pin: {pin!r}, seed: {self.pin_seed}")
+        log.debug("Calculated the PIN hash with the legacy hash format.")
         return hashed_pin
 
     @log_with(log)
@@ -301,17 +301,25 @@ class Token(MethodsMixin, db.Model):
                     res = True
             else:
                 log.debug("we got a hashed PIN!")
+                legacy_hash = False
                 if self.pin_hash:
                     try:
                         # New PIN verification
                         return verify_pass_hash(pin, self.pin_hash)
                     except ValueError as _e:
                         # old PIN verification
+                        legacy_hash = True
                         pin_hash = self.get_hashed_pin(pin)
                 else:
                     pin_hash = pin
                 if pin_hash == (self.pin_hash or ""):
                     res = True
+                    if legacy_hash:
+                        # The PIN is correct but stored with the legacy hash format. Rewrite it with
+                        # the current one, so the legacy format disappears with the next successful
+                        # verification of each PIN.
+                        self.set_hashed_pin(pin)
+                        self.save()
         return res
 
     def is_pin_encrypted(self, pin=None):
