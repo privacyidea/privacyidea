@@ -1,11 +1,12 @@
 """
 Tests for the database migration script a1b2c3d4e5f6, which encrypts
-sensitive plaintext SMS gateway options and resizes the challenge.data
-column (the challenge rows themselves are cleared by the next revision,
-c3d4e5f6a7b8, rather than converted here).
+sensitive plaintext SMS gateway options and removes the length limit of the
+challenge.data column (the challenge rows themselves are cleared by the next
+revision, c3d4e5f6a7b8, rather than converted here).
 
 This tests the helper functions and data transformation logic without
-running the full alembic migration (which requires TEST_DATABASE_URL).
+running the full alembic migration (which requires TEST_DATABASE_URL, see
+test_migration_a1b2c3d4e5f6_challenge_data.py).
 """
 from sqlalchemy import select
 
