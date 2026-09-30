@@ -53,6 +53,8 @@ import {
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { TokenDetailsComponent } from "./token-details.component";
+import { By } from "@angular/platform-browser";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 
 describe("TokenDetailsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsComponent>;
@@ -576,30 +578,11 @@ describe("TokenDetailsComponent", () => {
     expect(component.isEditingInfo()).toBe(false);
   });
 
-  it("sticky header floats while the sentinel is above the scroll container", () => {
-    let observerCallback: IntersectionObserverCallback | undefined;
-    (global.IntersectionObserver as unknown as jest.Mock).mockImplementation((cb: IntersectionObserverCallback) => {
-      observerCallback = cb;
-      return { observe: jest.fn(), unobserve: jest.fn(), disconnect: jest.fn() };
-    });
-
-    component.ngAfterViewInit();
-    expect(observerCallback).toBeDefined();
-    const header = component.stickyHeader.nativeElement;
-    const observer = {} as IntersectionObserver;
-    const entryAt = (top: number, rootTop: number | null): IntersectionObserverEntry[] =>
-      [
-        { boundingClientRect: { top }, rootBounds: rootTop === null ? null : { top: rootTop } }
-      ] as unknown as IntersectionObserverEntry[];
-
-    observerCallback!(entryAt(-10, 0), observer);
-    expect(header.classList.contains("is-sticky")).toBe(true);
-
-    observerCallback!(entryAt(10, 0), observer);
-    expect(header.classList.contains("is-sticky")).toBe(false);
-
-    observerCallback!(entryAt(-10, null), observer);
-    expect(header.classList.contains("is-sticky")).toBe(false);
+  it("attaches the sticky header directive once the loaded page renders", () => {
+    fixture.detectChanges();
+    const header = fixture.debugElement.query(By.directive(StickyHeaderDirective));
+    expect(header).not.toBeNull();
+    expect(header.nativeElement.classList).toContain("sticky-header");
   });
 
   describe("fitWidthToTopRow", () => {
