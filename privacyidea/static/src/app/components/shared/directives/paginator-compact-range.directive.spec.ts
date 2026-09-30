@@ -63,11 +63,15 @@ class HostComponent {
   pageSize = 10;
 }
 
+// A filter row with no table region anywhere on the page (e.g. container details).
 @Component({
   standalone: true,
   imports: [MatPaginatorModule, PaginatorCompactRangeDirective],
   template: `
     <div class="filter-paginator-container">
+      <div class="filter-actions-group">
+        <div class="custom-filter"></div>
+      </div>
       <mat-paginator
         appPaginatorCompactRange
         [length]="10189"
@@ -78,6 +82,50 @@ class HostComponent {
   `
 })
 class HostWithoutScrollRegionComponent {}
+
+// The table's region inside a wrapper next to the filter row rather than beside the row itself
+// (e.g. machine details).
+@Component({
+  standalone: true,
+  imports: [MatPaginatorModule, PaginatorCompactRangeDirective],
+  template: `
+    <div class="page-root">
+      <div class="filter-paginator-container">
+        <mat-paginator
+          appPaginatorCompactRange
+          [length]="10189"
+          [pageIndex]="0"
+          [pageSize]="10"
+          [pageSizeOptions]="[10, 20]"></mat-paginator>
+      </div>
+      <div class="table-wrapper">
+        <div class="table-scroll-region"></div>
+      </div>
+    </div>
+  `
+})
+class HostWithNestedScrollRegionComponent {}
+
+// Two tables on one page, each below its own filter row; only the second row has this directive.
+@Component({
+  standalone: true,
+  imports: [MatPaginatorModule, PaginatorCompactRangeDirective],
+  template: `
+    <div class="page-root">
+      <div class="table-scroll-region first-table"></div>
+      <div class="filter-paginator-container">
+        <mat-paginator
+          appPaginatorCompactRange
+          [length]="10189"
+          [pageIndex]="0"
+          [pageSize]="10"
+          [pageSizeOptions]="[10, 20]"></mat-paginator>
+      </div>
+      <div class="table-scroll-region second-table"></div>
+    </div>
+  `
+})
+class HostWithTwoTablesComponent {}
 
 // A table's own filter component standing in for a bare mat-form-field (e.g. the container
 // templates filter), next to a plain trigger button.
@@ -275,15 +323,48 @@ describe("PaginatorCompactRangeDirective", () => {
     expect(resizeObserver.disconnect).toHaveBeenCalled();
   });
 
-  it("leaves the full range label alone when there is no sibling scroll region", async () => {
-    await TestBed.resetTestingModule()
-      .configureTestingModule({ imports: [HostWithoutScrollRegionComponent] })
-      .compileComponents();
-    const otherFixture = TestBed.createComponent(HostWithoutScrollRegionComponent);
-    expect(() => otherFixture.detectChanges()).not.toThrow();
+  describe("in layouts other than a region right beside the filter row", () => {
+    const mount = async <T>(host: new () => T): Promise<ComponentFixture<T>> => {
+      await TestBed.resetTestingModule()
+        .configureTestingModule({ imports: [host] })
+        .compileComponents();
+      const otherFixture = TestBed.createComponent(host);
+      otherFixture.detectChanges();
+      return otherFixture;
+    };
+    const classObserverOf = (region: Element) =>
+      mutationObservers.find((observer) => observer.observed.includes(region));
 
-    const label = otherFixture.nativeElement.querySelector(".mat-mdc-paginator-range-label");
-    expect(label.textContent?.trim()).toBe("1 – 10 of 10189");
+    it("watches a table region nested in a wrapper next to the row", async () => {
+      const otherFixture = await mount(HostWithNestedScrollRegionComponent);
+
+      expect(classObserverOf(otherFixture.nativeElement.querySelector(".table-scroll-region"))).toBeDefined();
+    });
+
+    it("watches the table after the row, not one above it", async () => {
+      const otherFixture = await mount(HostWithTwoTablesComponent);
+
+      expect(classObserverOf(otherFixture.nativeElement.querySelector(".second-table"))).toBeDefined();
+      expect(classObserverOf(otherFixture.nativeElement.querySelector(".first-table"))).toBeUndefined();
+    });
+
+    it("still compacts the range on a tight row with no table region to watch", async () => {
+      const otherFixture = await mount(HostWithoutScrollRegionComponent);
+      const query = (selector: string): HTMLElement => otherFixture.nativeElement.querySelector(selector);
+      const filter = query(".custom-filter");
+      filter.style.flexGrow = "7";
+      filter.style.minWidth = `${CONTAINER_WIDTH - PAGINATOR_WIDTH}px`;
+      jest
+        .spyOn(query(".filter-paginator-container"), "getBoundingClientRect")
+        .mockReturnValue({ width: CONTAINER_WIDTH } as DOMRect);
+      jest
+        .spyOn(query("mat-paginator"), "getBoundingClientRect")
+        .mockReturnValue({ width: PAGINATOR_WIDTH } as DOMRect);
+      const observer = resizeObservers.find((o) => o.observed[0] === query(".filter-paginator-container"))!;
+      observer.cb([], observer as unknown as ResizeObserver);
+
+      expect(query(".mat-mdc-paginator-range-label").textContent?.trim()).toBe("1 – 10");
+    });
   });
 
   describe("with a filter component wrapping the filter field", () => {

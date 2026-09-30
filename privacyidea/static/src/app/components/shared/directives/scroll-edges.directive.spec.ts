@@ -72,6 +72,29 @@ class HostWithHeaderRowComponent {
   @ViewChild("region") region!: { nativeElement: HTMLElement };
 }
 
+// A table page's card: controls (filter row, action row) above the scroll region.
+@Component({
+  standalone: true,
+  imports: [ScrollEdgesDirective],
+  template: `
+    <div
+      #card
+      class="card">
+      <div class="controls"></div>
+      <div
+        #region
+        class="table-scroll-region"
+        appScrollEdges>
+        <div class="content">content</div>
+      </div>
+    </div>
+  `
+})
+class HostWithControlsComponent {
+  @ViewChild("card") card!: { nativeElement: HTMLElement };
+  @ViewChild("region") region!: { nativeElement: HTMLElement };
+}
+
 describe("ScrollEdgesDirective", () => {
   let fixture: ComponentFixture<HostComponent>;
   let observers: FakeObserver[];
@@ -154,6 +177,72 @@ describe("ScrollEdgesDirective", () => {
   it("does not insert a header shadow layer when the host has no header row", () => {
     expect(regionEl().querySelector(".sticky-header-shadow")).toBeNull();
     expect(resizeObservers).toHaveLength(0);
+  });
+});
+
+describe("ScrollEdgesDirective below a page's controls", () => {
+  let fixture: ComponentFixture<HostWithControlsComponent>;
+  let topObserver: FakeObserver;
+
+  beforeEach(async () => {
+    const observers: FakeObserver[] = [];
+    (globalThis.IntersectionObserver as unknown as jest.Mock).mockImplementation(
+      (cb: EdgeCallback, options: IntersectionObserverInit) => {
+        const observer: FakeObserver = { cb, options, observed: [], disconnect: jest.fn() };
+        observers.push(observer);
+        return { observe: (el: Element) => observer.observed.push(el), unobserve: jest.fn(), disconnect: jest.fn() };
+      }
+    );
+    await TestBed.configureTestingModule({ imports: [HostWithControlsComponent] }).compileComponents();
+    fixture = TestBed.createComponent(HostWithControlsComponent);
+    fixture.detectChanges();
+    topObserver = observers[0];
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  function regionEl(): HTMLElement {
+    return fixture.componentInstance.region.nativeElement;
+  }
+
+  // Places the region `above` px below its card's top and gives it `overflow` px of hidden content.
+  function layOut(above: number, overflow: number): void {
+    jest.spyOn(fixture.componentInstance.card.nativeElement, "getBoundingClientRect").mockReturnValue({
+      top: 100
+    } as DOMRect);
+    jest.spyOn(regionEl(), "getBoundingClientRect").mockReturnValue({ top: 100 + above } as DOMRect);
+    Object.defineProperty(regionEl(), "clientHeight", { value: 500, configurable: true });
+    Object.defineProperty(regionEl(), "scrollHeight", { value: 500 + overflow, configurable: true });
+  }
+
+  it("collapses the controls once scrolled when the overflow outlasts everything above the region", () => {
+    layOut(150, 151);
+
+    topObserver.cb([{ isIntersecting: false }]);
+
+    expect(regionEl().classList.contains("scrolled-from-top")).toBe(true);
+    expect(regionEl().classList.contains("controls-collapsed")).toBe(true);
+  });
+
+  it("keeps the controls when collapsing them could make the content fit, but still marks it scrolled", () => {
+    layOut(150, 150);
+
+    topObserver.cb([{ isIntersecting: false }]);
+
+    expect(regionEl().classList.contains("scrolled-from-top")).toBe(true);
+    expect(regionEl().classList.contains("controls-collapsed")).toBe(false);
+  });
+
+  it("expands the controls again once scrolled back to the top", () => {
+    layOut(150, 400);
+    topObserver.cb([{ isIntersecting: false }]);
+
+    topObserver.cb([{ isIntersecting: true }]);
+
+    expect(regionEl().classList.contains("scrolled-from-top")).toBe(false);
+    expect(regionEl().classList.contains("controls-collapsed")).toBe(false);
   });
 });
 

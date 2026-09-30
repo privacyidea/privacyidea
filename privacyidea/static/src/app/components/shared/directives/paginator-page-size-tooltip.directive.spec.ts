@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { FocusMonitor } from "@angular/cdk/a11y";
 import { Component } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
@@ -26,11 +27,13 @@ import { PaginatorPageSizeTooltipDirective } from "./paginator-page-size-tooltip
 @Component({
   standalone: true,
   imports: [MatPaginatorModule, PaginatorPageSizeTooltipDirective],
-  template: ` <mat-paginator
-    appPaginatorPageSizeTooltip
-    [length]="100"
-    [pageSize]="10"
-    [pageSizeOptions]="[10, 25, 50]"></mat-paginator> `
+  template: `
+    <mat-paginator
+      appPaginatorPageSizeTooltip
+      [length]="100"
+      [pageSize]="10"
+      [pageSizeOptions]="[10, 25, 50]"></mat-paginator>
+  `
 })
 class HostComponent {}
 
@@ -40,14 +43,17 @@ describe("PaginatorPageSizeTooltipDirective", () => {
   const touchTarget = (): HTMLElement =>
     fixture.nativeElement.querySelector(".mat-mdc-paginator-page-size .mat-mdc-paginator-touch-target");
 
+  const pageSizeSelect = (): HTMLElement =>
+    fixture.nativeElement.querySelector(".mat-mdc-paginator-page-size mat-select");
+
   // The directive instantiates MatTooltip by hand via Injector.create, off Angular's own component
   // injector tree, so it never shows up as a provider on the touch target's own DebugElement - the
   // directive's own (private) reference is the only way to reach it from a test.
   const tooltip = (): MatTooltip =>
     (
-      fixture.debugElement.query(By.directive(PaginatorPageSizeTooltipDirective)).injector.get(
-        PaginatorPageSizeTooltipDirective
-      ) as unknown as { tooltip: MatTooltip }
+      fixture.debugElement
+        .query(By.directive(PaginatorPageSizeTooltipDirective))
+        .injector.get(PaginatorPageSizeTooltipDirective) as unknown as { tooltip: MatTooltip }
     ).tooltip;
 
   beforeEach(async () => {
@@ -77,15 +83,25 @@ describe("PaginatorPageSizeTooltipDirective", () => {
     jest.useRealTimers();
   });
 
-  it("shows the tooltip on focusin and hides it on focusout", () => {
+  // Keyboard focus lands on the mat-select, a sibling of the touch target the hover listeners sit on.
+  it("shows the tooltip when the page-size select gets keyboard focus and hides it on blur", () => {
     jest.useFakeTimers();
-    const target = touchTarget();
+    const select = pageSizeSelect();
 
-    target.dispatchEvent(new FocusEvent("focusin"));
+    TestBed.inject(FocusMonitor).focusVia(select, "keyboard");
     jest.runOnlyPendingTimers();
     expect(tooltip()._isTooltipVisible()).toBe(true);
 
-    target.dispatchEvent(new FocusEvent("focusout"));
+    select.blur();
+    jest.runOnlyPendingTimers();
+    expect(tooltip()._isTooltipVisible()).toBe(false);
+    jest.useRealTimers();
+  });
+
+  it("does not show the tooltip when the page-size select is focused by mouse", () => {
+    jest.useFakeTimers();
+
+    TestBed.inject(FocusMonitor).focusVia(pageSizeSelect(), "mouse");
     jest.runOnlyPendingTimers();
     expect(tooltip()._isTooltipVisible()).toBe(false);
     jest.useRealTimers();
@@ -96,9 +112,13 @@ describe("PaginatorPageSizeTooltipDirective", () => {
     const activeTooltip = tooltip();
     const destroySpy = jest.spyOn(activeTooltip, "ngOnDestroy");
 
+    const select = pageSizeSelect();
+    const stopMonitoringSpy = jest.spyOn(TestBed.inject(FocusMonitor), "stopMonitoring");
+
     fixture.destroy();
 
     expect(destroySpy).toHaveBeenCalled();
+    expect(stopMonitoringSpy).toHaveBeenCalledWith(select);
     target.dispatchEvent(new MouseEvent("mouseenter"));
     expect(activeTooltip._isTooltipVisible()).toBe(false);
   });

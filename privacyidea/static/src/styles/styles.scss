@@ -425,6 +425,7 @@ $corner-radii: (
 .admin-content > *:not(router-outlet) {
   height: 100%;
   min-height: 0;
+  min-width: 0;
 }
 
 .selfservice-content-container > *:not(router-outlet) {

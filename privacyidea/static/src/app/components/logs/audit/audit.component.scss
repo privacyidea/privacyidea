@@ -8,9 +8,7 @@
   // action_detail, info and policies, which are left flexible and excluded from the tier sum
   // since they hold long free text or a list that can overflow.
   @include table.page-table-state-size(
-    calc(
-      #{table.table-width(s, l, s, m, m, m, l, s, s, s, s, m, s, l, s, m, s, s, s, s, s, m, s)} + 3 * 200px
-    )
+    calc(#{table.table-width(s, l, s, m, m, m, l, s, s, s, s, m, s, l, s, m, s, s, s, s, s, m, s)} + 3 * 200px)
   );
   @include table.base-table-structure(".audit-table", ".audit-table-filter", ".table-scroll-container");
   display: flex;
@@ -32,9 +30,10 @@
     }
   }
 
-  // Once the table is scrolled, the filter hint below the input is just noise above the sticky
+  // Once the table is scrolled far enough to collapse the controls above it (controls-collapsed -
+  // see ScrollEdgesDirective), the filter hint below the input is just noise above the sticky
   // header - the same content the hint describes is already scrolled out of view above it.
-  &:has(.table-scroll-region.scrolled-from-top) .audit-table-filter mat-hint {
+  &:has(.table-scroll-region.controls-collapsed) .audit-table-filter mat-hint {
     display: none;
   }
 }

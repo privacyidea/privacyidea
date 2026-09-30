@@ -23,11 +23,11 @@ import { getCompactRangeLabel } from "@app/paginator-intl";
 // Of the full "1,066 - 1,080 of 10,189" range label, the current page's own position
 // ("1,066 - 1,080") is what the user is actually tracking - the total is the part safe to drop, but
 // only once the row is actually tight: the filter field next to it (inside .filter-actions-group,
-// the container's other child) has no slack left. A scrolled table (.table-scroll-region
-// scrolled-from-top) is not by itself a "not enough room" signal - at a normal desktop width there
-// is plenty of room for the full label whether or not the table happens to be scrolled - so scroll
-// state does not force compact mode on its own; it only changes what counts as tight, since the
-// collapsed action row also frees up width the label could use. Material renders
+// the container's other child) has no slack left. A scrolled table is not by itself a "not enough
+// room" signal - at a normal desktop width there is plenty of room for the full label whether or
+// not the table happens to be scrolled - so scroll state does not force compact mode on its own; it
+// only changes what counts as tight, since the actions trigger that stands in for a collapsed action
+// row takes width beside the filter field. Material renders
 // the whole phrase as one interpolated text node with no separate markup for the range and the
 // total, so it can't be trimmed with CSS alone; this rewrites the node by hand instead, in either
 // direction, so it stays correct whether the rewrite runs during ngDoCheck (a genuine page change)
@@ -56,7 +56,6 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
   private readonly paginator = inject(MatPaginator);
   private readonly intl = inject(MatPaginatorIntl);
   private label?: HTMLElement;
-  private scrollRegion?: Element;
   private container?: HTMLElement;
   private filterActionsGroup?: HTMLElement;
   private classObserver?: MutationObserver;
@@ -67,23 +66,22 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
   ngAfterViewInit(): void {
     const label = this.host.nativeElement.querySelector<HTMLElement>(".mat-mdc-paginator-range-label");
     const container = this.host.nativeElement.closest<HTMLElement>(".filter-paginator-container");
-    // The table's region is a sibling of the row or of one of its wrappers (e.g. machines' header-row).
-    let scrollRegion: Element | null = null;
-    for (let scope = container?.parentElement; scope && !scrollRegion; scope = scope.parentElement) {
-      scrollRegion = scope.querySelector(":scope > .table-scroll-region");
-    }
-    if (!label || !container || !scrollRegion) {
+    if (!label || !container) {
       return;
     }
     this.label = label;
     this.container = container;
-    this.scrollRegion = scrollRegion;
     this.filterActionsGroup = container.querySelector<HTMLElement>(":scope > .filter-actions-group") ?? undefined;
 
-    // ScrollEdgesDirective toggles scrolled-from-top via Renderer2, which does not go through
-    // Angular change detection, so this label needs its own observer to notice it.
-    this.classObserver = new MutationObserver(() => this.apply());
-    this.classObserver.observe(scrollRegion, { attributes: true, attributeFilter: ["class"] });
+    // ScrollEdgesDirective toggles the table's scroll-state classes via Renderer2, which does not go
+    // through Angular change detection, so this label needs its own observer to notice them - they
+    // show or hide the actions trigger beside the filter, which changes what counts as tight. A row
+    // with no table region to watch (e.g. container details) still follows size changes below.
+    const scrollRegion = PaginatorCompactRangeDirective.findScrollRegion(container);
+    if (scrollRegion) {
+      this.classObserver = new MutationObserver(() => this.apply());
+      this.classObserver.observe(scrollRegion, { attributes: true, attributeFilter: ["class"] });
+    }
 
     // The row's available space changes with the viewport (including a browser zoom level, which
     // reflows exactly like a narrower viewport would) independently of any class toggling.
@@ -111,7 +109,7 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
   }
 
   private apply(): void {
-    if (this.writingBack || !this.label || !this.scrollRegion) {
+    if (this.writingBack || !this.label) {
       return;
     }
     this.compact = this.isRowTight();
@@ -189,6 +187,22 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
       }
     }
     return total;
+  }
+
+  // The row's table: the first .table-scroll-region after the row inside their closest shared
+  // ancestor - a sibling of the row on most pages, nested in a sibling wrapper on others (e.g.
+  // machine details). Searching after the row, not anywhere in that ancestor, keeps a page with
+  // several tables from pairing a row with the table above it.
+  private static findScrollRegion(container: HTMLElement): Element | undefined {
+    for (let scope = container.parentElement; scope; scope = scope.parentElement) {
+      const region = Array.from(scope.querySelectorAll(".table-scroll-region")).find(
+        (candidate) => container.compareDocumentPosition(candidate) & Node.DOCUMENT_POSITION_FOLLOWING
+      );
+      if (region) {
+        return region;
+      }
+    }
+    return undefined;
   }
 
   // A computed length in px, or 0 for anything else ("auto", a percentage basis, ...).

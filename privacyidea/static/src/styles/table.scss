@@ -350,11 +350,10 @@ $checkbox-column-width: 72px;
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;
-    // Once scrolled, the action row above collapses and frees up height, which can shrink this
-    // region's own content back under the point where it needs to scroll at all - overflow: auto
-    // then drops the scrollbar mid-scroll. Without a reserved gutter, that also drops the width the
-    // scrollbar took from the content, so every column jumps a few pixels wider at the same moment
-    // the header is trying to look stable. scrollbar-gutter keeps that width reserved regardless of
+    // Whether the table overflows at all changes with its rows (a filter, a page change) and with the
+    // space it gets, and overflow: auto adds or drops the scrollbar to match. Without a reserved
+    // gutter, that also takes the scrollbar's width from the content or hands it back, so every
+    // column jumps a few pixels at once. scrollbar-gutter keeps that width reserved regardless of
     // whether a scrollbar is actually needed right now, so only the scrollbar itself appears or
     // disappears - nothing else about the table's layout moves.
     scrollbar-gutter: stable;
@@ -439,9 +438,9 @@ $filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
 }
 
 // Collapses a table's own action-button row into a single "more actions" menu trigger once the
-// table has scrolled, mirroring the token table's sticky-header treatment (see
-// token-table.component.scss): the full row only fits above the table, so once scrolled it would
-// sit under the sticky header and cover rows, and is swapped for a compact trigger instead of also
+// table has scrolled far enough that collapsing it keeps the table scrollable (controls-collapsed -
+// see ScrollEdgesDirective): the full row only fits above the table, so once scrolled it would sit
+// under the sticky header and cover rows, and is swapped for a compact trigger instead of also
 // being made sticky. $row-class is the wrapping row div, $inner-class its content wrapper - a grid
 // track (1fr -> 0fr) collapses smoothly regardless of the row's actual content height, unlike
 // max-height, which needs that height guessed up front. $trigger-class is the icon button that
@@ -464,7 +463,7 @@ $filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
     }
   }
 
-  &:has(.table-scroll-region.scrolled-from-top) {
+  &:has(.table-scroll-region.controls-collapsed) {
     #{$row-class} {
       grid-template-rows: 0fr;
       margin-bottom: 0;

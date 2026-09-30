@@ -23,6 +23,9 @@ import { AfterViewInit, Directive, ElementRef, inject, OnDestroy, Renderer2 } fr
  * there is hidden content in that direction:
  *
  *   - `scrolled-from-top`: the content is scrolled down from the very top.
+ *   - `controls-collapsed`: scrolled from the top, with enough overflow that the page may collapse
+ *     the controls above the host (an action row, a filter hint) without that undoing the scroll -
+ *     see overflowOutlastsControlsAbove.
  *   - `more-below`: there is still content below the visible area.
  *
  * Two zero-height sentinels are inserted at the top and bottom of the scroll content and
@@ -85,8 +88,12 @@ export class ScrollEdgesDirective implements AfterViewInit, OnDestroy {
         // Top sentinel out of view → content has been scrolled down from the top.
         if (entry.isIntersecting) {
           this.renderer.removeClass(root, "scrolled-from-top");
+          this.renderer.removeClass(root, "controls-collapsed");
         } else {
           this.renderer.addClass(root, "scrolled-from-top");
+          if (this.overflowOutlastsControlsAbove(root)) {
+            this.renderer.addClass(root, "controls-collapsed");
+          }
         }
       },
       { root }
@@ -105,6 +112,19 @@ export class ScrollEdgesDirective implements AfterViewInit, OnDestroy {
       { root }
     );
     this.bottomObserver.observe(bottomSentinel);
+  }
+
+  // Collapsing the controls above the host hands their height to the host. Content that overflows
+  // by no more than that then fits: scrollTop clamps back to 0, the top sentinel comes back into view
+  // and the controls expand again, undoing the scroll that collapsed them. They can free at most
+  // everything above the host inside its parent, so only an overflow larger than that collapses them.
+  private overflowOutlastsControlsAbove(root: HTMLElement): boolean {
+    const parent = root.parentElement;
+    if (!parent) {
+      return false;
+    }
+    const above = root.getBoundingClientRect().top - parent.getBoundingClientRect().top;
+    return root.scrollHeight - root.clientHeight > above;
   }
 
   ngOnDestroy(): void {
