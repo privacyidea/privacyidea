@@ -47,7 +47,7 @@ Version 3.14, 2026-09-30
   * `GET /user/` lists the resolvers it could not query in `detail.skipped_resolvers` and in the audit
     log, while still returning the users of the others (#5457)
   * The tags `{now}` and `{current_time}` can be used in event handlers, and the custom user attributes handler
-    replaces tags in the attribute value (#5862)
+    replaces tags in the attribute value (#5862, #5935)
   * `pi-manage backup create` and `restore` support PostgreSQL. Everything that can refuse a restore is checked
     before the archive is extracted (#5891)
   * The packages and the Docker image schedule the cleanup of every table that collects stale rows. The new page
@@ -69,9 +69,10 @@ Version 3.14, 2026-09-30
     guarded by the new policy action `sshkey_read` (admin and user scope).
   * SSH key tokens now store an integrity checksum of the SSH key data in the encrypted OTP key field. Manipulations
     of the database entries (e.g. a database admin changing the public key to gain access to SSH servers) are
-    detected when the key is fetched. The migration adds the checksum to existing tokens
+    detected when the key is fetched. The migration adds the checksum to existing tokens. A token that fails the
+    check is left out of `GET /machine/authitem/ssh`, the keys of the other tokens are still returned
   * Additional SSH key types accepted by the SSH key token can be configured with `PI_ALLOWED_SSH_KEY_TYPES`
-    in `pi.cfg`. The configured types are added to the built-in ones
+    in `pi.cfg`. The configured types are added to the built-in ones (#4987)
   * Added a new policy scope "hardening". The action `hide_version` removes the version number from responses to
     unauthenticated requests and `hide_auth_error_status` returns a uniform 401 for failed authentications, so the
     status code no longer reveals the reason (#5390, #5630)
@@ -126,7 +127,8 @@ Version 3.14, 2026-09-30
     to pass a relative revision, e.g. `pi-manage db downgrade -- -1` to undo a single revision (#5284)
   * `pi-manage config import` returns a non-zero exit code on failure, continues after an object that can not be
     imported and reports the result at the end. Configurations from older versions containing actions that no longer
-    exist can be imported with `--skip-invalid` (#5516)
+    exist can be imported with `--skip-invalid`. `pi-manage config export --censor` replaces the secrets with the
+    placeholder `__CENSORED__`, such an export can only be imported again on the same instance (#5516)
   * Removed the `/validate/samlcheck` endpoint, which was deprecated in 3.11. Use `/validate/check` with the
     authorization policies `add_user_in_response` and `add_resolver_in_response` instead (#5414)
   * The endpoints `POST /token/copypin` and `POST /token/copyuser` are deprecated and will be removed in a
@@ -135,18 +137,15 @@ Version 3.14, 2026-09-30
   * The lost token process (`POST /token/lost/<serial>`) requires an administrator. The `losttoken` action is
     defined in the admin scope only
   * Removed the u2f token type. Existing tokens are set to the type `deprecated` and disabled by the migration and can
-    be removed with `pi-tokenjanitor deprecated delete u2f`.
+    be removed with `pi-tokenjanitor deprecated delete u2f`. The type `deprecated` can not be enrolled (#5949)
   * Cancelling an active challenge requires the new admin action `cancelchallenge` instead of the read-only
     `getchallenges` right. The challenges of a user can be listed with the new `GET /token/challenges/user`, and the
     challenge listings no longer contain the `id` field, use the `transaction_id` instead.
   * Database connections are validated before they are used, so a request no longer fails because of an idle timeout or
     a restarted database. It can be switched off with `SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": False}` (#5757)
   * `pi-manage` uses the tarfile package of Python instead of calling the `tar` command (#3815)
-  * The CA connector types are registered explicitly instead of being discovered via subclasses, which made saving a
-    connector fail after the imports were reordered (#4881)
+  * The CA connector types are registered explicitly instead of being discovered via subclasses (#4881)
   * Replaced the remaining usages of PyOpenSSL with the cryptography package (#1991)
-  * `GET /user/` accepts the parameter `include_custom_attributes`, so a user list can be fetched without looking up
-    the custom attributes of every user (#5185)
   * Application specific password tokens can be enrolled in self-service. Listing the defined service IDs with
     `GET /serviceid/`, which the enrollment needs to offer a choice, is available to users through the new
     `serviceid_list` action in the user scope; on an installation without any user policy it is allowed like every
@@ -166,6 +165,10 @@ Version 3.14, 2026-09-30
   * The lost token process always creates a new replacement token. An earlier replacement of the same token
     is disabled when a new one is issued
   * Realms can be deleted again when a custom user attribute was set for one of their users (#5094)
+  * A realm can be deleted, and the tokens and containers of its users managed, while the resolver of those users
+    is unreachable. An owner whose login name can not be looked up is only matched by admin policies without a user
+    or for every user (`*`), not by policies that name users, exclude them or match them with a regular expression
+    (#6015)
   * Editing an inactive policy no longer activates it, because the `active` parameter is now honoured (#5411)
   * A realm administrator with the `userlist` right sees the users of all realms granted to them, instead of only the
     first realm of the first matching policy (#5421). Each realm of a request is checked on its own, so several
@@ -231,8 +234,6 @@ Version 3.14, 2026-09-30
     containing `*` or a user principal name containing `#` no longer breaks the resolver (#5701)
   * Corrected the redaction configuration of the `log_with` decorator, which hid all arguments of `init_token` and of
     the RADIUS token instead of only the secret ones (#5524)
-  * A censored configuration export censors the option and header values of an SMS gateway by their stored encryption
-    state instead of guessing from the key name, and importing a RADIUS server from an older version no longer raises
   * Logging an exception object instead of a message no longer raises inside the log handler
   * `pi-tokenjanitor findcontainer delete_info` reports only the container infos it actually deleted
   * Corrected the documentation of the "Clear failcounter after minutes" setting: any authentication attempt clears the
@@ -265,14 +266,10 @@ Version 3.14, 2026-09-30
   * The webhook handler keeps all keys of a JSON payload when it replaces tags (#5748)
   * Changing the order of an event handler no longer deletes its options and conditions (#5854)
   * The recursive LDAP group search handles group names given as a list as well as a single string (#5936)
-  * The migration scripts run on Oracle again (#5872)
   * User and machine resolvers can not be named `test`, which only runs the connection test, and names like `.`
     or `..` are refused (#6001)
-  * The deprecated token type is not offered for enrollment (#5949)
   * The PIN policies are not applied to the enrollment of token types without a PIN, e.g. certificate and SSH
     key (#5885)
-  * One SSH key token that fails its integrity check no longer makes `GET /machine/authitem/ssh` fail for all
-    tokens (#6005)
   * Responses that carry a token seed are marked `no-store`, an update of a config entry without a type keeps its
     type, and the configuration documentation censors secret values (#5988)
   * A PIN stored in the legacy hash format is rewritten in the current format after a successful check, and less
@@ -290,6 +287,8 @@ Version 3.14, 2026-09-30
     is removed. The audit `serial` column is widened to 200 characters, please read the update notes for the
     duration of this migration on MySQL and MariaDB. A request to `/validate/check` naming a realm or resolver that
     does not exist is logged as well (#5852)
+  * The `missing_line` flag of an audit entry no longer reports a missing entry on a Galera cluster, where
+    `wsrep_auto_increment_control` writes the ids of a node several numbers apart (#5785)
   * The authentication cache hashes with `PI_HASH_ALGO_LIST` and `PI_HASH_ALGO_PARAMS` like everything else (#5914).
     privacyIDEA refuses to start with an unusable value of either of them instead of failing at the first login
     (#5926)
@@ -299,7 +298,7 @@ Version 3.14, 2026-09-30
     token of the event, and the container event handler replaces tags as well (#5786)
   * Documented the tags of `push_text_on_mobile`. `{ua_browser}` names the browser, the tags of the triggering client
     are kept when the smartphone polls its challenges, and a text that can not be formatted falls back to the default
-    text instead of failing the authentication (#5788)
+    text instead of failing the authentication (#5787, #5788)
   * The action and the position of an event handler definition are checked when it is saved (#5988)
   * `POST /container/<serial>/realms` returns the status of each realm in the sub-dictionary `realms`, so that a
     realm named `deleted` no longer collides with the flag of the same name (#5934)
