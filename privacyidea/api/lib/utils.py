@@ -822,6 +822,11 @@ def verify_auth_token(auth_token, required_role=None):
     if wrong_username:
         raise AuthError(_("Authentication failure. The username {wrong_username} "
                           "is not allowed to impersonate via JWT.").format(wrong_username=wrong_username))
+    # Without a login name the user object of the request only restricts to a realm, or to nothing at all
+    username = r.get("username")
+    if not isinstance(username, str) or not username:
+        raise AuthError(_("Authentication failure. The Authorization token does not name a user."),
+                        id=Error.AUTHENTICATE_MISSING_USERNAME)
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match
