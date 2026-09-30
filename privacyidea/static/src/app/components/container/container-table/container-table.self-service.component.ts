@@ -20,7 +20,6 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -55,7 +54,6 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
     MatPaginatorModule,
     NgClass,
     CopyableComponent,
-    MatCheckboxModule,
     MatIcon,
     MatButtonModule,
     ScrollToTopDirective,

@@ -865,10 +865,6 @@ $corner-radii: (
   width: 300px;
 }
 
-.max-width-300 {
-  max-width: 300px;
-}
-
 // Standardized table column width tiers (analogous to the card-width-* tiers above): a column opts
 // into one via a col-width-{size} class on its cell instead of a one-off pixel value, so every
 // table's columns - and the table-state placeholder sized from them (see table.table-width()) -
