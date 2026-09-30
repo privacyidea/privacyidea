@@ -32,6 +32,7 @@
   </div>
 } @else {
   <div
+    #scrollContainer
     appScrollToTop
     aria-label="Details"
     class="details-container"
@@ -45,7 +46,9 @@
       auditTooltip="Show container in audit log"
       (auditClick)="showContainerAuditLog()">
     </app-details-header>
-    <div class="container-actions-bar">
+    <div
+      class="sticky-header container-actions-bar"
+      [appStickyHeader]="scrollContainer">
       <app-container-details-actions
         [containerSerial]="containerSerial()"
         [containerType]="containerType()"></app-container-details-actions>

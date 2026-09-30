@@ -350,6 +350,12 @@ table.mat-mdc-table {
     border-top-width: 0;
   }
 
+  // A direct app-detail-field-row child is the grid row itself; the element selector outranks the
+  // component's own `:host { display: contents }`, which only applies when the row is nested.
+  > app-detail-field-row {
+    display: grid;
+  }
+
   > :first-child {
     border-top-width: 1px;
   }
