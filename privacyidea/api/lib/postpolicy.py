@@ -81,7 +81,7 @@ from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
 from .prepolicy import check_max_token_user, check_max_token_realm, fido2_enroll, rss_age, container_registration_config
 from ...lib.challenge import get_challenges
 from ...lib.container import (get_all_containers, init_container, init_registration, find_container_by_serial,
-                              create_container_tokens_from_template)
+                              create_container_tokens_from_template, get_container_challenge_user)
 from ...lib.containers.container_info import SERVER_URL, CHALLENGE_TTL, REGISTRATION_TTL, SSL_VERIFY, RegistrationState
 from ...lib.policies.actions import PolicyAction
 from ...lib.users.internal_user_attributes import InternalUserAttributes
@@ -1051,6 +1051,8 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
                                 request.all_data)
         challenge = get_challenges(container.serial, transaction_id=res["transaction_id"])[0]
         challenge.session = ChallengeSession.ENROLLMENT
+        # Only the user who passed the first factor can complete the authentication with the answered challenge
+        challenge.set_data({**challenge.get_data(), "user": get_container_challenge_user(user)})
         challenge.save()
 
         # Write registration info to the response

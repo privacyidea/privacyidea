@@ -945,14 +945,18 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         """
         create_container_template(container_type="smartphone", template_name="test",
                                   options={"tokens": [{"type": "hotp", "genkey": True}]})
+        self.addCleanup(delete_container_template, "test")
         set_policy("enroll_via_multichallenge", scope=SCOPE.AUTH, user="alice",
                    action={PolicyAction.ENROLL_VIA_MULTICHALLENGE: "smartphone",
                            PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEMPLATE: "test",
                            PolicyAction.PASSTHRU: True})
+        self.addCleanup(delete_policy, "enroll_via_multichallenge")
         set_policy("registration", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"})
+        self.addCleanup(delete_policy, "registration")
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         set_realm("ldaprealm", resolvers=[{'name': "catchall"}])
         set_realm("ldaprealm2", resolvers=[{'name': "catchall"}])
+        self.addCleanup(delete_realm, "ldaprealm2")
         set_default_realm("ldaprealm")
 
         with self.app.test_request_context('/validate/check', method='POST', data={"user": "alice", "pass": "alicepw"}):
@@ -963,6 +967,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             serial = res.json["detail"]["serial"]
         self.reset_flask_g()
         container = find_container_by_serial(serial)
+        self.addCleanup(self._delete_container_with_tokens, serial)
 
         mock_smph = MockSmartphone()
         params = mock_smph.register_finalize("123456", datetime.datetime.now(),
@@ -997,13 +1002,11 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertFalse(res.json["result"]["value"], res.json)
         self.reset_flask_g()
 
-        delete_policy("enroll_via_multichallenge")
-        delete_policy("registration")
-        for token in container.tokens:
+    @staticmethod
+    def _delete_container_with_tokens(container_serial: str):
+        for token in find_container_by_serial(container_serial).tokens:
             remove_token(token.get_serial())
-        delete_container_by_serial(serial)
-        delete_container_template("test")
-        delete_realm("ldaprealm2")
+        delete_container_by_serial(container_serial)
 
     @ldap3mock.activate
     def test_09_cancel_enroll_HOTP(self):
