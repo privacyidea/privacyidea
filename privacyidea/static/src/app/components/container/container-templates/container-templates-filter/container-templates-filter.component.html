@@ -34,4 +34,7 @@
       placeholder="Example query: 'name: example_template container_type: smartphone'"
       i18n-placeholder="@@container.exampleQueryName" />
   </app-clearable-input>
+  <app-info-hint
+    matSuffix
+    [text]="filterMatchInfo()" />
 </mat-form-field>

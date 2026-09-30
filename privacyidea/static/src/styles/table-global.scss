@@ -646,6 +646,6 @@ app-details-card .details-header {
 
 // The filter input's info icon lines up with the typed text and the clear button, which sit below the floating label,
 // rather than with the middle of the whole field.
-.filter-paginator-container .mat-mdc-form-field-icon-suffix:has(app-info-hint) {
+.mat-mdc-text-field-wrapper:has(app-clearable-input) .mat-mdc-form-field-icon-suffix:has(> app-info-hint) {
   align-self: flex-end;
 }

@@ -16686,6 +16686,22 @@
           <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="lockedUsers.lockedUser" datatype="html">
+        <source>Locked user</source>
+        <target>Gesperrter Benutzer</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/locked-users/locked-users.component.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.containerTemplate" datatype="html">
+        <source>Container template</source>
+        <target>Container-Vorlage</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-filter/container-templates-filter.component.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="common.wildcardOrExactMatch" datatype="html">
         <source>Use * as a wildcard, or start a value with = to match it exactly.</source>
         <target>Verwenden Sie * als Platzhalter oder beginnen Sie einen Wert mit =, um ihn exakt abzugleichen.</target>
