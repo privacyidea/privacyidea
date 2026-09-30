@@ -472,5 +472,11 @@ $filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
     #{$trigger-class} {
       display: inline-flex;
     }
+
+    // The trigger (plus its margin-left-8) takes its room from the filter field, so the filter row keeps the width
+    // it had before and the table below does not grow when the header turns sticky.
+    .filter-actions-group > .mat-mdc-form-field {
+      max-width: calc(var(--input-width-xxl) - #{$filter-trigger-size} - 8px);
+    }
   }
 }
