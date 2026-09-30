@@ -41,6 +41,9 @@ export type { MultiSelectFilterOption };
   selector: "app-multi-select-filter",
   standalone: true,
   imports: [MatButtonModule, MatIcon, MatMenuModule, MultiSelectMenuComponent],
+  // A flex box around its button, not a line box: as a plain block, the inline button sits on the
+  // text baseline and floats a few pixels above the header label it stands beside.
+  styles: ":host { display: inline-flex; align-items: center; }",
   templateUrl: "./multi-select-filter.component.html"
 })
 export class MultiSelectFilterComponent {

@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { DatePipe, NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, linkedSignal, ViewChild } from "@angular/core";
 import { PiResponse } from "@app/app.component";
@@ -69,6 +71,7 @@ import { concatMap, reduce } from "rxjs/operators";
   templateUrl: "./locked-users.component.html",
   styleUrl: "./locked-users.component.scss",
   imports: [
+    TableStateComponent,
     RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTableModule,
@@ -255,6 +258,14 @@ export class LockedUsersComponent {
     const value = (event.target as HTMLInputElement).value;
     this.casService.lockedUsersFilter.set(this.casService.lockedUsersFilter().copyWith({ value }));
   }
+
+  // Empty panel in place of the whole table area when no user is locked.
+  readonly tableState = new TableState({
+    resource: this.casService.lockedUsersResource,
+    count: () => this.totalLength(),
+    filterActive: () => this.casService.lockedUsersFilter().isNotEmpty,
+    resetFilter: () => this.clearFilter()
+  });
 
   clearFilter(): void {
     this.casService.lockedUsersFilter.set(this.casService.lockedUsersFilter().copyWith({ value: "" }));

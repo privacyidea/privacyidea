@@ -53,6 +53,8 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { RouterLink } from "@angular/router";
 import { ConditionalAccessCell } from "./cells/conditional-access-cell/conditional-access-cell";
 import { hasInfoContent, InfoCell } from "./cells/info-cell/info-cell";
@@ -282,6 +284,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
 @Component({
   selector: "app-authentication-log",
   imports: [
+    TableStateComponent,
     RefocusAfterReloadDirective,
     MatCell,
     MatFormField,
@@ -696,6 +699,14 @@ export class AuthenticationLog {
 
   // Clears both the text and the time filter, bound to the input's clear (X) button; the time filter lives in its own
   // signals, so it needs its own explicit clear alongside the text.
+  // Empty panel in place of the whole table area when the log has no entries at all.
+  readonly tableState = new TableState({
+    resource: this.authenticationLogService.authenticationLogResource,
+    count: () => this.totalLength(),
+    filterActive: () => this.authenticationLogService.authenticationLogFilter().isNotEmpty,
+    resetFilter: () => this.clearAllFilters()
+  });
+
   clearAllFilters(): void {
     this.clearTimeFilter();
     this.authenticationLogService.clearFilter();

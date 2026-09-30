@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { DatePipe, NgClass, TitleCasePipe } from "@angular/common";
 import { Component, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
@@ -58,6 +60,7 @@ import { concatMap, reduce } from "rxjs/operators";
   templateUrl: "./blocklist.component.html",
   styleUrl: "./blocklist.component.scss",
   imports: [
+    TableStateComponent,
     RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTableModule,
@@ -285,6 +288,15 @@ export class BlocklistComponent {
     this.filterText.set((event.target as HTMLInputElement).value);
     this.dataSource().filter = this.normalizedFilter();
   }
+
+  // Empty panel in place of the whole table area when no IP is blocked. The filter runs on the loaded
+  // rows, so the unfiltered count decides.
+  readonly tableState = new TableState({
+    resource: this.casService.blocklistResource,
+    count: () => this.casService.blocklistResource.value()?.result?.value?.length ?? 0,
+    filterActive: () => this.filterText().length > 0,
+    resetFilter: () => this.clearFilter()
+  });
 
   clearFilter(): void {
     this.filterText.set("");
