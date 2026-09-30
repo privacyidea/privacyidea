@@ -72,6 +72,7 @@ export interface LDAPResolverData extends ResolverData {
   AUTHTYPE: BindType;
   BINDDN: string;
   BINDPW: string;
+  KEYTABFILE?: string;
   TIMEOUT: number;
   CACHE_TIMEOUT: number;
   SIZELIMIT: number;
