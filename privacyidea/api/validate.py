@@ -676,6 +676,8 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     Handles FIDO2/Passkey authentication and enroll_via_multichallenge of passkeys.
     Updates the context with the result.
     """
+    # A request without its transaction_id is malformed, not an authentication attempt, so it is rejected before
+    # anything classifies it and leaves no authentication event.
     transaction_id = get_required(request.all_data, "transaction_id")
     # A passkey answer is verified against this very transaction, so it continues that attempt. The token layer's
     # own settling does not apply here: this path resolves and checks the token itself.
@@ -684,7 +686,12 @@ def _handle_fido2_auth(context: dict, credential_id: str):
 
     # Resolve Token
     if serial:
-        token = get_one_token(serial=serial)
+        try:
+            token = get_one_token(serial=serial)
+        except ResourceNotFoundError:
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.NO_TOKEN
+            context[AUTH_EVENT_SERIALS_KEY] = [serial]
+            raise
     else:
         token = get_fido2_token_by_credential_id(credential_id)
 
@@ -752,6 +759,8 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             return  # Result remains False
 
         # Enrollment
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.ENROLLMENT_FAIL
+        context[AUTH_EVENT_SERIALS_KEY] = [token.get_serial()]
         request.all_data.update({"type": "passkey"})
         fido2_enroll(request, None)
         try:
@@ -849,7 +858,10 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     else:
         context["details"]["message"] = _("Authentication failed.")
 
-    context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS if context["result"] else AuthEventType.MFA_FAIL
+    if context["result"]:
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.LOGIN_SUCCESS
+    elif not attestation_object:
+        context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
 
 
 def _handle_serial_auth(context: dict, serial: str):
