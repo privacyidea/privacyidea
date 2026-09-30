@@ -17,7 +17,7 @@ from testfixtures import log_capture, LogCapture
 from werkzeug.datastructures.headers import Headers
 from werkzeug.test import EnvironBuilder
 
-from privacyidea.api.lib.policyhelper import get_realm_for_authentication
+from privacyidea.api.lib.policyhelper import get_realm_for_authentication, get_login_mode_values
 from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             check_tokeninfo,
                                             no_detail_on_success,
@@ -41,7 +41,7 @@ from privacyidea.lib.machine import attach_token
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE, AUTOASSIGNVALUE, AUTHORIZED,
-                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, SESSION_PERSISTENCE)
+                                    DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, SESSION_PERSISTENCE, LOGINMODE)
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
                                    check_user_pass, unassign_token)
@@ -2273,3 +2273,27 @@ class PolicyHelperTestCase(MyApiTestCase):
         self.assertEqual("realm2", realm)
 
         delete_policy("auth_realm")
+
+    def test_02_get_login_mode_values(self):
+        self.setUp_user_realms()
+        user = User("cornelius", self.realm1)
+        with self.app.test_request_context('/auth', method='POST'):
+            self.assertDictEqual({}, get_login_mode_values(g, user))
+
+            try:
+                set_policy("login_mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
+                self.assertDictEqual({LOGINMODE.PRIVACYIDEA: ["login_mode"]}, get_login_mode_values(g, user))
+
+                # Policies of the same priority that set different modes are all returned
+                set_policy("login_mode_disable", scope=SCOPE.WEBUI,
+                           action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}")
+                self.assertDictEqual({LOGINMODE.PRIVACYIDEA: ["login_mode"], LOGINMODE.DISABLE: ["login_mode_disable"]},
+                                     get_login_mode_values(g, user))
+
+                # A policy of a lower priority is not returned
+                set_policy("login_mode_disable", scope=SCOPE.WEBUI,
+                           action=f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}", priority=2)
+                self.assertDictEqual({LOGINMODE.PRIVACYIDEA: ["login_mode"]}, get_login_mode_values(g, user))
+            finally:
+                delete_policy("login_mode")
+                delete_policy("login_mode_disable")

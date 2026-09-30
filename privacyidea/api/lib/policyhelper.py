@@ -426,6 +426,24 @@ def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
     return True, []
 
 
+def get_login_mode_values(g, user: User) -> dict[str, list[str]]:
+    """
+    The WebUI login modes of *user*, set by the matching ``login_mode`` policies of the highest priority. Policies of
+    that priority may set different modes. Whether that is a conflict depends on the login: a password login needs
+    exactly one mode, while a passkey login only has to know whether one of them is ``disable``.
+
+    The names of the returned policies are added to the audit entry.
+
+    :return: a dictionary mapping each login mode to the names of the policies that set it, empty if no policy matches
+    """
+    policies = Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGINMODE,
+                          user_object=user).policies(write_to_audit_log=False)
+    prioritized_policies = [policy for policy in policies if policy["priority"] == policies[0]["priority"]]
+    login_mode_values = g.policy_object.extract_action_values(prioritized_policies, PolicyAction.LOGINMODE)
+    g.audit_object.add_policy({name for names in login_mode_values.values() for name in names})
+    return login_mode_values
+
+
 def get_realm_for_authentication(g, username: str, realm: str) -> str:
     """
     Checks if the set_realm policy action from the authentication scope defines a realm that should be used for the

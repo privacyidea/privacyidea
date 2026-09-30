@@ -29,7 +29,6 @@ from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
 from privacyidea.lib.error import AuthError, Error, TokenAdminError, UserError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.policydecorators import libpolicy, login_mode
 from privacyidea.lib.token import check_user_pass
 from privacyidea.lib.utils import fetch_one_resource
 from privacyidea.models import Admin, db
@@ -134,7 +133,6 @@ def delete_db_admin(username):
     db.session.commit()
 
 
-@libpolicy(login_mode)
 def check_webui_user(user, password, options=None, superuser_realms=None, check_otp=False):
     """
     This function is used to authenticate the user at the web ui.
