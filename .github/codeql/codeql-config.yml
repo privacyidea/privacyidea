@@ -1,0 +1,6 @@
+name: "privacyIDEA CodeQL config"
+
+# Vendored third-party code is not privacyIDEA's own code. Excluding it removes a large amount
+# of noise (including node_modules Python files that would appear in the custom-query results).
+paths-ignore:
+  - "privacyidea/static"

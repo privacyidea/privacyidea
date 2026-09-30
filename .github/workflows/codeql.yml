@@ -36,12 +36,10 @@ jobs:
       uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
       with:
         languages: ${{ matrix.language }}
-        # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified in a config file.
-        # Prefix the list here with "+" to use these queries and those in the config file.
-
-        # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
-        # queries: security-extended,security-and-quality
+        config-file: ./.github/codeql/codeql-config.yml
+        # privacyIDEA custom security queries, Python only. The "+" runs them in addition to
+        # the default suite. See .github/codeql/queries/README.md.
+        queries: ${{ matrix.language == 'python' && '+./.github/codeql/queries' || '' }}
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
