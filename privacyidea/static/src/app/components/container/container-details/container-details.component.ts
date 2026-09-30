@@ -69,6 +69,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { formatLocalDateTime } from "@utils/date-format.utils";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 
 type ContainerDetailGroup = "status" | "container";
 
@@ -112,6 +113,7 @@ interface TokenOption {
   selector: "app-container-details",
   standalone: true,
   imports: [
+    StickyHeaderDirective,
     EditButtonsComponent,
     MatFormField,
     MatInput,

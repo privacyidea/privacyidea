@@ -82,6 +82,7 @@ import { TokenDetailsDescriptionComponent } from "./token-details-description/to
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
 import { TokenDetailsStatusComponent } from "./token-details-status/token-details-status.component";
+import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import {
   SshMachineAssignDialogData,
@@ -90,6 +91,7 @@ import {
 
 @Component({
   imports: [
+    StickyHeaderDirective,
     MatIcon,
     NgClass,
     TokenDetailsUserComponent,
@@ -313,11 +315,8 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild(TokenDetailsUserComponent) userChild?: TokenDetailsUserComponent;
   @ViewChild(TokenDetailsInfoComponent) infoChild?: TokenDetailsInfoComponent;
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
-  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
-  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   @ViewChild("detailsGrid") private detailsGrid?: ElementRef<HTMLElement>;
 
-  private stickyObserver?: IntersectionObserver;
   private resizeObserver?: ResizeObserver;
   private fitRafId = 0;
 
@@ -355,22 +354,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
-
-    this.stickyObserver = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.rootBounds) return;
-        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-        if (shouldFloat) {
-          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
-        } else {
-          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
-        }
-      },
-      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
-    );
-    this.stickyObserver.observe(this.stickySentinel.nativeElement);
-
     // Track the available width (viewport/zoom changes) and re-fit the panel.
     this.resizeObserver = new ResizeObserver(() => this.scheduleFit());
     this.resizeObserver.observe(this.hostRef.nativeElement);
@@ -379,7 +362,6 @@ export class TokenDetailsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    this.stickyObserver?.disconnect();
     this.resizeObserver?.disconnect();
     if (this.fitRafId) cancelAnimationFrame(this.fitRafId);
   }
