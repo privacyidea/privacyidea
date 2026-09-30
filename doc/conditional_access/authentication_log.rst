@@ -118,8 +118,13 @@ Failure
      on users changing their mind.
    ``ENROLLMENT_CANCELED_FAIL``
      cancelling an enrollment failed.
+   ``ENROLLMENT_FAIL``
+     completing the enrollment of a token during authentication failed, for
+     example of a passkey with :ref:`policy_enroll_via_multichallenge`. Either a
+     required enrollment policy is missing, or the registration data from the
+     authenticator was rejected. The ready-made failure rate limits leave it out.
    ``NOT_AUTHORIZED``
-     an authorization policy refused the authentication.
+     an authorization policy or the server configuration refused the authentication.
    ``UNKNOWN_FAIL_REASON``
      the authentication failed and nothing more specific was determined. This is only used as fallback and should
      usually not be seen.
@@ -171,7 +176,7 @@ The state of a token
      the token excluded itself from this request, for example an
      application-specific password whose service does not match.
 
-A policy refusing the request
+A policy or the server configuration refusing the request
    ``AUTHORIZATION_DENIED``
      an authorization policy turned the request away outright
      (``authorized=deny``); the next three are authorization decisions too,
@@ -186,6 +191,9 @@ A policy refusing the request
    ``LOGIN_MODE_DISABLED``
      the login to the WebUI is disabled for the user, see
      :ref:`policy_login_mode`.
+   ``WEBUI_PASSKEY_LOGIN_DISABLED``
+     a login to the WebUI without a username was refused because
+     ``WEBUI_PASSKEY_LOGIN_ENABLED`` is switched off in the :ref:`cfgfile`.
 
 The credentials
    ``WRONG_OTP``
