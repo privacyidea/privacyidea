@@ -28,6 +28,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -41,6 +42,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { Machine, MachineService, MachineServiceInterface } from "@services/machine/machine.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-machines",
@@ -59,7 +61,9 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     ClearableInputComponent,
     CopyableComponent,
     FilterValueButtonComponent,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./machines.component.html",
   styleUrl: "./machines.component.scss"

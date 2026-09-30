@@ -56,6 +56,7 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -138,7 +139,8 @@ const columnKeysMap = [
     NgClass,
     ScrollToTopDirective,
     ScrollEdgesDirective,
-    TableStateComponent
+    TableStateComponent,
+    MatMenuModule
   ],
   templateUrl: "./realm-table.component.html",
   styleUrl: "./realm-table.component.scss"
@@ -434,7 +436,9 @@ export class RealmTableComponent implements OnDestroy, OnInit {
     } catch (err) {
       const httpErr = err as HttpErrorResponse;
       const message = httpErr.error?.result?.error?.message || httpErr.message;
-      this._notificationService.error($localize`:@@realm.failedCreateRealm:Failed to create realm. ${message}:MESSAGE:`);
+      this._notificationService.error(
+        $localize`:@@realm.failedCreateRealm:Failed to create realm. ${message}:MESSAGE:`
+      );
       return false;
     } finally {
       this.isCreatingRealm.set(false);

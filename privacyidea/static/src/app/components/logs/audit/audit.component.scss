@@ -3,13 +3,12 @@
 
 .audit-table-container {
   @include styles.main-component-style;
+  @include table.paginator-range-floor;
   // Sized from the col-width-* tiers on the columns below, plus a flat estimate for
   // action_detail, info and policies, which are left flexible and excluded from the tier sum
   // since they hold long free text or a list that can overflow.
   @include table.page-table-state-size(
-    calc(
-      #{table.table-width(s, l, s, m, m, m, l, s, s, s, s, m, s, l, s, m, s, s, s, s, s, m, s)} + 3 * 200px
-    )
+    calc(#{table.table-width(s, l, s, m, m, m, l, s, s, s, s, m, s, l, s, m, s, s, s, s, s, m, s)} + 3 * 200px)
   );
   @include table.base-table-structure(".audit-table", ".audit-table-filter", ".table-scroll-container");
   display: flex;

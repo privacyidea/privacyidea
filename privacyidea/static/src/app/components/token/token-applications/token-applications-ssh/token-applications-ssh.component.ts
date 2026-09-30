@@ -41,6 +41,7 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
 import { inlineFilterHint } from "@utils/filter-hint.utils";
 import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 @Component({
   selector: "app-token-applications-ssh",
@@ -62,7 +63,8 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     MatIconModule,
     MatButtonModule,
     TokenApplicationsActionsComponent,
-    TableStateComponent
+    TableStateComponent,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./token-applications-ssh.component.html",
   styleUrls: ["./token-applications-ssh.component.scss"]

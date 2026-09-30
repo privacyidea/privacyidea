@@ -24,56 +24,76 @@
   i18n-aria-label="@@token.tokenTable">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        class="token-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@common.filterTokens">Filter Tokens...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="tokenService.clearFilter()"
-          [showClearButton]="tokenService.filterDraft().isNotEmpty">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="tokenResource.isLoading()"
-            [appFilterAutocomplete]="filterKeywords"
-            (input)="onFilterInput($event)"
-            (keyup.enter)="tokenService.applyFilterInput($event)"
-            [value]="tokenService.filterDraft().filterString"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@token.exampleQueryType"
-            id="token-filter-input"
-            matInput
-            placeholder="Example query: 'type: hotp userid: 1000'" />
-        </app-clearable-input>
-        <mat-hint>{{ filterHint }}</mat-hint>
-        @if (showFilterHint()) {
-          <mat-hint
-            align="end"
-            i18n="@@common.pressEnterApply"
-            >Press enter to apply the filter</mat-hint
-          >
-        }
-      </mat-form-field>
-      <button
-        [matMenuTriggerFor]="advancedFilterMenu"
-        aria-label="More Filter"
-        class="margin-left-8"
-        i18n-aria-label="@@common.moreFilter"
-        i18n-matTooltip="@@common.moreFilter"
-        mat-icon-button
-        matTooltip="More Filter">
-        <mat-icon>filter_list</mat-icon>
-      </button>
+      <div class="filter-actions-group">
+        <mat-form-field
+          class="token-table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@common.filterTokens">Filter Tokens...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="tokenService.clearFilter()"
+            [showClearButton]="tokenService.filterDraft().isNotEmpty">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="tokenResource.isLoading()"
+              [appFilterAutocomplete]="filterKeywords"
+              (input)="onFilterInput($event)"
+              (keyup.enter)="tokenService.applyFilterInput($event)"
+              [value]="tokenService.filterDraft().filterString"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@token.exampleQueryType"
+              id="token-filter-input"
+              matInput
+              placeholder="Example query: 'type: hotp userid: 1000'" />
+          </app-clearable-input>
+          <mat-hint>{{ filterHint }}</mat-hint>
+          @if (showFilterHint()) {
+            <mat-hint
+              align="end"
+              i18n="@@common.pressEnterApply"
+              >Press enter to apply the filter</mat-hint
+            >
+          }
+        </mat-form-field>
+        <button
+          [matMenuTriggerFor]="advancedFilterMenu"
+          aria-label="More Filter"
+          class="margin-left-8"
+          i18n-aria-label="@@common.moreFilter"
+          i18n-matTooltip="@@common.moreFilter"
+          mat-icon-button
+          matTooltip="More Filter">
+          <mat-icon class="ms--filter-list"></mat-icon>
+        </button>
+        <button
+          [matMenuTriggerFor]="tokenTableActions.actionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <span class="icon-badge">
+            <mat-icon>menu</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+          </span>
+        </button>
+      </div>
       <mat-paginator
+        appPaginatorPageSizeTooltip
+        appPaginatorCompactRange
         (page)="onPageEvent($event)"
+        class="hide-page-size-label"
         [length]="totalLength()"
         [pageIndex]="pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSize()"
         showFirstLastButtons />
     </div>
-    <div class="margin-bottom-16">
-      <app-token-table-actions />
+    <div class="token-actions-row margin-bottom-16">
+      <div class="token-actions-row-inner">
+        <app-token-table-actions #tokenTableActions />
+      </div>
     </div>
     <div
       appScrollEdges
@@ -130,7 +150,7 @@
                           i18n-aria-label="@@common.filterBy"
                           class="filter-button"
                           mat-icon-button>
-                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
+                          <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
                         </button>
                       } @else if (apiFilterKeyMap[column.key] === "rollout_state") {
                         <button

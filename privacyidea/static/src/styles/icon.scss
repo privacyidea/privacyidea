@@ -30,6 +30,23 @@
   mask-size: 100% 100%;
 }
 
+// Material's filter_list with a fourth line as short as its last one, so the filter icon does not
+// read as the three-line menu icon of the actions trigger beside it. Same 24px grid and 2px lines as
+// the ligature, the four lines spaced evenly across it. Used on an empty mat-icon in its place.
+.ms--filter-list {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M3 4h18v2H3zM6 9h12v2H6zM10 14h4v2h-4zM10 19h4v2h-4z'/%3E%3C/svg%3E");
+  background-color: currentColor;
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
 .ms--database {
   display: inline-block;
   width: 1em;
@@ -156,6 +173,21 @@
       font-weight: bold;
     }
 
+    // A slightly larger badge set out past the base icon's corner, on the card's own surface so it
+    // reads as cut out of the card rather than as a disc on top of the icon (the actions trigger's
+    // tool badge on its menu icon).
+    &.icon-badge-corner {
+      right: -4px;
+      bottom: -3px;
+      background: var(--surface-raised);
+
+      &.mat-icon {
+        width: 16px;
+        height: 16px;
+        font-size: var(--icon-badge-font-size, 12px);
+      }
+    }
+
     // Larger glyph for the numeric/graphic count badges (e.g. the tokens
     // dashboard widget) while keeping the circular badge shape.
     &.icon-badge-icon-large.mat-icon {
@@ -244,8 +276,11 @@ mat-icon {
   width: 24px;
 }
 
+// The icon font's own 24px: component stylesheets that `@use "styles"` carry a scoped copy of the
+// font's .material-icons rule, which already sizes the header icons drawn in their own templates to
+// 24px, so shared header filters (e.g. app-multi-select-filter) match them only at the same size.
 .keyword-button-icon {
-  font-size: 18px;
+  font-size: 24px;
   vertical-align: bottom;
   margin-right: 0;
   align-items: center;
@@ -265,4 +300,3 @@ mat-icon {
 .mdc-button__label .icon-badge {
   margin-right: 8px;
 }
-

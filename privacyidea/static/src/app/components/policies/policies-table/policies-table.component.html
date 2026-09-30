@@ -30,12 +30,37 @@
         [initialFilter]="filter()"
         [isLoading]="policyService.allPoliciesResource.isLoading()"
         [unfilteredPolicies]="policyService.allPolicies()"
-        class="policies-table-filter"></app-policy-filter>
+        class="policies-table-filter">
+        @if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
+          <button
+            [matMenuTriggerFor]="policiesTableActions.actionsMenu"
+            aria-label="Actions"
+            class="table-actions-trigger margin-left-8"
+            i18n-aria-label="@@common.actions"
+            i18n-matTooltip="@@common.actions"
+            mat-icon-button
+            matTooltip="Actions">
+            <span class="icon-badge">
+              <mat-icon>menu</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+            </span>
+          </button>
+        }
+      </app-policy-filter>
     }
 
-    <app-policies-table-actions [policySelection]="selector.selectedRows()" />
+    <div class="actions-row">
+      <div class="actions-row-inner">
+        <app-policies-table-actions
+          #policiesTableActions
+          [policySelection]="selector.selectedRows()" />
+      </div>
+    </div>
 
-    <table
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
       (matSortChange)="onSortChange($event)"
       [dataSource]="sortedFilteredPolicies()"
       class="policies-table row-striped"
@@ -176,7 +201,7 @@
       }
 
       <tr
-        *matHeaderRowDef="columnKeys()"
+        *matHeaderRowDef="columnKeys(); sticky: true"
         mat-header-row></tr>
       <tr
         *matRowDef="let policy; columns: columnKeys()"
@@ -207,7 +232,8 @@
           </app-table-state>
         </td>
       </tr>
-    </table>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [hint]="emptyHint()"

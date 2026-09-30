@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { DatePipe, formatDate, NgClass } from "@angular/common";
+import { DatePipe, formatDate, NgClass, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   computed,
@@ -53,6 +53,8 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { RouterLink } from "@angular/router";
 import { ConditionalAccessCell } from "./cells/conditional-access-cell/conditional-access-cell";
 import { hasInfoContent, InfoCell } from "./cells/info-cell/info-cell";
@@ -64,6 +66,8 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
@@ -272,6 +276,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
 @Component({
   selector: "app-authentication-log",
   imports: [
+    TableStateComponent,
     RefocusAfterReloadDirective,
     MatCell,
     MatFormField,
@@ -283,6 +288,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatTable,
     MatCellDef,
     NgClass,
+    NgTemplateOutlet,
     MatHeaderRowDef,
     MatHeaderRow,
     MatRowDef,
@@ -311,7 +317,9 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatIconModule,
     MatMenuModule,
     MatSliderModule,
-    MatTooltipModule
+    MatTooltipModule,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   providers: [provideNativeDateAdapter()],
   templateUrl: "./authentication-log.html",
@@ -683,6 +691,14 @@ export class AuthenticationLog {
 
   // Clears both the text and the time filter, bound to the input's clear (X) button; the time filter lives in its own
   // signals, so it needs its own explicit clear alongside the text.
+  // Empty panel in place of the whole table area when the log has no entries at all.
+  readonly tableState = new TableState({
+    resource: this.authenticationLogService.authenticationLogResource,
+    count: () => this.totalLength(),
+    filterActive: () => this.authenticationLogService.authenticationLogFilter().isNotEmpty,
+    resetFilter: () => this.clearAllFilters()
+  });
+
   clearAllFilters(): void {
     this.clearTimeFilter();
     this.authenticationLogService.clearFilter();
@@ -735,6 +751,14 @@ export class AuthenticationLog {
   // Apply the slider's current [start, end] thumbs as the time filter, on thumb release / keyboard commit.
   commitTimeRange(): void {
     this.applyTimeRange(this.sliderPosToIso(this.rangeStart(), false), this.sliderPosToIso(this.rangeEnd(), true));
+  }
+
+  // The slider inside the "More Filter" menu: its arrow/Home/End/Page keys move a thumb rather than the menu's
+  // focus. Escape and Tab still reach the menu, so it closes as usual.
+  keepSliderKeysInMenu(event: KeyboardEvent): void {
+    if (event.key !== "Escape" && event.key !== "Tab") {
+      event.stopPropagation();
+    }
   }
 
   // Thumb value indicator: the format tracks the window's zoom - time-of-day for short windows, day for medium, month

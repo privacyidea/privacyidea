@@ -24,12 +24,21 @@
   & {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
+
+  // Room for the filter field (932px - see policy-filter's own styles) plus the actions trigger that
+  // appears beside it once the table scrolls (40px icon button + 8px margin). Unlike on other table
+  // pages, this filter is a direct child of the page's flex column rather than of a filter row, so the
+  // row-oriented flex sizing base-table-structure gives it would size its height instead: flex: none
+  // keeps it at its content's height.
   .policies-table-filter {
-    max-width: 932px;
+    max-width: calc(var(--input-width-xxl) + 48px);
     min-width: 300px;
     width: 100%;
+    flex: none;
   }
 
   .policies-table {

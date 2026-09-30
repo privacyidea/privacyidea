@@ -37,10 +37,12 @@ import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -63,6 +65,7 @@ import {
   ConditionalAccessDryRunOffDialogResult
 } from "./conditional-access-dry-run-off-dialog/conditional-access-dry-run-off-dialog.component";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 @Component({
   selector: "app-conditional-access",
@@ -83,7 +86,10 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     ClearableInputComponent,
     MatInput,
     InfoHintComponent,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective,
+    MatMenuModule
   ],
   templateUrl: "./conditional-access.component.html",
   styleUrl: "./conditional-access.component.scss"

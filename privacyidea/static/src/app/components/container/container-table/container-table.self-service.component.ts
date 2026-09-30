@@ -31,6 +31,8 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
@@ -58,7 +60,9 @@ import { TokenService, TokenServiceInterface } from "@services/token/token.servi
     MatButtonModule,
     ScrollToTopDirective,
     ScrollEdgesDirective,
-    TableStateComponent
+    TableStateComponent,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./container-table.self-service.component.html",
   styleUrl: "./container-table.component.scss"

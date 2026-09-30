@@ -21,35 +21,55 @@
   class="challenges-table-container">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        subscriptSizing="dynamic"
-        appearance="fill"
-        class="challenges-table-filter">
-        <mat-label i18n="@@token.filterChallenges">Filter Challenges...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="challengesService.clearFilter()"
-          [showClearButton]="challengesService.filterDraft().isNotEmpty">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="challengesService.challengesResource.isLoading()"
-            (input)="challengesService.handleFilterInput($event)"
-            [value]="challengesService.filterDraft().filterString"
-            i18n-placeholder="@@token.exampleQueryTransaction"
-            matInput
-            placeholder="Example query: 'transaction_id: 00000000000000000001'" />
-        </app-clearable-input>
-        <mat-hint>{{ filterHint }}</mat-hint>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          subscriptSizing="dynamic"
+          appearance="fill"
+          class="challenges-table-filter">
+          <mat-label i18n="@@token.filterChallenges">Filter Challenges...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="challengesService.clearFilter()"
+            [showClearButton]="challengesService.filterDraft().isNotEmpty">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="challengesService.challengesResource.isLoading()"
+              (input)="challengesService.handleFilterInput($event)"
+              [value]="challengesService.filterDraft().filterString"
+              i18n-placeholder="@@token.exampleQueryTransaction"
+              matInput
+              placeholder="Example query: 'transaction_id: 00000000000000000001'" />
+          </app-clearable-input>
+          <mat-hint>{{ filterHint }}</mat-hint>
+        </mat-form-field>
+        <button
+          [matMenuTriggerFor]="challengesTableActions.actionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <span class="icon-badge">
+            <mat-icon>menu</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+          </span>
+        </button>
+      </div>
       <mat-paginator
+        appPaginatorPageSizeTooltip
+        appPaginatorCompactRange
         (page)="onPageEvent($event)"
+        class="hide-page-size-label"
         [length]="length()"
         [pageIndex]="pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSize()"
         showFirstLastButtons></mat-paginator>
     </div>
-    <div class="margin-bottom-16">
-      <app-challenges-table-actions />
+    <div class="actions-row margin-bottom-16">
+      <div class="actions-row-inner">
+        <app-challenges-table-actions #challengesTableActions />
+      </div>
     </div>
     <div
       class="table-scroll-region"

@@ -27,6 +27,7 @@ import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
@@ -41,6 +42,8 @@ import {
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { RowSelector } from "@services/table-utils/row-selector";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ViewTemplateTokensComponent } from "./view-template-tokens/view-template-tokens.component";
@@ -112,7 +115,10 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     ViewTemplateTokensComponent,
     MatPaginatorModule,
     TableStateComponent,
-    RouterLink
+    RouterLink,
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective,
+    MatTooltipModule
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"

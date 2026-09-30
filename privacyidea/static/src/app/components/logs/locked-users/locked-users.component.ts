@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { DatePipe, NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, linkedSignal, ViewChild } from "@angular/core";
 import { PiResponse } from "@app/app.component";
@@ -27,12 +29,15 @@ import { MatInput } from "@angular/material/input";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { ExpandableMessageComponent } from "@components/shared/expandable-message/expandable-message.component";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ADMIN_INTERNAL_ROLE } from "@core/models/user_role/user-role";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
@@ -66,6 +71,7 @@ import { concatMap, reduce } from "rxjs/operators";
   templateUrl: "./locked-users.component.html",
   styleUrl: "./locked-users.component.scss",
   imports: [
+    TableStateComponent,
     RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTableModule,
@@ -85,7 +91,10 @@ import { concatMap, reduce } from "rxjs/operators";
     MultiSelectFilterComponent,
     RouterLink,
     NgClass,
-    DatePipe
+    DatePipe,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective,
+    MatMenuModule
   ]
 })
 export class LockedUsersComponent {
@@ -249,6 +258,14 @@ export class LockedUsersComponent {
     const value = (event.target as HTMLInputElement).value;
     this.casService.lockedUsersFilter.set(this.casService.lockedUsersFilter().copyWith({ value }));
   }
+
+  // Empty panel in place of the whole table area when no user is locked.
+  readonly tableState = new TableState({
+    resource: this.casService.lockedUsersResource,
+    count: () => this.totalLength(),
+    filterActive: () => this.casService.lockedUsersFilter().isNotEmpty,
+    resetFilter: () => this.clearFilter()
+  });
 
   clearFilter(): void {
     this.casService.lockedUsersFilter.set(this.casService.lockedUsersFilter().copyWith({ value: "" }));

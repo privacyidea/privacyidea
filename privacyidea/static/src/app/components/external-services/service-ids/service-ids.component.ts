@@ -23,9 +23,12 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceId, ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 
 import { MatIconModule } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -52,6 +55,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatPaginator,
     MatSortModule,
     MatIconModule,
+    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
     MatTooltipModule,
@@ -62,7 +66,9 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatInput,
     CopyableComponent,
     RouterLink,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./service-ids.component.html",
   styleUrl: "./service-ids.component.scss"

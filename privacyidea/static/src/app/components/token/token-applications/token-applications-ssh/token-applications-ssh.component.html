@@ -37,28 +37,31 @@
     class="application-table-container">
     @if (tableState.showTable()) {
       <div class="filter-paginator-container">
-        <mat-form-field
-          subscriptSizing="dynamic"
-          class="application-table-filter">
-          <mat-label i18n="@@token.filterSshApplications">Filter SSH Applications...</mat-label>
-          <app-clearable-input
-            (clearButtonClick)="machineService.clearFilter()"
-            [showClearButton]="machineService.filterDraft().isNotEmpty">
-            <input
-              #filterInput
-              [appRefocusAfterReload]="machineService.tokenApplicationResource.isLoading()"
-              (input)="machineService.handleFilterInput($event)"
-              [value]="machineService.filterDraft().filterString"
-              aria-label="Filter Input"
-              i18n-aria-label="@@common.filterInput"
-              i18n-placeholder="@@token.exampleQueryService"
-              id="ssh-filter-input"
-              matInput
-              placeholder="Example query: 'service_id: myService'" />
-          </app-clearable-input>
-          <mat-hint>{{ filterHint }}</mat-hint>
-        </mat-form-field>
+        <div class="filter-actions-group">
+          <mat-form-field
+            subscriptSizing="dynamic"
+            class="application-table-filter">
+            <mat-label i18n="@@token.filterSshApplications">Filter SSH Applications...</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="machineService.clearFilter()"
+              [showClearButton]="machineService.filterDraft().isNotEmpty">
+              <input
+                #filterInput
+                [appRefocusAfterReload]="machineService.tokenApplicationResource.isLoading()"
+                (input)="machineService.handleFilterInput($event)"
+                [value]="machineService.filterDraft().filterString"
+                aria-label="Filter Input"
+                i18n-aria-label="@@common.filterInput"
+                i18n-placeholder="@@token.exampleQueryService"
+                id="ssh-filter-input"
+                matInput
+                placeholder="Example query: 'service_id: myService'" />
+            </app-clearable-input>
+            <mat-hint>{{ filterHint }}</mat-hint>
+          </mat-form-field>
+        </div>
         <mat-paginator
+          appPaginatorCompactRange
           (page)="machineService.onPageEvent($event)"
           [length]="length()"
           [pageIndex]="machineService.pageIndex()"

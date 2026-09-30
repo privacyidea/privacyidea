@@ -102,6 +102,29 @@ class TestHostComponent {
   @ViewChild("nav", { read: ElementRef }) navRef!: ElementRef<HTMLElement>;
 }
 
+// A table's action row: the "More" button takes the actions trigger's menu icon and wrench badge.
+@Component({
+  standalone: true,
+  imports: [OverflowNavDirective],
+  template: `
+    <nav
+      #nav
+      appOverflowNav
+      overflowNavIcon="menu"
+      overflowNavBadgeIcon="build">
+      <button
+        class="nav-button"
+        id="btn1">
+        <span>Create</span>
+      </button>
+      <div class="spacer"></div>
+    </nav>
+  `
+})
+class ActionRowHostComponent {
+  @ViewChild("nav", { read: ElementRef }) navRef!: ElementRef<HTMLElement>;
+}
+
 @Component({
   standalone: true,
   imports: [OverflowNavDirective],
@@ -366,6 +389,23 @@ describe("OverflowNavDirective", () => {
     return { fixture, navEl };
   }
 
+  describe("with a custom icon and badge", () => {
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [ActionRowHostComponent]
+      }).compileComponents();
+    });
+
+    it("shows the given icon with the given badge on the more button", async () => {
+      const { navEl, fixture } = await setup(ActionRowHostComponent, 2000, 100);
+      const icons = Array.from(navEl.querySelectorAll(".overflow-more-btn .icon-badge mat-icon"));
+      expect(icons.map((icon) => icon.textContent)).toEqual(["menu", "build"]);
+      expect(icons[1].classList).toContain("icon-badge-overlay");
+      expect(icons[1].classList).toContain("icon-badge-corner");
+      fixture.destroy();
+    });
+  });
+
   describe("creation", () => {
     beforeEach(async () => {
       await TestBed.configureTestingModule({
@@ -408,6 +448,12 @@ describe("OverflowNavDirective", () => {
       const icon = navEl.querySelector(".overflow-more-btn mat-icon");
       expect(icon).toBeTruthy();
       expect(icon!.textContent).toBe("more_horiz");
+      fixture.destroy();
+    });
+
+    it("should not badge the default icon", async () => {
+      const { navEl, fixture } = await setup(TestHostComponent, 2000, 100);
+      expect(navEl.querySelector(".overflow-more-btn .icon-badge")).toBeNull();
       fixture.destroy();
     });
 

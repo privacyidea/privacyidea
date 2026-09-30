@@ -3,14 +3,14 @@
 
 .blocklist-table-container {
   @include styles.main-component-style;
-  @include table.base-table-structure(
-    ".blocklist-table",
-    ".blocklist-table-filter",
-    ".table-scroll-container"
-  );
+  // The empty/error/loading panel fills the page like on every other table page.
+  @include table.page-table-state-size;
+  @include table.base-table-structure(".blocklist-table", ".blocklist-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .toolbar {
@@ -58,10 +58,6 @@
   width: 18px;
   height: 18px;
   color: var(--mat-sys-on-surface-variant);
-}
-
-.filter-container {
-  margin-bottom: 16px;
 }
 
 .table-checkbox {

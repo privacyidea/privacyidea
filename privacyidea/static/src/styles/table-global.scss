@@ -26,6 +26,13 @@ mat-paginator .mat-mdc-paginator-page-size-label {
   white-space: nowrap;
 }
 
+// The label is redundant with the tooltip PaginatorPageSizeTooltipDirective puts on the size
+// picker itself - kept as a class rather than the default so a paginator without the directive
+// still shows its own label text.
+mat-paginator.hide-page-size-label .mat-mdc-paginator-page-size-label {
+  display: none;
+}
+
 mat-paginator .mat-mdc-paginator-range-label {
   margin: 0 16px;
   white-space: nowrap;
@@ -82,17 +89,30 @@ table.mat-mdc-table .mat-mdc-header-cell {
   // straight back. Nothing in a header cell relies on being clipped: the label wraps.
   overflow: visible;
 
+  // The fill below is positioned against the cell. A sticky cell is already positioned; a header
+  // that does not stick needs it too, or the fill spans the nearest positioned ancestor instead and
+  // its side overhang widens the whole page by a pixel.
+  &:not(.mat-mdc-table-sticky) {
+    position: relative;
+  }
+
   &::before {
     content: "";
     position: absolute;
-    // Overhang the bottom edge only. The top needs none: a sliver can only appear there once the
-    // rows have scrolled, and that is exactly when .scrolled-from-top paints the region's
-    // border-top over that pixel - a scroll container's own border is never covered by the
-    // content it clips. Overhanging the top as well would hide that border.
-    inset: 0 0 -1px;
+    // Overhangs the bottom edge; the top edge only once scrolled (below). At rest, the cell's top
+    // border is the table's own top edge, which an overhang there would paint over. It overhangs
+    // both sides too: the table paints a sticky cell's collapsed borders where the cell sits
+    // unscrolled, so once scrolled, the border strip between two header cells is a see-through
+    // gap onto the rows passing underneath. The later cell's fill covers the overlap.
+    inset: 0 -1px -1px;
     // --surface-raised is the ancestor card's depth-tinted gradient, so the header tracks the
     // Depth setting instead of being pinned to one swatch.
     background: var(--surface-raised);
+    // The column line the overhang covers, redrawn on the fill: each cell draws its left one, the
+    // last cell its right one as well (below). A border rather than an inset box-shadow: borders
+    // snap to whole device pixels, a shadow blurs or drops out on a fractional zoom.
+    box-sizing: border-box;
+    border-left: 1px solid var(--mat-sys-outline-variant);
     // Behind the cell's own content, still inside the sticky cell's stacking context (Material
     // gives it z-index 100), so it stays above the rows scrolling underneath.
     z-index: -1;
@@ -102,14 +122,77 @@ table.mat-mdc-table .mat-mdc-header-cell {
   // top of it. It doubles as the divider against the rows once they scroll under the header: a
   // border-bottom is not painted on a position:sticky cell under border-collapse:collapse
   // (Material tables), and a box-shadow would land under the fill rather than over it.
+  &:last-child::before {
+    border-right: 1px solid var(--mat-sys-outline-variant);
+  }
+
   &::after {
     content: "";
     position: absolute;
-    left: 0;
-    right: 0;
+    // As wide as the fill, so the line runs on under the column lines.
+    left: -1px;
+    right: -1px;
     bottom: -1px;
     height: 1px;
     background: var(--mat-sys-outline-variant);
+  }
+}
+
+// Once scrolled, the sticky cell sits flush with the top of the region's scrollport, and its top
+// border - the strip between that edge and the cell's padding box, where the fill starts - is not
+// painted on a sticky cell either (as with its border-bottom above), so the rows scrolling beneath
+// show through it. Overhanging the fill across it closes that strip; anything above the scrollport
+// is clipped, so the region's own border-top divider (outside the scrollport) stays visible.
+.table-scroll-region.scrolled-from-top table.mat-mdc-table .mat-mdc-header-cell::before {
+  top: -1px;
+}
+
+// Once a table is scrolled far enough to collapse the controls above it (controls-collapsed - see
+// ScrollEdgesDirective), the hint under its filter input is just noise above the sticky header - the
+// content the hint describes is already scrolled out of view. Global and keyed off the table's card
+// (the scroll region's parent), so it reaches every table, including a filter row drawn by its own
+// component (e.g. the policies filter).
+:has(> .table-scroll-region.controls-collapsed) .filter-paginator-container mat-hint {
+  display: none;
+}
+
+// Elevate the header once rows have scrolled under it, so it reads as raised above them rather
+// than flush. Cast on .sticky-header-shadow (a plain div ScrollEdgesDirective inserts next to the
+// table, sized to the header row's height via its --sticky-header-height custom property) rather
+// than on each header cell: a shadow per cell doubles up at every column boundary where two
+// adjacent cells' shadows overlap, seaming the header instead of reading as one continuous edge.
+// The shadow div shares the header's own sticky top:0 offset and height, so it sits exactly behind
+// the header cells (z-index below their 100) and its box-shadow spills out under their shared
+// bottom edge. --elevation-3 is unsuitable here - it is the ambient, two-directional "raised card"
+// shadow used for depth-tinted surfaces, which is faint and symmetric rather than a shadow cast
+// downward, so it barely reads on a header that is only ever raised on its bottom edge.
+// --mat-sys-shadow is unsuitable too: it resolves to an opaque, near-background grey in dark mode,
+// so it disappears against the row it falls on - this needs its own alpha to stay visible on any
+// surface colour.
+.table-scroll-region {
+  .sticky-header-shadow {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    height: var(--sticky-header-height, 0);
+    // Matches the actual header row's rendered width (see scroll-edges.directive.ts) rather than
+    // stretching to this flex column's full width: a narrow table sets its own width to auto so its
+    // columns do not stretch to fill the row, and this div is the region's flex child, not the
+    // table's, so without this it would cast its shadow (and, before there was anything to clip it,
+    // read as a bare bordered box) past the table's real right edge.
+    width: var(--sticky-header-width, 100%);
+    margin-bottom: calc(-1 * var(--sticky-header-height, 0px));
+    pointer-events: none;
+  }
+
+  // Follows the UI settings' depth like every other shadow (--depth-scale, see html.depth-* in
+  // styles.scss), measured against the default level's 0.6 so that level casts exactly this shadow:
+  // subtle halves it, very strong doubles it, and flat (0) casts none - the header's own bottom
+  // border is then all that separates it from the rows, as on every other flat surface.
+  &.scrolled-from-top .sticky-header-shadow {
+    --sticky-header-shadow-scale: calc(var(--depth-scale) / 0.6);
+    box-shadow: 0 calc(4px * var(--sticky-header-shadow-scale)) calc(6px * var(--sticky-header-shadow-scale))
+      calc(-2px * var(--sticky-header-shadow-scale)) rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -131,6 +214,32 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   margin-bottom: 16px;
   flex-wrap: wrap;
 
+  // Groups the filter field with its adjacent buttons (More Filter, bulk actions, ...) into one
+  // block, capped at a comfortable reading width instead of letting the row stretch edge-to-edge on
+  // wide screens. It carries the width the filter field and buttons used to size against directly
+  // on .filter-paginator-container, so their own flex rules below now target it through this group
+  // rather than as its own direct children.
+  //
+  // flex: 1 1 0 (not width: 100%, and not flex-basis: auto) so it claims exactly the free space left
+  // once the paginator has taken its own content width, up to the cap - and, since it is the only
+  // child here with flex-grow, shrinks first as that free space runs out: the paginator's own
+  // flex: 0 1 max-content below never grows past its content and never shrinks past it either, so
+  // this group gives up width - down to the filter field's own min-width - before the paginator is
+  // ever pushed to wrap onto the next line. A flex-basis of auto instead of 0 measures the group by
+  // its children's own preferred size to size the parent, which - because the filter field inside
+  // uses flex-basis: 0% itself (an intentional "grow from nothing" pattern, not a real size) -
+  // resolves inconsistently across browsers, and even in the same browser depending on how many
+  // sibling buttons are visible (the bulk-actions trigger button toggles on scroll): basis 0 removes
+  // that ambiguity by giving the group a definite starting size instead of one derived from content.
+  > .filter-actions-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: calc(932px + 48px + 48px);
+  }
+
   // The filter field is taller than its input: a hint line sits underneath it. Centring the row
   // would centre on that too, so give the paginator the input's own height from the top of the row
   // and centre it inside that - it then lines up on the middle of the input itself, whether or not
@@ -149,7 +258,7 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   // drawn as a circle, and matching the input's height instead would draw it as an ellipse - and
   // is shifted onto the middle of the input row: a translate percentage resolves against the
   // element's own height, so the offset holds whatever the size above is.
-  > button {
+  .filter-actions-group > button {
     align-self: flex-start;
     height: table.$filter-trigger-size;
     width: table.$filter-trigger-size;
@@ -174,7 +283,9 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
 
   .mat-mdc-paginator {
     background-color: table.$paginator-bg;
-    flex: 1 1 max-content;
+    // No flex-grow: it only ever needs its own content width, and growing left it stretching to
+    // fill whatever the filter-actions-group didn't claim, wider than its own controls needed.
+    flex: 0 1 max-content;
     min-width: max-content;
 
     @media (max-width: 1100px) {
