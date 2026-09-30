@@ -14529,11 +14529,18 @@
           <context context-type="linenumber">49</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.valuesMatchPartially" datatype="html">
-        <source>Values match partially by default.</source>
+      <trans-unit id="common.partialMatchKeys" datatype="html">
+        <source>Partial match: <x id="keys" equiv-text="partial.join(&quot;, &quot;)"/></source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
-          <context context-type="linenumber">30</context>
+          <context context-type="linenumber">56</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.exactMatchKeys" datatype="html">
+        <source>Exact match: <x id="keys" equiv-text="exact.join(&quot;, &quot;)"/></source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.wildcardOrExactMatch" datatype="html">
@@ -14541,13 +14548,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
           <context context-type="linenumber">32</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="common.someColumnsMatchExactly" datatype="html">
-        <source>Some columns always match exactly; hover a column's filter icon to see which.</source>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
-          <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.usuallyCaseInsensitive" datatype="html">

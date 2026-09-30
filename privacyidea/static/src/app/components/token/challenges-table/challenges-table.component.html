@@ -39,6 +39,9 @@
               matInput
               placeholder="Example query: 'transaction_id: 00000000000000000001'" />
           </app-clearable-input>
+          <app-info-hint
+            matSuffix
+            [text]="filterMatchInfo()" />
           <mat-hint>{{ filterHint }}</mat-hint>
         </mat-form-field>
         <button

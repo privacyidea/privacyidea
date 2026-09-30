@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
@@ -57,7 +59,7 @@ import { TableStateComponent } from "@components/shared/table-state/table-state.
 import { TableState } from "@core/models/table_state/table-state";
 import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { exactMatch } from "@utils/filter.utils";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 
@@ -134,6 +136,8 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
 @Component({
   selector: "app-audit",
   imports: [
+    InfoHintComponent,
+    MatSuffix,
     RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatCardModule,
@@ -185,6 +189,11 @@ export class AuditComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly apiFilterKeyMap = this.auditService.apiFilterKeyMap;
   readonly filterHint = inlineFilterHint();
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip([...this.auditService.apiFilterKeys, ...this.auditService.advancedApiFilterKeys], (key) =>
+      this.auditService.exactMatchKeys.has(key)
+    )
+  );
   sort = this.auditService.sort;
 
   @ViewChild("filterHTMLInputElement", { static: false })

@@ -26,12 +26,8 @@ export interface FilterInputHintOptions {
 
 export function filterInputHint(options: FilterInputHintOptions = {}): string {
   const lines: string[] = [];
-  lines.push($localize`:@@common.valuesMatchPartially:Values match partially by default.`);
   lines.push(
     $localize`:@@common.wildcardOrExactMatch:Use * as a wildcard, or start a value with = to match it exactly.`
-  );
-  lines.push(
-    $localize`:@@common.someColumnsMatchExactly:Some columns always match exactly; hover a column's filter icon to see which.`
   );
   if (options.supportsKeywords ?? true) {
     lines.push(
@@ -46,6 +42,23 @@ export function filterInputHint(options: FilterInputHintOptions = {}): string {
     );
   }
   return lines.join(options.separator ?? "\n");
+}
+
+/**
+ * The text of the info icon on a filter input: the offered keywords, grouped by whether the table matches a value
+ * anywhere in the field or only in full. A group without keywords is left out.
+ */
+export function filterMatchTooltip(keys: readonly string[], isExact: (key: string) => boolean): string {
+  const partial = keys.filter((key) => !isExact(key));
+  const exact = keys.filter((key) => isExact(key));
+  const lines: string[] = [];
+  if (partial.length) {
+    lines.push($localize`:@@common.partialMatchKeys:Partial match: ${partial.join(", ")}:keys:`);
+  }
+  if (exact.length) {
+    lines.push($localize`:@@common.exactMatchKeys:Exact match: ${exact.join(", ")}:keys:`);
+  }
+  return lines.join("\n");
 }
 
 /**

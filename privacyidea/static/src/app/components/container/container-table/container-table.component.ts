@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
   Component,
   ElementRef,
@@ -65,7 +67,7 @@ import { TableStateComponent } from "@components/shared/table-state/table-state.
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { withUser } from "@utils/filter.utils";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
@@ -86,6 +88,8 @@ const columnsKeyMap = [
   selector: "app-container-table",
   standalone: true,
   imports: [
+    InfoHintComponent,
+    MatSuffix,
     RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,
@@ -135,6 +139,12 @@ export class ContainerTableComponent implements OnDestroy {
   readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
   readonly filterKeywords = [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys];
   readonly filterHint = inlineFilterHint();
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys],
+      (key) => this.containerService.exactMatchKeys.has(key)
+    )
+  );
   // The `user` and `realm` filters are exact values that the backend resolves against the user store, so
   // they are only applied when the input is confirmed with enter. All other filters are applied while typing.
   protected readonly filterInputValue = linkedSignal({

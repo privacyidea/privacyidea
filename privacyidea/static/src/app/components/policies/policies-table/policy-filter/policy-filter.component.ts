@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
   afterNextRender,
   AfterViewInit,
@@ -35,12 +37,19 @@ import { FilterAutocompleteDirective } from "@components/shared/directives/filte
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { PolicyDetail } from "@services/policies/policies.service";
-import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 
 @Component({
   selector: "app-policy-filter",
   standalone: true,
-  imports: [FilterAutocompleteDirective, RefocusAfterReloadDirective, MatInputModule, ClearableInputComponent],
+  imports: [
+    InfoHintComponent,
+    MatSuffix,
+    FilterAutocompleteDirective,
+    RefocusAfterReloadDirective,
+    MatInputModule,
+    ClearableInputComponent
+  ],
   templateUrl: "./policy-filter.component.html",
   styleUrl: "./policy-filter.component.scss"
 })
@@ -57,6 +66,13 @@ export class PolicyFilterComponent implements AfterViewInit {
   unfilteredPolicies = input<PolicyDetail[]>([]);
   readonly isLoading = input<boolean>(false);
   readonly filterHint = inlineFilterHint();
+  // The policies are filtered in the browser: priority compares numbers and active reads true or false, every other
+  // keyword matches anywhere in the field.
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(["name", "scope", "description", "actions", "conditions", "priority", "active"], (key) =>
+      ["priority", "active"].includes(key)
+    )
+  );
 
   readonly filterChange = output<FilterValueGeneric<PolicyDetail>>();
   readonly inputElement = viewChild.required<ElementRef<HTMLInputElement>>("filterHTMLInputElement");

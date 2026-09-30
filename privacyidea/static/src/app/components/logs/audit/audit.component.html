@@ -41,6 +41,9 @@
               matInput
               placeholder="Example query: 'action: GET success: false'" />
           </app-clearable-input>
+          <app-info-hint
+            matSuffix
+            [text]="filterMatchInfo()" />
           <mat-hint>{{ filterHint }}</mat-hint>
         </mat-form-field>
         @if (authService.actionAllowed("auditlog_download")) {

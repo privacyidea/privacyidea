@@ -51,6 +51,9 @@
               matInput
               placeholder="Example query: 'serial: OATH0001'" />
           </app-clearable-input>
+          <app-info-hint
+            matSuffix
+            [text]="filterMatchInfo()" />
           <mat-hint>{{ filterHint }}</mat-hint>
         </mat-form-field>
       </div>

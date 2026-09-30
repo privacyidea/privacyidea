@@ -16638,12 +16638,20 @@
           <context context-type="linenumber">68</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.valuesMatchPartially" datatype="html">
-        <source>Values match partially by default.</source>
-        <target state="new">Values match partially by default.</target>
+      <trans-unit id="common.partialMatchKeys" datatype="html">
+        <source>Partial match: <x id="keys" equiv-text="partial.join(&quot;, &quot;)"/></source>
+        <target state="new">Partial match: <x id="keys" equiv-text="partial.join(&quot;, &quot;)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
-          <context context-type="linenumber">30</context>
+          <context context-type="linenumber">56</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.exactMatchKeys" datatype="html">
+        <source>Exact match: <x id="keys" equiv-text="exact.join(&quot;, &quot;)"/></source>
+        <target state="new">Exact match: <x id="keys" equiv-text="exact.join(&quot;, &quot;)"/></target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.wildcardOrExactMatch" datatype="html">
@@ -16652,14 +16660,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
           <context context-type="linenumber">32</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="common.someColumnsMatchExactly" datatype="html">
-        <source>Some columns always match exactly; hover a column's filter icon to see which.</source>
-        <target state="new">Some columns always match exactly; hover a column's filter icon to see which.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
-          <context context-type="linenumber">35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.quoteValuesContain" datatype="html">
