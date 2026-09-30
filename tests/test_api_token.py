@@ -6141,3 +6141,57 @@ class APITokenListNodeTestCase(MyApiTestCase):
                     remove_token(serial)
                 except ResourceNotFoundError:
                     pass
+
+    def test_07_owner_is_looked_up_once_per_request(self):
+        # Looking an owner up waits out the timeout of an unreachable resolver, so the request hook and the policy
+        # check share one lookup instead of paying it twice. A resolver that was deleted leaves the token orphaned
+        # for good and is logged as an information, an unreachable one as a warning.
+        self.setUp_user_realms()
+        single = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        bulk = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        deleted_resolver = init_token({"type": "spass"}, user=User("cornelius", self.realm1)).get_serial()
+        lookups = []
+
+        def unreachable(*args, **kwargs):
+            lookups.append(args)
+            raise ResolverError("Error performing bind operation: unreachable")
+
+        def delete(serial: str) -> tuple[Response, list[str]]:
+            lookups.clear()
+            with self.app.test_request_context(f'/token/{serial}', method='DELETE',
+                                               headers={'Authorization': self.at}):
+                with self.assertLogs("privacyidea.api.lib.utils", level="INFO") as captured:
+                    res = self.app.full_dispatch_request()
+            return res, [line for line in captured.output if "can not be looked up" in line]
+
+        try:
+            set_policy("delete", scope=SCOPE.ADMIN, action=PolicyAction.DELETE, realm=self.realm1, user="*")
+            with (mock.patch.object(PasswdIdResolver, "getUsername", side_effect=unreachable),
+                  mock.patch.object(PasswdIdResolver, "getUserId", side_effect=unreachable),
+                  mock.patch.object(PasswdIdResolver, "get_user_info", side_effect=unreachable)):
+                res, logged = delete(single)
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(1, len(lookups), lookups)
+                self.assertEqual(1, len(logged), logged)
+                self.assertTrue(logged[0].startswith("WARNING"), logged)
+
+                # A list of serials is not looked up by the request hook, only by the policy check
+                lookups.clear()
+                with self.app.test_request_context('/token/', method='DELETE', json={"serials": [bulk]},
+                                                   headers={'Authorization': self.at}):
+                    res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(1, len(lookups), lookups)
+
+            with mock.patch("privacyidea.lib.user.get_resolver_object", return_value=None):
+                res, logged = delete(deleted_resolver)
+                self.assertEqual(200, res.status_code, res.json)
+                self.assertEqual(1, len(logged), logged)
+                self.assertTrue(logged[0].startswith("INFO"), logged)
+        finally:
+            delete_policy("delete")
+            for serial in (single, bulk, deleted_resolver):
+                try:
+                    remove_token(serial)
+                except ResourceNotFoundError:
+                    pass

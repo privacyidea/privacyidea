@@ -33,7 +33,7 @@ import copy
 from .lib.utils import (get_all_params, get_before_request_config, get_optional, map_error_to_code,
                         get_auth_error_status_code, send_error, verify_auth_token, get_auth_token_from_request,
                         logged_in_user_from_token, hide_specific_error_message, construct_radius_response,
-                        report_owner_lookup_error)
+                        resolve_token_owner, report_owner_lookup_error)
 from .container import container_blueprint
 from ..lib.container import find_container_for_token, find_container_by_serial
 from .lib.conditional_access import restore_rejection_audit
@@ -48,7 +48,7 @@ from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.log import redact_url
 from privacyidea.api.auth import (user_required, admin_required, jwtauth)
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
-from privacyidea.lib.token import get_token_type, get_token_owner, get_token_owner_without_lookup
+from privacyidea.lib.token import get_token_type
 from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.validate import validate_blueprint
 from .resolver import resolver_blueprint
@@ -83,7 +83,7 @@ from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response, hide_version
 from ..lib.error import (PrivacyIDEAError,
-                         AuthError, UserError, ResolverError,
+                         AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
@@ -465,23 +465,19 @@ def before_request():
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Already get some typical parameters to log
     serial = get_optional(request.all_data, "serial")
-    owner_lookup_error = None
     if serial and "*" not in serial and "," not in serial:
         g.serial = serial
         tokentype = get_token_type(serial)
         if not request.User:
-            # We determine the user object by the given serial number
+            # We determine the user object by the given serial number. If the owner can not be looked up, because
+            # the resolver of the owner was deleted or is unreachable, this is the owner as far as the database
+            # knows them: the token can still be managed, and the policies of the realm of the owner still apply
+            # to it. The failed lookup is reported below, once the audit entry of the request exists.
             try:
-                request.User = get_token_owner(serial) or User()
+                request.User = resolve_token_owner(serial) or User()
             except ResourceNotFoundError:
                 # The serial might not exist! This would raise an exception
                 pass
-            except (UserError, ResolverError) as error:
-                # The owner can not be looked up, because the resolver of the owner was deleted or is unreachable. The
-                # token can still be managed, and the policies of the realm of the owner still apply to it. It is
-                # reported below, once the audit entry of the request exists.
-                owner_lookup_error = error
-                request.User = get_token_owner_without_lookup(serial)
 
     else:
         g.serial = None
@@ -545,8 +541,8 @@ def before_request():
                         "thread_id": f"{threading.current_thread().ident!s}",
                         "info": ""})
 
-    if owner_lookup_error:
-        report_owner_lookup_error(serial, owner_lookup_error)
+    if serial:
+        report_owner_lookup_error(serial)
 
     if g.logged_in_user.get("role") == "admin":
         # An administrator is calling this API

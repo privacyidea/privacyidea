@@ -26,16 +26,16 @@ import logging
 from dataclasses import dataclass
 from datetime import timedelta, datetime, timezone
 
-from privacyidea.api.lib.utils import report_owner_lookup_error
+from privacyidea.api.lib.utils import report_owner_lookup_error, resolve_token_owner
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
-from privacyidea.lib.error import PolicyError, ResourceNotFoundError, UserError, ResolverError
+from privacyidea.lib.error import PolicyError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.tokens.push_types import PushAction
-from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner, get_token_owner_without_lookup
+from privacyidea.lib.token import get_tokens_from_serial_or_user
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timedelta
@@ -160,13 +160,10 @@ def get_token_user_attributes(serial: str):
     user_attributes = UserAttributes()
     # get user attributes from the token
     token = get_tokens_from_serial_or_user(serial, user=None)[0]
-    try:
-        token_owner = get_token_owner(serial)
-    except (UserError, ResolverError) as error:
-        # The owner can not be looked up, because the resolver of the owner was deleted or is unreachable. The
-        # policies are matched against the realm and the resolver of the owner then, as there is no login name.
-        report_owner_lookup_error(serial, error)
-        token_owner = get_token_owner_without_lookup(serial)
+    # If the owner can not be looked up, because the resolver of the owner was deleted or is unreachable, the
+    # policies are matched against the realm and the resolver of the owner, as there is no login name.
+    token_owner = resolve_token_owner(serial)
+    report_owner_lookup_error(serial)
     if token_owner:
         user_attributes.username = token_owner.login
         user_attributes.realm = token_owner.realm

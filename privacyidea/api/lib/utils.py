@@ -48,6 +48,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
 from privacyidea.lib.conditional_access.authentication_log import (ClientLabelSource,
                                                                     PendingAuthEvent)
 from privacyidea.lib.conditional_access.request_context import AuthPrincipal, get_ca_context, claimed_ca_message
+from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.user import User
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_from_config, SYSCONF
@@ -686,11 +687,42 @@ def get_before_request_config():
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
     g.policies = {}
+    # The owners of the tokens of this request and the errors their lookup failed with, see resolve_token_owner()
+    g.token_owners = {}
+    g.token_owner_errors = {}
 
 
-def report_owner_lookup_error(serial: str, error: Exception) -> None:
+def resolve_token_owner(serial: str) -> User | None:
     """
-    Report that the owner of a token can not be looked up, because their resolver was deleted or is unreachable.
+    The owner of a token, or the owner as far as the database knows them - the realm and the resolver, but no
+    login name - if they can not be looked up because their resolver was deleted or is unreachable.
+
+    Looking an owner up queries the user store and waits out the timeout of an unreachable resolver, while the
+    request hook and every policy check of one request ask for the same owner. The result is therefore kept for
+    the rest of the request. A failed lookup is kept as well, to be reported by
+    :func:`report_owner_lookup_error` once the audit entry of the request exists.
+
+    :param serial: serial number of the token
+    :return: the owner of the token, or None if the token has no owner
+    :raises ResourceNotFoundError: if the token does not exist
+    """
+    # privacyidea.lib.token imports this module
+    from privacyidea.lib.token import get_token_owner, get_token_owner_without_lookup
+
+    owners = g.setdefault("token_owners", {})
+    if serial not in owners:
+        try:
+            owners[serial] = get_token_owner(serial)
+        except (UserError, ResolverError) as error:
+            g.setdefault("token_owner_errors", {})[serial] = error
+            owners[serial] = get_token_owner_without_lookup(serial)
+    return owners[serial]
+
+
+def report_owner_lookup_error(serial: str) -> None:
+    """
+    Report that the owner of a token could not be looked up by :func:`resolve_token_owner`, if that happened and
+    was not reported yet. Does nothing otherwise.
 
     Without this, the request is only recorded with an empty user name next to the realm and the resolver of the
     owner, which looks exactly like a token without an owner. Writing the error to the audit entry lets the empty
@@ -698,16 +730,14 @@ def report_owner_lookup_error(serial: str, error: Exception) -> None:
     duplicate user ids raise the same ResolverError as an unreachable one - is not mistaken for a token that was
     never assigned.
 
-    The owner is looked up more than once per request, so the error is only reported once per token.
-
-    :param serial: serial number of the token whose owner can not be looked up
-    :param error: the error the lookup failed with
+    :param serial: serial number of the token whose owner was resolved
     """
-    if serial in g.setdefault("reported_owner_lookup_errors", set()):
+    error = g.get("token_owner_errors", {}).pop(serial, None)
+    if error is None:
         return
-    g.reported_owner_lookup_errors.add(serial)
     message = f"The owner of the token {serial} can not be looked up: {error}"
-    log.warning(message)
+    # A deleted resolver leaves a token orphaned for good, an unreachable one is a problem of its own
+    log.log(logging.WARNING if isinstance(error, ResolverError) else logging.INFO, message)
     g.audit_object.add_to_log({"info": message}, add_with_comma=True)
 
 
