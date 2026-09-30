@@ -140,7 +140,7 @@
                   @case ("policies-csv") {
                     @for (policy of element[column.key]?.split(","); track policy) {
                       <app-copyable [copyText]="policy">
-                        <span>{{ policy }}</span>
+                        <span [title]="policy">{{ policy }}</span>
                         <app-filter-value-button
                           class="margin-left-8"
                           column="policies"
@@ -202,7 +202,7 @@
                   }
                   @case ("copy-text") {
                     <app-copyable [copyText]="element[column.key]">
-                      <span>{{ element[column.key] }}</span>
+                      <span [title]="element[column.key]">{{ element[column.key] }}</span>
                       @if (showInlineCellFilter(column.key)) {
                         <app-filter-value-button
                           class="margin-left-8"

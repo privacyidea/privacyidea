@@ -1072,6 +1072,9 @@ $corner-radii: (
 // :focus-visible keeps the actions reachable for keyboard/AT users, while a click - which leaves the button focused
 // but not focus-visible - no longer pins them open after the pointer has left the row.
 tr.mat-mdc-row {
+  // Both cell actions share one mid-tone: visible enough to find, quiet enough not to crowd dense rows.
+  --copy-icon-color: var(--mat-sys-outline);
+  --filter-icon-color: var(--mat-sys-outline);
   --copy-button-opacity: 0;
   --filter-button-opacity: 0;
 
