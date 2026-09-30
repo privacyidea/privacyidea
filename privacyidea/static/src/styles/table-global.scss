@@ -147,6 +147,15 @@ table.mat-mdc-table .mat-mdc-header-cell {
   top: -1px;
 }
 
+// Once a table is scrolled far enough to collapse the controls above it (controls-collapsed - see
+// ScrollEdgesDirective), the hint under its filter input is just noise above the sticky header - the
+// content the hint describes is already scrolled out of view. Global and keyed off the table's card
+// (the scroll region's parent), so it reaches every table, including a filter row drawn by its own
+// component (e.g. the policies filter).
+:has(> .table-scroll-region.controls-collapsed) .filter-paginator-container mat-hint {
+  display: none;
+}
+
 // Elevate the header once rows have scrolled under it, so it reads as raised above them rather
 // than flush. Cast on .sticky-header-shadow (a plain div ScrollEdgesDirective inserts next to the
 // table, sized to the header row's height via its --sticky-header-height custom property) rather
