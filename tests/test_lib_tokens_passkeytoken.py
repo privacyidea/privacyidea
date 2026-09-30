@@ -876,3 +876,35 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(token.get_serial(), get_fido2_token_by_credential_id(self.credential_id).get_serial())
         remove_token(serial=token.get_serial())
         remove_token(serial=other_token.get_serial())
+
+    def test_26_registration_needs_waiting_token_and_complete_data(self):
+        """
+        update() only takes a complete registration for a token that waits for one and otherwise raises, leaving the
+        token as it is. Without registration data, it starts a new enrollment.
+        """
+        token = self._create_token()
+        for registration_data in ({"attestationObject": self.registration_attestation,
+                                   "clientDataJSON": self.registration_client_data},
+                                  {"attestationObject": self.registration_attestation},
+                                  {"clientDataJSON": self.registration_client_data}):
+            with self.subTest(fields=list(registration_data)):
+                with self.assertRaises(EnrollmentError):
+                    token.update(registration_data)
+                self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
+                self.assertTrue(token.is_active())
+
+        token.update({})
+        self.assertEqual(RolloutState.CLIENTWAIT, token.token.rollout_state)
+        self.assertFalse(token.is_active())
+        remove_token(serial=token.get_serial())
+
+        registration_request = self._initialize_registration()
+        for registration_data in ({"attestationObject": self.registration_attestation},
+                                  {"clientDataJSON": self.registration_client_data}):
+            with self.subTest(fields=list(registration_data), rollout_state=RolloutState.CLIENTWAIT):
+                with self.assertRaises(EnrollmentError):
+                    registration_request.token.update(registration_data)
+                self.assertEqual(RolloutState.CLIENTWAIT, registration_request.token.token.rollout_state)
+        registration_request.token.update(registration_request.registration_response)
+        self.assertEqual(RolloutState.ENROLLED, registration_request.token.token.rollout_state)
+        remove_token(serial=registration_request.token.get_serial())
