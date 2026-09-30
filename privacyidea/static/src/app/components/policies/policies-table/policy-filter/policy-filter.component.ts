@@ -70,7 +70,7 @@ export class PolicyFilterComponent implements AfterViewInit {
   // keyword matches anywhere in the field.
   readonly filterMatchInfo = computed(() =>
     filterMatchTooltip(
-      $localize`:@@common.policies:Policies`,
+      $localize`:@@common.policy:Policy`,
       ["name", "scope", "description", "actions", "conditions", "priority", "active"],
       (key) => ["priority", "active"].includes(key)
     )

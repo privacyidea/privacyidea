@@ -14543,22 +14543,22 @@
           <context context-type="linenumber">60</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.containers" datatype="html">
-        <source>Containers</source>
+      <trans-unit id="common.challenge" datatype="html">
+        <source>Challenge</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
           <context context-type="linenumber">60</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.sshMachines" datatype="html">
-        <source>SSH machines</source>
+      <trans-unit id="token.sshMachine" datatype="html">
+        <source>SSH machine</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
           <context context-type="linenumber">60</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.offlineMachines" datatype="html">
-        <source>Offline machines</source>
+      <trans-unit id="token.offlineMachine" datatype="html">
+        <source>Offline machine</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
           <context context-type="linenumber">60</context>

@@ -148,7 +148,7 @@ export class TokenTableComponent implements OnDestroy {
   readonly filterHint = inlineFilterHint();
   readonly filterMatchInfo = computed(() =>
     filterMatchTooltip(
-      $localize`:@@common.tokens:Tokens`,
+      $localize`:@@common.token:Token`,
       [...this.tokenService.apiFilterKeys, ...this.tokenService.advancedApiFilterKeys],
       (key) => this.tokenService.exactMatchKeys.has(key)
     )

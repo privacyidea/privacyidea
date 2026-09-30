@@ -82,13 +82,13 @@ describe("filterMatchTooltip", () => {
   const isExact = (key: string) => ["type", "user"].includes(key);
 
   it("leads the partial keywords with the table name and lists the exact ones below", () => {
-    expect(filterMatchTooltip("Tokens", ["serial", "type", "description", "user"], isExact)).toBe(
-      "Tokens partial match: serial, description\nExact match: type, user"
+    expect(filterMatchTooltip("Token", ["serial", "type", "description", "user"], isExact)).toBe(
+      "Token partial match: serial, description\nExact match: type, user"
     );
   });
 
   it("leaves out a group without keywords", () => {
-    expect(filterMatchTooltip("Tokens", ["serial"], isExact)).toBe("Tokens partial match: serial");
-    expect(filterMatchTooltip("Tokens", ["user"], isExact)).toBe("Tokens exact match: user");
+    expect(filterMatchTooltip("Token", ["serial"], isExact)).toBe("Token partial match: serial");
+    expect(filterMatchTooltip("Token", ["user"], isExact)).toBe("Token exact match: user");
   });
 });

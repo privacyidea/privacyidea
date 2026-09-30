@@ -168,7 +168,7 @@ export class UserTableComponent implements OnDestroy {
   readonly filterHint = inlineFilterHint();
   readonly filterMatchInfo = computed(() =>
     filterMatchTooltip(
-      $localize`:@@nav.users:Users`,
+      $localize`:@@common.user:User`,
       [...this.userService.apiFilterKeys, ...this.userService.advancedApiFilterKeys],
       (key) => this.userService.exactMatchKeys.has(key)
     )

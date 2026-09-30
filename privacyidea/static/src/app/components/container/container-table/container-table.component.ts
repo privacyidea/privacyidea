@@ -141,7 +141,7 @@ export class ContainerTableComponent implements OnDestroy {
   readonly filterHint = inlineFilterHint();
   readonly filterMatchInfo = computed(() =>
     filterMatchTooltip(
-      $localize`:@@common.containers:Containers`,
+      $localize`:@@common.container:Container`,
       [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys],
       (key) => this.containerService.exactMatchKeys.has(key)
     )

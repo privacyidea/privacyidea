@@ -110,7 +110,7 @@ export class ChallengesTableComponent {
   readonly filterHint = inlineFilterHint();
   readonly filterMatchInfo = computed(() =>
     filterMatchTooltip(
-      $localize`:@@nav.challenges:Challenges`,
+      $localize`:@@common.challenge:Challenge`,
       [...this.challengesService.apiFilterKeys, ...this.challengesService.advancedApiFilterKeys],
       (key) => this.challengesService.exactMatchKeys.has(key)
     )

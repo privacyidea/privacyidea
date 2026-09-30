@@ -91,7 +91,7 @@ export class TokenApplicationsOfflineComponent {
   readonly filterHint = inlineFilterHint();
   readonly filterMatchInfo = computed(() =>
     filterMatchTooltip(
-      $localize`:@@token.offlineMachines:Offline machines`,
+      $localize`:@@token.offlineMachine:Offline machine`,
       [...this.machineService.apiFilterKeys, ...this.machineService.advancedApiFilterKeys],
       (key) => this.machineService.isExactMatchKey(key)
     )
