@@ -127,7 +127,7 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
-                                   TokenAdminError)
+                                   TokenAdminError, EnrollmentError)
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
@@ -138,6 +138,8 @@ from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_REFUSAL_STATUS
+from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.webauthntoken import WebAuthnTokenClass
 from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_plugin_info_from_useragent, AUTH_RESPONSE
@@ -735,11 +737,28 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
 
     if attestation_object:
+        # The registration has to answer the enroll_via_multichallenge challenge of a token that waits for it. An
+        # enrollment started at /token/init is completed there.
+        enrollment_challenges = [challenge for challenge in
+                                 get_challenges(serial=token.get_serial(), transaction_id=transaction_id)
+                                 if challenge.is_valid()
+                                 and challenge.get_data().get(PolicyAction.ENROLL_VIA_MULTICHALLENGE)]
+        if (token.get_type() != PasskeyTokenClass.get_class_type()
+                or token.rollout_state != RolloutState.CLIENTWAIT or not enrollment_challenges):
+            log.warning(f"Registration data for token {token.get_serial()} does not answer a pending enrollment.")
+            context["details"]["message"] = _("Authentication failed.")
+            context[AUTH_EVENT_TYPE_KEY] = AuthEventType.MFA_FAIL
+            context["serial_list"].append(token.get_serial())
+            return  # Result remains False
+
         # Enrollment
         request.all_data.update({"type": "passkey"})
         fido2_enroll(request, None)
         try:
             registration_details = token.update(request.all_data)
+            # Double-check the enrollment was successful
+            if token.rollout_state != RolloutState.ENROLLED:
+                raise EnrollmentError(f"The registration data did not enroll the token {token.get_serial()}.")
             evm = registration_details.pop(PolicyAction.ENROLL_VIA_MULTICHALLENGE, None)
 
             # Check if offline data should be appended here already (policy)
@@ -887,7 +906,7 @@ def _handle_standard_auth(context: dict):
     Handles username+otp/password authentication, or container challenges.
     """
     transaction_id = request.all_data.get("transaction_id")
-    container_result = check_container_challenge(transaction_id)
+    container_result = check_container_challenge(transaction_id, context["user"])
 
     success = container_result.get("success", False)
     details = container_result.get("details", {})

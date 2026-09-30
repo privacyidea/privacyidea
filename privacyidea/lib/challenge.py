@@ -47,6 +47,11 @@ from ..models.utils import utc_now
 
 log = logging.getLogger(__name__)
 
+# The columns a challenge list can be sorted by. The challenge and its data are left out: they are CLOB columns on
+# Oracle, which cannot be sorted by, and the data is stored encrypted.
+SORTABLE_CHALLENGE_COLUMNS = ("transaction_id", "serial", "session", "timestamp", "expiration", "received_count",
+                              "otp_valid")
+
 
 class DeleteChallengesResult(NamedTuple):
     """
@@ -125,7 +130,8 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     :param serial: The serial of the token
     :param transaction_id: The transaction_id of the challenge
     :param sortby: Sort by a Challenge DB field. The default is
-        Challenge.timestamp.
+        Challenge.timestamp, which is also used for a field that is not
+        one of SORTABLE_CHALLENGE_COLUMNS.
     :type sortby: A Challenge column or a string.
     :param sortdir: Can be "asc" (default) or "desc"
     :type sortdir: basestring
@@ -136,6 +142,11 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     :return: dict with challenges, prev, next and count
     :rtype: dict
     """
+    sort_column = sortby if isinstance(sortby, str) else sortby.key
+    if sort_column not in SORTABLE_CHALLENGE_COLUMNS:
+        log.warning(f'Unknown sort column "{sort_column}". Using "timestamp" instead.')
+        sort_column = "timestamp"
+
     # Serve exact serial / transaction_id filters from the cache; wildcard and
     # list-all queries fall through to the DB path (see docstring).
     def _is_exact(v):
@@ -149,14 +160,13 @@ def get_challenges_paginate(serial=None, transaction_id=None,
         if isinstance(cached, list):
             # Apply in-memory sort
             reverse = sortdir == "desc"
-            sort_key = sortby if isinstance(sortby, str) else sortby.key
             try:
-                cached = sorted(cached, key=lambda c: getattr(c, sort_key, c.timestamp),
+                cached = sorted(cached, key=lambda c: getattr(c, sort_column, c.timestamp),
                                 reverse=reverse)
             except TypeError as e:
-                # Mixed/incomparable types under sort_key - fall back to the
+                # Mixed/incomparable types under sort_column - fall back to the
                 # natural insertion order rather than failing the request.
-                log.debug("Cannot sort cached challenges by %r: %s", sort_key, e)
+                log.debug("Cannot sort cached challenges by %r: %s", sort_column, e)
 
             total = len(cached)
             start = (page - 1) * psize
@@ -174,14 +184,11 @@ def get_challenges_paginate(serial=None, transaction_id=None,
 
     stmt = _create_challenge_query(serial=serial, transaction_id=transaction_id)
 
-    if isinstance(sortby, str):
-        cols = Challenge.__table__.columns
-        sortby = cols.get(sortby)
-
+    sort_expression = Challenge.__table__.columns[sort_column]
     if sortdir == "desc":
-        stmt = stmt.order_by(sortby.desc())
+        stmt = stmt.order_by(sort_expression.desc())
     else:
-        stmt = stmt.order_by(sortby.asc())
+        stmt = stmt.order_by(sort_expression.asc())
 
     pagination = db.paginate(stmt, page=page, per_page=psize, error_out=False)
     challenge_list = [challenge.get() for challenge in pagination.items]
@@ -420,6 +427,15 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
             "Challenge for transaction_id %s does not have the action %s set to True",
             transaction_id, PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL
         )
+        return False
+
+    # An enrollment that the client has already completed must not be removed here. Once the challenge has
+    # been answered, the token or container belongs to the finished enrollment rather than to one that is
+    # still in progress, so it is kept.
+    _, answered = challenge.get_otp_status()
+    if answered:
+        log.info("Challenge for transaction_id %s has already been answered; the enrollment is kept.",
+                 transaction_id)
         return False
 
     # If we reach this point, we can cancel the enrollment, depending on the type.

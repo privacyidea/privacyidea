@@ -5,12 +5,19 @@ This migration:
 1. Encrypts SMS Gateway options whose key contains PASSWORD or SECRET
   (table: smsgatewayoption) – adds an ``Encrypted`` boolean column to track
   which values are encrypted.
-2. The ``challenge.data`` column is widened from 512 to 2000 characters, so it
-  can hold the encrypted JSON that newly created challenges store there. The
-  existing rows themselves are not converted here: the very next revision,
-  c3d4e5f6a7b8, unconditionally deletes every row of the ``challenge`` table,
-  since challenges are short-lived and none of them can be in the new
-  dict-only format yet. Encrypting them here first would be pure wasted work.
+2. The ``challenge.data`` column becomes a Text column without a length
+  limit, so it can hold the encrypted JSON that newly created challenges store
+  there, like a challenge cached in Redis. The existing rows themselves are not
+  converted here: the very next revision, c3d4e5f6a7b8, unconditionally deletes
+  every row of the ``challenge`` table, since challenges are short-lived and
+  none of them can be in the new dict-only format yet. Encrypting them here
+  first would be pure wasted work. For the same reason, on Oracle, which cannot
+  change a VARCHAR2 column into a CLOB, the column is replaced without copying
+  its data.
+
+  A downgrade deletes all challenges before it limits the column to 512
+  characters again: the code before this revision cannot read their encrypted
+  data, and most of it does not fit.
 
 The migration is idempotent: SMS gateway option values that are already in
 encrypted format (contain a colon separating IV:ciphertext hex) are skipped.
@@ -57,17 +64,29 @@ def _looks_encrypted(value):
         return False
 
 
+def _replace_challenge_data_column(new_type: sa.types.TypeEngine) -> None:
+    """
+    Replace challenge.data by an empty column of the given type, for Oracle, which cannot convert between VARCHAR2
+    and CLOB in place.
+    """
+    op.drop_column('challenge', 'data')
+    op.add_column('challenge', sa.Column('data', new_type, nullable=True))
+
+
 def upgrade():
     # We need the crypto module to encrypt values
     from privacyidea.lib.crypto import encryptPassword
 
-    # --- 0a. Increase challenge.data column size to accommodate encrypted values ---
-    log.info("Increasing challenge.data column size from 512 to 2000...")
-    with op.batch_alter_table('challenge', schema=None) as batch_op:
-        batch_op.alter_column('data',
-                              existing_type=sa.Unicode(length=512),
-                              type_=sa.Unicode(length=2000),
-                              existing_nullable=True)
+    # --- 0a. Remove the length limit of challenge.data to accommodate encrypted values ---
+    log.info("Changing challenge.data to a text column...")
+    if op.get_bind().dialect.name == "oracle":
+        _replace_challenge_data_column(sa.Text())
+    else:
+        with op.batch_alter_table('challenge', schema=None) as batch_op:
+            batch_op.alter_column('data',
+                                  existing_type=sa.Unicode(length=512),
+                                  type_=sa.Text(),
+                                  existing_nullable=True)
 
     # --- 0b. Add Encrypted boolean column to smsgatewayoption ---
     log.info("Adding Encrypted column to smsgatewayoption table...")
@@ -163,10 +182,14 @@ def downgrade():
     with op.batch_alter_table('smsgatewayoption', schema=None) as batch_op:
         batch_op.drop_column('Encrypted')
 
-    # --- 2. Revert challenge.data column size back to 512 ---
-    log.info("Reverting challenge.data column size from 2000 to 512...")
-    with op.batch_alter_table('challenge', schema=None) as batch_op:
-        batch_op.alter_column('data',
-                              existing_type=sa.Unicode(length=2000),
-                              type_=sa.Unicode(length=512),
-                              existing_nullable=True)
+    # --- 2. Revert challenge.data to 512 characters ---
+    log.info("Deleting all challenges and reverting challenge.data to 512 characters...")
+    op.execute("DELETE FROM challenge")
+    if op.get_bind().dialect.name == "oracle":
+        _replace_challenge_data_column(sa.Unicode(length=512))
+    else:
+        with op.batch_alter_table('challenge', schema=None) as batch_op:
+            batch_op.alter_column('data',
+                                  existing_type=sa.Text(),
+                                  type_=sa.Unicode(length=512),
+                                  existing_nullable=True)
