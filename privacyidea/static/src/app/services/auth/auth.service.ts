@@ -164,6 +164,7 @@ export interface PasswordLoginParams {
 export interface WebAuthnLoginParams {
   transaction_id: string;
   username: string;
+  realm?: string;
   credential_id: string;
   authenticatorData: string;
   clientDataJSON: string;
@@ -331,7 +332,7 @@ export class AuthService implements AuthServiceInterface {
   readonly userDetails = computed(() => this.authData()?.user_details || false);
   readonly tokenWizard = computed(() => this.authData()?.token_wizard || false);
   readonly tokenWizard2nd = computed(() => this.authData()?.token_wizard_2nd || false);
-  readonly adminDashboard = computed(() => this.authData()?.admin_dashboard || false);
+  readonly adminDashboard = computed(() => this.role() === "admin");
   readonly dialogNoToken = computed(() => this.authData()?.dialog_no_token || false);
   readonly searchOnEnter = computed(() => this.authData()?.search_on_enter || false);
   readonly timeoutAction = computed(() => this.authData()?.timeout_action || "logout");

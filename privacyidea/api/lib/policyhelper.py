@@ -26,15 +26,16 @@ import logging
 from dataclasses import dataclass
 from datetime import timedelta, datetime, timezone
 
+from privacyidea.api.lib.utils import report_owner_lookup_error, resolve_token_owner
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
-from privacyidea.lib.error import PolicyError, ResourceNotFoundError, UserError
+from privacyidea.lib.error import PolicyError, ResourceNotFoundError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.realm import realm_is_defined
 from privacyidea.lib.tokens.push_types import PushAction
-from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner, get_token_owner_without_lookup
+from privacyidea.lib.token import get_tokens_from_serial_or_user
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timedelta
@@ -159,13 +160,10 @@ def get_token_user_attributes(serial: str):
     user_attributes = UserAttributes()
     # get user attributes from the token
     token = get_tokens_from_serial_or_user(serial, user=None)[0]
-    try:
-        token_owner = get_token_owner(serial)
-    except UserError as error:
-        # The owner can not be looked up, e.g. because the resolver of the owner was deleted. The policies are
-        # matched against the realm and the resolver of the owner then, as there is no login name.
-        log.info(f"The owner of the token {serial} can not be looked up: {error}")
-        token_owner = get_token_owner_without_lookup(serial)
+    # If the owner can not be looked up, because the resolver of the owner was deleted or is unreachable, the
+    # policies are matched against the realm and the resolver of the owner, as there is no login name.
+    token_owner = resolve_token_owner(serial)
+    report_owner_lookup_error(serial)
     if token_owner:
         user_attributes.username = token_owner.login
         user_attributes.realm = token_owner.realm
@@ -215,6 +213,8 @@ def check_token_action_allowed(g, action: str, serial: str, user_attributes: Use
     without conditions on the user. Only for the action ASSIGN, all policies are considered, ignoring the username,
     realm, and resolver conditions. The token realms are still taken into account. This shall allow helpdesk admins
     to assign their users to tokens without owner.
+    If the owner exists but can not be looked up, only the policies without a user and those for every user (``*``)
+    are considered, as it can not be checked whether a policy names the owner.
 
     :param g: The global flask object g
     :param action: The action to be performed on the token
@@ -303,6 +303,8 @@ def check_container_action_allowed(g, action: str, container_serial: str, user_a
     without conditions on the user. Only for the action CONTAINER_ASSIGN_USER, all policies are considered, ignoring
     the username, realm, and resolver conditions. The container realms are still taken into account. This shall allow
     helpdesk admins to assign their users to containers without owner.
+    If the owner exists but can not be looked up, only the policies without a user and those for every user (``*``)
+    are considered, as it can not be checked whether a policy names the owner.
 
     For the action CONTAINER_CREATE, the user attributes from the parameters are considered, as the container has no
     owner yet.
@@ -424,6 +426,24 @@ def check_last_auth_policy(g, token: TokenClass) -> tuple[bool, list[str]]:
             return True, []
         return False, last_auth_policy[timeframe]
     return True, []
+
+
+def get_login_mode_values(g, user: User) -> dict[str, list[str]]:
+    """
+    The WebUI login modes of *user*, set by the matching ``login_mode`` policies of the highest priority. Policies of
+    that priority may set different modes. Whether that is a conflict depends on the login: a password login needs
+    exactly one mode, while a passkey login only has to know whether one of them is ``disable``.
+
+    The names of the returned policies are added to the audit entry.
+
+    :return: a dictionary mapping each login mode to the names of the policies that set it, empty if no policy matches
+    """
+    policies = Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.LOGINMODE,
+                          user_object=user).policies(write_to_audit_log=False)
+    prioritized_policies = [policy for policy in policies if policy["priority"] == policies[0]["priority"]]
+    login_mode_values = g.policy_object.extract_action_values(prioritized_policies, PolicyAction.LOGINMODE)
+    g.audit_object.add_policy({name for names in login_mode_values.values() for name in names})
+    return login_mode_values
 
 
 def get_realm_for_authentication(g, username: str, realm: str) -> str:

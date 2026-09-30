@@ -1,17 +1,17 @@
 """
 Tests for the database migration script a1b2c3d4e5f6, which encrypts
-sensitive plaintext SMS gateway options and resizes the challenge.data
-column (the challenge rows themselves are cleared by the next revision,
-c3d4e5f6a7b8, rather than converted here).
+sensitive plaintext SMS gateway options and removes the length limit of the
+challenge.data column (the challenge rows themselves are cleared by the next
+revision, c3d4e5f6a7b8, rather than converted here).
 
 This tests the helper functions and data transformation logic without
-running the full alembic migration (which requires TEST_DATABASE_URL).
+running the full alembic migration (which requires TEST_DATABASE_URL, see
+test_migration_a1b2c3d4e5f6_challenge_data.py).
 """
 from sqlalchemy import select
 
 from privacyidea.lib.crypto import encryptPassword, decryptPassword
 from privacyidea.models import SMSGateway, SMSGatewayOption, Challenge, db
-from privacyidea.models.challenge import Challenge as ChallengeModel
 from .base import MyTestCase
 
 
@@ -150,13 +150,6 @@ class MigrationEncryptionTestCase(MyTestCase):
         the original plaintext. Verify a 512-char plaintext can be encrypted
         and stored without truncation.
         """
-        from sqlalchemy import inspect
-
-        # Verify the model column size is 2000
-        mapper = inspect(ChallengeModel)
-        data_col = mapper.columns['_data']
-        self.assertEqual(data_col.type.length, 2000)
-
         # Create a challenge with a large data payload (up to original 512 chars)
         large_data = {"payload": "x" * 480}
         c = Challenge(serial="COLSIZE01", transaction_id="colsize_tid001",

@@ -32,6 +32,7 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.sql import Select
 
 from privacyidea.api.lib.utils import send_result
+from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import delete_challenges, get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.containerclass import TokenContainerClass
@@ -48,7 +49,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import (hexlify_and_unicode, parse_timedelta, SQL_LIKE_ESCAPE,
                                    convert_wildcard_to_sql_like)
 from privacyidea.models import (TokenContainer, TokenContainerOwner, Token, TokenContainerToken,
-                                Realm, TokenContainerTemplate, TokenContainerInfo, TokenContainerStates, db)
+                                Realm, TokenContainerTemplate, TokenContainerInfo, TokenContainerStates, Challenge, db)
 
 log = logging.getLogger(__name__)
 
@@ -1823,14 +1824,26 @@ def get_offline_token_serials(container: TokenContainerClass) -> list[str]:
     return offline_serials
 
 
-def check_container_challenge(transaction_id: str) -> dict:
+def get_container_challenge_user(user: User) -> dict:
     """
-    Check if the challenge for the given transaction_id belongs to a container.
-    If this is the case it checks if the challenge is valid and was already answered. Then it deletes the challenge
-    and returns a successful authentication response.
+    The user a container challenge of the enroll via multi challenge is created for, as it is stored in the challenge
+    data. Like a container owner, the user is identified by the user id of the resolver and not by the login.
+
+    :param user: The user who passed the first factor
+    :return: A dictionary with the user id, the resolver and the realm id of the user
+    """
+    return {"user_id": user.uid, "resolver": user.resolver, "realm_id": user.realm_id}
+
+
+def check_container_challenge(transaction_id: str, user: User) -> dict:
+    """
+    Check if the transaction contains a challenge of a container that was created for the given user.
+    If this is the case it checks if the challenge is valid and was already answered and if the user still owns the
+    container. Then it deletes the challenge and returns a successful authentication response.
     This function is used as last step during enroll via multi challenge.
 
     :param transaction_id: The transaction ID of the challenge
+    :param user: The user to authenticate, who has to be the user the challenge was created for
     :return: A dictionary with the success state and details of the authentication in the format
 
         ::
@@ -1842,21 +1855,49 @@ def check_container_challenge(transaction_id: str) -> dict:
     """
     success = False
     details = {}
-    challenge_type = None
     if transaction_id:
         challenges = get_challenges(transaction_id=transaction_id)
-        challenge = challenges[0] if challenges else None
+        challenge = next((transaction_challenge for transaction_challenge in challenges
+                          if transaction_challenge.get_data().get("type") == "container"), None)
         if challenge:
-            if challenge.data:
-                # check if the challenge is for a container
-                challenge_type = challenge.get_data().get("type")
-            if challenge_type and challenge_type == "container":
-                # The challenge belongs to a container, if the challenge is already answered, we can delete it and
-                # return a successful authentication
-                if challenge.is_valid():
-                    _, status = challenge.get_otp_status()
-                    success = status
-                    if success:
-                        details = {"serial": challenge.serial, "message": "Found matching challenge"}
-                        challenge.delete()
+            # The challenge belongs to a container, if the challenge is already answered, we can delete it and
+            # return a successful authentication
+            _, answered = challenge.get_otp_status()
+            if (challenge.is_valid() and answered and _is_challenge_user(challenge, user)
+                    and _is_container_owner(challenge.serial, user)):
+                # Only one request may use the challenge
+                removed = delete_challenges(serial=challenge.serial, transaction_id=transaction_id).removed
+                success = removed > 0
+                if success:
+                    details = {"serial": challenge.serial, "message": "Found matching challenge"}
     return {"success": success, "details": details}
+
+
+def _is_challenge_user(challenge: Challenge | ChallengeDTO, user: User) -> bool:
+    """
+    Checks that the container challenge was created for the given user.
+    """
+    if not user or not user.uid:
+        return False
+    if challenge.get_data().get("user") == get_container_challenge_user(user):
+        return True
+    log.warning(f"The challenge of the container {challenge.serial} was not created for the user {user}.")
+    return False
+
+
+def _is_container_owner(container_serial: str, user: User) -> bool:
+    """
+    Checks that the user is an owner of the container, comparing the user id, the resolver and the realm id with the
+    owner entries in the database.
+    """
+    stmt = (select(TokenContainerOwner.id)
+            .join(TokenContainerOwner.container)
+            .where(TokenContainer.serial == container_serial,
+                   TokenContainerOwner.user_id == user.uid,
+                   func.lower(TokenContainerOwner.resolver) == user.resolver.lower(),
+                   TokenContainerOwner.realm_id == user.realm_id)
+            .limit(1))
+    if db.session.execute(stmt).first():
+        return True
+    log.warning(f"User {user} is not an owner of the container {container_serial}.")
+    return False

@@ -856,6 +856,11 @@ def check_signature(subscription):
     :return: True
     """
     vendor = subscription.get("by_name").split()[0]
+    # The vendor is read from the uploaded subscription file. It is used to build the path of the
+    # public key, so it must not be able to point the lookup at another directory.
+    if vendor != os.path.basename(vendor):
+        raise SubscriptionError("Invalid vendor in the subscription.",
+                                application=subscription.get("application"))
     enckey = get_app_config_value("PI_ENCFILE", "/etc/privacyidea/enckey")
     dirname = os.path.dirname(enckey)
     # In dirname we are searching for <vendor>.pem

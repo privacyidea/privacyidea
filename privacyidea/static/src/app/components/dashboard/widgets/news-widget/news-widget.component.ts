@@ -41,6 +41,8 @@ export class NewsWidgetComponent extends DashboardWidget implements OnInit {
   static override readonly defaultSize: WidgetSize = { cols: 8, rows: 3 };
   static override readonly minSize: WidgetSize = { cols: 6, rows: 3 };
   static override readonly maxSize: WidgetSize = { cols: DASHBOARD_COLUMNS, rows: 8 };
+  static override readonly pinned = true;
+  static override readonly fixedPosition = { x: 16, y: 0 };
 
   private readonly infoService: InfoServiceInterface = inject(InfoService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);

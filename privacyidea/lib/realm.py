@@ -47,7 +47,7 @@ from .framework import get_app_config_value
 from .log import log_with
 from ..models import (Realm,
                       ResolverRealm,
-                      Resolver, db, save_config_timestamp, TokenRealm)
+                      Resolver, db, save_config_timestamp, TokenRealm, TokenOwner, TokenContainerOwner)
 
 log = logging.getLogger(__name__)
 
@@ -263,23 +263,18 @@ def delete_realm(realm_name: str, delete_custom_attributes: bool = False, confir
     :param confirm_ca_policies: delete the realm anyway although conditional-access
         policies still reference it, instead of refusing the deletion
     """
-    # Check if there are still users assigned to tokens or containers
-    from .container import get_all_containers
-    from .token import get_tokens
-    tokens = get_tokens(realm=realm_name)
-    for token in tokens:
-        if token.user and token.user.realm == realm_name:
-            raise UserError("Realm can not be deleted, because a user of this realm is still assigned to a token.")
-    containers = get_all_containers(realm=realm_name)['containers']
-    for container in containers:
-        owners = container.get_users()
-        for owner in owners:
-            if owner.realm == realm_name:
-                raise UserError(
-                    "Realm can not be deleted, because a user of this realm is still assigned to a container.")
-
     from ..models import CustomUserAttribute
-    realm_obj = fetch_one_resource(Realm, name=realm_name)
+    realm = fetch_one_resource(Realm, name=realm_name)
+    realm_id = realm.id
+
+    # Check the owner tables directly: resolving the owners into User objects would query the resolver
+    stmt = select(TokenOwner.id).where(TokenOwner.realm_id == realm_id).limit(1)
+    if db.session.scalar(stmt) is not None:
+        raise UserError("Realm can not be deleted, because a user of this realm is still assigned to a token.")
+    stmt = select(TokenContainerOwner.id).where(TokenContainerOwner.realm_id == realm_id).limit(1)
+    if db.session.scalar(stmt) is not None:
+        raise UserError("Realm can not be deleted, because a user of this realm is still assigned to a container.")
+
     # Custom user attributes reference the realm. Refuse the deletion unless the
     # caller explicitly opted in to removing them, naming the affected keys so a
     # WebUI/CLI can ask for confirmation.
@@ -306,9 +301,6 @@ def delete_realm(realm_name: str, delete_custom_attributes: bool = False, confir
     # Check if there is a default realm
     def_realm = get_default_realm()
     had_def_realm_before = (def_realm != "")
-
-    realm = realm_obj
-    realm_id = realm.id
 
     # Delete relationships
     stmt = delete(TokenRealm).where(TokenRealm.realm_id == realm.id)

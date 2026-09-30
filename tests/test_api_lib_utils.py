@@ -15,6 +15,7 @@ from privacyidea.lib.conditional_access.authentication_event_types import (AuthE
                                                                            INTERNAL_CLASSIFICATION_KEYS,
                                                                            LOG_TRANSACTION_ID_KEY)
 from privacyidea.lib.params import get_optional_timestamp, get_required_timestamp
+from privacyidea.config import pubtest_key
 from privacyidea.lib.utils import prepare_result
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
@@ -177,6 +178,44 @@ class UtilsTestCase(MyApiTestCase):
             verify_auth_token(auth_token=auth_token,
                               required_role="user")
             mock_log.assert_any_call("A given JWT definition does not match.")
+
+    def test_03b_verify_auth_token_requires_username(self):
+        with open("tests/testdata/jwt_sign.key", "r") as f:
+            key = f.read()
+        secret = self.app.config["SECRET_KEY"]
+        wildcard_entry = {"public_key": pubtest_key, "algorithm": "RS256", "role": "user", "realm": "realm1",
+                          "username": ".*"}
+        no_user = "The Authorization token does not name a user."
+
+        with mock.patch.dict(self.app.config, {"PI_TRUSTED_JWT": [wildcard_entry]}):
+            # The regex ".*" matches the empty string
+            empty_username_token = jwt.encode(payload={"role": "user", "username": "", "realm": "realm1"}, key=key,
+                                              algorithm="RS256")
+            self.assertRaisesRegex(AuthError, no_user, verify_auth_token, auth_token=empty_username_token,
+                                   required_role=["user"])
+
+            # A missing username must not reach the regex
+            auth_token = jwt.encode(payload={"role": "user", "realm": "realm1"}, key=key, algorithm="RS256")
+            self.assertRaises(AuthError, verify_auth_token, auth_token=auth_token, required_role=["user"])
+
+            auth_token = jwt.encode(payload={"role": "user", "username": ["userA"], "realm": "realm1"}, key=key,
+                                    algorithm="RS256")
+            self.assertRaises(AuthError, verify_auth_token, auth_token=auth_token, required_role=["user"])
+
+            # Raise on trying to use a JWT without a username
+            self.setUp_user_realms()
+            with self.app.test_request_context('/token/', method='GET',
+                                               headers={"Authorization": empty_username_token}):
+                res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res.json)
+
+        for payload in ({"role": "user", "username": "", "realm": "realm1"},
+                        {"role": "user", "realm": "realm1"},
+                        {"role": "user", "username": 123, "realm": "realm1"},
+                        {"role": "admin", "realm": ""}):
+            auth_token = jwt.encode(payload=payload, key=secret, algorithm="HS256")
+            self.assertRaisesRegex(AuthError, no_user, verify_auth_token, auth_token=auth_token,
+                                   required_role=["user", "admin"])
 
     def test_04_check_jwt_username_in_audit(self):
         # Here we check, if the username from the trusted JWT appears in the audit log.

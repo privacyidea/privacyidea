@@ -138,13 +138,10 @@ describe("SubscriptionsWidgetComponent", () => {
     expect(SubscriptionsWidgetComponent.icon).toBe("event_repeat");
   });
 
-  it("should be an ordinary widget the admin can move, resize and remove", () => {
-    expect(SubscriptionsWidgetComponent.pinned).toBe(false);
-    expect(SubscriptionsWidgetComponent.fixedPosition).toBeNull();
-    // Opens tall enough for the compact view to show every component without scrolling.
-    expect(SubscriptionsWidgetComponent.defaultSize).toEqual({ cols: 8, rows: 11 });
-    expect(SubscriptionsWidgetComponent.minSize.cols).toBeLessThan(SubscriptionsWidgetComponent.defaultSize.cols);
-    expect(SubscriptionsWidgetComponent.maxSize.cols).toBeGreaterThan(SubscriptionsWidgetComponent.defaultSize.cols);
+  it("should be pinned below the news on the right", () => {
+    expect(SubscriptionsWidgetComponent.pinned).toBe(true);
+    expect(SubscriptionsWidgetComponent.fixedPosition).toEqual({ x: 16, y: 3 });
+    expect(SubscriptionsWidgetComponent.defaultSize).toEqual({ cols: 8, rows: 8 });
   });
 
   it("should render the server row first, then the sectioned components", () => {

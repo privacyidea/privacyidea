@@ -246,8 +246,8 @@ class AuthEventReason(str, Enum):
     # application-specific password whose service_id does not match the one the request names.
     TOKEN_NOT_APPLICABLE = "TOKEN_NOT_APPLICABLE"
 
-    # --- authorization, i.e. a policy refusing an otherwise valid authentication ---------------------------------
-    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The three below are
+    # --- authorization, i.e. a policy refusing the request ---------------------------------------------------------
+    # An authorization policy denied the request outright (PolicyAction.AUTHORIZED = deny). The next three are
     # authorization decisions too, each naming the specific limit that was hit; this one is the plain deny.
     AUTHORIZATION_DENIED = "AUTHORIZATION_DENIED"
     # The user made too many failed attempts inside the policy's time limit (auth_max_fail).
@@ -256,6 +256,8 @@ class AuthEventReason(str, Enum):
     AUTH_MAX_SUCCESS = "AUTH_MAX_SUCCESS"
     # The token's last successful authentication is too long ago (last_auth).
     LAST_AUTH_TOO_OLD = "LAST_AUTH_TOO_OLD"
+    # The WebUI login is disabled for the user (login_mode=disable), for the password and the passkey login alike.
+    LOGIN_MODE_DISABLED = "LOGIN_MODE_DISABLED"
 
     # --- the credentials themselves ------------------------------------------------------------------------------
     # The first factor was right (or not required) but the OTP was not. There is deliberately no reason for a wrong
