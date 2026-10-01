@@ -35,10 +35,17 @@ describe("BreakableCodeComponent", () => {
 
   it("offers a break after each underscore", () => {
     const host = render("WEBUI_PASSKEY_LOGIN_DISABLED");
+    const elements = Array.from(host.children).map((element) => [element.tagName.toLowerCase(), element.textContent]);
 
-    expect(host.innerHTML.replace(/<!--.*?-->/g, "")).toBe(
-      "<span>WEBUI_</span><wbr><span>PASSKEY_</span><wbr><span>LOGIN_</span><wbr><span>DISABLED</span>"
-    );
+    expect(elements).toEqual([
+      ["span", "WEBUI_"],
+      ["wbr", ""],
+      ["span", "PASSKEY_"],
+      ["wbr", ""],
+      ["span", "LOGIN_"],
+      ["wbr", ""],
+      ["span", "DISABLED"]
+    ]);
   });
 
   it("keeps the text exactly as given", () => {
