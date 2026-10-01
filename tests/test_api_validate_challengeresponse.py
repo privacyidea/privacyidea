@@ -1660,7 +1660,11 @@ class AChallengeResponse(MyApiTestCase):
 
         remove_token(serial)
 
+    @responses.activate
     def test_19_increase_failcounter_on_challenge(self):
+        # Configure the SMS Gateway
+        setup_sms_gateway()
+
         # Create email token
         init_token({
             "type": "email",
