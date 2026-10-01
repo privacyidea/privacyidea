@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -57,6 +58,7 @@ const columnKeysMap = [
   selector: "app-user-resolver",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,

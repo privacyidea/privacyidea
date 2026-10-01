@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -54,6 +55,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-periodic-task",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,

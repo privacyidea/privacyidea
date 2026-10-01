@@ -42,19 +42,7 @@
               placeholder="Filter by name or provider" />
           </app-clearable-input>
         </mat-form-field>
-        <button
-          [matMenuTriggerFor]="tableActionsMenu"
-          aria-label="Actions"
-          class="table-actions-trigger margin-left-8"
-          i18n-aria-label="@@common.actions"
-          i18n-matTooltip="@@common.actions"
-          mat-icon-button
-          matTooltip="Actions">
-          <span class="icon-badge">
-            <mat-icon>menu</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-          </span>
-        </button>
+        <app-table-actions-trigger [menu]="tableActionsMenu" />
       </div>
       <mat-paginator
         appPaginatorCompactRange
@@ -71,7 +59,7 @@
             class="action-button-primary button-width-l"
             mat-stroked-button>
             <span class="icon-badge">
-              <mat-icon class="padding-right-3">sms</mat-icon>
+              <mat-icon class="icon-badge-pad-3">sms</mat-icon>
               <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
             </span>
             <span i18n="@@common.createSmsGateway">Create SMS Gateway</span>
@@ -206,7 +194,7 @@
         class="action-button-primary button-width-l"
         mat-stroked-button>
         <span class="icon-badge">
-          <mat-icon class="padding-right-3">sms</mat-icon>
+          <mat-icon class="icon-badge-pad-3">sms</mat-icon>
           <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
         </span>
         <span i18n="@@common.createSmsGateway">Create SMS Gateway</span>

@@ -339,13 +339,15 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getTdClassForKey(key: string): string[] {
-    const classes = ["width-241"];
+    const classes = ["details-value-cell-width"];
     if (key === "description") {
-      classes.push("height-127");
-    } else if (["realms", "tokengroup"].includes(key)) {
-      classes.push("height-78");
+      // The description cell grows with its text and has no fixed row height.
+      return classes;
+    }
+    if (["realms", "tokengroup"].includes(key)) {
+      classes.push("details-row-height-tall");
     } else {
-      classes.push("height-53");
+      classes.push("details-row-height");
     }
     return classes;
   }

@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { CommonModule } from "@angular/common";
 import {
   Component,
@@ -60,6 +61,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
 @Component({
   selector: "app-event",
   imports: [
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     CommonModule,
     MatTableModule,

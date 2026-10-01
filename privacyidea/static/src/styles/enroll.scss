@@ -27,7 +27,8 @@
   border-radius: var(--border-radius);
 }
 
-.width-948 {
+// Content column of the token enrollment forms: as wide as the largest enrollment form needs.
+.enroll-content-width {
   max-width: 948px;
   width: 100%;
 }

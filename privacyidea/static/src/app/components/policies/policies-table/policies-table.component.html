@@ -32,19 +32,7 @@
         [unfilteredPolicies]="policyService.allPolicies()"
         class="policies-table-filter">
         @if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
-          <button
-            [matMenuTriggerFor]="policiesTableActions.actionsMenu"
-            aria-label="Actions"
-            class="table-actions-trigger margin-left-8"
-            i18n-aria-label="@@common.actions"
-            i18n-matTooltip="@@common.actions"
-            mat-icon-button
-            matTooltip="Actions">
-            <span class="icon-badge">
-              <mat-icon>menu</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-            </span>
-          </button>
+          <app-table-actions-trigger [menu]="policiesTableActions.actionsMenu()" />
         }
       </app-policy-filter>
     }

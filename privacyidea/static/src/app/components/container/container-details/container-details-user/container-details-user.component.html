@@ -46,7 +46,7 @@
               @case ("user_name") {
                 @if (host().isEditingUser() && userService.selectedUserRealm() !== "") {
                   <mat-form-field
-                    class="input-width-m height-52"
+                    class="input-width-m details-field-height"
                     subscriptSizing="dynamic">
                     <mat-label i18n="@@common.enterUser">Enter User</mat-label>
                     <app-clearable-input
@@ -84,7 +84,7 @@
               @case ("user_realm") {
                 @if (host().isEditingUser()) {
                   <mat-form-field
-                    class="input-width-m height-52"
+                    class="input-width-m details-field-height"
                     subscriptSizing="dynamic">
                     <mat-label i18n="@@common.selectRealmUser">Select Realm of User</mat-label>
                     <mat-select
@@ -144,7 +144,7 @@
     </ng-container>
     <tr
       *matRowDef="let row; columns: ['key', 'value']"
-      class="height-52"
+      class="details-field-height"
       mat-row></tr>
   </table>
 </app-details-card>

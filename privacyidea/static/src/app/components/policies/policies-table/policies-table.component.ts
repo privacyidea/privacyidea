@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { CommonModule, KeyValuePipe } from "@angular/common";
 import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -57,6 +58,7 @@ import { ViewConditionsColumnComponent } from "./view-conditions-column/view-con
   selector: "app-policies-table",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     CommonModule,
     KeyValuePipe,
     MatTableModule,

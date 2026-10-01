@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { CommonModule, KeyValuePipe } from "@angular/common";
 import { Component, computed, inject, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -27,7 +28,6 @@ import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
@@ -101,6 +101,7 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   selector: "app-container-templates",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     CommonModule,
     KeyValuePipe,
     MatIconModule,
@@ -118,7 +119,6 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     RouterLink,
     ScrollEdgesDirective,
     PaginatorCompactRangeDirective,
-    MatTooltipModule
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"

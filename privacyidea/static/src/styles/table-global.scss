@@ -40,7 +40,7 @@ mat-paginator .mat-mdc-paginator-range-label {
 
 mat-paginator .mat-mdc-paginator-container {
   padding: 0 0 0 16px;
-  flex-wrap: nowrap !important;
+  flex-wrap: nowrap;
   --mat-paginator-container-size: 0px;
 }
 
@@ -196,7 +196,7 @@ table.mat-mdc-table .mat-mdc-header-cell {
   &.scrolled-from-top .sticky-header-shadow {
     --sticky-header-shadow-scale: calc(var(--depth-scale) / 0.6);
     box-shadow: 0 calc(4px * var(--sticky-header-shadow-scale)) calc(6px * var(--sticky-header-shadow-scale))
-      calc(-2px * var(--sticky-header-shadow-scale)) rgba(0, 0, 0, 0.4);
+      calc(-2px * var(--sticky-header-shadow-scale)) var(--sticky-header-shadow-color);
   }
 }
 
@@ -262,7 +262,8 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   // drawn as a circle, and matching the input's height instead would draw it as an ellipse - and
   // is shifted onto the middle of the input row: a translate percentage resolves against the
   // element's own height, so the offset holds whatever the size above is.
-  .filter-actions-group > button {
+  .filter-actions-group > button,
+  .filter-actions-group > app-table-actions-trigger > button {
     align-self: flex-start;
     height: table.$filter-trigger-size;
     width: table.$filter-trigger-size;
@@ -275,8 +276,8 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
     transform: translateY(calc(#{table.$field-input-height} / 2 - 50%));
 
     span.mat-mdc-button-touch-target {
-      height: table.$filter-trigger-size !important;
-      width: table.$filter-trigger-size !important;
+      height: table.$filter-trigger-size;
+      width: table.$filter-trigger-size;
     }
   }
 
@@ -383,46 +384,37 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   --mat-divider-color: var(--mat-sys-color-on-surface);
 }
 
-.height-52 {
+// Fixed row heights of the key/value details tables: a value cell keeps the same height whether it
+// shows text or its edit field, so entering edit mode does not shift the rows below.
+// A single-line form field, or the table row that holds one.
+.details-field-height {
   height: 52px;
 }
 
-.container-form-field {
-  height: 51px;
+mat-form-field.details-field-height {
+  --mat-form-field-container-height: 52px;
+  --mat-form-field-container-vertical-padding: 8px;
 }
 
-.height-115 {
-  height: 115px;
+// A single-line value cell: the field plus the 1px row border.
+.details-row-height {
+  height: 53px;
 }
 
-.height-136 {
-  height: 136px;
-}
-
-.height-137 {
-  height: 137px;
-}
-
-.height-77 {
-  height: 77px;
-}
-
-.height-78 {
+// A two-line value cell (the realm and token group chip lists).
+.details-row-height-tall {
   height: 78px;
+}
+
+// Width of the value column in the details tables.
+.details-value-cell-width {
+  width: 241px;
+  max-width: 241px;
 }
 
 .scroll-margin-pad {
   margin-right: -16px;
   padding-right: 16px;
-}
-
-.flex-column {
-  display: flex;
-  flex-direction: column;
-}
-
-.height-auto {
-  height: auto;
 }
 
 table.mat-mdc-table {
@@ -554,7 +546,7 @@ app-details-card .details-header {
   .details-table.border-bottom-none {
     tr:last-child td,
     tr:last-child th {
-      border-bottom: none !important;
+      border-bottom: none;
     }
   }
 
@@ -599,13 +591,19 @@ app-details-card .details-header {
 
   .container-details-token-table-layout .mat-mdc-text-field-wrapper,
   .add-token .mat-mdc-text-field-wrapper {
-    padding-left: 16px !important;
+    padding-left: 16px;
   }
 
-  .details-table
-    .mat-mdc-form-field:not(.height-77):not(.height-115):not(.height-126):not(.height-136):not(.height-137) {
+  .details-table .mat-mdc-form-field {
     --mat-form-field-container-height: 52px;
     --mat-form-field-container-vertical-padding: 8px;
+  }
+
+  // A multi-line field (the description textarea) opts out of the compact single-line sizing above and
+  // keeps Material's default container.
+  .details-table .mat-mdc-form-field.details-field-multiline {
+    --mat-form-field-container-height: 56px;
+    --mat-form-field-container-vertical-padding: 16px;
   }
 
   .mat-mdc-row {

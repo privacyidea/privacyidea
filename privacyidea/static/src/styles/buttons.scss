@@ -44,7 +44,7 @@ $button-low-contrast-variant: linear-gradient(
   display: flex;
 
   &:disabled {
-    color: #909090 !important;
+    color: var(--grey-base) !important;
   }
 }
 
@@ -322,75 +322,52 @@ $button-low-contrast-variant: linear-gradient(
     cursor: not-allowed;
     opacity: 0.5;
     background-color: var(--mat-sys-surface-variant);
-    color: var(--mat-sys-on-surface-variant);
-    border-color: var(--mat-sys-outline);
+    --mat-button-outlined-disabled-label-text-color: var(--mat-sys-on-surface-variant);
+    --mat-button-outlined-disabled-outline-color: var(--mat-sys-outline);
   }
 }
 
-@mixin action-button(
-  $bg,
-  $color,
-  $hover-bg,
-  $ripple: null,
-  $ripple-mdc: null,
-  $layer: null,
-  $border: true,
-  $primary: false
-) {
+@mixin action-button($bg, $color, $ripple: null, $ripple-mdc: null, $layer: null, $border: true, $primary: false) {
   @extend %action-button-base;
   background-color: $bg;
 
+  // Material's outlined-button rule (.mat-mdc-outlined-button:not(:disabled) / [disabled]) reads the
+  // label and outline colours from these tokens. It has the same specificity as a plain
+  // color / border-color declaration here and is injected at runtime, so the tokens (not the
+  // properties) carry the colours; they work from the global sheet regardless of stylesheet order.
+  --mat-button-outlined-label-text-color: #{$color};
+  @if $border {
+    --mat-button-outlined-outline-color: #{$color};
+  } @else {
+    --mat-button-outlined-outline-width: 0;
+    border-width: 0;
+  }
   @if $layer {
     --mat-button-outlined-state-layer-color: #{$layer};
-    --mat-stroked-button-state-layer-color: #{$layer};
   }
   @if $ripple {
     --mat-button-outlined-ripple-color: #{$ripple};
-    --mat-stroked-button-ripple-color: #{$ripple};
   }
   @if $ripple-mdc {
     --mat-ripple-color: #{$ripple-mdc};
   }
 
-  @if not $border {
-    border: none !important;
-  }
-
   &:not([disabled]) {
-    // Set the rest background here (not only at the top level) so it wins over
+    // The rest background is set here (not only at the top level) so it wins over
     // Material's transparent outlined-button background; otherwise a stroked
     // action button shows its container through and looks darker on a non-white
     // surface (e.g. the recessed stage well) than on the white page.
-    //
-    // !important on background-color and color: Material's own default outlined-button rule
-    // (.mat-mdc-outlined-button:not(:disabled)) sets the label to the theme's primary color at the same
-    // selector specificity as this one, so which wins is a coin flip decided by stylesheet load order -
-    // it loses inside a dialog's CDK overlay, where the button's compiled styles can be injected after the
-    // global bundle. A secondary button's label color already matches Material's default (both are
-    // primary-colored text), so the loss is invisible there; a primary/delete-primary button's near-white
-    // label does not, and silently renders as unreadable same-color-as-background text.
+    // !important keeps the rest background through hover; the hover feedback is Material's state layer.
     background-color: $bg !important;
+    // !important on color: inside a mat-toolbar Material re-points the label token at the toolbar text
+    // colour with a higher-specificity rule (.mat-toolbar .mat-mdc-button-base.mat-mdc-button-base.mat-unthemed),
+    // which would otherwise override the token above.
     color: $color !important;
-    // Material reads the label color from this variable, not from the plain
-    // `color` property above, so without it the outlined-button label stays
-    // the theme's primary color regardless of $color.
-    --mat-button-outlined-label-text-color: #{$color};
-    @if $border {
-      border-color: $color;
-    }
-
-    &:hover {
-      background-color: $hover-bg;
-    }
   }
 
   @if $primary {
     &[disabled] {
-      background-color: var(--mat-sys-surface-container-high) !important;
-      color: var(--mat-sys-on-surface-variant) !important;
-      @if $border {
-        border-color: var(--mat-sys-surface-container-highest) !important;
-      }
+      background-color: var(--mat-sys-surface-container-high);
     }
   }
 }
@@ -399,7 +376,6 @@ $button-low-contrast-variant: linear-gradient(
   @include action-button(
     var(--mat-sys-primary),
     var(--mat-sys-surface-container-lowest),
-    var(--mat-sys-primary-base-active),
     $border: false,
     $primary: true
   );
@@ -414,44 +390,39 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .action-button-secondary {
-  @include action-button(
-    var(--mat-sys-surface-container-lowest),
-    var(--mat-sys-primary),
-    var(--sky-bg),
-    $ripple-mdc: var(--sky-bg)
-  );
+  @include action-button(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary), $ripple-mdc: var(--sky-bg));
 }
 
-// The Material rule for an outlined button (.mat-mdc-outlined-button:not(:disabled)) sets the label
-// and outline colour with the same specificity as the class rules here, and it is injected at
-// runtime with the button component, so which of the two wins depends on the order the stylesheets
-// happen to land in. Setting Material's own tokens takes that order out of the picture: its rule
-// then paints the destructive colour itself, wherever the button is used.
 .action-button-delete-primary {
   @include action-button(
     var(--red-base),
     var(--mat-sys-surface-container-lowest),
-    var(--red-light),
     $ripple: var(--red-light-active),
     $ripple-mdc: var(--rose-bg),
     $layer: var(--rose-bg),
     $border: false,
     $primary: true
   );
-  --mat-button-outlined-label-text-color: var(--mat-sys-surface-container-lowest);
 }
 
 .action-button-delete-secondary {
   @include action-button(
     var(--mat-sys-surface-container-lowest),
     var(--red-base),
-    var(--rose-bg),
     $ripple: var(--rose-ripple),
     $ripple-mdc: var(--rose-bg),
     $layer: var(--rose-bg)
   );
-  --mat-button-outlined-label-text-color: var(--red-base);
-  --mat-button-outlined-outline-color: var(--red-base);
+}
+
+.action-button-warn-secondary {
+  @include action-button(
+    var(--mat-sys-surface-container-lowest),
+    var(--warn-base),
+    $ripple: color-mix(in srgb, var(--warn-base) 20%, transparent),
+    $ripple-mdc: color-mix(in srgb, var(--warn-base) 12%, transparent),
+    $layer: color-mix(in srgb, var(--warn-base) 12%, transparent)
+  );
 }
 
 .filter-button {

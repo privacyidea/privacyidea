@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 @use "@angular/material" as mat;
 
 .sms-gateway-page-layout {

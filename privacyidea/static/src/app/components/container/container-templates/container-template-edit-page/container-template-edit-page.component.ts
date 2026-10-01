@@ -27,7 +27,6 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatListModule } from "@angular/material/list";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -58,7 +57,6 @@ import { deepCopy } from "@utils/deep-copy.utils";
     MatCardModule,
     MatIconModule,
     MatButtonModule,
-    MatTooltipModule,
     MatFormFieldModule,
     MatListModule,
     MatCheckboxModule,

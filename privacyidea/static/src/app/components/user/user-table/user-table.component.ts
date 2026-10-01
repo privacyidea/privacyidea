@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
@@ -59,7 +60,6 @@ import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/inp
 import { MatPaginator } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatMenuModule } from "@angular/material/menu";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -108,6 +108,7 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
 @Component({
   selector: "app-user-table",
   imports: [
+    TableActionsTriggerComponent,
     InfoHintComponent,
     MatSuffix,
     RefocusAfterReloadDirective,
@@ -142,7 +143,6 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
     PaginatorPageSizeTooltipDirective,
     PaginatorCompactRangeDirective,
     MatMenuModule,
-    MatTooltipModule
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
