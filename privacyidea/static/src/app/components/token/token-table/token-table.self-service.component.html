@@ -86,7 +86,9 @@
                         (click)="contentService.tokenSelected(element.serial)"
                         (keydown.enter)="contentService.tokenSelected(element.serial)"
                         (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                        [appTruncationTooltip]="element.serial"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
@@ -102,13 +104,19 @@
                           (keydown.space)="
                             $event.preventDefault(); contentService.navigateContainerDetails(element.container_serial)
                           "
+                          [appTruncationTooltip]="element.container_serial"
                           [attr.aria-label]="linkLabel(column.label)"
+                          class="cell-truncate"
                           role="button"
                           tabindex="0">
                           {{ element[column.key] }}
                         </a>
                       } @else {
-                        {{ element[column.key] }}
+                        <span
+                          [appTruncationTooltip]="element[column.key]"
+                          class="cell-truncate">
+                          {{ element[column.key] }}
+                        </span>
                       }
                     </app-copyable>
                   }

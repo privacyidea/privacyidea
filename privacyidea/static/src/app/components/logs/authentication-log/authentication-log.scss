@@ -43,17 +43,6 @@
   overflow-wrap: break-word;
 }
 
-// Long values clipped so they cannot widen the table, paired with one of the width classes below (see
-// TRUNCATED_COLUMN_CLASSES). A flex item of the copyable row, hence the explicit min-width: 0 to let it shrink below
-// its content. white-space: nowrap is needed on the element itself now that the table no longer forces it table-wide
-// (see table-layout: fixed above) - without it the ellipsis never triggers, the text just wraps instead.
-.cell-truncate {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 // The opaque ids (32 hex chars for an attempt, 20 digits for a transaction): their leading characters already tell rows
 // apart, and the rest is read from the tooltip or the copy button.
 .cell-truncate-id {

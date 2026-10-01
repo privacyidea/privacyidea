@@ -211,8 +211,9 @@
                         (click)="contentService.tokenSelected(tokenDetails.serial)"
                         (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
                         (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
+                        [appTruncationTooltip]="tokenDetails.serial"
                         [attr.aria-label]="linkLabel(column.label)"
-                        class="flex ali-center"
+                        class="cell-truncate"
                         role="button"
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
@@ -265,7 +266,9 @@
                           $event.preventDefault();
                           contentService.navigateContainerDetails(tokenDetails.container_serial)
                         "
+                        [appTruncationTooltip]="tokenDetails.container_serial"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         role="button"
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
@@ -287,7 +290,9 @@
                           $event.preventDefault();
                           contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
                         "
+                        [appTruncationTooltip]="tokenDetails[column.key]"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         role="button"
                         tabindex="0">
                         {{ tokenDetails[column.key] }}
