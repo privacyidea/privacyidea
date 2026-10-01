@@ -1708,6 +1708,33 @@ class TestPIManageConfigImport:
             assert "cliyamlres" in get_resolver_list()
             delete_resolver("cliyamlres")
 
+    def test_08_import_ambiguous_event_handler_name_exits_nonzero(self, app, tmp_path):
+        from privacyidea.lib.event import EventConfiguration, delete_event, set_event
+
+        def exported(name, event):
+            return {"id": 1, "name": name, "event": [event], "handlermodule": "UserNotification",
+                    "action": "sendmail", "ordering": 0, "active": True, "position": "post",
+                    "abort_on_error": False, "condition": "", "options": {}, "conditions": {}}
+
+        with app.app_context():
+            for event in ("token_assign", "token_revoke"):
+                set_event("cliimpevent", event, "UserNotification", "sendmail")
+        infile = tmp_path / "events.json"
+        infile.write_text(json.dumps({"event": [exported("cliimpevent", "token_init"),
+                                                exported("cliimpother", "token_init")]}))
+        runner = app.test_cli_runner()
+        result = runner.invoke(pi_manage, ["config", "import", "-i", str(infile)])
+        assert result.exit_code == 1, result.output
+        assert "Failed configuration types: event" in result.output
+        assert 'Skipped ambiguous event handlers: "cliimpevent" with handler module "UserNotification".' \
+            in result.output
+        with app.app_context():
+            events = {(e["name"], tuple(e["event"])): e["id"] for e in EventConfiguration().events}
+            assert set(events) == {("cliimpevent", ("token_assign",)), ("cliimpevent", ("token_revoke",)),
+                                   ("cliimpother", ("token_init",))}
+            for event_id in events.values():
+                delete_event(event_id)
+
 
 class PIManageChallengeTestCase(CliTestCase):
     """
