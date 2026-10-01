@@ -52,34 +52,16 @@ from privacyidea.lib.utils import (is_true, censor_connect_string,
 from privacyidea.lib.error import ParameterError, ResolverError
 from privacyidea.lib.metrics import track_resolver_op
 
-# TODO passlib has to be replaced before the next release, this is just a workaround that can not stay
-# passlib 1.7.4 compatibility with modern bcrypt. Two breaking changes:
-# 1. bcrypt 4.1.0 removed __about__.__version__ — passlib uses it for version detection.
-#    https://github.com/pyca/bcrypt/issues/684
-# 2. bcrypt 5.0.0 raises ValueError for passwords > 72 bytes instead of silently
-#    truncating. passlib's wrap-bug detection passes a long password to hashpw during
-#    backend initialization, which crashes and causes all bcrypt verification to silently
-#    return False.
-import bcrypt as _bcrypt
-if not hasattr(_bcrypt, '__about__'):
-    _bcrypt.__about__ = type('__about__', (), {'__version__': _bcrypt.__version__})()
-_orig_hashpw = _bcrypt.hashpw
-def _hashpw_compat(password, salt):
-    if isinstance(password, bytes) and len(password) > 72:
-        password = password[:72]
-    return _orig_hashpw(password, salt)
-_bcrypt.hashpw = _hashpw_compat
-
-# passlib imports must stay below the bcrypt monkey-patch above (E402 suppressed).
-from passlib.context import CryptContext  # noqa: E402
-from passlib.utils import h64  # noqa: E402
-from passlib.utils.compat import uascii_to_str  # noqa: E402
-from passlib.utils.compat import unicode as pl_unicode  # noqa: E402
-from passlib.utils import to_unicode  # noqa: E402
-import passlib.utils.handlers as uh  # noqa: E402
-import passlib.exc as exc  # noqa: E402
-from passlib.registry import register_crypt_handler  # noqa: E402
-from passlib.handlers.ldap_digests import _SaltedBase64DigestHelper  # noqa: E402
+from privacyidea.lib import passlib_compat  # noqa: F401 - patches bcrypt for the bcrypt scheme in pw_ctx
+from passlib.context import CryptContext
+from passlib.utils import h64
+from passlib.utils.compat import uascii_to_str
+from passlib.utils.compat import unicode as pl_unicode
+from passlib.utils import to_unicode
+import passlib.utils.handlers as uh
+import passlib.exc as exc
+from passlib.registry import register_crypt_handler
+from passlib.handlers.ldap_digests import _SaltedBase64DigestHelper
 
 # The number of user IDs that go into one query in get_user_info_batch. Databases cap the number of
 # bind parameters a statement may carry, so the IDs of a large page are looked up in several queries.

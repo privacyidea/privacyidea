@@ -43,6 +43,7 @@ import os
 import logging
 import codecs
 
+from privacyidea.lib import passlib_compat  # noqa: F401 - patches bcrypt for the bcrypt scheme in crypt_ctx
 from passlib.context import CryptContext
 
 from privacyidea.lib.error import ParameterError
