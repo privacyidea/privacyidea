@@ -868,24 +868,30 @@ $corner-radii: (
 // Standardized table column width tiers (analogous to the card-width-* tiers above): a column opts
 // into one via a col-width-{size} class on its cell instead of a one-off pixel value, so every
 // table's columns - and the table-state placeholder sized from them (see table.table-width()) -
-// draw from the same scale.
+// draw from the same scale. The tier is the column's width, not a hint: min-width keeps a narrow
+// card from squeezing the column down to its content (which differs with a row's hovered cell
+// actions), so the table scrolls inside its region instead.
 .col-width-s {
   width: var(--column-width-s);
+  min-width: var(--column-width-s);
   max-width: var(--column-width-s);
 }
 
 .col-width-m {
   width: var(--column-width-m);
+  min-width: var(--column-width-m);
   max-width: var(--column-width-m);
 }
 
 .col-width-l {
   width: var(--column-width-l);
+  min-width: var(--column-width-l);
   max-width: var(--column-width-l);
 }
 
 .col-width-xl {
   width: var(--column-width-xl);
+  min-width: var(--column-width-xl);
   max-width: var(--column-width-xl);
 }
 
