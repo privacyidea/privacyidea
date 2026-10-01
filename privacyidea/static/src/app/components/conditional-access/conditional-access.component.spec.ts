@@ -107,6 +107,15 @@ describe("ConditionalAccessComponent", () => {
     expect(component.policyDataSource().data[0].name).toBe("Brute Force");
   });
 
+  it("lists every policy on one page, with no paginator", () => {
+    const policies = Array.from({ length: 25 }, (_, i) => ({ ...samplePolicy, id: i + 1, name: `Policy ${i + 1}` }));
+    policyServiceMock.policies.set(policies);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("mat-paginator")).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll("tr.mat-mdc-row").length).toBe(25);
+  });
+
   it("should filter by name and by tracked event type", () => {
     component.onFilterInput("brute");
     expect(component.policyDataSource().filter).toBe("brute");
@@ -116,12 +125,8 @@ describe("ConditionalAccessComponent", () => {
   });
 
   it("should filter rows by a tracked counter type even when the name does not match", () => {
-    expect(
-      component.policyDataSource().filterPredicate(samplePolicy, "pin_fail")
-    ).toBe(true);
-    expect(
-      component.policyDataSource().filterPredicate(samplePolicy, "no_such_thing")
-    ).toBe(false);
+    expect(component.policyDataSource().filterPredicate(samplePolicy, "pin_fail")).toBe(true);
+    expect(component.policyDataSource().filterPredicate(samplePolicy, "no_such_thing")).toBe(false);
   });
 
   it("reports and clears its own filter through the shared table state", () => {
