@@ -291,6 +291,54 @@ class WebhookAPITestCase(MyApiTestCase):
         self.assertEqual({"A": "1", "B": "2"}, stored["headers"])
         self.assertEqual(["A"], stored["secret_headers"])
 
+    def test_19f_renaming_a_secret_header_keeps_its_value(self):
+        """
+        The client only ever holds ``__CENSORED__`` for a secret header, and that means "keep what
+        is stored under this name". Under the new name nothing is stored, so the rename has to be
+        stated - only the client knows one happened.
+        """
+        self._create("hook1", **{"header.X-Api-key": "s3cr3t",
+                                 "secret.header.X-Api-key": "1"})
+
+        response = self._request("/webhook/hook1", "POST",
+                                 {"header.X-API-Key": CENSORED,
+                                  "secret.header.X-API-Key": "1",
+                                  "rename.header.X-API-Key": "X-Api-key"})
+
+        self.assertEqual(200, response.status_code, response.data)
+        stored = get_webhook("hook1")
+        self.assertEqual({"X-API-Key": "s3cr3t"}, stored["headers"])
+        self.assertEqual(["X-API-Key"], stored["secret_headers"])
+
+    def test_19g_a_rename_without_its_header_is_refused(self):
+        # Same rule as a secret flag: it is a property of a header of the set being sent.
+        self._create("hook1", **{"header.A": "1"})
+
+        response = self._request("/webhook/hook1", "POST", {"rename.header.B": "A"})
+
+        self.assertEqual(400, response.status_code, response.data)
+        self.assertIn("rename.header.B", response.json["result"]["error"]["message"])
+        self.assertEqual({"A": "1"}, get_webhook("hook1")["headers"])
+
+    def test_19h_a_rename_to_a_header_that_is_also_sent_is_refused(self):
+        # Two rows would claim one name, and which value survived would be an accident.
+        self._create("hook1", **{"header.A": "1", "header.B": "2"})
+
+        response = self._request("/webhook/hook1", "POST",
+                                 {"header.A": "1", "header.B": CENSORED,
+                                  "rename.header.B": "A"})
+
+        self.assertEqual(400, response.status_code, response.data)
+        self.assertEqual({"A": "1", "B": "2"}, get_webhook("hook1")["headers"])
+
+    def test_19i_renaming_a_header_to_itself_is_refused(self):
+        self._create("hook1", **{"header.A": "1"})
+
+        response = self._request("/webhook/hook1", "POST",
+                                 {"header.A": CENSORED, "rename.header.A": "A"})
+
+        self.assertEqual(400, response.status_code, response.data)
+
     # ------------------------------------------------------------------
     # verify_tls
     # ------------------------------------------------------------------

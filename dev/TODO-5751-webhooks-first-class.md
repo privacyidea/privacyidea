@@ -841,7 +841,7 @@ reference, inline path).
   blocked ranges, the allowlist syntax, that a configured proxy is what gets checked — and the DNS-rebinding limit,
   which the design doc had recorded as an accepted trade-off but which appeared nowhere a reader would find it
 - [x] The **Test** button fires the stored configuration, so it is disabled while the form has unsaved changes
-- [x] Secret handling and the rename caveat (see B in the review follow-ups)
+- [x] Secret handling, including that renaming a header keeps its value (see the rename follow-up below)
 
 ### 9.2 — Event handler documentation update ✅
 

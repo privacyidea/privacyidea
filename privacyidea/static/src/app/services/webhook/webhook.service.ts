@@ -86,7 +86,7 @@ export interface WebhookServiceInterface {
   readonly webhooks: Signal<Webhook[]>;
   readonly webhookIdentifiers: Signal<string[]>;
 
-  postWebhook(webhook: Webhook): Promise<void>;
+  postWebhook(webhook: Webhook, headerRenames?: Record<string, string>): Promise<void>;
 
   testWebhook(identifier: string, payload?: string): Promise<WebhookTestResult | null>;
 
@@ -135,7 +135,7 @@ export class WebhookService implements WebhookServiceInterface {
    * "remove the last one" - with no `header.*` parameter at all the server keeps the stored set,
    * so an emptied header table would otherwise be a silent no-op.
    */
-  private static toRequestBody(webhook: Webhook): Record<string, unknown> {
+  private static toRequestBody(webhook: Webhook, headerRenames?: Record<string, string>): Record<string, unknown> {
     // `id` is the database key the list carries; the endpoint takes the identifier from the path.
     const { headers, secret_headers, id: __, ...rest } = webhook;
     const body: Record<string, unknown> = { ...rest };
@@ -146,15 +146,26 @@ export class WebhookService implements WebhookServiceInterface {
         body[`secret.header.${name}`] = "1";
       }
     }
+    for (const [newName, oldName] of Object.entries(headerRenames ?? {})) {
+      if (newName !== oldName && names.includes(newName)) {
+        body[`rename.header.${newName}`] = oldName;
+      }
+    }
     if (names.length === 0) {
       body["clear_headers"] = true;
     }
     return body;
   }
 
-  async postWebhook(webhook: Webhook): Promise<void> {
+  /**
+   * @param headerRenames new header name -> the name it is stored under. A header is addressed by
+   *   its name, so without this a rename is a delete plus a create - and the editor never holds a
+   *   secret header's value, only the `__CENSORED__` placeholder, which means "keep what is stored
+   *   under this name". Only the client knows a rename happened, so only it can say so.
+   */
+  async postWebhook(webhook: Webhook, headerRenames?: Record<string, string>): Promise<void> {
     const url = `${this.webhookBaseUrl}${encodeURIComponent(webhook.identifier)}`;
-    const request = this.http.post<PiResponse<number>>(url, WebhookService.toRequestBody(webhook), {
+    const request = this.http.post<PiResponse<number>>(url, WebhookService.toRequestBody(webhook, headerRenames), {
       headers: this.authService.getHeaders()
     });
 

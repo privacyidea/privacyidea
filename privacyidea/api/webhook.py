@@ -56,6 +56,8 @@ webhook_blueprint = Blueprint('webhook_blueprint', __name__)
 HEADER_PREFIX = "header."
 #: Prefix marking a header as secret, i.e. to be stored encrypted.
 SECRET_HEADER_PREFIX = "secret.header."
+#: Prefix naming the header a header is being renamed from.
+RENAME_HEADER_PREFIX = "rename.header."
 
 
 def _parse_headers(param):
@@ -72,41 +74,63 @@ def _parse_headers(param):
     which is what a client flipping only the encryption flag used to do.
 
     :param param: the request parameters
-    :return: a ``(headers, secret_headers, given)`` tuple. ``given`` is True if the request
-        carried the header set, which is what distinguishes "replace the headers" from "leave
-        them alone". Only a ``header.*`` sets it: a flag is a property of a header, not a header,
-        so it cannot express "these are all of them".
-    :raises ParameterError: if a ``secret.header.*`` has no ``header.*`` of the same name
+    ``rename.header.X-API-Key=X-Api-key`` says that the header now called ``X-API-Key`` is the one
+    stored as ``X-Api-key``. A header is addressed by its name here, so without saying so a rename
+    is a delete plus a create - and a secret header's value is one the client does not have, only
+    the ``__CENSORED__`` placeholder, which means "keep what is stored under this name". The
+    identity has to come from the client because only the client knows a rename happened.
+
+    :param param: the request parameters
+    :return: a ``(headers, secret_headers, renames, given)`` tuple. ``given`` is True if the
+        request carried the header set, which is what distinguishes "replace the headers" from
+        "leave them alone". Only a ``header.*`` sets it: a flag or a rename is a property of a
+        header, not a header, so neither can express "these are all of them".
+    :raises ParameterError: if a ``secret.header.*`` or ``rename.header.*`` has no ``header.*`` of
+        the same name, or if a rename names the header it renames to
     """
     headers = {}
     # Every name seen with the secret prefix, whether it was flagged on or off: a
     # ``secret.header.X=0`` for a header that is not being sent is as meaningless as one set to 1.
     secret_flags = set()
     secret_headers = set()
+    renames = {}
     given = False
 
     for key, value in param.items():
         if key.startswith(SECRET_HEADER_PREFIX):
-            # Check the longer prefix first: "secret.header.X" also starts
-            # with neither "header." nor anything else we care about, but
-            # being explicit keeps the two branches independent.
+            # Check the longer prefixes first: "secret.header.X" and "rename.header.X" also start
+            # with neither "header." nor anything else we care about, but being explicit keeps the
+            # branches independent.
             name = key[len(SECRET_HEADER_PREFIX):]
             secret_flags.add(name)
             if is_true(value):
                 secret_headers.add(name)
+        elif key.startswith(RENAME_HEADER_PREFIX):
+            renames[key[len(RENAME_HEADER_PREFIX):]] = value
         elif key.startswith(HEADER_PREFIX):
             given = True
             headers[key[len(HEADER_PREFIX):]] = value
 
-    orphaned = sorted(secret_flags - set(headers))
+    # Named as the parameters the client actually sent, not as bare header names: a name can
+    # arrive under either prefix, and "X-Api-Key is orphaned" does not say which line to fix.
+    orphaned = sorted(
+        [f"{SECRET_HEADER_PREFIX}{name}" for name in secret_flags - set(headers)]
+        + [f"{RENAME_HEADER_PREFIX}{name}" for name in set(renames) - set(headers)])
     if orphaned:
         raise ParameterError(
-            f"Secret header flag(s) without a header of the same name: "
-            f"{', '.join(f'{SECRET_HEADER_PREFIX}{name}' for name in orphaned)}. "
-            f"Sending any '{HEADER_PREFIX}*' parameter replaces the whole header set, so send "
-            f"every header you want to keep, each with its own flag.")
+            f"Parameter(s) naming a header that is not part of the request: "
+            f"{', '.join(orphaned)}. Sending any '{HEADER_PREFIX}*' parameter replaces the whole "
+            f"header set, so send every header you want to keep, each with its own flag.")
 
-    return headers, secret_headers, given
+    # Renaming a header to the name it already has says nothing; renaming it to a name that is
+    # also being sent as a header of its own would have two rows claim one name.
+    conflicting = sorted(new for new, old in renames.items() if new == old or old in headers)
+    if conflicting:
+        raise ParameterError(
+            f"Rename(s) naming a header that is also being sent, or renaming a header to itself: "
+            f"{', '.join(f'{RENAME_HEADER_PREFIX}{name}' for name in conflicting)}.")
+
+    return headers, secret_headers, renames, given
 
 
 @webhook_blueprint.route('/', methods=['GET'])
@@ -211,6 +235,13 @@ def set_webhook_api(identifier=None):
         stored encrypted, e.g. ``secret.header.X-Api-Key=1``. It is a
         property of a header of the set being sent, so it requires a
         ``header.*`` of the same name; a flag on its own results in a 400.
+    :jsonparam rename.header.*: the name a header is currently stored under,
+        e.g. ``rename.header.X-API-Key=X-Api-key`` renames ``X-Api-key`` to
+        ``X-API-Key`` and the row keeps its value. Without it a rename is a
+        delete plus a create, which loses the value of a secret header - the
+        client only ever holds ``__CENSORED__`` for it, and that means "keep
+        what is stored under this name". Requires a ``header.*`` of the new
+        name; re-sending a rename that has already been applied is a no-op.
     :jsonparam clear_headers: set to true to remove all headers. Needed
         because "no ``header.*`` parameters" means "leave the headers
         alone", so there would otherwise be no way to delete the last one.
@@ -219,7 +250,7 @@ def set_webhook_api(identifier=None):
     """
     param = request.all_data
 
-    headers, secret_headers, headers_given = _parse_headers(param)
+    headers, secret_headers, header_renames, headers_given = _parse_headers(param)
     if not headers_given and is_true(get_optional(param, "clear_headers")):
         headers_given = True
 
@@ -255,6 +286,7 @@ def set_webhook_api(identifier=None):
         timeout=get_optional(param, "timeout"),
         headers=headers if headers_given else None,
         secret_headers=secret_headers if headers_given else None,
+        header_renames=header_renames if headers_given else None,
     )
 
     # Log the identifier, never the URL: it may embed a token.

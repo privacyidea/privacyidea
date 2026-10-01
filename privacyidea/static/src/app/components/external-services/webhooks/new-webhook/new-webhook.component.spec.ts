@@ -151,7 +151,8 @@ describe("NewWebhookComponent", () => {
         expect.objectContaining({
           headers: { "X-Api-Key": "s3cr3t", "X-Source": "privacyidea" },
           secret_headers: ["X-Api-Key"]
-        })
+        }),
+        {}
       );
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS);
     });
@@ -174,15 +175,16 @@ describe("NewWebhookComponent", () => {
       expect(model.url).toBe("https://siem.example.com/hook");
       expect(model.timeout).toBe(5);
       expect(component.headers()).toEqual([
-        { key: "X-Api-Key", value: WEBHOOK_CENSORED, secret: true },
-        { key: "X-Source", value: "privacyidea", secret: false }
+        { key: "X-Api-Key", value: WEBHOOK_CENSORED, secret: true, originalKey: "X-Api-Key" },
+        { key: "X-Source", value: "privacyidea", secret: false, originalKey: "X-Source" }
       ]);
     });
 
     it("sends the censored placeholder back unchanged, keeping the stored secret", async () => {
       await component.save();
       expect(webhookServiceMock.postWebhook).toHaveBeenCalledWith(
-        expect.objectContaining({ headers: expect.objectContaining({ "X-Api-Key": WEBHOOK_CENSORED }) })
+        expect.objectContaining({ headers: expect.objectContaining({ "X-Api-Key": WEBHOOK_CENSORED }) }),
+        {}
       );
     });
 
@@ -206,13 +208,46 @@ describe("NewWebhookComponent", () => {
 
       await component.save();
 
-      expect(webhookServiceMock.postWebhook).toHaveBeenCalledWith(expect.objectContaining({ identifier: "siem" }));
+      expect(webhookServiceMock.postWebhook).toHaveBeenCalledWith(expect.objectContaining({ identifier: "siem" }), {});
     });
 
     it("can test an unchanged definition, but not once it is edited", () => {
       expect(component.canTest()).toBe(true);
       component.updateHeader(0, { value: "new" });
       expect(component.canTest()).toBe(false);
+    });
+
+    it("tells the server which header a renamed one used to be", async () => {
+      // The form only ever holds __CENSORED__ for a secret header, and that means "keep what is
+      // stored under this name". Under the new name nothing is stored, so without saying that this
+      // is a rename the credential is created empty and the save still reports success.
+      component.updateHeader(0, { key: "X-API-Key" });
+
+      await component.save();
+
+      expect(webhookServiceMock.postWebhook).toHaveBeenCalledWith(
+        expect.objectContaining({
+          headers: expect.objectContaining({ "X-API-Key": WEBHOOK_CENSORED })
+        }),
+        { "X-API-Key": "X-Api-Key" }
+      );
+    });
+
+    it("reports no rename for a row that only changed its value", async () => {
+      component.updateHeader(1, { value: "changed" });
+
+      await component.save();
+
+      expect(webhookServiceMock.postWebhook).toHaveBeenCalledWith(expect.anything(), {});
+    });
+
+    it("reports no rename for a row the admin added", async () => {
+      component.addHeader();
+      component.updateHeader(2, { key: "X-New", value: "v" });
+
+      await component.save();
+
+      expect(webhookServiceMock.postWebhook).toHaveBeenCalledWith(expect.anything(), {});
     });
 
     it("counts a header-only edit as an unsaved change", () => {

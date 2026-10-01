@@ -56,6 +56,13 @@ interface HeaderRow {
   key: string;
   value: string;
   secret: boolean;
+  /**
+   * The name this row was loaded under, absent for a row the admin added. When it differs from
+   * `key` the row was renamed, and the save says so - otherwise the server sees a delete plus a
+   * create and a secret header's value is lost, since this form only ever holds the placeholder
+   * for it.
+   */
+  originalKey?: string;
 }
 
 interface WebhookFormModel {
@@ -257,8 +264,17 @@ export class NewWebhookComponent implements OnDestroy {
       secret_headers: rows.filter((row) => row.secret).map((row) => row.key.trim())
     };
 
+    // A row that was loaded under another name was renamed. The server addresses a header by its
+    // name, so it has to be told; otherwise the rename is a delete plus a create and a secret
+    // header's value is gone, because this form only ever held the placeholder for it.
+    const renames = Object.fromEntries(
+      this.headers()
+        .filter((row) => row.originalKey && row.key.trim() && row.originalKey !== row.key.trim())
+        .map((row) => [row.key.trim(), row.originalKey as string])
+    );
+
     try {
-      await this.webhookService.postWebhook(webhook);
+      await this.webhookService.postWebhook(webhook, renames);
       this.pendingChangesService.clearAllRegistrations();
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_WEBHOOKS);
       return true;
@@ -333,7 +349,8 @@ export class NewWebhookComponent implements OnDestroy {
       Object.entries(data?.headers ?? {}).map(([key, value]) => ({
         key,
         value,
-        secret: secretHeaders.includes(key)
+        secret: secretHeaders.includes(key),
+        originalKey: key
       }))
     );
     this.headersDirty.set(false);

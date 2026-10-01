@@ -341,6 +341,68 @@ class WebhookCrudTestCase(MyTestCase):
         self.assertEqual(webhook["headers"], {"Authorization": "", "X-Env": "prod"})
         self.assertEqual(webhook["secret_headers"], ["Authorization"])
 
+    def test_renaming_a_secret_header_keeps_its_value(self):
+        """
+        The caller never holds a secret header's value, only the placeholder, and that means "keep
+        what is stored under this name". Under a new name nothing is stored, so without being told
+        about the rename the credential is created empty and the save still reports success.
+        """
+        set_webhook("siem", url="https://siem.example.com/ingest", headers={"X-Api-key": "s3cr3t"},
+                    secret_headers={"X-Api-key"})
+
+        set_webhook("siem", headers={"X-API-Key": CENSORED}, secret_headers={"X-API-Key"},
+                    header_renames={"X-API-Key": "X-Api-key"})
+
+        stored = get_webhook("siem", censor=False)
+        self.assertEqual({"X-API-Key": "s3cr3t"}, stored["headers"])
+        self.assertEqual(["X-API-Key"], stored["secret_headers"])
+
+    def test_renaming_a_plain_header_keeps_its_value_too(self):
+        set_webhook("siem", url="https://siem.example.com/ingest", headers={"X-Source": "privacyidea"})
+
+        set_webhook("siem", headers={"X-Origin": CENSORED},
+                    header_renames={"X-Origin": "X-Source"})
+
+        self.assertEqual({"X-Origin": "privacyidea"}, get_webhook("siem")["headers"])
+
+    def test_a_rename_may_be_sent_twice(self):
+        # A double submit must not fail a request that has already done what it asked for.
+        set_webhook("siem", url="https://siem.example.com/ingest", headers={"X-Api-key": "s3cr3t"},
+                    secret_headers={"X-Api-key"})
+        renamed = dict(headers={"X-API-Key": CENSORED}, secret_headers={"X-API-Key"},
+                       header_renames={"X-API-Key": "X-Api-key"})
+
+        set_webhook("siem", **renamed)
+        set_webhook("siem", **renamed)
+
+        self.assertEqual({"X-API-Key": "s3cr3t"}, get_webhook("siem", censor=False)["headers"])
+
+    def test_a_rename_of_an_unknown_header_is_refused(self):
+        set_webhook("siem", url="https://siem.example.com/ingest", headers={"X-Source": "privacyidea"})
+
+        self.assertRaisesRegex(
+            ParameterError, "no header named 'X-Nothing' is stored",
+            set_webhook, "siem", headers={"X-New": CENSORED},
+            header_renames={"X-New": "X-Nothing"})
+
+    def test_a_rename_onto_an_existing_header_is_refused(self):
+        # Two rows would claim one name, and which value survived would be an accident.
+        set_webhook("siem", url="https://siem.example.com/ingest", headers={"A": "1", "B": "2"})
+
+        self.assertRaisesRegex(
+            ParameterError, "a header named 'B' already exists",
+            set_webhook, "siem", headers={"A": "1", "B": CENSORED},
+            header_renames={"B": "A"})
+
+    def test_a_rename_without_a_header_set_is_refused(self):
+        # The header set is replaced wholesale, so a rename on its own describes a state the next
+        # write would undo.
+        set_webhook("siem", url="https://siem.example.com/ingest", headers={"A": "1"})
+
+        self.assertRaisesRegex(
+            ParameterError, "requires sending the header set",
+            set_webhook, "siem", description="x", header_renames={"B": "A"})
+
     def test_toggling_header_encryption_off(self):
         """Un-checking 'encrypted' decrypts the stored value in place."""
         set_webhook("hook", url="https://example.com",

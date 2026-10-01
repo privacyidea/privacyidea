@@ -63,20 +63,22 @@ import { Webhook, WebhookService, WebhookServiceInterface } from "@services/webh
   styleUrl: "./webhooks.component.scss"
 })
 export class WebhooksComponent {
-  // The order of these fields is load-bearing, not stylistic: a class field is initialized where it
-  // stands, so anything reading `this.x` must be declared after `x`. Sorting them by visibility or
-  // alphabetically - an IDE "rearrange members" action does exactly that - moves `selector` above
-  // `webhookDataSource`, which then receives `undefined`; it surfaces far away as
   filterString = signal<string>("");
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  // Must stay below webhookDataSource; see the note at the top of the class.
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   selector = new RowSelector<Webhook>({
     keyGetter: (webhook) => webhook.identifier,
-    visibleRows: renderedRows(this.webhookDataSource)
+    // Wrapped rather than passed directly: a class field is initialized where it stands, so
+    // `renderedRows(this.webhookDataSource)` only works while this field sits below that one. An
+    // IDE "rearrange members" has moved it above three times now, and the result was an
+    // `undefined` reaching toObservable() far from where it was caused. The computed defers the
+    // read to first use, so the order of these two fields stops mattering.
+    visibleRows: renderedRows(computed(() => this.webhookDataSource()))
   });
-  // "TypeError: source is not a function" out of toObservable().
   protected readonly webhookService: WebhookServiceInterface = inject(WebhookService);
   totalLength: WritableSignal<number> = computed(() => this.webhookService.webhooks().length) as WritableSignal<number>;
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   webhookDataSource = computed(() => {
     const webhooks = this.webhookService.webhooks();
     const dataSource = new MatTableDataSource(webhooks);
@@ -88,9 +90,6 @@ export class WebhooksComponent {
     dataSource.filter = this.filterString().toLowerCase();
     return dataSource;
   });
-  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
-  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   readonly tableState = new TableState({
     resource: this.webhookService.webhookResource,
     count: () => this.webhookService.webhooks().length,

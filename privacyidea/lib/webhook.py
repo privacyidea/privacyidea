@@ -216,7 +216,47 @@ def _webhook_to_dict(webhook, censor=False):
     return result
 
 
-def _apply_headers(webhook, headers, secret_headers):
+def _apply_renames(webhook, renames):
+    """
+    Rename stored ``webhookheader`` rows before the set is synchronised.
+
+    A header is addressed by its name everywhere else, so without this a rename is a delete plus a
+    create - and the editor never holds a secret header's value, only the ``__CENSORED__``
+    placeholder, which means "keep what is stored under this name". Under the new name nothing is
+    stored, so the credential would be created empty and the save would still report success. The
+    row itself has a stable identity (``webhookheader.id``), and this is what lets a caller use it.
+
+    Applied first, so everything after it finds the row under its new name and the ordinary
+    "keep the stored value" path does the rest.
+
+    Re-sending the same rename is a no-op rather than an error: a double submit would otherwise
+    fail a request that has already done exactly what it asked for.
+
+    :param webhook: the Webhook database object
+    :param renames: dict of new header name -> the name it is stored under
+    :raises ParameterError: if the rename names no stored header, or would overwrite one
+    """
+    existing = {h.key: h for h in webhook.headers}
+    for new_key, old_key in (renames or {}).items():
+        if new_key == old_key:
+            continue
+        old_row, new_row = existing.get(old_key), existing.get(new_key)
+        if old_row is None:
+            if new_row is not None:
+                # Already renamed - the same request sent twice.
+                continue
+            raise ParameterError(f"Cannot rename the header {old_key!r} to {new_key!r}: no header "
+                                 f"named {old_key!r} is stored on this webhook.")
+        if new_row is not None:
+            raise ParameterError(f"Cannot rename the header {old_key!r} to {new_key!r}: a header "
+                                 f"named {new_key!r} already exists on this webhook.")
+        old_row.key = new_key
+        existing[new_key] = existing.pop(old_key)
+        log.info(f"Renamed header {old_key!r} to {new_key!r} on webhook {webhook.identifier!r}, "
+                 f"keeping its stored value.")
+
+
+def _apply_headers(webhook, headers, secret_headers, renames=None):
     """
     Synchronise the ``webhookheader`` rows of ``webhook`` with ``headers``.
 
@@ -229,7 +269,11 @@ def _apply_headers(webhook, headers, secret_headers):
     :param headers: dict of header name -> value
     :param secret_headers: iterable of header names whose values are secret
         and must be stored encrypted
+    :param renames: dict of new header name -> the name it is stored under, applied before
+        anything else looks at the stored rows (see :func:`_apply_renames`)
     """
+    _apply_renames(webhook, renames)
+
     headers = headers or {}
     secret_headers = set(secret_headers or ())
 
@@ -377,7 +421,7 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
                 client_certificate=None, client_key=None,
                 client_key_password=None,
                 http_proxy=None, https_proxy=None, timeout=None,
-                headers=None, secret_headers=None):
+                headers=None, secret_headers=None, header_renames=None):
     """
     Create or update a webhook definition.
 
@@ -417,6 +461,11 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     :type headers: dict or None
     :param secret_headers: iterable of header names whose values must be
         stored encrypted
+    :param header_renames: dict of new header name -> the name it is currently stored under.
+        Applied before the set is synchronised, so the renamed row keeps its value - which is the
+        only way a secret header can be renamed at all, since the caller never holds its value and
+        can only send the ``__CENSORED__`` placeholder for it.
+    :type header_renames: dict or None
     :return: the database id of the webhook
     :raises ParameterError: if a parameter is missing or invalid
     """
@@ -502,7 +551,11 @@ def set_webhook(identifier, url=None, description=None, http_method=None,
     db.session.flush()
 
     if headers is not None:
-        _apply_headers(webhook, headers, secret_headers)
+        _apply_headers(webhook, headers, secret_headers, renames=header_renames)
+    elif header_renames:
+        # A rename without a header set would be a partial update of something that is replaced
+        # wholesale; it describes a state the next write would undo.
+        raise ParameterError("Renaming a header requires sending the header set it belongs to.")
 
     db.session.commit()
     log.info(f"{'Created' if creating else 'Updated'} webhook {identifier!r} "
