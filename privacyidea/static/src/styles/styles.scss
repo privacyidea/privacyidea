@@ -1087,9 +1087,7 @@ tr.mat-mdc-row {
 // fixed column its width, so nothing else moves. Wrapping values keep the room reserved, as reflowing them would shift
 // every row below. Collapsed rather than display: none, so the actions stay in the tab order and the accessibility
 // tree, and tabbing onto one expands it through :focus-visible.
-tr.mat-mdc-row:not(:hover):not(:has(:focus-visible))
-  app-copyable:has(.cell-truncate)
-  :is(app-copy-button, app-filter-value-button) {
+tr.mat-mdc-row:not(:hover):not(:has(:focus-visible)) app-copyable:has(.cell-truncate) .copyable-actions {
   min-width: 0;
   max-width: 0;
   margin-left: 0;

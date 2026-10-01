@@ -1,0 +1,8 @@
+// The value's actions (a projected filter button, then the copy button) as one group: their 24px targets touch, so the
+// spacing to the value is this group's margin alone, whichever action comes first.
+.copyable-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-left: 8px;
+}

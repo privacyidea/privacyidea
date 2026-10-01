@@ -147,7 +147,6 @@
                       <app-copyable [copyText]="policy">
                         <span [title]="policy">{{ policy }}</span>
                         <app-filter-value-button
-                          class="margin-left-8"
                           column="policies"
                           [value]="policy"
                           (filterValue)="addFilterValue('policies', $event)" />
@@ -165,7 +164,6 @@
                         {{ element[column.key] }}
                       </a>
                       <app-filter-value-button
-                        class="margin-left-8"
                         column="serial"
                         [value]="element.serial"
                         (filterValue)="addFilterValue('serial', $event)" />
@@ -182,7 +180,6 @@
                         {{ element[column.key] }}
                       </a>
                       <app-filter-value-button
-                        class="margin-left-8"
                         column="container_serial"
                         [value]="element.container_serial"
                         (filterValue)="addFilterValue('container_serial', $event)" />
@@ -205,7 +202,6 @@
                         {{ element[column.key] }}
                       </a>
                       <app-filter-value-button
-                        class="margin-left-8"
                         column="user"
                         [value]="element[column.key]"
                         (filterValue)="addFilterValue('user', $event)" />
@@ -220,7 +216,6 @@
                       </span>
                       @if (showInlineCellFilter(column.key)) {
                         <app-filter-value-button
-                          class="margin-left-8"
                           [column]="column.key"
                           [value]="element[column.key]"
                           (filterValue)="addFilterValue(column.key, $event)" />

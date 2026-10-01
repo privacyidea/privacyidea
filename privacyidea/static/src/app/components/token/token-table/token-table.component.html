@@ -271,7 +271,6 @@
                         {{ tokenDetails[column.key] }}
                       </a>
                       <app-filter-value-button
-                        class="margin-left-8"
                         column="container_serial"
                         [value]="tokenDetails.container_serial"
                         (filterValue)="addFilterValue('container_serial', $event)" />
@@ -294,7 +293,6 @@
                         {{ tokenDetails[column.key] }}
                       </a>
                       <app-filter-value-button
-                        class="margin-left-8"
                         column="username"
                         [value]="tokenDetails[column.key]"
                         (filterValue)="filterByUser($event, tokenDetails.user_realm)" />

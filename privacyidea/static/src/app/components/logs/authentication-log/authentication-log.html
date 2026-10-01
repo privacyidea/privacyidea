@@ -341,7 +341,6 @@
                   {{ serial }}
                 </a>
                 <app-filter-value-button
-                  class="margin-left-8"
                   column="serial"
                   [value]="serial"
                   (filterValue)="addFilterValue('serial', '*' + $event + '*')" />
@@ -363,7 +362,6 @@
                   {{ element.username }}
                 </a>
                 <app-filter-value-button
-                  class="margin-left-8"
                   column="username"
                   [value]="element.username"
                   (filterValue)="addFilterValue('username', $event)" />
@@ -428,7 +426,6 @@
                 <span>{{ element[column.key] }}</span>
                 } @if (showInlineCellFilter(column.key)) {
                 <app-filter-value-button
-                  class="margin-left-8"
                   [column]="column.key"
                   [value]="element[column.key]"
                   (filterValue)="addFilterValue(column.key, $event)" />
