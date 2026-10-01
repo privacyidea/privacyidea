@@ -21,6 +21,26 @@
   gap: 8px;
 }
 
+// A width of its own per column rather than its content's, so the columns, the table and the page keep
+// their size whichever rows a filter leaves.
+.blocklist-table {
+  $column-widths: (
+    identifier: 190px,
+    state: 120px,
+    cause: 130px,
+    block_expires_at: 170px,
+    blocked_at: 170px,
+    error_message: 160px
+  );
+
+  @each $column, $width in $column-widths {
+    th.mat-column-#{$column},
+    td.mat-column-#{$column} {
+      width: $width;
+    }
+  }
+}
+
 // Column header: label plus its filter/sort control(s) on one row.
 .header-cell {
   display: inline-flex;

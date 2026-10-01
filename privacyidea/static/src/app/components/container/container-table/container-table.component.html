@@ -217,7 +217,9 @@
                         (keydown.space)="
                           $event.preventDefault(); contentService.navigateContainerDetails(element.serial)
                         "
+                        [appTruncationTooltip]="element.serial"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
@@ -265,13 +267,14 @@
                           $event.preventDefault();
                           contentService.userSelected(element[column.key], element['user_realm'])
                         "
+                        [appTruncationTooltip]="element[column.key]"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
                       </a>
                       <app-filter-value-button
-                        class="margin-left-8"
                         [column]="column.key"
                         [value]="element[column.key]"
                         (filterValue)="filterByUser($event, element['user_realm'])" />

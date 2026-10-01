@@ -24,9 +24,8 @@
   gap: 12px;
 }
 
-// The field keeps its own width whether or not a projected control sits beside it, so the actions
-// trigger that appears once the table scrolls takes the room reserved next to the field (see
-// .policies-table-filter) instead of narrowing it.
+// The field keeps its own width whether or not a projected control sits beside it: the actions
+// trigger takes the room reserved next to the field (see .policies-table-filter) instead of narrowing it.
 .filter-actions-group > mat-form-field {
   max-width: var(--input-width-xxl);
 }
