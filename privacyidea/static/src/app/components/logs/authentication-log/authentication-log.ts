@@ -73,6 +73,7 @@ import { PaginatorCompactRangeDirective } from "@components/shared/directives/pa
 import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { BreakableCodeComponent } from "@components/shared/breakable-code/breakable-code.component";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
@@ -308,6 +309,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     ScrollToTopDirective,
     ScrollEdgesDirective,
     TruncationTooltipDirective,
+    BreakableCodeComponent,
     DatePipe,
     ClearableInputComponent,
     ConditionalAccessCell,

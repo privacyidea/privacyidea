@@ -38,11 +38,13 @@ import { TableStateComponent } from "@components/shared/table-state/table-state.
 import { TableState } from "@core/models/table_state/table-state";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { TokenTableComponent } from "./token-table.component";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 @Component({
   selector: "app-token-table-self-service",
   standalone: true,
   imports: [
+    TruncationTooltipDirective,
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
