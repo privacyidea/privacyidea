@@ -514,21 +514,15 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertFalse(is_user_locked(self.user))
 
     def test_is_user_locked_timed_future(self):
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
-                                        lock_expires_at=utc_now() + timedelta(seconds=600)))
-        db.session.commit()
+        self._lock_user_for()
         self.assertTrue(is_user_locked(self.user))
 
     def test_is_user_locked_timed_expired(self):
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
-                                        lock_expires_at=utc_now() - timedelta(seconds=600)))
-        db.session.commit()
+        self._lock_user(utc_now() - timedelta(seconds=600))
         self.assertFalse(is_user_locked(self.user))
 
     def test_is_user_locked_permanent(self):
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
-                                        lock_expires_at=None))
-        db.session.commit()
+        self._lock_user(None)
         self.assertTrue(is_user_locked(self.user))
 
     def test_is_user_locked_unresolved_user(self):
@@ -537,9 +531,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
     # --- get_user_lock clear_expired ---------------------------------------
 
     def _add_lock_action(self, lock_expires_at):
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, lock_expires_at=lock_expires_at))
-        db.session.commit()
+        self._lock_user(lock_expires_at)
 
     def test_clear_expired_deletes_stale_row(self):
         # An expired timed lock is dropped when the pre-check opts in.
@@ -579,18 +571,15 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertFalse(is_ip_blocked("203.0.113.5"))
 
     def test_is_ip_blocked_timed_future(self):
-        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=utc_now() + timedelta(seconds=600)))
-        db.session.commit()
+        self._block_ip_for("203.0.113.5")
         self.assertTrue(is_ip_blocked("203.0.113.5"))
 
     def test_is_ip_blocked_timed_expired(self):
-        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=utc_now() - timedelta(seconds=600)))
-        db.session.commit()
+        self._block_ip("203.0.113.5", utc_now() - timedelta(seconds=600))
         self.assertFalse(is_ip_blocked("203.0.113.5"))
 
     def test_is_ip_blocked_permanent(self):
-        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=None))
-        db.session.commit()
+        self._block_ip("203.0.113.5", None)
         self.assertTrue(is_ip_blocked("203.0.113.5"))
 
     def test_is_ip_blocked_empty_ip(self):
@@ -601,8 +590,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
     def test_is_ip_blocked_finds_a_row_under_another_spelling_of_the_address(self):
         # g.client_ip is request.remote_addr verbatim wherever no proxy override is configured, so the
         # lookup cannot assume the spelling it is handed is the one the row was filed under.
-        db.session.add(BlockList(ip="2001:db8::1", block_expires_at=utc_now() + timedelta(seconds=600)))
-        db.session.commit()
+        self._block_ip_for("2001:db8::1")
         self.assertTrue(is_ip_blocked("2001:0DB8::0:1"))
 
     def test_the_engine_files_a_block_under_the_canonical_identifier(self):
@@ -620,21 +608,18 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
     def test_get_ip_block_timed_reports_remaining(self):
         now = utc_now()
-        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=now + timedelta(seconds=600)))
-        db.session.commit()
+        self._block_ip("203.0.113.5", now + timedelta(seconds=600))
         block = get_ip_block("203.0.113.5", now=now)
         self.assertEqual(False, block.permanent, block)
         self.assertEqual(600, block.seconds_remaining, block)
         self.assertIsNotNone(block.expires_at, block)
 
     def test_get_ip_block_expired_reads_as_unblocked(self):
-        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=utc_now() - timedelta(seconds=1)))
-        db.session.commit()
+        self._block_ip("203.0.113.5", utc_now() - timedelta(seconds=1))
         self.assertIsNone(get_ip_block("203.0.113.5"))
 
     def test_get_ip_block_permanent(self):
-        db.session.add(BlockList(ip="203.0.113.5", block_expires_at=None))
-        db.session.commit()
+        self._block_ip("203.0.113.5", None)
         block = get_ip_block("203.0.113.5")
         self.assertEqual(True, block.permanent, block)
         self.assertIsNone(block.seconds_remaining, block)
@@ -642,41 +627,37 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
     # --- get_ip_block clear_expired -------------------------------------------
 
-    def _add_block(self, ip, block_expires_at):
-        db.session.add(BlockList(ip=ip, block_expires_at=block_expires_at))
-        db.session.commit()
-
     def test_ip_clear_expired_deletes_stale_row(self):
         # An expired timed block is dropped when the pre-check opts in.
-        self._add_block("203.0.113.5", utc_now() - timedelta(seconds=600))
+        self._block_ip("203.0.113.5", utc_now() - timedelta(seconds=600))
         self.assertIsNone(get_ip_block("203.0.113.5", clear_expired=True))
-        self.assertIsNone(self._block("203.0.113.5"))
+        self.assertIsNone(self._block_state("203.0.113.5"))
 
     def test_ip_clear_expired_default_keeps_stale_row(self):
         # The default is a pure read: an expired row reads as unblocked but stays.
-        self._add_block("203.0.113.5", utc_now() - timedelta(seconds=600))
+        self._block_ip("203.0.113.5", utc_now() - timedelta(seconds=600))
         self.assertIsNone(get_ip_block("203.0.113.5"))
-        self.assertIsNotNone(self._block("203.0.113.5"))
+        self.assertIsNotNone(self._block_state("203.0.113.5"))
 
     def test_ip_clear_expired_keeps_active_block(self):
         # A still-active timed block is never deleted, even with clear_expired.
-        self._add_block("203.0.113.5", utc_now() + timedelta(seconds=600))
+        self._block_ip("203.0.113.5", utc_now() + timedelta(seconds=600))
         self.assertIsNotNone(get_ip_block("203.0.113.5", clear_expired=True))
-        self.assertIsNotNone(self._block("203.0.113.5"))
+        self.assertIsNotNone(self._block_state("203.0.113.5"))
 
     def test_ip_clear_expired_keeps_permanent_block(self):
         # A permanent block is never deleted, even with clear_expired.
-        self._add_block("203.0.113.5", None)
+        self._block_ip("203.0.113.5", None)
         block = get_ip_block("203.0.113.5", clear_expired=True)
         self.assertIsNotNone(block)
         self.assertTrue(block.permanent)
-        self.assertIsNotNone(self._block("203.0.113.5"))
+        self.assertIsNotNone(self._block_state("203.0.113.5"))
 
     def test_is_ip_blocked_clear_expired_deletes_stale_row(self):
         # The boolean wrapper threads clear_expired through to get_ip_block.
-        self._add_block("203.0.113.5", utc_now() - timedelta(seconds=600))
+        self._block_ip("203.0.113.5", utc_now() - timedelta(seconds=600))
         self.assertFalse(is_ip_blocked("203.0.113.5", clear_expired=True))
-        self.assertIsNone(self._block("203.0.113.5"))
+        self.assertIsNone(self._block_state("203.0.113.5"))
 
     # --- evaluate_conditional_access_policies --------------------------------------------
 
@@ -861,7 +842,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._seed_events(AuthEventType.LOGIN_SUCCESS, 1, timestamp=now - timedelta(seconds=200))
 
         evaluate_conditional_access_policies(CAContext(self.user, source_ip=ip), AuthEventType.PASSWORD_FAIL, now=now)
-        self.assertIsNotNone(self._block(ip))
+        self.assertIsNotNone(self._block_state(ip))
 
     def test_expired_lock_is_reapplied_when_the_threshold_is_still_met(self):
         # An expired lock leaves the failures in the window, so the stage locks the user again rather than leaving a
@@ -1232,7 +1213,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertEqual("dry_ip", outcomes[0].policy_name)
         self.assertEqual(str(ConditionalAccessAction.BLOCK_IP), outcomes[0].action_type)
         # Dry run: the IP is never actually blocked.
-        self.assertIsNone(self._block(ip))
+        self.assertIsNone(self._block_state(ip))
 
     def test_a_failing_policy_does_not_cost_the_other_policies_their_evaluation(self):
         # Each policy is guarded separately, so one policy raising does not disable the ones ordered behind it or
@@ -1352,7 +1333,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                 AuthEventType.PASSWORD_FAIL)
 
         self.assertListEqual([], outcomes)
-        self.assertIsNone(self._block("127.0.0.1"))
+        self.assertIsNone(self._block_state("127.0.0.1"))
 
     def test_a_restriction_that_is_not_in_force_records_nothing(self):
         # The write reported success, but nothing can be read back from the row it claims to have written - the
@@ -1404,7 +1385,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
         self.assertListEqual([("ip_live", str(ConditionalAccessAction.BLOCK_IP))],
                              [(outcome.policy_name, outcome.action_type) for outcome in outcomes])
-        self.assertIsNotNone(self._block("203.0.113.7"))
+        self.assertIsNotNone(self._block_state("203.0.113.7"))
 
     def test_a_dry_run_outcome_survives_a_restriction_that_is_not_in_force(self):
         # A dry-run outcome records what a policy *would* have done and never claimed to have written anything,
@@ -1578,10 +1559,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
     def test_permanent_lock_not_downgraded_to_timed(self):
         # Pre-existing permanent lock (set by a higher-severity stage).
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm,
-                                        lock_expires_at=None))
-        db.session.commit()
+        self._lock_user(None)
         # A timed LOCK_USER policy now tries to lock the same user.
         self._make_policy(name="timed", counter_type=AuthEventType.MFA_FAIL)
         self._seed_events(AuthEventType.MFA_FAIL, 3)
@@ -1594,10 +1572,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         # The guard itself, against a lock already on the row: reachable when two requests race past the
         # pre-check, or through an endpoint that has no gate. See test_two_policies_leave_the_longest_lock for
         # the path this rule exists for.
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
-                                        lock_expires_at=utc_now() + timedelta(seconds=3600),
-                                        error_message="MSG-LONG"))
-        db.session.commit()
+        self._lock_user(utc_now() + timedelta(seconds=3600), error_message="MSG-LONG")
         self._make_policy(name="short", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER,
                                                                                {"duration_seconds": 600})],
@@ -1610,10 +1585,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
 
     def test_a_longer_lock_replaces_a_shorter_one(self):
         # The other direction is an escalation and must go through, error message and all.
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid, realm=self.user.realm,
-                                        lock_expires_at=utc_now() + timedelta(seconds=600),
-                                        error_message="MSG-SHORT"))
-        db.session.commit()
+        self._lock_user_for(error_message="MSG-SHORT")
         self._make_policy(name="long", counter_type=AuthEventType.MFA_FAIL,
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.LOCK_USER,
                                                                                {"duration_seconds": 3600})],
@@ -1742,8 +1714,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
     def test_allowlisted_ip_block_row_is_not_enforced(self):
         # Even with an existing block row, an allowlisted IP reads as not blocked, so adding an IP to the
         # allowlist immediately lifts a stale or mistaken block.
-        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=utc_now() + timedelta(seconds=900)))
-        db.session.commit()
+        self._block_ip("203.0.113.7", utc_now() + timedelta(seconds=900))
         self.assertTrue(is_ip_blocked("203.0.113.7"))
         with never_block_config("203.0.113.0/24"):
             self.assertFalse(is_ip_blocked("203.0.113.7"))
@@ -1754,8 +1725,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
     def test_allowlisted_ip_block_row_is_removed_by_the_auth_pre_check(self):
         # The auth pre-check passes clear_expired, so the first authentication after the
         # IP was allowlisted drops the now-unenforceable row.
-        db.session.add(BlockList(ip="203.0.113.7", block_expires_at=None))
-        db.session.commit()
+        self._block_ip("203.0.113.7", None)
         with never_block_config("203.0.113.0/24"):
             self.assertFalse(is_ip_blocked("203.0.113.7", clear_expired=True))
         self.assertEqual(0, db.session.query(BlockList).count())
@@ -1772,7 +1742,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
             stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 900)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
-        block = self._block(ip)
+        block = self._block_state(ip)
         self.assertIsNotNone(block)
         self.assertIsNotNone(block.block_expires_at)
         self.assertGreater(block.block_expires_at, utc_now())
@@ -1796,34 +1766,32 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
-        self.assertIsNone(self._block(ip))
+        self.assertIsNone(self._block_state(ip))
 
     def test_block_ip_does_not_downgrade_permanent_block(self):
         ip = "203.0.113.7"
         # Pre-existing permanent block (block_expires_at is None).
-        db.session.add(BlockList(ip=ip, block_expires_at=None))
-        db.session.commit()
+        self._block_ip(ip, None)
         self._make_policy(name="blocktimed", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=ConditionalAccessTarget.SOURCE_IP,
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 900)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         # The permanent block must remain permanent (block_expires_at stays None).
-        self.assertIsNone(self._block(ip).block_expires_at)
+        self.assertIsNone(self._block_state(ip).block_expires_at)
         self.assertTrue(is_ip_blocked(ip))
 
     def test_a_shorter_block_does_not_replace_a_longer_one(self):
         # The guard itself, against a block already on the row - the IP mirror of
         # test_a_shorter_lock_does_not_replace_a_longer_one.
         ip = "203.0.113.7"
-        db.session.add(BlockList(ip=ip, block_expires_at=utc_now() + timedelta(seconds=3600)))
-        db.session.commit()
+        self._block_ip(ip, utc_now() + timedelta(seconds=3600))
         self._make_policy(name="shortblock", counter_type=AuthEventType.PASSWORD_FAIL,
                           target=ConditionalAccessTarget.SOURCE_IP,
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
-        remaining = (self._block(ip).block_expires_at - utc_now()).total_seconds()
+        remaining = (self._block_state(ip).block_expires_at - utc_now()).total_seconds()
         self.assertAlmostEqual(3600, remaining, delta=5)
 
     def test_two_policies_leave_the_longest_block(self):
@@ -1838,7 +1806,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 600)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
-        remaining = (self._block(ip).block_expires_at - utc_now()).total_seconds()
+        remaining = (self._block_state(ip).block_expires_at - utc_now()).total_seconds()
         self.assertAlmostEqual(3600, remaining, delta=5)
 
     def test_a_second_policy_may_still_lengthen_the_block(self):
@@ -1852,7 +1820,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                           stages=(StageDefinition(3, [StageActionDefinition(ConditionalAccessAction.BLOCK_IP, 3600)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
-        remaining = (self._block(ip).block_expires_at - utc_now()).total_seconds()
+        remaining = (self._block_state(ip).block_expires_at - utc_now()).total_seconds()
         self.assertAlmostEqual(3600, remaining, delta=5)
 
     def test_permanent_block_ip_action(self):
@@ -1864,7 +1832,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                               3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_BLOCK_IP)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
-        block = self._block(ip)
+        block = self._block_state(ip)
         self.assertIsNotNone(block)
         self.assertIsNone(block.block_expires_at)
         self.assertTrue(is_ip_blocked(ip))
@@ -1879,7 +1847,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                                   3, [StageActionDefinition(ConditionalAccessAction.PERMANENT_BLOCK_IP, 900)]),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
-        self.assertIsNone(self._block(ip).block_expires_at)
+        self.assertIsNone(self._block_state(ip).block_expires_at)
 
     def test_permanent_block_ip_without_source_ip_skipped(self):
         # Like BLOCK_IP, a request with no source IP is logged and skipped, not raised.
@@ -1900,7 +1868,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=3)
         evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
         # The block runs out while the failures are still in the window.
-        block = self._block(ip)
+        block = self._block_state(ip)
         block.block_expires_at = utc_now() - timedelta(seconds=10)
         db.session.commit()
         self.assertFalse(is_ip_blocked(ip))
@@ -1951,7 +1919,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertIsNotNone(state)
         self.assertIsNotNone(state.lock_expires_at)
         # IP blocked permanently: the timed block did not downgrade the permanent one
-        block = self._block(ip)
+        block = self._block_state(ip)
         self.assertIsNotNone(block)
         self.assertIsNone(block.block_expires_at)
         self.assertTrue(is_ip_blocked(ip))
@@ -2946,7 +2914,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
                           stages=(StageDefinition(3, block, error_message="Blocked for {duration}."),))
         self._seed_ip_events(ip, AuthEventType.PASSWORD_FAIL, n_users=1, per_user=3)
         evaluate_conditional_access_policies(CAContext(self.user, ip), AuthEventType.PASSWORD_FAIL)
-        self.assertEqual("Blocked for {duration}.", self._block(ip).error_message)
+        self.assertEqual("Blocked for {duration}.", self._block_state(ip).error_message)
         self.assertEqual("Blocked for {duration}.", get_ip_block(ip).error_message)
 
     def test_render_error_message_substitutes_only_the_duration_tag(self):

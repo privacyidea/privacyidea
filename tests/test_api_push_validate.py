@@ -19,10 +19,7 @@ from privacyidea.lib.cache import ChallengeDTO
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthEventReason
 from privacyidea.lib.conditional_access.engine import is_user_locked
-from privacyidea.models.conditional_access_policy import (BlockList, ConditionalAccessPolicy,
-                                                          ConditionalAccessPolicyStage,
-                                                          ConditionalAccessStageAction,
-                                                          ConditionalAccessPolicyCounterType, UserLockState)
+from privacyidea.models.conditional_access_policy import UserLockState
 from privacyidea.lib.config import set_privacyidea_config, delete_privacyidea_config
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
@@ -46,6 +43,7 @@ from privacyidea.models.utils import utc_now
 from . import ldap3mock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
 from .base import MyApiTestCase, force_expire_challenges
+from .conditional_access_base import ConditionalAccessFixtureMixin
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
@@ -177,7 +175,7 @@ class PushTokenTestMixin:
             self.assertEqual(200, self.app.full_dispatch_request().status_code)
 
 
-class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
+class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTestCase):
     """
     test the api.validate endpoints
     """
@@ -1814,7 +1812,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         self._enroll_push_for(user)
-        self._clear_ca()
+        self._clear()
 
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1836,15 +1834,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                                             serials={self.serial_push}, transaction_id=transaction_id,
                                             endpoint='/ttype/push')
         finally:
-            self._clear_ca()
+            self._clear()
             remove_token(self.serial_push)
             delete_policy("push_config")
-
-    def _clear_ca(self):
-        for model in (UserLockState, BlockList, ConditionalAccessStageAction, ConditionalAccessPolicyStage,
-                      ConditionalAccessPolicyCounterType, ConditionalAccessPolicy, AuthenticationLog):
-            db.session.query(model).delete()
-        db.session.commit()
 
     def _enroll_push_for(self, user: User) -> None:
         """Enroll ``self.serial_push`` for *user* through the real two-step flow."""
@@ -1871,11 +1863,9 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        self._clear_ca()
+        self._clear()
         # Lock the owner up front.
-        db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                        lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
-        db.session.commit()
+        self._lock_user_for(user=user)
         try:
             self.assertTrue(is_user_locked(user))
             # The enrollment step2 must succeed despite the lock.
@@ -1886,7 +1876,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             token = get_tokens(serial=self.serial_push)[0]
             self.assertEqual(RolloutState.ENROLLED, token.token.rollout_state)
         finally:
-            self._clear_ca()
+            self._clear()
             remove_token(self.serial_push)
             delete_policy("push_config")
 
@@ -1899,7 +1889,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        self._clear_ca()
+        self._clear()
         self._enroll_push_for(user)
         try:
             # Trigger a real challenge while unlocked, then read its nonce.
@@ -1910,9 +1900,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             nonce = challenge.challenge
             transaction_id = challenge.transaction_id
             # Now lock the owner and answer with a VALID signature.
-            db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                            lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
-            db.session.commit()
+            self._lock_user_for(user=user)
             self.assertTrue(is_user_locked(user))
             logs_before = db.session.query(AuthenticationLog).count()
             signature = self.smartphone_private_key.sign(f"{nonce}|{self.serial_push}".encode("utf8"),
@@ -1941,7 +1929,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(user.login, entry["user"], entry)
             self.assertEqual(user.realm, entry["realm"], entry)
         finally:
-            self._clear_ca()
+            self._clear()
             delete_challenges(serial=self.serial_push)
             remove_token(self.serial_push)
             delete_policy("push_config")
@@ -1956,7 +1944,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        self._clear_ca()
+        self._clear()
         self._enroll_push_for(user)
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1975,9 +1963,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertNotIn("detail", ordinary.json, ordinary.json)
 
             # A silent lock: the valid answer is refused and says no more than the invalid one did.
-            db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                            lock_expires_at=utc_now() + datetime.timedelta(seconds=600)))
-            db.session.commit()
+            self._lock_user_for(user=user)
             with self.app.test_request_context('/ttype/push', method='POST',
                                                data={"serial": self.serial_push,
                                                      "signature": b32encode(signature)}):
@@ -1986,11 +1972,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertNotIn("detail", silent.json, silent.json)
 
             # With wording configured, the smartphone is told what happened.
-            db.session.query(UserLockState).delete()
-            db.session.add(UserLockState(resolver=user.resolver, uid=user.uid, realm=user.realm,
-                                            lock_expires_at=utc_now() + datetime.timedelta(seconds=600),
-                                            error_message="Locked. Try again in about {duration}."))
-            db.session.commit()
+            self._lock_user_for(user=user, error_message="Locked. Try again in about {duration}.")
             with self.app.test_request_context('/ttype/push', method='POST',
                                                data={"serial": self.serial_push,
                                                      "signature": b32encode(signature)}):
@@ -2005,7 +1987,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             # The answer was never processed, so the challenge is still open through all three attempts.
             self.assertTrue(get_challenges(transaction_id=challenge.transaction_id))
         finally:
-            self._clear_ca()
+            self._clear()
             delete_challenges(serial=self.serial_push)
             remove_token(self.serial_push)
             delete_policy("push_config")
@@ -2026,7 +2008,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
 
         def answer_that_locks(error_message):
             """Trigger a challenge, then answer it correctly with a policy that locks on that very answer."""
-            self._clear_ca()
+            self._clear()
             delete_challenges(serial=self.serial_push)
             create_conditional_access_policy(
                 name="ca_push_lock", time_window_seconds=3600,
@@ -2058,7 +2040,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertNotIn("Locked", (worded.json.get("detail") or {}).get("message", ""), worded.json)
             self.assertTrue(is_user_locked(user))
         finally:
-            self._clear_ca()
+            self._clear()
             delete_challenges(serial=self.serial_push)
             remove_token(self.serial_push)
             delete_policy("push_config")
@@ -2072,7 +2054,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        self._clear_ca()
+        self._clear()
         self._enroll_push_for(user)
         blocked_ip = "203.0.113.9"
         try:
@@ -2085,9 +2067,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
                 f"{challenge.challenge}|{self.serial_push}".encode("utf8"), padding.PKCS1v15(), hashes.SHA256())
 
             # Block the address the smartphone will answer from, with wording so the refusal is identifiable.
-            db.session.add(BlockList(ip=blocked_ip, block_expires_at=utc_now() + datetime.timedelta(seconds=600),
-                                     error_message="Blocked. Try again in about {duration}."))
-            db.session.commit()
+            self._block_ip_for(blocked_ip, error_message="Blocked. Try again in about {duration}.")
             logs_before = db.session.query(AuthenticationLog).count()
 
             with self.app.test_request_context('/ttype/push', method='POST',
@@ -2108,7 +2088,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             # And the answer was never processed, so the challenge is still open.
             self.assertTrue(get_challenges(transaction_id=challenge.transaction_id))
         finally:
-            self._clear_ca()
+            self._clear()
             delete_challenges(serial=self.serial_push)
             remove_token(self.serial_push)
             delete_policy("push_config")
@@ -2125,7 +2105,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        self._clear_ca()
+        self._clear()
         self._enroll_push_for(user)
         try:
             # Trigger a real challenge. This writes the one CHALLENGE_TRIGGERED row the policy below counts, so
@@ -2165,7 +2145,7 @@ class PushAPITestCase(PushTokenTestMixin, MyApiTestCase):
             # And the answer was never processed, so the challenge is still open.
             self.assertTrue(get_challenges(transaction_id=challenge.transaction_id))
         finally:
-            self._clear_ca()
+            self._clear()
             delete_challenges(serial=self.serial_push)
             remove_token(self.serial_push)
             delete_policy("push_config")

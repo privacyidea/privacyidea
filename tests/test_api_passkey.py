@@ -38,14 +38,13 @@ from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import db, TokenOwner
-from privacyidea.models.conditional_access_policy import UserLockState
-from privacyidea.models.utils import utc_now
 from tests.authlog_utils import assert_authentication_log, assert_authentication_log_entry, clear_authentication_log
 from tests.base import MyApiTestCase, OverrideConfigTestCase
+from tests.conditional_access_base import ConditionalAccessFixtureMixin
 from tests.passkey_base import PasskeyTestBase
 
 
-class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
+class PasskeyAPITestBase(ConditionalAccessFixtureMixin, MyApiTestCase, PasskeyTestBase):
 
     def setUp(self):
         # Clear session before each test to avoid side effects
@@ -1719,9 +1718,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         credential/serial lock-evasion gap. Generic failure to the client, and the log
         records the lock as the reason rather than a passkey outcome."""
         serial = self._enroll_static_passkey()
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
-                                        realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
-        db.session.commit()
+        self._lock_user_for()
         clear_authentication_log()
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1740,8 +1737,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertListEqual([AuthEventType.USER_LOCKED],
                                  [entry.event_type for entry in get_authentication_logs()])
         finally:
-            db.session.query(UserLockState).delete()
-            db.session.commit()
+            self._clear()
             remove_token(serial)
 
     def test_29_restrict_authenticator_device_type_scoped_to_realm_on_auth(self):
@@ -1930,9 +1926,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         without a login name.
         """
         serial = self._enroll_static_passkey()
-        db.session.add(UserLockState(resolver=self.user.resolver, uid=self.user.uid,
-                                     realm=self.user.realm, lock_expires_at=utc_now() + timedelta(seconds=600)))
-        db.session.commit()
+        self._lock_user_for()
         clear_authentication_log()
         try:
             with self.app.test_request_context('/validate/check', method='POST',
@@ -1946,8 +1940,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertListEqual([AuthEventType.USER_LOCKED],
                                  [entry.event_type for entry in get_authentication_logs()])
         finally:
-            db.session.query(UserLockState).delete()
-            db.session.commit()
+            self._clear()
             remove_token(serial)
 
     def test_36_validate_check_rejects_user_that_does_not_resolve(self):
