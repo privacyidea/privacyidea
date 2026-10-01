@@ -44,19 +44,7 @@
             [text]="filterMatchInfo()" />
           <mat-hint>{{ filterHint }}</mat-hint>
         </mat-form-field>
-        <button
-          [matMenuTriggerFor]="challengesTableActions.actionsMenu"
-          aria-label="Actions"
-          class="table-actions-trigger margin-left-8"
-          i18n-aria-label="@@common.actions"
-          i18n-matTooltip="@@common.actions"
-          mat-icon-button
-          matTooltip="Actions">
-          <span class="icon-badge">
-            <mat-icon>menu</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-          </span>
-        </button>
+        <app-table-actions-trigger [menu]="challengesTableActions.actionsMenu()" />
       </div>
       <mat-paginator
         appPaginatorPageSizeTooltip
@@ -152,7 +140,7 @@
                     </span>
                   }
                   @case ("otp_received") {
-                    <div class="flex just-center width-100">
+                    <div class="flex just-center width-full">
                       <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">
                         {{ element[column.key] }}
                       </span>

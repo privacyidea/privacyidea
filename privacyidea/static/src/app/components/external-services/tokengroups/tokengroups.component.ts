@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -26,7 +27,6 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -48,6 +48,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-tokengroups",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
@@ -57,7 +58,6 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,

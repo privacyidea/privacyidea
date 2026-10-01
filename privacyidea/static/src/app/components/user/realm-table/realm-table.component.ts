@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { NgClass } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
 import {
@@ -111,6 +112,7 @@ const columnKeysMap = [
   selector: "app-realm-table",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     ClearableInputComponent,
     CopyableComponent,

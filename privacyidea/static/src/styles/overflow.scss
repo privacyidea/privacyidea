@@ -16,7 +16,7 @@
 }
 
 .responsive-divider-1310 {
-  display: none !important;
+  display: none;
 
   @media (max-width: 1310px) {
     display: block;
@@ -35,7 +35,7 @@
 }
 
 .responsive-br-1580 {
-  display: none !important;
+  display: none;
 
   @media (max-width: 1580px) {
     display: block;
@@ -50,7 +50,7 @@
 
 .responsive-pad-0-1310 {
   @media (max-width: 1310px) {
-    padding: 0 !important;
+    padding: 0;
   }
 }
 
@@ -61,7 +61,7 @@
 }
 
 .overflow-dropdown {
-  background: var(--mat-sys-surface-container, #fff);
+  background: var(--mat-sys-surface-container);
   border-radius: var(--border-radius, 8px);
   box-shadow: var(--elevation-3);
   min-width: 160px;
@@ -72,7 +72,7 @@
 }
 
 .overflow-menu-item {
-  display: flex !important;
+  display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -82,14 +82,14 @@
   cursor: pointer;
   font-size: 14px;
   font-family: "Roboto", sans-serif;
-  color: var(--mat-sys-on-surface, #333);
+  color: var(--mat-sys-on-surface);
   text-align: left;
   white-space: nowrap;
   line-height: 1.4;
   box-sizing: border-box;
 
   &:hover {
-    background: var(--mat-sys-surface-container-high, #f0f0f0);
+    background: var(--mat-sys-surface-container-high);
   }
 
   .mat-icon,
@@ -111,66 +111,79 @@
   }
 }
 
-.overflow-menu-item-active {
-  background: var(--mat-sys-primary-container, #e0e0ff) !important;
-  color: var(--mat-sys-on-primary-container, #1a1a2e) !important;
+// Doubled class: outranks the item's :hover rule above.
+.overflow-menu-item.overflow-menu-item-active {
+  background: var(--mat-sys-primary-container);
+  color: var(--mat-sys-on-primary-container);
   font-weight: 500;
 }
 
-.overflow-menu-item-disabled {
-  cursor: unset !important;
+.overflow-menu-item.overflow-menu-item-disabled {
+  cursor: unset;
   opacity: 0.4;
-  color: var(--mat-sys-on-surface, #333) !important;
+  color: var(--mat-sys-on-surface);
 
   &:hover {
-    background: none !important;
+    background: none;
   }
 }
 
-.overflow-more-btn {
+// The "More" trigger carries the mat-mdc-button classes, but Material's button rules load with the
+// first MatButton instance, so a page without one leaves the trigger to the browser's defaults. The
+// look is therefore set here as properties; the --mat-button-text-* tokens carry the same values
+// for when Material's rules are present, so either source paints the same button. The compound
+// selector outranks those rules for the properties no token covers.
+.overflow-more-btn.mat-mdc-button {
+  --mat-button-text-container-height: 40px;
+  --mat-button-text-container-shape: var(--border-radius, 4px);
+  --mat-button-text-horizontal-padding: 16px;
+  --mat-button-text-with-icon-horizontal-padding: 16px;
+  --mat-button-text-icon-spacing: 0;
+  --mat-button-text-icon-offset: 0;
+  --mat-button-text-label-text-color: var(--mat-sys-on-surface);
+  --mat-button-text-label-text-size: 14px;
+  --mat-button-text-label-text-weight: 500;
   display: inline-flex;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  border: none !important;
-  background: none !important;
-  cursor: pointer !important;
-  padding: 0 16px !important;
-  height: 40px !important;
-  border-radius: var(--border-radius, 4px) !important;
-  color: var(--mat-sys-on-surface, #333) !important;
-  font-family: inherit !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  white-space: nowrap !important;
-  flex-shrink: 0 !important;
-  transition: background 200ms ease !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: var(--border-radius, 4px);
+  background: none;
+  color: var(--mat-button-text-label-text-color);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 200ms ease;
 
   &:hover {
-    color: var(--mat-sys-primary-base-active) !important;
+    --mat-button-text-label-text-color: var(--mat-sys-primary-base-active);
   }
 
   // A badge on the icon (see .icon-badge in icon.scss) keeps its own, smaller size.
   .material-icons:not(.icon-badge-overlay),
   .mat-icon:not(.icon-badge-overlay),
   mat-icon:not(.icon-badge-overlay) {
-    font-size: 24px !important;
-    width: 24px !important;
-    height: 24px !important;
-    line-height: 1 !important;
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-    color: inherit !important;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    line-height: 1;
+    color: inherit;
   }
 
   > span {
-    font-size: 14px !important;
-    color: inherit !important;
+    font-size: 14px;
+    color: inherit;
   }
 
   &.nav-active {
-    background: var(--mat-sys-primary) !important;
-    color: var(--mat-sys-on-primary) !important;
+    --mat-button-text-label-text-color: var(--mat-sys-on-primary);
+    background: var(--mat-sys-primary);
   }
 }
 
@@ -179,10 +192,9 @@
   margin-left: 0;
 }
 
-.overflow-more-hidden {
-  display: none !important;
-}
-
+// Display toggles set by the overflow directive; they must hide the element whatever display
+// rule its own component sets.
+.overflow-more-hidden,
 .sub-overflow-hidden {
   display: none !important;
 }

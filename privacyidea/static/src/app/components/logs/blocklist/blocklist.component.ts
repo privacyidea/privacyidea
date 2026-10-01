@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { DatePipe, NgClass, TitleCasePipe } from "@angular/common";
@@ -60,6 +61,7 @@ import { concatMap, reduce } from "rxjs/operators";
   templateUrl: "./blocklist.component.html",
   styleUrl: "./blocklist.component.scss",
   imports: [
+    TableActionsTriggerComponent,
     TableStateComponent,
     RefocusAfterReloadDirective,
     ScrollToTopDirective,

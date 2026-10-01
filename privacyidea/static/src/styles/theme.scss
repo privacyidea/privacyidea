@@ -1,6 +1,6 @@
 @use "@angular/material" as mat;
 
-$focus-outline: 2px solid var(--mat-sys-primary-light);
+@forward "tokens";
 
 html {
   &.system {
@@ -54,6 +54,8 @@ html {
     --yellow-light: light-dark(hsl(28, 85%, 55%), hsl(28, 85%, 45%));
     --yellow-light-active: light-dark(hsl(28, 85%, 60%), hsl(28, 85%, 50%));
     --yellow-base-hover: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 32%));
+    // Orange label/outline colour of warning-tone secondary actions, held clear of the surface in both modes.
+    --warn-base: light-dark(hsl(25, 81%, 43%), hsl(25, 81%, 55%));
 
     --grey-dark: light-dark(hsl(0, 0%, 42%), hsl(0, 0%, 50%));
     --grey-base: light-dark(hsl(0, 0%, 50%), hsl(0, 0%, 55%));
@@ -137,6 +139,7 @@ html {
     --yellow-light: hsl(28, 85%, 55%);
     --yellow-light-active: hsl(28, 85%, 60%);
     --yellow-base-hover: hsl(28, 85%, 45%);
+    --warn-base: hsl(25, 81%, 43%);
 
     --grey-dark: hsl(0, 0%, 42%);
     --grey-base: hsl(0, 0%, 50%);
@@ -218,6 +221,7 @@ html {
     --yellow-light: hsl(28, 85%, 45%);
     --yellow-light-active: hsl(28, 85%, 50%);
     --yellow-base-hover: hsl(28, 85%, 32%);
+    --warn-base: hsl(25, 81%, 55%);
 
     --grey-dark: hsl(0, 0%, 50%);
     --grey-base: hsl(0, 0%, 55%);

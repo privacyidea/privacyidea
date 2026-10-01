@@ -45,19 +45,7 @@
           </app-clearable-input>
         </mat-form-field>
         @if (authService.oneActionAllowed(["api_client_add", "api_client_delete"])) {
-          <button
-            [matMenuTriggerFor]="tableActionsMenu"
-            aria-label="Actions"
-            class="table-actions-trigger margin-left-8"
-            i18n-aria-label="@@common.actions"
-            i18n-matTooltip="@@common.actions"
-            mat-icon-button
-            matTooltip="Actions">
-            <span class="icon-badge">
-              <mat-icon>menu</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-            </span>
-          </button>
+          <app-table-actions-trigger [menu]="tableActionsMenu" />
         }
       </div>
       <mat-paginator
@@ -75,7 +63,7 @@
               class="action-button-primary button-width-l"
               mat-stroked-button>
               <span class="icon-badge">
-                <mat-icon class="padding-right-3">vpn_key</mat-icon>
+                <mat-icon class="icon-badge-pad-3">vpn_key</mat-icon>
                 <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
               </span>
               <span i18n="@@apiClient.createApiClient">Create API Client</span>
@@ -310,7 +298,7 @@
           class="action-button-primary button-width-l"
           mat-stroked-button>
           <span class="icon-badge">
-            <mat-icon class="padding-right-3">vpn_key</mat-icon>
+            <mat-icon class="icon-badge-pad-3">vpn_key</mat-icon>
             <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
           </span>
           <span i18n="@@apiClient.createApiClient">Create API Client</span>

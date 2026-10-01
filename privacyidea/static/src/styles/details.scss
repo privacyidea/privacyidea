@@ -1,0 +1,51 @@
+// Rules that reach into child components of the details pages. They live in a global sheet and are
+// scoped by a container class, so the children keep their own view encapsulation.
+
+// The edit buttons of a details card appear while the card is hovered or being edited.
+app-details-card app-edit-buttons {
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+app-details-card:hover app-edit-buttons,
+app-details-card.is-editing app-edit-buttons,
+app-details-card td.padding-0 app-edit-buttons,
+app-details-card .detail-field--editing app-edit-buttons {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+// The container actions render in a row inside the sticky actions bar. The extra element selector
+// outweighs the actions component's own column layout.
+.container-actions-bar app-container-details-actions .actions-otp-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  > h4 {
+    display: none;
+  }
+
+  .flex-column {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  mat-divider {
+    display: none;
+  }
+}
+
+// The copy icon lives inside the copy button's own component.
+app-subscriptions-widget .widget-header-action .copy-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+}

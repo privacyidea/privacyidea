@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -25,7 +26,6 @@ import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SmtpServer, SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
@@ -49,6 +49,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
   selector: "app-smtp",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginator,
@@ -57,7 +58,6 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,

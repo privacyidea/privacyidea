@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { Component, computed, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -60,6 +61,7 @@ const columnKeysMap = [
   styleUrls: ["./machine-resolver.component.scss"],
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     MatTableModule,
 

@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -54,6 +54,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-radius-servers",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,
@@ -63,7 +64,6 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
-    MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
     MatLabel,

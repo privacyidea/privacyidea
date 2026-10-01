@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { LiveAnnouncer } from "@angular/cdk/a11y";
 import {
   Component,
@@ -71,6 +72,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-conditional-access",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginator,

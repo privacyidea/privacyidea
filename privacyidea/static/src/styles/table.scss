@@ -369,6 +369,7 @@ $checkbox-column-width: 72px;
 
     // Flush with the top of the region: the cover each edge needs comes from the ::before below,
     // which overhangs without moving the cell, so neither edge is uncovered to pay for the other.
+    // !important: the CDK table writes the sticky offset as an inline `top`.
     .mat-mdc-header-cell {
       top: 0 !important;
     }
@@ -455,7 +456,11 @@ $filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
 // max-height, which needs that height guessed up front. $trigger-class is the icon button that
 // opens the equivalent actions as a mat-menu, placed next to the table's filter.
 @mixin actions-row-collapse($row-class, $inner-class, $trigger-class: ".table-actions-trigger") {
-  #{$trigger-class} {
+  // app-table-actions-trigger draws the same button inside its own view, out of reach of this
+  // component's scoped styles, so its host element (which this component's template owns) is what
+  // gets hidden and shown.
+  #{$trigger-class},
+  app-table-actions-trigger {
     display: none;
   }
 
@@ -480,6 +485,10 @@ $filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
 
     #{$trigger-class} {
       display: inline-flex;
+    }
+
+    app-table-actions-trigger {
+      display: contents;
     }
 
     // The trigger (plus its margin-left-8) takes its room from the filter field, so the filter row keeps the width

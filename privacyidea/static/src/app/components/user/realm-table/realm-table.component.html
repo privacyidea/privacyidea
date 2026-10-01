@@ -29,19 +29,7 @@
                 placeholder="Filter across all columns." />
             </app-clearable-input>
           </mat-form-field>
-          <button
-            [matMenuTriggerFor]="tableActionsMenu"
-            aria-label="Actions"
-            class="table-actions-trigger margin-left-8"
-            i18n-aria-label="@@common.actions"
-            i18n-matTooltip="@@common.actions"
-            mat-icon-button
-            matTooltip="Actions">
-            <span class="icon-badge">
-              <mat-icon>menu</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
-            </span>
-          </button>
+          <app-table-actions-trigger [menu]="tableActionsMenu" />
         </div>
       </div>
 
@@ -104,7 +92,7 @@
                 *matCellDef="let element"
                 [ngClass]="[
                   column.width ? 'col-width-' + column.width : '',
-                  column.key === 'resolvers' ? 'width-100' : '',
+                  column.key === 'resolvers' ? 'width-full' : '',
                   column.key === 'actions' ? 'actions-cell' : ''
                 ]"
                 mat-cell>

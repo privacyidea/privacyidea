@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
@@ -88,6 +89,7 @@ const columnsKeyMap = [
   selector: "app-container-table",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     InfoHintComponent,
     MatSuffix,
     RefocusAfterReloadDirective,

@@ -1,4 +1,4 @@
-@use "styles";
+@use "styles-api" as styles;
 
 .periodic-task-page-layout {
   @include styles.main-component-style;

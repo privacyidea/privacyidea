@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { DatePipe } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, untracked, ViewChild, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -50,6 +51,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-api-clients",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginator,

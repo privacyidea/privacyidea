@@ -1,0 +1,78 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (!collapseWhenEmpty() || toolbarActions().length) {
+  <div
+    appOverflowNav
+    overflowNavIcon="menu"
+    overflowNavBadgeIcon="build"
+    [class.flex-row]="layout() === 'compact'"
+    [class.gap-8]="layout() === 'compact'"
+    [class.flex-nowrap]="!wrap()"
+    [class.margin-bottom-16]="spaced()"
+    [class.table-actions-roomy]="layout() === 'roomy'">
+    <ng-content />
+    @for (action of toolbarActions(); track action.id) {
+      <button
+        (click)="action.run?.()"
+        [attr.data-overflow-pinned]="action.pinned ? '' : null"
+        [class]="buttonClass(action)"
+        [disabled]="action.disabled"
+        [matMenuTriggerFor]="action.submenu ?? null"
+        [matTooltip]="action.tooltip ?? ''"
+        mat-stroked-button>
+        <!-- The icon is a direct child of the button so Material projects it into its icon slot, beside the
+             label, instead of into the label. -->
+        @if (action.badge) {
+          <span
+            [class.icon-badge-spaced]="action.spacedBadge"
+            class="icon-badge">
+            <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+          </span>
+        } @else {
+          <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
+        }
+        <span>{{ action.label }}</span>
+      </button>
+    }
+  </div>
+}
+
+<!-- The same actions as menu items, for the compact trigger shown next to the filter once the table is
+     scrolled and the toolbar is hidden. -->
+<mat-menu #actionsMenu="matMenu">
+  @for (action of menuActions(); track action.id) {
+    @if (action.submenu) {
+      <button
+        [matMenuTriggerFor]="action.submenu"
+        mat-menu-item>
+        <mat-icon [class]="action.fontIcon ?? ''">{{ action.menuIcon ?? action.icon }}</mat-icon>
+        <span>{{ action.label }}</span>
+      </button>
+    } @else {
+      <button
+        (click)="action.run?.()"
+        [disabled]="action.disabled"
+        mat-menu-item>
+        <mat-icon [class]="action.fontIcon ?? ''">{{ action.menuIcon ?? action.icon }}</mat-icon>
+        <span>{{ action.label }}</span>
+      </button>
+    }
+  }
+</mat-menu>

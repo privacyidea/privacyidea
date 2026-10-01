@@ -1,4 +1,4 @@
-@use "buttons";
+@use "styles-api" as styles;
 
 .button-row {
   display: flex;
@@ -38,7 +38,7 @@
   }
 
   &:focus {
-    outline: buttons.$button-focus-outline;
+    outline: styles.$focus-outline;
     outline-offset: -2px;
     position: relative;
     z-index: 1;

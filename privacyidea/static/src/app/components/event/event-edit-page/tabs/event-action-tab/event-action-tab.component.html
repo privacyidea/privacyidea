@@ -111,7 +111,7 @@
         @if (!showOptionError(optionName)) {
           <div
             [innerHTML]="actionOptions()[optionName].desc || actionOptions()[optionName].description || ''"
-            [ngClass]="{ 'margin-top--16': actionOptions()[optionName].type !== 'bool' }"
+            [ngClass]="{ 'margin-top-neg-16': actionOptions()[optionName].type !== 'bool' }"
             class="checkbox-hint input-width-xl"></div>
         }
       </div>

@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { NgClass } from "@angular/common";
@@ -28,7 +29,6 @@ import { MatInputModule } from "@angular/material/input";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
@@ -70,6 +70,7 @@ const columnKeysMap = [
   selector: "app-challenges-table",
   standalone: true,
   imports: [
+    TableActionsTriggerComponent,
     InfoHintComponent,
     MatSuffix,
     RefocusAfterReloadDirective,
@@ -80,7 +81,6 @@ const columnKeysMap = [
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
-    MatTooltipModule,
     NgClass,
     CopyableComponent,
     FilterValueButtonComponent,
