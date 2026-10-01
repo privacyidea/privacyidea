@@ -354,7 +354,9 @@
                   (keydown.space)="
                             $event.preventDefault(); contentService.userSelected(element.username, element.realm)
                           "
+                  [appTruncationTooltip]="element.username"
                   aria-label="{{ column.label }} Link"
+                  class="cell-truncate"
                   i18n-aria-label="@@authLog.link"
                   role="button"
                   tabindex="0">

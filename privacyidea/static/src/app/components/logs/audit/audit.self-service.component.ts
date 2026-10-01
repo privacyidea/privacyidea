@@ -42,6 +42,7 @@ import {
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
@@ -87,7 +88,8 @@ import { AuditComponent } from "./audit.component";
     LocalDateTimePipe,
     TableStateComponent,
     PaginatorPageSizeTooltipDirective,
-    PaginatorCompactRangeDirective
+    PaginatorCompactRangeDirective,
+    TruncationTooltipDirective
   ],
   templateUrl: "./audit.self-service.component.html",
   styleUrl: "./audit.component.scss"

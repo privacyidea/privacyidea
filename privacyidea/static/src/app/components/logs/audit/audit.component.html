@@ -200,7 +200,9 @@
                           $event.preventDefault();
                           contentService.userSelected(element[column.key], element['user_realm'])
                         "
+                        [appTruncationTooltip]="element[column.key]"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
@@ -212,19 +214,7 @@
                         (filterValue)="addFilterValue('user', $event)" />
                     </app-copyable>
                   }
-                  @case ("copy-text") {
-                    <app-copyable [copyText]="element[column.key]">
-                      <span [title]="element[column.key]">{{ element[column.key] }}</span>
-                      @if (showInlineCellFilter(column.key)) {
-                        <app-filter-value-button
-                          class="margin-left-8"
-                          [column]="column.key"
-                          [value]="element[column.key]"
-                          (filterValue)="addFilterValue(column.key, $event)" />
-                      }
-                    </app-copyable>
-                  }
-                  @case ("truncated-text") {
+                  @case ("copy-filter-text") {
                     <app-copyable [copyText]="element[column.key]">
                       <span
                         [appTruncationTooltip]="element[column.key]"

@@ -69,8 +69,7 @@ type AuditCellRenderType =
   | "highlight-ok"
   | "date"
   | "policies-csv"
-  | "copy-text"
-  | "truncated-text"
+  | "copy-filter-text"
   | "serial-link"
   | "container-link"
   | "user-link"
@@ -87,15 +86,15 @@ const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
   serial: "serial-link",
   container_serial: "container-link",
   user: "user-link",
-  action: "copy-text",
-  action_detail: "copy-text",
-  info: "copy-text",
-  user_agent: "copy-text",
-  privacyidea_server: "copy-text",
-  realm: "truncated-text",
-  administrator: "copy-text",
-  client: "copy-text",
-  resolver: "copy-text"
+  action: "copy-filter-text",
+  action_detail: "copy-filter-text",
+  info: "copy-filter-text",
+  user_agent: "copy-filter-text",
+  privacyidea_server: "copy-filter-text",
+  realm: "copy-filter-text",
+  administrator: "copy-filter-text",
+  client: "copy-filter-text",
+  resolver: "copy-filter-text"
 };
 
 // A clicked cell value names one entry, so it is matched in full - except a day, which only begins the timestamp it

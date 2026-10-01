@@ -147,7 +147,9 @@
                     <app-copyable [copyText]="element.serial">
                       <a
                         (click)="contentService.tokenSelected(element.serial)"
+                        [appTruncationTooltip]="element.serial"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         routerLink="/token">
                         {{ element[column.key] }}
                       </a>
@@ -162,7 +164,9 @@
                     <app-copyable [copyText]="element.container_serial">
                       <a
                         (click)="contentService.navigateContainerDetails(element.container_serial)"
+                        [appTruncationTooltip]="element.container_serial"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         routerLink="/token">
                         {{ element[column.key] }}
                       </a>
@@ -182,7 +186,9 @@
                           $event.preventDefault();
                           contentService.userSelected(element[column.key], element['user_realm'])
                         "
+                        [appTruncationTooltip]="element[column.key]"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
@@ -194,9 +200,13 @@
                         (filterValue)="addFilterValue('user', $event)" />
                     </app-copyable>
                   }
-                  @case ("copy-text") {
+                  @case ("copy-filter-text") {
                     <app-copyable [copyText]="element[column.key]">
-                      <span>{{ element[column.key] }}</span>
+                      <span
+                        [appTruncationTooltip]="element[column.key]"
+                        class="cell-truncate">
+                        {{ element[column.key] }}
+                      </span>
                       @if (showInlineCellFilter(column.key)) {
                         <app-filter-value-button
                           class="margin-left-8"
