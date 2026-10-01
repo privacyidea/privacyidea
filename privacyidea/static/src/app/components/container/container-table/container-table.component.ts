@@ -269,10 +269,15 @@ export class ContainerTableComponent implements OnDestroy {
 
   toggleFilter(filterKeyword: string): void {
     this.containerService.updateFilter((current) =>
-      this.tableUtilsService.toggleKeywordInFilter({
-        keyword: filterKeyword,
-        currentValue: current
-      })
+      filterKeyword === "assigned"
+        ? this.tableUtilsService.toggleBooleanInFilter({
+            keyword: filterKeyword,
+            currentValue: current
+          })
+        : this.tableUtilsService.toggleKeywordInFilter({
+            keyword: filterKeyword,
+            currentValue: current
+          })
     );
   }
 
@@ -281,6 +286,13 @@ export class ContainerTableComponent implements OnDestroy {
   }
 
   getFilterIconName(keyword: string): string {
+    if (keyword === "assigned") {
+      const value = this.containerService.activeFilter().booleanValueOfKey(keyword);
+      if (value === undefined) {
+        return "filter_alt";
+      }
+      return value ? "screen_rotation_alt" : "filter_alt_off";
+    }
     const isSelected = this.isFilterSelected(keyword, this.containerService.activeFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
   }

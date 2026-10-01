@@ -226,6 +226,54 @@ describe("ContainerTableComponent (Jest)", () => {
     });
   });
 
+  describe("assigned filter", () => {
+    let tableUtilsService: MockTableUtilsService;
+
+    beforeEach(() => {
+      tableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
+      containerService.updateFilter.mockImplementation((update: (current: FilterValue) => FilterValue) =>
+        containerService.activeFilter.set(update(containerService.activeFilter()))
+      );
+      tableUtilsService.toggleBooleanInFilter.mockImplementation(
+        ({ keyword, currentValue }: { keyword: string; currentValue: FilterValue }) =>
+          currentValue.toggleBooleanKey(keyword)
+      );
+    });
+
+    it("cycles through true, false and cleared like the actions menu does", () => {
+      component.toggleFilter("assigned");
+      expect(containerService.activeFilter().getValueOfKey("assigned")).toBe("true");
+
+      component.toggleFilter("assigned");
+      expect(containerService.activeFilter().getValueOfKey("assigned")).toBe("false");
+
+      component.toggleFilter("assigned");
+      expect(containerService.activeFilter().hasKey("assigned")).toBe(false);
+    });
+
+    it("leaves other keywords to the keyword toggle", () => {
+      tableUtilsService.toggleKeywordInFilter.mockReturnValue(new FilterValue({ value: "type: generic" }));
+
+      component.toggleFilter("type");
+
+      expect(tableUtilsService.toggleKeywordInFilter).toHaveBeenCalledWith({
+        keyword: "type",
+        currentValue: expect.any(FilterValue)
+      });
+      expect(tableUtilsService.toggleBooleanInFilter).not.toHaveBeenCalled();
+    });
+
+    it("shows the icon for the unset, true and false state", () => {
+      expect(component.getFilterIconName("assigned")).toBe("filter_alt");
+
+      containerService.activeFilter.set(new FilterValue({ value: "assigned: true" }));
+      expect(component.getFilterIconName("assigned")).toBe("screen_rotation_alt");
+
+      containerService.activeFilter.set(new FilterValue({ value: "assigned: false" }));
+      expect(component.getFilterIconName("assigned")).toBe("filter_alt_off");
+    });
+  });
+
   describe("Accessibility labels", () => {
     it("selectRowLabel names the container serial", () => {
       expect((component as unknown as { selectRowLabel: (serial: string) => string }).selectRowLabel("CONT-1")).toBe(
