@@ -17,9 +17,9 @@
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
   // Sized from the col-width-* tiers the columns below use (select checkbox + priority s + name m +
   // scope s + description xl + active s), plus the actions/conditions columns' own current widths
-  // (no fixed width for actions + 400 for conditions), since those two are a list that can badly
-  // overflow and are deliberately left without a tier.
-  @include table.page-table-state-size(calc(#{table.table-width(checkbox, s, l, s, xl, s)} + 400px));
+  // (400 each for actions and conditions), since those two are a list that can badly overflow and are
+  // deliberately left without a tier.
+  @include table.page-table-state-size(calc(#{table.table-width(checkbox, s, l, s, xl, s)} + 2 * 400px));
 
   & {
     display: flex;
@@ -119,6 +119,15 @@
       word-break: break-word;
     }
 
+    // A fixed width, like the col-width-* tiers of the other columns: sized from their content, the two
+    // columns would narrow with the rows a filter leaves, taking the table and the page with them.
+    th.col-actions,
+    th.col-conditions,
+    td.col-actions,
+    td.col-conditions {
+      width: 400px;
+    }
+
     td.col-actions {
       padding: 0;
     }
@@ -126,7 +135,6 @@
     td.col-conditions {
       padding: 0;
       max-width: 100% !important;
-      width: 400px;
       white-space: normal;
       word-break: break-word;
     }
