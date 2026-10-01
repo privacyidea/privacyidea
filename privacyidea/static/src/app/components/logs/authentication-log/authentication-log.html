@@ -320,7 +320,9 @@
               @switch (column.key) { @case ("timestamp") {
               <span>{{ element.timestamp | date: "yyyy-MM-dd HH:mm:ss" }}</span>
               } @case ("event_type") {
-              <span [ngClass]="getEventTypeClass(element[column.key])"> {{ element[column.key] }} </span>
+              <app-breakable-code
+                [ngClass]="getEventTypeClass(element[column.key])"
+                [text]="element[column.key]" />
               } @case ("reason") {
               <app-reason-cell
                 [reasons]="element.reasons"
@@ -331,7 +333,9 @@
               <app-copyable [copyText]="serial">
                 <a
                   (click)="contentService.tokenSelected(serial)"
+                  [appTruncationTooltip]="serial"
                   aria-label="{{ column.label }} Link"
+                  class="cell-truncate"
                   i18n-aria-label="@@authLog.link"
                   routerLink="/token">
                   {{ serial }}

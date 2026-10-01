@@ -30,7 +30,8 @@
     }
 
     // Values that still do not fit are truncated, so the copy and filter buttons stay inside the cell.
-    app-copyable span {
+    app-copyable span,
+    app-copyable .cell-truncate {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;

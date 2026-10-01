@@ -161,7 +161,9 @@
                     <app-copyable [copyText]="element.serial">
                       <a
                         (click)="contentService.tokenSelected(element.serial)"
+                        [appTruncationTooltip]="element.serial"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         routerLink="/token">
                         {{ element[column.key] }}
                       </a>
@@ -176,7 +178,9 @@
                     <app-copyable [copyText]="element.container_serial">
                       <a
                         (click)="contentService.navigateContainerDetails(element.container_serial)"
+                        [appTruncationTooltip]="element.container_serial"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         routerLink="/token">
                         {{ element[column.key] }}
                       </a>

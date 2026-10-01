@@ -20,6 +20,7 @@ import { Component, computed, inject, input } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { BreakableCodeComponent } from "@components/shared/breakable-code/breakable-code.component";
 import { AuthenticationLogEntry } from "@services/authentication-log/authentication-log.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 
@@ -38,7 +39,7 @@ import { parseReasonDetail, ReasonDetail } from "../../reason-detail";
 @Component({
   selector: "app-reason-cell",
   standalone: true,
-  imports: [MatButtonModule, MatIcon, MatTooltipModule],
+  imports: [BreakableCodeComponent, MatButtonModule, MatIcon, MatTooltipModule],
   templateUrl: "./reason-cell.html",
   styleUrl: "./reason-cell.scss"
 })

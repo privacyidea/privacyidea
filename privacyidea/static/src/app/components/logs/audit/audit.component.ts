@@ -62,6 +62,7 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { exactMatch } from "@utils/filter.utils";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 type AuditCellRenderType =
   | "status-span"
@@ -171,7 +172,8 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
     LocalDateTimePipe,
     TableStateComponent,
     PaginatorPageSizeTooltipDirective,
-    PaginatorCompactRangeDirective
+    PaginatorCompactRangeDirective,
+    TruncationTooltipDirective
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"
