@@ -3,10 +3,16 @@
   // (custom properties cross the component boundary). Defaults to fully visible.
   opacity: var(--copy-button-opacity, 1);
   transition: opacity 0.15s ease-in-out;
+  // Pads the glyph out to the 24px minimum target size (WCAG 2.5.8) and no further, so the padding is the visible
+  // space to its neighbours instead of an extra margin. A larger --copy-icon-size needs no padding.
+  display: inline-flex;
+  padding: max(0px, calc((24px - var(--copy-icon-size, 16px)) / 2));
 }
 
 .copy-icon {
   font-size: var(--copy-icon-size, 16px);
+  width: var(--copy-icon-size, 16px);
+  height: var(--copy-icon-size, 16px);
   display: flex !important;
   justify-content: center;
   color: var(--copy-icon-color, var(--mat-sys-surface-container-high));

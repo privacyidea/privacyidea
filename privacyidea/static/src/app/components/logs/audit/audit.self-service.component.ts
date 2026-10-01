@@ -18,7 +18,7 @@
  **/
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
-import { NgClass } from "@angular/common";
+import { DatePipe, NgClass } from "@angular/common";
 import { Component } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
@@ -42,6 +42,7 @@ import {
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
@@ -49,7 +50,6 @@ import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { AuditComponent } from "./audit.component";
 
 @Component({
@@ -84,10 +84,11 @@ import { AuditComponent } from "./audit.component";
     ScrollToTopDirective,
     ClearableInputComponent,
     ScrollEdgesDirective,
-    LocalDateTimePipe,
+    DatePipe,
     TableStateComponent,
     PaginatorPageSizeTooltipDirective,
-    PaginatorCompactRangeDirective
+    PaginatorCompactRangeDirective,
+    TruncationTooltipDirective
   ],
   templateUrl: "./audit.self-service.component.html",
   styleUrl: "./audit.component.scss"

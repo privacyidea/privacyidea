@@ -45,6 +45,27 @@
 // to its content width ends up with its value sitting on the border. Pad every cell of this
 // table instead - the checkbox column sets its own width and opts out.
 .conditional-access-table {
+  // A width of its own per column rather than its content's, so the columns, the table and the page keep
+  // their size whichever rows a filter leaves.
+  $column-widths: (
+    name: 256px,
+    priority: 140px,
+    time_window_seconds: 146px,
+    counter_types_to_track: 338px,
+    stages: 78px,
+    threshold: 99px,
+    actions: 289px,
+    enabled: 92px,
+    dry_run: 91px
+  );
+
+  @each $column, $width in $column-widths {
+    th.mat-column-#{$column},
+    td.mat-column-#{$column} {
+      width: $width;
+    }
+  }
+
   td.mat-mdc-cell:not(.ca-checkbox-cell),
   th.mat-mdc-header-cell:not(.ca-checkbox-cell) {
     padding-right: 16px;

@@ -16,12 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-row flex-nowrap ali-center">
-  <ng-content></ng-content>
-  <div class="copyable-actions">
-    <ng-content select="app-filter-value-button"></ng-content>
-    @if (copyText()) {
-      <app-copy-button [copyText]="copyText()" />
-    }
-  </div>
-</div>
+@for (segment of segments(); track $index) {
+  <span [textContent]="segment"></span>
+  @if (!$last) {
+    <wbr />
+  }
+}

@@ -868,24 +868,30 @@ $corner-radii: (
 // Standardized table column width tiers (analogous to the card-width-* tiers above): a column opts
 // into one via a col-width-{size} class on its cell instead of a one-off pixel value, so every
 // table's columns - and the table-state placeholder sized from them (see table.table-width()) -
-// draw from the same scale.
+// draw from the same scale. The tier is the column's width, not a hint: min-width keeps a narrow
+// card from squeezing the column down to its content (which differs with a row's hovered cell
+// actions), so the table scrolls inside its region instead.
 .col-width-s {
   width: var(--column-width-s);
+  min-width: var(--column-width-s);
   max-width: var(--column-width-s);
 }
 
 .col-width-m {
   width: var(--column-width-m);
+  min-width: var(--column-width-m);
   max-width: var(--column-width-m);
 }
 
 .col-width-l {
   width: var(--column-width-l);
+  min-width: var(--column-width-l);
   max-width: var(--column-width-l);
 }
 
 .col-width-xl {
   width: var(--column-width-xl);
+  min-width: var(--column-width-xl);
   max-width: var(--column-width-xl);
 }
 
@@ -1079,6 +1085,19 @@ tr.mat-mdc-row {
     --copy-button-opacity: 1;
     --filter-button-opacity: 1;
   }
+}
+
+// A value that truncates (.cell-truncate) gets the whole cell while its row is at rest: its actions collapse to no
+// width and take their room back together with the row's other actions, when the value ellipsizes further and its
+// truncation tooltip carries the rest. Safe only because such a value never wraps - the row keeps its height and the
+// fixed column its width, so nothing else moves. Wrapping values keep the room reserved, as reflowing them would shift
+// every row below. Collapsed rather than display: none, so the actions stay in the tab order and the accessibility
+// tree, and tabbing onto one expands it through :focus-visible.
+tr.mat-mdc-row:not(:hover):not(:has(:focus-visible)) app-copyable:has(.cell-truncate) .copyable-actions {
+  min-width: 0;
+  max-width: 0;
+  margin-left: 0;
+  overflow: hidden;
 }
 
 .multiline-tooltip {
