@@ -65,6 +65,10 @@ DEFAULT_DURATION = 600
 #: The source IP the block tests use - not loopback, which is on the never-block list.
 BLOCKED_IP = "203.0.113.9"
 
+#: The source IP a stateless source-IP DENY is decided for. Distinct from BLOCKED_IP so a test can tell the two
+#: restrictions apart, and routable for the same reason: a never-block address is exempt from an IP DENY too.
+DENIED_IP = "203.0.113.8"
+
 
 class ConditionalAccessFixtureMixin:
     """
