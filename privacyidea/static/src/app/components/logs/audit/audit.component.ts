@@ -41,7 +41,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
-import { NgClass } from "@angular/common";
+import { DatePipe, NgClass } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -57,7 +57,6 @@ import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
-import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { exactMatch } from "@utils/filter.utils";
@@ -169,7 +168,7 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
     MatIconModule,
     MatTooltipModule,
     ScrollEdgesDirective,
-    LocalDateTimePipe,
+    DatePipe,
     TableStateComponent,
     PaginatorPageSizeTooltipDirective,
     PaginatorCompactRangeDirective,

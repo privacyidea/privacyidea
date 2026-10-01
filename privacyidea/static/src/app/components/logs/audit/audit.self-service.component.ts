@@ -18,7 +18,7 @@
  **/
 import { MatSuffix } from "@angular/material/form-field";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
-import { NgClass } from "@angular/common";
+import { DatePipe, NgClass } from "@angular/common";
 import { Component } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
@@ -50,7 +50,6 @@ import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { AuditComponent } from "./audit.component";
 
 @Component({
@@ -85,7 +84,7 @@ import { AuditComponent } from "./audit.component";
     ScrollToTopDirective,
     ClearableInputComponent,
     ScrollEdgesDirective,
-    LocalDateTimePipe,
+    DatePipe,
     TableStateComponent,
     PaginatorPageSizeTooltipDirective,
     PaginatorCompactRangeDirective,

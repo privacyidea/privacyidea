@@ -119,16 +119,13 @@
                     </span>
                   }
                   @case ("date") {
-                    <div class="date-cell">
-                      <div class="flex ali-center">
-                        <span>{{ element[column.key] | localDateTime: "date" }}</span>
-                        <app-filter-value-button
-                          class="margin-left-8"
-                          [column]="column.key"
-                          [value]="element[column.key]?.slice(0, 10)"
-                          (filterValue)="addFilterValue(column.key, $event)" />
-                      </div>
-                      <span>{{ element[column.key] | localDateTime: "time" }}</span>
+                    <div class="flex ali-center">
+                      <span>{{ element[column.key] | date: "yyyy-MM-dd HH:mm:ss" }}</span>
+                      <app-filter-value-button
+                        class="margin-left-8"
+                        [column]="column.key"
+                        [value]="element[column.key]?.slice(0, 10)"
+                        (filterValue)="addFilterValue(column.key, $event)" />
                     </div>
                   }
                   @case ("policies-csv") {
