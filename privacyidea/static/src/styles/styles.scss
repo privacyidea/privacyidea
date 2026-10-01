@@ -1081,6 +1081,21 @@ tr.mat-mdc-row {
   }
 }
 
+// A value that truncates (.cell-truncate) gets the whole cell while its row is at rest: its actions collapse to no
+// width and take their room back together with the row's other actions, when the value ellipsizes further and its
+// truncation tooltip carries the rest. Safe only because such a value never wraps - the row keeps its height and the
+// fixed column its width, so nothing else moves. Wrapping values keep the room reserved, as reflowing them would shift
+// every row below. Collapsed rather than display: none, so the actions stay in the tab order and the accessibility
+// tree, and tabbing onto one expands it through :focus-visible.
+tr.mat-mdc-row:not(:hover):not(:has(:focus-visible))
+  app-copyable:has(.cell-truncate)
+  :is(app-copy-button, app-filter-value-button) {
+  min-width: 0;
+  max-width: 0;
+  margin-left: 0;
+  overflow: hidden;
+}
+
 .multiline-tooltip {
   white-space: pre-line;
   text-align: left;

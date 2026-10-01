@@ -224,6 +224,22 @@
                       }
                     </app-copyable>
                   }
+                  @case ("truncated-text") {
+                    <app-copyable [copyText]="element[column.key]">
+                      <span
+                        [appTruncationTooltip]="element[column.key]"
+                        class="cell-truncate">
+                        {{ element[column.key] }}
+                      </span>
+                      @if (showInlineCellFilter(column.key)) {
+                        <app-filter-value-button
+                          class="margin-left-8"
+                          [column]="column.key"
+                          [value]="element[column.key]"
+                          (filterValue)="addFilterValue(column.key, $event)" />
+                      }
+                    </app-copyable>
+                  }
                   @default {
                     <span>
                       {{ element[column.key] }}

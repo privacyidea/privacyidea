@@ -70,6 +70,7 @@ type AuditCellRenderType =
   | "date"
   | "policies-csv"
   | "copy-text"
+  | "truncated-text"
   | "serial-link"
   | "container-link"
   | "user-link"
@@ -91,7 +92,7 @@ const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
   info: "copy-text",
   user_agent: "copy-text",
   privacyidea_server: "copy-text",
-  realm: "copy-text",
+  realm: "truncated-text",
   administrator: "copy-text",
   client: "copy-text",
   resolver: "copy-text"
