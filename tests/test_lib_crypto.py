@@ -4,6 +4,8 @@ This test file tests the lib.crypto and lib.security.default
 import base64
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 
 from cryptography.exceptions import InvalidSignature
@@ -1198,3 +1200,25 @@ class BuildPassContextTestCase(unittest.TestCase):
         # like the mapping it spells out.
         with self.assertRaisesRegex(RuntimeError, "PI_HASH_ALGO_PARAMS.*argon2id__rounds names a hash algorithm"):
             self._build(PI_HASH_ALGO_PARAMS=[["argon2id__rounds", 5]])
+
+    def test_15_bcrypt_in_a_fresh_interpreter(self):
+        # passlib loads the bcrypt backend on first use, so bcrypt in PI_HASH_ALGO_LIST must work with only the
+        # modules privacyidea.lib.crypto imports - no resolver module, which a test process has usually loaded.
+        # A password longer than bcrypt's 72 bytes is truncated as bcrypt did before 5.0.0, not rejected.
+        script = ("import sys\n"
+                  "from flask import Flask\n"
+                  "from privacyidea.lib.crypto import build_pass_context\n"
+                  "app = Flask(__name__)\n"
+                  "app.config['PI_HASH_ALGO_LIST'] = ['bcrypt', 'argon2']\n"
+                  "with app.app_context():\n"
+                  "    pass_ctx = build_pass_context()\n"
+                  "password_hash = pass_ctx.hash('secret')\n"
+                  "assert password_hash.startswith('$2b$'), password_hash\n"
+                  "assert pass_ctx.verify('secret', password_hash)\n"
+                  "assert not pass_ctx.verify('wrong', password_hash)\n"
+                  "long_password_hash = pass_ctx.hash('x' * 100)\n"
+                  "assert pass_ctx.verify('x' * 72 + 'y', long_password_hash)\n"
+                  "assert not any(module.startswith('privacyidea.lib.resolvers') for module in sys.modules)\n")
+        repository_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        result = subprocess.run([sys.executable, "-c", script], cwd=repository_root, capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stderr)
