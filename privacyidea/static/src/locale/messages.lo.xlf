@@ -10182,7 +10182,7 @@
       </trans-unit>
       <trans-unit id="machine.machineResolverNameContains" datatype="html">
         <source>Only <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>letters, digits and . _ -<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> are allowed.</source>
-        <target state="new">ຊື່ Machine resolver ມີ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຕົວອັກສອນທີ່ບໍ່ຖືກຕ້ອງ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/>. ອະນຸຍາດໃຫ້ໃຊ້ພຽງແຕ່ ຕົວອັກສອນ, ຕົວເລກ, ຈ້ຳ, ຂີດກ້ອງ ແລະ ຂີດຕໍ່ ເທົ່ານັ້ນ.</target>
+        <target>ອະນຸຍາດໃຫ້ໃຊ້ສະເພາະ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຕົວອັກສອນ, ຕົວເລກ ແລະ . _ -<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/> ເທົ່ານັ້ນ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/machine-resolver/machine-resolver-details/machine-resolver-details.component.html</context>
           <context context-type="linenumber">104</context>
@@ -20390,7 +20390,7 @@
           <context context-type="linenumber">1063</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelOff" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.off" datatype="html" xml:space="preserve">
         <source>Off</source>
         <target state="translated">ປິດ</target>
         <context-group purpose="location">
@@ -20398,7 +20398,7 @@
           <context context-type="linenumber">32</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelOn" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.on" datatype="html" xml:space="preserve">
         <source>On</source>
         <target state="translated">ເປີດ</target>
         <context-group purpose="location">
@@ -20406,7 +20406,7 @@
           <context context-type="linenumber">32</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelNo" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.no" datatype="html" xml:space="preserve">
         <source>No</source>
         <target state="translated">ບໍ່</target>
         <context-group purpose="location">
@@ -20414,7 +20414,7 @@
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelYes" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.yes" datatype="html" xml:space="preserve">
         <source>Yes</source>
         <target state="translated">ແມ່ນ</target>
         <context-group purpose="location">
@@ -20422,7 +20422,7 @@
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelAccept" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.accept" datatype="html" xml:space="preserve">
         <source>Accept</source>
         <target state="translated">ຍອມຮັບ</target>
         <context-group purpose="location">
@@ -20430,7 +20430,7 @@
           <context context-type="linenumber">42</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelActive" datatype="html">
+      <trans-unit id="valueLabel.active" datatype="html">
         <source>Active</source>
         <target>ກຳລັງໃຊ້ງານ</target>
         <context-group purpose="location">
@@ -20438,7 +20438,7 @@
           <context context-type="linenumber">43</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelAllowed" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.allowed" datatype="html" xml:space="preserve">
         <source>Allowed</source>
         <target state="translated">ອະນຸຍາດ</target>
         <context-group purpose="location">
@@ -20446,7 +20446,7 @@
           <context context-type="linenumber">44</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelAnyPin" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.anyPin" datatype="html" xml:space="preserve">
         <source>Any PIN</source>
         <target state="translated">ລະຫັດ PIN ໃດກໍໄດ້</target>
         <context-group purpose="location">
@@ -20454,7 +20454,7 @@
           <context context-type="linenumber">45</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelBroken" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.broken" datatype="html" xml:space="preserve">
         <source>Broken</source>
         <target state="translated">ເພ</target>
         <context-group purpose="location">
@@ -20462,7 +20462,7 @@
           <context context-type="linenumber">46</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelChallenge" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.challenge" datatype="html" xml:space="preserve">
         <source>Challenge</source>
         <target state="translated">Challenge</target>
         <context-group purpose="location">
@@ -20470,7 +20470,7 @@
           <context context-type="linenumber">47</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelClientWait" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.clientWait" datatype="html" xml:space="preserve">
         <source>Client wait</source>
         <target state="translated">ລູກຂ່າຍລໍຖ້າ</target>
         <context-group purpose="location">
@@ -20478,7 +20478,7 @@
           <context context-type="linenumber">48</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelDamaged" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.damaged" datatype="html" xml:space="preserve">
         <source>Damaged</source>
         <target state="translated">ເສຍຫາຍ</target>
         <context-group purpose="location">
@@ -20486,7 +20486,7 @@
           <context context-type="linenumber">49</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelDeactivated" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.deactivated" datatype="html" xml:space="preserve">
         <source>Deactivated</source>
         <target state="translated">ປິດການນຳໃຊ້ແລ້ວ</target>
         <context-group purpose="location">
@@ -20498,7 +20498,7 @@
           <context context-type="linenumber">54</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelDeclined" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.declined" datatype="html" xml:space="preserve">
         <source>Declined</source>
         <target state="translated">ປະຕິເສດແລ້ວ</target>
         <context-group purpose="location">
@@ -20506,7 +20506,7 @@
           <context context-type="linenumber">51</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelDenied" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.denied" datatype="html" xml:space="preserve">
         <source>Denied</source>
         <target state="translated">ຖືກປະຕິເສດ</target>
         <context-group purpose="location">
@@ -20514,7 +20514,7 @@
           <context context-type="linenumber">52</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelDisabled" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.disabled" datatype="html" xml:space="preserve">
         <source>Disabled</source>
         <target state="translated">ປິດໃຊ້ງານແລ້ວ</target>
         <context-group purpose="location">
@@ -20526,7 +20526,7 @@
           <context context-type="linenumber">53</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelEnrolled" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.enrolled" datatype="html" xml:space="preserve">
         <source>Enrolled</source>
         <target state="translated">ລົງທະບຽນແລ້ວ</target>
         <context-group purpose="location">
@@ -20534,7 +20534,7 @@
           <context context-type="linenumber">55</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelFailed" datatype="html">
+      <trans-unit id="valueLabel.failed" datatype="html">
         <source>Failed</source>
         <target>ຫຼົ້ມເຫຼວ</target>
         <context-group purpose="location">
@@ -20542,7 +20542,7 @@
           <context context-type="linenumber">56</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelForced" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.forced" datatype="html" xml:space="preserve">
         <source>Forced</source>
         <target state="translated">ບັງຄັບ</target>
         <context-group purpose="location">
@@ -20550,7 +20550,7 @@
           <context context-type="linenumber">57</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelLocked" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.locked" datatype="html" xml:space="preserve">
         <source>Locked</source>
         <target state="translated">ຖືກລັອກ</target>
         <context-group purpose="location">
@@ -20566,7 +20566,7 @@
           <context context-type="linenumber">58</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelLockScreen" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.lockScreen" datatype="html" xml:space="preserve">
         <source>Lock screen</source>
         <target state="translated">ໜ້າຈໍລັອກ</target>
         <context-group purpose="location">
@@ -20574,7 +20574,7 @@
           <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelLogout" datatype="html">
+      <trans-unit id="valueLabel.logout" datatype="html">
         <source>Logout</source>
         <target>ອອກຈາກລະບົບ</target>
         <context-group purpose="location">
@@ -20582,7 +20582,7 @@
           <context context-type="linenumber">60</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelLost" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.lost" datatype="html" xml:space="preserve">
         <source>Lost</source>
         <target state="translated">ສູນຫາຍ</target>
         <context-group purpose="location">
@@ -20590,7 +20590,7 @@
           <context context-type="linenumber">61</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelNone" datatype="html">
+      <trans-unit id="valueLabel.none" datatype="html">
         <source>None</source>
         <target>ບໍ່ມີ</target>
         <context-group purpose="location">
@@ -20598,7 +20598,7 @@
           <context context-type="linenumber">62</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelPending" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.pending" datatype="html" xml:space="preserve">
         <source>Pending</source>
         <target state="translated">ລໍຖ້າດຳເນີນການ</target>
         <context-group purpose="location">
@@ -20610,7 +20610,7 @@
           <context context-type="linenumber">63</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelReject" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.reject" datatype="html" xml:space="preserve">
         <source>Reject</source>
         <target state="translated">ປະຕິເສດ</target>
         <context-group purpose="location">
@@ -20618,7 +20618,7 @@
           <context context-type="linenumber">65</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelRevoked" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.revoked" datatype="html" xml:space="preserve">
         <source>Revoked</source>
         <target state="translated">ເພີກຖອນແລ້ວ</target>
         <context-group purpose="location">
@@ -20626,7 +20626,7 @@
           <context context-type="linenumber">66</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelTokenPin" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.tokenPin" datatype="html" xml:space="preserve">
         <source>Token PIN</source>
         <target state="translated">ລະຫັດ PIN ໂທເຄັນ</target>
         <context-group purpose="location">
@@ -20634,7 +20634,7 @@
           <context context-type="linenumber">70</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelUserStore" datatype="html" xml:space="preserve">
+      <trans-unit id="valueLabel.userStore" datatype="html" xml:space="preserve">
         <source>User store</source>
         <target state="translated">ບ່ອນເກັບຂໍ້ມູນຜູ້ໃຊ້</target>
         <context-group purpose="location">
@@ -20642,7 +20642,7 @@
           <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelVerify" datatype="html">
+      <trans-unit id="valueLabel.verify" datatype="html">
         <source>Verify</source>
         <target>ກວດສອບ</target>
         <context-group purpose="location">
@@ -24714,7 +24714,7 @@
           <context context-type="linenumber">92</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7324241450799564337" datatype="html">
+      <trans-unit id="dashboard.timeWindow1h" datatype="html">
         <source>1 h</source>
         <target state="new">1 h</target>
         <context-group purpose="location">
@@ -24722,7 +24722,7 @@
           <context context-type="linenumber">40</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1272598752638190101" datatype="html">
+      <trans-unit id="dashboard.timeWindow6h" datatype="html">
         <source>6 h</source>
         <target state="new">6 h</target>
         <context-group purpose="location">
@@ -24730,7 +24730,7 @@
           <context context-type="linenumber">46</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8073962907604601724" datatype="html">
+      <trans-unit id="dashboard.timeWindow24h" datatype="html">
         <source>24 h</source>
         <target state="new">24 h</target>
         <context-group purpose="location">

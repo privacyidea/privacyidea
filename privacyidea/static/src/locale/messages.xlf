@@ -18416,63 +18416,63 @@
           <context context-type="linenumber">304</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelAccept" datatype="html">
+      <trans-unit id="valueLabel.accept" datatype="html">
         <source>Accept</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">42</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelActive" datatype="html">
+      <trans-unit id="valueLabel.active" datatype="html">
         <source>Active</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">43</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelAllowed" datatype="html">
+      <trans-unit id="valueLabel.allowed" datatype="html">
         <source>Allowed</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">44</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelAnyPin" datatype="html">
+      <trans-unit id="valueLabel.anyPin" datatype="html">
         <source>Any PIN</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">45</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelBroken" datatype="html">
+      <trans-unit id="valueLabel.broken" datatype="html">
         <source>Broken</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">46</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelChallenge" datatype="html">
+      <trans-unit id="valueLabel.challenge" datatype="html">
         <source>Challenge</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">47</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelClientWait" datatype="html">
+      <trans-unit id="valueLabel.clientWait" datatype="html">
         <source>Client wait</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">48</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelDamaged" datatype="html">
+      <trans-unit id="valueLabel.damaged" datatype="html">
         <source>Damaged</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">49</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelDeactivated" datatype="html">
+      <trans-unit id="valueLabel.deactivated" datatype="html">
         <source>Deactivated</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
@@ -18483,21 +18483,21 @@
           <context context-type="linenumber">54</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelDeclined" datatype="html">
+      <trans-unit id="valueLabel.declined" datatype="html">
         <source>Declined</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">51</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelDenied" datatype="html">
+      <trans-unit id="valueLabel.denied" datatype="html">
         <source>Denied</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">52</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelDisabled" datatype="html">
+      <trans-unit id="valueLabel.disabled" datatype="html">
         <source>Disabled</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access-edit-page/conditional-access-edit-page.component.html</context>
@@ -18508,28 +18508,28 @@
           <context context-type="linenumber">53</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelEnrolled" datatype="html">
+      <trans-unit id="valueLabel.enrolled" datatype="html">
         <source>Enrolled</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">55</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelFailed" datatype="html">
+      <trans-unit id="valueLabel.failed" datatype="html">
         <source>Failed</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">56</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelForced" datatype="html">
+      <trans-unit id="valueLabel.forced" datatype="html">
         <source>Forced</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">57</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelLocked" datatype="html">
+      <trans-unit id="valueLabel.locked" datatype="html">
         <source>Locked</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/logs/locked-users/locked-users.component.html</context>
@@ -18544,56 +18544,56 @@
           <context context-type="linenumber">58</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelLockScreen" datatype="html">
+      <trans-unit id="valueLabel.lockScreen" datatype="html">
         <source>Lock screen</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelLogout" datatype="html">
+      <trans-unit id="valueLabel.logout" datatype="html">
         <source>Logout</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">60</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelLost" datatype="html">
+      <trans-unit id="valueLabel.lost" datatype="html">
         <source>Lost</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">61</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelNo" datatype="html">
+      <trans-unit id="valueLabel.no" datatype="html">
         <source>No</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelNone" datatype="html">
+      <trans-unit id="valueLabel.none" datatype="html">
         <source>None</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">62</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelOff" datatype="html">
+      <trans-unit id="valueLabel.off" datatype="html">
         <source>Off</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">32</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelOn" datatype="html">
+      <trans-unit id="valueLabel.on" datatype="html">
         <source>On</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">32</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelPending" datatype="html">
+      <trans-unit id="valueLabel.pending" datatype="html">
         <source>Pending</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/authentication-activity-widget/authentication-activity-widget.component.ts</context>
@@ -18604,42 +18604,42 @@
           <context context-type="linenumber">63</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelReject" datatype="html">
+      <trans-unit id="valueLabel.reject" datatype="html">
         <source>Reject</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">65</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelRevoked" datatype="html">
+      <trans-unit id="valueLabel.revoked" datatype="html">
         <source>Revoked</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">66</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelTokenPin" datatype="html">
+      <trans-unit id="valueLabel.tokenPin" datatype="html">
         <source>Token PIN</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">70</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelUserStore" datatype="html">
+      <trans-unit id="valueLabel.userStore" datatype="html">
         <source>User store</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelVerify" datatype="html">
+      <trans-unit id="valueLabel.verify" datatype="html">
         <source>Verify</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
           <context context-type="linenumber">72</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="valueLabelYes" datatype="html">
+      <trans-unit id="valueLabel.yes" datatype="html">
         <source>Yes</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/value-label.utils.ts</context>
@@ -22229,21 +22229,21 @@
           <context context-type="linenumber">149</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1272598752638190101" datatype="html">
+      <trans-unit id="dashboard.timeWindow6h" datatype="html">
         <source>6 h</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/metrics-time-window.ts</context>
           <context context-type="linenumber">46</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7324241450799564337" datatype="html">
+      <trans-unit id="dashboard.timeWindow1h" datatype="html">
         <source>1 h</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/metrics-time-window.ts</context>
           <context context-type="linenumber">40</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8073962907604601724" datatype="html">
+      <trans-unit id="dashboard.timeWindow24h" datatype="html">
         <source>24 h</source>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/dashboard/widgets/metrics-time-window.ts</context>
