@@ -182,10 +182,10 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
     test the api.validate endpoints
     """
 
-    def test_00_create_realms(self):
+    def test_create_realms(self):
         self.setUp_user_realms()
 
-    def test_01_push_token_reorder_list(self):
+    def test_push_token_reorder_list(self):
         """
         * Policy push_wait
         * The user has two tokens. SPASS and Push with the same PIN.
@@ -292,7 +292,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push1")
         delete_policy("push2")
 
-    def test_02_push_token_do_not_wait_if_disabled(self):
+    def test_push_token_do_not_wait_if_disabled(self):
         """
         * Policy push_wait
         * The user has two tokens. HOTP chal-resp and Push with the same PIN.
@@ -410,7 +410,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push2")
         delete_policy("chalresp")
 
-    def test_03_unfinished_enrolled_push_token(self):
+    def test_unfinished_enrolled_push_token(self):
         """
         * The user has a push token where the enrollment process was not completed
 
@@ -467,7 +467,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push2")
 
     @ldap3mock.activate
-    def test_10_enroll_push(self):
+    def test_enroll_push(self):
         from .test_api_validate import LDAPDirectory
 
         # Init LDAP
@@ -709,7 +709,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         return serial, transaction_id
 
     @ldap3mock.activate
-    def test_10a_finalize_enroll_push_within_grace(self):
+    def test_finalize_enroll_push_within_grace(self):
         # An enrollment challenge answered by the smartphone (otp_valid set during the
         # rollout) can be finalized by the application after the original challenge
         # validity has passed: answering extends the expiration by the finalize grace,
@@ -746,7 +746,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_privacyidea_config("PushChallengeFinalizeGrace")
 
     @ldap3mock.activate
-    def test_10a2_finalize_enroll_push_after_grace_fails(self):
+    def test_finalize_enroll_push_after_grace_fails(self):
         # Once the finalize window (validity + grace) has elapsed, the answered
         # enrollment challenge can no longer be redeemed: a late /validate/check must
         # not complete the authentication. (The token itself is already enrolled - the
@@ -772,7 +772,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         self._teardown_multichallenge_push_enrollment(serial)
 
     @ldap3mock.activate
-    def test_10b_finalize_enroll_push_before_smartphone_confirms(self):
+    def test_finalize_enroll_push_before_smartphone_confirms(self):
         # Regression test: while the enrollment challenge is still pending (the
         # smartphone has not confirmed the rollout yet, so otp_valid is unset), a
         # /validate/check poll must not authenticate. The pending enrollment
@@ -845,7 +845,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_realm("ldaprealm")
         delete_resolver("catchall")
 
-    def test_15_push_with_require_presence(self):
+    def test_push_with_require_presence(self):
         self.setUp_user_realms()
         # Setup PUSH policies
         set_policy("push_config", scope=SCOPE.ENROLL,
@@ -1072,7 +1072,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_require_presence")
 
-    def test_16_push_require_presence_with_push_wait(self):
+    def test_push_require_presence_with_push_wait(self):
         self.setUp_user_realms()
         # Setup PUSH policies
         set_policy("pol_push_config", scope=SCOPE.ENROLL,
@@ -1143,7 +1143,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("pol_push_require_presence")
         delete_policy("pol_push_wait")
 
-    def test_17_push_code_to_phone(self):
+    def test_push_code_to_phone(self):
         """
         Test the push token in code_to_phone mode.
         This is a 2-step process:
@@ -1338,7 +1338,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("generic_challenge_text")
         delete_policy("push_challenge_text")
 
-    def test_18_push_code_to_phone_fail(self):
+    def test_push_code_to_phone_fail(self):
         """
         Test the push token in code_to_phone mode with a wrong display_code.
         """
@@ -1480,7 +1480,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_mode_code_to_phone")
 
-    def test_18a_push_code_to_phone_before_smartphone_confirms(self):
+    def test_push_code_to_phone_before_smartphone_confirms(self):
         """
         Test that entering a display_code before the smartphone has confirmed the challenge
         results in a REJECT.
@@ -1563,7 +1563,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_mode_code_to_phone")
 
-    def test_18b_push_code_to_phone_smartphone_declines(self):
+    def test_push_code_to_phone_smartphone_declines(self):
         """
         Test that if the smartphone declines the challenge in code_to_phone mode,
         the authentication is rejected.
@@ -1682,7 +1682,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_mode_code_to_phone")
 
-    def test_18c_authentication_log_push_states(self):
+    def test_authentication_log_push_states(self):
         """
         Full authentication-log coverage for the push flow. The PIN step at
         /validate/check logs CHALLENGE_TRIGGERED; /ttype/push (the only point
@@ -1805,7 +1805,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_18d_push_bad_signature_written_to_auth_log(self):
+    def test_push_bad_signature_written_to_auth_log(self):
         """The push-specific conditional-access seam: a well-formed-but-wrong push
         signature at /ttype/push emits CHALLENGE_ANSWERED_FAIL to the auth log. """
         self.setUp_user_realms()
@@ -1856,7 +1856,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
                                                  "fbtoken": "firebaseT"}):
             return self.app.full_dispatch_request()
 
-    def test_18e_push_enrollment_not_gated_by_lock(self):
+    def test_push_enrollment_not_gated_by_lock(self):
         """A locked token owner must still be able to complete push enrollment:
         the conditional-access pre-check runs only on the authentication path,
         not on the enrollment step at /ttype/push."""
@@ -1882,7 +1882,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
             remove_token(self.serial_push)
             delete_policy("push_config")
 
-    def test_18f_push_auth_answer_gated_by_lock(self):
+    def test_push_auth_answer_gated_by_lock(self):
         """A locked owner's signed push answer is rejected by the pre-check before
         the signature is verified: the answer is not processed (no
         CHALLENGE_ANSWERED log row) and the challenge stays open."""
@@ -1936,7 +1936,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
             remove_token(self.serial_push)
             delete_policy("push_config")
 
-    def test_18g_push_rejection_reports_a_configured_message(self):
+    def test_push_rejection_reports_a_configured_message(self):
         """A rejected push answer is reported the way this endpoint reports any failed answer: an error message an
         admin configured is surfaced, and a silent rejection carries no detail - because an ordinary failed answer
         here carries none either. The opposite of /validate/*, where every failure has a detail and a silent
@@ -1994,7 +1994,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
             remove_token(self.serial_push)
             delete_policy("push_config")
 
-    def test_18h_push_answer_that_trips_a_lock_still_succeeds(self):
+    def test_push_answer_that_trips_a_lock_still_succeeds(self):
         """An answer that locks its own owner is answered as the answer it was - it verified, so it succeeds - and
         the lock refuses the answers after it. Nothing about this response mentions the lock, whether or not the
         stage carried wording, so the moment a lock is written is not observable here at all."""
@@ -2047,7 +2047,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
             remove_token(self.serial_push)
             delete_policy("push_config")
 
-    def test_19_push_code_to_phone_with_require_presence(self):
+    def test_push_code_to_phone_with_require_presence(self):
         """
         Test that if both code_to_phone and require_presence are enabled, require_presence takes
         precedence: challenge mode is REQUIRE_PRESENCE, client_mode is POLL (not INTERACTIVE),
@@ -2206,7 +2206,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_mode_code_to_phone")
         delete_policy("push_require_presence")
 
-    def test_20_push_code_to_phone_with_push_wait(self):
+    def test_push_code_to_phone_with_push_wait(self):
         """
         Test that if both code_to_phone and push_wait are enabled, push_wait takes precedence.
         """
@@ -2308,7 +2308,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         thread.start()
         return thread
 
-    def test_21_push_wait_success(self):
+    def test_push_wait_success(self):
         """
         Push with push_wait, answered successfully: the smartphone confirms the challenge
         while /validate/check is still blocking in the push_wait loop. Authentication
@@ -2354,7 +2354,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_wait")
 
-    def test_22_push_wait_declined(self):
+    def test_push_wait_declined(self):
         """
         Push with push_wait, declined: the smartphone declines while /validate/check is blocking.
         The wait loop short-circuits on the decline (well before the timeout) and reports DECLINED
@@ -2408,7 +2408,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_wait")
 
-    def test_22a_push_wait_cancelled(self):
+    def test_push_wait_cancelled(self):
         """
         Push with push_wait, cancelled (user aborted their own request): the smartphone sends
         decline_reason=cancelled.
@@ -2445,7 +2445,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_wait")
 
-    def test_23_push_wait_failed(self):
+    def test_push_wait_failed(self):
         """
         Push with push_wait, invalid answer: the smartphone posts a bad signature while
         /validate/check is blocking. The answer is rejected, the loop times out and rejects;
@@ -2489,7 +2489,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_wait")
 
-    def test_24_push_wait_late_answer(self):
+    def test_push_wait_late_answer(self):
         """
         Push with push_wait, answered too late: the smartphone confirms only after the wait has
         already timed out. The challenge has been cleaned up, so the late confirmation finds no
@@ -2547,7 +2547,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_wait")
 
-    def test_24b_push_wait_no_challenge_keeps_other_challenges(self):
+    def test_push_wait_no_challenge_keeps_other_challenges(self):
         """
         If create_challenge persists nothing (no firebase_configuration), push_wait gets
         transaction_id=None. The cleanup must NOT delete by serial alone, otherwise it would
@@ -2579,7 +2579,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         delete_policy("push_config")
         delete_policy("push_wait")
 
-    def test_25_push_answer_challenge_deleted_concurrently(self):
+    def test_push_answer_challenge_deleted_concurrently(self):
         """
         If the challenge row is deleted concurrently while the smartphone answer is being
         committed (e.g. a push_wait timeout firing at the same instant), the /ttype/push handler
@@ -2631,7 +2631,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_26_push_token_owner_fallbacks(self):
+    def test_push_token_owner_fallbacks(self):
         """The conditional-access owner lookup for the push answer falls back to
         an empty user when the serial is missing or does not resolve to a token,
         so the pre-check never refuses an answer over identity resolution."""
@@ -2644,7 +2644,7 @@ class PushAPITestCase(PushTokenTestMixin, ConditionalAccessFixtureMixin, MyApiTe
             self.assertFalse(resolve("NO_SUCH_SERIAL_XYZ"))
 
 
-    def test_26_polled_notification_names_the_triggering_client(self):
+    def test_polled_notification_names_the_triggering_client(self):
         """
         The tags of the triggering client have to survive until the smartphone polls.
 
@@ -2742,7 +2742,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             return res.json["detail"]["challenge_status"]
 
-    def test_01_decline_reason_cancelled(self):
+    def test_decline_reason_cancelled(self):
         """A signed decline with decline_reason=cancelled sets the CANCELLED session,
         polltransaction reports 'cancelled', the challenge stays (reportable, not deleted)
         and the pending /validate/check is rejected."""
@@ -2770,7 +2770,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_02_decline_reason_unknown_trigger(self):
+    def test_decline_reason_unknown_trigger(self):
         """
         A signed decline with decline_reason=unknown_trigger keeps the DECLINED session,
         polltransaction reports 'declined' and the pending /validate/check is rejected.
@@ -2798,7 +2798,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_03_decline_no_reason(self):
+    def test_decline_no_reason(self):
         """
         An earlier app version declines with a signature over '...|decline' and no decline_reason.
         The signature still verifies and the decline maps to the DECLINED session.
@@ -2818,7 +2818,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_04_decline_reason_downgrade_rejected(self):
+    def test_decline_reason_downgrade_rejected(self):
         """
         A MITM cannot downgrade the reason: because the reason is part of the signed
         payload, a signature computed without it (or with a different one) fails when the
@@ -2847,7 +2847,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_05_polling_get_skips_cancelled(self):
+    def test_polling_get_skips_cancelled(self):
         """After a cancel, the smartphone polling GET no longer offers the challenge."""
         self.setUp_user_realms()
         self._setup_standard_push()
@@ -2868,7 +2868,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_06_is_open_guard_no_reanswer(self):
+    def test_is_open_guard_no_reanswer(self):
         """
         The open-challenge guard makes _handle_auth_response idempotent: replaying an
         approve signature on an already-answered challenge, and answering an already-refused
@@ -2908,7 +2908,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_07_is_open_guard_expired(self):
+    def test_is_open_guard_expired(self):
         """An expired challenge is not answerable at the /ttype/push endpoint either."""
         self.setUp_user_realms()
         self._setup_standard_push()
@@ -2928,7 +2928,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_08_code_to_phone_no_regeneration_on_replay(self):
+    def test_code_to_phone_no_regeneration_on_replay(self):
         """Replaying the confirm signature on an already-confirmed code_to_phone challenge
         must not regenerate (and leak) a fresh display_code."""
         self.setUp_user_realms()
@@ -2962,7 +2962,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         delete_policy("push_config")
         delete_policy("push_mode_code_to_phone")
 
-    def test_09_decline_reason_unknown_logs_and_declines(self):
+    def test_decline_reason_unknown_logs_and_declines(self):
         """
         A signed but unrecognized decline_reason still declines (the refusal always takes
         effect) and is logged as app/server vocabulary drift.
@@ -2986,7 +2986,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_10_audit_logs_the_refusal_and_its_reason(self):
+    def test_audit_logs_the_refusal_and_its_reason(self):
         """
         The audit entry of the smartphone's answer names the transaction, the resulting status
         and the raw reason the app sent - an unknown reason included, which is what makes the
@@ -3011,7 +3011,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_11_audit_logs_the_accepted_answer(self):
+    def test_audit_logs_the_accepted_answer(self):
         """
         An accepted answer is logged as well, so the entry tells an approval from a refusal
         instead of leaving the reader to infer it from an empty column.
@@ -3033,7 +3033,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_12_audit_logs_the_refusal_on_validate_check(self):
+    def test_audit_logs_the_refusal_on_validate_check(self):
         """
         The /validate/check that fails because of the refusal names transaction and status,
         instead of only reporting a response that did not match the challenge.
@@ -3056,7 +3056,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_13_authentication_log_separates_the_decline_variants(self):
+    def test_authentication_log_separates_the_decline_variants(self):
         """
         Each decline reason classifies the answer as its own authentication event, so a
         conditional-access policy can count "I did not trigger this" without counting the
@@ -3091,7 +3091,7 @@ class PushDeclineReasonTestCase(PushTokenTestMixin, MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
 
-    def test_14_finalizing_after_a_refusal_is_logged_as_the_refusal(self):
+    def test_finalizing_after_a_refusal_is_logged_as_the_refusal(self):
         """
         A client that polls and then finalizes runs into the challenge the phone already refused.
         That request is classified as the refusal rather than as an answer that did not match:
