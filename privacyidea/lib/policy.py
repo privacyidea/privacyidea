@@ -1187,10 +1187,63 @@ def remove_wildcards_and_negations(value_list: list[str]) -> list[str]:
     return raw_values
 
 
+def _action_definitions_for_scope(scope: str) -> dict:
+    """Return the definitions of the actions of the given scope (static + dynamic), keyed by the action name."""
+    from .token import get_dynamic_policy_definitions
+    return get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope)
+
+
 def _allowed_actions_for_scope(scope: str) -> set:
     """Return the set of action names defined for the given scope (static + dynamic)."""
-    from .token import get_dynamic_policy_definitions
-    return set(get_static_policy_definitions(scope) | get_dynamic_policy_definitions(scope))
+    return set(_action_definitions_for_scope(scope))
+
+
+def negate_disabled_bool_actions(scope: str, action: str | dict) -> str | dict:
+    """
+    Turn a boolean action with a value that is not true (like ``policywrite=False``) into the excluded action
+    ``-policywrite``. The policy matching only checks whether an action is set, so it would ignore the value and treat
+    the action as enabled. A boolean action with an empty value is stored without the value, a boolean action with a
+    value like "true" or "1" stays as it is.
+
+    :param scope: The scope of the policy
+    :param action: The policy actions as a dict or comma separated string
+    :return: The policy actions in the same form
+    """
+    bool_actions = {name for name, definition in _action_definitions_for_scope(scope).items()
+                    if definition.get("type") == "bool"}
+
+    def is_empty(value):
+        return value is None or (isinstance(value, str) and not value.strip())
+
+    def stored_key(key, value):
+        # The key a boolean action is stored with, or None if it keeps its value
+        if is_empty(value):
+            return key
+        if not is_true(value.strip() if isinstance(value, str) else value):
+            return f"-{key}"
+        return None
+
+    if isinstance(action, dict):
+        negated_action = {}
+        for key, value in action.items():
+            new_key = stored_key(key, value) if key in bool_actions else None
+            if new_key:
+                negated_action[new_key] = True
+            else:
+                negated_action[key] = value
+        return negated_action
+
+    # Only replace the changed actions, so that the other actions are stored exactly as given
+    parts = []
+    for part in re.split(r'(?<!\\),', action):
+        key_value = part.strip().split("=", 1)
+        if len(key_value) == 2 and key_value[0] in bool_actions:
+            new_key = stored_key(*key_value)
+            if new_key:
+                # Keep the space after the separating comma
+                part = part[:len(part) - len(part.lstrip())] + new_key
+        parts.append(part)
+    return ",".join(parts)
 
 
 def validate_actions(scope: str, action: str | dict) -> bool:
@@ -1499,11 +1552,13 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
     # validate action values
     if action is not None:
         if scope is not None:
-            validate_actions(scope, action)
+            action_scope = scope
         elif policy:
-            validate_actions(policy.scope, action)
+            action_scope = policy.scope
         else:
             raise ParameterError("Scope is required to set action values!")
+        validate_actions(action_scope, action)
+        action = negate_disabled_bool_actions(action_scope, action)
     if isinstance(action, dict):
         action_list = []
         for k, v in action.items():
