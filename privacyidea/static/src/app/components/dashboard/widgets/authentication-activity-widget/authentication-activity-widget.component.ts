@@ -285,7 +285,7 @@ challenge-response login count once, classified by how the attempt ended.`;
         {
           // An attempt counts here when its latest event is a challenge or enrolment with no answer logged after
           // it, so a bucket dates when the attempt *started*.
-          label: $localize`:@@valueLabelPending:Pending`,
+          label: $localize`:@@valueLabel.pending:Pending`,
           key: "pending",
           counts: this.binsOf(seriesOf("pending"), binCount),
           total: pending,

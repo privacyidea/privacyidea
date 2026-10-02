@@ -29,8 +29,8 @@ const BOOLEAN_VALUE_PAIRS: readonly (readonly [string, string])[] = [
 ];
 
 const BOOLEAN_PRESET_LABELS: Record<BooleanValueLabelPreset, readonly [string, string]> = {
-  switch: [$localize`:@@valueLabelOff:Off`, $localize`:@@valueLabelOn:On`],
-  predicate: [$localize`:@@valueLabelNo:No`, $localize`:@@valueLabelYes:Yes`]
+  switch: [$localize`:@@valueLabel.off:Off`, $localize`:@@valueLabel.on:On`],
+  predicate: [$localize`:@@valueLabel.no:No`, $localize`:@@valueLabel.yes:Yes`]
 };
 
 /**
@@ -39,37 +39,37 @@ const BOOLEAN_PRESET_LABELS: Record<BooleanValueLabelPreset, readonly [string, s
  * show is a string the translators pay for and nobody reads.
  */
 const VALUE_VOCABULARY: Record<string, string> = {
-  accept: $localize`:@@valueLabelAccept:Accept`,
-  active: $localize`:@@valueLabelActive:Active`,
-  allowed: $localize`:@@valueLabelAllowed:Allowed`,
-  any_pin: $localize`:@@valueLabelAnyPin:Any PIN`,
-  broken: $localize`:@@valueLabelBroken:Broken`,
-  challenge: $localize`:@@valueLabelChallenge:Challenge`,
-  clientwait: $localize`:@@valueLabelClientWait:Client wait`,
-  damaged: $localize`:@@valueLabelDamaged:Damaged`,
-  deactivated: $localize`:@@valueLabelDeactivated:Deactivated`,
-  declined: $localize`:@@valueLabelDeclined:Declined`,
-  denied: $localize`:@@valueLabelDenied:Denied`,
-  disable: $localize`:@@valueLabelDisabled:Disabled`,
-  disabled: $localize`:@@valueLabelDeactivated:Deactivated`,
-  enrolled: $localize`:@@valueLabelEnrolled:Enrolled`,
-  failed: $localize`:@@valueLabelFailed:Failed`,
-  force: $localize`:@@valueLabelForced:Forced`,
-  locked: $localize`:@@valueLabelLocked:Locked`,
-  lockscreen: $localize`:@@valueLabelLockScreen:Lock screen`,
-  logout: $localize`:@@valueLabelLogout:Logout`,
-  lost: $localize`:@@valueLabelLost:Lost`,
-  none: $localize`:@@valueLabelNone:None`,
-  pending: $localize`:@@valueLabelPending:Pending`,
+  accept: $localize`:@@valueLabel.accept:Accept`,
+  active: $localize`:@@valueLabel.active:Active`,
+  allowed: $localize`:@@valueLabel.allowed:Allowed`,
+  any_pin: $localize`:@@valueLabel.anyPin:Any PIN`,
+  broken: $localize`:@@valueLabel.broken:Broken`,
+  challenge: $localize`:@@valueLabel.challenge:Challenge`,
+  clientwait: $localize`:@@valueLabel.clientWait:Client wait`,
+  damaged: $localize`:@@valueLabel.damaged:Damaged`,
+  deactivated: $localize`:@@valueLabel.deactivated:Deactivated`,
+  declined: $localize`:@@valueLabel.declined:Declined`,
+  denied: $localize`:@@valueLabel.denied:Denied`,
+  disable: $localize`:@@valueLabel.disabled:Disabled`,
+  disabled: $localize`:@@valueLabel.deactivated:Deactivated`,
+  enrolled: $localize`:@@valueLabel.enrolled:Enrolled`,
+  failed: $localize`:@@valueLabel.failed:Failed`,
+  force: $localize`:@@valueLabel.forced:Forced`,
+  locked: $localize`:@@valueLabel.locked:Locked`,
+  lockscreen: $localize`:@@valueLabel.lockScreen:Lock screen`,
+  logout: $localize`:@@valueLabel.logout:Logout`,
+  lost: $localize`:@@valueLabel.lost:Lost`,
+  none: $localize`:@@valueLabel.none:None`,
+  pending: $localize`:@@valueLabel.pending:Pending`,
   privacyidea: "privacyIDEA",
-  reject: $localize`:@@valueLabelReject:Reject`,
-  revoked: $localize`:@@valueLabelRevoked:Revoked`,
+  reject: $localize`:@@valueLabel.reject:Reject`,
+  revoked: $localize`:@@valueLabel.revoked:Revoked`,
   sha1: "SHA-1",
   sha256: "SHA-256",
   sha512: "SHA-512",
-  tokenpin: $localize`:@@valueLabelTokenPin:Token PIN`,
-  userstore: $localize`:@@valueLabelUserStore:User store`,
-  verify: $localize`:@@valueLabelVerify:Verify`
+  tokenpin: $localize`:@@valueLabel.tokenPin:Token PIN`,
+  userstore: $localize`:@@valueLabel.userStore:User store`,
+  verify: $localize`:@@valueLabel.verify:Verify`
 };
 
 /**

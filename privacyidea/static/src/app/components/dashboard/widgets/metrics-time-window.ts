@@ -37,12 +37,12 @@ const SECONDS_PER_HOUR = 3600;
 // An hour is short enough that a slow resolver shows up as slow rather than being averaged away by the hours around it.
 export const DEFAULT_METRICS_TIME_WINDOW: MetricsTimeWindow = {
   id: "1h",
-  label: $localize`1 h`,
+  label: $localize`:@@dashboard.timeWindow1h:1 h`,
   seconds: SECONDS_PER_HOUR
 };
 
 export const METRICS_TIME_WINDOWS: readonly MetricsTimeWindow[] = [
   DEFAULT_METRICS_TIME_WINDOW,
-  { id: "6h", label: $localize`6 h`, seconds: 6 * SECONDS_PER_HOUR },
-  { id: "24h", label: $localize`24 h`, seconds: 24 * SECONDS_PER_HOUR }
+  { id: "6h", label: $localize`:@@dashboard.timeWindow6h:6 h`, seconds: 6 * SECONDS_PER_HOUR },
+  { id: "24h", label: $localize`:@@dashboard.timeWindow24h:24 h`, seconds: 24 * SECONDS_PER_HOUR }
 ];
