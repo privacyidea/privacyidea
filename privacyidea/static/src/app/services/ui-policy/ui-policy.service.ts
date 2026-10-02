@@ -28,7 +28,6 @@ export interface AppConfig {
   logo: string;
   showNode: string;
   externalLinks: boolean;
-  hasJobQueue: string;
   loginText: string;
   logoutRedirectUrl: string;
   gdprLink: string;
@@ -58,7 +57,6 @@ export class UiPolicyService {
         logo: "",
         showNode: "",
         externalLinks: false,
-        hasJobQueue: "false",
         loginText: "",
         logoutRedirectUrl: "",
         gdprLink: "",
@@ -70,10 +68,6 @@ export class UiPolicyService {
 
   get remoteUser(): string {
     return this.config.remoteUser;
-  }
-
-  get hasJobQueue(): boolean {
-    return !!this.config.hasJobQueue.toLowerCase();
   }
 
   get passwordReset(): boolean {

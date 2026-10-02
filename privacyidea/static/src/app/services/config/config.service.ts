@@ -36,7 +36,6 @@ export interface AppConfig {
   logo: string;
   show_node: string;
   external_links: boolean;
-  has_job_queue: string;
   login_text: string;
   gdpr_link: string;
   translation_warning: boolean;
@@ -64,7 +63,6 @@ export class ConfigService implements ConfigServiceInterface {
     logo: "",
     show_node: "",
     external_links: false,
-    has_job_queue: "false",
     login_text: "",
     gdpr_link: "",
     translation_warning: false,

@@ -75,8 +75,6 @@ angular.module("privacyideaApp")
             });
             obj = angular.element(document.querySelector('#LOGO'));
             $scope.piLogo = obj.val();
-            obj = angular.element(document.querySelector('#HAS_JOB_QUEUE'));
-            $scope.hasJobQueue = obj.val() === "True";
             obj = angular.element(document.querySelector('#LOGIN_TEXT'));
             $scope.piLoginText = obj.val();
             obj = angular.element(document.querySelector('#SHOW_NODE'));

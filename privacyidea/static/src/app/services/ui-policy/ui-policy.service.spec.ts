@@ -37,7 +37,6 @@ describe("UiPolicyService", () => {
       logo: "/logo.png",
       showNode: "node‑1",
       externalLinks: true,
-      hasJobQueue: "true",
       loginText: "Hello",
       logoutRedirectUrl: "/bye",
       gdprLink: "/gdpr",
@@ -60,7 +59,6 @@ describe("UiPolicyService", () => {
     expect(uiPolicyService.gdprLink).toBe("/gdpr");
     expect(uiPolicyService.privacyideaVersionNumber).toBe("1.2.3");
     expect(uiPolicyService.translationWarning).toBe(true);
-    expect(uiPolicyService.hasJobQueue).toBe(true);
   });
 
   it("falls back to defaults and warns when appConfig is missing", () => {
@@ -71,6 +69,5 @@ describe("UiPolicyService", () => {
     expect(warn).toHaveBeenCalledWith("App configuration not found. Using default values.");
     expect(srv.remoteUser).toBe("");
     expect(srv.passwordReset).toBe(false);
-    expect(srv.hasJobQueue).toBe(true);
   });
 });

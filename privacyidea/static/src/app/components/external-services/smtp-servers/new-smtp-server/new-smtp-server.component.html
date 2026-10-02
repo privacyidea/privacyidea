@@ -205,22 +205,16 @@
           </app-clearable-input>
         </mat-form-field>
 
-        <div class="checkbox-group">
-          @if (showTLS()) {
+        @if (showTLS()) {
+          <div class="checkbox-group">
             <mat-checkbox
               [checked]="smtpModel().tls"
               (change)="smtpModel.update(m => ({...m, tls: $event.checked}))"
               i18n="@@smtpServer.useStarttls"
               >Use StartTLS</mat-checkbox
             >
-          }
-          <mat-checkbox
-            [checked]="smtpModel().enqueue_job"
-            (change)="smtpModel.update(m => ({...m, enqueue_job: $event.checked}))"
-            i18n="@@smtpServer.sendMailFromJob"
-            >Send mail from job queue</mat-checkbox
-          >
-        </div>
+          </div>
+        }
 
         <mat-divider />
 

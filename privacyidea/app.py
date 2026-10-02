@@ -85,7 +85,6 @@ from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.user import user_blueprint
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
-from privacyidea.lib import queue
 from privacyidea.lib.conditional_access.session import init_ca_session
 from privacyidea.lib.crypto import build_pass_context, init_hsm
 from privacyidea.lib.framework import get_app_config_value
@@ -591,8 +590,6 @@ def create_app(config_name="development",
 
     babel.init_app(app, locale_selector=get_accepted_language)
 
-    queue.register_app(app)
-
     if initialize_hsm:
         with app.app_context():
             init_hsm()
@@ -691,8 +688,6 @@ def create_docker_app():
     app.jinja_env.filters["versioned"] = versioned_asset
 
     babel.init_app(app, locale_selector=get_accepted_language)
-
-    queue.register_app(app)
 
     if app.config.get(ConfigKey.HSM_INITIALIZE, False):
         with app.app_context():
