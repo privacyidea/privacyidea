@@ -305,7 +305,7 @@ export class TokenTableComponent implements OnDestroy {
   toggleFilter(filterKeyword: string): void {
     this.tokenService.updateFilter((current) => {
       let newValue =
-        filterKeyword === "active"
+        filterKeyword === "active" || filterKeyword === "assigned"
           ? this.tableUtilsService.toggleBooleanInFilter({
               keyword: filterKeyword,
               currentValue: current
