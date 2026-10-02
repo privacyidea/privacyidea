@@ -62,7 +62,7 @@ from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, webauthn_b64_encode,
                                              WebAuthnUser, AuthenticationRejectedException,
                                              UserVerificationLevel, AttestationLevel)
 from privacyidea.lib.user import User
-from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
+from privacyidea.lib.utils import hexlify_and_unicode, is_true
 
 __doc__ = """
 WebAuthn  is the Web Authentication API specified by the FIDO Alliance.
@@ -472,11 +472,6 @@ native encoding of the language (usually utf-16).
 
 from privacyidea.models import TokenCredentialIdHash, db
 
-IMAGES = {"yubico": "privacyidea/static/img/FIDO-U2F-Security-Key-444x444.png",
-          "plug-up": "privacyidea/static/img/plugup.jpg",
-          "u2fzero.com": "privacyidea/static/img/u2fzero.png",
-          "solokeys": "privacyidea/static/img/solokeys.png"}
-
 DEFAULT_DESCRIPTION = lazy_gettext('Generic WebAuthn Token')
 
 # Policy defaults
@@ -885,7 +880,6 @@ class WebAuthnTokenClass(TokenClass):
             user_id=self.token.serial,
             user_name=user.login,
             user_display_name=str(user),
-            icon_url=IMAGES.get(self.token.description.lower().split()[0], "") if self.token.description else "",
             credential_id=self.decrypt_otpkey(),
             public_key=webauthn_b64_encode(binascii.unhexlify(self.get_tokeninfo(FIDO2TokenInfo.PUB_KEY))),
             sign_count=self.get_otp_count(),
@@ -1406,16 +1400,9 @@ class WebAuthnTokenClass(TokenClass):
             for allow_credential in public_key_credential_request_options["allowCredentials"]:
                 allow_credential["transports"] = allowed_transports
 
-        data_image = convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
-
-        reply_dict = {}
         sign_request = {"webAuthnSignRequest": public_key_credential_request_options,
                         "hideResponseInput": self.client_mode != ClientMode.INTERACTIVE}
-        if data_image:
-            sign_request["img"] = data_image
-            reply_dict["image"] = data_image
-        reply_dict["attributes"] = sign_request
-        return True, message, db_challenge.transaction_id, reply_dict
+        return True, message, db_challenge.transaction_id, {"attributes": sign_request}
 
     @check_token_locked
     def check_otp(self, otpval, counter=None, window=None, options=None):

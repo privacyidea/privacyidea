@@ -30,7 +30,6 @@ import binascii
 import hashlib
 import html
 import logging
-import mimetypes
 import re
 import string
 import threading
@@ -1667,28 +1666,6 @@ def parse_string_to_dict(s, split_char=":"):
     values = [[x for x in y.split()] for y in packed_list[1::2]]
     d = {a: b for a, b in zip(keys, values)}
     return d
-
-
-def convert_imagefile_to_dataimage(imagepath):
-    """
-    This helper reads an image file and converts it to a dataimage string,
-    that can be directly used in HTML pages.
-
-    :param imagepath:
-    :return: A dataimage as string
-    """
-    try:
-        mime, _ = mimetypes.guess_type(imagepath)
-        if not mime:
-            log.warning(f"Unknown file type in file {imagepath!s}.")
-            return ""
-        with open(imagepath, "rb") as f:
-            data = f.read()
-            data64 = base64.b64encode(data)
-        return f"data:{mime!s};base64,{to_unicode(data64)!s}"
-    except FileNotFoundError:
-        log.warning(f"The file {imagepath!s} could not be found.")
-        return ""
 
 
 ua_re = re.compile(r'^(?P<agent>[a-zA-Z0-9_-]+)(/(?P<version>\d+[\d.]*))?(\s(?P<comment>.*))?')

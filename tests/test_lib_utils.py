@@ -31,7 +31,7 @@ from privacyidea.lib.utils import (parse_timelimit,
                                    modhex_decode, checksum, urlsafe_b64encode_and_unicode,
                                    check_ip_in_policy, split_pin_pass, create_tag_dict,
                                    check_serial_valid, determine_logged_in_userparams,
-                                   to_list, parse_string_to_dict, convert_imagefile_to_dataimage,
+                                   to_list, parse_string_to_dict,
                                    get_plugin_info_from_useragent, get_computer_name_from_user_agent,
                                    get_useragent_name,
                                    redacted_email, redacted_phone_number,
@@ -1130,21 +1130,6 @@ class UtilsTestCase(MyTestCase):
         self.assertEqual(d.get("key1"), ["v1", "v2", "v3"])
         self.assertEqual(d.get("key2"), [])
         self.assertEqual(d.get("key3"), ["v5"])
-
-    def test_36_imagefile_to_dataimage(self):
-        file = "./tests/testdata/FIDO-U2F-Security-Key-444x444.png"
-        dataimage = convert_imagefile_to_dataimage(file)
-        self.assertTrue(dataimage.startswith("data:image/png;base64,iVBOR"))
-
-        # File not found returns an empty datatime string
-        file = "./tests/testdata/FIDO-U2F-Security-Key-444x444.XXX"
-        dataimage = convert_imagefile_to_dataimage(file)
-        self.assertEqual("", dataimage)
-
-        # Try to read a crazy file with an unknown mime-type (it seems, YAML is now known, as well)
-        file = "./tests/testdata/import.oath"
-        dataimage = convert_imagefile_to_dataimage(file)
-        self.assertEqual("", dataimage)
 
     def test_37_useragent_split(self):
         user_agents = [
