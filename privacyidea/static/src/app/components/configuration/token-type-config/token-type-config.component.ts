@@ -46,7 +46,6 @@ import { RemoteConfigComponent } from "@components/configuration/token-type-conf
 import { SmsConfigComponent } from "@components/configuration/token-type-config/token-types/sms-config/sms-config.component";
 import { TiqrConfigComponent } from "@components/configuration/token-type-config/token-types/tiqr-config/tiqr-config.component";
 import { TotpConfigComponent } from "@components/configuration/token-type-config/token-types/totp-config/totp-config.component";
-import { U2fConfigComponent } from "@components/configuration/token-type-config/token-types/u2f-config/u2f-config.component";
 import { WebauthnConfigComponent } from "@components/configuration/token-type-config/token-types/webauthn-config/webauthn-config.component";
 import { YubicoConfigComponent } from "@components/configuration/token-type-config/token-types/yubico-config/yubico-config.component";
 import {
@@ -74,7 +73,6 @@ import { forkJoin, lastValueFrom } from "rxjs";
     MatTooltipModule,
     HotpConfigComponent,
     TotpConfigComponent,
-    U2fConfigComponent,
     WebauthnConfigComponent,
     RadiusConfigComponent,
     RemoteConfigComponent,

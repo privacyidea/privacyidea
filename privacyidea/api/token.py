@@ -264,11 +264,6 @@ def init():
                  "img": "<img width=250 src=\\"data:image/png;base64,...\\"/>",
                  "value": "otpauth://hotp/mylabel?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&counter=0"
                },
-               "oathurl": {
-                 "description": "URL for OATH token",
-                 "img": "<img width=250 src=\\"data:image/png;base64,...\\"/>",
-                 "value": "oathtoken:///addToken?name=mylabel&lockdown=true&key=3132...3930"
-               },
                "otpkey": {
                  "description": "OTP seed",
                  "img": "<img width=200 src=\\"data:image/png;base64,...\\"/>",

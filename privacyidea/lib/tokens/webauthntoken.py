@@ -502,8 +502,7 @@ PUBKEY_CRED_ALGORITHMS_ORDER = ['ecdsa', 'rsassa-pss', 'rsassa-pkcs1v1_5']
 log = logging.getLogger(__name__)
 
 WEBAUTHN_TOKEN_SPECIFIC_SETTINGS = {
-    FIDO2ConfigOptions.TRUST_ANCHOR_DIR: 'public',
-    FIDO2ConfigOptions.APP_ID: 'public'
+    FIDO2ConfigOptions.TRUST_ANCHOR_DIR: 'public'
 }
 
 
@@ -786,7 +785,7 @@ class WebAuthnTokenClass(TokenClass):
                     FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_FORM: {
                         'type': 'str',
                         'desc': _("Whether to request attestation data when enrolling a new WebAuthn token. "
-                                  "Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
+                                  "Note: for webauthn_req to work, this cannot be set to none. "
                                   "Default: direct (ask for non-anonymized attestation data)"),
                         'group': WebAuthnGroup.WEBAUTHN,
                         'value': [

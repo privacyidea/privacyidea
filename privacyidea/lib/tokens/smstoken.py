@@ -39,8 +39,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """The SMS token sends an SMS containing an OTP via some kind of
-gateway. The gateways can be an SMTP or HTTP gateway or the special sipgate
-protocol.
+gateway. The gateways can be, for example, an HTTP, SMTP or SMPP gateway.
 The Gateways are defined in the SMSProvider Modules.
 
 This code is tested in tests/test_lib_tokens_sms
@@ -84,8 +83,8 @@ class SMSAction:
 class SmsTokenClass(HotpTokenClass):
     """
     The SMS token sends an SMS containing an OTP via some kind of
-    gateway. The gateways can be an SMTP or HTTP gateway or the special sipgate
-    protocol. The Gateways are defined in the SMSProvider Modules.
+    gateway. The gateways can be, for example, an HTTP, SMTP or SMPP gateway.
+    The Gateways are defined in the SMSProvider Modules.
 
     The SMS token is a challenge response token. I.e. the first request needs
     to contain the correct OTP PIN. If the OTP PIN is correct, the sending of

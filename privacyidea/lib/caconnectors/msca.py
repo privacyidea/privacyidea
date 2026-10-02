@@ -259,8 +259,8 @@ class MSCAConnector(BaseCAConnector):
           * ``template``: The name of the certificate template to issue
 
         :param csr: Certificate signing request
-        :type csr: PEM string or SPKAC
-        :param options: Additional options like the validity time or the template or spkac=1
+        :type csr: PEM string
+        :param options: Additional options like the validity time or the template
         :type options: dict
         :return: Returns a tuple of requestID and the certificate object if cert was provided instantly
         :rtype: (int, X509 or None)

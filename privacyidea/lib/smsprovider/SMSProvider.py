@@ -51,7 +51,6 @@ log = logging.getLogger(__name__)
 
 SMS_PROVIDERS = [
     "privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider",
-    "privacyidea.lib.smsprovider.SipgateSMSProvider.SipgateSMSProvider",
     "privacyidea.lib.smsprovider.SmtpSMSProvider.SmtpSMSProvider",
     "privacyidea.lib.smsprovider.SmppSMSProvider.SmppSMSProvider",
     "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider",
@@ -424,8 +423,8 @@ def get_smsgateway(identifier=None, id=None, gwtype=None):
 
 def create_sms_instance(identifier):
     """
-    This function creates and instance of SMS Provider (either HTTP, Smtp,
-    Sipgate) depending on the given sms gateway identifier.
+    This function creates an instance of the SMS provider (e.g. HTTP, SMTP or SMPP)
+    configured for the given sms gateway identifier.
 
     :param identifier: The name of the SMS gateway configuration
     :return: SMS Provider object

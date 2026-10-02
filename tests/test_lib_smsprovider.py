@@ -1,7 +1,6 @@
 __doc__ = """
 This test file tests the modules:
  lib.smsprovider.httpsmsprovider
- lib.smsprovider.sipgateprovider
  lib.smsprovider.smtpsmsprovider
  lib.smsprovider.smppsmsprovider
  lib.smsprovider.scriptsmsprovider
@@ -29,8 +28,6 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      create_sms_instance,
                                                      _is_sensitive_key)
 from privacyidea.lib.smsprovider.ScriptSMSProvider import ScriptSMSProvider, SCRIPT_BACKGROUND, SCRIPT_WAIT
-from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
-from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
 from privacyidea.lib.smsprovider.SmppSMSProvider import SmppSMSProvider
 from privacyidea.lib.smsprovider.SmtpSMSProvider import SmtpSMSProvider
 from privacyidea.lib.smtpserver import add_smtpserver
@@ -52,10 +49,6 @@ class SMSTestCase(MyTestCase):
         self.assertTrue(text == "Some Error", text)
 
     def test_01_get_provider_class(self):
-        _provider = get_sms_provider_class(
-            "privacyidea.lib.smsprovider.SipgateSMSProvider",
-            "SipgateSMSProvider")
-
         _provider = get_sms_provider_class(
             "privacyidea.lib.smsprovider.HttpSMSProvider",
             "HttpSMSProvider")
@@ -376,65 +369,6 @@ class SmtpSMSTestCase(MyTestCase):
             r = self.regexp_provider.submit_message("+49 123/456-78", "Hello")
             self.assertTrue(r)
             log.assert_any_call("submitting message {0!r} to {1!s}".format("Hello", "4912345678"))
-
-
-class SipgateSMSTestCase(MyTestCase):
-    url = URL
-    config = {'USERNAME': "user",
-              'PASSWORD': "password",
-              'PROXY': "https://user:pw@1.2.3.4:8089"}
-
-    def setUp(self):
-        self.provider = SipgateSMSProvider()
-        self.provider.load_config(self.config)
-
-    @responses.activate
-    def test_01_success(self):
-        responses.add(responses.POST,
-                      self.url)
-        # Here we need to send the SMS
-        r = self.provider.submit_message("123456", "Hello")
-        self.assertTrue(r)
-
-    @responses.activate
-    def test_02_fail(self):
-        responses.add(responses.POST,
-                      self.url, status=402)
-        # Here we need to send the SMS
-        self.assertRaises(SMSError, self.provider.submit_message,
-                          "123456", "Hello")
-
-    @responses.activate
-    def test_03_send_sms_regexp_success(self):
-        config_regexp = {'USERNAME': "user",
-                         'PASSWORD': "password",
-                         'PROXY': "https://user:pw@1.2.3.4:8089",
-                         "REGEXP": "/[+-/. ]//"}
-        regexp_provider = SipgateSMSProvider()
-        regexp_provider.load_config(config_regexp)
-        responses.add(responses.POST,
-                      self.url)
-        # Here we need to send the SMS
-        with mock.patch("logging.Logger.debug") as log:
-            r = regexp_provider.submit_message("+49 123/456-78", "Hello")
-            self.assertTrue(r)
-            log.assert_any_call("submitting message {0!r} to {1!s}".format("Hello", "4912345678"))
-
-    @responses.activate
-    def test_08_smsgateway_success(self):
-        responses.add(responses.POST,
-                      self.url)
-        identifier = "mySMS"
-        provider_module = "privacyidea.lib.smsprovider.SipgateSMSProvider" \
-                          ".SipgateSMSProvider"
-        id = set_smsgateway(identifier, provider_module, description="test",
-                            options=self.config)
-        self.assertTrue(id > 0)
-        sms = create_sms_instance(identifier)
-        with mock.patch("logging.Logger.debug") as log:
-            r = sms.submit_message("123456", "Hello")
-            self.assertTrue(r)
-            log.assert_any_call("submitting message {0!r} to {1!s}".format("Hello", "123456"))
 
 
 class ScriptSMSTestCase(MyTestCase):

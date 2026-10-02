@@ -56,7 +56,6 @@
       [formData]="formData()"
       [hashLibs]="hashLibs()"
       [totpSteps]="totpSteps()"></app-totp-config>
-    <app-u2f-config [formData]="formData()"></app-u2f-config>
     <app-webauthn-config
       (formDataChange)="onFormDataChange($event)"
       [formData]="formData()"></app-webauthn-config>
