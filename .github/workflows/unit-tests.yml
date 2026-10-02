@@ -33,7 +33,7 @@ on:
         type: boolean
         default: false
       coverage:
-        description: Collect coverage on the min Python version and upload it to Codecov.
+        description: Collect coverage on the max Python version and upload it to Codecov.
         type: boolean
         default: false
     secrets:
@@ -209,8 +209,10 @@ jobs:
         pip freeze
         # --dist=loadfile keeps all tests in one file on one worker, preserving
         # the intra-file ordering the unittest-style suite currently relies on.
-        # Collect coverage only on the lowest Python version to avoid redundant
-        # reports and reduce overhead on all other matrix jobs.
+        # Collect coverage only on the highest Python version to avoid redundant
+        # reports and reduce overhead on all other matrix jobs. From 3.14 on,
+        # coverage measures through sys.monitoring rather than the much slower
+        # C tracer.
         # Migration tests are excluded - they have their own workflow. So are
         # the backup round-trip tests: they shell out to the dump and restore
         # commands of the database, which only the migration workflow installs
@@ -218,7 +220,7 @@ jobs:
         # runner image happens to carry would either refuse to work (pg_dump
         # rejects a server newer than itself) or be the wrong one for the
         # server (the preinstalled MySQL dumper against a MariaDB service).
-        if [ "$COVERAGE" = "true" ] && [ "$PYTHON_VERSION" = "$MIN_PYTHON_VERSION" ]; then
+        if [ "$COVERAGE" = "true" ] && [ "$PYTHON_VERSION" = "$COVERAGE_PYTHON_VERSION" ]; then
           python -b -m pytest -v -n "$WORKERS" --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration and not backup" tests/
         else
           python -b -m pytest -v -n "$WORKERS" --dist=loadfile -m "not migration and not backup" tests/
