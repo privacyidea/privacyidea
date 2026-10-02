@@ -269,14 +269,14 @@ def _compare_date_within_last(date_to_check: str | datetime.datetime, time_delta
     date_to_check = _get_datetime(date_to_check)
     if date_to_check.tzinfo is None:
         log.debug("Date to check is timezone-naive, assuming UTC.")
-        date_to_check = date_to_check.replace(tzinfo=datetime.timezone.utc)
+        date_to_check = date_to_check.replace(tzinfo=datetime.UTC)
     try:
         condition_time_delta = parse_timedelta(time_delta)
     except TypeError as error:
         raise CompareError(str(error))
 
     # calculate the true time difference between the time stamp and now
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now(datetime.UTC)
     true_time_delta = now - date_to_check
 
     # compare the true time value with the condition time value

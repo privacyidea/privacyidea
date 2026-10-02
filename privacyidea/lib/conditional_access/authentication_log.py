@@ -18,8 +18,8 @@
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import datetime, UTC
+from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import and_, false, func, or_, select
@@ -60,20 +60,14 @@ SORTABLE_COLUMNS: dict[str, InstrumentedAttribute] = {
 DEFAULT_PAGE_SIZE = 15
 
 
-class ClientLabelSource(str, Enum):
+class ClientLabelSource(StrEnum):
     """
     Where a row's ``client_label`` came from: the ``client_id`` request parameter the client chose for itself, or
     the User-Agent header it sent. Recorded because the two are worth very different amounts - one is a name an
     integration deliberately gives itself, the other is a string any browser sends.
-
-    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like
-    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthLogUserRole`.
     """
     CLIENT_ID = "client_id"
     USER_AGENT = "user_agent"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 @dataclass
@@ -150,7 +144,7 @@ def naive_utc(value: datetime) -> datetime:
     This lets callers pass either form without risking a naive-vs-aware comparison against the column.
     """
     if value.tzinfo is not None:
-        return value.astimezone(timezone.utc).replace(tzinfo=None)
+        return value.astimezone(UTC).replace(tzinfo=None)
     return value
 
 

@@ -328,7 +328,7 @@ def rotate_device(device: RememberedDevice, client_ip: str | None = None) -> Rot
     return RotatedCookie(build_cookie_value(device.series_id, device.counter), device.expires_at)
 
 
-class RememberStatus(str, enum.Enum):
+class RememberStatus(enum.StrEnum):
     """
     Outcome status of consuming a presented remember-device cookie.
 

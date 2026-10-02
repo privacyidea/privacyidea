@@ -334,7 +334,7 @@ def get_users_with_active_tokens():
     return db.session.execute(select(func.count()).select_from(stmt.subquery())).scalar_one()
 
 
-class SubscriptionState(str, enum.Enum):
+class SubscriptionState(enum.StrEnum):
     """
     State of a subscription record, with the colour the dashboard maps it to. This is
     about the subscription itself, independent of how recently the client was used.

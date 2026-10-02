@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from dateutil.tz import tzutc
 from sqlalchemy import (
@@ -187,6 +187,6 @@ class PasswordReset(MethodsMixin, db.Model):
         self.resolver = resolver
         self.email = email
         # Create UTC timestamp but remove tzinfo for DB storage as not all DBs can handle timezones
-        self.timestamp = timestamp or datetime.now(timezone.utc).replace(tzinfo=None)
-        self.expiration = (expiration or datetime.now(timezone.utc).replace(tzinfo=None)
+        self.timestamp = timestamp or datetime.now(UTC).replace(tzinfo=None)
+        self.expiration = (expiration or datetime.now(UTC).replace(tzinfo=None)
                            + timedelta(seconds=expiration_seconds))

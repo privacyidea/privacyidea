@@ -37,7 +37,7 @@ import traceback
 from base64 import b32decode
 from binascii import Error as BinasciiError
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from typing import Any, TYPE_CHECKING
 from urllib.parse import quote
 
@@ -940,9 +940,9 @@ class PushTokenClass(TokenClass):
             now = datetime.now(ts.tzinfo)
         else:
             # If a timestamp without timezone is given, we assume it is UTC
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             # We need to add the timezone UTC to the naive timestamp
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=UTC)
         if not (now - td <= ts <= now + td):
             raise PrivacyIDEAError(f'Timestamp {timestamp} not in valid range.')
 

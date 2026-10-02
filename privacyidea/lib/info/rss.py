@@ -23,7 +23,7 @@ This module reads news from the given RSS feeds
 import feedparser
 import logging
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, UTC
 from dateutil.parser import parse
 
 RSS_FEEDS = {"Community News": "https://community.privacyidea.org/c/news.rss",
@@ -61,7 +61,7 @@ def get_news(rss_feeds: dict[str, str] = None, channel: str = None, days: int = 
     """
     def _parse_rss(rss):
         feed = []
-        modified = datetime.now(timezone.utc) - timedelta(days=days)
+        modified = datetime.now(UTC) - timedelta(days=days)
         for item in rss.entries:
             pub_date = parse(item.published)
             if pub_date > modified:

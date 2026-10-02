@@ -57,7 +57,7 @@ window short enough that this is acceptable.
 """
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from urllib.parse import quote
 from uuid import uuid4
 
@@ -144,7 +144,7 @@ def _naive(value: datetime) -> datetime:
     not be able to turn an authentication into an error.
     """
     if value is not None and value.tzinfo is not None:
-        return value.astimezone(timezone.utc).replace(tzinfo=None)
+        return value.astimezone(UTC).replace(tzinfo=None)
     return value
 
 

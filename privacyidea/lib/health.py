@@ -213,7 +213,7 @@ def _check_ldap_endpoint(resolver_name: str, host: str, port: int,
             cert = _fetch_tls_cert(host, port, timeout)
         else:
             cert = _fetch_starttls_cert(host, port, timeout)
-        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
+        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.UTC)))
         entry["error"] = None
     except Exception as e:
         log.info(f"Failed to fetch certificate for resolver {resolver_name!r} ({host}:{port}): {e}")
@@ -256,7 +256,7 @@ def _check_keycloak_endpoint(resolver_name: str, host: str, port: int, timeout: 
         # A Keycloak endpoint is a plain TLS server, so the generic TLS-wrap
         # probe used for ldaps:// reads its certificate too.
         cert = _fetch_tls_cert(host, port, timeout)
-        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
+        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.UTC)))
         entry["error"] = None
     except Exception as e:
         log.info(f"Failed to fetch certificate for resolver {resolver_name!r} ({host}:{port}): {e}")
@@ -306,7 +306,7 @@ def _check_entraid_cert_file(resolver_name: str, path: str | None) -> dict:
         # CERTIFICATE block and ignores the key. A key-only file raises ValueError,
         # which we turn into a clear "no certificate" message below.
         cert = x509.load_pem_x509_certificate(data)
-        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
+        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.UTC)))
         entry["error"] = None
     except FileNotFoundError as e:
         log.info(f"Client certificate file for resolver {resolver_name!r} not found: {e}")
@@ -360,7 +360,7 @@ def _check_server_cert_file(path: str) -> dict:
             cert = x509.load_pem_x509_certificate(data)
         else:
             cert = x509.load_der_x509_certificate(data)
-        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
+        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.UTC)))
         entry["error"] = None
     except Exception as e:
         log.info(f"Failed to read server certificate from {path}: {e}")
@@ -377,7 +377,7 @@ def _check_server_cert_probe(host: str, port: int, timeout: float = 5.0) -> dict
              "tls_mode": "ldaps"}  # plain TLS wrap, same as ldaps probe
     try:
         cert = _fetch_tls_cert(host, port, timeout=timeout)
-        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
+        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.UTC)))
         entry["error"] = None
     except Exception as e:
         log.info(f"Failed to fetch server certificate from {host}:{port}: {e}")
@@ -438,7 +438,7 @@ def get_certificate_status(refresh: bool = False) -> list:
     past. The per-process dictionary is what answers when Redis cannot.
     """
     ttl = _cache_ttl()
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    now = datetime.datetime.now(tz=datetime.UTC)
     cache_key = "certificates"
     client = _cache_client()
     if not refresh:

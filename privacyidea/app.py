@@ -462,7 +462,7 @@ def _setup_node_configuration(app: Flask):
         if inspect.has_table(NodeName.__tablename__):
             db.session.merge(NodeName(id=str(pi_uuid),
                                       name=pi_node_name,
-                                      lastseen=datetime.datetime.now(datetime.timezone.utc)))
+                                      lastseen=datetime.datetime.now(datetime.UTC)))
             db.session.commit()
         else:
             log.warning(f"Could not update node names in db. "

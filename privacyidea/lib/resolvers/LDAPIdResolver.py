@@ -135,8 +135,8 @@ def get_ad_timestamp_now() -> int:
     :return: Current time in 100 nanoseconds since 1.1.1601
     :rtype: int
     """
-    utc_now = datetime.datetime.now(tz=datetime.timezone.utc)
-    elapsed_time = utc_now - MS_AD_START.replace(tzinfo=datetime.timezone.utc)
+    utc_now = datetime.datetime.now(tz=datetime.UTC)
+    elapsed_time = utc_now - MS_AD_START.replace(tzinfo=datetime.UTC)
     total_seconds = elapsed_time.total_seconds()
     # convert this to (100 nanoseconds)
     return int(MS_AD_MULTIPLYER * total_seconds)
@@ -210,7 +210,7 @@ def _get_cache_bucket(resolver: "IdResolver", func_name: str) -> dict:
     Return the cache dict of this resolver for the given function, after evicting expired entries.
     """
     resolver_id = resolver.getResolverId()
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    now = datetime.datetime.now(tz=datetime.UTC)
     tdelta = datetime.timedelta(seconds=resolver.cache_timeout)
     if resolver_id not in CACHE:
         CACHE[resolver_id] = {"getUserId": {},
@@ -255,7 +255,7 @@ def cache_lookup(resolver: "IdResolver", func_name: str, key: str, attributes: l
     entry = _get_cache_bucket(resolver, func_name).get(key)
     if not entry:
         return CACHE_MISS
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    now = datetime.datetime.now(tz=datetime.UTC)
     if now >= entry.get("timestamp") + datetime.timedelta(seconds=resolver.cache_timeout):
         return CACHE_MISS
 
@@ -281,7 +281,7 @@ def cache_store(resolver: "IdResolver", func_name: str, key: str, value: dict | 
         return
     _get_cache_bucket(resolver, func_name)[key] = {
         "value": value,
-        "timestamp": datetime.datetime.now(tz=datetime.timezone.utc)}
+        "timestamp": datetime.datetime.now(tz=datetime.UTC)}
 
 
 def cache(func):

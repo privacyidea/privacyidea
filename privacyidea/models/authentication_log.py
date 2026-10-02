@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, Identity, JSON, Index
@@ -199,7 +199,7 @@ class AuthenticationLog(MethodsMixin, db.Model):
         across all supported databases (they are ignored or handled differently per backend). We therefore store
         UTC and re-attach the timezone on read.
         """
-        return self.timestamp.replace(tzinfo=timezone.utc)
+        return self.timestamp.replace(tzinfo=UTC)
 
     def to_dict(self, include_outcomes: bool = False, include_reasons: bool = False) -> dict:
         """

@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import logging
-from enum import Enum
+from enum import StrEnum
 
 log = logging.getLogger(__name__)
 
@@ -107,13 +107,9 @@ def strip_internal_classification(details):
     return details
 
 
-class AuthEventType(str, Enum):
+class AuthEventType(StrEnum):
     """
     Event types written to the authentication log.
-
-    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python 3.10. The ``__str__`` override
-    normalizes ``str()``/f-string output to the value across all supported versions (3.10-3.14); without it the
-    output would differ between versions.
     """
     # An authorization policy or the server configuration blocked the authentication
     NOT_AUTHORIZED = "NOT_AUTHORIZED"
@@ -200,11 +196,8 @@ class AuthEventType(str, Enum):
     # by it (g.client_id stays None), so whatever the request does otherwise proceeds unauthenticated by that key.
     SUSPENDED_API_KEY_USED = "SUSPENDED_API_KEY_USED"
 
-    def __str__(self) -> str:
-        return self.value
 
-
-class AuthEventReason(str, Enum):
+class AuthEventReason(StrEnum):
     """
     Why an :class:`AuthEventType` came out the way it did.
 
@@ -227,8 +220,6 @@ class AuthEventReason(str, Enum):
 
     The order the members are declared in therefore *is* the order they are recorded in: keep the groups below
     together when adding one.
-
-    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
     """
     # --- the token's own state (see TokenClass.check_all and the filters ahead of it) -----------------------------
     # The token is disabled.
@@ -293,9 +284,6 @@ class AuthEventReason(str, Enum):
     # reasoning that leaves a wrong first factor without a reason of its own.
     CHALLENGE_DECLINED_ON_DEVICE = "CHALLENGE_DECLINED_ON_DEVICE"
 
-    def __str__(self) -> str:
-        return self.value
-
 
 def order_request_reasons(reasons) -> list[AuthEventReason]:
     """
@@ -351,7 +339,7 @@ def build_reason_detail(reasons: dict | None = None, policies: list | None = Non
     return detail or None
 
 
-class AuthEventOutcome(str, Enum):
+class AuthEventOutcome(StrEnum):
     """
     Outcome class of an :class:`AuthEventType`: did the authentication ``SUCCESS`` (succeed), ``FAILURE`` (fail/get
     denied), or is it ``PENDING`` (still in flight -- a challenge was sent/continued/approved out of band, or an
@@ -359,14 +347,11 @@ class AuthEventOutcome(str, Enum):
 
     This is a domain classification, not a presentation/severity choice: it lets callers group events by result --
     e.g. a conditional-access policy condition selecting all failed events, or the WebUI coloring a row -- without
-    enumerating each event type. ``str``/``Enum`` (not ``StrEnum``) for 3.10 compatibility, like :class:`AuthEventType`.
+    enumerating each event type.
     """
     SUCCESS = "success"
     FAILURE = "failure"
     PENDING = "pending"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 # Outcome of each event type. Every AuthEventType must be classified here; EventTypeOutcomeTestCase asserts
@@ -469,7 +454,7 @@ def outcome_of(event_type: AuthEventType) -> AuthEventOutcome:
     return EVENT_TYPE_OUTCOME[event_type]
 
 
-class CountMode(str, Enum):
+class CountMode(StrEnum):
     """
     How a conditional-access policy counts the tracked :class:`AuthEventType`\\ s against its stage thresholds. The
     valid modes depend on the policy target (see ``_COUNT_MODES_BY_TARGET`` in the CRUD layer): both targets support the
@@ -484,37 +469,26 @@ class CountMode(str, Enum):
     :attr:`DISTINCT_USERS` counts the number of distinct accounts a subject targeted rather than the volume of events
     -- the password-spraying / enumeration signal for a ``source_ip`` policy (one IP hitting many accounts). It is
     specific to the ``source_ip`` target (there is no distinct-accounts notion for a single-user policy).
-
-    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
     """
     PER_REQUEST = "PER_REQUEST"
     PER_ATTEMPT = "PER_ATTEMPT"
     DISTINCT_USERS = "DISTINCT_USERS"
 
-    def __str__(self) -> str:
-        return self.value
 
-
-class AuthLogUserRole(str, Enum):
+class AuthLogUserRole(StrEnum):
     """
     Role of the authenticating principal recorded in the authentication log. The two admin values are kept distinct
     because conditional-access rules may treat them differently: ``admin-external`` admins come from an admin realm
     (an external identity source) and are the everyday admins, while ``admin-internal`` admins are local database
     accounts (created via the CLI, used for initial setup and as fallback/recovery) that authenticate only at the
     ``/auth`` endpoint. Both share the ``admin-`` prefix so a single ``user_role=admin*`` filter matches either.
-
-    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python 3.10; the ``__str__`` override
-    normalizes ``str()``/f-string output to the value across versions (mirrors :class:`AuthEventType`).
     """
     USER = "user"
     ADMIN_INTERNAL = "admin-internal"
     ADMIN_EXTERNAL = "admin-external"
 
-    def __str__(self) -> str:
-        return self.value
 
-
-class RestrictionCause(str, Enum):
+class RestrictionCause(StrEnum):
     """
     Who imposed a live conditional-access restriction: the engine acting on a policy (:attr:`POLICY`) or an
     administrator by hand (:attr:`MANUAL`).
@@ -525,14 +499,9 @@ class RestrictionCause(str, Enum):
     ``authentication_log`` row of the request that triggered it - and a manual lock has no such request. The
     cause is written together with the expiry, so it always describes the restriction now in force rather than
     the first one ever written.
-
-    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like :class:`AuthEventType`.
     """
     POLICY = "POLICY"
     MANUAL = "MANUAL"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 # Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the

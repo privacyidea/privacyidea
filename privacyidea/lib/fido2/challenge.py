@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from dataclasses import dataclass
 from webauthn.helpers import bytes_to_base64url
 
@@ -181,5 +181,5 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict,
     if result.success > 0:
         cancel_challenge(transaction_id)
         # Update the last_auth token info
-        token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        token.write_tokeninfo(PolicyAction.LASTAUTH, datetime.now(UTC).isoformat(timespec="seconds"))
     return result

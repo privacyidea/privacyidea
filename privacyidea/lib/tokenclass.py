@@ -80,7 +80,7 @@ import logging
 import traceback
 from base64 import b32encode
 from binascii import unhexlify
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
@@ -359,7 +359,7 @@ class TokenClass:
             db.session.add(new_owner)
             # Add users realm to token realms
             self.set_realms([user.realm], add=True, commit_db_session=False)
-            self.write_tokeninfo("assignment_date", datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            self.write_tokeninfo("assignment_date", datetime.now(UTC).isoformat(timespec="seconds"),
                                commit_db_session=False)
             db.session.commit()
         elif token_owner != user:
@@ -2395,5 +2395,5 @@ class TokenClass:
         self.token.description = token_information.setdefault("description", '')
         self.token.pin_hash = token_information.setdefault("_hashed_pin", None)
         self.add_tokeninfo_dict(token_information.setdefault("info_list", {}))
-        self.write_tokeninfo("import_date", datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        self.write_tokeninfo("import_date", datetime.now(UTC).isoformat(timespec="seconds"))
         self.save()

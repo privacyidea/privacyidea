@@ -302,9 +302,9 @@ class TotpTokenClass(HotpTokenClass):
                 return curtime.timestamp()
             else:
                 # curtime is naive
-                return curtime.replace(tzinfo=datetime.timezone.utc).timestamp()
+                return curtime.replace(tzinfo=datetime.UTC).timestamp()
         # return the current timestamp
-        return datetime.datetime.now(tz=datetime.timezone.utc).timestamp()
+        return datetime.datetime.now(tz=datetime.UTC).timestamp()
 
     @check_token_otp_length
     @check_token_locked

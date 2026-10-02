@@ -39,7 +39,7 @@ import traceback
 from dataclasses import dataclass, field, replace
 from datetime import time as dt_time
 from datetime import timedelta, datetime
-from enum import Enum
+from enum import StrEnum
 from importlib import import_module
 from importlib import metadata
 
@@ -671,7 +671,7 @@ def check_proxy(path_to_client: "list[IPAddress]", proxy_settings: str) -> "IPAd
     return path_to_client[check_proxy_index(path_to_client, proxy_settings)]
 
 
-class ClientIpSource(str, Enum):
+class ClientIpSource(StrEnum):
     """
     Where a request's effective client IP was taken from.
 
@@ -680,16 +680,11 @@ class ClientIpSource(str, Enum):
     this peer is not permitted to map the client any further, which is what distinguishes "we do not map" from
     "we tried and this peer may not". :attr:`X_FORWARDED_FOR` and :attr:`CLIENT_PARAM` are a hop the override
     admitted, from the header resp. the ``client`` request parameter.
-
-    ``str``/``Enum`` (not ``StrEnum``) for Python 3.10, like the conditional-access enums.
     """
     REMOTE_ADDR = "REMOTE_ADDR"
     REMOTE_ADDR_UNMAPPED = "REMOTE_ADDR_UNMAPPED"
     X_FORWARDED_FOR = "X_FORWARDED_FOR"
     CLIENT_PARAM = "CLIENT_PARAM"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 # X-Forwarded-For is attacker-controlled and unbounded, so the recorded chain is capped rather than trusted to

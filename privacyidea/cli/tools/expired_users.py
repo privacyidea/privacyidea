@@ -90,7 +90,7 @@ def expire(realm, attribute_name, delete_serial, unassign_serial, noaction):
     """
     Search for expired Users in the specified realm.
     """
-    utc_now = datetime.datetime.now(tz=datetime.timezone.utc)
+    utc_now = datetime.datetime.now(tz=datetime.UTC)
     params = {attribute_name: "1"}
     if realm:
         params["realm"] = realm
