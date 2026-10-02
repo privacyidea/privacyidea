@@ -1380,15 +1380,16 @@ def get_policies(active: bool | None = None, name: str | None = None, scope: str
 def set_policy(name: str | None = None, scope: str | None = None, action: str | list | None = None,
                realm: str | list | None = None, resolver: str | list | None = None,
                user: str | list | None = None, time: str | None = None, client: str | None = None,
-               active: bool = True, adminrealm: str | list | None = None, adminuser: str | list | None = None,
-               priority: int | str | None = None, check_all_resolvers: bool = False,
+               active: bool | None = None, adminrealm: str | list | None = None, adminuser: str | list | None = None,
+               priority: int | str | None = None, check_all_resolvers: bool | None = None,
                conditions: list | None = None, pinode: str | list | None = None,
-               description: str | None = None, user_case_insensitive: bool = False,
+               description: str | None = None, user_case_insensitive: bool | None = None,
                user_agents: str | list[str] | None = None) -> int:
     """
     Function to set a policy.
 
-    If the policy with this name already exists, it updates the policy.
+    If the policy with this name already exists, it updates the policy. Parameters that are None keep their
+    stored value.
     It expects a dict of with the following keys:
 
     :param name: The name of the policy
@@ -1455,9 +1456,12 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
         except (ValueError, ParameterError):
             raise ParameterError(f"Invalid time format '{time}'!")
 
-    active = is_true(active)
-    check_all_resolvers = is_true(check_all_resolvers)
-    user_case_insensitive = is_true(user_case_insensitive)
+    if active is not None:
+        active = is_true(active)
+    if check_all_resolvers is not None:
+        check_all_resolvers = is_true(check_all_resolvers)
+    if user_case_insensitive is not None:
+        user_case_insensitive = is_true(user_case_insensitive)
 
     if isinstance(action, list):
         action = ", ".join(action)
@@ -1541,9 +1545,12 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
             policy.pinode = pinode
         if user_agents is not None:
             policy.user_agents = user_agents
-        policy.active = active
-        policy.check_all_resolvers = check_all_resolvers
-        policy.user_case_insensitive = user_case_insensitive
+        if active is not None:
+            policy.active = active
+        if check_all_resolvers is not None:
+            policy.check_all_resolvers = check_all_resolvers
+        if user_case_insensitive is not None:
+            policy.user_case_insensitive = user_case_insensitive
         if conditions is not None:
             # only update the conditions if there are any
             set_policy_conditions(conditions_data, policy)
@@ -1564,7 +1571,8 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
                                                        PolicyDescription.object_type == "policy")
     description_db = db.session.scalars(description_stmt).first()
     if description_db:
-        description_db.description = description
+        if description is not None:
+            description_db.description = description
     else:
         new_description = PolicyDescription(object_id=ret, object_type="policy", description=description)
         db.session.add(new_description)

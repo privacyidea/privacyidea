@@ -234,6 +234,30 @@ class PolicyTestCase(MyTestCase):
 
         delete_policy(name="pol5")
 
+    def test_02a_update_keeps_omitted_values(self):
+        set_policy(name="keep_values", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, active=False,
+                   check_all_resolvers=True, user_case_insensitive=True, priority=3, description="keep me")
+        set_policy(name="keep_values", action=PolicyAction.ENABLE)
+        policy = get_policies(name="keep_values")[0]
+        self.assertIn(PolicyAction.ENABLE, policy["action"])
+        expected = {"active": False, "check_all_resolvers": True, "user_case_insensitive": True,
+                    "priority": 3, "description": "keep me"}
+        self.assertEqual(expected, {key: policy.get(key) for key in expected})
+
+        set_policy(name="keep_values", active=True, check_all_resolvers=False, user_case_insensitive=False,
+                   description="")
+        policy = get_policies(name="keep_values")[0]
+        expected = {"active": True, "check_all_resolvers": False, "user_case_insensitive": False,
+                    "priority": 3, "description": ""}
+        self.assertEqual(expected, {key: policy.get(key) for key in expected})
+        delete_policy("keep_values")
+
+        set_policy(name="new_defaults", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        policy = get_policies(name="new_defaults")[0]
+        expected = {"active": True, "check_all_resolvers": False, "user_case_insensitive": False, "priority": 1}
+        self.assertEqual(expected, {key: policy.get(key) for key in expected})
+        delete_policy("new_defaults")
+
     def test_03_set_policy_fails(self):
         # invalid scope
         with self.assertRaises(ParameterError):

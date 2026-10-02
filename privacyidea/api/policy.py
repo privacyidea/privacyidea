@@ -146,7 +146,8 @@ def patch_policy_name_api(old_name):
 def set_policy_api(name=None):
     """
     Create or update a policy. If a policy with the given ``name``
-    already exists, it is updated; otherwise it is created.
+    already exists, it is updated; otherwise it is created. On an
+    update, every parameter that is not sent keeps its stored value.
 
     Policies in privacyIDEA gate what an admin or user is allowed to do,
     define defaults, and shape authentication and enrollment behavior.
@@ -251,11 +252,15 @@ def set_policy_api(name=None):
     user = param.get("user")
     time = param.get("time")
     client = param.get("client")
-    active = is_true(param.get("active", True))
+    active = param.get("active")
+    if active is not None:
+        active = is_true(active)
     check_all_resolvers = param.get("check_all_resolvers")
     admin_realm = param.get("adminrealm")
     admin_user = param.get("adminuser")
-    priority = int(param.get("priority", 1))
+    priority = param.get("priority")
+    if priority is not None:
+        priority = int(priority)
     conditions = param.get("conditions")
     description = param.get("description")
     user_agents = param.get("user_agents", None)
@@ -272,7 +277,7 @@ def set_policy_api(name=None):
                      resolver=resolver, user=user, client=client, time=time,
                      active=active, adminrealm=admin_realm,
                      adminuser=admin_user, pinode=pinode,
-                     check_all_resolvers=check_all_resolvers or False,
+                     check_all_resolvers=check_all_resolvers,
                      priority=priority, conditions=conditions,
                      description=description, user_agents=user_agents,
                      user_case_insensitive=user_case_insensitive)
