@@ -239,31 +239,6 @@ Options:
 
 You can personalize the **text** option, but you must place it inside double-quotes and must include the *{otp}* value.
 
-Sipgate provider
-~~~~~~~~~~~~~~~~
-
-The sipgate provider connects to https://samurai.sipgate.net/RPC2 and takes only
-two arguments *USERNAME* and *PASSWORD*.
-
-Parameters:
-
-**USERNAME**
-
-   The sipgate username.
-
-**PASSWORD**
-
-   The sipgate password.
-
-**PROXY**
-
-   You can specify a proxy to connect to the HTTP gateway.
-
-It takes not options.
-
-If you activate debug log level you will see the submitted SMS and the response
-content from the Sipgate gateway.
-
 .. rubric:: Footnotes
 
 .. [#twilio] https://www.twilio.com/docs/api/rest/sending-messages

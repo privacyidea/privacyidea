@@ -40,7 +40,6 @@ import { SshkeyApiPayloadMapper } from "./sshkey-token-api-payload.mapper";
 import { TanApiPayloadMapper } from "./tan-token-api-payload.mapper";
 import { TiqrApiPayloadMapper } from "./tiqr-token-api-payload.mapper";
 import { TotpApiPayloadMapper } from "./totp-token-api-payload.mapper";
-import { U2fApiPayloadMapper } from "./u2f-token-api-payload.mapper";
 import { VascoApiPayloadMapper } from "./vasco-token-api-payload.mapper";
 import { WebAuthnApiPayloadMapper } from "./webauthn-token-api-payload.mapper";
 import { YubicoApiPayloadMapper } from "./yubico-token-api-payload.mapper";
@@ -71,7 +70,6 @@ export const tokenApiPayloadMapperRegistry: Partial<Record<TokenTypeKey, TokenAp
     registration: new RegistrationApiPayloadMapper(),
     tan: new TanApiPayloadMapper(),
     tiqr: new TiqrApiPayloadMapper(),
-    u2f: new U2fApiPayloadMapper(),
     vasco: new VascoApiPayloadMapper(),
     webauthn: new WebAuthnApiPayloadMapper(),
     passkey: new PasskeyApiPayloadMapper()

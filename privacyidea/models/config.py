@@ -36,7 +36,6 @@ from privacyidea.models.utils import MethodsMixin
 log = logging.getLogger(__name__)
 
 PRIVACYIDEA_TIMESTAMP = "__timestamp__"
-SAFE_STORE = "PI_DB_SAFE_STORE"
 
 
 def save_config_timestamp(invalidate_config=True):

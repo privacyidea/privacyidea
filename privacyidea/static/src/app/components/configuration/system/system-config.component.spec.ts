@@ -88,8 +88,6 @@ describe("SystemConfigComponent", () => {
     expect(component.params().no_auth_counter).toBe(true);
     expect(component.params().PrependPin).toBe(false);
     expect(component.params().AutoResync).toBe(true);
-    expect(component.params().UiLoginDisplayHelpButton).toBe(false);
-    expect(component.params().UiLoginDisplayRealmBox).toBe(true);
     expect(component.params()["someOtherConfig"]).toBe("test_value");
   });
 
@@ -100,8 +98,6 @@ describe("SystemConfigComponent", () => {
     expect(component.params().no_auth_counter).toBe(true);
     expect(component.params().PrependPin).toBe(false);
     expect(component.params().AutoResync).toBe(true);
-    expect(component.params().UiLoginDisplayHelpButton).toBe(false);
-    expect(component.params().UiLoginDisplayRealmBox).toBe(true);
   });
 
   it("should derive SMTP identifiers from the configured servers", () => {

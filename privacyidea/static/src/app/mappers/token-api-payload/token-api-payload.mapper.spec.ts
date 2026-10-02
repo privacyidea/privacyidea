@@ -44,7 +44,6 @@ import { SshkeyApiPayloadMapper, SshkeyEnrollmentData } from "./sshkey-token-api
 import { TanApiPayloadMapper, TanEnrollmentData } from "./tan-token-api-payload.mapper";
 import { TiqrApiPayloadMapper, TiqrEnrollmentData } from "./tiqr-token-api-payload.mapper";
 import { TotpApiPayloadMapper, TotpEnrollmentData } from "./totp-token-api-payload.mapper";
-import { U2fApiPayloadMapper, U2fEnrollmentData } from "./u2f-token-api-payload.mapper";
 import { VascoApiPayloadMapper, VascoEnrollmentData } from "./vasco-token-api-payload.mapper";
 import {
   WebAuthnApiPayloadMapper,
@@ -1314,31 +1313,6 @@ describe("TotpApiPayloadMapper", () => {
     expect(result.hashAlgorithm).toBeUndefined();
     expect(result.timeStep).toBeUndefined();
     expect(result.otpLength).toBeUndefined();
-  });
-});
-
-describe("U2fApiPayloadMapper", () => {
-  const mapper = new U2fApiPayloadMapper();
-  const base = (): U2fEnrollmentData => ({ ...common, type: "u2f" });
-
-  it("maps base", () => {
-    const p = mapper.toApiPayload(base());
-    expect(p.type).toBe("u2f");
-  });
-
-  it("fromTokenDetailsToEnrollmentData maps TokenDetails to U2fEnrollmentData", () => {
-    const details = {
-      tokentype: "u2f",
-      description: "desc",
-      container_serial: "CONT-1",
-      info: {},
-      username: "alice",
-      realms: ["realm1"],
-      serial: "S1"
-    };
-    const result = mapper.fromTokenDetailsToEnrollmentData(details as unknown as TokenDetails);
-    expect(result.type).toBe("u2f");
-    expect(result.serial).toBe("S1");
   });
 });
 

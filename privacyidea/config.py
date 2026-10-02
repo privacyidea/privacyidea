@@ -161,13 +161,11 @@ def _env_flag(name: str) -> bool:
 class Config:
     SECRET_KEY = os.environ.get(ConfigKey.SECRET_KEY)
     PI_ENCFILE = os.path.join(basedir, "tests/testdata/enckey")
-    PI_HSM = "default"
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
     PI_AUDIT_KEY_PRIVATE = os.path.join(basedir, "tests/testdata/private.pem")
     PI_AUDIT_KEY_PUBLIC = os.path.join(basedir, "tests/testdata/public.pem")
     PI_LOGFILE = "privacyidea.log"
     PI_LOGLEVEL = logging.INFO
-    CACHE_TYPE = "simple"
     PI_EXTERNAL_LINKS = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # PI_GNUPG_HOME = "gpg"
@@ -223,7 +221,6 @@ class TestingConfig(Config):
     PI_HASH_ALGO_PARAMS = {"argon2__rounds": 1, "argon2__memory_cost": 8, "argon2__parallelism": 1}
     # Disable the /healthz/resolversz probe cache so tests see fresh results
     PI_HEALTHZ_RESOLVER_CACHE_SECONDS = 0
-    CACHE_TYPE = "None"
     PI_SCRIPT_HANDLER_DIRECTORY = "tests/testdata/scripts/"
     PI_NOTIFICATION_HANDLER_SPOOLDIRECTORY = "tests/testdata/"
     PI_NODE_UUID = "8e4272a9-9037-40df-8aa3-976e4a04b5a9"

@@ -40,7 +40,6 @@ import { EnrollSshkeyComponent } from "@components/token/token-enrollment/enroll
 import { EnrollTanComponent } from "@components/token/token-enrollment/enroll-tan/enroll-tan.component";
 import { EnrollTiqrComponent } from "@components/token/token-enrollment/enroll-tiqr/enroll-tiqr.component";
 import { EnrollTotpComponent } from "@components/token/token-enrollment/enroll-totp/enroll-totp.component";
-import { EnrollU2fComponent } from "@components/token/token-enrollment/enroll-u2f/enroll-u2f.component";
 import { EnrollVascoComponent } from "@components/token/token-enrollment/enroll-vasco/enroll-vasco.component";
 import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
 import { EnrollYubicoComponent } from "@components/token/token-enrollment/enroll-yubico/enroll-yubico.component";
@@ -72,7 +71,6 @@ import { EnrollYubikeyComponent } from "@components/token/token-enrollment/enrol
     EnrollRegistrationComponent,
     EnrollTanComponent,
     EnrollTiqrComponent,
-    EnrollU2fComponent,
     EnrollVascoComponent,
     EnrollWebauthnComponent,
     EnrollPasskeyComponent

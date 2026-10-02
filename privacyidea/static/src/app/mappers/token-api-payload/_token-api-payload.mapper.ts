@@ -53,26 +53,12 @@ export interface PasskeyRegistrationOptions {
   extensions?: AuthenticationExtensionsClientInputs;
 }
 
-/**
- * Legacy FIDO U2F register request payload returned by the backend during
- * the first enrollment step. The new UI does not parse it; the field is only
- * present so the HTML template can detect its existence.
- */
-export interface U2fRegisterRequest {
-  appId: string;
-  version: string;
-  challenge: string;
-
-  [key: string]: unknown;
-}
-
 export interface EnrollmentResponseDetail {
   type: TokenTypeKey;
   serial: string;
   rollout_state?: string;
   threadid?: number;
   passkey_registration?: PasskeyRegistrationOptions;
-  u2fRegisterRequest?: U2fRegisterRequest;
   pushurl?: EnrollmentUrl;
   googleurl?: EnrollmentUrl;
   otpkey?: EnrollmentUrl;

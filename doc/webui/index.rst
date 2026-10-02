@@ -280,7 +280,7 @@ The *Notification Delivery* panel summarises outbound message delivery
 across the three notification channels:
 
 * **Push** - per configured push gateway identifier.
-* **SMS** - per configured SMS gateway identifier (HTTP, SMPP, Sipgate,
+* **SMS** - per configured SMS gateway identifier (HTTP, SMPP,
   SMTP-to-SMS, script).
 * **Email** - per configured SMTP server identifier.
 

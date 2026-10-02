@@ -174,13 +174,6 @@ export const tokenTypes: TokenType[] = [
     rollover: true
   } as TokenType,
   {
-    key: "u2f",
-    name: "U2F",
-    info: "",
-    text: $localize`:@@token.u2fTokenToken:The U2F token is a token defined by the Fido Alliance. It is the predecessor to WebAuthn/Passkey, has been superseded by them, and therefore should not be used any more.`,
-    rollover: true
-  } as TokenType,
-  {
     key: "vasco",
     name: "VASCO",
     info: "",
