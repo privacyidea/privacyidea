@@ -1740,9 +1740,39 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self._clear()
             remove_token(serial)
 
+    def test_locked_owner_rejected_at_auth_before_token_work(self):
+        """
+        The /auth half of test_locked_owner_rejected_before_token_work. The two endpoints resolve a username-less
+        passkey request by different code: /validate/check through the gate's own identity resolver, /auth in
+        before_request, which has already put the owner on request.User by the time the login gate runs. A lock
+        enforced on one therefore proves nothing about the other, and this is the endpoint a browser actually
+        logs in through.
+        """
+        serial = self._enroll_static_passkey()
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
+        data = dict(self.authentication_response_uv)
+        data["transaction_id"] = passkey_challenge["transaction_id"]
+        self.assertNotIn("user", data)
+        self._lock_user_for()
+        clear_authentication_log()
+        try:
+            with self.app.test_request_context('/auth', method='POST', data=data,
+                                               headers={"Origin": self.expected_origin}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(401, res.status_code, res.json)
+            # The rejection classifies the login, which is the only place an admin can see why a request that
+            # never named a user was turned away.
+            self.assertListEqual([AuthEventType.USER_LOCKED],
+                                 [entry.event_type for entry in get_authentication_logs()])
+        finally:
+            self._clear()
+            remove_token(serial)
+
     def test_restrict_authenticator_device_type_scoped_to_realm_on_auth(self):
         """
-        The same realm-scoped SCOPE.AUTH restriction as test_26, but for the WebUI login endpoint. /auth
+        The same realm-scoped SCOPE.AUTH restriction as
+        test_authenticate_restrict_authenticator_device_type_scoped_to_realm, but for the WebUI login
+        endpoint. /auth
         resolves the credential_id to its owner in before_request, which runs before the prepolicies, so
         unlike /validate/check it needs no second policy evaluation. If that ordering ever changed, the
         restriction would silently downgrade to matching only unscoped policies.
@@ -1767,7 +1797,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
     def test_disabled_token_type_on_auth(self):
         """
-        The same disabled_token_types policy as test_21, at the WebUI login endpoint. /auth refuses the answer
+        The same disabled_token_types policy as test_disabled_token_type, at the WebUI login endpoint. /auth
+        refuses the answer
         before any token work, and the row says which type was turned off - the only place an admin can see why a
         login that never named a user failed.
         """

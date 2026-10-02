@@ -632,7 +632,8 @@ class ConditionalAccessContextTestCase(MyTestCase):
         self.assertEqual(own_attempt, context.attempt_id)
 
     def test_a_request_gets_an_attempt_id(self):
-        # The converse of test_41: inside a request there is an attempt to attribute a challenge to, and it is the one
+        # The converse of test_no_attempt_id_outside_a_request: inside a request there is an attempt to
+        # attribute a challenge to, and it is the one
         # the request's buffer holds.
         with self.app.test_request_context("/validate/check"):
             attempt_id = current_attempt_id()

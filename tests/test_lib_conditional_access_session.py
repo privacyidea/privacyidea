@@ -229,10 +229,13 @@ class GuardedWriteTestCase(MyTestCase):
 
     def test_flushed_lock_succeeds_on_non_sqlite(self):
         # MariaDB and PostgreSQL use row-level locking, so this write succeeds even with a flushed-but-uncommitted
-        # request-session transaction, unlike SQLite in test_07; this documents production database behavior.
+        # request-session transaction, unlike SQLite in
+        # test_write_lock_on_the_request_session_is_a_contained_failure; this documents production
+        # database behavior.
         if db.engine.dialect.name == "sqlite":
             self.skipTest("This test documents non-SQLite (row-level locking) behavior. "
-                          "See test_07 for SQLite's database-level locking behavior.")
+                          "See test_write_lock_on_the_request_session_is_a_contained_failure "
+                          "for SQLite's database-level locking behavior.")
 
         # Add work to the request session and flush it, without committing.
         pending = self._entry("flushed-on-request-session")

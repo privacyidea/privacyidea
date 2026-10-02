@@ -739,7 +739,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                 "a ConditionalAccessAction is not assignable to any target")
 
     def test_action_value_validators_are_exhaustive(self):
-        # Guard the manual registration in _ACTION_VALUE_VALIDATORS the way test_08 guards _ACTIONS_BY_TARGET.
+        # Guard the manual registration in _ACTION_VALUE_VALIDATORS the way
+        # test_actions_by_target_is_exhaustive guards _ACTIONS_BY_TARGET.
         # The dispatch is indexed without a default, so a missing entry is a KeyError on the first policy that
         # uses the new action - which is the point: a new action type must declare what action_value it takes
         # rather than inheriting "anything goes".
@@ -747,7 +748,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
                             "a ConditionalAccessAction is missing from _ACTION_VALUE_VALIDATORS")
 
     def test_count_modes_by_target_is_exhaustive(self):
-        # Guards the per-target count-mode registration like test_08 does for actions: every target needs an entry in
+        # Guards the per-target count-mode registration like test_actions_by_target_is_exhaustive does for
+        # actions: every target needs an entry in
         # both maps (a missing key KeyErrors at validation), each target's default must be one of its allowed modes, and
         # every CountMode must be usable on some target, or it is dead.
         self.assertSetEqual(
@@ -1137,7 +1139,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         ids = self._numbered(10, 20, 30)
         parked = self._parked_values(list(reversed(ids)))
         # Above the highest live priority, so the parking cannot collide with an unlisted policy either. The
-        # property, not the arithmetic: how far above is test_20b's business, and pinning exact values here
+        # property, not the arithmetic: how far above is
+        # test_parking_values_are_disjoint_between_disjoint_reorders's business, and pinning exact values here
         # would only assert the ids this fixture happens to get.
         self.assertEqual(len(ids), len(set(parked)))
         self.assertTrue(all(value > 30 for value in parked), parked)
@@ -1308,7 +1311,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
     def test_falsy_non_list_conditions_are_rejected(self):
         # A falsy non-list must be a 400 like any other malformed value, not read as "no conditions": that would create
         # a policy applying to *everyone*, the wrong direction to fail for an access-control policy. Only an omitted
-        # parameter means unconditioned (test_30). Distinct name *and* priority per case is deliberate: both are unique
+        # parameter means unconditioned (test_conditions_are_optional). Distinct name *and* priority per case
+        # is deliberate: both are unique
         # across policies, so a validation regression would leak a policy on the first case, and every later case would
         # then raise on that collision instead of on the value - passing for the wrong reason and hiding the regression.
         for index, conditions in enumerate((0, False, {}, "")):

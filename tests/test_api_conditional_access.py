@@ -43,6 +43,7 @@ from privacyidea.lib.conditional_access.engine import get_user_lock, get_ip_bloc
 from privacyidea.lib.conditional_access.engine import ConditionalAccessAction, ConditionalAccessTarget
 from privacyidea.lib.conditional_access.engine import LockSubject
 from privacyidea.lib.conditional_access.policy import create_conditional_access_policy, default_error_message
+from privacyidea.lib.conditional_access.policy_template import list_conditional_access_policy_templates
 from privacyidea.lib.conditional_access.outcome_log import get_outcomes, record_outcomes
 from privacyidea.lib.conditional_access.session import get_ca_session
 from privacyidea.lib.conditional_access.state import (lock_internal_admin, lock_user,
@@ -2280,8 +2281,8 @@ class PollTransactionTestCase(ConditionalAccessApiTestCase):
         self.assertEqual(logs_before, len(get_authentication_logs()))
 
     # The /ttype/push authentication-path pre-check (locked owner / blocked IP rejected, enrollment not gated) is
-    # covered end-to-end with real signed push answers in tests/test_api_push_validate.py (test_18e / test_18f), since
-    # the pre-check lives in the push token's _api_endpoint_post auth branch.
+    # covered end-to-end with real signed push answers in tests/test_api_push_validate.py, since the pre-check lives
+    # in the push token's _api_endpoint_post auth branch.
 
 
 class SuspendedApiKeyTestCase(ConditionalAccessApiTestCase):
@@ -3064,5 +3065,128 @@ class ConditionalAccessEngineOverRequestsTestCase(ConditionalAccessApiTestCase):
         # Released, not closed: the row the request stages is still written.
         self.assertEqual(1, len(get_authentication_logs()))
 
+    # --- scenarios that cross an endpoint boundary ------------------------------------------------------
 
+    def test_failures_at_one_endpoint_lock_the_user_at_another(self):
+        # The engine counts an account's failures from one shared authentication log, which is the whole reason
+        # for counting them centrally rather than per endpoint: an attacker who spreads guesses over /validate/check
+        # and /auth has to meet the same threshold as one who does not. Two wrong OTPs here, and the WebUI login is
+        # refused without a single password having been tried against it.
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=2, duration=600)
+        for _ in range(2):
+            self._check({"user": "cornelius", "pass": "pin000000"})
+        self.assertTrue(is_user_locked(self.user))
+
+        logs_before = len(get_authentication_logs())
+        res = self._auth("cornelius", "test")
+        self.assertEqual(401, res.status_code, res.json)
+        # Classified as the lock, not as a password failure - so the refusal at /auth is provably the restriction
+        # /validate/check wrote and not a credential the login checked.
+        self.assertListEqual([AuthEventType.USER_LOCKED], _rows_since(logs_before))
+
+    def test_failures_at_the_webui_login_lock_the_user_at_validate_check(self):
+        # And the other way round, the two endpoints classifying their failures differently: a policy tracking
+        # both counts them together.
+        self._make_lock_policy(counter_type=[AuthEventType.PASSWORD_FAIL, AuthEventType.MFA_FAIL],
+                               threshold=2, duration=600)
+        self._auth("cornelius", "wrongpassword")
+        self.assertFalse(is_user_locked(self.user), "locked on one failure")
+        self._check({"user": "cornelius", "pass": "pin000000"})
+        self.assertTrue(is_user_locked(self.user), "the two endpoints' failures were not counted together")
+
+        logs_before = len(get_authentication_logs())
+        body = self._check({"user": "cornelius", "pass": "pin755224"})
+        self.assertFalse(body["result"]["value"], body)
+        self.assertListEqual([AuthEventType.USER_LOCKED], _rows_since(logs_before))
+
+    def test_an_admin_lifting_a_lock_lets_the_user_straight_back_in(self):
+        # The remediation an operator actually performs: a locked account, the Locked Users page, and a login that
+        # works again. Asserted end to end because the lock is read on the authentication path and cleared on the
+        # management one, and nothing else proves those two agree on the row's key.
+        self._make_lock_policy(counter_type=AuthEventType.MFA_FAIL, threshold=1, duration=600)
+        self._check({"user": "cornelius", "pass": "pin000000"})
+        self.assertTrue(is_user_locked(self.user))
+        self.assertFalse(self._check({"user": "cornelius", "pass": "pin755224"})["result"]["value"])
+
+        res = self._conditionalaccess("lock/user", "DELETE",
+                                      {"user": "cornelius", "realm": self.realm1,
+                                       "resolver": self.resolvername1})
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertTrue(res.json["result"]["value"], res.json)
+
+        self.assertFalse(is_user_locked(self.user))
+        # The same credentials that were refused a moment ago now authenticate: the lock is gone, not merely
+        # hidden from the listing.
+        self.assertTrue(self._check({"user": "cornelius", "pass": "pin287082"})["result"]["value"])
+
+    def test_a_wrong_challenge_answer_feeds_the_engine(self):
+        # The second leg of a challenge-response login classifies as CHALLENGE_ANSWERED_FAIL rather than MFA_FAIL,
+        # so a policy counting only the latter would never see an attacker who answers challenges. The two legs
+        # share an attempt, which is what makes it worth asserting the engine is reached from the answer at all.
+        set_policy("ca_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
+        self.addCleanup(delete_policy, "ca_cr")
+        self._make_lock_policy(counter_type=AuthEventType.CHALLENGE_ANSWERED_FAIL, threshold=2, duration=600)
+
+        for _ in range(2):
+            triggered = self._check({"user": "cornelius", "pass": "pin"})
+            transaction_id = triggered["detail"]["transaction_id"]
+            self._check({"user": "cornelius", "pass": "000000", "transaction_id": transaction_id})
+
+        self.assertTrue(is_user_locked(self.user), "answering a challenge wrongly did not reach the engine")
+        self.assertEqual(2, len([entry for entry in get_authentication_logs()
+                                 if entry.event_type == AuthEventType.CHALLENGE_ANSWERED_FAIL]))
+
+    def _auth(self, username: str, password: str, remote_addr: str | None = None) -> Response:
+        """The WebUI login, for the scenarios that cross from one endpoint to another."""
+        kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
+        with self.app.test_request_context('/auth', method='POST',
+                                           data={"username": username, "password": password}, **kwargs):
+            return self.app.full_dispatch_request()
+
+    def _conditionalaccess(self, path: str, method: str, json_data: dict) -> Response:
+        """The admin API an operator lifts a restriction through."""
+        with self.app.test_request_context(f"/conditionalaccess/{path}", method=method, json=json_data,
+                                           headers={"Authorization": self.at}):
+            return self.app.full_dispatch_request()
+
+    # --- the shipped templates, instantiated as an admin would and driven through real requests -----------
+
+    def _from_template(self, key: str, priority: int = 1) -> None:
+        """Instantiate the shipped template *key* as a real policy, exactly as a client does after prefilling."""
+        policy = next(entry["policy"] for entry in list_conditional_access_policy_templates()
+                      if entry["key"] == key)
+        create_conditional_access_policy(**policy, priority=priority)
+
+    def test_the_password_bruteforce_template_locks_a_real_attacker_out(self):
+        # The template suite replays these against the engine directly, which proves the arithmetic but not that an
+        # admin who picks the template off the list gets a locked account out of it. This drives the shipped policy
+        # end to end: ten wrong PINs at /validate/check, then the right credentials refused.
+        self._from_template("password_bruteforce")
+        for _ in range(10):
+            self.assertFalse(self._check({"user": "cornelius", "pass": "wrongpin000000"})["result"]["value"])
+        self.assertTrue(is_user_locked(self.user), "the shipped password_bruteforce template did not lock")
+
+        logs_before = len(get_authentication_logs())
+        self.assertFalse(self._check({"user": "cornelius", "pass": "pin755224"})["result"]["value"])
+        self.assertListEqual([AuthEventType.USER_LOCKED], _rows_since(logs_before))
+        # 900 seconds, as the template ships it - the admin gets the duration they were shown.
+        self.assertAlmostEqual(900, get_user_lock(self.user).seconds_remaining, delta=10)
+
+    def test_the_mfa_bruteforce_template_escalates_over_real_requests(self):
+        # The progressive template: a short lock at three failures, and nothing stronger until the lock lifts and
+        # the attacker keeps going - because attempts made while locked are refused at the pre-check and never
+        # counted. That interaction is only visible over real requests.
+        self._from_template("mfa_bruteforce")
+        for _ in range(3):
+            self.assertFalse(self._check({"user": "cornelius", "pass": "pin000000"})["result"]["value"])
+        state = self._state()
+        self.assertIsNotNone(state, "the shipped mfa_bruteforce template did not lock at its first stage")
+        self.assertIsNotNone(state.lock_expires_at, "locked permanently at the first stage")
+
+        # Hammering while locked feeds nothing: the rejections classify as USER_LOCKED, which no stage tracks.
+        for _ in range(10):
+            self._check({"user": "cornelius", "pass": "pin000000"})
+        self.assertEqual(3, len([entry for entry in get_authentication_logs()
+                                 if entry.event_type == AuthEventType.MFA_FAIL]))
+        self.assertIsNotNone(self._state().lock_expires_at, "escalated on attempts made while locked")
 
