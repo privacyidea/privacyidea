@@ -1,5 +1,16 @@
 # Update Notes
 
+## Update from 3.14 to 3.14.1
+
+* **Boolean policy actions stored with the value false are now excluded actions.** A boolean action like
+  `policywrite=False` acted as enabled, because the policy matching only checks whether an action is set. Policies
+  created from the WebUI template "helpdesk" in 3.14 granted 21 admin rights like this, among them `policywrite`. The
+  migration turns every boolean action with the value `false` (in any case) or `0` into the excluded action, like
+  `-policywrite` — **run the schema update** (`pi-manage setup update_db`). The schema update logs a warning for
+  every policy it changes. Other values, like `triggerchallenge=hotp`, are left as they are and still act as enabled;
+  the schema update logs a warning for these too. Saving such a policy again stores these actions as excluded, so
+  check the policies named in the warnings.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to
