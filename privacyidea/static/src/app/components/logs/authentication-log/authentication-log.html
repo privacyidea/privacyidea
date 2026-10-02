@@ -320,7 +320,9 @@
               @switch (column.key) { @case ("timestamp") {
               <span>{{ element.timestamp | date: "yyyy-MM-dd HH:mm:ss" }}</span>
               } @case ("event_type") {
-              <span [ngClass]="getEventTypeClass(element[column.key])"> {{ element[column.key] }} </span>
+              <app-breakable-code
+                [ngClass]="getEventTypeClass(element[column.key])"
+                [text]="element[column.key]" />
               } @case ("reason") {
               <app-reason-cell
                 [reasons]="element.reasons"
@@ -331,13 +333,14 @@
               <app-copyable [copyText]="serial">
                 <a
                   (click)="contentService.tokenSelected(serial)"
+                  [appTruncationTooltip]="serial"
                   aria-label="{{ column.label }} Link"
+                  class="cell-truncate"
                   i18n-aria-label="@@authLog.link"
                   routerLink="/token">
                   {{ serial }}
                 </a>
                 <app-filter-value-button
-                  class="margin-left-8"
                   column="serial"
                   [value]="serial"
                   (filterValue)="addFilterValue('serial', '*' + $event + '*')" />
@@ -350,14 +353,15 @@
                   (keydown.space)="
                             $event.preventDefault(); contentService.userSelected(element.username, element.realm)
                           "
+                  [appTruncationTooltip]="element.username"
                   aria-label="{{ column.label }} Link"
+                  class="cell-truncate"
                   i18n-aria-label="@@authLog.link"
                   role="button"
                   tabindex="0">
                   {{ element.username }}
                 </a>
                 <app-filter-value-button
-                  class="margin-left-8"
                   column="username"
                   [value]="element.username"
                   (filterValue)="addFilterValue('username', $event)" />
@@ -422,7 +426,6 @@
                 <span>{{ element[column.key] }}</span>
                 } @if (showInlineCellFilter(column.key)) {
                 <app-filter-value-button
-                  class="margin-left-8"
                   [column]="column.key"
                   [value]="element[column.key]"
                   (filterValue)="addFilterValue(column.key, $event)" />
@@ -498,7 +501,7 @@
       [table]="tableState"
       heading="No authentication log entries yet"
       hint="Authentication requests are recorded here as they arrive."
-      i18n-heading="@@authLog.noAuthenticationLogEntries"
+      i18n-heading="@@authLog.noAuthenticationLogEntriesYet"
       i18n-hint="@@authLog.authenticationRequestsRecorded"
       icon="fact_check" />
   }

@@ -62,6 +62,7 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey,
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from privacyidea.lib import passlib_compat  # noqa: F401 - patches bcrypt, which PI_HASH_ALGO_LIST may contain
 from passlib.context import CryptContext
 from passlib.exc import MissingBackendError, PasslibWarning, PasswordSizeError
 from privacyidea.config import ConfigKey
@@ -250,7 +251,8 @@ def build_pass_context() -> CryptContext:
         except MissingBackendError as e:
             raise RuntimeError(f"'{ConfigKey.HASH_ALGO_LIST}' is not usable: {e}") from e
         except ValueError as e:
-            # passlib 1.7 fails to load the backend of bcrypt 5 with a ValueError
+            # passlib 1.7 fails to load the backend of an incompatible bcrypt release with a ValueError
+            # (passlib_compat keeps the pinned bcrypt loadable)
             raise RuntimeError(f"'{ConfigKey.HASH_ALGO_LIST}' is not usable: {handler.name}: {e}") from e
 
     # Merge into a copy: updating DEFAULT_HASH_ALGO_PARAMS in place would let the first app that

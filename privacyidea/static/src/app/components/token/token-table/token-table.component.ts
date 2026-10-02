@@ -68,6 +68,7 @@ import { withDefaultRealm, withUser } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
 import { ROLLOUT_STATE_VALUES, valueDisplayLabel } from "@utils/value-label.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -90,6 +91,7 @@ const columnKeysMap = [
   selector: "app-token-table",
   standalone: true,
   imports: [
+    TruncationTooltipDirective,
     InfoHintComponent,
     MatSuffix,
     RefocusAfterReloadDirective,
@@ -303,7 +305,7 @@ export class TokenTableComponent implements OnDestroy {
   toggleFilter(filterKeyword: string): void {
     this.tokenService.updateFilter((current) => {
       let newValue =
-        filterKeyword === "active"
+        filterKeyword === "active" || filterKeyword === "assigned"
           ? this.tableUtilsService.toggleBooleanInFilter({
               keyword: filterKeyword,
               currentValue: current
