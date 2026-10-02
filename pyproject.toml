@@ -6,7 +6,7 @@
 name = "privacyIDEA"
 description = "privacyIDEA: multifactor authentication management system"
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE"]
 keywords = ["OTP", "two-factor authentication", "management", "security", "2fa", "mfa", "fido", "passkey", "webauthn"]
@@ -28,7 +28,6 @@ classifiers = [
     "Topic :: System :: Systems Administration :: Authentication/Directory",
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
     'Programming Language :: Python :: 3.13',

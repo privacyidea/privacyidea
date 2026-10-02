@@ -58,7 +58,7 @@ jobs:
           done
           # Validate ALL using the same splitting the consumer workflows use:
           # `jq -Rc 'split(" ")'` does NOT collapse repeated/leading/trailing
-          # spaces, so a value like "3.10  3.14" would yield an empty matrix
+          # spaces, so a value like "3.11  3.14" would yield an empty matrix
           # entry. Reject anything that doesn't match a strict single-space
           # separated list of "3.X" tokens.
           tokens=$(printf '%s' "$ALL" | jq -Rc 'split(" ")')
