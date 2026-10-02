@@ -113,4 +113,7 @@ $table-cell-font-size: 0.875rem;
 .info-hint-tooltip .mdc-tooltip__surface {
   background-color: var(--mat-tooltip-container-color);
   max-width: 320px;
+  text-align: left;
+  // A line break in the text starts a new line, e.g. one per group in a filter input's match tooltip.
+  white-space: pre-line;
 }

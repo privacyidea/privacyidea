@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
   Component,
   ElementRef,
@@ -36,6 +38,7 @@ import {
   ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
@@ -54,14 +57,19 @@ import { ContainerTableActionsComponent } from "@components/container/container-
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { TableState } from "@core/models/table_state/table-state";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
+import { withUser } from "@utils/filter.utils";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -81,6 +89,9 @@ const columnsKeyMap = [
   selector: "app-container-table",
   standalone: true,
   imports: [
+    TruncationTooltipDirective,
+    InfoHintComponent,
+    MatSuffix,
     RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,
@@ -90,6 +101,7 @@ const columnsKeyMap = [
     NgClass,
     CopyButtonComponent,
     CopyableComponent,
+    FilterValueButtonComponent,
     MatCheckboxModule,
     ScrollToTopDirective,
     ClearableInputComponent,
@@ -100,7 +112,9 @@ const columnsKeyMap = [
     MatDividerModule,
     ScrollEdgesDirective,
     TableStateComponent,
-    RouterLink
+    RouterLink,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss"
@@ -119,6 +133,7 @@ export class ContainerTableComponent implements OnDestroy {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
 
   readonly columnsKeyMap = columnsKeyMap;
   readonly columnKeys = columnsKeyMap.map((column) => column.key);
@@ -126,6 +141,13 @@ export class ContainerTableComponent implements OnDestroy {
   readonly advancedApiFilterKeys = this.containerService.advancedApiFilterKeys;
   readonly filterKeywords = [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys];
   readonly filterHint = inlineFilterHint();
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      $localize`:@@common.container:Container`,
+      [...this.containerService.apiFilterKeys, ...this.containerService.advancedApiFilterKeys],
+      (key) => this.containerService.exactMatchKeys.has(key)
+    )
+  );
   // The `user` and `realm` filters are exact values that the backend resolves against the user store, so
   // they are only applied when the input is confirmed with enter. All other filters are applied while typing.
   protected readonly filterInputValue = linkedSignal({
@@ -261,6 +283,10 @@ export class ContainerTableComponent implements OnDestroy {
   getFilterIconName(keyword: string): string {
     const isSelected = this.isFilterSelected(keyword, this.containerService.activeFilter());
     return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  filterByUser(username: string, realm: string): void {
+    this.containerService.updateFilter((current) => withUser(current, username, realm));
   }
 
   onKeywordClick(filterKeyword: string): void {

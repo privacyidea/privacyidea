@@ -48,34 +48,59 @@
     }
     @if (tableState.showTable()) {
       <div class="filter-paginator-container">
-        <mat-form-field
-          class="token-table-filter"
-          subscriptSizing="dynamic">
-          <mat-label i18n="@@user.filterUsers">Filter Users...</mat-label>
-          <app-clearable-input
-            (clearButtonClick)="userService.clearFilter()"
-            [showClearButton]="filterHTMLInputElement.value.length > 0">
-            <input
-              #filterHTMLInputElement
-              [appRefocusAfterReload]="userService.usersResource.isLoading()"
-              [appFilterAutocomplete]="filterKeywords()"
-              (input)="userService.handleFilterInput($event)"
-              [value]="userService.filterDraft().filterString"
-              aria-label="Filter Input"
-              i18n-aria-label="@@common.filterInput"
-              i18n-placeholder="@@user.searchAllColumns"
-              matInput
-              placeholder="Search all columns, or by column e.g. 'root email: @acme'" />
-          </app-clearable-input>
-          <mat-hint>{{ filterHint }}</mat-hint>
-        </mat-form-field>
+        <div class="filter-actions-group">
+          <mat-form-field
+            class="token-table-filter"
+            subscriptSizing="dynamic">
+            <mat-label i18n="@@user.filterUsers">Filter Users...</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="userService.clearFilter()"
+              [showClearButton]="filterHTMLInputElement.value.length > 0">
+              <input
+                #filterHTMLInputElement
+                [appRefocusAfterReload]="userService.usersResource.isLoading()"
+                [appFilterAutocomplete]="filterKeywords()"
+                (input)="userService.handleFilterInput($event)"
+                [value]="userService.filterDraft().filterString"
+                aria-label="Filter Input"
+                i18n-aria-label="@@common.filterInput"
+                i18n-placeholder="@@user.searchAllColumns"
+                matInput
+                placeholder="Search all columns, or by column e.g. 'root email: @acme'" />
+            </app-clearable-input>
+            <app-info-hint
+              matSuffix
+              [text]="filterMatchInfo()" />
+            <mat-hint>{{ filterHint }}</mat-hint>
+          </mat-form-field>
+          <button
+            [matMenuTriggerFor]="userTableActions.actionsMenu"
+            aria-label="Actions"
+            class="table-actions-trigger margin-left-8"
+            i18n-aria-label="@@common.actions"
+            i18n-matTooltip="@@common.actions"
+            mat-icon-button
+            matTooltip="Actions">
+            <span class="icon-badge">
+              <mat-icon>menu</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+            </span>
+          </button>
+        </div>
         <mat-paginator
+          appPaginatorPageSizeTooltip
+          appPaginatorCompactRange
+          class="hide-page-size-label"
           [length]="totalLength()"
           [pageSizeOptions]="pageSizeOptions()"
           [pageSize]="userService.pageSize()"
           showFirstLastButtons></mat-paginator>
       </div>
-      <app-user-table-actions />
+      <div class="actions-row">
+        <div class="actions-row-inner">
+          <app-user-table-actions #userTableActions />
+        </div>
+      </div>
       <div
         appScrollEdges
         class="table-scroll-region">
@@ -130,10 +155,21 @@
                       <app-copyable [copyText]="element[column.key]">
                         <a
                           (click)="onClickUsername(element)"
+                          [appTruncationTooltip]="element[column.key]"
                           [attr.aria-label]="linkLabel(column.label)"
+                          class="cell-truncate"
                           routerLink="/users/details/{{ element.username }}">
                           {{ element[column.key] }}
                         </a>
+                      </app-copyable>
+                    }
+                    @case ("userid") {
+                      <app-copyable [copyText]="element[column.key]">
+                        <span
+                          [appTruncationTooltip]="element[column.key]"
+                          class="cell-truncate">
+                          {{ element[column.key] }}
+                        </span>
                       </app-copyable>
                     }
                     @case ("resolver") {
@@ -147,6 +183,10 @@
                         } @else {
                           {{ element[column.key] }}
                         }
+                        <app-filter-value-button
+                          column="resolver"
+                          [value]="element[column.key]"
+                          (filterValue)="addFilterValue('resolver', $event)" />
                       </app-copyable>
                     }
                     @default {

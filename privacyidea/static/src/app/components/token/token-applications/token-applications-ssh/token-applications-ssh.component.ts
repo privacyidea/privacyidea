@@ -17,6 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -29,6 +31,7 @@ import { MatCell, MatCellDef, MatTableDataSource, MatTableModule } from "@angula
 import { MatTabsModule } from "@angular/material/tabs";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { TokenApplicationsActionsComponent } from "@components/token/token-applications/token-applications-actions/token-applications-actions.component";
@@ -37,13 +40,17 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { MachineService, MachineServiceInterface, TokenApplication } from "@services/machine/machine.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
+import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 @Component({
   selector: "app-token-applications-ssh",
   standalone: true,
   imports: [
+    InfoHintComponent,
+    MatSuffix,
     RefocusAfterReloadDirective,
     MatTabsModule,
     MatCell,
@@ -55,11 +62,13 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
     MatPaginatorModule,
     NgClass,
     CopyableComponent,
+    FilterValueButtonComponent,
     ClearableInputComponent,
     MatIconModule,
     MatButtonModule,
     TokenApplicationsActionsComponent,
-    TableStateComponent
+    TableStateComponent,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./token-applications-ssh.component.html",
   styleUrls: ["./token-applications-ssh.component.scss"]
@@ -82,6 +91,13 @@ export class TokenApplicationsSshComponent {
   displayedColumns: string[] = this.columnsKeyMap.map((column) => column.key);
   sort = this.machineService.sort;
   readonly filterHint = inlineFilterHint();
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      $localize`:@@token.sshMachine:SSH machine`,
+      [...this.machineService.apiFilterKeys, ...this.machineService.advancedApiFilterKeys],
+      (key) => this.machineService.isExactMatchKey(key)
+    )
+  );
 
   dataSource = computed(() => {
     const data = this.machineService.tokenApplications();
@@ -106,6 +122,11 @@ export class TokenApplicationsSshComponent {
 
   getFilterIconName(keyword: string): string {
     return this.machineService.getFilterIconName(keyword);
+  }
+
+  // A clicked cell value names one entry, so it is matched in full rather than anywhere in the column.
+  addFilterValue(keyword: string, value: string): void {
+    this.machineService.updateFilter((current) => current.addEntry(keyword, exactMatch(value)));
   }
 
   onKeywordClick(filterKeyword: string): void {

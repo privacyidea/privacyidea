@@ -201,7 +201,8 @@
   </button>
   <span
     class="version-text"
-    [class.node-shown]="authService.showNode()">
+    [class.node-shown]="authService.showNode()"
+    [class.profile-hidden]="userUtilsPanel && !userUtilsPanel.isLargeScreen()">
     <span class="version-prefix">
       {{ versionPrefix() }}
     </span>

@@ -37,6 +37,7 @@ import {
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
@@ -113,7 +114,8 @@ interface FlattenedClientRow {
     MatIcon,
     ClearableInputComponent,
     LocalDateTimePipe,
-    TableStateComponent
+    TableStateComponent,
+    ScrollEdgesDirective
   ]
 })
 export class ClientsComponent {

@@ -16,10 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, input } from "@angular/core";
+import { Component, computed, inject, input, ViewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
+import { MatMenu, MatMenuModule } from "@angular/material/menu";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -32,11 +33,21 @@ import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/ov
 
 @Component({
   selector: "app-user-table-actions",
-  imports: [MatButtonModule, MatFormField, MatLabel, MatOption, MatSelect, MatIcon, OverflowNavDirective],
+  imports: [
+    MatButtonModule,
+    MatFormField,
+    MatLabel,
+    MatMenuModule,
+    MatOption,
+    MatSelect,
+    MatIcon,
+    OverflowNavDirective
+  ],
   templateUrl: "./user-table-actions.component.html",
   styleUrl: "./user-table-actions.component.scss"
 })
 export class UserTableActionsComponent {
+  @ViewChild("actionsMenu", { static: true }) actionsMenu!: MatMenu;
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly userService: UserServiceInterface = inject(UserService);

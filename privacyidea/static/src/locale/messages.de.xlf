@@ -16638,12 +16638,76 @@
           <context context-type="linenumber">68</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="common.useAsWildcard" datatype="html">
-        <source>Use * as a wildcard.</source>
-        <target>Verwenden Sie * als Platzhalter.</target>
+      <trans-unit id="common.tablePartialMatchKeys" datatype="html">
+        <source><x id="table" equiv-text="table"/> partial match: <x id="keys" equiv-text="partial"/></source>
+        <target><x id="table" equiv-text="table"/> teilweise Übereinstimmung: <x id="keys" equiv-text="partial"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
-          <context context-type="linenumber">29</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.tableExactMatchKeys" datatype="html">
+        <source><x id="table" equiv-text="table"/> exact match: <x id="keys" equiv-text="exact"/></source>
+        <target><x id="table" equiv-text="table"/> exakte Übereinstimmung: <x id="keys" equiv-text="exact"/></target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.challenge" datatype="html">
+        <source>Challenge</source>
+        <target>Challenge</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="token.sshMachine" datatype="html">
+        <source>SSH machine</source>
+        <target>SSH-Maschine</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="token.offlineMachine" datatype="html">
+        <source>Offline machine</source>
+        <target>Offline-Maschine</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.exactMatchKeys" datatype="html">
+        <source>Exact match: <x id="keys" equiv-text="exact"/></source>
+        <target>Exakte Übereinstimmung: <x id="keys" equiv-text="exact"/></target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">59</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="lockedUsers.lockedUser" datatype="html">
+        <source>Locked user</source>
+        <target>Gesperrter Benutzer</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/logs/locked-users/locked-users.component.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="container.containerTemplate" datatype="html">
+        <source>Container template</source>
+        <target>Container-Vorlage</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/container/container-templates/container-templates-filter/container-templates-filter.component.ts</context>
+          <context context-type="linenumber">60</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="common.wildcardOrExactMatch" datatype="html">
+        <source>Use * as a wildcard, or start a value with = to match it exactly.</source>
+        <target>Verwenden Sie * als Platzhalter oder beginnen Sie einen Wert mit =, um ihn exakt abzugleichen.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">src/app/utils/filter-hint.utils.ts</context>
+          <context context-type="linenumber">32</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.quoteValuesContain" datatype="html">

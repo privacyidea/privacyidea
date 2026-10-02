@@ -20,7 +20,6 @@
 import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -31,6 +30,8 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { ContainerTableComponent } from "@components/container/container-table/container-table.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
@@ -42,23 +43,26 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 @Component({
   selector: "app-container-table-self-service",
   standalone: true,
   imports: [
+    TruncationTooltipDirective,
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
     MatPaginatorModule,
     NgClass,
     CopyableComponent,
-    MatCheckboxModule,
     MatIcon,
     MatButtonModule,
     ScrollToTopDirective,
     ScrollEdgesDirective,
-    TableStateComponent
+    TableStateComponent,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./container-table.self-service.component.html",
   styleUrl: "./container-table.component.scss"
@@ -90,11 +94,11 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   }
 
   readonly columnKeysMapSelfService = [
-    { key: "serial", label: $localize`:@@common.serial:Serial` },
-    { key: "type", label: $localize`:@@common.type:Type` },
-    { key: "states", label: $localize`:@@common.status:Status` },
-    { key: "description", label: $localize`:@@common.description:Description` },
-    { key: "delete", label: $localize`:@@common.delete:Delete` }
+    { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+    { key: "type", label: $localize`:@@common.type:Type`, width: "s" },
+    { key: "states", label: $localize`:@@common.status:Status`, width: "m" },
+    { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+    { key: "delete", label: $localize`:@@common.delete:Delete`, width: "s" }
   ];
   readonly columnKeysSelfService: string[] = this.columnKeysMapSelfService.map(
     (column: { key: string; label: string }) => column.key

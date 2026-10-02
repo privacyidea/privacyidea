@@ -215,6 +215,17 @@ describe("MachineService (with mock classes)", () => {
     });
   });
 
+  it("isExactMatchKey follows the keys sent plain for the application", () => {
+    machineService.selectedApplicationType.set("ssh");
+    expect(machineService.isExactMatchKey("hostname")).toBe(true);
+    expect(machineService.isExactMatchKey("machineid & resolver")).toBe(true);
+    expect(machineService.isExactMatchKey("serial")).toBe(false);
+    expect(machineService.isExactMatchKey("count")).toBe(false);
+
+    machineService.selectedApplicationType.set("offline");
+    expect(machineService.isExactMatchKey("count")).toBe(true);
+  });
+
   it("onPageEvent & onSortEvent update linked signals", () => {
     machineService.onPageEvent({ pageSize: 25, pageIndex: 3 } as PageEvent);
     expect(machineService.pageSize()).toBe(25);

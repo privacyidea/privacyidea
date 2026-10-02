@@ -19,6 +19,8 @@
 @if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
   <div
     appOverflowNav
+    overflowNavIcon="menu"
+    overflowNavBadgeIcon="build"
     class="flex-row margin-bottom-16 gap-8">
     @if (authService.actionAllowed("policywrite")) {
       <button
@@ -56,3 +58,34 @@
     }
   </div>
 }
+
+<!-- Same actions as menu items, for the compact trigger shown next to the filter once the table is
+     scrolled and this component's own button row is hidden. -->
+<mat-menu #actionsMenu="matMenu">
+  @if (authService.actionAllowed("policywrite")) {
+    <button
+      (click)="createNewPolicy()"
+      mat-menu-item>
+      <mat-icon>gavel</mat-icon>
+      <span i18n="@@policy.createPolicy">Create Policy</span>
+    </button>
+  }
+  @if (authService.actionAllowed("policydelete")) {
+    <button
+      (click)="deleteSelectedPolicies()"
+      [disabled]="policySelection().length < 1"
+      mat-menu-item>
+      <mat-icon>delete_sweep</mat-icon>
+      <span i18n="@@common.delete">Delete</span>
+    </button>
+  }
+  @if (authService.actionAllowed("policywrite")) {
+    <button
+      (click)="copySelectedPolicies()"
+      [disabled]="policySelection().length < 1"
+      mat-menu-item>
+      <mat-icon>content_copy</mat-icon>
+      <span i18n="@@common.copy">Copy</span>
+    </button>
+  }
+</mat-menu>

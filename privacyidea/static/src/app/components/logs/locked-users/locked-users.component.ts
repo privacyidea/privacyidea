@@ -16,6 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
+import { filterMatchTooltip } from "@utils/filter-hint.utils";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { DatePipe, NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, linkedSignal, ViewChild } from "@angular/core";
 import { PiResponse } from "@app/app.component";
@@ -27,12 +32,15 @@ import { MatInput } from "@angular/material/input";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 import { ExpandableMessageComponent } from "@components/shared/expandable-message/expandable-message.component";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ADMIN_INTERNAL_ROLE } from "@core/models/user_role/user-role";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
@@ -44,7 +52,8 @@ import {
   ConditionalAccessStateService,
   ConditionalAccessStateServiceInterface,
   LockedUserEntry,
-  LockedUsersPage
+  LockedUsersPage,
+  LOCKED_USERS_FILTER_KEYS
 } from "@services/conditional-access-state/conditional-access-state.service";
 import {
   AuthenticationLogService,
@@ -66,6 +75,9 @@ import { concatMap, reduce } from "rxjs/operators";
   templateUrl: "./locked-users.component.html",
   styleUrl: "./locked-users.component.scss",
   imports: [
+    InfoHintComponent,
+    MatSuffix,
+    TableStateComponent,
     RefocusAfterReloadDirective,
     ScrollToTopDirective,
     MatTableModule,
@@ -85,10 +97,18 @@ import { concatMap, reduce } from "rxjs/operators";
     MultiSelectFilterComponent,
     RouterLink,
     NgClass,
-    DatePipe
+    DatePipe,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective,
+    MatMenuModule
   ]
 })
 export class LockedUsersComponent {
+  // Every keyword is sent plain and the backend matches it exactly, unless the value itself contains a *.
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip($localize`:@@lockedUsers.lockedUser:Locked user`, LOCKED_USERS_FILTER_KEYS, () => true)
+  );
+
   protected readonly casService: ConditionalAccessStateServiceInterface = inject(ConditionalAccessStateService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly authenticationLogService: AuthenticationLogServiceInterface = inject(AuthenticationLogService);
@@ -250,6 +270,14 @@ export class LockedUsersComponent {
     this.casService.lockedUsersFilter.set(this.casService.lockedUsersFilter().copyWith({ value }));
   }
 
+  // Empty panel in place of the whole table area when no user is locked.
+  readonly tableState = new TableState({
+    resource: this.casService.lockedUsersResource,
+    count: () => this.totalLength(),
+    filterActive: () => this.casService.lockedUsersFilter().isNotEmpty,
+    resetFilter: () => this.clearFilter()
+  });
+
   clearFilter(): void {
     this.casService.lockedUsersFilter.set(this.casService.lockedUsersFilter().copyWith({ value: "" }));
   }
@@ -269,6 +297,11 @@ export class LockedUsersComponent {
     if (!current.includes(value)) {
       this.setFilterValues(keyword, [...current, value]);
     }
+  }
+
+  // A message may contain commas, so it replaces the message filtered by instead of joining a list of them.
+  filterByErrorMessage(message: string): void {
+    this.casService.lockedUsersFilter.set(this.casService.lockedUsersFilter().addEntry("error_message", message));
   }
 
   // Header keyword button (e.g. username): one click toggles a `keyword:` term in the main filter input for

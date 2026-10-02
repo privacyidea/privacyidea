@@ -37,6 +37,7 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { ContentService } from "@services/content/content.service";
 import { AuthService } from "@services/auth/auth.service";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { expectsTableStateGating } from "@testing/table-state-gating";
 
 describe("TokenApplicationsSshComponent (Jest)", () => {
@@ -125,6 +126,16 @@ describe("TokenApplicationsSshComponent (Jest)", () => {
       expect(ds).toBeInstanceOf(MatTableDataSource);
       expect((ds as MatTableDataSource<TokenApplication>).data).toEqual(fakeApps);
       expect(component.length()).toBe(1);
+    });
+  });
+
+  describe("inline cell filter", () => {
+    it("replaces the column's filter with the clicked value, matched exactly", () => {
+      machineServiceMock.activeFilter.set(new FilterValue({ value: "serial: OLD" }));
+
+      component.addFilterValue("serial", "SSH1");
+
+      expect(machineServiceMock.activeFilter().getValueOfKey("serial")).toBe("=SSH1");
     });
   });
 });

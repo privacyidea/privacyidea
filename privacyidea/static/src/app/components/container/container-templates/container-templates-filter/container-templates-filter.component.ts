@@ -17,7 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, ElementRef, Input, input, output, signal, viewChild } from "@angular/core";
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
+import { filterMatchTooltip } from "@utils/filter-hint.utils";
+import { Component, ElementRef, Input, input, output, signal, viewChild, computed } from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
@@ -27,11 +30,20 @@ import { ContainerTemplate } from "@services/container/container.service";
 @Component({
   selector: "app-container-templates-filter",
   standalone: true,
-  imports: [MatInputModule, ClearableInputComponent, RefocusAfterReloadDirective],
+  imports: [InfoHintComponent, MatSuffix, MatInputModule, ClearableInputComponent, RefocusAfterReloadDirective],
   templateUrl: "./container-templates-filter.component.html",
   styleUrl: "./container-templates-filter.component.scss"
 })
 export class ContainerTemplatesFilterComponent {
+  // Filtered in the browser: default compares true or false, every other keyword matches anywhere in the field.
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      $localize`:@@container.containerTemplate:Container template`,
+      ["name", "container_type", "tokens", "default"],
+      (key) => key === "default"
+    )
+  );
+
   /**
    * Classic @Input for initialization from parent.
    */

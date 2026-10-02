@@ -9,43 +9,62 @@
          so replacing the table with a panel would leave no way to create one. -->
     @if (tableState.showTable() || tableState.status() === "empty") {
       <div class="filter-paginator-container">
-        <mat-form-field
-          class="token-table-filter"
-          subscriptSizing="dynamic">
-          <mat-label i18n="@@realm.filterRealms">Filter Realms...</mat-label>
-          <app-clearable-input
-            (clearButtonClick)="resetFilter()"
-            [showClearButton]="filterString().length > 0">
-            <input
-              #filterHTMLInputElement
-              [appRefocusAfterReload]="realmService.realmResource.isLoading()"
-              (input)="onFilterInput(filterHTMLInputElement.value)"
-              [value]="filterString()"
-              aria-label="Filter Input"
-              i18n-aria-label="@@common.filterInput"
-              i18n-placeholder="@@common.filterAcrossAll"
-              matInput
-              placeholder="Filter across all columns." />
-          </app-clearable-input>
-        </mat-form-field>
+        <div class="filter-actions-group">
+          <mat-form-field
+            class="token-table-filter"
+            subscriptSizing="dynamic">
+            <mat-label i18n="@@realm.filterRealms">Filter Realms...</mat-label>
+            <app-clearable-input
+              (clearButtonClick)="resetFilter()"
+              [showClearButton]="filterString().length > 0">
+              <input
+                #filterHTMLInputElement
+                [appRefocusAfterReload]="realmService.realmResource.isLoading()"
+                (input)="onFilterInput(filterHTMLInputElement.value)"
+                [value]="filterString()"
+                aria-label="Filter Input"
+                i18n-aria-label="@@common.filterInput"
+                i18n-placeholder="@@common.filterAcrossAll"
+                matInput
+                placeholder="Filter across all columns." />
+            </app-clearable-input>
+          </mat-form-field>
+          <button
+            [matMenuTriggerFor]="tableActionsMenu"
+            aria-label="Actions"
+            class="table-actions-trigger margin-left-8"
+            i18n-aria-label="@@common.actions"
+            i18n-matTooltip="@@common.actions"
+            mat-icon-button
+            matTooltip="Actions">
+            <span class="icon-badge">
+              <mat-icon>menu</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+            </span>
+          </button>
+        </div>
       </div>
 
-      <div class="flex-row margin-bottom-16">
-        <mat-form-field
-          class="input-width-m"
-          subscriptSizing="dynamic">
-          <mat-label i18n="@@realm.node">Node</mat-label>
+      <div class="actions-row">
+        <div class="actions-row-inner">
+          <div class="flex-row margin-bottom-16">
+            <mat-form-field
+              class="input-width-m"
+              subscriptSizing="dynamic">
+              <mat-label i18n="@@realm.node">Node</mat-label>
 
-          <mat-select
-            (selectionChange)="selectedNode.set($event.value)"
-            [value]="selectedNode()">
-            @for (node of nodeOptions(); track node.value) {
-              <mat-option [value]="node.value">
-                {{ node.label }}
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+              <mat-select
+                (selectionChange)="selectedNode.set($event.value)"
+                [value]="selectedNode()">
+                @for (node of nodeOptions(); track node.value) {
+                  <mat-option [value]="node.value">
+                    {{ node.label }}
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
       </div>
 
       <div
@@ -390,3 +409,25 @@
     }
   </div>
 </div>
+
+<!-- The node filter as a menu, for the compact trigger shown next to the filter once the table is
+     scrolled and the row holding the node selector is hidden. -->
+<mat-menu #tableActionsMenu="matMenu">
+  <button
+    [matMenuTriggerFor]="nodeMenu"
+    mat-menu-item>
+    <mat-icon>dns</mat-icon>
+    <span i18n="@@realm.node">Node</span>
+  </button>
+</mat-menu>
+
+<mat-menu #nodeMenu="matMenu">
+  @for (node of nodeOptions(); track node.value) {
+    <button
+      (click)="selectedNode.set(node.value)"
+      mat-menu-item>
+      <mat-icon>{{ node.value === selectedNode() ? "radio_button_checked" : "radio_button_unchecked" }}</mat-icon>
+      <span>{{ node.label }}</span>
+    </button>
+  }
+</mat-menu>

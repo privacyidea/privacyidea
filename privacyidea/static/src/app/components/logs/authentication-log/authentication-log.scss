@@ -3,6 +3,7 @@
 
 .authentication-log-table-container {
   @include styles.main-component-style;
+  @include table.paginator-range-floor;
   @include table.base-table-structure(
     ".authentication-log-table",
     ".authentication-log-table-filter",
@@ -13,9 +14,7 @@
   // transaction_id m + conditional_access_outcomes xl), plus a flat 300px for other_info, which claims
   // that width only once the current page has something to show (see columnWidthClass) and is
   // deliberately left without a static tier.
-  @include table.page-table-state-size(
-    calc(#{table.table-width(m, s, l, l, m, s, m, l, m, m, m, xl)} + 300px)
-  );
+  @include table.page-table-state-size(calc(#{table.table-width(m, s, l, l, m, s, m, l, m, m, m, xl)} + 300px));
   // Flex column so the filter row + paginator stay pinned and only the
   // .table-scroll-region (flex: 1 1 auto, overflow: auto) scrolls — both
   // vertically (with a sticky header row) and horizontally, as one unit.
@@ -30,6 +29,8 @@
   .authentication-log-table {
     table-layout: fixed;
   }
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .cell-scroll {
@@ -40,17 +41,6 @@
 
 .cell-scroll-info {
   overflow-wrap: break-word;
-}
-
-// Long values clipped so they cannot widen the table, paired with one of the width classes below (see
-// TRUNCATED_COLUMN_CLASSES). A flex item of the copyable row, hence the explicit min-width: 0 to let it shrink below
-// its content. white-space: nowrap is needed on the element itself now that the table no longer forces it table-wide
-// (see table-layout: fixed above) - without it the ellipsis never triggers, the text just wraps instead.
-.cell-truncate {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 // The opaque ids (32 hex chars for an attempt, 20 digits for a transaction): their leading characters already tell rows
@@ -145,21 +135,6 @@ td.cell-info {
   pointer-events: none;
 }
 
-// Reveal the inline cell actions (filter + copy) only while the row is hovered or holds focus, to keep dense rows
-// calm. Both buttons live in child components and expose a `--*-button-opacity` hook; custom properties inherit
-// across the encapsulation boundary, so we drive their visibility from the row without reaching into them.
-// :focus-within keeps the actions reachable for keyboard/AT users.
-.authentication-log-table tr.mat-mdc-row {
-  --copy-button-opacity: 0;
-  --filter-button-opacity: 0;
-
-  &:hover,
-  &:focus-within {
-    --copy-button-opacity: 1;
-    --filter-button-opacity: 1;
-  }
-}
-
 // Inline in the action row: grows to take the leftover width so the slider stays usable, within sensible bounds.
 .time-filter-custom-range {
   box-sizing: border-box;
@@ -214,6 +189,15 @@ td.cell-info {
     --mat-slider-value-indicator-container-transform: translateX(-50%);
     --mat-slider-value-indicator-text-transform: none;
     --mat-slider-value-indicator-transform-origin: center bottom;
+  }
+
+  // The copy in the "More Filter" menu: a panel of its own under the menu items, rather than squeezed into the row.
+  &.menu-time-range {
+    width: auto;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 8px 16px 12px;
   }
 
   .range-summary {

@@ -759,6 +759,16 @@ class AuditEngineOptionsTestCase(unittest.TestCase):
         self.assertEqual(20, SQLAudit._create_engine(audit).pool.size())
 
 
+class AuditToIsodateTestCase(unittest.TestCase):
+
+    def test_01_postgresql_and_oracle_use_calendar_year(self):
+        from sqlalchemy.dialects import oracle, postgresql
+        for dialect in (postgresql.dialect(), oracle.dialect()):
+            sql = str(sqlaudit.to_isodate(LogEntry.date).compile(dialect=dialect))
+            self.assertIn("'YYYY-MM-DD HH24:MI:SS'", sql)
+            self.assertNotIn("IYYY", sql)
+
+
 class AuditColumnLengthTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):
         # this needs to exist on app creation

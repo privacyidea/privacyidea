@@ -29,6 +29,8 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { StickyHeaderDirective } from "@components/shared/directives/sticky-header.directive";
@@ -36,11 +38,13 @@ import { TableStateComponent } from "@components/shared/table-state/table-state.
 import { TableState } from "@core/models/table_state/table-state";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { TokenTableComponent } from "./token-table.component";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 @Component({
   selector: "app-token-table-self-service",
   standalone: true,
   imports: [
+    TruncationTooltipDirective,
     MatTableModule,
     MatFormFieldModule,
     MatInputModule,
@@ -56,7 +60,9 @@ import { TokenTableComponent } from "./token-table.component";
     StickyHeaderDirective,
     ScrollEdgesDirective,
     TableStateComponent,
-    RouterLink
+    RouterLink,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./token-table.self-service.component.html",
   styleUrl: "./token-table.component.scss"
@@ -71,17 +77,17 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   });
   columnKeysMapSelfService = computed(() => {
     const columnKeys = [
-      { key: "serial", label: $localize`:@@common.serial:Serial` },
-      { key: "tokentype", label: $localize`:@@common.type:Type` },
-      { key: "description", label: $localize`:@@common.description:Description` },
-      { key: "container_serial", label: $localize`:@@common.container:Container` },
-      { key: "active", label: $localize`:@@common.active:Active` },
-      { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter` }
+      { key: "serial", label: $localize`:@@common.serial:Serial`, width: "m" },
+      { key: "tokentype", label: $localize`:@@common.type:Type`, width: "s" },
+      { key: "description", label: $localize`:@@common.description:Description`, width: "xl" },
+      { key: "container_serial", label: $localize`:@@common.container:Container`, width: "m" },
+      { key: "active", label: $localize`:@@common.active:Active`, width: "s" },
+      { key: "failcount", label: $localize`:@@token.failCounter:Fail Counter`, width: "s" }
     ];
     if (this.authService.actionAllowed("revoke"))
-      columnKeys.push({ key: "revoke", label: $localize`:@@token.revoke:Revoke` });
+      columnKeys.push({ key: "revoke", label: $localize`:@@token.revoke:Revoke`, width: "s" });
     if (this.authService.actionAllowed("delete"))
-      columnKeys.push({ key: "delete", label: $localize`:@@common.delete:Delete` });
+      columnKeys.push({ key: "delete", label: $localize`:@@common.delete:Delete`, width: "s" });
 
     return columnKeys;
   });

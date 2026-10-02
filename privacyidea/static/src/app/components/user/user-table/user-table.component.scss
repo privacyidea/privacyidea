@@ -4,6 +4,7 @@
 .user-layout {
   display: flex;
   justify-content: center;
+  @include table.paginator-range-floor;
 }
 
 .user-table-container {
@@ -13,6 +14,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
 .resolver-warning {

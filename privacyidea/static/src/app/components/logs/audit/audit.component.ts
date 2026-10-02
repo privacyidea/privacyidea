@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
@@ -39,7 +41,7 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
-import { NgClass } from "@angular/common";
+import { DatePipe, NgClass } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -50,19 +52,23 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
-import { LocalDateTimePipe } from "@components/shared/pipes/local-date-time.pipe";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { inlineFilterHint } from "@utils/filter-hint.utils";
+import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
+import { exactMatch } from "@utils/filter.utils";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 type AuditCellRenderType =
   | "status-span"
   | "highlight-ok"
   | "date"
   | "policies-csv"
-  | "copy-text"
+  | "copy-filter-text"
   | "serial-link"
   | "container-link"
   | "user-link"
@@ -79,16 +85,20 @@ const cellRenderTypeByKey: Record<string, AuditCellRenderType> = {
   serial: "serial-link",
   container_serial: "container-link",
   user: "user-link",
-  action: "copy-text",
-  action_detail: "copy-text",
-  info: "copy-text",
-  user_agent: "copy-text",
-  privacyidea_server: "copy-text",
-  realm: "copy-text",
-  administrator: "copy-text",
-  client: "copy-text",
-  resolver: "copy-text"
+  action: "copy-filter-text",
+  action_detail: "copy-filter-text",
+  info: "copy-filter-text",
+  user_agent: "copy-filter-text",
+  privacyidea_server: "copy-filter-text",
+  realm: "copy-filter-text",
+  administrator: "copy-filter-text",
+  client: "copy-filter-text",
+  resolver: "copy-filter-text"
 };
+
+// A clicked cell value names one entry, so it is matched in full - except a day, which only begins the timestamp it
+// is compared with, and a policy, which is one of several the column lists.
+const PARTIAL_MATCH_CELL_FILTER_KEYS = new Set(["startdate", "date", "policies"]);
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to. Columns left without a "width" stay flexible (long free text or a list that can overflow);
@@ -126,6 +136,8 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
 @Component({
   selector: "app-audit",
   imports: [
+    InfoHintComponent,
+    MatSuffix,
     RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatCardModule,
@@ -147,6 +159,7 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
     MatColumnDef,
     MatLabel,
     CopyableComponent,
+    FilterValueButtonComponent,
     RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent,
@@ -155,8 +168,11 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
     MatIconModule,
     MatTooltipModule,
     ScrollEdgesDirective,
-    LocalDateTimePipe,
-    TableStateComponent
+    DatePipe,
+    TableStateComponent,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective,
+    TruncationTooltipDirective
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"
@@ -174,6 +190,13 @@ export class AuditComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly apiFilterKeyMap = this.auditService.apiFilterKeyMap;
   readonly filterHint = inlineFilterHint();
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      $localize`:@@nav.audit:Audit`,
+      [...this.auditService.apiFilterKeys, ...this.auditService.advancedApiFilterKeys],
+      (key) => this.auditService.exactMatchKeys.has(key)
+    )
+  );
   sort = this.auditService.sort;
 
   @ViewChild("filterHTMLInputElement", { static: false })
@@ -256,5 +279,17 @@ export class AuditComponent {
 
   getCellRenderType(columnKey: string): AuditCellRenderType {
     return cellRenderTypeByKey[columnKey] ?? "default";
+  }
+
+  // info is free prose that practically never repeats, so filtering on one entry's value finds only that entry.
+  showInlineCellFilter(columnKey: string): boolean {
+    return columnKey !== "info";
+  }
+
+  // Inline "filter by this value" action on a cell: replaces whatever the column was filtered by with this value.
+  addFilterValue(columnKey: string, value: string): void {
+    const keyword = this.apiFilterKeyMap[columnKey] ?? columnKey;
+    const filterValue = PARTIAL_MATCH_CELL_FILTER_KEYS.has(keyword) ? value : exactMatch(value);
+    this.auditService.updateFilter((current) => current.addEntry(keyword, filterValue));
   }
 }

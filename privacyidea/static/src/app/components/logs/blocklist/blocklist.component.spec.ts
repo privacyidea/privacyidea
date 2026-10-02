@@ -106,6 +106,34 @@ describe("BlocklistComponent", () => {
     jest.clearAllMocks();
   });
 
+  it("shows the empty panel instead of the table when no IP is blocked", () => {
+    casService.setBlocklistEntries([]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain("No blocked IP addresses");
+    expect(fixture.nativeElement.querySelector(".table-scroll-region")).toBeNull();
+  });
+
+  it("offers Block IP on the empty panel when blocklist_set is allowed", () => {
+    const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["blocklist_set"] });
+    jest.spyOn(component, "blockIp");
+    casService.setBlocklistEntries([]);
+    fixture.detectChanges();
+
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector("app-table-state button");
+    expect(button.textContent).toContain("Block IP");
+    button.click();
+    expect(component.blockIp).toHaveBeenCalled();
+  });
+
+  it("does NOT offer Block IP on the empty panel without blocklist_set", () => {
+    casService.setBlocklistEntries([]);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector("app-table-state button")).toBeNull();
+  });
+
   it("should be created", () => {
     expect(component).toBeTruthy();
   });

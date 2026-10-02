@@ -16,7 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { DatePipe, formatDate, NgClass } from "@angular/common";
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
+import { filterMatchTooltip } from "@utils/filter-hint.utils";
+import { DatePipe, formatDate, NgClass, NgTemplateOutlet } from "@angular/common";
 import {
   Component,
   computed,
@@ -53,6 +56,8 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
+import { TableStateComponent } from "@components/shared/table-state/table-state.component";
+import { TableState } from "@core/models/table_state/table-state";
 import { RouterLink } from "@angular/router";
 import { ConditionalAccessCell } from "./cells/conditional-access-cell/conditional-access-cell";
 import { hasInfoContent, InfoCell } from "./cells/info-cell/info-cell";
@@ -64,8 +69,11 @@ import { CopyableComponent } from "@components/shared/copyable/copyable.componen
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { BreakableCodeComponent } from "@components/shared/breakable-code/breakable-code.component";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
@@ -258,14 +266,6 @@ const CLIENT_LABEL_SOURCE_META: Record<string, { label: string; tooltip: string 
 // Full, independently-translatable tooltip per column with an inline filter button, kept as complete sentences (not
 // noun-interpolated) so each language can phrase its grammar correctly; a column with no entry falls back to the
 // button's generic default.
-const FILTER_TOOLTIPS: Record<string, string> = {
-  username: $localize`:@@common.filterUser:Filter by this user`,
-  source_ip: $localize`:@@authLog.filterSourceIp:Filter by this source IP`,
-  serial: $localize`:@@authLog.filterSerial:Filter by this serial`,
-  transaction_id: $localize`:@@authLog.filterTransactionId:Filter by this transaction ID`,
-  attempt_id: $localize`:@@authLog.filterAttemptId:Filter by this attempt ID`
-};
-
 // Columns whose value is clipped instead of widening the table: the full value stays reachable via the truncation
 // tooltip, the copy button and the inline filter. Width classes (see .cell-truncate-* rules) differ per column - ids
 // read by their leading characters, a client label read as a name - but never narrow a column past its header's own
@@ -280,6 +280,9 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
 @Component({
   selector: "app-authentication-log",
   imports: [
+    InfoHintComponent,
+    MatSuffix,
+    TableStateComponent,
     RefocusAfterReloadDirective,
     MatCell,
     MatFormField,
@@ -291,6 +294,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatTable,
     MatCellDef,
     NgClass,
+    NgTemplateOutlet,
     MatHeaderRowDef,
     MatHeaderRow,
     MatRowDef,
@@ -305,6 +309,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     ScrollToTopDirective,
     ScrollEdgesDirective,
     TruncationTooltipDirective,
+    BreakableCodeComponent,
     DatePipe,
     ClearableInputComponent,
     ConditionalAccessCell,
@@ -319,13 +324,24 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     MatIconModule,
     MatMenuModule,
     MatSliderModule,
-    MatTooltipModule
+    MatTooltipModule,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   providers: [provideNativeDateAdapter()],
   templateUrl: "./authentication-log.html",
   styleUrl: "./authentication-log.scss"
 })
 export class AuthenticationLog {
+  // Every keyword is sent verbatim and the backend matches it exactly (see AuthenticationLogService.filterParams).
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      $localize`:@@nav.authenticationLog:Authentication Log`,
+      [...this.authenticationLogService.apiFilter, ...this.authenticationLogService.advancedApiFilter],
+      () => true
+    )
+  );
+
   readonly columnKeysMap = columnKeysMap;
   // Cells whose content can grow tall (stacked serials, long JSON) get a capped, scrollable cell.
   readonly scrollableColumnKeys = ["serial", ...INFO_COLUMN_KEYS];
@@ -691,6 +707,14 @@ export class AuthenticationLog {
 
   // Clears both the text and the time filter, bound to the input's clear (X) button; the time filter lives in its own
   // signals, so it needs its own explicit clear alongside the text.
+  // Empty panel in place of the whole table area when the log has no entries at all.
+  readonly tableState = new TableState({
+    resource: this.authenticationLogService.authenticationLogResource,
+    count: () => this.totalLength(),
+    filterActive: () => this.authenticationLogService.authenticationLogFilter().isNotEmpty,
+    resetFilter: () => this.clearAllFilters()
+  });
+
   clearAllFilters(): void {
     this.clearTimeFilter();
     this.authenticationLogService.clearFilter();
@@ -743,6 +767,14 @@ export class AuthenticationLog {
   // Apply the slider's current [start, end] thumbs as the time filter, on thumb release / keyboard commit.
   commitTimeRange(): void {
     this.applyTimeRange(this.sliderPosToIso(this.rangeStart(), false), this.sliderPosToIso(this.rangeEnd(), true));
+  }
+
+  // The slider inside the "More Filter" menu: its arrow/Home/End/Page keys move a thumb rather than the menu's
+  // focus. Escape and Tab still reach the menu, so it closes as usual.
+  keepSliderKeysInMenu(event: KeyboardEvent): void {
+    if (event.key !== "Escape" && event.key !== "Tab") {
+      event.stopPropagation();
+    }
   }
 
   // Thumb value indicator: the format tracks the window's zoom - time-of-day for short windows, day for medium, month
@@ -826,11 +858,6 @@ export class AuthenticationLog {
   // User-Agent is a string any browser sends.
   clientLabelBadge(source: string | null | undefined): { label: string; tooltip: string } | null {
     return source ? (CLIENT_LABEL_SOURCE_META[source] ?? null) : null;
-  }
-
-  // Localized tooltip for a cell's inline filter button, falling back to the generic phrasing.
-  filterTooltip(columnKey: string): string {
-    return FILTER_TOOLTIPS[columnKey] ?? $localize`:@@common.filterByValue:Filter by this value`;
   }
 
   // The width class a clipped column's value carries, or null for a column shown in full.

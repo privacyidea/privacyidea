@@ -13,23 +13,35 @@
 }
 
 .policies-table-layout {
+  $list-column-width: 400px;
+
   @include styles.main-component-style;
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
-  // Sized from the col-width-* tiers the columns below use (select checkbox + priority s + name m +
-  // scope s + description xl + active s), plus the actions/conditions columns' own current widths
-  // (no fixed width for actions + 400 for conditions), since those two are a list that can badly
-  // overflow and are deliberately left without a tier.
-  @include table.page-table-state-size(calc(#{table.table-width(checkbox, s, l, s, xl, s)} + 400px));
+  // Sized from the col-width-* tiers the columns below use (select checkbox + priority s + name l +
+  // scope s + description xl + active s), plus the actions/conditions columns' $list-column-width each,
+  // since those two are a list that can badly overflow and are deliberately left without a tier.
+  @include table.page-table-state-size(
+    calc(#{table.table-width(checkbox, s, l, s, xl, s)} + 2 * #{$list-column-width})
+  );
 
   & {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
+  @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
+
+  // Room for the filter field (932px - see policy-filter's own styles) plus the actions trigger beside
+  // it (table.$filter-trigger-reserve). Unlike on other table
+  // pages, this filter is a direct child of the page's flex column rather than of a filter row, so the
+  // row-oriented flex sizing base-table-structure gives it would size its height instead: flex: none
+  // keeps it at its content's height.
   .policies-table-filter {
-    max-width: 932px;
+    max-width: calc(var(--input-width-xxl) + #{table.$filter-trigger-reserve});
     min-width: 300px;
     width: 100%;
+    flex: none;
   }
 
   .policies-table {
@@ -110,6 +122,15 @@
       word-break: break-word;
     }
 
+    // A width of their own rather than their content's, so the two columns, the table and the page keep
+    // their size whichever rows a filter leaves.
+    th.col-actions,
+    th.col-conditions,
+    td.col-actions,
+    td.col-conditions {
+      width: $list-column-width;
+    }
+
     td.col-actions {
       padding: 0;
     }
@@ -117,7 +138,6 @@
     td.col-conditions {
       padding: 0;
       max-width: 100% !important;
-      width: 400px;
       white-space: normal;
       word-break: break-word;
     }

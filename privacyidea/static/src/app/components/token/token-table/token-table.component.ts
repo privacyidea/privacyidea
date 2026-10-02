@@ -16,6 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { MatSuffix } from "@angular/material/form-field";
+import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import {
   Component,
   computed,
@@ -50,18 +52,23 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
+import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterAutocompleteDirective } from "@components/shared/directives/filter-autocomplete.directive";
+import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
+import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import { filterColumnHint, inlineFilterHint } from "@utils/filter-hint.utils";
-import { withDefaultRealm } from "@utils/filter.utils";
+import { filterColumnHint, filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
+import { withDefaultRealm, withUser } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
+import { ROLLOUT_STATE_VALUES, valueDisplayLabel } from "@utils/value-label.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
+import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -84,6 +91,9 @@ const columnKeysMap = [
   selector: "app-token-table",
   standalone: true,
   imports: [
+    TruncationTooltipDirective,
+    InfoHintComponent,
+    MatSuffix,
     RefocusAfterReloadDirective,
     FilterAutocompleteDirective,
     MatTableModule,
@@ -97,6 +107,7 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ClearableInputComponent,
     CopyableComponent,
+    FilterValueButtonComponent,
     MultiSelectFilterComponent,
     TokenTableActionsComponent,
     MatButton,
@@ -106,7 +117,9 @@ const columnKeysMap = [
     MatTooltipModule,
     ScrollEdgesDirective,
     TableStateComponent,
-    RouterLink
+    RouterLink,
+    PaginatorPageSizeTooltipDirective,
+    PaginatorCompactRangeDirective
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
@@ -135,7 +148,18 @@ export class TokenTableComponent implements OnDestroy {
     (keyword) => !keyword.includes(" ")
   );
   readonly filterHint = inlineFilterHint();
+  readonly filterMatchInfo = computed(() =>
+    filterMatchTooltip(
+      $localize`:@@common.token:Token`,
+      [...this.tokenService.apiFilterKeys, ...this.tokenService.advancedApiFilterKeys],
+      (key) => this.tokenService.exactMatchKeys.has(key)
+    )
+  );
   readonly tokenTypeFilterOptions = computed(() => this.tokenService.tokenTypeOptions().map((type) => type.key));
+  readonly rolloutStateFilterOptions = ROLLOUT_STATE_VALUES.map((value) => ({
+    value,
+    label: valueDisplayLabel(value, ROLLOUT_STATE_VALUES, { vocabulary: true })
+  }));
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
@@ -322,6 +346,15 @@ export class TokenTableComponent implements OnDestroy {
       const isSelected = this.isFilterSelected(keyword, this.tokenService.activeFilter());
       return isSelected ? "filter_alt_off" : "filter_alt";
     }
+  }
+
+  addFilterValue(columnKey: string, value: string): void {
+    const keyword = this.apiFilterKeyMap[columnKey] ?? columnKey;
+    this.tokenService.updateFilter((current) => current.addEntry(keyword, value));
+  }
+
+  filterByUser(username: string, realm: string): void {
+    this.tokenService.updateFilter((current) => withUser(current, username, realm));
   }
 
   onKeywordClick(filterKeyword: string): void {

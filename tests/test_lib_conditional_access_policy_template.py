@@ -136,6 +136,9 @@ class ConditionalAccessPolicyTemplateTestCase(MyTestCase):
             AuthEventType.NOT_AUTHORIZED,           # authorization denial, not an authentication failure
             AuthEventType.USER_UNKNOWN,             # inert for a user target; the per-IP set counts it (enumeration)
             AuthEventType.ENROLLMENT_CANCELED_FAIL,  # enrollment housekeeping, not a credential attempt
+            # A missing enrollment policy is the server's fault, and rejected registration data is not a guessed
+            # credential; counting either would let a failing enrollment lock the user out.
+            AuthEventType.ENROLLMENT_FAIL,
             # The server could not offer a factor (a required policy is missing, or building the challenge failed); this
             # is the server's fault, so counting it would let a configuration gap throttle and block the very clients it
             # is already failing -- though it stays trackable so an admin can opt in.

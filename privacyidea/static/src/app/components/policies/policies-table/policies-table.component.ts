@@ -27,6 +27,7 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatMenuModule } from "@angular/material/menu";
 
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
@@ -43,8 +44,10 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { exactMatch, matchesFilterTerm, splitExactMatch } from "@utils/filter.utils";
 import { StringUtils } from "@utils/string.utils";
 import { POLICY_VOCABULARY_ACTIONS, valueDisplayLabel } from "@utils/value-label.utils";
+import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
@@ -72,7 +75,9 @@ import { ViewConditionsColumnComponent } from "./view-conditions-column/view-con
     HighlightPipe,
     TableStateComponent,
     MultiSelectFilterComponent,
-    RouterLink
+    RouterLink,
+    ScrollEdgesDirective,
+    MatMenuModule
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"
@@ -145,9 +150,10 @@ export class PoliciesTableComponent {
   readonly highlightTerms = computed(() => {
     const filter = this.filter();
     const freeText = filter.freeTextTerms;
+    // A value that asks for an exact match is highlighted without its prefix, which the text does not contain.
     const withKeyword = (key: string): string[] => {
       const value = filter.getFilterOfKey(key);
-      return value ? [...freeText, value] : freeText;
+      return value ? [...freeText, splitExactMatch(value).text] : freeText;
     };
     return {
       description: withKeyword("description"),
@@ -217,6 +223,12 @@ export class PoliciesTableComponent {
     this.filterComponent()?.updateFilterManually(nextFilter);
   }
 
+  filterByAction(actionName: string): void {
+    const nextFilter = this.filter().setValueOfKey("actions", exactMatch(actionName));
+    this.onFilterUpdate(nextFilter);
+    this.filterComponent()?.updateFilterManually(nextFilter);
+  }
+
   getFilterIconName(columnKey: string): string {
     const actionType = this.filterOptions.find((o) => o.key === columnKey)?.getActionType?.(this.filter()) ?? "add";
     switch (actionType) {
@@ -278,9 +290,9 @@ function matchesActions(item: PolicyDetail, term: string, labelOf: PolicyActionL
   if (!item.action) return false;
   return Object.entries(item.action).some(
     ([name, value]) =>
-      name.toLowerCase().includes(term) ||
-      String(value).toLowerCase().includes(term) ||
-      labelOf(name, item.scope, value).toLowerCase().includes(term)
+      matchesFilterTerm(name, term) ||
+      matchesFilterTerm(String(value), term) ||
+      matchesFilterTerm(labelOf(name, item.scope, value), term)
   );
 }
 
@@ -294,10 +306,10 @@ function matchesConditions(item: PolicyDetail, term: string): boolean {
     item.client,
     item.user_agents
   ];
-  if (listFields.some((list) => list?.some((entry) => entry.toLowerCase().includes(term)))) return true;
+  if (listFields.some((list) => list?.some((entry) => matchesFilterTerm(entry, term)))) return true;
   return Boolean(
-    item.time?.toLowerCase().includes(term) ||
-    item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(term)))
+    (item.time && matchesFilterTerm(item.time, term)) ||
+    item.conditions?.some((cond) => cond.some((c) => matchesFilterTerm(String(c), term)))
   );
 }
 
@@ -336,7 +348,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
       label: $localize`:@@policy.policyName:Policy Name`,
       matches: (item, filter) => {
         const val = filter.getFilterOfKey("name");
-        return !val || item.name.toLowerCase().includes(val.toLowerCase());
+        return !val || matchesFilterTerm(item.name, val);
       },
       globalMatches: (item, term) => item.name.toLowerCase().includes(term)
     }),
@@ -347,7 +359,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
       // entry still matches as a substring, so a hand-typed partial scope works as before.
       matches: (item, filter) => {
         const scopes = StringUtils.splitFilterList(filter.getFilterOfKey("scope"));
-        return !scopes.length || scopes.some((scope) => item.scope.toLowerCase().includes(scope.toLowerCase()));
+        return !scopes.length || scopes.some((scope) => matchesFilterTerm(item.scope, scope));
       },
       globalMatches: (item, term) => item.scope.toLowerCase().includes(term)
     }),
@@ -356,7 +368,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
       label: $localize`:@@common.description:Description`,
       matches: (item, filter) => {
         const val = filter.getFilterOfKey("description");
-        return !val || (item.description?.toLowerCase().includes(val.toLowerCase()) ?? false);
+        return !val || matchesFilterTerm(item.description ?? "", val);
       },
       globalMatches: (item, term) => item.description?.toLowerCase().includes(term) ?? false
     }),
@@ -364,7 +376,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
       key: "actions",
       label: $localize`:@@common.actions:Actions`,
       matches: (item, filter) => {
-        const val = filter.getFilterOfKey("actions")?.toLowerCase();
+        const val = filter.getFilterOfKey("actions");
         return !val || matchesActions(item, val, labelOf);
       },
       globalMatches: (item, term) => matchesActions(item, term, labelOf)
@@ -373,7 +385,7 @@ function createPolicyFilterOptions(labelOf: PolicyActionLabelResolver): FilterOp
       key: "conditions",
       label: $localize`:@@common.conditions:Conditions`,
       matches: (item, filter) => {
-        const val = filter.getFilterOfKey("conditions")?.toLowerCase();
+        const val = filter.getFilterOfKey("conditions");
         return !val || matchesConditions(item, val);
       },
       globalMatches: (item, term) => matchesConditions(item, term)

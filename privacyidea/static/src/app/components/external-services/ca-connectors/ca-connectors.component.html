@@ -21,137 +21,161 @@
   class="ca-connectors-container">
   @if (tableState.showTable()) {
     <div class="filter-paginator-container">
-      <mat-form-field
-        appearance="fill"
-        class="table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n="@@caConnector.filterCaConnectors">Filter CA Connectors...</mat-label>
-        <app-clearable-input
-          (clearButtonClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            [appRefocusAfterReload]="caConnectorService.caConnectorResource.isLoading()"
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label="@@common.filterInput"
-            i18n-placeholder="@@common.filterByNameType"
-            matInput
-            placeholder="Filter by name or type" />
-        </app-clearable-input>
-      </mat-form-field>
+      <div class="filter-actions-group">
+        <mat-form-field
+          appearance="fill"
+          class="table-filter"
+          subscriptSizing="dynamic">
+          <mat-label i18n="@@caConnector.filterCaConnectors">Filter CA Connectors...</mat-label>
+          <app-clearable-input
+            (clearButtonClick)="resetFilter()"
+            [showClearButton]="filterString().length > 0">
+            <input
+              #filterHTMLInputElement
+              [appRefocusAfterReload]="caConnectorService.caConnectorResource.isLoading()"
+              (input)="onFilterInput(filterHTMLInputElement.value)"
+              [value]="filterString()"
+              aria-label="Filter Input"
+              i18n-aria-label="@@common.filterInput"
+              i18n-placeholder="@@common.filterByNameType"
+              matInput
+              placeholder="Filter by name or type" />
+          </app-clearable-input>
+        </mat-form-field>
+        <button
+          [matMenuTriggerFor]="tableActionsMenu"
+          aria-label="Actions"
+          class="table-actions-trigger margin-left-8"
+          i18n-aria-label="@@common.actions"
+          i18n-matTooltip="@@common.actions"
+          mat-icon-button
+          matTooltip="Actions">
+          <span class="icon-badge">
+            <mat-icon>menu</mat-icon>
+            <mat-icon class="icon-badge-overlay icon-badge-corner">build</mat-icon>
+          </span>
+        </button>
+      </div>
       <mat-paginator
+        appPaginatorCompactRange
         [length]="totalLength()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSizeOptions()[1]"
         showFirstLastButtons />
     </div>
-    <div class="actions-container">
-      <button
-        (click)="openEditDialog()"
-        class="action-button-primary button-width-l"
-        mat-stroked-button>
-        <span class="icon-badge">
-          <mat-icon class="padding-right-3">assured_workload</mat-icon>
-          <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-        </span>
-        <span i18n="@@common.createCaConnector">Create CA Connector</span>
-      </button>
-      <button
-        (click)="deleteSelected()"
-        [disabled]="!selector.hasSelection()"
-        class="action-button-delete-secondary button-width-l"
-        mat-stroked-button>
-        <mat-icon>delete_sweep</mat-icon>
-        <span i18n="@@common.delete">Delete</span>
-      </button>
+    <div class="actions-row margin-bottom-16">
+      <div class="actions-row-inner">
+        <div class="actions-container">
+          <button
+            (click)="openEditDialog()"
+            class="action-button-primary button-width-l"
+            mat-stroked-button>
+            <span class="icon-badge">
+              <mat-icon class="padding-right-3">assured_workload</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+            <span i18n="@@common.createCaConnector">Create CA Connector</span>
+          </button>
+          <button
+            (click)="deleteSelected()"
+            [disabled]="!selector.hasSelection()"
+            class="action-button-delete-secondary button-width-l"
+            mat-stroked-button>
+            <mat-icon>delete_sweep</mat-icon>
+            <span i18n="@@common.delete">Delete</span>
+          </button>
+        </div>
+      </div>
     </div>
-    <table
-      [dataSource]="caConnectorDataSource()"
-      class="ca-connectors-table"
-      mat-table
-      matSort>
-      <ng-container matColumnDef="select">
-        <th
-          *matHeaderCellDef
-          class="table-checkbox"
-          mat-header-cell>
-          <mat-checkbox
-            (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
-            [checked]="selector.allRowsSelected()"
-            [disabled]="!selector.hasVisibleRows()"
-            [indeterminate]="selector.someRowsSelected()" />
-        </th>
-        <td
-          *matCellDef="let row"
-          class="table-checkbox"
-          mat-cell>
-          <mat-checkbox
-            (change)="selector.setRowSelected(row, $event.checked)"
-            (click)="$event.stopPropagation()"
-            [checked]="selector.isRowSelected(row)" />
-        </td>
-      </ng-container>
+    <div
+      appScrollEdges
+      class="table-scroll-region">
+      <table
+        [dataSource]="caConnectorDataSource()"
+        class="ca-connectors-table"
+        mat-table
+        matSort>
+        <ng-container matColumnDef="select">
+          <th
+            *matHeaderCellDef
+            class="table-checkbox"
+            mat-header-cell>
+            <mat-checkbox
+              (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
+              [checked]="selector.allRowsSelected()"
+              [disabled]="!selector.hasVisibleRows()"
+              [indeterminate]="selector.someRowsSelected()" />
+          </th>
+          <td
+            *matCellDef="let row"
+            class="table-checkbox"
+            mat-cell>
+            <mat-checkbox
+              (change)="selector.setRowSelected(row, $event.checked)"
+              (click)="$event.stopPropagation()"
+              [checked]="selector.isRowSelected(row)" />
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="connectorname">
-        <th
-          *matHeaderCellDef
-          class="col-width-l"
-          i18n="@@caConnector.caConnectorName"
-          mat-header-cell
-          mat-sort-header
-          >CA Connector Name</th
-        >
-        <td
-          *matCellDef="let connector"
-          class="col-width-l"
-          mat-cell>
-          <app-copyable [copyText]="connector.connectorname">
-            <a
-              role="button"
-              tabindex="0"
-              (click)="openEditDialog(connector)"
-              (keydown.enter)="openEditDialog(connector)"
-              class="flex ali-center">
-              {{ connector.connectorname }}
-            </a>
-          </app-copyable>
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="connectorname">
+          <th
+            *matHeaderCellDef
+            class="col-width-l"
+            i18n="@@caConnector.caConnectorName"
+            mat-header-cell
+            mat-sort-header
+            >CA Connector Name</th
+          >
+          <td
+            *matCellDef="let connector"
+            class="col-width-l"
+            mat-cell>
+            <app-copyable [copyText]="connector.connectorname">
+              <a
+                role="button"
+                tabindex="0"
+                (click)="openEditDialog(connector)"
+                (keydown.enter)="openEditDialog(connector)"
+                class="flex ali-center">
+                {{ connector.connectorname }}
+              </a>
+            </app-copyable>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="type">
-        <th
-          *matHeaderCellDef
-          class="col-width-s"
-          i18n="@@common.type"
-          mat-header-cell
-          mat-sort-header
-          >Type</th
-        >
-        <td
-          *matCellDef="let connector"
-          class="col-width-s"
-          mat-cell>
-          {{ connector.type }}
-        </td>
-      </ng-container>
+        <ng-container matColumnDef="type">
+          <th
+            *matHeaderCellDef
+            class="col-width-s"
+            i18n="@@common.type"
+            mat-header-cell
+            mat-sort-header
+            >Type</th
+          >
+          <td
+            *matCellDef="let connector"
+            class="col-width-s"
+            mat-cell>
+            {{ connector.type }}
+          </td>
+        </ng-container>
 
-      <tr
-        *matHeaderRowDef="displayedColumns"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: displayedColumns"
-        mat-row></tr>
+        <tr
+          *matHeaderRowDef="displayedColumns; sticky: true"
+          mat-header-row></tr>
+        <tr
+          *matRowDef="let row; columns: displayedColumns"
+          mat-row></tr>
 
-      <tr *matNoDataRow>
-        <td colspan="3">
-          <app-table-state
-            [status]="tableState.rowStatus()"
-            [table]="tableState" />
-        </td>
-      </tr>
-    </table>
+        <tr *matNoDataRow>
+          <td colspan="3">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
+          </td>
+        </tr>
+      </table>
+    </div>
   } @else {
     <app-table-state
       [table]="tableState"
@@ -173,3 +197,19 @@
     </app-table-state>
   }
 </div>
+
+<mat-menu #tableActionsMenu="matMenu">
+  <button
+    (click)="openEditDialog()"
+    mat-menu-item>
+    <mat-icon>assured_workload</mat-icon>
+    <span i18n="@@common.createCaConnector">Create CA Connector</span>
+  </button>
+  <button
+    (click)="deleteSelected()"
+    [disabled]="!selector.hasSelection()"
+    mat-menu-item>
+    <mat-icon>delete_sweep</mat-icon>
+    <span i18n="@@common.delete">Delete</span>
+  </button>
+</mat-menu>

@@ -142,7 +142,9 @@ class to_isodate(FunctionElement):
 @compiles(to_isodate, 'oracle')
 @compiles(to_isodate, 'postgresql')
 def fn_to_isodate_oracle_pg(element, compiler, **kw):
-    return f"to_char({compiler.process(element.clauses, **kw)}, 'IYYY-MM-DD HH24:MI:SS')"
+    # YYYY is the calendar year. IYYY would be the year of the ISO week, which is a different one for up to three
+    # days around New Year.
+    return f"to_char({compiler.process(element.clauses, **kw)}, 'YYYY-MM-DD HH24:MI:SS')"
 
 
 @compiles(to_isodate, 'sqlite')

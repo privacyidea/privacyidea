@@ -1,7 +1,9 @@
 .filter-value-button {
   background: unset;
   border: unset;
-  padding: 0;
+  // Pads the 18px glyph out to the 24px minimum target size (WCAG 2.5.8). Next to the copy button that padding is also
+  // the visible space between the two glyphs, and it lets the two targets touch without falling below the minimum.
+  padding: 3px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -14,5 +16,5 @@
   font-size: 18px;
   width: 18px;
   height: 18px;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--filter-icon-color, var(--mat-sys-on-surface-variant));
 }

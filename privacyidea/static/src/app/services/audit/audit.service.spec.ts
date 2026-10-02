@@ -77,6 +77,11 @@ describe("AuditService (signals & helpers)", () => {
     });
   });
 
+  it("filterParams sends a day filter on the entry date", () => {
+    auditService.activeFilter.set(new FilterValue({ value: "date: 2026-09-25" }));
+    expect(auditService.filterParams()).toEqual({ date: "*2026-09-25*" });
+  });
+
   it("auditResource builds a request when route or tab is audit", async () => {
     jest.clearAllMocks();
     const getHeadersMock = jest.spyOn(authService, "getHeaders");

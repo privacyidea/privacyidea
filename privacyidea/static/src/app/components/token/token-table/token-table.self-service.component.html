@@ -26,13 +26,18 @@
     <div
       [appStickyHeader]="scrollContainer"
       class="filter-paginator-container sticky-header">
-      <h3
-        class="selfservice-paginator-label"
-        i18n="@@token.yourTokens"
-        >Your Tokens</h3
-      >
+      <div class="filter-actions-group">
+        <h3
+          class="selfservice-paginator-label"
+          i18n="@@token.yourTokens"
+          >Your Tokens</h3
+        >
+      </div>
       <mat-paginator
+        appPaginatorPageSizeTooltip
+        appPaginatorCompactRange
         (page)="onPageEvent($event)"
+        class="hide-page-size-label"
         [length]="totalLength()"
         [pageIndex]="pageIndex()"
         [pageSizeOptions]="pageSizeOptions()"
@@ -52,6 +57,7 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              [ngClass]="'col-width-' + column.width"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
@@ -70,7 +76,7 @@
             </th>
             <td
               *matCellDef="let element; let row"
-              class="max-width-300"
+              [ngClass]="'col-width-' + column.width"
               mat-cell>
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
@@ -80,7 +86,9 @@
                         (click)="contentService.tokenSelected(element.serial)"
                         (keydown.enter)="contentService.tokenSelected(element.serial)"
                         (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                        [appTruncationTooltip]="element.serial"
                         [attr.aria-label]="linkLabel(column.label)"
+                        class="cell-truncate"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
@@ -96,13 +104,19 @@
                           (keydown.space)="
                             $event.preventDefault(); contentService.navigateContainerDetails(element.container_serial)
                           "
+                          [appTruncationTooltip]="element.container_serial"
                           [attr.aria-label]="linkLabel(column.label)"
+                          class="cell-truncate"
                           role="button"
                           tabindex="0">
                           {{ element[column.key] }}
                         </a>
                       } @else {
-                        {{ element[column.key] }}
+                        <span
+                          [appTruncationTooltip]="element[column.key]"
+                          class="cell-truncate">
+                          {{ element[column.key] }}
+                        </span>
                       }
                     </app-copyable>
                   }

@@ -26,7 +26,9 @@ export interface FilterInputHintOptions {
 
 export function filterInputHint(options: FilterInputHintOptions = {}): string {
   const lines: string[] = [];
-  lines.push($localize`:@@common.useAsWildcard:Use * as a wildcard.`);
+  lines.push(
+    $localize`:@@common.wildcardOrExactMatch:Use * as a wildcard, or start a value with = to match it exactly.`
+  );
   if (options.supportsKeywords ?? true) {
     lines.push(
       $localize`:@@common.quoteValuesContain:Quote values that contain spaces or a colon, e.g. description: "my note".`
@@ -40,6 +42,24 @@ export function filterInputHint(options: FilterInputHintOptions = {}): string {
     );
   }
   return lines.join(options.separator ?? "\n");
+}
+
+/**
+ * The text of the info icon on a filter input: the offered keywords, grouped by whether the table matches a value
+ * anywhere in the field or only in full, the first group led by the table's name. A group without keywords is left
+ * out.
+ */
+export function filterMatchTooltip(table: string, keys: readonly string[], isExact: (key: string) => boolean): string {
+  const partial = keys.filter((key) => !isExact(key)).join(", ");
+  const exact = keys.filter((key) => isExact(key)).join(", ");
+  if (!partial) {
+    return $localize`:@@common.tableExactMatchKeys:${table}:table: exact match: ${exact}:keys:`;
+  }
+  const lines = [$localize`:@@common.tablePartialMatchKeys:${table}:table: partial match: ${partial}:keys:`];
+  if (exact) {
+    lines.push($localize`:@@common.exactMatchKeys:Exact match: ${exact}:keys:`);
+  }
+  return lines.join("\n");
 }
 
 /**

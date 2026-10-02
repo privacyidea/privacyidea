@@ -16,16 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
+import { Component, computed, effect, inject, OnDestroy, OnInit, signal, ViewChild } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDialog } from "@angular/material/dialog";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService } from "@services/auth/auth.service";
@@ -69,12 +70,14 @@ export interface SystemConfigParams {
     MatSelect,
     MatOption,
     MatHint,
+    MatSuffix,
     RouterLink,
     MatCheckbox,
     ScrollToTopDirective,
     MatButton,
     MatIcon,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ClearButtonComponent
   ],
   styleUrls: ["./system-config.component.scss"]
 })
@@ -89,7 +92,9 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
 
   params = signal<SystemConfigParams>({});
   isDirty = signal(false);
-  smtpIdentifiers: string[] = [];
+  readonly smtpIdentifiers = computed<string[]>(() =>
+    this.smtpService.smtpServers().map((server) => server.identifier)
+  );
 
   constructor() {
     effect(() => {
@@ -113,12 +118,6 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
         this.params.set(newParams as SystemConfigParams);
         this.isDirty.set(false);
       }
-    });
-
-    // Keep SMTP identifiers in sync with the SMTP servers service
-    effect(() => {
-      const servers = this.smtpService.smtpServers();
-      this.smtpIdentifiers = servers.map((s) => s.identifier);
     });
   }
 

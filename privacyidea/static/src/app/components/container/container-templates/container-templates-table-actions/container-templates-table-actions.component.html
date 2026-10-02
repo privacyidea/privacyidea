@@ -19,6 +19,8 @@
 
 <div
   appOverflowNav
+  overflowNavIcon="menu"
+  overflowNavBadgeIcon="build"
   class="button-row margin-bottom-16">
   <button
     (click)="onClickCreateTemplate()"
@@ -46,3 +48,28 @@
     <span i18n="@@common.delete">Delete</span>
   </button>
 </div>
+
+<!-- Same actions as menu items, for the compact trigger shown next to the filter once the table is
+     scrolled and this component's own button row is hidden. -->
+<mat-menu #actionsMenu="matMenu">
+  <button
+    (click)="onClickCreateTemplate()"
+    mat-menu-item>
+    <mat-icon>note_add</mat-icon>
+    <span i18n="@@common.createTemplate">Create Template</span>
+  </button>
+  <button
+    (click)="openCopyTemplateDialog()"
+    [disabled]="selectedTemplates().length < 1"
+    mat-menu-item>
+    <mat-icon>content_copy</mat-icon>
+    <span i18n="@@common.copy">Copy</span>
+  </button>
+  <button
+    (click)="openDeleteTemplateDialog()"
+    [disabled]="selectedTemplates().length < 1"
+    mat-menu-item>
+    <mat-icon>delete</mat-icon>
+    <span i18n="@@common.delete">Delete</span>
+  </button>
+</mat-menu>

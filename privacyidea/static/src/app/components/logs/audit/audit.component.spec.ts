@@ -21,6 +21,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { ActivatedRoute } from "@angular/router";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditData, AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
@@ -33,7 +34,6 @@ import {
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { expectsTableStateGating } from "@testing/table-state-gating";
-import { expectedLocalDateTimeFromInput } from "@testing/expected-local-date-time";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
 import { of } from "rxjs";
 import { AuditComponent } from "./audit.component";
@@ -109,6 +109,33 @@ describe("AuditComponent (unit)", () => {
   it("creates self service", () => {
     const selfFixture = TestBed.createComponent(AuditSelfServiceComponent);
     expect(selfFixture.componentInstance).toBeTruthy();
+  });
+
+  describe("inline cell filter", () => {
+    it("filters by the API keyword the column maps to", () => {
+      component.apiFilterKeyMap["realm"] = "realm_name";
+
+      component.addFilterValue("realm", "defrealm");
+
+      expect(mockAuditService.activeFilter().getValueOfKey("realm_name")).toBe("=defrealm");
+      expect(mockAuditService.activeFilter().hasKey("realm")).toBe(false);
+    });
+
+    it("filters by the column key itself when it has no API mapping", () => {
+      mockAuditService.activeFilter.set(new FilterValue({ value: "serial: OLD" }));
+
+      component.addFilterValue("serial", "HOTP1");
+
+      expect(mockAuditService.activeFilter().getValueOfKey("serial")).toBe("=HOTP1");
+    });
+
+    it("keeps a day and a policy a partial match", () => {
+      component.addFilterValue("startdate", "2026-09-25");
+      component.addFilterValue("policies", "otp");
+
+      expect(mockAuditService.activeFilter().getValueOfKey("startdate")).toBe("2026-09-25");
+      expect(mockAuditService.activeFilter().getValueOfKey("policies")).toBe("otp");
+    });
   });
 
   describe("page‑related derived signals", () => {
@@ -232,7 +259,7 @@ describe("AuditComponent (template rendering)", () => {
     jest.clearAllMocks();
   });
 
-  it("renders the startdate column as local date/time, not the raw server string", () => {
+  it("renders the startdate column as one ISO date and time, not the raw server string", () => {
     const rows: AuditData[] = [{ startdate: "2026-01-15T10:00:00.123456" } as AuditData];
     mockAuditService.auditResource.value.set({
       detail: undefined,
@@ -258,7 +285,7 @@ describe("AuditComponent (template rendering)", () => {
     const cells = fixture.nativeElement.querySelectorAll("tbody td");
     const cellText = cells[startdateColumnIndex].textContent.trim();
 
-    expect(cellText).toBe(expectedLocalDateTimeFromInput("2026-01-15T10:00:00.123456"));
+    expect(cellText).toContain("2026-01-15 10:00:00");
     expect(cellText).not.toContain("2026-01-15T10:00:00");
   });
 });

@@ -90,9 +90,8 @@ $border-radius: var(--border-radius);
     width: 300px;
   }
 
-  // The global .margin-top-16 utility adds 16px above the action row, reset and
-  // passkey buttons; drop it on the login page only (utility stays global).
-  .login-actions.margin-top-16,
+  // The global .margin-top-16 utility adds 16px above the reset and passkey
+  // buttons; drop it on the login page only (utility stays global).
   .reset-btn.margin-top-16,
   .passkey-btn.margin-top-16 {
     margin-top: 0;

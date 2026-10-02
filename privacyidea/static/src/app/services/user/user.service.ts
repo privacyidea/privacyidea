@@ -44,7 +44,7 @@ const apiFilterKeys = ["description", "email", "givenname", "mobile", "phone", "
 // backend reads it as a boolean, not as a pattern.
 const advancedApiFilterKeys = ["has_tokens"];
 
-const exactMatchKeys = new Set(["has_tokens"]);
+const exactMatchKeys = new Set(["resolver", "has_tokens"]);
 const booleanKeys = new Set(["has_tokens"]);
 
 export interface UserData {
