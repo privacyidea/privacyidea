@@ -64,7 +64,7 @@ import copy
 import logging
 import threading
 import traceback
-from datetime import (datetime, timezone)
+from datetime import (datetime, UTC)
 from functools import wraps
 from typing import NoReturn
 
@@ -736,7 +736,7 @@ def get_auth_token():
                         "nonce": nonce,
                         "role": role,
                         "authtype": authtype,
-                        "exp": datetime.now(timezone.utc) + validity,
+                        "exp": datetime.now(UTC) + validity,
                         "rights": rights},
                        secret, algorithm='HS256')
 

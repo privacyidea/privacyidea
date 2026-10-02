@@ -26,7 +26,7 @@ from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin, utc_now
 
 
-class ClientStatus(str, enum.Enum):
+class ClientStatus(enum.StrEnum):
     """
     The states a client may be in. Only ``ACTIVE`` clients can authenticate;
     ``SUSPENDED`` is a reversible off-switch. Permanent removal is a delete, and

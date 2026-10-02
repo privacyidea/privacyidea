@@ -23,7 +23,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
-from datetime import timezone, datetime
+from datetime import datetime, UTC
 from collections.abc import Generator
 
 from flask import g
@@ -355,12 +355,12 @@ def _create_container_query(user: User = None, serial: str = None, ctype: str = 
 
     if last_auth_delta:
         time_delta = parse_timedelta(last_auth_delta)
-        max_time = datetime.now(timezone.utc).replace(tzinfo=None) - time_delta
+        max_time = datetime.now(UTC).replace(tzinfo=None) - time_delta
         stmt = stmt.where(TokenContainer.last_seen > max_time)
 
     if last_sync_delta:
         time_delta = parse_timedelta(last_sync_delta)
-        max_time = datetime.now(timezone.utc).replace(tzinfo=None) - time_delta
+        max_time = datetime.now(UTC).replace(tzinfo=None) - time_delta
         stmt = stmt.where(TokenContainer.last_updated > max_time)
 
     if state and state.strip("*"):
@@ -635,7 +635,7 @@ def init_container(params: dict[str, any]) -> dict[str, str | list]:
     container = create_container_from_db_object(db_container)
 
     # Creation Date
-    creation_date = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    creation_date = datetime.now(UTC).isoformat(timespec="seconds")
     container.update_container_info(
         [TokenContainerInfoData(key="creation_date", value=creation_date, info_type=PI_INTERNAL)])
 

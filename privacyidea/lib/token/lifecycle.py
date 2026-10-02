@@ -281,7 +281,7 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
         token.set_validity_period_start(validity_period_start)
 
     # Creation Date
-    token.write_tokeninfo("creation_date", datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"))
+    token.write_tokeninfo("creation_date", datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"))
 
     # If the token has no rollout_state, we set it to "enrolled"
     if not token.rollout_state:

@@ -31,7 +31,7 @@ The attempt reduction uses a window function (``ROW_NUMBER``), because an attemp
 representative is chosen by a column *pair* and no aggregate ranks on one.
 """
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.sql import ColumnElement
@@ -53,7 +53,7 @@ MAX_STATISTICS_BINS = 100
 
 def _utc_iso(value: datetime) -> str:
     """Render a naive-UTC datetime as an ISO-8601 string with its timezone, like :meth:`AuthenticationLog.to_dict`."""
-    return value.replace(tzinfo=timezone.utc).isoformat()
+    return value.replace(tzinfo=UTC).isoformat()
 
 
 @dataclass

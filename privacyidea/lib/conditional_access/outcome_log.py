@@ -49,7 +49,7 @@ Two things are deliberately **not** recorded here, so their absence is not read 
 """
 import logging
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from sqlalchemy import select
 
@@ -103,7 +103,7 @@ def _restriction_info(expires_at: datetime | None) -> dict | None:
     """
     if expires_at is None:
         return None
-    aware = expires_at if expires_at.tzinfo is not None else expires_at.replace(tzinfo=timezone.utc)
+    aware = expires_at if expires_at.tzinfo is not None else expires_at.replace(tzinfo=UTC)
     return {"expires_at": aware.isoformat()}
 
 

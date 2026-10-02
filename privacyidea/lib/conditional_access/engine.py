@@ -22,7 +22,7 @@ import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from enum import Enum
+from enum import StrEnum
 from typing import Any, TYPE_CHECKING
 
 from netaddr import AddrFormatError, IPAddress
@@ -87,7 +87,7 @@ log = logging.getLogger(__name__)
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class ConditionalAccessAction(str, Enum):
+class ConditionalAccessAction(StrEnum):
     """
     Action types a :class:`~privacyidea.models.conditional_access_policy.ConditionalAccessPolicyStage`
     can execute when its failure threshold is met.
@@ -109,10 +109,6 @@ class ConditionalAccessAction(str, Enum):
     admin reset clears them); the timed :attr:`LOCK_USER` / :attr:`BLOCK_IP` read
     a duration from ``action_value`` and a missing/invalid one is a skipped
     misconfiguration (never silently permanent).
-
-    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
-    3.10, mirroring
-    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`.
     """
     LOCK_USER = "LOCK_USER"
     PERMANENT_LOCK_USER = "PERMANENT_LOCK_USER"
@@ -121,9 +117,6 @@ class ConditionalAccessAction(str, Enum):
     BLOCK_IP = "BLOCK_IP"
     PERMANENT_BLOCK_IP = "PERMANENT_BLOCK_IP"
     DENY = "DENY"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 #: Every action, most severe first - the one severity ordering there is, so an action reads the same wherever it
@@ -147,7 +140,7 @@ ACTION_SEVERITY: tuple[ConditionalAccessAction, ...] = (
 _ACTION_RANK: dict[ConditionalAccessAction, int] = {action: rank for rank, action in enumerate(ACTION_SEVERITY)}
 
 
-class AccessDecision(str, Enum):
+class AccessDecision(StrEnum):
     """
     The verdict of the pre-auth conditional-access decision step
     (:func:`evaluate_access_decision`) for a single request.
@@ -166,11 +159,8 @@ class AccessDecision(str, Enum):
     DENY = "DENY"
     CONTINUE = "CONTINUE"
 
-    def __str__(self) -> str:
-        return self.value
 
-
-class ConditionalAccessTarget(str, Enum):
+class ConditionalAccessTarget(StrEnum):
     """
     The identity a policy counts, thresholds, and enforces against.
 
@@ -181,15 +171,9 @@ class ConditionalAccessTarget(str, Enum):
     drives what the threshold keys on and what the action targets (so the allowed
     actions differ by target, enforced in the CRUD layer); the count *mode* within
     a target is a separate axis (see :class:`CountMode`).
-
-    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
-    3.10, mirroring :class:`ConditionalAccessAction`.
     """
     USER = "user"
     SOURCE_IP = "source_ip"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 # The ``recipient_group`` values of an EMAIL_ADMIN action that mean "every internal DB admin with an email

@@ -20,7 +20,7 @@ __doc__ = """This module provides functions to manage periodic tasks in the data
 to determine their next scheduled running time and to run them."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from croniter import croniter
 from dateutil.tz import tzutc, tzlocal
@@ -138,7 +138,7 @@ def set_periodic_task(name=None, interval=None, nodes=None, taskmodule=None,
         existing_task = db.session.scalars(existing_task_stmt).one_or_none()
 
     if existing_task:
-        existing_task.last_update = datetime.now(timezone.utc).replace(tzinfo=None)
+        existing_task.last_update = datetime.now(UTC).replace(tzinfo=None)
         existing_task.name = name
         existing_task.active = active
         existing_task.interval = interval

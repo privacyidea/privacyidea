@@ -121,13 +121,13 @@ def _labels_hash(labels_key: str) -> str:
 def _utc_now() -> datetime.datetime:
     # Naive UTC datetime. The metric_aggregate.window_start column is
     # DateTime(timezone=False); keep everything we compare against it naive.
-    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    return datetime.datetime.now(datetime.UTC).replace(tzinfo=None)
 
 
 def _window_start(now: datetime.datetime) -> datetime.datetime:
-    epoch = int(now.replace(tzinfo=datetime.timezone.utc).timestamp())
+    epoch = int(now.replace(tzinfo=datetime.UTC).timestamp())
     bucket_epoch = epoch - (epoch % WINDOW_SECONDS)
-    return datetime.datetime.fromtimestamp(bucket_epoch, tz=datetime.timezone.utc).replace(tzinfo=None)
+    return datetime.datetime.fromtimestamp(bucket_epoch, tz=datetime.UTC).replace(tzinfo=None)
 
 
 # Metric writes happen on a dedicated session so they cannot piggyback on

@@ -18,7 +18,7 @@
 #
 #
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from sqlalchemy import select, delete
 
@@ -116,7 +116,7 @@ def check_recoverycode(user, recoverycode):
     recoverycode_valid = False
     # delete old entries
     delete_expired_stmt = delete(PasswordReset).where(
-        PasswordReset.expiration < datetime.now(timezone.utc).replace(tzinfo=None))
+        PasswordReset.expiration < datetime.now(UTC).replace(tzinfo=None))
     delete_result = db.session.execute(delete_expired_stmt)
     log.debug(f"{delete_result.rowcount!s} old password recoverycodes deleted.")
     stmt = select(PasswordReset).where(PasswordReset.username == user.login, PasswordReset.realm == user.realm)

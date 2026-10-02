@@ -18,7 +18,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
@@ -140,7 +140,7 @@ class TokenContainerClass:
         """
         last_auth = self._db_container.last_seen
         if last_auth:
-            last_auth = last_auth.replace(tzinfo=timezone.utc)
+            last_auth = last_auth.replace(tzinfo=UTC)
         return last_auth
 
     def update_last_authentication(self):
@@ -150,7 +150,7 @@ class TokenContainerClass:
         # SQLite does not support timezone aware timestamps, hence all time stamps are stored in utc time.
         # The timezone information must be removed, because some databases would change the time stamp to local time
         # (e.g. postgresql)
-        self._db_container.last_seen = datetime.now(timezone.utc).replace(tzinfo=None)
+        self._db_container.last_seen = datetime.now(UTC).replace(tzinfo=None)
         self._db_container.save()
 
     def reset_last_authentication(self):
@@ -169,7 +169,7 @@ class TokenContainerClass:
         """
         last_sync = self._db_container.last_updated
         if last_sync:
-            last_sync = last_sync.replace(tzinfo=timezone.utc)
+            last_sync = last_sync.replace(tzinfo=UTC)
         return last_sync
 
     def update_last_synchronization(self):
@@ -179,7 +179,7 @@ class TokenContainerClass:
         # SQLite does not support timezone aware timestamps, hence all time stamps are stored in utc time.
         # The timezone information must be removed, because some databases would change the time stamp to local time
         # (e.g. postgresql)
-        self._db_container.last_updated = datetime.now(timezone.utc).replace(tzinfo=None)
+        self._db_container.last_updated = datetime.now(UTC).replace(tzinfo=None)
         self._db_container.save()
 
     def reset_last_synchronization(self):
@@ -758,7 +758,7 @@ class TokenContainerClass:
             if challenge.is_valid():
                 # Create message
                 nonce = challenge.challenge
-                times_stamp = challenge.timestamp.replace(tzinfo=timezone.utc).isoformat()
+                times_stamp = challenge.timestamp.replace(tzinfo=UTC).isoformat()
                 extra_data = challenge.get_data()
                 passphrase_user = extra_data.get("passphrase_user")
                 if passphrase_user:

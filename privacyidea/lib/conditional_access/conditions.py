@@ -76,7 +76,7 @@ be checked.
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import or_
@@ -92,7 +92,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class ConditionOperator(str, Enum):
+class ConditionOperator(StrEnum):
     """
     How a condition compares the value read from the request against the value
     stored on the condition.
@@ -110,16 +110,9 @@ class ConditionOperator(str, Enum):
     speaks one vocabulary; the implementation differs because ``compare_values``
     expects its right-hand side as a comma-separated *string*, whereas a condition
     stores a JSON list.
-
-    ``str`` is used instead of ``StrEnum`` (3.11+) for compatibility with Python
-    3.10, mirroring
-    :class:`~privacyidea.lib.conditional_access.authentication_event_types.AuthEventType`.
     """
     IN = "IN"
     NOT_IN = "NOT_IN"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 @dataclass(frozen=True)
@@ -211,14 +204,11 @@ class ConditionTypeSpec:
     log_column: Any | None = None
 
 
-class ConditionType(str, Enum):
+class ConditionType(StrEnum):
     """The condition types shipped today. See :data:`CONDITION_TYPES` for their specs."""
     USER_REALM = "USER_REALM"
     USER_ROLE = "USER_ROLE"
     ENDPOINT = "ENDPOINT"
-
-    def __str__(self) -> str:
-        return self.value
 
 
 def _resolve_user_realm(context: "CAContext") -> Any:

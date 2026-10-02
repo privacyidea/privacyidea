@@ -515,7 +515,7 @@ class LocalCAConnector(BaseCAConnector):
             else:
                 full_path_crl = workingdir + "/" + crl
             next_update = _get_crl_next_update(full_path_crl)
-            if datetime.datetime.now(tz=datetime.timezone.utc) + \
+            if datetime.datetime.now(tz=datetime.UTC) + \
                     datetime.timedelta(days=self.overlap) > next_update:
                 log.info("We checked the overlap period and we need to create "
                          "the new CRL.")

@@ -6,7 +6,7 @@ Create Date: 2026-04-28 00:00:00.000000
 
 """
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 import sqlalchemy as sa
 from alembic import op
@@ -111,7 +111,7 @@ def _run_data_migration(conn) -> None:
     """
     old = _old_table()
     new = _new_table()
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(UTC).replace(tzinfo=None)
 
     def _target_exists(user_id, resolver, realm_id, key) -> bool:
         return conn.execute(

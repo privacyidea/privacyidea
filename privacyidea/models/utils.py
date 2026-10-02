@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from sqlalchemy.dialects import sqlite, mysql
 from sqlalchemy.sql.sqltypes import BigInteger, Unicode
@@ -33,7 +33,7 @@ def utc_now() -> datetime:
     """
     Return the current UTC time as a naive datetime object.
     """
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)
 
 
 def utc_isoformat(value: "datetime | None") -> "str | None":
@@ -45,7 +45,7 @@ def utc_isoformat(value: "datetime | None") -> "str | None":
     time (e.g. the WebUI's AngularJS ``date`` filter) misread it and show a
     shifted value, so attach the UTC zone on the way out.
     """
-    return value.replace(tzinfo=timezone.utc).isoformat() if value else None
+    return value.replace(tzinfo=UTC).isoformat() if value else None
 
 
 def case_sensitive_unicode(length: int):

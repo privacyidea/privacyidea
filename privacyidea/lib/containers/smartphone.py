@@ -19,7 +19,7 @@
 #
 import base64
 import logging
-from datetime import timezone
+from datetime import UTC
 from urllib.parse import quote
 
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
@@ -381,7 +381,7 @@ class SmartphoneContainer(TokenContainerClass):
         from privacyidea.lib.token import create_challenge
         db_challenge = create_challenge(serial=self.serial, challenge=nonce,
                                         data=data, validitytime=validity_time)
-        timestamp = db_challenge.timestamp.replace(tzinfo=timezone.utc)
+        timestamp = db_challenge.timestamp.replace(tzinfo=UTC)
         time_stamp_iso = timestamp.isoformat()
 
         # Get encryption info (optional)
