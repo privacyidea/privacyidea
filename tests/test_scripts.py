@@ -8,7 +8,6 @@ SCRIPTS = [
     'privacyidea-create-pwidresolver-user',
     'privacyidea-fix-access-rights',
     'privacyidea-pip-update',
-#    'privacyidea-queue-huey',
     'privacyidea-update-counter.py',
     'privacyidea-update-linotp-counter.py',
     'privacyidea-user-action',

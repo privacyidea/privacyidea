@@ -11,12 +11,10 @@ from unittest.mock import patch
 
 from privacyidea.lib.crypto import encryptPassword, decryptPassword
 from privacyidea.lib.error import ResourceNotFoundError
-from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
                                         SMTPServer, send_email_identifier,
                                         send_email_data)
-from tests.queuemock import MockQueueTestCase
 from . import smtpmock
 from .base import MyTestCase
 
@@ -255,82 +253,6 @@ class SMTPServerTestCase(MyTestCase):
             "of as a str.")
 
 
-class SMTPServerQueueTestCase(MockQueueTestCase):
-    @smtpmock.activate
-    def test_01_enqueue_email(self):
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False, enqueue_job=True)
-        self.assertTrue(r > 0)
-
-        server = get_smtpserver("myserver")
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-        r = server.send_email(["recp@example.com"], "Hallo", "Body")
-        self.assertEqual(r, True)
-
-        queue = get_job_queue()
-        self.assertEqual(len(queue.enqueued_jobs), 1)
-        job_name, args, kwargs = queue.enqueued_jobs[0]
-        self.assertEqual(job_name, "smtpserver.send_email")
-        self.assertEqual(args[1], ["recp@example.com"])
-        self.assertEqual(args[2], "Hallo")
-        self.assertEqual(args[3], "Body")
-
-        # send_email returns True, even if the SMTP server will eventually reject the message
-        smtpmock.setdata(response={"fail@example.com": (550,
-                                                        "Message rejected")},
-                         support_tls=False)
-        r = server.send_email(["fail@example.com"], "Hallo", "Body")
-        self.assertEqual(r, True)
-        self.assertEqual(len(queue.enqueued_jobs), 2)
-        job_name, args, kwargs = queue.enqueued_jobs[1]
-        self.assertEqual(job_name, "smtpserver.send_email")
-        self.assertEqual(args[1], ["fail@example.com"])
-        self.assertEqual(args[2], "Hallo")
-        self.assertEqual(args[3], "Body")
-
-        delete_smtpserver("myserver")
-
-    @smtpmock.activate
-    def test_02_send_email_without_queue(self):
-        # enqueue_job is False!
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        server = get_smtpserver("myserver")
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-        r = server.send_email(["recp@example.com"], "Hallo", "Body")
-        self.assertEqual(r, True)
-
-        smtpmock.setdata(response={"recp@example.com": (550,
-                                                        "Message rejected")},
-                         support_tls=False)
-        r = server.send_email(["recp@example.com"], "Hallo", "Body")
-        self.assertEqual(r, False)
-
-        # Use TLS
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=True)
-        self.assertTrue(r > 0)
-        server = get_smtpserver("myserver")
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=True)
-        r = server.send_email(["recp@example.com"], "Hallo", "Body")
-        self.assertEqual(r, True)
-
-        # If we configure TLS but the server does not support this, we raise
-        # an error
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-        self.assertRaises(SMTPException, server.send_email,
-                          ["recp@example.com"], "Hallo", "Body")
-
-        # Assert that no
-        queue = get_job_queue()
-        self.assertEqual(queue.enqueued_jobs, [])
-
-        delete_smtpserver("myserver")
-
-
 class SendEmailMetricsTestCase(MyTestCase):
     """Cover the metric-recording wrappers around ``send_email_identifier`` and
     ``send_email_data`` - especially the exception re-raise path that codecov
@@ -437,3 +359,13 @@ class SMTPServerExportImportTestCase(MyTestCase):
         self.assertEqual(reexported["expsmtp"]["password"], "smtppw")
         self.assertEqual(reexported["expsmtp"]["private_key_password"], "pkppw")
         delete_smtpserver("expsmtp")
+
+    def test_02_import_ignores_enqueue_job(self):
+        from privacyidea.lib.smtpserver import export_smtpserver, import_smtpserver
+        import_smtpserver({"legacysmtp": {"server": "mail.example", "port": 25, "sender": "pi@example.com",
+                                          "enqueue_job": True}})
+        exported = export_smtpserver(name="legacysmtp")
+        self.assertEqual("mail.example", exported["legacysmtp"]["server"])
+        self.assertEqual("pi@example.com", exported["legacysmtp"]["sender"])
+        self.assertNotIn("enqueue_job", exported["legacysmtp"])
+        delete_smtpserver("legacysmtp")

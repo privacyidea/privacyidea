@@ -292,13 +292,6 @@ against the channel row's total. Reads ``GET
 ``3600``). The panel carries the same window picker in its header as
 *Resolver Timing*, with the same three choices and the same storage.
 
-.. note::
-
-   When the SMTP job queue is enabled (``enqueue_job=True`` on the SMTP
-   configuration), the email metric records dispatch success rather than
-   final delivery: the synchronous return value is ``True`` once the
-   job has been queued, regardless of what the worker eventually does.
-
 Authentication activity
 ~~~~~~~~~~~~~~~~~~~~~~~
 

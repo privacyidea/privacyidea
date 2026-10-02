@@ -54,7 +54,6 @@ describe("ConditionalAccessActionItemComponent", () => {
       timeout: 120,
       sender: "",
       tls: false,
-      enqueue_job: false,
       smime: false,
       dont_send_on_error: true
     };
