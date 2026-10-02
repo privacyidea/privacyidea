@@ -244,7 +244,7 @@ export class UserDetailsComponent implements OnInit, OnDestroy {
     if (status.lock_expires_at) {
       return $localize`:@@user.lockedUntil:Locked until ${formatLocalDateTime(status.lock_expires_at)}`;
     }
-    return $localize`:@@valueLabelLocked:Locked`;
+    return $localize`:@@valueLabel.locked:Locked`;
   });
 
   ngOnInit(): void {
