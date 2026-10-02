@@ -10,10 +10,12 @@ defect shapes so a new change that reintroduces one is flagged on the pull reque
 | `B3-subprocess-argv-concat` | A subprocess argv element built by string concatenation (no path containment / `--` separator). |
 | `B4-write-then-chmod` | A secret file opened for writing and only `chmod`'d to an owner-only mode afterwards (world-readable window). |
 | `B5-config-exec-sink` | `Config.from_pyfile` / `exec` running a file as Python — unsafe if the bytes can come from an archive/untrusted source. |
+| `FAIL6-verify-default-off` | A TLS/certificate verification flag read from config with a default of `False`, so an install that omits the key runs without verification (distinct from B1's literal `verify=False`). |
+| `STATE1-otp-verify-without-gate` | A `token.check_otp()` whose enclosing function does not also run the composed usability gate (`check_all` / `check_token_list`), so a disabled/revoked/expired/not-yet-enrolled token is not filtered. |
 
-These five are the high-precision queries. Broader "review-list" queries (route-missing-authz, global-write-only) and
-the design notes live in the security-review corpus and are intentionally not wired to fail CI; the missing-gate case
-is covered by `tests/test_route_authorization_registry.py` instead.
+These are the high-precision queries. Broader "review-list" queries (route-missing-authz, global-write-only,
+challenge-consume-discarded) and the design notes live in the security-review corpus and are intentionally not wired to
+fail CI; the missing-authorization-decorator case is covered by `tests/test_route_authorization_registry.py` instead.
 
 Run locally with the CodeQL CLI:
 ```
