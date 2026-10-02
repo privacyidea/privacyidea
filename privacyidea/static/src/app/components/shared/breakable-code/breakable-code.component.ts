@@ -16,16 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { Component, computed, input } from "@angular/core";
 
+// An identifier like WEBUI_PASSKEY_LOGIN_DISABLED has no break opportunity of its own, so a narrow cell would break it
+// at an arbitrary character. A <wbr> after each underscore lets it wrap between its words instead, without adding a
+// character to what is selected and copied.
 @Component({
-  selector: "app-copyable",
+  selector: "app-breakable-code",
   standalone: true,
-  imports: [CopyButtonComponent],
-  templateUrl: "./copyable.component.html",
-  styleUrl: "./copyable.component.scss"
+  templateUrl: "./breakable-code.component.html"
 })
-export class CopyableComponent {
-  copyText = input.required<string>();
+export class BreakableCodeComponent {
+  readonly text = input<string | null | undefined>("");
+
+  readonly segments = computed(() => (this.text() ?? "").split(/(?<=_)/));
 }

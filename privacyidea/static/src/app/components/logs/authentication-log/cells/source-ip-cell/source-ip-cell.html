@@ -34,7 +34,6 @@
     <span>{{ sourceIp() }}</span>
     @if (showFilter()) {
     <app-filter-value-button
-      class="margin-left-8"
       column="source_ip"
       [value]="sourceIp()!"
       (filterValue)="onFilter('source_ip', $event)" />
@@ -63,7 +62,6 @@
     <app-copyable [copyText]="peerIp()!">
       <span>{{ peerIp() }}</span>
       <app-filter-value-button
-        class="margin-left-8"
         column="peer_ip"
         [value]="peerIp()!"
         (filterValue)="onFilter('peer_ip', $event)" />

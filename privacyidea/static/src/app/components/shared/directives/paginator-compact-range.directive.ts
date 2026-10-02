@@ -176,6 +176,11 @@ export class PaginatorCompactRangeDirective implements AfterViewInit, DoCheck, O
     for (const child of Array.from(this.filterActionsGroup.children)) {
       const el = child as HTMLElement;
       const style = getComputedStyle(el);
+      // A hidden trigger (the table is not scrolled) holds its room in the row but is not yet part of
+      // what the paginator has to share it with.
+      if (style.visibility === "hidden") {
+        continue;
+      }
       if (parseFloat(style.flexGrow) > 0) {
         const floor = Math.max(
           PaginatorCompactRangeDirective.px(style.minWidth),

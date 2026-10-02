@@ -155,10 +155,21 @@
                       <app-copyable [copyText]="element[column.key]">
                         <a
                           (click)="onClickUsername(element)"
+                          [appTruncationTooltip]="element[column.key]"
                           [attr.aria-label]="linkLabel(column.label)"
+                          class="cell-truncate"
                           routerLink="/users/details/{{ element.username }}">
                           {{ element[column.key] }}
                         </a>
+                      </app-copyable>
+                    }
+                    @case ("userid") {
+                      <app-copyable [copyText]="element[column.key]">
+                        <span
+                          [appTruncationTooltip]="element[column.key]"
+                          class="cell-truncate">
+                          {{ element[column.key] }}
+                        </span>
                       </app-copyable>
                     }
                     @case ("resolver") {
@@ -173,7 +184,6 @@
                           {{ element[column.key] }}
                         }
                         <app-filter-value-button
-                          class="margin-left-8"
                           column="resolver"
                           [value]="element[column.key]"
                           (filterValue)="addFilterValue('resolver', $event)" />

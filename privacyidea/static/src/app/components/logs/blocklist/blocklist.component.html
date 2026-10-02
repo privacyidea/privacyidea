@@ -316,7 +316,17 @@
       hint="IP addresses blocked by a conditional-access policy are listed here."
       i18n-heading="@@blocklist.noBlockedIps"
       i18n-hint="@@blocklist.ipsBlockedByPolicy"
-      icon="block" />
+      icon="block">
+      @if (authService.actionAllowed("blocklist_set")) {
+        <button
+          (click)="blockIp()"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <mat-icon>lock</mat-icon>
+          <span i18n="@@blocklist.blockIp">Block IP</span>
+        </button>
+      }
+    </app-table-state>
   }
 </div>
 
