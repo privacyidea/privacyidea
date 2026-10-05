@@ -2131,14 +2131,14 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(401, self._auth("testadmin", "testpw", remote_addr=BLOCKED_IP).status_code)
         entry = self.find_most_recent_audit_entry(action="*/auth")
         self.assertEqual("testadmin", entry["administrator"], entry)
-        # Blank rather than "": Oracle stores an empty string as NULL.
-        self.assertFalse(entry["user"], entry)
+        # "" or None: Oracle stores an empty string as NULL.
+        self.assertIn(entry["user"], ("", None), entry)
         self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
         # A local database admin lives in no realm, so the entry names none - the same blank the view writes for the
         # login it lets through. The gate logged the realm it had guessed from the login name before it knew this was
         # an admin at all, and the rejection has to undo that rather than leave it standing.
-        self.assertFalse(entry["realm"], entry)
-        self.assertFalse(entry["resolver"], entry)
+        self.assertIn(entry["realm"], ("", None), entry)
+        self.assertIn(entry["resolver"], ("", None), entry)
 
     def test_a_rejected_admin_realm_login_is_named_as_fully_as_an_accepted_one(self):
         # An admin who *is* a user - one in a superuser realm - keeps the identity columns an ordinary login gets,
@@ -2153,7 +2153,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             self.app.config["SUPERUSER_REALM"] = []
         entry = self.find_most_recent_audit_entry(action="*/auth")
         self.assertEqual("cornelius", entry["administrator"], entry)
-        self.assertFalse(entry["user"], entry)
+        self.assertIn(entry["user"], ("", None), entry)
         self.assertEqual(self.user.realm, entry["realm"], entry)
         self.assertEqual(self.user.resolver, entry["resolver"], entry)
 

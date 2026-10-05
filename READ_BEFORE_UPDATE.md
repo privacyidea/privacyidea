@@ -1,5 +1,11 @@
 # Update Notes
 
+## Update from 3.14 to 3.14.1
+
+* **Locks of local administrators get a new key** so that they can be stored on Oracle (#6045). Run the schema update
+  (`pi-manage db upgrade`) right after the update: until then, existing locks of local administrators are not
+  enforced.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

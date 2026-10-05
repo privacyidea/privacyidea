@@ -657,8 +657,12 @@ def unlock_user_by_id(uid: str, realm: str, resolver: str | None = None,
     several rows: a scoped admin must not clear a row outside their boundary via a
     call that also matches one inside it. An out-of-scope target is therefore
     indistinguishable from an absent lock — both return ``False``.
+
+    A **local database admin**'s row is never matched, even when *realm* is the placeholder their row carries: they
+    are unlocked through :func:`unlock_internal_admin` and :func:`unlock_internal_admin_by_uid` only.
     """
-    conditions = [UserLockState.uid == uid, UserLockState.realm == realm]
+    conditions = [UserLockState.uid == uid, UserLockState.realm == realm,
+                  UserLockState.user_role != str(AuthLogUserRole.ADMIN_INTERNAL)]
     if resolver:
         conditions.append(UserLockState.resolver == resolver)
     if visibility_scopes is not None:
@@ -678,9 +682,10 @@ def unlock_user_by_username(username: str, realm: str, resolver: str | None = No
     narrows the match when supplied.
 
     ``visibility_scopes`` restricts the delete to the caller's authorization
-    boundary exactly as in :func:`unlock_user_by_id`.
+    boundary exactly as in :func:`unlock_user_by_id`, and leaves a local database admin's row alone as that does.
     """
-    conditions = [UserLockState.username == username, UserLockState.realm == realm]
+    conditions = [UserLockState.username == username, UserLockState.realm == realm,
+                  UserLockState.user_role != str(AuthLogUserRole.ADMIN_INTERNAL)]
     if resolver:
         conditions.append(UserLockState.resolver == resolver)
     if visibility_scopes is not None:

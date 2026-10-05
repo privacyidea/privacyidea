@@ -703,6 +703,20 @@ class UserLockStateTestCase(MyTestCase):
         self.assertTrue(unlock_user_by_username(self.user.login, self.user.realm))
         self.assertListEqual([], list_locked_users())
 
+    def test_user_unlocks_leave_a_local_admins_lock_alone(self):
+        # The placeholder a local admin's row carries can be passed as a realm and resolver like any other value,
+        # but a local admin is unlocked through their own entry points only.
+        create_db_admin("lockadmin", password="secret")
+        try:
+            lock_internal_admin("lockadmin")
+            self.assertFalse(unlock_user_by_id("lockadmin", "~internal"))
+            self.assertFalse(unlock_user_by_id("lockadmin", "~internal", "~internal"))
+            self.assertFalse(unlock_user_by_username("lockadmin", "~internal"))
+            self.assertFalse(unlock_user_by_username("lockadmin", "~internal", "~internal"))
+            self.assertIsNotNone(db.session.get(UserLockState, ("~internal", "lockadmin", "~internal")))
+        finally:
+            delete_db_admin("lockadmin")
+
     # --- blocklist ------------------------------------------------------------
 
     def test_list_blocklist_empty(self):
