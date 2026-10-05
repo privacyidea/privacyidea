@@ -6,29 +6,6 @@ import { TestType } from "@playwright/test";
 type Known = Record<string, { reason: string; pages: string[] | "all" }>;
 
 export const KNOWN: Known = {
-  "single main landmark": {
-    reason: "every page renders two <main> landmarks",
-    pages: "all"
-  },
-  "table accessible name": {
-    reason: "the table has no aria-label, aria-labelledby or caption",
-    pages: [
-      "api clients",
-      "ca connectors",
-      "conditional access",
-      "container templates",
-      "events",
-      "machines",
-      "periodic tasks",
-      "policies",
-      "privacyidea servers",
-      "radius servers",
-      "service ids",
-      "sms gateways",
-      "smtp servers",
-      "tokengroups"
-    ]
-  },
   "tier width": {
     reason: "the header's label and its sort/filter buttons are wider than the column's tier",
     pages: ["challenges", "containers", "container templates", "realms"]
@@ -57,13 +34,9 @@ export const KNOWN: Known = {
       "users"
     ]
   },
-  "focus indicator": {
-    reason: "the overflow-more button (.overflow-more-btn) shows no focus indicator",
-    pages: ["radius create", "sms create", "smtp create"]
-  },
   "tab stops visible": {
     reason: "Tab lands on a link with no box (an empty cell link)",
-    pages: ["audit", "challenges", "token applications"]
+    pages: ["token applications"]
   }
 };
 

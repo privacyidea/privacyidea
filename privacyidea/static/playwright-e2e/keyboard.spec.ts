@@ -16,7 +16,6 @@ test.describe("document structure", () => {
     });
 
     test(`${route.name}: a single main landmark`, async ({ page }) => {
-      knownFailure(test, "single main landmark", route.name);
       await openPage(page, route.path);
       expect(await page.locator("main, [role='main']").count()).toBe(1);
     });
@@ -26,7 +25,6 @@ test.describe("document structure", () => {
 test.describe("tables are described", () => {
   for (const route of TABLE_PAGES) {
     test(`${route.name}: the table has an accessible name`, async ({ page }) => {
-      knownFailure(test, "table accessible name", route.name);
       await openPage(page, route.path);
       test.skip(!(await hasTable(page)), "no table on this instance");
       const unnamed = await page.evaluate(() =>
@@ -106,7 +104,6 @@ test.describe("focus indicator", () => {
   // captured focused, focus is taken away, and they are captured again. Identical pixels mean no indicator.
   for (const route of ALL_PAGES) {
     test(`${route.name}: a keyboard-focused control shows a focus indicator`, async ({ page }) => {
-      knownFailure(test, "focus indicator", route.name);
       await openPage(page, route.path);
       await page.mouse.move(0, 0);
       const invisible: string[] = [];

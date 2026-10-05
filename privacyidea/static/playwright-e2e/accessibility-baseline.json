@@ -1,134 +1,99 @@
 {
   "api client create": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "api clients": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "audit": {
     "light": [
-      "button-name",
-      "color-contrast",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "authentication log": {
     "light": [
-      "button-name",
-      "color-contrast",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "blocklist": {
     "light": [
-      "button-name",
-      "color-contrast",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "ca connectors": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "challenges": {
     "light": [
-      "aria-command-name",
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "aria-command-name",
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "clients": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "conditional access": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "conditional access create": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "container create": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
@@ -136,122 +101,92 @@
   "container template create": {
     "light": [
       "aria-allowed-attr",
-      "button-name",
       "target-size"
     ],
     "dark": [
       "aria-allowed-attr",
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "container templates": {
     "light": [
-      "button-name",
-      "label",
       "nested-interactive",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "nested-interactive",
       "target-size"
     ]
   },
   "containers": {
     "light": [
-      "button-name",
-      "color-contrast",
-      "label",
       "scrollable-region-focusable",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "scrollable-region-focusable",
       "target-size"
     ]
   },
   "dashboard": {
     "light": [
-      "button-name",
-      "color-contrast",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "event create": {
     "light": [
-      "button-name",
-      "nested-interactive",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "nested-interactive",
       "target-size"
     ]
   },
   "events": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "locked users": {
     "light": [
-      "button-name",
-      "color-contrast",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "machine resolver create": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "machine resolvers": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "machines": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
@@ -262,49 +197,37 @@
   },
   "news": {
     "light": [
-      "button-name",
-      "image-alt",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "image-alt",
       "target-size"
     ]
   },
   "periodic task create": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "periodic tasks": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "policies": {
     "light": [
-      "button-name",
       "nested-interactive",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "nested-interactive",
       "target-size"
@@ -312,287 +235,218 @@
   },
   "policy create": {
     "light": [
-      "aria-input-field-name",
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "aria-input-field-name",
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "privacyidea servers": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "radius create": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "radius servers": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "realms": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "resolver create": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "resolvers": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "service ids": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "sms create": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "sms gateways": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "smtp create": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "smtp servers": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "subscription": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "system config": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "token applications": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "token enrollment": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "token get serial": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "token import": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "token type config": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "tokengroups": {
     "light": [
-      "button-name",
-      "label",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "target-size"
     ]
   },
   "tokens": {
     "light": [
-      "button-name",
-      "color-contrast",
-      "label",
       "scrollable-region-focusable",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
-      "label",
       "scrollable-region-focusable",
       "target-size"
     ]
   },
   "ui settings": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "user create": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
   },
   "users": {
     "light": [
-      "button-name",
       "target-size"
     ],
     "dark": [
-      "button-name",
       "color-contrast",
       "target-size"
     ]
