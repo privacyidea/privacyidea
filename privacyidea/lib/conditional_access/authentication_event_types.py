@@ -557,7 +557,8 @@ class RestrictionCause(str, Enum):
 # Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the
 # handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, DEVICE_TOKEN_REUSED,
 # SUSPENDED_API_KEY_USED, OFFLINE_REFILL_SUCCESS, OFFLINE_REFILL_FAIL - that never actually reach
-# reduce_request_events, which reduces the per-token outcomes of one token flow and none of these comes from one. The CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
+# reduce_request_events, which reduces the per-token outcomes of one token flow and none of these comes from one. The
+# CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
 # classify a request the pre-check rejected before any token logic ran, so they never reach reduce_request_events
 # either, and are excluded from the trackable vocabulary anyway (see CA_ENFORCEMENT_EVENT_TYPES).
 #: Request-level precedence, highest signal first: which staged event classifies a request that
