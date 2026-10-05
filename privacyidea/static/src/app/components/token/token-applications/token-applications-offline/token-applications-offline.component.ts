@@ -78,10 +78,6 @@ import { ScrollFocusableDirective } from "@components/shared/directives/scroll-f
   styleUrls: ["./token-applications-offline.component.scss"]
 })
 export class TokenApplicationsOfflineComponent {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);

@@ -137,8 +137,6 @@
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
-            aria-label="{{ column.label }} Header"
-            i18n-aria-label="@@authLog.header"
             mat-header-cell
             [ngClass]="columnWidthClass(column)">
             <div class="flex ali-center">
@@ -288,7 +286,6 @@
                   (click)="onKeywordClick(column.key)"
                   [attr.aria-label]="column.label | filterByLabel"
                   class="filter-button"
-                  i18n-aria-label="@@common.filterBy"
                   mat-icon-button>
                   <mat-icon class="keyword-button-icon margin-left-0"> {{ getFilterIconName(column.key) }} </mat-icon>
                 </button>
@@ -297,7 +294,6 @@
                   (click)="onSortClick(column.key)"
                   [attr.aria-label]="column.label | sortByLabel"
                   class="sort-button"
-                  i18n-aria-label="@@common.sortBy"
                   mat-icon-button
                   type="button">
                   <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
@@ -309,8 +305,6 @@
           </th>
           <td
             *matCellDef="let element"
-            aria-label="{{ column.label }} Cell"
-            i18n-aria-label="@@authLog.cell"
             mat-cell
             [class.cell-info]="isInfoColumn(column.key)"
             [ngClass]="columnWidthClass(column)">
@@ -334,9 +328,7 @@
                 <a
                   (click)="contentService.tokenSelected(serial)"
                   [appTruncationTooltip]="serial"
-                  aria-label="{{ column.label }} Link"
                   class="cell-truncate"
-                  i18n-aria-label="@@authLog.link"
                   routerLink="/token">
                   {{ serial }}
                 </a>
@@ -354,9 +346,7 @@
                             $event.preventDefault(); contentService.userSelected(element.username, element.realm)
                           "
                   [appTruncationTooltip]="element.username"
-                  aria-label="{{ column.label }} Link"
                   class="cell-truncate"
-                  i18n-aria-label="@@authLog.link"
                   role="button"
                   tabindex="0">
                   {{ element.username }}
@@ -375,8 +365,6 @@
               } } } @case ("realm") { @if (element.realm) {
               <app-copyable [copyText]="element.realm">
                 <a
-                  aria-label="{{ column.label }} Link"
-                  i18n-aria-label="@@authLog.link"
                   routerLink="/users/realms">
                   {{ element.realm }}
                 </a>

@@ -43,6 +43,12 @@ describe("pageTitleFor", () => {
     expect(pageTitleFor("/external-services/smtp/details/mail")).toBe("SMTP servers – details");
   });
 
+  it("takes the first keyword segment after a page, so a record may be named like a keyword", () => {
+    expect(pageTitleFor("/policies/details/new")).toBe("Policies – details");
+    expect(pageTitleFor("/tokens/details/details")).toBe("Tokens – details");
+    expect(pageTitleFor("/containers/templates/details/create")).toBe("Container templates – details");
+  });
+
   it("has no name for a path no page is known by", () => {
     expect(pageTitleFor("/nowhere")).toBeUndefined();
     expect(pageTitleFor("/nowhere/new")).toBeUndefined();

@@ -136,10 +136,6 @@ export class TokenTableComponent implements OnDestroy {
     return $localize`:@@token.selectTokenNamed:Select token ${serial}:SERIAL:`;
   }
 
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

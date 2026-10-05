@@ -150,16 +150,17 @@
                 <div>
                   @switch (column.key) {
                     @case ("username") {
-                      <app-copyable [copyText]="element[column.key]">
-                        <a
-                          (click)="onClickUsername(element)"
-                          [appTruncationTooltip]="element[column.key]"
-                          [attr.aria-label]="linkLabel(column.label)"
-                          class="cell-truncate"
-                          routerLink="/users/details/{{ element.username }}">
-                          {{ element[column.key] }}
-                        </a>
-                      </app-copyable>
+                      @if (element[column.key]) {
+                        <app-copyable [copyText]="element[column.key]">
+                          <a
+                            (click)="onClickUsername(element)"
+                            [appTruncationTooltip]="element[column.key]"
+                            class="cell-truncate"
+                            routerLink="/users/details/{{ element.username }}">
+                            {{ element[column.key] }}
+                          </a>
+                        </app-copyable>
+                      }
                     }
                     @case ("userid") {
                       <app-copyable [copyText]="element[column.key]">
@@ -171,21 +172,22 @@
                       </app-copyable>
                     }
                     @case ("resolver") {
-                      <app-copyable [copyText]="element[column.key]">
-                        @if (resolverLinkAllowed()) {
-                          <a
-                            [attr.aria-label]="linkLabel(column.label)"
-                            [routerLink]="resolverLink(element[column.key])">
+                      @if (element[column.key]) {
+                        <app-copyable [copyText]="element[column.key]">
+                          @if (resolverLinkAllowed()) {
+                            <a
+                              [routerLink]="resolverLink(element[column.key])">
+                              {{ element[column.key] }}
+                            </a>
+                          } @else {
                             {{ element[column.key] }}
-                          </a>
-                        } @else {
-                          {{ element[column.key] }}
-                        }
-                        <app-filter-value-button
-                          column="resolver"
-                          [value]="element[column.key]"
-                          (filterValue)="addFilterValue('resolver', $event)" />
-                      </app-copyable>
+                          }
+                          <app-filter-value-button
+                            column="resolver"
+                            [value]="element[column.key]"
+                            (filterValue)="addFilterValue('resolver', $event)" />
+                        </app-copyable>
+                      }
                     }
                     @default {
                       <span>

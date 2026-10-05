@@ -209,27 +209,28 @@
                       [disabled]="!containerSelection.hasVisibleRows()"></mat-checkbox>
                   }
                   @case ("serial") {
-                    <app-copyable [copyText]="element.serial">
-                      <a
-                        (click)="contentService.navigateContainerDetails(element.serial)"
-                        (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
-                        (keydown.space)="
-                          $event.preventDefault(); contentService.navigateContainerDetails(element.serial)
-                        "
-                        [appTruncationTooltip]="element.serial"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        class="cell-truncate"
-                        role="button"
-                        tabindex="0">
-                        {{ element[column.key] }}
-                      </a>
-                    </app-copyable>
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
+                        <a
+                          (click)="contentService.navigateContainerDetails(element.serial)"
+                          (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
+                          (keydown.space)="
+                            $event.preventDefault(); contentService.navigateContainerDetails(element.serial)
+                          "
+                          [appTruncationTooltip]="element.serial"
+                          class="cell-truncate"
+                          role="button"
+                          tabindex="0">
+                          {{ element[column.key] }}
+                        </a>
+                      </app-copyable>
+                    }
                   }
                   @case ("realms") {
                     <div [ngClass]="{ 'realm-list': (element[column.key]?.length || 0) > 1 }">
                       @for (realm of element[column.key]; track realm; let idx = $index) {
                         <div>
-                          <span [attr.aria-label]="linkLabel(column.label)">
+                          <span>
                             {{ realm }}
                           </span>
                           <br class="realm-break" />
@@ -258,31 +259,31 @@
                     }
                   }
                   @case ("user_name") {
-                    <app-copyable [copyText]="element[column.key]">
-                      <a
-                        (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                        (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
-                        (keydown.space)="
-                          $event.preventDefault();
-                          contentService.userSelected(element[column.key], element['user_realm'])
-                        "
-                        [appTruncationTooltip]="element[column.key]"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        class="cell-truncate"
-                        role="button"
-                        tabindex="0">
-                        {{ element[column.key] }}
-                      </a>
-                      <app-filter-value-button
-                        [column]="column.key"
-                        [value]="element[column.key]"
-                        (filterValue)="filterByUser($event, element['user_realm'])" />
-                    </app-copyable>
+                    @if (element[column.key]) {
+                      <app-copyable [copyText]="element[column.key]">
+                        <a
+                          (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                          (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                          (keydown.space)="
+                            $event.preventDefault();
+                            contentService.userSelected(element[column.key], element['user_realm'])
+                          "
+                          [appTruncationTooltip]="element[column.key]"
+                          class="cell-truncate"
+                          role="button"
+                          tabindex="0">
+                          {{ element[column.key] }}
+                        </a>
+                        <app-filter-value-button
+                          [column]="column.key"
+                          [value]="element[column.key]"
+                          (filterValue)="filterByUser($event, element['user_realm'])" />
+                      </app-copyable>
+                    }
                   }
                   @default {
                     @if (tableUtilsService.isLink(column.key) && element[column.key]) {
                       <a
-                        [attr.aria-label]="linkLabel(column.label)"
                         href="#">
                         {{ element[column.key] }}
                       </a>

@@ -126,16 +126,17 @@
                 [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    <app-copyable [copyText]="element.serial">
-                      <a
-                        (click)="contentService.navigateContainerDetails(element.serial)"
-                        (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        role="button"
-                        tabindex="0">
-                        {{ element.serial }}
-                      </a>
-                    </app-copyable>
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
+                        <a
+                          (click)="contentService.navigateContainerDetails(element.serial)"
+                          (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
+                          role="button"
+                          tabindex="0">
+                          {{ element.serial }}
+                        </a>
+                      </app-copyable>
+                    }
                   }
                   @case ("states") {
                     @if (authService.actionAllowed("container_state")) {

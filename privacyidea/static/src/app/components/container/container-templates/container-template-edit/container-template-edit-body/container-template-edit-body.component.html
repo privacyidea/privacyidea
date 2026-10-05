@@ -20,11 +20,14 @@
 @if (template().container_type && availableTokenTypes().length) {
   <mat-chip-set>
     @for (type of availableTokenTypes(); track type) {
-      <mat-chip
-        class="clickable-chip"
-        (click)="onAddToken(type)">
-        {{ _toTitleCase(type) }}
-        <mat-icon matChipTrailingIcon>add</mat-icon>
+      <mat-chip class="clickable-chip">
+        <button
+          class="chip-action"
+          type="button"
+          (click)="onAddToken(type)">
+          {{ _toTitleCase(type) }}
+          <mat-icon>add</mat-icon>
+        </button>
       </mat-chip>
     }
   </mat-chip-set>

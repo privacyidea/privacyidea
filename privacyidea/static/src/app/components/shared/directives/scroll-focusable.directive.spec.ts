@@ -55,6 +55,8 @@ describe("ScrollFocusableDirective", () => {
     fixture = TestBed.createComponent(HostComponent);
     fixture.detectChanges();
     host = fixture.nativeElement.querySelector("div");
+    host.style.overflowX = "auto";
+    host.style.overflowY = "auto";
   });
 
   it("is not a tab stop while its content fits", () => {
@@ -79,6 +81,27 @@ describe("ScrollFocusableDirective", () => {
     setSize({ height: 300, width: 100 }, { height: 100, width: 100 });
     setSize({ height: 100, width: 100 }, { height: 100, width: 100 });
 
+    expect(host.hasAttribute("tabindex")).toBe(false);
+  });
+
+  it.each(["visible", "hidden", "clip"])(
+    "is not a tab stop when its overflow is %s although content overflows",
+    (overflow) => {
+      host.style.overflowX = overflow;
+      host.style.overflowY = overflow;
+      setSize({ height: 300, width: 300 }, { height: 100, width: 100 });
+
+      expect(host.hasAttribute("tabindex")).toBe(false);
+    }
+  );
+
+  it("is a tab stop when only one axis scrolls and that axis overflows", () => {
+    host.style.overflowX = "hidden";
+    host.style.overflowY = "auto";
+    setSize({ height: 300, width: 300 }, { height: 100, width: 100 });
+    expect(host.getAttribute("tabindex")).toBe("0");
+
+    setSize({ height: 100, width: 300 }, { height: 100, width: 100 });
     expect(host.hasAttribute("tabindex")).toBe(false);
   });
 

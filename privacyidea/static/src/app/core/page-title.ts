@@ -78,12 +78,17 @@ export function pageTitleFor(path: string): string | undefined {
   if (exact) {
     return exact;
   }
-  const detail = /^(.*)\/(new|create|details)(\/.*)?$/.exec(clean);
-  const base = detail ? titles.get(detail[1]) : undefined;
-  if (!detail || !base) {
+  // The first keyword segment after a known page path wins, so a record named like a keyword ("details/new") still
+  // belongs to the page it is listed on.
+  const segments = clean.split("/");
+  const at = segments.findIndex(
+    (segment, i) => i > 0 && /^(new|create|details)$/.test(segment) && titles.has(segments.slice(0, i).join("/"))
+  );
+  if (at < 0) {
     return undefined;
   }
-  return detail[2] === "details"
+  const base = titles.get(segments.slice(0, at).join("/"))!;
+  return segments[at] === "details"
     ? $localize`:@@pageTitle.details:${base}:PAGE: – details`
     : $localize`:@@pageTitle.new:${base}:PAGE: – new`;
 }

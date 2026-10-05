@@ -100,10 +100,6 @@ type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
   styleUrl: "./user-details-token-table.component.scss"
 })
 export class UserDetailsTokenTableComponent {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   /**
    * The two ways out of the empty state. They are passed as templates rather than projected content
    * because this component renders them in a different place depending on the table's state, and a

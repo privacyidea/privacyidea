@@ -22,11 +22,14 @@
     @if (tokenTypes().length) {
       <mat-chip-set>
         @for (type of tokenTypes(); track type) {
-          <mat-chip
-            class="clickable-chip"
-            (click)="addToken(type)">
-            {{ _toTitleCase(type) }}
-            <mat-icon matChipTrailingIcon>add</mat-icon>
+          <mat-chip class="clickable-chip">
+            <button
+              class="chip-action"
+              type="button"
+              (click)="addToken(type)">
+              {{ _toTitleCase(type) }}
+              <mat-icon>add</mat-icon>
+            </button>
           </mat-chip>
         }
       </mat-chip-set>

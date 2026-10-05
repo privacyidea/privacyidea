@@ -136,16 +136,17 @@
                     [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                     @switch (column.key) {
                       @case ("serial") {
-                        <app-copyable [copyText]="element.serial">
-                          <a
-                            (click)="contentService.tokenSelected(element.serial)"
-                            (keydown.enter)="contentService.tokenSelected(element.serial)"
-                            [attr.aria-label]="linkLabel(column.label)"
-                            role="button"
-                            tabindex="0">
-                            {{ element[column.key] }}
-                          </a>
-                        </app-copyable>
+                        @if (element.serial) {
+                          <app-copyable [copyText]="element.serial">
+                            <a
+                              (click)="contentService.tokenSelected(element.serial)"
+                              (keydown.enter)="contentService.tokenSelected(element.serial)"
+                              role="button"
+                              tabindex="0">
+                              {{ element[column.key] }}
+                            </a>
+                          </app-copyable>
+                        }
                       }
                       @case ("active") {
                         @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
@@ -180,7 +181,6 @@
                             <a
                               (click)="contentService.navigateContainerDetails(element[column.key])"
                               (keydown.enter)="contentService.navigateContainerDetails(element[column.key])"
-                              [attr.aria-label]="linkLabel(column.label)"
                               role="button"
                               tabindex="0">
                               {{ element[column.key] }}

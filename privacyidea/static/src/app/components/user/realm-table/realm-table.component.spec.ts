@@ -694,12 +694,6 @@ describe("RealmTableComponent", () => {
     expect(notificationService.error).toHaveBeenCalledWith("Failed to set default realm. Realm not found.");
   });
 
-  it("linkLabel should build a link label from the given label", () => {
-    expect((component as unknown as { linkLabel: (label: string) => string }).linkLabel("realmA")).toContain(
-      "realmA"
-    );
-  });
-
   it("onClickResolver should redirect to resolver details page", () => {
     const resolver = { resolvername: "res1", type: "ldapresolver" } as unknown as Resolver;
     resolverService.setResolvers([resolver]);

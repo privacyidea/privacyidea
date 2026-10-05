@@ -82,44 +82,46 @@
                 [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    <app-copyable [copyText]="element.serial">
-                      <a
-                        (click)="contentService.tokenSelected(element.serial)"
-                        (keydown.enter)="contentService.tokenSelected(element.serial)"
-                        (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
-                        [appTruncationTooltip]="element.serial"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        class="cell-truncate"
-                        role="button"
-                        tabindex="0">
-                        {{ element[column.key] }}
-                      </a>
-                    </app-copyable>
-                  }
-                  @case ("container_serial") {
-                    <app-copyable [copyText]="element.container_serial">
-                      @if (containerService.containerBelongsToUser(element.container_serial)) {
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
                         <a
-                          (click)="contentService.navigateContainerDetails(element.container_serial)"
-                          (keydown.enter)="contentService.navigateContainerDetails(element.container_serial)"
-                          (keydown.space)="
-                            $event.preventDefault(); contentService.navigateContainerDetails(element.container_serial)
-                          "
-                          [appTruncationTooltip]="element.container_serial"
-                          [attr.aria-label]="linkLabel(column.label)"
+                          (click)="contentService.tokenSelected(element.serial)"
+                          (keydown.enter)="contentService.tokenSelected(element.serial)"
+                          (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                          [appTruncationTooltip]="element.serial"
                           class="cell-truncate"
                           role="button"
                           tabindex="0">
                           {{ element[column.key] }}
                         </a>
-                      } @else {
-                        <span
-                          [appTruncationTooltip]="element[column.key]"
-                          class="cell-truncate">
-                          {{ element[column.key] }}
-                        </span>
-                      }
-                    </app-copyable>
+                      </app-copyable>
+                    }
+                  }
+                  @case ("container_serial") {
+                    @if (element.container_serial) {
+                      <app-copyable [copyText]="element.container_serial">
+                        @if (containerService.containerBelongsToUser(element.container_serial)) {
+                          <a
+                            (click)="contentService.navigateContainerDetails(element.container_serial)"
+                            (keydown.enter)="contentService.navigateContainerDetails(element.container_serial)"
+                            (keydown.space)="
+                              $event.preventDefault(); contentService.navigateContainerDetails(element.container_serial)
+                            "
+                            [appTruncationTooltip]="element.container_serial"
+                            class="cell-truncate"
+                            role="button"
+                            tabindex="0">
+                            {{ element[column.key] }}
+                          </a>
+                        } @else {
+                          <span
+                            [appTruncationTooltip]="element[column.key]"
+                            class="cell-truncate">
+                            {{ element[column.key] }}
+                          </span>
+                        }
+                      </app-copyable>
+                    }
                   }
                   @case ("active") {
                     @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
@@ -183,7 +185,6 @@
                   @default {
                     @if (tableUtilsService.isLink(column.key) && tableUtilsService.getDisplayText(column.key, element)) {
                       <a
-                        [attr.aria-label]="linkLabel(column.label)"
                         href="#">
                         {{ tableUtilsService.getDisplayText(column.key, element) }}
                       </a>

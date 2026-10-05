@@ -20,7 +20,8 @@
 import { AfterViewInit, Directive, ElementRef, inject, OnDestroy } from "@angular/core";
 
 // A region that scrolls must be reachable with the keyboard, or a keyboard user cannot read what is cut off. The
-// element takes part in the tab order only while its content overflows it, so a cell whose list fits adds no tab stop.
+// element takes part in the tab order only while it can scroll (its overflow is auto or scroll) and its content
+// overflows it, so a cell whose list fits, or whose overflow is clipped or visible, adds no tab stop.
 @Directive({
   selector: "[appScrollFocusable]",
   standalone: true
@@ -40,7 +41,10 @@ export class ScrollFocusableDirective implements AfterViewInit, OnDestroy {
   }
 
   private update(): void {
-    if (this.host.scrollHeight > this.host.clientHeight + 1 || this.host.scrollWidth > this.host.clientWidth + 1) {
+    const style = getComputedStyle(this.host);
+    const scrollsX = /auto|scroll/.test(style.overflowX) && this.host.scrollWidth > this.host.clientWidth + 1;
+    const scrollsY = /auto|scroll/.test(style.overflowY) && this.host.scrollHeight > this.host.clientHeight + 1;
+    if (scrollsX || scrollsY) {
       this.host.setAttribute("tabindex", "0");
     } else {
       this.host.removeAttribute("tabindex");

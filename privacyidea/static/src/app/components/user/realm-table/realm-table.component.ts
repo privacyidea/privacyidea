@@ -150,10 +150,6 @@ const columnKeysMap = [
   styleUrl: "./realm-table.component.scss"
 })
 export class RealmTableComponent implements OnDestroy, OnInit {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   // Services
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

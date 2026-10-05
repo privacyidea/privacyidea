@@ -96,10 +96,6 @@ import { ScrollFocusableDirective } from "@components/shared/directives/scroll-f
   styleUrl: "./user-details-container-table.component.scss"
 })
 export class UserDetailsContainerTableComponent {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   /**
    * The way out of the empty state. Passed as a template rather than projected content because this
    * component renders it in a different place depending on the table's state, and a single

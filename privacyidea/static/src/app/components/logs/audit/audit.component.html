@@ -158,7 +158,6 @@
                         <a
                           (click)="contentService.tokenSelected(element.serial)"
                           [appTruncationTooltip]="element.serial"
-                          [attr.aria-label]="linkLabel(column.label)"
                           class="cell-truncate"
                           routerLink="/token">
                           {{ element[column.key] }}
@@ -176,7 +175,6 @@
                         <a
                           (click)="contentService.navigateContainerDetails(element.container_serial)"
                           [appTruncationTooltip]="element.container_serial"
-                          [attr.aria-label]="linkLabel(column.label)"
                           class="cell-truncate"
                           routerLink="/token">
                           {{ element[column.key] }}
@@ -199,7 +197,6 @@
                             contentService.userSelected(element[column.key], element['user_realm'])
                           "
                           [appTruncationTooltip]="element[column.key]"
-                          [attr.aria-label]="linkLabel(column.label)"
                           class="cell-truncate"
                           role="button"
                           tabindex="0">

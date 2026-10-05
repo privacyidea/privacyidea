@@ -182,10 +182,6 @@ const columnKeysMap: { key: string; label: string; width?: "s" | "m" | "l" | "xl
   styleUrl: "./audit.component.scss"
 })
 export class AuditComponent {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);

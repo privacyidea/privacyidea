@@ -126,7 +126,6 @@
                           (click)="contentService.tokenSelected(element.serial)"
                           (keydown.enter)="contentService.tokenSelected(element.serial)"
                           (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
-                          [attr.aria-label]="linkLabel(column.label)"
                           role="button"
                           tabindex="0">
                           {{ element[column.key] }}
@@ -146,7 +145,6 @@
                         (keydown.space)="
                           $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
                         "
-                        [attr.aria-label]="linkLabel(column.label)"
                         role="button"
                         tabindex="0">
                         {{ element[column.key] }}
