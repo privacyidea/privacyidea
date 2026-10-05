@@ -53,3 +53,38 @@ export async function setSticky(page: Page, on: boolean): Promise<void> {
 export function filterInput(page: Page) {
   return page.locator(".filter-paginator-container input, app-policy-filter input").first();
 }
+
+// Backend calls the shell of the app needs to render at all; everything else a page loads can be held or failed.
+const SHELL_ENDPOINTS = [
+  "config",
+  "auth",
+  "user/settings",
+  "realm",
+  "defaultrealm",
+  "info/integrations",
+  "container/types",
+  "policy/defs"
+];
+
+// Fails ("error") or never answers ("loading") the GET requests a page loads its data with, so the page stays in the
+// error or loading state of its table panel. Held requests are dropped when the test ends.
+export async function holdApi(page: Page, mode: "error" | "loading"): Promise<void> {
+  await page.route("**/proxy/**", (route) => {
+    const request = route.request();
+    const endpoint = new URL(request.url()).pathname.replace(/^.*\/proxy\//, "");
+    if (request.method() !== "GET" || SHELL_ENDPOINTS.some((e) => endpoint.startsWith(e))) {
+      return route.continue();
+    }
+    if (mode === "error") {
+      return route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({
+          result: { status: false, error: { code: 1, message: "Forced by the e2e test" } },
+          id: 1
+        })
+      });
+    }
+    return undefined;
+  });
+}
