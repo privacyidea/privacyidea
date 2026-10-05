@@ -1,4 +1,5 @@
 import { test as base } from "@playwright/test";
+import { BASE_URL } from "./env";
 
 export { expect } from "@playwright/test";
 
@@ -17,7 +18,7 @@ export const selfTest = base.extend<object, { selfSession: string }>({
       }
       const context = await browser.newContext({
         ignoreHTTPSErrors: true,
-        baseURL: process.env["BASE_URL"] ?? "https://localhost:4200/app/v2/"
+        baseURL: BASE_URL
       });
       const page = await context.newPage();
       await page.goto("login");
@@ -31,10 +32,14 @@ export const selfTest = base.extend<object, { selfSession: string }>({
     },
     { scope: "worker" }
   ],
-  context: async ({ browser, selfSession }, use) => {
+  // Takes the test's colour scheme, motion preference and screen over, which a context of its own would not.
+  context: async ({ browser, selfSession, colorScheme, reducedMotion, viewport }, use) => {
     const context = await browser.newContext({
       ignoreHTTPSErrors: true,
-      baseURL: process.env["BASE_URL"] ?? "https://localhost:4200/app/v2/"
+      baseURL: BASE_URL,
+      colorScheme,
+      reducedMotion,
+      viewport
     });
     if (selfSession) {
       await context.addInitScript((entries: string) => {

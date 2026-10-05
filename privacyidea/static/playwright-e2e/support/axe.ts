@@ -21,11 +21,26 @@ function readBaseline(): Baseline {
   return fs.existsSync(BASELINE_FILE) ? (JSON.parse(fs.readFileSync(BASELINE_FILE, "utf8")) as Baseline) : {};
 }
 
+// Workers record their results side by side, so the read-modify-write of the one file is done under a lock: a directory
+// that only one worker can create at a time.
 function writeBaseline(name: string, theme: string, rules: string[]): void {
-  const baseline = readBaseline();
-  baseline[name] = { ...baseline[name], [theme]: rules };
-  const sorted = Object.fromEntries(Object.entries(baseline).sort(([a], [b]) => a.localeCompare(b)));
-  fs.writeFileSync(BASELINE_FILE, JSON.stringify(sorted, null, 2) + "\n");
+  const lock = BASELINE_FILE + ".lock";
+  for (;;) {
+    try {
+      fs.mkdirSync(lock);
+      break;
+    } catch {
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+    }
+  }
+  try {
+    const baseline = readBaseline();
+    baseline[name] = { ...baseline[name], [theme]: rules };
+    const sorted = Object.fromEntries(Object.entries(baseline).sort(([a], [b]) => a.localeCompare(b)));
+    fs.writeFileSync(BASELINE_FILE, JSON.stringify(sorted, null, 2) + "\n");
+  } finally {
+    fs.rmdirSync(lock);
+  }
 }
 
 // Runs axe on the page as it is now and fails on any rule the baseline does not list for `name` and `scheme`.

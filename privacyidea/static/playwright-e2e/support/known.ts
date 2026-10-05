@@ -5,12 +5,7 @@ import { TestType } from "@playwright/test";
 // test reports "expected to fail, but passed" - the cue to delete its entry here.
 type Known = Record<string, { reason: string; pages: string[] | "all" }>;
 
-export const KNOWN: Known = {
-  "tier width": {
-    reason: "the header's label and its sort/filter buttons are wider than the column's tier",
-    pages: ["challenges", "containers", "container templates", "realms"]
-  }
-};
+export const KNOWN: Known = {};
 
 // Marks the running test as an expected failure when the check is known to fail on this page.
 export function knownFailure(test: Pick<TestType<any, any>, "fail">, check: string, page: string): void {

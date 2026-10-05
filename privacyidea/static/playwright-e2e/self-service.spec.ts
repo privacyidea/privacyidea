@@ -1,5 +1,7 @@
 import { expect, selfTest as test, SELF_PASS, SELF_USER } from "./support/self-service";
 import { expectNoNewViolations } from "./support/axe";
+import { forceTheme, settle } from "./support/helpers";
+import { Page } from "@playwright/test";
 
 // The pages of the self-service user. Needs E2E_SELF_USER / E2E_SELF_PASS (see support/self-service.ts).
 const SELF_PAGES = [
@@ -14,14 +16,18 @@ const SELF_PAGES = [
   { name: "self news", path: "news" }
 ];
 
+test.use({ reducedMotion: "reduce", viewport: { width: 1920, height: 1080 } });
+
 test.beforeEach(() => {
   test.skip(!SELF_USER || !SELF_PASS, "E2E_SELF_USER and E2E_SELF_PASS are not set");
 });
 
-async function open(page: import("@playwright/test").Page, path: string): Promise<void> {
+async function open(page: Page, path: string): Promise<void> {
   await page.goto(path, { waitUntil: "networkidle" });
   await expect(page).not.toHaveURL(/\/login/);
-  await page.waitForTimeout(500);
+  await expect(page).toHaveURL(new RegExp(`${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/?$`));
+  await settle(page);
+  await forceTheme(page);
 }
 
 for (const scheme of ["light", "dark"] as const) {
