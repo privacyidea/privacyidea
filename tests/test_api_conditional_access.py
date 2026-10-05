@@ -21,6 +21,7 @@ End-to-end tests for the conditional-access engine at the
 before any token logic runs, and the full loop where repeated failures trip a
 policy stage and lock the user.
 """
+import binascii
 from unittest import mock
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
@@ -56,7 +57,11 @@ from privacyidea.lib.smtpserver import add_smtpserver, delete_smtpserver
 from privacyidea.lib.challenge import get_challenges, delete_challenges
 from privacyidea.lib.clients import create_client, update_client
 from privacyidea.lib.remembered_device import create_remembered_device, user_identity, PERSISTENT_COOKIE_NAME
-from privacyidea.lib.token import init_token, remove_token, get_tokens, revoke_token
+from privacyidea.lib.applications.offline import REFILLTOKEN_LENGTH
+from privacyidea.lib.machine import attach_token
+from privacyidea.lib.machineresolver import save_resolver as save_machine_resolver
+from privacyidea.lib.token import init_token, remove_token, get_tokens, get_one_token, revoke_token
+from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import db, Challenge, ConditionalAccessOutcome
@@ -68,6 +73,7 @@ from privacyidea.models.conditional_access_policy import (BlockList, Conditional
 from privacyidea.models.utils import utc_now
 from . import smtpmock
 from .authlog_utils import assert_authentication_log, assert_authentication_log_entry
+from .api_validate_common import HOSTSFILE
 from .base import skip_unless_admin_lookup_folds_case
 from .conditional_access_base import BLOCKED_IP, DENIED_IP, ConditionalAccessApiTestCase
 
@@ -1082,6 +1088,116 @@ class TriggerChallengeGateTestCase(_GateContract, _UserGateContract, _PostRespon
                                 "transaction_id": transaction_id})
         self.assertFalse(answered["result"]["value"], answered)
         self.assertEqual("Locked. Try again in about 10 minute(s).", answered["detail"]["message"], answered)
+
+
+class OfflineRefillGateTestCase(_GateContract, _UserGateContract, _PostResponseGateContract,
+                                ConditionalAccessApiTestCase):
+    """
+    The gate over ``/validate/offlinerefill``. Every failed refill is an error response rather than a ``result.value``
+    false, so a rejection is one too, and the identity gated on is the owner of the token the serial names.
+    """
+
+    failure_event_type = AuthEventType.OFFLINE_REFILL_FAIL
+    event_name = "validate_offlinerefill"
+    endpoint_path = "/validate/offlinerefill"
+    serial = "CA_GATE_OFFLINE"
+    refill_failure = "Token is not an offline token or refill token is incorrect"
+
+    #: The stored refilltoken and token counter before the request under assertion, so a refusal is "changed nothing".
+    before: tuple[str, int] = ("", 0)
+
+    def setUp(self) -> None:
+        super().setUp()
+        save_machine_resolver({"name": "ca_hosts", "type": "hosts", "filename": HOSTSFILE,
+                               "type.filename": "string"})
+        init_token({"serial": self.serial, "type": "hotp", "otpkey": self.otpkey, "pin": "pin"}, user=self.user)
+        attach_token(self.serial, "offline", hostname="pippin", resolver_name="ca_hosts", options={"count": 10})
+        # The offline bag, and the first refilltoken with it, are handed out only to the machine the token is
+        # attached to, which the hosts file resolves to this address.
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"serial": self.serial, "pass": "pin755224"},
+                                           environ_base={"REMOTE_ADDR": "192.168.0.2"}):
+            self.assertIn("auth_items", self.app.full_dispatch_request().json)
+        self._clear()
+
+    def tearDown(self) -> None:
+        if get_tokens(serial=self.serial):
+            remove_token(self.serial)
+        super().tearDown()
+
+    def _refill(self, refilltoken: str | None = None, remote_addr: str | None = None,
+                data: dict | None = None) -> Response:
+        """A refill with the last offline OTP the server issued, which is always in the window it checks."""
+        token = get_one_token(serial=self.serial)
+        self.before = (token.get_tokeninfo("refilltoken"), token.token.count)
+        otp = HmacOtp(digits=6).generate(counter=token.token.count - 1, key=binascii.unhexlify(self.otpkey),
+                                         inc_counter=False)
+        kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
+        with self.app.test_request_context('/validate/offlinerefill', method='POST',
+                                           data={"serial": self.serial, "pass": f"pin{otp}",
+                                                 "refilltoken": refilltoken or self.before[0], **(data or {})},
+                                           **kwargs):
+            return self.app.full_dispatch_request()
+
+    def _authenticate(self, remote_addr: str | None = None) -> Response:
+        return self._refill(remote_addr=remote_addr)
+
+    def _fail(self) -> Response:
+        return self._refill(refilltoken="a" * 2 * REFILLTOKEN_LENGTH)
+
+    def _assert_succeeded(self, response: Response) -> None:
+        self.assertEqual(200, response.status_code, response.json)
+        self.assertTrue(response.json["result"]["value"], response.json)
+        self.assertEqual(self.serial, response.json["auth_items"]["offline"][0]["serial"], response.json)
+
+    def _assert_refused(self, response: Response, message: str | None = None) -> None:
+        self.assertEqual(400, response.status_code, response.json)
+        error = response.json["result"]["error"]
+        self.assertEqual(Error.PARAMETER, error["code"], response.json)
+        # Silent, it says what a wrong refilltoken says, so it cannot be told apart from one.
+        self.assertEqual(f"ERR905: {message or self.refill_failure}", error["message"], response.json)
+        self.assertNotIn("auth_items", response.json)
+        # Refused before any token work: nothing was handed out, so nothing rotated and the counter did not move.
+        token = get_one_token(serial=self.serial)
+        self.assertEqual(self.before, (token.get_tokeninfo("refilltoken"), token.token.count))
+
+    def test_the_gate_is_rechecked_for_a_user_a_pre_event_handler_rewrites_to(self):
+        self.skipTest("the refill gates on the owner of the serial's token, which rewriting the user does not change")
+
+    def test_a_user_parameter_naming_somebody_else_does_not_lift_the_lock(self):
+        # The refill hands out the material of whatever token the serial names, so the user that token belongs to
+        # is the one gated on - not one the request chose to name.
+        self._lock_user_for()
+        self._assert_refused(self._refill(data={"user": "root"}))
+
+    def test_an_unknown_serial_is_still_refused_from_a_blocked_address(self):
+        self._block_ip_for(BLOCKED_IP)
+        with self.app.test_request_context('/validate/offlinerefill', method='POST',
+                                           data={"serial": "CA_GATE_UNKNOWN", "pass": "pin123456",
+                                                 "refilltoken": "a" * 2 * REFILLTOKEN_LENGTH},
+                                           environ_base={"REMOTE_ADDR": BLOCKED_IP}):
+            response = self.app.full_dispatch_request()
+        self.assertEqual(f"ERR905: {self.refill_failure}", response.json["result"]["error"]["message"])
+        assert_authentication_log([AuthEventType.IP_BLOCKED])
+
+    def test_a_silent_refusal_is_masked_like_any_failed_refill(self):
+        self._lock_user_for()
+        set_policy(name="hide_refill_error", scope=SCOPE.TOKEN,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL}=true")
+        self.addCleanup(delete_policy, "hide_refill_error")
+        response = self._refill()
+        self.assertEqual(400, response.status_code, response.json)
+        error = response.json["result"]["error"]
+        self.assertEqual(Error.VALIDATE, error["code"], response.json)
+        self.assertEqual("Failed offline token refill", error["message"], response.json)
+
+    def test_a_configured_message_is_shown_past_the_mask(self):
+        # As on the other endpoints, where a claimed message is what hide_specific_error_message shows.
+        self._lock_user_for(error_message="MSG-LOCK")
+        set_policy(name="hide_refill_error", scope=SCOPE.TOKEN,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL}=true")
+        self.addCleanup(delete_policy, "hide_refill_error")
+        self._assert_refused(self._refill(), message="MSG-LOCK")
 
 
 class AuthGateTestCase(_GateContract, _UserGateContract, _PostResponseGateContract,

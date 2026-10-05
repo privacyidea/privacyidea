@@ -113,7 +113,8 @@ from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            increase_failcounter_on_challenge, get_first_policy_value, fido2_enroll,
                                            disabled_token_types, load_challenge_text)
 from privacyidea.api.lib.conditional_access import (conditional_access_gate, conditional_access_precheck,
-                                                    REMEMBER_DEVICE_REJECTION)
+                                                    RejectionShape, REMEMBER_DEVICE_REJECTION,
+                                                    TRIGGER_CHALLENGE_REJECTION)
 from privacyidea.api.lib.utils import (get_all_params, get_before_request_config, get_optional_one_of, get_optional,
                                        INTERNAL_OPTION_KEYS)
 from privacyidea.api.recover import recover_blueprint
@@ -226,7 +227,49 @@ def before_request():
         "realm": request.User.realm})
 
 
+def _offline_refill_identity() -> User:
+    """
+    The owner of the token a ``/validate/offlinerefill`` request names, for the conditional-access gate to check.
+
+    Read from the serial alone: the refill hands out the material of whatever token the serial names, so a ``user``
+    parameter naming somebody else must not be what the gate checks. Falls back to an empty user when the serial does
+    not resolve to exactly one owned token, so the source-IP block still applies.
+    """
+    serial = get_optional(request.all_data, "serial")
+    if not serial:
+        return User()
+    try:
+        token = get_one_token(serial=serial, silent_fail=True)
+    except Exception as ex:
+        log.debug(f"Conditional-access pre-check could not resolve the owner of {serial!r}: {ex!r}")
+        return User()
+    return token.user if (token and token.user) else User()
+
+
+def _hide_offline_refill_error() -> bool:
+    """Whether a failed refill is answered with the unspecific error rather than its own."""
+    return Match.user(g, scope=SCOPE.TOKEN, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
+                      user_object=request.User if hasattr(request, "User") else None).any()
+
+
+def _refuse_offline_refill(message: str | None) -> tuple[Response, int]:
+    """
+    Answer a refill conditional access refused the way every failed refill is answered: an error response. A silent
+    rejection says what a wrong refilltoken says, and is masked like it; a configured message is shown either way,
+    as it is past ``hide_specific_error_message`` on the other endpoints.
+    """
+    error = ParameterError(message or _("Token is not an offline token or refill token is incorrect"))
+    if not message and _hide_offline_refill_error():
+        return send_error("Failed offline token refill", error_code=Error.VALIDATE), get_auth_error_status_code(error)
+    return send_error(str(error), error_code=error.id), get_auth_error_status_code(error)
+
+
+OFFLINE_REFILL_REJECTION = RejectionShape(render=_refuse_offline_refill)
+
+
 @validate_blueprint.route('/offlinerefill', methods=['POST'])
+# First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
+@conditional_access_gate(_offline_refill_identity, shape=OFFLINE_REFILL_REJECTION)
 @check_user_serial_or_cred_id_in_request(request)
 @event("validate_offlinerefill", request, g)
 def offlinerefill():
@@ -320,11 +363,7 @@ def offlinerefill():
     except Exception as e:
         log_authentication(AuthEventType.OFFLINE_REFILL_FAIL, request, serial=serial,
                            reasons=[reason] if reason else None)
-        if Match.user(
-                g,
-                scope=SCOPE.TOKEN,
-                action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
-                user_object=request.User if hasattr(request, "User") else None).any():
+        if _hide_offline_refill_error():
             return send_error("Failed offline token refill", error_code=Error.VALIDATE), get_auth_error_status_code(e)
         raise
 
@@ -1380,9 +1419,7 @@ def check_remember_device():
 @postpolicy(preferred_client_mode, request=request)
 @add_serial_from_response_to_g
 # First decorator to act on the request; see conditional_access_gate for why it sits exactly here.
-# rejection_value=0: result.value here is the number of challenges triggered, not a boolean, so a rejection answers
-# with this endpoint's own kind of nothing rather than changing the field's type.
-@conditional_access_gate(_conditional_access_identity, rejection_value=0)
+@conditional_access_gate(_conditional_access_identity, shape=TRIGGER_CHALLENGE_REJECTION)
 @check_user_serial_or_cred_id_in_request(request)
 @prepolicy(check_application_tokentype, request=request)
 @prepolicy(increase_failcounter_on_challenge, request=request)
