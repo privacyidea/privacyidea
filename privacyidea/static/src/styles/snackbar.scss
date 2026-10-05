@@ -16,13 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+// The status colors, darkened enough that the white text keeps 4.5:1 against every one of them in both themes.
+$snackbar-darken: 30%;
+
 .mat-mdc-snack-bar-container {
   .mdc-snackbar__label {
     white-space: pre-line;
   }
 
   &.success-snackbar {
-    --mat-snack-bar-container-color: var(--green-base);
+    --mat-snack-bar-container-color: color-mix(in srgb, var(--green-base), black $snackbar-darken);
     --mat-snack-bar-supporting-text-color: white;
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
@@ -31,7 +34,7 @@
   }
 
   &.error-snackbar {
-    --mat-snack-bar-container-color: var(--red-base);
+    --mat-snack-bar-container-color: color-mix(in srgb, var(--red-base), black $snackbar-darken);
     --mat-snack-bar-supporting-text-color: white;
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
@@ -40,7 +43,7 @@
   }
 
   &.warning-snackbar {
-    --mat-snack-bar-container-color: var(--yellow-base);
+    --mat-snack-bar-container-color: color-mix(in srgb, var(--yellow-base), black $snackbar-darken);
     --mat-snack-bar-supporting-text-color: white;
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
