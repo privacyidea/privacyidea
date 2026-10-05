@@ -28,13 +28,42 @@ import { TooltipAriaLabelDirective } from "./tooltip-aria-label.directive";
   standalone: true,
   imports: [MatIcon, MatTooltip, TooltipAriaLabelDirective],
   template: `
-    <button id="icon" [matTooltip]="tip()"><mat-icon aria-hidden="true">refresh</mat-icon></button>
-    <button id="text" matTooltip="Tip">Visible text</button>
-    <button id="labelled" aria-label="Own name" matTooltip="Tip"><mat-icon aria-hidden="true">x</mat-icon></button>
-    <button id="labelledby" aria-labelledby="other" matTooltip="Tip"><mat-icon aria-hidden="true">x</mat-icon></button>
-    <a id="link" href="/x" matTooltip="Go"><mat-icon aria-hidden="true">x</mat-icon></a>
-    <span id="span" matTooltip="Not a control"></span>
-    <button id="empty" matTooltip=""><mat-icon aria-hidden="true">x</mat-icon></button>
+    <button
+      id="icon"
+      [matTooltip]="tip()"
+      ><mat-icon aria-hidden="true">refresh</mat-icon></button
+    >
+    <button
+      id="text"
+      matTooltip="Tip"
+      >Visible text</button
+    >
+    <button
+      id="labelled"
+      aria-label="Own name"
+      matTooltip="Tip"
+      ><mat-icon aria-hidden="true">x</mat-icon></button
+    >
+    <button
+      id="labelledby"
+      aria-labelledby="other"
+      matTooltip="Tip"
+      ><mat-icon aria-hidden="true">x</mat-icon></button
+    >
+    <a
+      id="link"
+      href="/x"
+      matTooltip="Go"
+      ><mat-icon aria-hidden="true">x</mat-icon></a
+    >
+    <span
+      id="span"
+      matTooltip="Not a control"></span>
+    <button
+      id="empty"
+      matTooltip=""
+      ><mat-icon aria-hidden="true">x</mat-icon></button
+    >
   `
 })
 class HostComponent {

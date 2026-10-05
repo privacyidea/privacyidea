@@ -25,6 +25,8 @@ import { MatTooltip } from "@angular/material/tooltip";
 // directive copies the tooltip's message into aria-label, tracking it when it changes. An element that sets its own
 // aria-label or aria-labelledby, or that has visible text of its own, keeps what it has.
 @Directive({
+  // Attaches to Material's own matTooltip on a button or link, so it takes effect wherever the tooltip does.
+  // eslint-disable-next-line @angular-eslint/directive-selector
   selector: "button[matTooltip], a[matTooltip]",
   standalone: true
 })
