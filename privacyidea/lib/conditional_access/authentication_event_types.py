@@ -200,6 +200,15 @@ class AuthEventType(str, Enum):
     # by it (g.client_id stays None), so whatever the request does otherwise proceeds unauthenticated by that key.
     SUSPENDED_API_KEY_USED = "SUSPENDED_API_KEY_USED"
 
+    # --- written by /validate/offlinerefill ------------------------------------------------------------------------
+    # Kept apart from LOGIN_SUCCESS and the token-flow failures: a refill is an offline client renewing its material,
+    # not a login, so a policy counting logins must not count refills by accident.
+    #
+    # The refilltoken was accepted and the client received fresh offline material and a new refilltoken.
+    OFFLINE_REFILL_SUCCESS = "OFFLINE_REFILL_SUCCESS"
+    # The refill was refused; the reasons say why (token state, WRONG_OTP or one of the offline refill reasons).
+    OFFLINE_REFILL_FAIL = "OFFLINE_REFILL_FAIL"
+
     def __str__(self) -> str:
         return self.value
 
@@ -292,6 +301,14 @@ class AuthEventReason(str, Enum):
     # CHALLENGE_CANCELLED, or the unspecified CHALLENGE_DECLINED), so a reason per variant would repeat it - the same
     # reasoning that leaves a wrong first factor without a reason of its own.
     CHALLENGE_DECLINED_ON_DEVICE = "CHALLENGE_DECLINED_ON_DEVICE"
+
+    # --- offline refill (/validate/offlinerefill) ----------------------------------------------------------------
+    # The refilltoken the client sent does not match the stored one: stale after a missed rotation, or replayed.
+    REFILLTOKEN_MISMATCH = "REFILLTOKEN_MISMATCH"
+    # The token is not attached to any machine with the offline application.
+    NOT_AN_OFFLINE_TOKEN = "NOT_AN_OFFLINE_TOKEN"
+    # A WebAuthn/Passkey refill whose user agent names no machine, so no machine-specific refilltoken can be looked up.
+    MACHINE_NOT_IDENTIFIED = "MACHINE_NOT_IDENTIFIED"
 
     def __str__(self) -> str:
         return self.value
@@ -400,6 +417,8 @@ EVENT_TYPE_OUTCOME: dict[AuthEventType, AuthEventOutcome] = {
     AuthEventType.ACCESS_DENIED: AuthEventOutcome.FAILURE,
     AuthEventType.DEVICE_TOKEN_REUSED: AuthEventOutcome.FAILURE,
     AuthEventType.SUSPENDED_API_KEY_USED: AuthEventOutcome.FAILURE,
+    AuthEventType.OFFLINE_REFILL_SUCCESS: AuthEventOutcome.SUCCESS,
+    AuthEventType.OFFLINE_REFILL_FAIL: AuthEventOutcome.FAILURE,
 }
 
 
@@ -537,8 +556,8 @@ class RestrictionCause(str, Enum):
 
 # Request-level precedence, highest signal first. Every non-enforcement (trackable) event type appears here, even the
 # handful - CHALLENGE_TRIGGER_FAIL, INVALID_TOKEN_TYPE, UNKNOWN_FAIL_REASON, DEVICE_TOKEN_REUSED,
-# SUSPENDED_API_KEY_USED - that never actually reach reduce_request_events, which reduces the per-token outcomes of
-# one token flow and none of these comes from one. The CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
+# SUSPENDED_API_KEY_USED, OFFLINE_REFILL_SUCCESS, OFFLINE_REFILL_FAIL - that never actually reach
+# reduce_request_events, which reduces the per-token outcomes of one token flow and none of these comes from one. The CA_ENFORCEMENT_EVENT_TYPES are the only ones left out: they
 # classify a request the pre-check rejected before any token logic ran, so they never reach reduce_request_events
 # either, and are excluded from the trackable vocabulary anyway (see CA_ENFORCEMENT_EVENT_TYPES).
 #: Request-level precedence, highest signal first: which staged event classifies a request that
@@ -581,6 +600,9 @@ REQUEST_EVENT_PRECEDENCE: list[AuthEventType] = [
     # attempt nor stands in for a request's own outcome.
     AuthEventType.DEVICE_TOKEN_REUSED,
     AuthEventType.SUSPENDED_API_KEY_USED,
+    # Classify a refill, which is a single event on a request of its own; listed for the same invariant.
+    AuthEventType.OFFLINE_REFILL_SUCCESS,
+    AuthEventType.OFFLINE_REFILL_FAIL,
 ]
 
 # Precedence rank of each event.

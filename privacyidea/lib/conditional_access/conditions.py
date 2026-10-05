@@ -261,6 +261,7 @@ AUTHENTICATING_ENDPOINTS: tuple[str, ...] = (
     "/validate/radiuscheck",
     "/validate/triggerchallenge",
     "/validate/initialize",
+    "/validate/offlinerefill",
     # The out-of-band push answer. The route is /ttype/<ttype>, but push is the only token type that authenticates
     # through it, so the path it is reached under is what an admin selects.
     "/ttype/push",
