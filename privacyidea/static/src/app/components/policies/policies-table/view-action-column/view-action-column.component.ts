@@ -57,7 +57,7 @@ export class ViewActionColumnComponent {
       const detail = this.policyService.getDetailsOfAction(actionNameWithoutExclusion(name), this.scope());
       const isBoolean = detail?.type === "bool";
       // An invalid value is shown and marked, also the one of a boolean action: it does not enable the action, which
-      // still acts as enabled until saving the policy in the WebUI removes it.
+      // still acts as enabled until the policy is saved again.
       const invalidValue = !isExcluded && !!detail && actionValueIsInvalid(detail, value);
       return {
         name,

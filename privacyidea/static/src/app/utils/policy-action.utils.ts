@@ -30,31 +30,19 @@ export function actionNameWithoutExclusion(name: string): string {
 }
 
 /**
- * Whether the value of a boolean action enables it, like the backend decides it: no value, an empty value or one of
- * 1, "1", true, "True", "true" and "TRUE". The backend stores a boolean action saved with any other value as excluded
- * action, the WebUI leaves it out when saving a policy.
+ * What the value of a boolean action means, like the backend decides it: true for no value, an empty value or one of
+ * 1, "1", true, "True", "true" and "TRUE"; false for false, 0, "0" and "false" in any case; null for any other value,
+ * like "hotp". The backend stores a boolean action saved with a false value as excluded action and rejects any other
+ * value.
  */
-export function boolActionValueEnablesAction(value: string | boolean | number | null | undefined): boolean {
+export function boolActionValue(value: string | boolean | number | null | undefined): boolean | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (["false", "0"].includes(trimmed.toLowerCase())) return false;
+    return trimmed === "" || ["1", "True", "true", "TRUE"].includes(trimmed) ? true : null;
+  }
   if (value === undefined || value === null || value === true || value === 1) return true;
-  if (typeof value !== "string") return false;
-  const trimmed = value.trim();
-  return trimmed === "" || ["1", "True", "true", "TRUE"].includes(trimmed);
-}
-
-/**
- * The actions without the boolean actions whose value does not enable them. Saving a policy in the WebUI sends these
- * actions, so such an action is removed from the policy instead of being stored as excluded action.
- */
-export function withoutDisablingBoolActions(
-  actions: Record<string, string | boolean>,
-  detailOf: (name: string) => PolicyActionDetail | null
-): Record<string, string | boolean> {
-  return Object.fromEntries(
-    Object.entries(actions).filter(
-      ([name, value]) =>
-        isExcludedActionName(name) || detailOf(name)?.type !== "bool" || boolActionValueEnablesAction(value)
-    )
-  );
+  return value === false || value === 0 ? false : null;
 }
 
 /**
@@ -63,7 +51,7 @@ export function withoutDisablingBoolActions(
  * A list that is empty, like the realms of a fresh installation, is not checked.
  */
 export function actionValueIsInvalid(detail: PolicyActionDetail, value: string | number | boolean): boolean {
-  if (detail.type === "bool") return !boolActionValueEnablesAction(value);
+  if (detail.type === "bool") return boolActionValue(value) !== true;
   const values =
     detail.multiple && typeof value === "string" ? value.split(" ").filter((part) => part !== "") : [value];
   if (detail.type === "int" && values.some((part) => String(part).trim() === "" || !Number.isInteger(Number(part)))) {

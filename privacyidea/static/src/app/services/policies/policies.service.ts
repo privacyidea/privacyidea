@@ -25,7 +25,6 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { splitMarkupSegments } from "@utils/markup.utils";
-import { withoutDisablingBoolActions } from "@utils/policy-action.utils";
 import { lastValueFrom, Observable } from "rxjs";
 
 export type ActionType = "bool" | "int" | "str" | "text";
@@ -179,6 +178,7 @@ export interface UserAgentOption {
   key: string;
   label: string;
 }
+
 
 export interface PolicyServiceInterface {
   readonly isEditMode: Signal<boolean>;
@@ -448,7 +448,6 @@ export class PolicyService implements PolicyServiceInterface {
   // -----------------------------------
 
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<Record<string, number>>> {
-    policyData = this.withoutDisablingBoolActions(policyData);
     const allPoliciesCopy = [...this.allPolicies()];
     allPoliciesCopy.push({ ...policyData });
     this.allPolicies.set(allPoliciesCopy);
@@ -684,7 +683,6 @@ export class PolicyService implements PolicyServiceInterface {
   }
 
   async savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): Promise<boolean> {
-    updatedPolicy = this.withoutDisablingBoolActions(updatedPolicy);
     let lastStableState = [...this.allPolicies()];
     const headers = this.authService.getHeaders();
     const hasNameChange = updatedPolicy.name && updatedPolicy.name !== originalPolicyName;
@@ -723,18 +721,6 @@ export class PolicyService implements PolicyServiceInterface {
       );
       return false;
     }
-  }
-
-  /**
-   * The policy without the boolean actions whose value does not enable them, so saving it removes them instead of the
-   * backend storing them as excluded actions.
-   */
-  private withoutDisablingBoolActions(policy: PolicyDetail): PolicyDetail {
-    if (!policy.action) return policy;
-    return {
-      ...policy,
-      action: withoutDisablingBoolActions(policy.action, (name) => this.getDetailsOfAction(name, policy.scope))
-    };
   }
 
   readonly allPoliciesResource = httpResource<PiResponse<PolicyDetail[]>>(() => {

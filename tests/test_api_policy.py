@@ -597,6 +597,18 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual({f"-{PolicyAction.PASSONNOTOKEN}": True}, get_policies(name="boolValue")[0].get("action"))
         delete_policy("boolValue")
 
+        # A value that is neither true nor false is rejected
+        for action in [f"{PolicyAction.PASSONNOTOKEN}=hotp", {PolicyAction.PASSONNOTOKEN: "hotp"}]:
+            with self.app.test_request_context('/policy/boolValue',
+                                               method='POST',
+                                               json={"scope": SCOPE.AUTH, "action": action},
+                                               headers={'PI-Authorization': self.at}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(res.status_code, 400, res.json)
+                self.assertIn(f"Invalid value for action '{PolicyAction.PASSONNOTOKEN}'",
+                              res.json["result"]["error"]["message"])
+            self.assertFalse(get_policies(name="boolValue"))
+
     def test_02_rename_policy(self):
         # create a policy pol_old
         with self.app.test_request_context(

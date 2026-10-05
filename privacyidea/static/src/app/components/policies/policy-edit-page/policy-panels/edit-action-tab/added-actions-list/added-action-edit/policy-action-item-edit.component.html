@@ -26,16 +26,20 @@
         class="detail-description"
         [innerHTML]="description | highlight: highlight() : true"></span>
     }
-    @if (valueDisablesAction()) {
+    @if (boolValue() === false) {
       <span
         class="detail-warning"
-        i18n="@@policy.boolValueDisablesAction">The value "{{ action().value }}" does not enable this action. Saving the policy removes it.</span>
+        i18n="@@policy.boolValueDisablesAction">The value "{{ action().value }}" disables this action. Saving the policy stores it as excluded.</span>
+    } @else if (boolValue() === null) {
+      <span
+        class="detail-warning"
+        i18n="@@policy.boolValueInvalid">The value "{{ action().value }}" is neither true nor false. Saving the policy fails until you change it.</span>
     }
   </div>
 
   <div class="detail-input">
     <div class="detail-value">
-      @if (valueDisablesAction()) {
+      @if (boolValue() !== true) {
         <button
           (click)="keepActionEnabled()"
           class="action-button-secondary flex-1"

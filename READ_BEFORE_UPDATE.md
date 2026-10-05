@@ -8,8 +8,9 @@
   migration turns every boolean action with the value `false` (in any case) or `0` into the excluded action, like
   `-policywrite` — **run the schema update** (`pi-manage setup update_db`). The schema update logs a warning for
   every policy it changes. Other values, like `triggerchallenge=hotp`, are left as they are and still act as enabled;
-  the schema update logs a warning for these too. Saving such a policy again stores these actions as excluded, so
-  check the policies named in the warnings.
+  the schema update logs a warning for these too. Saving a policy with such a value now fails, also through the API
+  and `pi-manage`, so check the policies named in the warnings and set these actions to `true` or `false`.
+  `pi-manage config import --skip-invalid` drops such actions instead.
 
 ## Update from 3.13 to 3.14
 

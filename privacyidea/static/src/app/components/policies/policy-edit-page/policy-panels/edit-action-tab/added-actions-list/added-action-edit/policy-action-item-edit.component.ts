@@ -30,7 +30,7 @@ import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
-import { boolActionValueEnablesAction } from "@utils/policy-action.utils";
+import { boolActionValue } from "@utils/policy-action.utils";
 import {
   labeledOptions,
   POLICY_VOCABULARY_ACTIONS,
@@ -99,10 +99,11 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
   }
 
   /**
-   * A boolean action with a value that does not enable it. It still acts as enabled, but saving the policy removes it.
+   * What the value of a boolean action means, true for any other action. A false value still acts as enabled, saving
+   * the policy stores it as excluded. A value that is neither true nor false (null) makes saving the policy fail.
    */
-  readonly valueDisablesAction = computed<boolean>(
-    () => this.isBooleanAction() && !boolActionValueEnablesAction(this.action().value)
+  readonly boolValue = computed<boolean | null>(() =>
+    this.isBooleanAction() ? boolActionValue(this.action().value) : true
   );
 
   keepActionEnabled(): void {

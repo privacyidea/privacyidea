@@ -379,6 +379,10 @@ class PolicyTestCase(MyTestCase):
         cleaned, dropped = filter_invalid_actions(SCOPE.ADMIN, {"disable": True, "gone": True})
         self.assertEqual(set(cleaned.keys()), {"disable"})
         self.assertEqual(dropped, ["gone"])
+        # An excluded action is not checked
+        cleaned, dropped = filter_invalid_actions(SCOPE.ADMIN, "enable=hotp, disable=false, -revoke=hotp")
+        self.assertEqual(cleaned, {"disable": "false", "-revoke": "hotp"})
+        self.assertEqual(dropped, ["enable"])
 
     def test_06e_import_policy_skip_invalid_all_dropped(self):
         # A policy whose only actions are invalid is skipped (no valid action
@@ -2437,10 +2441,18 @@ class PolicyTestCase(MyTestCase):
                          negate_disabled_bool_actions(SCOPE.AUTH, {PolicyAction.PASSONNOTOKEN: "",
                                                                    PolicyAction.PASSONNOUSER: None}))
 
-        # Any other value disables the action, so it is excluded instead
-        for value in ["False", "false", "0", "yes", "tRuE"]:
+        # A false value disables the action
+        for value in ["False", "false", "FALSE", "fAlSe", "0", " false "]:
             self.assertEqual(f"-{PolicyAction.PASSONNOTOKEN}",
                              negate_disabled_bool_actions(SCOPE.AUTH, f"{PolicyAction.PASSONNOTOKEN}={value}"), value)
+        self.assertEqual({f"-{PolicyAction.PASSONNOTOKEN}": True, f"-{PolicyAction.PASSONNOUSER}": True},
+                         negate_disabled_bool_actions(SCOPE.AUTH, {PolicyAction.PASSONNOTOKEN: False,
+                                                                   PolicyAction.PASSONNOUSER: 0}))
+
+        # validate_actions rejects these
+        for value in ["yes", "tRuE", "hotp"]:
+            action = f"{PolicyAction.PASSONNOTOKEN}={value}"
+            self.assertEqual(action, negate_disabled_bool_actions(SCOPE.AUTH, action))
 
         # Actions as a dict like the API and the WebUI send them, also the boolean actions of a token type
         self.assertEqual({f"-{PolicyAction.POLICYWRITE}": True, PolicyAction.ENABLE: True,
@@ -2506,6 +2518,44 @@ class PolicyTestCase(MyTestCase):
         # The import of a policy also negates the disabled action
         import_policy([{"name": "imported", "scope": SCOPE.ADMIN, "action": {PolicyAction.POLICYWRITE: "False"}}])
         self.assertEqual({f"-{PolicyAction.POLICYWRITE}": True}, get_policies(name="imported")[0].get("action"))
+        delete_policy("imported")
+
+    def test_52d_set_policy_rejects_invalid_bool_action_values(self):
+        # A value that is neither true nor false would act as enabled, whatever was meant by it, so it is rejected
+        for action in [f"{PolicyAction.TRIGGERCHALLENGE}=hotp", {PolicyAction.TRIGGERCHALLENGE: "hotp"},
+                       f"{PolicyAction.ENABLE}, {PolicyAction.TRIGGERCHALLENGE}=tRuE",
+                       {PolicyAction.TRIGGERCHALLENGE: 2}]:
+            with self.assertRaises(ParameterError) as exception:
+                set_policy("invalid_bool", scope=SCOPE.ADMIN, action=action)
+            self.assertIn(f"Invalid value for action '{PolicyAction.TRIGGERCHALLENGE}'", exception.exception.message)
+            self.assertFalse(get_policies(name="invalid_bool"))
+
+        # An update of a stored policy is rejected as well and leaves the stored actions as they are
+        set_policy("invalid_bool", scope=SCOPE.ADMIN, action=PolicyAction.TRIGGERCHALLENGE)
+        with self.assertRaises(ParameterError):
+            set_policy("invalid_bool", action={PolicyAction.TRIGGERCHALLENGE: "hotp"})
+        self.assertEqual({PolicyAction.TRIGGERCHALLENGE: True}, get_policies(name="invalid_bool")[0].get("action"))
+        delete_policy("invalid_bool")
+
+        # True, false and empty values are valid, also as Python values
+        for value in [True, 1, "1", "TRUE", "", None, False, 0, "0", "False", "fAlSe"]:
+            self.assertTrue(validate_actions(SCOPE.ADMIN, {PolicyAction.TRIGGERCHALLENGE: value}), value)
+
+        # An excluded action and an action of another type are not checked
+        self.assertTrue(validate_actions(SCOPE.ADMIN, f"-{PolicyAction.TRIGGERCHALLENGE}=hotp"))
+        self.assertTrue(validate_actions(SCOPE.CONTAINER, {PolicyAction.CONTAINER_SSL_VERIFY: "False"}))
+
+        # The import fails for the policy, with skip_invalid it drops the action and skips a policy left empty
+        with self.assertRaises(PolicyError):
+            import_policy([{"name": "imported", "scope": SCOPE.ADMIN,
+                            "action": {PolicyAction.TRIGGERCHALLENGE: "hotp"}}])
+        self.assertFalse(get_policies(name="imported"))
+        import_policy([{"name": "imported", "scope": SCOPE.ADMIN,
+                        "action": {PolicyAction.ENABLE: True, PolicyAction.TRIGGERCHALLENGE: "hotp"}},
+                       {"name": "emptied", "scope": SCOPE.ADMIN,
+                        "action": {PolicyAction.TRIGGERCHALLENGE: "hotp"}}], skip_invalid=True)
+        self.assertEqual({PolicyAction.ENABLE: True}, get_policies(name="imported")[0].get("action"))
+        self.assertFalse(get_policies(name="emptied"))
         delete_policy("imported")
 
     def test_53_set_policy_validate_realms(self):

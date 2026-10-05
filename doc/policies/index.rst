@@ -104,8 +104,9 @@ Each policy can contain the following attributes:
 
   A boolean action saved with a value is only enabled by an empty value or by
   ``true``, ``True``, ``TRUE`` or ``1``.
-  Any other value, like ``policywrite=false``, disables it, so it is stored as
-  the excluded action ``-policywrite``.
+  The value ``false`` (in any case) or ``0``, like ``policywrite=false``,
+  disables it, so it is stored as the excluded action ``-policywrite``.
+  Any other value, like ``triggerchallenge=hotp``, is rejected.
 
 
 Conditions

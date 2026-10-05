@@ -133,10 +133,20 @@ describe("PolicyActionItemEditComponent", () => {
       fixture.detectChanges();
     });
 
-    it("shows the value and what saving the policy does", () => {
-      expect(component.valueDisablesAction()).toBe(true);
+    it("shows that saving the policy fails for a value that is neither true nor false", () => {
+      expect(component.boolValue()).toBeNull();
       const warning = fixture.debugElement.query(By.css(".detail-warning")).nativeElement as HTMLElement;
       expect(warning.textContent).toContain('"hotp"');
+      expect(warning.textContent).toContain("fails");
+    });
+
+    it("shows that saving the policy stores a false value as excluded", () => {
+      fixture.componentRef.setInput("action", { name: "triggerchallenge", value: "False" });
+      fixture.detectChanges();
+      expect(component.boolValue()).toBe(false);
+      const warning = fixture.debugElement.query(By.css(".detail-warning")).nativeElement as HTMLElement;
+      expect(warning.textContent).toContain("excluded");
+      expect(fixture.debugElement.query(By.css(".detail-value button"))).not.toBeNull();
     });
 
     it("keeps the action enabled by setting its value to true", () => {
@@ -149,7 +159,7 @@ describe("PolicyActionItemEditComponent", () => {
     it.each([true, "true", "TRUE", "1", ""])("shows nothing for the enabling value %p", (value) => {
       fixture.componentRef.setInput("action", { name: "triggerchallenge", value });
       fixture.detectChanges();
-      expect(component.valueDisablesAction()).toBe(false);
+      expect(component.boolValue()).toBe(true);
       expect(fixture.debugElement.query(By.css(".detail-warning"))).toBeNull();
       expect(fixture.debugElement.query(By.css(".detail-value button"))).toBeNull();
     });
@@ -158,7 +168,7 @@ describe("PolicyActionItemEditComponent", () => {
       fixture.componentRef.setInput("action", { name: "container_ssl_verify", value: "False" });
       fixture.componentRef.setInput("actionDetail", { type: "str", desc: "", value: ["True", "False"] });
       fixture.detectChanges();
-      expect(component.valueDisablesAction()).toBe(false);
+      expect(component.boolValue()).toBe(true);
       expect(fixture.debugElement.query(By.css(".detail-warning"))).toBeNull();
     });
   });

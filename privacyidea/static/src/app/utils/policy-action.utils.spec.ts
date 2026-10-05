@@ -16,13 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import type { PolicyActionDetail } from "@services/policies/policies.service";
 import {
   actionNameWithoutExclusion,
   actionValueIsInvalid,
-  boolActionValueEnablesAction,
-  isExcludedActionName,
-  withoutDisablingBoolActions
+  boolActionValue,
+  isExcludedActionName
 } from "./policy-action.utils";
 
 describe("policy action utils", () => {
@@ -39,20 +37,25 @@ describe("policy action utils", () => {
   it.each([true, 1, "1", "True", "true", "TRUE", "", " ", null, undefined])(
     "takes the value %p as enabling a boolean action",
     (value) => {
-      expect(boolActionValueEnablesAction(value)).toBe(true);
+      expect(boolActionValue(value)).toBe(true);
     }
   );
 
-  it.each([false, 0, "0", "False", "false", "tRuE", "yes", "hotp"])(
-    "takes the value %p as not enabling a boolean action",
+  it.each([false, 0, "0", "False", "false", "FALSE", "fAlSe", " false "])(
+    "takes the value %p as disabling a boolean action",
     (value) => {
-      expect(boolActionValueEnablesAction(value)).toBe(false);
+      expect(boolActionValue(value)).toBe(false);
     }
   );
+
+  it.each(["tRuE", "yes", "hotp", 2])("takes the value %p as neither true nor false", (value) => {
+    expect(boolActionValue(value)).toBeNull();
+  });
 
   describe("actionValueIsInvalid", () => {
     it("takes a boolean action as invalid if its value does not enable it", () => {
       expect(actionValueIsInvalid({ type: "bool", desc: "" }, "hotp")).toBe(true);
+      expect(actionValueIsInvalid({ type: "bool", desc: "" }, "false")).toBe(true);
       expect(actionValueIsInvalid({ type: "bool", desc: "" }, true)).toBe(false);
     });
 
@@ -87,29 +90,6 @@ describe("policy action utils", () => {
       expect(actionValueIsInvalid({ type: "str", desc: "", value: [] }, "realm1")).toBe(false);
       expect(actionValueIsInvalid({ type: "str", desc: "" }, "anything")).toBe(false);
       expect(actionValueIsInvalid({ type: "text", desc: "" }, "")).toBe(false);
-    });
-  });
-
-  describe("withoutDisablingBoolActions", () => {
-    const details: Record<string, PolicyActionDetail> = {
-      triggerchallenge: { type: "bool", desc: "" },
-      hotp_hashlib: { type: "str", desc: "", value: ["sha1", "sha256"] }
-    };
-    const detailOf = (name: string) => details[name] ?? null;
-
-    it("leaves out a boolean action whose value does not enable it", () => {
-      expect(withoutDisablingBoolActions({ triggerchallenge: "hotp", hotp_hashlib: "sha1" }, detailOf)).toEqual({
-        hotp_hashlib: "sha1"
-      });
-    });
-
-    it.each([true, "true", "1", ""])("keeps a boolean action with the enabling value %p", (value) => {
-      expect(withoutDisablingBoolActions({ triggerchallenge: value }, detailOf)).toEqual({ triggerchallenge: value });
-    });
-
-    it("keeps excluded actions, actions of other types and unknown actions", () => {
-      const actions = { "-triggerchallenge": "hotp", hotp_hashlib: "md5", unknown: "False" };
-      expect(withoutDisablingBoolActions(actions, detailOf)).toEqual(actions);
     });
   });
 });

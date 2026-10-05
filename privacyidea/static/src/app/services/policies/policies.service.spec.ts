@@ -191,23 +191,6 @@ describe("PolicyService", () => {
       expect(reloadSpy).toHaveBeenCalled();
     });
 
-    it("leaves out a boolean action whose value does not enable it", async () => {
-      service.allPolicies.set([]);
-      jest
-        .spyOn(service, "getDetailsOfAction")
-        .mockImplementation((name) => (name === "triggerchallenge" ? { type: "bool", desc: "" } : null));
-
-      const savePromise = service.saveNewPolicy({
-        ...newPolicy,
-        action: { triggerchallenge: "hotp", "test-action": true }
-      });
-
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
-      expect(req.request.body.action).toEqual({ "test-action": true });
-      req.flush(MockPiResponse.fromValue({ status: true }));
-      expect(await savePromise).toBe(true);
-    });
-
     it("should return false and show error notification when response status is false", async () => {
       service.allPolicies.set([]);
       const reloadSpy = jest.spyOn(service.allPoliciesResource, "reload");
@@ -313,24 +296,6 @@ describe("PolicyService", () => {
         expect(notificationService.success).toHaveBeenCalledWith(
           expect.stringContaining("Policy updated successfully")
         );
-      });
-
-      it("leaves out a boolean action whose value does not enable it", async () => {
-        const detailSpy = jest
-          .spyOn(service, "getDetailsOfAction")
-          .mockImplementation((name) => (name === "triggerchallenge" ? { type: "bool", desc: "" } : null));
-
-        const savePromise = service.savePolicyEdits(originalPolicy.name, {
-          ...updatedPolicy,
-          action: { triggerchallenge: "hotp", "updated-action": true }
-        });
-
-        expect(detailSpy).toHaveBeenCalledWith("triggerchallenge", "user");
-        expect(service.allPolicies()[0].action).toEqual({ "updated-action": true });
-        const postReq = httpTestingController.expectOne(`${service.policyBaseUrl}${originalPolicy.name}`);
-        expect(postReq.request.body.action).toEqual({ "updated-action": true });
-        postReq.flush(MockPiResponse.fromValue({ status: true }));
-        expect(await savePromise).toBe(true);
       });
 
       it("should rollback optimistic update and show error notification on POST failure", async () => {
