@@ -127,7 +127,7 @@ from privacyidea.lib.challenge import get_challenges, extract_answered_challenge
 from privacyidea.lib.config import ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
 from privacyidea.lib.error import (ParameterError, PolicyError, ResourceNotFoundError, Error, AuthError, UserError,
-                                   TokenAdminError, EnrollmentError)
+                                   TokenAdminError, EnrollmentError, ValidateError)
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
@@ -267,6 +267,7 @@ def offlinerefill():
     serial = get_required(request.all_data, "serial")
     refilltoken_request = get_required(request.all_data, "refilltoken")
     password = get_required(request.all_data, "pass", allow_empty=True)
+    reason = None
     try:
         tokens = get_tokens(serial=serial)
         if len(tokens) != 1:
@@ -276,6 +277,7 @@ def offlinerefill():
         # check if token is disabled or otherwise not fit for auth
         message_list = []
         if not token.check_all(message_list):
+            reason = token.auth_details.get(AUTH_EVENT_REASON_KEY)
             log.info(f"Failed to offline refill: {message_list}")
             raise ParameterError(_("The token is not valid."))
         token_attachments = list_machine_tokens(serial=serial, application="offline")
@@ -288,6 +290,7 @@ def offlinerefill():
             elif token.type.lower() in ["webauthn", "passkey"]:
                 computer_name = get_computer_name_from_user_agent(request.user_agent.string)
                 if not computer_name:
+                    reason = AuthEventReason.MACHINE_NOT_IDENTIFIED
                     log.warning(f"Unable to refill because user agent does not contain a valid machine name: "
                                 f"{request.user_agent.string}")
                     raise ParameterError(_("Machine can not be identified by user agent!"))
@@ -297,7 +300,11 @@ def offlinerefill():
                 # We need the options to pass the count and the rounds for the next offline OTP values,
                 # which could have changed in the meantime.
                 options = token_attachments[0].get("options")
-                otps = MachineApplication.get_refill(token, password, options)
+                try:
+                    otps = MachineApplication.get_refill(token, password, options)
+                except ValidateError:
+                    reason = AuthEventReason.WRONG_OTP
+                    raise
                 refilltoken_new = MachineApplication.generate_new_refilltoken(token, request.user_agent.string)
                 response = send_result(True)
                 content = response.json
@@ -305,10 +312,14 @@ def offlinerefill():
                                                       "response": otps,
                                                       "serial": serial}]}
                 response.set_data(json.dumps(content))
+                log_authentication(AuthEventType.OFFLINE_REFILL_SUCCESS, request, serial=serial)
                 return response
+        reason = AuthEventReason.REFILLTOKEN_MISMATCH if token_attachments else AuthEventReason.NOT_AN_OFFLINE_TOKEN
         raise ParameterError(_("Token is not an offline token or refill token is incorrect"))
 
     except Exception as e:
+        log_authentication(AuthEventType.OFFLINE_REFILL_FAIL, request, serial=serial,
+                           reasons=[reason] if reason else None)
         if Match.user(
                 g,
                 scope=SCOPE.TOKEN,

@@ -667,8 +667,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         source_ip_source="REMOTE_ADDR", endpoint='/validate/check')
 
         # Refill without machine name will fail with parameter error 905
+        clear_authentication_log()
         data = {"serial": serial, "refilltoken": refill_token, "pass": ""}
-        with self.app.test_request_context('/validate/offlinerefill', method='POST', data=data):
+        with self.app.test_request_context('/validate/offlinerefill', method='POST', data=data,
+                                           headers={"User-Agent": "privacyidea-cp/1.1.1"}):
             res = self.app.full_dispatch_request()
             self.assertIn("result", res.json)
             result = res.json["result"]
@@ -702,6 +704,15 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(serial, offline["serial"])
             self.assertIn("response", offline)
             self.assertFalse(offline["response"])
+        auth_log_entries = assert_authentication_log([AuthEventType.OFFLINE_REFILL_FAIL,
+                                                      AuthEventType.OFFLINE_REFILL_SUCCESS], same_attempt=False)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.OFFLINE_REFILL_FAIL], user=self.user,
+                                        serials={serial}, client_label="privacyidea-cp/1.1.1",
+                                        endpoint='/validate/offlinerefill',
+                                        reason=AuthEventReason.MACHINE_NOT_IDENTIFIED)
+        assert_authentication_log_entry(auth_log_entries[AuthEventType.OFFLINE_REFILL_SUCCESS], user=self.user,
+                                        serials={serial}, client_label=user_agent,
+                                        endpoint='/validate/offlinerefill')
 
         # Disable offline for the token
         with self.app.test_request_context(f'/machine/token/{serial}/offline/1',
