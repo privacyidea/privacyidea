@@ -85,7 +85,7 @@ from privacyidea.lib.conditional_access.engine import (get_subject_lock, get_use
                                                        RestrictionStatus)
 from privacyidea.lib.conditional_access.policy import default_error_message
 from privacyidea.lib.conditional_access.session import release_ca_connection
-from privacyidea.lib.conditional_access.request_context import get_ca_context, peek_ca_context
+from privacyidea.lib.conditional_access.request_context import GateCheck, get_ca_context, peek_ca_context
 from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import Match, SCOPE
@@ -420,10 +420,11 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
     :func:`conditional_access_login_gate`. The exception is a pre-policy that rewrites the identity: ``set_realm``
     and ``mangle`` on ``/validate/check`` assign a new ``request.User``, and everything downstream authenticates,
     logs and counts as that one - so they run first, or the gate would check an identity that never authenticates.
-    A pre-event handler can assign one too (the RequestMangler with ``reset_user``). The event handlers stay below
-    the gate, so that none of them runs for a user it refuses; instead the gate leaves its check on the request's
-    conditional-access context, and the event decorator runs it again for the new user
-    (:func:`~privacyidea.lib.conditional_access.request_context.recheck_conditional_access_gate`).
+    A pre-event handler can change the identity too: the RequestMangler assigns a new ``request.User`` with
+    ``reset_user``, or rewrites the ``serial`` or ``credential_id`` an *identity_resolver* reads. The event handlers
+    stay below the gate, so that none of them runs for a user it refuses; instead the gate leaves its check on the
+    request's conditional-access context, and the event decorator runs it again whenever the identity it resolves
+    has changed (:func:`~privacyidea.lib.conditional_access.request_context.recheck_conditional_access_gate`).
 
     Below the response decorators because this gate *returns* its rejection rather than raising one: a failed
     authentication on ``/validate/*`` is an ordinary ``200`` carrying ``result.value`` false, not an error
@@ -452,14 +453,17 @@ def conditional_access_gate(identity_resolver: Callable[[], User] | None = None,
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            def check() -> ResponseReturnValue | None:
-                user = identity_resolver() if identity_resolver is not None else request.User
+            def resolve_identity() -> User:
+                return identity_resolver() if identity_resolver is not None else request.User
+
+            def check(user: User) -> ResponseReturnValue | None:
                 return conditional_access_precheck(user, shape)
 
-            rejection = check()
+            user = resolve_identity()
+            rejection = check(user)
             if rejection is not None:
                 return rejection
-            get_ca_context().gate_check = check
+            get_ca_context().gate_check = GateCheck(resolve_identity, check, user)
             return wrapped_function(*args, **kwargs)
         return wrapper
     return decorator
@@ -710,13 +714,16 @@ def conditional_access_login_gate() -> Callable[[Callable], Callable]:
     def decorator(wrapped_function: Callable) -> Callable:
         @functools.wraps(wrapped_function)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            def check() -> None:
-                user = request.User or User()
+            def resolve_identity() -> User:
+                return request.User or User()
+
+            def check(user: User) -> None:
                 g.audit_object.log({"user": user.login, "realm": user.realm})
                 _reject_restricted_login(user)
 
-            check()
-            get_ca_context().gate_check = check
+            user = resolve_identity()
+            check(user)
+            get_ca_context().gate_check = GateCheck(resolve_identity, check, user)
             return wrapped_function(*args, **kwargs)
 
         return wrapper

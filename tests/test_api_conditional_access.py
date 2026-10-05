@@ -106,6 +106,17 @@ def _rewrite_realm_by_request_mangler(event_name: str, named_realm: str, rewritt
                               "match_pattern": named_realm, "reset_user": "1"})
 
 
+def _rewrite_serial_by_request_mangler(event_name: str, named_serial: str, rewritten_serial: str) -> int:
+    """
+    Configure a RequestMangler pre-handler on *event_name* that rewrites the serial *named_serial* to
+    *rewritten_serial*, leaving ``request.User`` as it is. Returns its id.
+    """
+    return set_event(f"rewrite_{named_serial}", event=[event_name], handlermodule="RequestMangler", action="set",
+                     position="pre", conditions={},
+                     options={"parameter": "serial", "value": rewritten_serial, "match_parameter": "serial",
+                              "match_pattern": named_serial})
+
+
 # The type checker treats _ContractHost as the fixture class, so self.user, self._lock_user_for, self.assertEqual
 # and the rest resolve; at runtime the base is plain object, because a TestCase base here would be collected and
 # run, raising NotImplementedError from the abstract hooks.
@@ -457,8 +468,32 @@ class _PostResponseGateContract(_ContractHost):
         raise NotImplementedError
 
 
+class _SerialRewriteGateContract(_ContractHost):
+    """
+    The gate re-check on an endpoint that resolves the token owner from the serial. A pre-event handler that rewrites
+    the serial changes who the request is for without touching ``request.User``, so the re-check has to follow the
+    identity the gate resolves rather than the request's user.
+    """
+
+    #: The serial of the test user's token, which the handler rewrites the named serial to.
+    serial: str
+    event_name: str
+
+    def _authenticate_with_serial(self, serial: str) -> Response:
+        """The request this endpoint authenticates by serial, naming *serial* and no user."""
+        raise NotImplementedError
+
+    def test_the_gate_is_rechecked_for_a_serial_a_pre_event_handler_rewrites_to(self):
+        # The named serial belongs to no token, so the gate lets the request through; the handler then points it at
+        # the locked user's token.
+        self.addCleanup(delete_event,
+                        _rewrite_serial_by_request_mangler(self.event_name, "CA_GATE_NAMED", self.serial))
+        self._lock_user_for(error_message="MSG-REWRITTEN")
+        self._assert_refused(self._authenticate_with_serial("CA_GATE_NAMED"), message="MSG-REWRITTEN")
+
+
 class ValidateCheckGateTestCase(_GateContract, _UserGateContract, _PostResponseGateContract,
-                               ConditionalAccessApiTestCase):
+                               _SerialRewriteGateContract, ConditionalAccessApiTestCase):
     """The gate contract over ``/validate/check``, the machine-facing authentication."""
 
     failure_event_type = AuthEventType.MFA_FAIL
@@ -494,6 +529,11 @@ class ValidateCheckGateTestCase(_GateContract, _UserGateContract, _PostResponseG
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": self.username, "pass": "pin755224"}, **kwargs):
+            return self.app.full_dispatch_request()
+
+    def _authenticate_with_serial(self, serial: str) -> Response:
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data={"serial": serial, "pass": "pin755224"}):
             return self.app.full_dispatch_request()
 
     def _assert_succeeded(self, response: Response) -> None:
@@ -845,7 +885,7 @@ class ValidateCheckGateTestCase(_GateContract, _UserGateContract, _PostResponseG
 
 
 class RadiusCheckGateTestCase(_GateContract, _UserGateContract, _PostResponseGateContract,
-                             ConditionalAccessApiTestCase):
+                             _SerialRewriteGateContract, ConditionalAccessApiTestCase):
     """
     The same gate over ``/validate/radiuscheck``, which shares ``/validate/check``'s view and renders the result as
     a bare status code: 204 authenticated, 400 anything else, with no body at all to carry wording.
@@ -881,6 +921,11 @@ class RadiusCheckGateTestCase(_GateContract, _UserGateContract, _PostResponseGat
         kwargs = {"environ_base": {"REMOTE_ADDR": remote_addr}} if remote_addr else {}
         with self.app.test_request_context('/validate/radiuscheck', method='POST',
                                            data={"user": self.username, "pass": "pin755224"}, **kwargs):
+            return self.app.full_dispatch_request()
+
+    def _authenticate_with_serial(self, serial: str) -> Response:
+        with self.app.test_request_context('/validate/radiuscheck', method='POST',
+                                           data={"serial": serial, "pass": "pin755224"}):
             return self.app.full_dispatch_request()
 
     def _assert_succeeded(self, response: Response) -> None:
@@ -922,7 +967,7 @@ class RadiusCheckGateTestCase(_GateContract, _UserGateContract, _PostResponseGat
 
 
 class TriggerChallengeGateTestCase(_GateContract, _UserGateContract, _PostResponseGateContract,
-                                  ConditionalAccessApiTestCase):
+                                  _SerialRewriteGateContract, ConditionalAccessApiTestCase):
     """
     The gate over ``/validate/triggerchallenge``, where ``result.value`` is the number of challenges triggered
     rather than a boolean - so its rejection answers with this endpoint's own kind of nothing, ``0``.
@@ -964,6 +1009,12 @@ class TriggerChallengeGateTestCase(_GateContract, _UserGateContract, _PostRespon
         with self.app.test_request_context('/validate/triggerchallenge', method='POST',
                                            data={"user": self.username}, headers={"Authorization": self.at},
                                            **kwargs):
+            return self.app.full_dispatch_request()
+
+    def _authenticate_with_serial(self, serial: str) -> Response:
+        self.challenges_before = db.session.query(Challenge).count()
+        with self.app.test_request_context('/validate/triggerchallenge', method='POST',
+                                           data={"serial": serial}, headers={"Authorization": self.at}):
             return self.app.full_dispatch_request()
 
     def _check(self, data: dict) -> dict:
@@ -1091,7 +1142,7 @@ class TriggerChallengeGateTestCase(_GateContract, _UserGateContract, _PostRespon
 
 
 class OfflineRefillGateTestCase(_GateContract, _UserGateContract, _PostResponseGateContract,
-                                ConditionalAccessApiTestCase):
+                                _SerialRewriteGateContract, ConditionalAccessApiTestCase):
     """
     The gate over ``/validate/offlinerefill``. Every failed refill is an error response rather than a ``result.value``
     false, so a rejection is one too, and the identity gated on is the owner of the token the serial names.
@@ -1142,6 +1193,9 @@ class OfflineRefillGateTestCase(_GateContract, _UserGateContract, _PostResponseG
     def _authenticate(self, remote_addr: str | None = None) -> Response:
         return self._refill(remote_addr=remote_addr)
 
+    def _authenticate_with_serial(self, serial: str) -> Response:
+        return self._refill(data={"serial": serial})
+
     def _fail(self) -> Response:
         return self._refill(refilltoken="a" * 2 * REFILLTOKEN_LENGTH)
 
@@ -1163,7 +1217,8 @@ class OfflineRefillGateTestCase(_GateContract, _UserGateContract, _PostResponseG
         self.assertEqual(self.before, (token.get_tokeninfo("refilltoken"), token.token.count))
 
     def test_the_gate_is_rechecked_for_a_user_a_pre_event_handler_rewrites_to(self):
-        self.skipTest("the refill gates on the owner of the serial's token, which rewriting the user does not change")
+        self.skipTest("the refill gates on the owner of the serial's token, which rewriting the user does not change; "
+                      "test_the_gate_is_rechecked_for_a_serial_a_pre_event_handler_rewrites_to covers its re-check")
 
     def test_a_user_parameter_naming_somebody_else_does_not_lift_the_lock(self):
         # The refill hands out the material of whatever token the serial names, so the user that token belongs to

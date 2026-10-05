@@ -202,14 +202,12 @@ class event:
                 # The action is determined by the event configuration
                 # In the options we can pass the mailserver configuration
                 options = {"request": self.request, "g": self.g, "handler_def": e_handler_def}
-                user_before_handler = getattr(self.request, "User", None)
                 self._run_handler(event_handler, e_handler_def, options, "PRE-EVENT")
-                if getattr(self.request, "User", None) != user_before_handler:
-                    # The handler replaced the user after the conditional-access gate checked the one the request
-                    # named, so the new user is gated before any later handler or the view acts for them.
-                    rejection = recheck_conditional_access_gate()
-                    if rejection is not None:
-                        return rejection
+                # The handler may have changed who the request is for after the conditional-access gate checked it,
+                # so a changed identity is gated before any later handler or the view acts for it.
+                rejection = recheck_conditional_access_gate()
+                if rejection is not None:
+                    return rejection
 
             f_result = func(*args, **kwds)
 

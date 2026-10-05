@@ -96,6 +96,11 @@ takes precedence over the realm in the login name, and without any realm the def
 :ref:`conditional_access` is checked for the user of the original request and again for the new user. Other policies
 that are checked before the event handlers run still apply to the user of the original request.
 
+The same holds for a request that names a token instead of a user, for example ``/validate/check`` or
+``/validate/offlinerefill`` with only a ``serial``: conditional access is checked for the owner of that token, and
+setting the ``serial`` or ``credential_id`` parameter has it checked again for the owner of the new token, with or
+without *reset_user*.
+
 Code
 ~~~~
 
