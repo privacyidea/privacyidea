@@ -25,7 +25,7 @@ import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { MockContentService, MockLocalService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { RealmService } from "./realm.service";
+import { compareResolverPriority, RealmResolver, RealmService } from "./realm.service";
 
 describe("RealmService", () => {
   let realmService: RealmService;
@@ -343,6 +343,32 @@ describe("RealmService", () => {
 
       httpMock.expectOne(`${environment.proxyUrl}/realm/superuser`);
       httpMock.expectOne(`${environment.proxyUrl}/realm/`);
+    });
+  });
+
+  describe("compareResolverPriority", () => {
+    const resolver = (name: string, priority: number | null): RealmResolver => ({
+      name,
+      type: "ldap",
+      node: "",
+      priority
+    });
+
+    it("orders by priority, lowest first", () => {
+      expect(compareResolverPriority(resolver("b", 1), resolver("a", 2))).toBeLessThan(0);
+      expect(compareResolverPriority(resolver("a", 2), resolver("b", 1))).toBeGreaterThan(0);
+    });
+
+    it("counts a missing priority as 1000", () => {
+      expect(compareResolverPriority(resolver("a", null), resolver("b", 999))).toBeGreaterThan(0);
+      expect(compareResolverPriority(resolver("b", 999), resolver("a", null))).toBeLessThan(0);
+      expect(compareResolverPriority(resolver("b", null), resolver("a", 1000))).toBeGreaterThan(0);
+    });
+
+    it("orders equal priorities by name", () => {
+      expect(compareResolverPriority(resolver("a", 3), resolver("b", 3))).toBeLessThan(0);
+      expect(compareResolverPriority(resolver("b", 3), resolver("a", 3))).toBeGreaterThan(0);
+      expect(compareResolverPriority(resolver("a", 3), resolver("a", 3))).toBe(0);
     });
   });
 });

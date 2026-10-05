@@ -229,6 +229,17 @@ describe("RealmTableComponent", () => {
     expect(names).toEqual(["resFirst", "resA", "resB", "resNoPrio"]);
   });
 
+  it("realmRows should list a realm without resolvers with no resolver groups", () => {
+    const realms: Realms = { realmA: { default: false } as Realm };
+
+    const ref = realmService.realmResource as unknown as MockHttpResourceRef<MockPiResponse<Realms> | undefined>;
+    ref.set(MockPiResponse.fromValue<Realms>(realms));
+
+    const row = component.realmRows()[0];
+    expect(row.name).toBe("realmA");
+    expect(row.resolverGroups).toEqual([]);
+  });
+
   it("realmRows should filter by selected node", () => {
     const realms: Realms = {
       realmA: {
