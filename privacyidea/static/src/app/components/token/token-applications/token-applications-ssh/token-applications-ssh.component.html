@@ -139,17 +139,19 @@
                     }
                   }
                   @case ("user") {
-                    <a
-                      (click)="contentService.userSelected(element[column.key], element['user_realm'])"
-                      (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
-                      (keydown.space)="
-                        $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
-                      "
-                      [attr.aria-label]="linkLabel(column.label)"
-                      role="button"
-                      tabindex="0">
-                      {{ element[column.key] }}
-                    </a>
+                    @if (element[column.key]) {
+                      <a
+                        (click)="contentService.userSelected(element[column.key], element['user_realm'])"
+                        (keydown.enter)="contentService.userSelected(element[column.key], element['user_realm'])"
+                        (keydown.space)="
+                          $event.preventDefault(); contentService.userSelected(element[column.key], element['user_realm'])
+                        "
+                        [attr.aria-label]="linkLabel(column.label)"
+                        role="button"
+                        tabindex="0">
+                        {{ element[column.key] }}
+                      </a>
+                    }
                   }
                   @case ("service_id") {
                     <span class="flex ali-center">

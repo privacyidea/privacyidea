@@ -1,6 +1,5 @@
 import { expect, test } from "./support/test";
 import { ALL_PAGES, TABLE_PAGES } from "./support/routes";
-import { knownFailure } from "./support/known";
 import { hasTable, openPage, setSticky } from "./support/helpers";
 
 // Accessibility that axe cannot judge from a static snapshot: document structure, keyboard operation and focus.
@@ -52,7 +51,6 @@ test.describe("tables are described", () => {
 test.describe("keyboard", () => {
   for (const route of ALL_PAGES) {
     test(`${route.name}: Tab moves through the page without losing or trapping focus`, async ({ page }) => {
-      knownFailure(test, "tab stops visible", route.name);
       await openPage(page, route.path);
       const seen: string[] = [];
       const problems: string[] = [];

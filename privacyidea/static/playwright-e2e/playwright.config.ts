@@ -16,7 +16,8 @@ export default defineConfig({
   globalSetup: path.join(__dirname, "support", "global-setup.ts"),
   fullyParallel: true,
   forbidOnly: !!process.env["CI"],
-  retries: process.env["CI"] ? 1 : 0,
+  // One retry: a page measured while the dev server is still settling can fail once; a test that needs it is reported as flaky.
+  retries: 1,
   reporter: [["list"], ["html", { outputFolder: path.join(__dirname, "playwright-report"), open: "never" }]],
   timeout: 60_000,
   expect: { timeout: 10_000 },

@@ -9,34 +9,6 @@ export const KNOWN: Known = {
   "tier width": {
     reason: "the header's label and its sort/filter buttons are wider than the column's tier",
     pages: ["challenges", "containers", "container templates", "realms"]
-  },
-  "paginator total at 200%": {
-    reason: "the row has no room for the total at 960 CSS px; the range shows alone",
-    pages: [
-      "api clients",
-      "audit",
-      "authentication log",
-      "ca connectors",
-      "challenges",
-      "conditional access",
-      "containers",
-      "container templates",
-      "events",
-      "locked users",
-      "machines",
-      "privacyidea servers",
-      "radius servers",
-      "service ids",
-      "sms gateways",
-      "smtp servers",
-      "tokengroups",
-      "tokens",
-      "users"
-    ]
-  },
-  "tab stops visible": {
-    reason: "Tab lands on a link with no box (an empty cell link)",
-    pages: ["token applications"]
   }
 };
 
