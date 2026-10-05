@@ -36,9 +36,13 @@ export async function expectNoNewViolations(
   testInfo: TestInfo,
   options: { include?: string } = {}
 ): Promise<void> {
-  // Material's off-screen live region for snackbar announcements is aria-hidden by design and comes and goes with a
-  // toast, so it is left out; the toast itself stays in.
-  const builder = new AxeBuilder({ page }).withTags(WCAG_TAGS).exclude("[id^='mat-snack-bar-container-live']");
+  // Left out: Material's off-screen live region for snackbar announcements (aria-hidden by design, it comes and goes
+  // with a toast; the toast itself stays in), and the corner ribbon an instance in debug mode wears (a rotated band
+  // clipped to the corner of the screen, so it is "partially obscured" by construction).
+  const builder = new AxeBuilder({ page })
+    .withTags(WCAG_TAGS)
+    .exclude("[id^='mat-snack-bar-container-live']")
+    .exclude(".debug-ribbon");
   const results = await (options.include ? builder.include(options.include) : builder).analyze();
   // An analysis that checked nothing would pass as well.
   expect(results.passes.length).toBeGreaterThan(0);

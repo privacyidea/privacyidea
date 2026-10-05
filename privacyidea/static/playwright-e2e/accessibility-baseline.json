@@ -1,320 +1,164 @@
 {
   "api client create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "api client details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "api clients": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "api clients (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "api clients (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "api clients (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "audit": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "audit (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "audit (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "authentication log": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "authentication log (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "blocklist": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "blocklist (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "blocklist (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "ca connectors": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "ca connectors (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "ca connectors (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "ca connectors (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "challenges": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "challenges (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "challenges (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "clients": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "clients (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "clients (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "conditional access": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "conditional access (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "conditional access (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "conditional access (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "conditional access create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "conditional access details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "container create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "container details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "container more filter (menu)": {
     "light": [],
     "dark": []
   },
   "container template create": {
-    "light": [
-      "color-contrast",
-      "target-size"
-    ],
-    "dark": [
-      "color-contrast",
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "container template details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "container templates": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "container templates (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "container templates (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "containers": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "containers (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "containers (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "dashboard": {
     "light": [
@@ -329,695 +173,361 @@
     "dark": []
   },
   "event create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "event details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "events": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "events (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "events (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "events (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "locked users": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "locked users (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "locked users (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "machine details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "machine resolver create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "machine resolver details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "machine resolvers": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "machine resolvers (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "machine resolvers (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "machine resolvers (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "machines": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "machines (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "machines (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "machines (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "news": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "periodic task create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "periodic task details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "periodic tasks": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "periodic tasks (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "periodic tasks (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "periodic tasks (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "policies": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "policies (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "policies (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "policies (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "policy create": {
-    "light": [
-      "color-contrast",
-      "target-size"
-    ],
-    "dark": [
-      "color-contrast",
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "policy details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "policy scope filter (menu)": {
     "light": [],
     "dark": []
   },
   "privacyidea server details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "privacyidea servers": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "privacyidea servers (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "privacyidea servers (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "privacyidea servers (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "radius create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "radius server details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "radius servers": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "radius servers (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "radius servers (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "radius servers (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "realms": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "realms (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "resolver create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "resolver details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "resolvers": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "resolvers (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "resolvers (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "resolvers (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "service ids": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "service ids (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "service ids (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "service ids (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "sms create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "sms gateway details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "sms gateways": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "sms gateways (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "sms gateways (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "sms gateways (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "smtp create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "smtp server details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "smtp servers": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "smtp servers (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "smtp servers (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "smtp servers (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "subscription": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "system config": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "token actions (menu)": {
     "light": [],
     "dark": []
   },
   "token applications": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "token details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "token enrollment": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "token get serial": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "token import": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "token more filter (menu)": {
     "light": [],
     "dark": []
   },
   "token type config": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "tokengroups": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "tokengroups (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "tokengroups (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "tokengroups (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "tokens": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "tokens (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "tokens (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "ui settings": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "user create": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "user details": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "users": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "users (error)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "users (filtered)": {
-    "light": [
-      "target-size"
-    ]
+    "light": []
   },
   "users (loading)": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   }
 }
