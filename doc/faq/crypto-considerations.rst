@@ -15,7 +15,7 @@ The encryption key can be encrypted with a password.
 The three encryption keys are used to encrypt
 
 * data like the OTP seeds and secret keys stored in the *Token* table,
-* password of resolvers to connect to LDAP/AD or SQL (stored in the
+* passwords of resolvers to connect to LDAP/AD or SQL (stored in the
   *ResolverConfig* table)
 * and optional additional values.
 

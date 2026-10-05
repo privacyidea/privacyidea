@@ -6,7 +6,7 @@ Logging Handler Module
 .. index:: Logging Handler, Handler Modules
 
 The logging event handler can be used to log the occurrence of an event to the
-python logging facility.
+Python logging facility.
 You can log arbitrary events with a configurable log message, loglevel and
 logger instance. Several tags are available to customize the log message.
 
@@ -19,7 +19,7 @@ Possible Actions
 logging
 .......
 
-Emit a log message to the python logging facility when the specified event gets
+Emit a log message to the Python logging facility when the specified event gets
 triggered (and the conditions match).
 
 **name**
@@ -88,5 +88,12 @@ with the following tags:
         issued the original request.
 
 .. note:: Not all tags are available in every event. It depends on the called
-    API-Endpoint and passed parameter which tags exist. If a tag does not exist
+    API endpoint and the passed parameters which tags exist. If a tag does not exist
     during the event handling, an empty string will be inserted.
+
+Code
+~~~~
+
+.. automodule:: privacyidea.lib.eventhandler.logginghandler
+   :members:
+   :undoc-members:

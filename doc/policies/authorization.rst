@@ -18,9 +18,13 @@ The following actions are available in the scope
 authorized
 ~~~~~~~~~~
 
+type: ``string``
+
+allowed values: ``grant_access``, ``deny_access``
+
 This is the basic authorization, that either grants the user access or denies access via the ``/validate``
 endpoints (see :ref:`rest_validate`).
-The default behaviour is to grant access, if and after the user has authenticated successfully.
+The default behavior is to grant access, if and after the user has authenticated successfully.
 
 Using ``authorized=deny_access`` specific authentication requests can be denied, even if the user has provided
 the correct credentials.
@@ -93,7 +97,7 @@ used up, even if the user was not authorized with this request.
 .. note:: Combining this with the client IP
    you can use this to allow remote access to
    sensitive areas only with hardware tokens
-   like the Yubikey, while allowing access
+   like the YubiKey, while allowing access
    to less secure areas also with a Google
    Authenticator.
 
@@ -134,9 +138,9 @@ the realm in this action.
 This policy is only applied to :http:post:`/validate/check`.
 
 Note, that this policy is evaluated, after the parameters of the request have been processed. This means,
-that the parameters like `user` and `realm` would already have to result in a valid user object. And thereafter this
+that the parameters like ``user`` and ``realm`` would already have to result in a valid user object. And thereafter this
 policy is applied.
-However, this means, that is is also possible to use the original user object in the policy conditions.
+However, this means, that it is also possible to use the original user object in the policy conditions.
 
 This policy can be used to move users from one original realm to a different realm, e.g. for authorization
 reasons. For this policy, the user has to be available in both realms!
@@ -153,7 +157,7 @@ For in depth information about user and realm mapping read :ref:`realms`.
 
 no_detail_on_success
 ~~~~~~~~~~~~~~~~~~~~
-.. deprecated:: v3.12
+.. deprecated:: 3.12
    Please use the :ref:`responsemanglerhandler` to delete the ``detail`` section.
 
 type: ``bool``
@@ -169,7 +173,7 @@ this additional information will not be returned.
 
 no_detail_on_fail
 ~~~~~~~~~~~~~~~~~
-.. deprecated:: v3.12
+.. deprecated:: 3.12
    This policy breaks :term:`challenge-response <Challenge>` authentication.
 
 type: ``bool``
@@ -266,9 +270,9 @@ Here you can specify how many failed authentication requests a user is allowed t
 
 If this value is exceeded, authentication is not possible anymore. The user will have to wait.
 
-If this policy is not defined, the normal behaviour of the failcounter applies. (see :term:`failcount`)
+If this policy is not defined, the normal behavior of the failcounter applies. (see :term:`FailCount`)
 
-Specify the value like ``2/1m`` meaning 2 failed authentication requests per minute. If during the last 5 minutes 2
+Specify the value like ``2/1m`` meaning 2 failed authentication requests per minute. If during the last minute 2
 failed authentications were performed the authentication request is discarded. The used OTP value is invalidated.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
@@ -294,7 +298,7 @@ successfully used for a certain time.
 Specify a value like ``12h``, ``123d`` or ``2y`` to disallow authentication,
 if the token was not successfully used for 12 hours, 123 days or 2 years.
 
-The date of the last successful authentication is store in the `tokeninfo`
+The date of the last successful authentication is stored in the ``tokeninfo``
 field of a token and denoted in UTC.
 
 .. _policy_add_user_in_response:
@@ -338,7 +342,7 @@ hexadecimal string (usually grouped using dashes, although these are
 optional) identifying one particular model of authenticator. To limit
 enrollment to a few known-good authenticator models, simply specify the AAGUIDs
 for each model of authenticator that is acceptable. If multiple policies with
-this action apply, the set of acceptable authenticators will be the union off
+this action apply, the set of acceptable authenticators will be the union of
 all authenticators allowed by the various policies.
 
 If this action is not configured, all authenticators will be deemed acceptable,
@@ -361,7 +365,7 @@ The action can be specified like this::
 
     webauthn_req=subject/.*Yubico.*/
 
-The keyword can be "subject", "issuer" or "serial". Followed by a
+The keyword can be "subject", "issuer" or "serial", followed by a
 regular expression. During registration of the WebAuthn authenticator the
 information is fetched from the attestation certificate. Only if the attribute
 in the attestation certificate matches accordingly the token can be enrolled.
@@ -376,7 +380,7 @@ require_auth_for_resolver_details
 
 type: ``bool``
 
-Usually, `/healthz/resolversz` will include in its response the name and status
+Usually, ``/healthz/resolversz`` will include in its response the name and status
 of each resolver individually, as well as the total status of all resolvers;
 without requiring any form of authentication.
 

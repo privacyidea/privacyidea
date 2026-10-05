@@ -32,7 +32,7 @@ In the WebUI you will find it here:
 * *Logs → Authentication Log* - the classified authentication events.
 * *Logs → Locked Users* and *Logs → IP Blocklist* - the restrictions in force,
   and where to lift them.
-* The *Conditional Access* dashboard panel summarises all of it, see
+* The *Conditional Access* dashboard panel summarizes all of it, see
   :ref:`dashboard`.
 
 Every one of these views requires an administrator right:

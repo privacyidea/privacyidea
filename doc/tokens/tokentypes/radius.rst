@@ -36,13 +36,15 @@ will be sent with the same user currently trying to authenticate.
 
 **RADIUS Secret**
 
-The RADIUS secret for this RADIUS client.
+The RADIUS secret for this RADIUS client. The WebUI does not show this field: the secret is part of the
+:ref:`radiusserver_config`. Only an API request that passes ``radius.server`` instead of a
+``radius.identifier`` uses the parameter ``radius.secret``.
 
 .. note:: Using the RADIUS token you can design migration scenarios. When
    migrating from other (proprietary) OTP solutions, you can enroll a RADIUS
    token for the users. The RADIUS token points to the RADIUS server of the
    old solution. Thus the user can authenticate against privacyIDEA with the
-   old, proprietary token, till he is enrolled a new token in privacyIDEA. The
+   old, proprietary token, until a new token is enrolled for them in privacyIDEA. The
    interesting thing is, that you also get the
    authentication request with the proprietary token in the audit log of
    privacyIDEA. This way you can have a scenario, where users are still using

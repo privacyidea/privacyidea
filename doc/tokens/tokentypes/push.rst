@@ -16,7 +16,7 @@ push-capable SMS gateway to the smartphone of the user. The built-in Firebase,
 HTTP, and Script providers support PUSH messages. Firebase gateways are enabled
 by default; HTTP and Script gateways require ``ALLOW_PUSH=yes``. This push
 notification is displayed on the smartphone of the user with a text
-that tells the user that he or somebody else requests to login to a
+that tells the user that he or somebody else requests to log in to a
 service. The user can simply accept this request.
 The smartphone sends a cryptographically signed response to the
 privacyIDEA server and the login request gets marked as confirmed
@@ -57,7 +57,7 @@ Step 1
 ......
 
 The user scans a QR code. This QR code contains the
-basic information for the push token and a enrollment URL, to which
+basic information for the push token and an enrollment URL, to which
 the smartphone should respond in the enrollment process.
 
 The smartphone stores this data and creates a new key pair.
@@ -70,7 +70,7 @@ for compatibility), the public key of the keypair,
 the serial number and an enrollment credential back to the
 enrollment URL of the privacyIDEA server.
 
-The server responds with it's public key for this token.
+The server responds with its public key for this token.
 
 Authentication
 ~~~~~~~~~~~~~~
@@ -79,8 +79,8 @@ Triggering the challenge
 ........................
 
 The authentication request is triggered by an application
-just the same like for any
-challenge response tokens either with the PIN to the
+just as for any
+challenge-response token either with the PIN to the
 endpoint ``/validate/check`` or via the endpoint
 ``/validate/triggerchallenge``.
 
@@ -97,8 +97,8 @@ of the privacyIDEA server.
 The privacyIDEA server verifies the response and marks this authentication
 request as successfully answered.
 
-In some cases the push notification does not reach the smartphone. Since
-version 3.4 the smartphone can also poll for active challenges.
+In some cases the push notification does not reach the smartphone. The
+smartphone can also poll for active challenges.
 
 Declining login
 ...............
@@ -137,7 +137,7 @@ Login to application
 
 The application can check with the original transaction ID
 with the privacyIDEA server, if the challenge has been successfully
-answered and automatically login the user.
+answered and log the user in automatically.
 
 Challenge lifetime
 ..................
@@ -154,7 +154,7 @@ two consecutive time windows:
   (default 300) from the moment it was answered, so that the application can
   finalize the authentication via ``/validate/check`` (and read a decline
   reason). The expiration only ever moves forward, so with an answer window
-  longer than the grace the challenge may stay redeemable until its original
+  longer than the grace period, the challenge may stay redeemable until its original
   expiration. Once the challenge finally expires it can no longer be redeemed.
 
 The finalize window also bounds how long an answered enrollment challenge stays
@@ -168,7 +168,7 @@ More information
 For a more detailed insight see the code documentation for the :ref:`code_push_token`.
 
 For an in depth view of the protocol see
-`the github issue <https://github.com/privacyidea/privacyidea/issues/1342>`_ and
+`the GitHub issue <https://github.com/privacyidea/privacyidea/issues/1342>`_ and
 `the wiki page <https://github.com/privacyidea/privacyidea/wiki/concept%3A-PushToken>`_.
 
 Information on the polling mechanism can be found in the `corresponding wiki page <https://github

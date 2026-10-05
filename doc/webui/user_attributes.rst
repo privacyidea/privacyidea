@@ -5,7 +5,7 @@ Additional user attributes
 
 .. index:: User Attributes, Additional User Attributes
 
-Since version 3.6 privacyIDEA allows to manage additional internal attributes for
+privacyIDEA allows you to manage additional internal attributes for
 users read from resolvers.
 These additional attributes are stored and managed within privacyIDEA.
 Administrators can manage attributes of users (see policies :ref:`admin_set_custom_user_attributes`

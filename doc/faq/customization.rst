@@ -13,7 +13,7 @@ Templates
 
 .. index:: customize, templates, HTML views
 
-.. note:: This applies to the previous WebUI only, which is served when `pi.cfg` selects it as
+.. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`. The WebUI privacyIDEA serves is a compiled application and
    does not read HTML views from the file system.
 
@@ -28,7 +28,7 @@ All HTML views are contained in::
     static_old/components/<component>/views/<view>.html
 
 You can find them on `GitHub <https://github.com/privacyidea/privacyidea/tree/master/privacyidea/static_old>`_
-or at the according location in your installation.
+or at the corresponding location in your installation.
 
 Follow these basic steps:
 
@@ -67,7 +67,7 @@ The translation in privacyIDEA is very flexible (see :ref:`translation`).
 But if you change the templates the normal translation with PO files can
 get a bit tricky.
 
-Starting with privacyIDEA 3.0.1 you can use the scope variable
+You can use the scope variable
 ``browserLanguage`` in your custom templates.
 
 You can print the browser language like this ``{{ browserLanguage }}``.
@@ -89,7 +89,7 @@ Themes
 
 .. index:: themes, CSS, customize
 
-.. note:: This applies to the previous WebUI only, which is served when `pi.cfg` selects it as
+.. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`. The WebUI privacyIDEA serves does not read ``PI_CSS``.
 
 You can adapt the style and colors by changing CSS. There are at least two ways to do this.
@@ -106,7 +106,7 @@ You might add a directory *privacyidea/static_old/custom/css/* and add your CSS
 file there.
 
 The CSS you specify here adds to the already existing styles. Thus a convenient way for
-using this setting is to help you distinguish different privacyIDEA instances like "testing", "acceptances"
+using this setting is to help you distinguish different privacyIDEA instances like "testing", "acceptance"
 and "production" or different nodes in a redundant setup.
 
 You can create a simple CSS file *[..]/privacyidea/static_old/custom/css/testing.css* like::
@@ -131,7 +131,7 @@ Again you can also use the Apache rewrite module to replace the original css fil
          "/etc/privacyidea/customization/my.css"
 
 
-A good stating point might be the themes at http://bootswatch.com.
+A good starting point might be the themes at https://bootswatch.com.
 
 .. note:: If you add your own CSS file, the file *bootstrap-theme.css* will
    not be loaded anymore. So you might start with a copy of the original file.
@@ -159,7 +159,7 @@ Logo
 ~~~~
 
 To use your own logo, specify the PI_LOGO parameter in the pi.cfg configuration file with the filename of your logo
-image. For example:
+image. For example::
 
     PI_LOGO = "mylogo.png"
 
@@ -173,16 +173,22 @@ Put your logo at the following location:
 
     privacyidea/static/public
 
-.. _customize_menu:
-
 Page title
 ~~~~~~~~~~
+
+.. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
+   described in :ref:`legacy_webui`. The WebUI privacyIDEA serves does not read ``PI_PAGE_TITLE``.
 
 You can configure the page title by setting ``PI_PAGE_TITLE`` in the
 ``pi.cfg`` file.
 
+.. _customize_menu:
+
 Menu
 ~~~~
+
+.. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
+   described in :ref:`legacy_webui`. The WebUI privacyIDEA serves does not use the menu template.
 
 The administrator can adapt the menu of the web UI using policies or of course web server rewrite
 rules. The original menu is located in ``static_old/templates/menu.html``.
@@ -194,6 +200,9 @@ Read more about it at the web UI policies at the :ref:`webui_custom_menu`.
 
 Headers and Footers
 ~~~~~~~~~~~~~~~~~~~
+
+.. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
+   described in :ref:`legacy_webui`. The WebUI privacyIDEA serves does not use the baseline template.
 
 The administrator can change the header and footer of each page. We call this the baseline of the
 web UI. The original baseline is contained in ``static_old/templates/baseline.html``.
@@ -216,8 +225,8 @@ Token customization
 
 Some tokens allow a special customization.
 
-The paper token allows you to add CSS for styling the printed output and
-add additional headers and footers. Read more about it at the
+In the previous WebUI (see :ref:`legacy_webui`), the paper token allows you to
+add CSS for styling the printed output and add additional headers and footers. Read more about it at the
 paper token :ref:`paper_token_customize`.
 
 .. _customize_3rd_party_tokens:
@@ -239,10 +248,10 @@ gathers and writes all token specific attributes.
 
 You should only add one token class per Python module.
 
-You can install your new Python module, wherever you want to like ``myproject.cooltoken``.
+You can install your new Python module wherever you want, e.g. as ``myproject.cooltoken``.
 
-If these tokens need additional enrollment data in the UI, you can specify
-two templates, that are displayed during enrollment and after the token
+If these tokens need additional enrollment data in the previous WebUI (see
+:ref:`legacy_webui`), you can specify two templates, that are displayed during enrollment and after the token
 is enrolled. These HTML templates need to be located at
 ``privacyidea/static_old/components/token/views/token.enroll.<tokentype>.html``
 and
@@ -259,6 +268,6 @@ See :ref:`picfg_3rd_party_tokens`.
 Custom Web UI
 ~~~~~~~~~~~~~
 
-You can also write your complete new WebUI.
+You can also write your own complete WebUI.
 To do so you need to specify files and folders in ``pi.cfg``.
 Read more about this at :ref:`custom_web_ui`.

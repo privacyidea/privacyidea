@@ -14,12 +14,16 @@ even create new containers. Additionally, the tokens in the container can be mod
 
 Possible Actions
 ~~~~~~~~~~~~~~~~
+
 create
 ......
+
 A new container will be created. This new container can be assigned to a user, which was identified in the request.
 Additionally, a token identified in the request can be added to the container.
 
-The administrator has to specify the **containertype** and can optionally specify a **description**.
+The administrator has to specify the container **type** and can optionally specify a **description**.
+With the option **user** the container is assigned to the user in the request or to the token or container owner,
+and with the option **token** the token from the request is added to the container.
 
 delete
 ......
@@ -30,14 +34,14 @@ conditions are matched. The tokens in the container will not be deleted.
 unassign
 ........
 
-The container which was identified in the request will be unassign from all users
+The container which was identified in the request will be unassigned from all users
 if all conditions are matched. The tokens in the container will not be changed.
 
 assign
 ......
 
 The container which was identified in the request will be assigned to a user which was identified in the request.
-If the logged in user performing this action has the role 'user' it is always himself. The user is not assigned to the
+If the logged in user performing this action has the role 'user', it is always this user. The user is not assigned to the
 tokens in the container.
 
 set states
@@ -100,7 +104,7 @@ add container info
 For the container identified in the request the container info will be added. Previous entries will be kept. Only if
 the given key already exists, an old entry will be overwritten.
 
-It requires the specification of a **key** and a optionally **value**. If no value is defined, it is set to an empty
+It requires the specification of a **key** and optionally a **value**. If no value is defined, it is set to an empty
 string "".
 
 The **value** may contain tags that are replaced when the event is handled.
@@ -116,8 +120,7 @@ handling, the value is then written as it was entered.
 delete container info
 .....................
 
-For the container identified in the request the container info will be deleted. If a **key** is specified, only the
-entry of this key will be deleted. If no key is passed, all entries will be removed.
+For the container identified in the request all container info entries will be deleted. Internal entries are kept.
 
 enable all tokens
 .................

@@ -6,7 +6,7 @@ What happens in the tokenview?
 A question which comes up often is why you can not view hundreds of tokens in
 the tokenview. Well - you are doing - you are just paging through the list ;-)
 
-Ok, here it what happens in the tokenview.
+OK, here is what happens in the tokenview.
 
 The tokenview fetches a slice of the tokens from the token database. So, if
 you configure the tokenview to display 15 tokens, only 15 tokens will be

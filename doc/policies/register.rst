@@ -18,7 +18,7 @@ User registration
    warning when they are used - if your installation relies on
    self-registration, please let us know before it is removed.
 
-Starting with privacyIDEA 2.10 users are allowed to register with privacyIDEA.
+Users can register with privacyIDEA.
 I.e. a user that does not exist in a given realm and resolver can create a
 new account.
 
@@ -48,14 +48,14 @@ During registration the user is also enrolled a
 to the user via a notification email.
 
 .. note:: Using the right policies in scope *webui* and *authentication* the
-   user could login with the password they set during registration and the
+   user could log in with the password they set during registration and the
    registration code received via email.
 
 
 Policy settings
 ...............
 
-In the scope *register* several settings define the behaviour of the
+In the scope *register* several settings define the behavior of the
 registration process.
 
 .. figure:: images/register-policy.png
@@ -91,7 +91,7 @@ This is the unique identifier of the :ref:`smtpserver`. This SMTP server is
 used to send the notification email with the registration code during the
 registration process.
 
-.. note:: If there is no *smtpconfig* or set to a wrong identifier, the user
+.. note:: If there is no *smtpconfig* or it is set to a wrong identifier, the user
    will get no notification email.
 
 .. _policy_requiredemail:
@@ -117,6 +117,16 @@ type: ``string``
 
 The body of the registration email. Use ``{regkey}`` as tag for the
 registration key.
+
+.. _register_policy_hide_specific_error_message:
+
+hide_specific_error_message
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+If this policy is set, a failed registration returns the generic error message
+"Failed registering new user" instead of the specific one.
 
 
 .. [#pythonre] https://docs.python.org/3/library/re.html

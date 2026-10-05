@@ -42,7 +42,7 @@ Attempts
 
 A challenge-response login takes several requests, e.g. one that triggers the
 challenge and one that answers it. These share an **attempt ID**, so they can be
-recognised as one logical authentication attempt, and a conditional access policy
+recognized as one logical authentication attempt, and a conditional access policy
 using the ``PER_ATTEMPT`` count mode counts them once.
 
 The attempt ID also survives a multi-challenge login, where answering one
@@ -55,7 +55,7 @@ Event types
 -----------
 
 Every entry carries exactly one event type. Each type belongs to an outcome
-class - *success*, *failure* or *pending* - which the WebUI uses to colour the
+class - *success*, *failure* or *pending* - which the WebUI uses to color the
 entry.
 
 Success
@@ -91,7 +91,7 @@ Failure
      the user has tokens, but none of them can be used for the authentication as they are revoked, disabled, expired or
      over the failcount.
    ``INVALID_TOKEN_TYPE``
-     the given token type can not be used to authenticate at this endpoint, e.g. `/validate/initialize` only accepts
+     the given token type can not be used to authenticate at this endpoint, e.g. ``/validate/initialize`` only accepts
      passkeys.
    ``CHALLENGE_ANSWERED_FAIL``
      the challenge response was wrong or expired, or the transaction ID is unknown.
@@ -117,7 +117,7 @@ Failure
      limits leave it out - counting it would spend part of a brute-force budget
      on users changing their mind.
    ``ENROLLMENT_CANCELED_FAIL``
-     cancelling an enrollment failed.
+     canceling an enrollment failed.
    ``ENROLLMENT_FAIL``
      completing the enrollment of a token during authentication failed, for
      example of a passkey with :ref:`policy_enroll_via_multichallenge`. Either a
@@ -250,7 +250,8 @@ serial, and the names of the policies that decided under
 .. note:: ``CHALLENGE_EXPIRED`` tells a timeout apart from a wrong answer - the
    user answered correctly, only too late. Recognizing it depends on the lapsed
    challenge still being readable, which is best-effort: stored in the database
-   a challenge stays until the janitor removes it, while the Redis cache expires
+   a challenge stays until ``pi-manage config challenge cleanup`` removes it
+   (see :ref:`cleanup_jobs`), while the Redis cache expires
    the key shortly after the challenge validity, so an answer arriving much
    later finds nothing and is recorded as ``CHALLENGE_UNKNOWN_TRANSACTION``.
 
@@ -322,7 +323,7 @@ conditional access acted on at all.
 
 .. _authentication_log_statistics:
 
-Summarising the log
+Summarizing the log
 -------------------
 
 :http:get:`/authenticationlog/statistics` answers "how did authentication go
@@ -372,7 +373,7 @@ positive number at all falls back to the default. Every filter the log listing
 accepts on an entry can be given as well, under the same plural name and with
 the same comma-separated lists and ``*`` wildcards, for example
 ``event_types=MFA_FAIL,PIN_FAIL`` or ``realms=realm1``. The plural is the only
-name recognised, so a query written in the singular - ``realm=realm1`` rather
+name recognized, so a query written in the singular - ``realm=realm1`` rather
 than ``realms=`` - is no filter at all and the summary then covers every
 attempt in the window. The filters apply to the entry that classifies each
 attempt. The ``ca_*`` filters are not offered: they match what conditional

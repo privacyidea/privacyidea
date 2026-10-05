@@ -13,12 +13,12 @@ privacyIDEA reads its configuration from different locations:
 
          export PRIVACYIDEA_CONFIGFILE=/your/config/file
 
-The configuration is overwritten and extended in each step. I.e. values define
+The configuration is overwritten and extended in each step. I.e. values defined
 in ``privacyidea/config.py``
 that are not redefined in one of the other config files, stay the same.
 
-You can create a new config file (either ``/etc/privacyidea/pi.cfg``) or any other
-file at any location and set the environment variable.
+You can create a new config file (either ``/etc/privacyidea/pi.cfg`` or any other
+file at any location and set the environment variable).
 The file should contain the following contents::
 
    # The realm, where users are allowed to login as administrators
@@ -34,8 +34,8 @@ The file should contain the following contents::
    # This is used to encrypt the token data and token passwords
    PI_ENCFILE = '/etc/privacyidea/enckey'
    # This is used to sign the audit log
-   PI_AUDIT_KEY_PRIVATE = '/home/cornelius/src/privacyidea/private.pem'
-   PI_AUDIT_KEY_PUBLIC = '/home/cornelius/src/privacyidea/public.pem'
+   PI_AUDIT_KEY_PRIVATE = '/etc/privacyidea/private.pem'
+   PI_AUDIT_KEY_PUBLIC = '/etc/privacyidea/public.pem'
    # PI_AUDIT_MODULE = <python audit module>
    # PI_AUDIT_SQL_URI = <special audit log DB uri>
    # Options passed to the Audit DB engine (supersedes SQLALCHEMY_ENGINE_OPTIONS)
@@ -56,11 +56,11 @@ For more information about the database connect string, supported databases and
 drivers please read :ref:`database_connect`.
 
 ``SQLALCHEMY_ENGINE_OPTIONS`` is a dictionary of keyword args to send
-to `create_engine() <https://docs.sqlalchemy.org/en/14/core/engines.html#sqlalchemy
+to `create_engine() <https://docs.sqlalchemy.org/en/20/core/engines.html#sqlalchemy
 .create_engine>`_. The ``max_identifier_length`` is the database's
 configured maximum number of characters that may be used in a SQL identifier
 such as a table name, column name, or label name. For Oracle version 19 and above
-the `max_identifier_length <https://docs.sqlalchemy.org/en/14/core/engines
+the `max_identifier_length <https://docs.sqlalchemy.org/en/20/core/engines
 .html#sqlalchemy.create_engine.params.max_identifier_length>`_ should be set to 128.
 
 privacyIDEA adds ``pool_pre_ping = True`` to these options unless you set the key
@@ -87,7 +87,7 @@ of an administrator.
 
 ``PI_INIT_CHECK_HOOK`` is a function in an external module, that will be
 called as decorator to ``token/init`` and ``token/assign``. This function
-takes the ``request`` and ``action`` (either "init" or "assign") as an
+takes the ``request`` and ``action`` (either "init" or "assign") as
 arguments and can modify the request or raise an exception to avoid the
 request being handled.
 
@@ -141,6 +141,10 @@ Security
 ``PI_ENABLE_CSP`` will make the server return a strict Content Security Policy for the browser.
 ``PI_FORCE_HTTPS`` will enforce the use of HTTPS.
 
+``PI_SESSION_COOKIE_SECURE`` (default ``True``) sets the ``Secure`` flag on the
+session cookie, so that the browser only sends it over HTTPS. Like
+``PI_FORCE_HTTPS``, it only takes effect if ``PI_ENABLE_CSP`` is set.
+
 ``PI_BASE_URL`` is the trusted public URL of this privacyIDEA server, e.g.::
 
     PI_BASE_URL = "https://pi.example.com"
@@ -151,6 +155,12 @@ notifications. These links are never derived from the inbound HTTP ``Host``
 header. If ``PI_BASE_URL`` is not configured, the password-recovery endpoint refuses to
 operate and the ``{url}`` notification tag is left blank. Always configure
 ``PI_BASE_URL`` for a secure deployment.
+
+``WEBUI_PASSKEY_LOGIN_ENABLED`` (default ``True``) allows logging in to the WebUI
+with a passkey without entering a username. Set it to ``False`` to refuse such
+logins. A passkey or WebAuthn token that answers a challenge triggered with the
+PIN or password is not affected. To hide the passkey login button on the login
+page, use the :ref:`policy_passkey_login` policy.
 
 Translation
 -----------
@@ -250,7 +260,7 @@ server. For this you can specify the database URI via ``PI_AUDIT_SQL_URI``.
    READ_BEFORE_UPDATE.md, if the Audit data has been changed. Then you need to adapt
    the Audit table manually.
 
-With ``PI_AUDIT_SQL_OPTIONS`` You can pass a dictionary of options to the
+With ``PI_AUDIT_SQL_OPTIONS`` you can pass a dictionary of options to the
 database engine. If ``PI_AUDIT_SQL_OPTIONS`` is not set,
 ``SQLALCHEMY_ENGINE_OPTIONS`` will be used.
 
@@ -259,7 +269,7 @@ an entry with long request data is written instead of being rejected. The former
 setting ``PI_AUDIT_SQL_TRUNCATE`` is ignored (See
 :ref:`Audit table size <audit_table_size>`).
 
-In certain cases when you experiencing problems you may use the parameters
+In certain cases when you are experiencing problems you may use the parameters
 ``PI_AUDIT_POOL_SIZE`` and ``PI_AUDIT_POOL_RECYCLE``. However, they are only
 effective if you also set ``PI_ENGINE_REGISTRY_CLASS`` to ``"shared"``.
 
@@ -291,11 +301,16 @@ version of the file, which is picked up in the same way.
    its own. Docker secrets are immutable, so rotating one there means a new secret
    and a new container rather than a replaced file.
 
-If you by any reason want to avoid signing audit entries entirely, you can
+If for any reason you want to avoid signing audit entries entirely, you can
 set ``PI_AUDIT_NO_SIGN = True``. If ``PI_AUDIT_NO_SIGN`` is set to ``True``
 audit entries will not be signed and also the signature of audit entries will not be
 verified. Audit entries will appear with the *signature* *fail*.
 Please see also :ref:`faq_crypto_audit` and :ref:`faq_perf_crypto_audit`
+
+Audit entries written by older privacyIDEA versions can carry an old style
+signature (text-book RSA). These entries appear with the signature *fail*, unless
+you set ``PI_CHECK_OLD_SIGNATURES = True`` to verify old style signatures as
+well. Verifying them is slow.
 
 .. _monitoring_modules:
 
@@ -317,10 +332,7 @@ you configure pooling. It uses the settings from the above mentioned
 ``PI_ENGINE_REGISTRY_CLASS``.
 
 .. note:: A SQL database is probably not the best database to store time series.
-   Other monitoring modules will follow.
 
-
-.. _picfg_metrics_health:
 
 Authentication path tuning
 --------------------------
@@ -352,6 +364,8 @@ user given a token within the interval may not be counted yet, which changes
 nothing for enforcement that is deliberately probabilistic. The subscription
 overview and the statistics task always count exactly. Set it to ``0`` to count
 on every check.
+
+.. _picfg_metrics_health:
 
 Metrics and certificate health
 ------------------------------
@@ -389,11 +403,21 @@ certificate::
 See :ref:`dashboard` for the full description of the panels these parameters
 feed.
 
+Health check endpoints
+----------------------
+
+``PI_HEALTHZ_RESOLVER_CACHE_SECONDS`` (default ``10``) sets how long the result
+of ``GET /healthz/resolversz`` is cached. This endpoint opens a connection to
+every configured LDAP and SQL resolver, so the cache keeps frequent calls from
+connecting to every backend each time. Each worker process caches its own
+result. Set it to ``0`` to probe the resolvers on every call. See
+:ref:`rest_healthcheck`.
+
 
 privacyIDEA Nodes
 -----------------
 
-privacyIDEA can run in a redundant setup. For several purposes You
+privacyIDEA can run in a redundant setup. For several purposes you
 can give these different nodes dedicated names.
 
 ``PI_NODE`` is a string with the name of this very node. At the startup of
@@ -439,13 +463,13 @@ users and roles using the parameter ``PI_TRUSTED_JWT``::
                       "resolver": "resolverX"}]
 
 
-This entry means, that the private key, that corresponds to the given
-public key can sign a JWT, that can impersonate as the *userA* in resolver
-*resolverX* in *realmA*.
+This entry means that the private key that corresponds to the given
+public key can sign a JWT that impersonates *userA* in resolver
+*resolverX* in *realm1*.
 
 .. note:: The ``username`` can be a regular expression like ".*".
    This way you could allow a private signing key to impersonate every
-   user in a realm. (Starting with version 3.3)
+   user in a realm.
 
 A JWT can be created like this::
 
@@ -453,13 +477,13 @@ A JWT can be created like this::
                                     "username": "userA",
                                     "realm": "realm1",
                                     "resolver": "resolverX"},
-                                    "key"=private_key,
-                                    "algorithm"="RS256")
+                           key=private_key,
+                           algorithm="RS256")
 
 .. note:: The user and the realm do not necessarily need to exist in any
    resolver!
    But there probably must be certain policies defined for this user.
-   If you are using an administrative user, the realm for this administrative
+   If you are using an administrative user, the realm of this administrative user
    must be defined in ``pi.cfg`` in the list ``SUPERUSER_REALM``.
 
 
@@ -526,6 +550,19 @@ in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``::
 
     PI_TOKEN_MODULES = [ "myproject.cooltoken", "myproject.lametoken" ]
 
+.. _picfg_vasco_library:
+
+VASCO library
+.............
+
+The :ref:`vasco_token` relies on a shared library of the vendor, which is not
+part of privacyIDEA. Set the path to this library with ``PI_VASCO_LIBRARY``::
+
+    PI_VASCO_LIBRARY = "/path/to/the/vendor/library.so"
+
+Each worker process loads the library once. If the option is not set or the
+library cannot be loaded, VASCO tokens cannot be used to authenticate.
+
 .. _picfg_enable_token_type_enrollment:
 
 Enable Enrollment of Deprecated Token Types
@@ -542,8 +579,8 @@ added to the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT`` list in ``pi.cfg``::
 
 .. note::
 
-   As of v3.14 no token types are in this state. Types that are *fully*
-   removed (e.g. ``u2f`` in v3.14) are migrated by the schema update to
+   As of 3.14 no token types are in this state. Types that are *fully*
+   removed (e.g. ``u2f`` in 3.14) are migrated by the schema update to
    ``tokentype='deprecated'`` and handled via ``pi-tokenjanitor deprecated``
    - see the developer note ``dev/token-deprecation-strategy.md``.
 
@@ -573,15 +610,15 @@ accepts (see ``PubkeyAcceptedAlgorithms``).
 --------------------------
 
 privacyIDEA can use email validators while enrolling email tokens via validate/check.
-You can configure your own email validators in the `pi.cfg`::
+You can configure your own email validators in the ``pi.cfg``::
 
     PI_EMAIL_VALIDATOR_MODULES = [ "myproject.emailvalidator", "otherproject.nogmail" ]
 
-This module needs to provide a function `validate_email(email: str) -> bool` which returns True if the
+This module needs to provide a function ``validate_email(email: str) -> bool`` which returns True if the
 email is valid.
 
-The email validator module that comes with privacyIDEA is `privacyidea.lib.utils.emailvalidation`.
-You do not need to add this in the `pi.cfg` file, this is available by default.
+The email validator module that comes with privacyIDEA is ``privacyidea.lib.utils.emailvalidation``.
+You do not need to add this in the ``pi.cfg`` file, this is available by default.
 
 
 .. _custom_web_ui:
@@ -632,8 +669,7 @@ Four workloads use it today:
   configured endpoint, which is worth doing once for the installation rather
   than once per worker process.
 
-More workloads (metrics, ...) may opt into Redis later; each one ships behind
-its own feature flag and stays off by default.
+Each workload has its own feature flag and stays off by default.
 
 .. note::
 
@@ -695,7 +731,7 @@ in the environment.
 .. _redis_user_cache:
 
 User cache
-~~~~~~~~~~
+..........
 
 .. index:: user cache, Redis
 
@@ -706,7 +742,7 @@ LDAP search, an SQL query, an HTTP call - and the answers change rarely, so
 serving them from Redis removes most of the user store traffic from
 authentication and from listing tokens.
 
-Unlike the two caches privacyIDEA already had, this one is shared: the
+Unlike the two other user caches, this one is shared: the
 :ref:`usercache` table only holds the login/ID correlation, and an LDAP
 resolver's ``CACHE_TIMEOUT`` cache is a dictionary inside a single worker
 process. Redis is visible to every worker on every node, and can be flushed.
@@ -746,7 +782,7 @@ stale here.
 .. _redis_auth_cache:
 
 Authentication cache
-~~~~~~~~~~~~~~~~~~~~
+....................
 
 .. index:: AuthCache, Authentication Cache, Redis
 
@@ -760,7 +796,7 @@ With Redis enabled none of that reaches the database.
 
 Entries live exactly as long as the policy allows: the policy's first interval
 (the ``4h`` in ``4h/5m``) becomes the Redis TTL, so a cached password
-disappears the moment the policy stops honouring it. Using an entry does not
+disappears the moment the policy stops honoring it. Using an entry does not
 extend its life, because the window runs from the *first* authentication.
 ``PI_REDIS_AUTH_CACHE_TTL`` (default 3600 seconds) is only a fallback for a
 caller that cannot name a window.
@@ -784,7 +820,7 @@ token or the user store, nothing else.
 .. _redis_health_cache:
 
 Certificate health results
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+..........................
 
 .. index:: health, certificate, Redis
 
@@ -811,7 +847,7 @@ did before.
 .. _redis_cache_security:
 
 Security
-~~~~~~~~
+........
 
 The Redis connection is configured entirely through ``PI_REDIS_URL`` - the URL
 scheme, credentials and TLS parameters it carries are the whole security
@@ -884,13 +920,13 @@ the authentication; the condition clears within one challenge-validity TTL.
 .. _redis_cache_upgrades:
 
 Upgrades and payload compatibility
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+..................................
 
 privacyIDEA does not support rolling upgrades on the SQL side (the schema
 migration step expects a single writer), so the Redis cache does not need to
 clear a higher bar. The policy below applies whenever the cache is enabled.
 
-**Within a single key prefix** (today: ``pi:challenge:v1:``), the payload may
+**Within a single key prefix** (e.g. ``pi:challenge:v1:``), the payload may
 grow over time. Older workers ignore unknown fields; newer workers read older
 entries via ``dict.get(field, default)``. No operator action is needed for
 this kind of change.
@@ -911,17 +947,15 @@ one challenge-validity window. The visible effect:
 
 **Self-healing safety net.** If a worker encounters a payload it cannot
 deserialize for any reason (corruption, a fork's incompatible change, a
-hand-edited key), the read is treated as a cache miss and the deserialisation
+hand-edited key), the read is treated as a cache miss and the deserialization
 failure is logged at debug. For Redis-only storage like challenges, the
 user-visible outcome is "challenge not found, please try again." The cache
 itself never crashes the worker.
 
-Future cache types may follow a different policy. Classic cache-aside
-objects backed by a database row of record (e.g. cached user attributes)
-will be free to mutate their payload at will, since any deserialisation
-failure falls through to the database and re-caches. Each new cacheable
-workload will document its own compatibility policy alongside its feature
-flag.
+Cache-aside workloads such as the :ref:`redis_user_cache` are backed by an
+authoritative source: an entry that cannot be read is answered by that source
+and cached again, so a change of their payload costs nothing but a few extra
+lookups.
 
 .. _user_settings:
 
@@ -957,7 +991,7 @@ accepted without rotating, so concurrent requests converge on one token.
 This is an advanced knob with a sensible default; most deployments never need to
 change it. It is a system-wide protocol tolerance, not a per-user or per-realm
 setting, so it is configured here rather than by policy. Set it to ``0`` for
-strict, fail-secure behaviour (no grace: any stale counter is treated as theft).
+strict, fail-secure behavior (no grace: any stale counter is treated as theft).
 Widening it trades theft-detection tightness for fewer re-registrations when a
 client loses a rotation response.
 
@@ -1011,7 +1045,7 @@ commas or whitespace. Each entry is a CIDR network or a bare IP address; an entr
 that cannot be parsed is written to the log and ignored. Loopback (``127.0.0.0/8``
 and ``::1/128``) is always on the list and cannot be removed. Blocking it would
 lock out a reverse proxy running on the same host, and when ``OverrideAuthorizationClient``
-is unset every client is seen as that proxy.
+(see :ref:`override_client`) is unset every client is seen as that proxy.
 
 An IPv4 entry also covers the IPv4-mapped form of the same address
 (``::ffff:10.0.0.1`` for ``10.0.0.1``), which is what a dual-stack listener

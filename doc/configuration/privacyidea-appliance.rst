@@ -6,15 +6,15 @@ privacyIDEA Appliance
 .. index:: appliance, setup tool
 
 privacyIDEA offers an appliance tool to manage your token administrators, RADIUS clients and
-also setup MySQL master-master replication.
-It can be found in a Github repository [#applianceGithub]_.
+also set up MySQL master-master replication.
+It can be found in a GitHub repository [#applianceGithub]_.
 
 This tool is supposed to run on Ubuntu LTS.
 
-.. note:: The ready made Ubuntu package for the appliance tool is only available with a Service Level Agreement from
+.. note:: The ready-made Ubuntu package for the appliance tool is only available with a Service Level Agreement from
    the company NetKnights [#applianceNetKnights]_.
 
-To configure the system, login as the user root on your machine and
+To configure the system, log in as root on your machine and
 run the command::
 
    pi-appliance
@@ -26,13 +26,13 @@ This will bring you to this start screen.
 
    Start screen of the appliance setup tool.
 
-You can configure privacyidea settings, the log level, administrators, encryption key and
+You can configure privacyIDEA settings, the log level, administrators, encryption key and
 much more. You can configure the webserver settings and RADIUS clients.
 
 .. figure:: images/appliance/configure-privacyidea.png
    :width: 400px
 
-   Configure privacyidea
+   Configure privacyIDEA
 
 .. figure:: images/appliance/manage-admins.png
    :width: 400px
@@ -48,7 +48,7 @@ much more. You can configure the webserver settings and RADIUS clients.
 
 All changes done in this setup tool are directly read from and written to the
 corresponding configuration files. The setup tool parses the original nginx
-and freeradius configuration files. So there is no additional place where this
+and FreeRADIUS configuration files. So there is no additional place where this
 data is kept.
 
 .. note:: You can also edit the clients.conf and other configuration files
@@ -62,14 +62,14 @@ Backup and Restore
 
 .. index:: Backup, Restore
 
-Starting with version 1.5 the setup tool also supports backup and
-restore. Backups are written to the directory `/var/lib/privacyidea/backup`.
+The setup tool also supports backup and
+restore. Backups are written to the directory ``/var/lib/privacyidea/backup``.
 
 The backup contains all privacyIDEA configuration, the contents of
-the directory `/etc/privacyidea`, the encryption key, the configured
+the directory ``/etc/privacyidea``, the encryption key, the configured
 administrators, the complete token database (MySQL) and Audit log.
 Furthermore if you are running FreeRADIUS the backup also contains
-the `/etc/freeradius/clients.conf` file.
+the ``/etc/freeradius/clients.conf`` file.
 
 .. figure:: images/appliance/backup1.png
    :width: 400px
@@ -79,7 +79,7 @@ Scheduled backup
 
 At the configuration point *Configure Backup* you can define times
 when a scheduled backup should be performed. This information is
-written to the file `/etc/crontab`.
+written to the file ``/etc/crontab``.
 
 .. figure:: images/appliance/backup2.png
    :width: 400px
@@ -90,11 +90,11 @@ You can enter minutes, hours, day of month, month and day of week.
 If the entry should be valid for each e.g. month or hour, you need
 to enter a '*'.
 
-In this example the `10 17 * * *` (minute=10, hour=17)
+In this example the ``10 17 * * *`` (minute=10, hour=17)
 means to perform a backup each day
 and each month at 17:10 (5:10pm).
 
-The example `1 10 1 * *` (minute=1, hour=10, day of month=1) means
+The example ``1 10 1 * *`` (minute=1, hour=10, day of month=1) means
 to perform a backup on the first day of each month at 10:01 am.
 
 Thus you could also perform backups only once a week at the weekend.
@@ -103,12 +103,12 @@ Immediate backup
 ~~~~~~~~~~~~~~~~
 
 If you want to run a backup right now you can choose the entry
-`Backup now`.
+*Backup now*.
 
 Restore
 ~~~~~~~
 
-The entry `View Backups` will list all the backups available.
+The entry *View Backups* will list all the backups available.
 
 .. figure:: images/appliance/backup3.png
    :width: 550px
@@ -128,7 +128,7 @@ The appliance-tool is also capable of setting up a redundant setup between
 two privacyIDEA nodes in master-master replication. The administrator sets
 up redundancy on the first configured node. On the second node the same version
 of privacyIDEA needs to be installed. No configuration needs to be done on the
-second node. The configuration and the token database is completely copied from the
+second node. The configuration and the token database are completely copied from the
 first node to the second node. Possible existing configuration on the second node will
 be overwritten during the setup.
 The appliance-tool can also set up an encrypted VPN that is used for the replication
@@ -150,21 +150,21 @@ of the database.
 Updates
 .......
 
-In this menu, you can setup cronjobs for automatic updates which is seldom
-used in productive setups.
+In this menu, you can set up cron jobs for automatic updates, which are rarely
+used in production setups.
 
 .. _pi-appliance_audit:
 
 Audit Rotation
 ..............
 
-In the `Audit Rotation` menu, you can setup cronjobs for the audit rotation conditioned
+In the *Audit Rotation* menu, you can set up cron jobs for the audit rotation conditioned
 by age or the number of entries. The syntax follows the crontab syntax as explained
 in :ref:`backup_and_restore`.
 
 .. note:: Keep in mind that the audit log is synchronized between the nodes in a redundant
-   setup. If you chose to rotate both audit logs, make sure you do it at different times to
-   avoid synchronisation issues.
+   setup. If you choose to rotate both audit logs, make sure you do it at different times to
+   avoid synchronization issues.
 
 .. [#applianceGithub] https://github.com/NetKnights-GmbH/privacyidea-appliance
 .. [#applianceNetKnights] https://netknights.it/en/products/privacyidea-enterprise-edition/

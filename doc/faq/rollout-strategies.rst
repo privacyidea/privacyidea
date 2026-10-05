@@ -6,7 +6,7 @@ What are possible rollout strategies?
 .. index:: rollout strategy
 
 There are different ways to enroll tokens to a big number of users.
-Here are some selected high level ideas, you can do with privacyIDEA.
+Here are some high-level ideas of what you can do with privacyIDEA.
 
 Autoenrollment
 ~~~~~~~~~~~~~~
@@ -30,8 +30,6 @@ While logged in, the user can enroll a token on his own.
 Automatic initial synchronization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. todo:: What is autosync? (has incorrect reference)
-
 Hardware TOTP tokens may get out of sync due to clock shift. HOTP tokens may
 get out of sync due to unused key presses. To cope with this you can activate
 :ref:`autosync`.
@@ -43,7 +41,7 @@ where the first authentication fails.
 In this case you can use the following workflow.
 
 In the TOTP token settings you can set the ``timeWindow`` to a very high
-value. Note that this timeWindow are the seconds that privacyIDEA will search
+value. Note that ``timeWindow`` is the number of seconds that privacyIDEA will search
 for the valid OTP value *before* and *after* the current time. E.g. you can
 set this to 86400. This way you allow the clock in the TOTP token to have
 drifted for a maximum of one day.
@@ -52,14 +50,17 @@ As you do not want such a big window for all authentications, you can
 automatically reset the ``timeWindow``. You can achieve this by creating an
 event definition:
 
- * event: *validate_check*
- * handler: *token*
- * condition:
-   * tokentype=TOTP
-   * count_auth_success=1
- * action=set tokeninfo
-   * key=*timeWindow*
-   * value=*180*
+* event: *validate_check*
+* handler: *token*
+* condition:
+
+  * tokentype=TOTP
+  * count_auth_success=1
+
+* action=set tokeninfo
+
+  * key=*timeWindow*
+  * value=*180*
 
 This way with the first successful authentication of a TOTP token the
 ``timeWindow`` of the TOTP token is set to 180 seconds.

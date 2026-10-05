@@ -64,7 +64,7 @@ after, not to count down to the second.
 
 Every other brace expression is left exactly as written, so braces in ordinary
 prose need no escaping. That also means a mistyped tag is shown to the user as
-written; the policy editor points out an unrecognised tag but does not refuse to
+written; the policy editor points out an unrecognized tag but does not refuse to
 save it. ``{duration}`` itself is only substituted where there *is* a remaining
 time. A permanent lock or block has none, and a ``DENY`` counts down nothing at
 all, so there the tag is shown as written - the editor flags that combination
@@ -246,7 +246,7 @@ masking policies are neither needed for it nor sufficient against a message an
 administrator configured.
 
 ``hide_auth_error_status`` (:ref:`policies_hardening`) changes nothing about a
-rejection: a refused login already returns the ``401`` that policy normalises
+rejection: a refused login already returns the ``401`` that policy normalizes
 to, and a refused ``/validate`` request already returns the ordinary ``200``.
 
 Where the reason always is

@@ -32,7 +32,7 @@ If checked, the PIN of the token will be checked on the local server. If the
 PIN matches only the remaining part of the issued password will be sent to
 the remote privacyIDEA server.
 
-**Remote Server ID**
+**Remote Server**
 
 The other privacyIDEA server, to which the authentication request will be forwarded.
 You need to configure the privacyIDEA Server at :ref:`privacyideaserver_config`.
@@ -65,5 +65,5 @@ will be issued for this resolver.
 
 .. note:: You can use *Remote Serial* to forward the request to a central
    privacyIDEA server, that only knows tokens but has no knowledge of users.
-   Or you can use *Remote Serial* to forward the request to an existing to on
+   Or you can use *Remote Serial* to forward the request to an existing token on
    *localhost* thus adding a second user to the same token.

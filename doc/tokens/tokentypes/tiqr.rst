@@ -5,8 +5,8 @@ TiQR
 
 .. index:: TiQR, OCRA
 
-Starting with version 2.6 privacyIDEA supports the TiQR token.
-The TiQR token is a smartphone token, that can be used to login by only
+privacyIDEA supports the TiQR token.
+The TiQR token is a smartphone token, that can be used to log in by only
 scanning a QR code.
 
 The TiQR token implements the
@@ -20,7 +20,7 @@ The token is also enrolled by scanning a QR code.
 
    *Choose a user for the TiQR token*
 
-.. note:: You can not enroll a TiQR token without assign the token to a user.
+.. note:: You can not enroll a TiQR token without assigning the token to a user.
 
 .. figure:: images/enroll_tiqr_2.png
 

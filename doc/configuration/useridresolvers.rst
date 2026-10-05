@@ -5,18 +5,18 @@ User ID Resolvers
 
 .. index:: useridresolvers, LDAP, Active Directory
 
-Each organisation or company usually has its users managed at a central location.
+Each organization or company usually has its users managed at a central location.
 This is why privacyIDEA does not provide its own user management but rather
 connects to existing user stores.
 
 UserIdResolvers are connectors to those user stores, the locations,
 where the users are managed. Nowadays this can be LDAP directories or
-especially Active Directory, some times FreeIPA or the Redhat 389 service.
+especially Active Directory, sometimes FreeIPA or 389 Directory Server.
 But classically users are also located in files like /etc/passwd on
 standalone unix systems. Web services often use SQL databases as
 user store.
 
-Today with many more online cloud services SCIM is also an uprising
+Today with many more online cloud services SCIM is also an emerging
 protocol to access userstores.
 
 privacyIDEA already comes with UserIdResolvers to talk to all these
@@ -27,19 +27,19 @@ user stores:
  * :ref:`sql_resolver`
  * :ref:`scim_resolver`
  * :ref:`http_resolver`
-    * :ref:`entra_id_resolver`
-    * :ref:`keycloak_resolver`
+
+   * :ref:`entra_id_resolver`
+   * :ref:`keycloak_resolver`
 
 .. note:: New resolver types (python modules) can be added easily. See the
    module section for this
    (:ref:`code_useridresolvers`).
 
 You can create as many UserIdResolvers as you wish and edit existing resolvers.
-When you have added all configuration data, most UIs of the UserIdResolvers have a
-button "Test resolver", so that you can test your configuration before saving
-it.
+When you have added all configuration data, you can use the *Test Connection*
+button to test your configuration before saving it.
 
-Starting with privacyIDEA 2.4 resolvers can be editable, i.e. you can edit
+Resolvers can be editable, i.e. you can edit
 the users in the user store. Read more about this at :ref:`manage_users`.
 
 .. note:: Using the authentication policy ``otppin=userstore`` users can
@@ -72,11 +72,11 @@ Create a flat file like this::
 LDAP Resolver
 .............
 
-.. index:: LDAP resolver, OpenLDAP, Active Directory, FreeIPA, Penrose,
-   Novell eDirectory, SAML attributes, Kerberos
+.. index:: LDAP resolver, OpenLDAP, Active Directory, FreeIPA,
+   NetIQ eDirectory, SAML attributes, Kerberos
 
 The LDAP resolver can be used to access any kind of LDAP service like
-OpenLDAP, Active Directory, FreeIPA, Penrose, Novell eDirectory.
+OpenLDAP, Active Directory, FreeIPA, NetIQ eDirectory.
 
 .. figure:: images/ldap-resolver.png
    :width: 500
@@ -103,20 +103,20 @@ This will create LDAP requests to
 TLS Version
 """""""""""
 
-When using TLS, you may specify the TLS version to use. Starting from version 3.6, privacyIDEA offers
+When using TLS, you may specify the TLS version to use. privacyIDEA uses
 TLS v1.3 by default.
 
 
 TLS Certificates
 """"""""""""""""
 
-When using TLS with LDAP, you can tell privacyIDEA to verify the certificate. The according
+When using TLS with LDAP, you can tell privacyIDEA to verify the certificate. The corresponding
 checkbox is visible in the WebUI if the target URL starts with *ldaps* or when using STARTTLS.
 
 You can specify a file with the trusted CA certificate, that signed the
 TLS certificate. The default CA filename is */etc/privacyidea/ldap-ca.crt*
 and can contain a list of base64 encoded CA certificates.
-PrivacyIDEA will use the CA file if specified. If you leave the field empty
+If a CA file is specified, privacyIDEA will use it. If you leave the field empty
 it will also try the system certificate store (*/etc/ssl/certs/ca-certificates.crt*
 or */etc/ssl/certs/ca-bundle.crt*).
 
@@ -129,7 +129,7 @@ The ``Bind Type`` for querying the LDAP-Server can be ``Anonymous``, ``Simple``,
 .. note:: When using bind type ``Simple`` you can specify the Bind-DN like
    ``cn=administrator,cn=users,dc=domain,dc=name`` or ``administrator@domain.name``.
    When using bind type ``NTLM`` you need to specify Bind-DN like
-   ``DOMAINNAME\\username``. In case of ``SASL Kerberos`` the Bind-DN needs to
+   ``DOMAINNAME\username``. In case of ``SASL Kerberos`` the Bind-DN needs to
    be the *PrincipalName* corresponding to the given *keytab*-file.
 
 For the ``SASL Kerberos`` bind type, the privacyIDEA server needs to be
@@ -140,7 +140,7 @@ authentication can be found in the corresponding
 Caching
 """""""
 
-The ``Cache Timeout`` configures a short living per process cache for LDAP users.
+The ``Cache Timeout`` configures a short-lived per-process cache for LDAP users.
 The cache is not shared between different Python processes, if you are running more processes
 in Apache or Nginx. You can set this to ``0`` to deactivate this cache.
 
@@ -148,8 +148,8 @@ Server Pools
 """"""""""""
 
 The ``Server pool retry rounds`` and ``Server pool skip timeout`` settings configure the behavior of
-the LDAP server pool. When establishing a LDAP connection, the resolver uses a round-robin
-strategy to select a LDAP server from the pool. If the current server is not reachable, it is removed
+the LDAP server pool. When establishing an LDAP connection, the resolver uses a round-robin
+strategy to select an LDAP server from the pool. If the current server is not reachable, it is removed
 from the pool and will be re-inserted after the number of seconds specified in the *skip timeout*.
 If the pool is empty after a round, a timeout is added before the next round is started.
 The ldap3 module defaults system wide to 10 seconds before starting the next round.
@@ -162,12 +162,12 @@ By default, knowledge about unavailable pool servers is not persisted between re
 Consequently, a new request may retry to reach unavailable servers, even though the *skip timeout*
 has not passed yet. If the *Per-process server pool* is enabled, knowledge about unavailable
 servers is persisted within each process. This setting may improve performance in situations in
-which a LDAP server from the pool is down for extended periods of time.
+which an LDAP server from the pool is down for extended periods of time.
 
 Modifying Users
 """""""""""""""
 
-Starting with privacyIDEA 2.12, you can define the LDAP resolver as editable.
+You can define the LDAP resolver as editable.
 I.e. you can create and modify users from within privacyIDEA.
 
 There are two additional configuration parameters for this case.
@@ -197,19 +197,19 @@ Loginname Attribute
 The ``LoginName attribute`` is the attribute that holds the login name. It
 can be changed to your needs.
 
-Starting with version 2.20 you can provide a list of attributes in
+You can provide a list of attributes in
 ``LoginName Attribute`` like::
 
     sAMAccountName, userPrincipalName
 
-This way a user can login with either his ``sAMAccountName`` or his ``principalName``.
+This way a user can log in with either their ``sAMAccountName`` or their ``userPrincipalName``.
 
 Search Filter
 """""""""""""
 
 The ``searchfilter`` is used to list all possible users, that can be used
 in this resolver. The search filter is used for forward and backward
-search the object in LDAP.
+searches of the object in LDAP.
 
 Attribute Mapping
 """""""""""""""""
@@ -283,6 +283,7 @@ the users you can leave this field empty.
 **Search Filter for User Groups**
 
 Define a search filter to get the groups of the user. The following tags can be used:
+
     * ``{base_dn}``: The base DN of the users as defined in ``Base DN``
     * ``{username}``: The username of the user to search for
     * All keys defined in the attribute mapping surrounded by curly braces
@@ -322,7 +323,7 @@ The option ``No retrieval of schema information`` can be used to
 disable the retrieval of schema information [#ldapschema]_ in
 order to improve performance. This checkbox is deactivated by default
 and should only be activated after having ensured that schema information
-are unnecessary.
+is unnecessary.
 
 .. _ldap_expired_users:
 
@@ -357,20 +358,20 @@ SQL database like MySQL, PostgreSQL, Oracle, DB2 or sqlite.
 
    *SQL resolver configuration*
 
-In the upper frame you need to configure the SQL connection.
+In the *Database Connection* section you need to configure the SQL connection.
 The SQL resolver uses `SQLAlchemy <http://sqlalchemy.org>`_ internally.
 In the field ``Driver`` you need to set a driver name as defined by the
-`SQLAlchemy  dialects <http://docs.sqlalchemy.org/en/rel_0_9/dialects/>`_
-like "mysql" or "postgres".
+`SQLAlchemy dialects <https://docs.sqlalchemy.org/en/20/dialects/>`_
+like ``mysql+pymysql`` or ``postgresql+psycopg2``.
 
-In the ``SQL attributes`` frame you can specify how the users are
+In the *Table, Mapping, Pool & Editable* section you can specify how the users are
 identified.
 
 The ``Database table`` contains the users.
 
 .. note:: At the moment, only one table
    is supported, i.e. if some of the user data like email address or telephone
-   number is located in a second table, those data can not be retrieved.
+   number is located in a second table, those data cannot be retrieved.
 
 The ``Limit`` is the SQL limit for a userlist request. This can be important
 if you have several thousand user entries in the table.
@@ -393,7 +394,7 @@ database.
 
 .. note:: There is no standard way to store passwords in an SQL database.
    privacyIDEA supports the most
-   common ways like Wordpress hashes starting with *$P* or *$S*. Secure hashes
+   common ways like WordPress hashes starting with *$P* or *$S*. Secure hashes
    starting with *{SHA}* or salted secure hashes starting with *{SSHA}*,
    *{SSHA256}* or *{SSHA512}*. Password hashes of length 64 are interpreted as
    OTRS sha256 hashes.
@@ -405,8 +406,8 @@ editable user is written to the database.
 You can add an additional ``Where statement`` if you do not want to use
 all users from the table.
 
-The ``poolSize`` and ``poolTimeout`` determine the pooling behaviour. The
-``poolSize`` (default 5) determine how many connections are kept open in the
+The ``poolSize`` and ``poolTimeout`` determine the pooling behavior. The
+``poolSize`` (default 5) determines how many connections are kept open in the
 pool. The ``poolTimeout`` (default 10) specifies how long the application
 waits to get a connection from the pool.
 
@@ -430,9 +431,6 @@ SCIM Resolver
 
 SCIM is a "System for Cross-domain Identity Management". SCIM is a REST-based
 protocol that can be used to ease identity management in the cloud.
-
-The SCIM resolver is tested in basic functions with OSIAM [#osiam]_,
-the "Open Source Identity & Access Management".
 
 To connect to a SCIM service you need to provide a URL to an authentication
 server and a URL to the resource server. The authentication server is used to
@@ -460,12 +458,12 @@ HTTP Resolver
 
 .. index:: HTTP resolver, resolver, api, http
 
-Starting with version 3.4 the HTTP resolver is available to retrieve user information from any kind
+The HTTP resolver retrieves user information from any kind
 of web service API. There are four types of HTTP resolvers:
 
     * :ref:`basic_http_resolver`: Limited configuration options to retrieve user information for a single user.
     * :ref:`advanced_http_resolver`: More complex configuration options to not only get user information for different
-      purposes, but also allows to create, edit and delete users.
+      purposes, but also allow creating, editing and deleting users.
     * :ref:`entra_id_resolver`: Preconfigured advanced HTTP resolver to retrieve user information from Microsoft Entra
       ID.
     * :ref:`keycloak_resolver`: Preconfigured advanced HTTP resolver to retrieve user information from Keycloak.
@@ -539,6 +537,7 @@ are configured. Below that, you can set up the user store API endpoint for each 
    :width: 500
 
 **Generic Settings**
+
     * **Resolver name**: A unique name for the resolver.
     * **Base URL**: The base URL of the user store API. It will be concatenated with the ``Endpoint`` in the detailed
       configurations, except for endpoints where a full URL is specified starting with ``http``.
@@ -571,7 +570,7 @@ are configured. Below that, you can set up the user store API endpoint for each 
     * **Edit user store**: If checked, the resolver is editable and allows creating, editing, and deleting users in the
       user store. Note that these rights must also be granted in the user store.
     * **Verify TLS**: If checked, the TLS certificate of the user store API is verified. This should always be checked
-      for productive use!
+      for production use!
       Optionally, a CA certificate can be provided to verify the TLS certificate of the user store API.
     * **Timeout**: Time in seconds to wait for a response from the user store API. If the request takes longer, it will
       be aborted.
@@ -579,6 +578,7 @@ are configured. Below that, you can set up the user store API endpoint for each 
 **Endpoint Configuration**
 
 The configuration is similar for each endpoint:
+
     * **Method**: The HTTP method to use for the request (GET, POST, PUT, PATCH, DELETE)
     * **Endpoint**: The endpoint of the user store API to which the request is sent. It will be concatenated with the
       base URL. If you enter a full URL starting with ``http``, it will not be concatenated with the base URL. You can
@@ -686,7 +686,7 @@ Entra ID Resolver
 .. index:: Entra ID resolver
 .. versionadded:: 3.12
 
-The EntraID resolver is a preconfigured advanced HTTP resolver to retrieve user information from Microsoft Entra ID.
+The Entra ID resolver is a preconfigured advanced HTTP resolver to retrieve user information from Microsoft Entra ID.
 Check out the
 `Microsoft Graph API documentation <https://learn.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0>`_
 if you want to change the default configuration.
@@ -700,8 +700,8 @@ settings are described.
 
     * **Base URL**: The base URL of the Microsoft Graph API. It will be concatenated with the ``Endpoint`` in the
       detailed configurations. By default, this is ``https://graph.microsoft.com/v1.0``.
-    * **Attribute Mapping**: The mapping between privacyIDEA user attributes and the ones used by Entra ID are already
-      all prefilled. If you do not need all of them, you can remove them.
+    * **Attribute Mapping**: The mapping between privacyIDEA user attributes and the ones used by Entra ID is already
+      prefilled. If you do not need all of them, you can remove them.
     * **Groups**: Receive the group memberships when getting the user information.
       Optionally, you can define the *privacyIDEA user groups key* to store the groups in the user info. By default,
       this is ``groups``. You can also define the *user store group attribute* to specify which Entra ID attribute
@@ -757,7 +757,7 @@ On the application page, browse to *Certificates & secrets*. There are two ways 
 
     1. **Client certificate**: Use a certificate of the privacyIDEA server to authenticate against Microsoft Entra
        ID. It is the recommended credential type by Entra ID. However, you can only use this credential type if the
-       user's password is checked by Entra ID first, and privayIDEA only evaluates the second factor. It can not be used
+       user's password is checked by Entra ID first, and privacyIDEA only evaluates the second factor. It cannot be used
        if privacyIDEA should check the password.
 
        To add a certificate, browse to *Certificates* and select *Upload certificate*. Select the certificate file and
@@ -777,7 +777,7 @@ For more information, read the official documentation on how to
 `Add and manage application credentials in Microsoft Entra ID
 <https://learn.microsoft.com/en-us/entra/identity-platform/how-to-add-credentials?tabs=certificate>`_.
 
-In the privacyIDEA web UI, in the authorization section of the EntraID resolver, you can now configure the following
+In the privacyIDEA WebUI, in the authorization section of the Entra ID resolver, you can now configure the following
 settings:
 
     * **Authority**: The URL of Microsoft where the application needs to authenticate to receive an access token.
@@ -834,8 +834,9 @@ the following required parameters are set in the request mapping:
       such as "John Doe".
     * *mailNickname*: The mail alias for the user. By default, this is equal to the given name.
     * *passwordProfile*: A dictionary by default containing only the user's password. The following options can be set:
+
         * *password* (required): The password for the user. You can use the tag ``{password}``. Note that if you do not
-          specify a password, the tag can not be replaced, and the raw tag string ``{password}`` will be used as the
+          specify a password, the tag cannot be replaced, and the raw tag string ``{password}`` will be used as the
           password. This will cause an error as this password does not comply with the password complexity requirements
           of Entra ID.
         * *forceChangePasswordNextSignIn* (optional): If set to true, the user must change the password at the next
@@ -876,8 +877,8 @@ settings are described.
 
 **Authorization**
 
-PrivacyIDEA must authenticate against the Keycloak server to retrieve an access token. This token is then used to
-access the Keycloak API to resolve and edit users. The authentication is done on behalf of a user. Hence, you need to
+The privacyIDEA server must authenticate against the Keycloak server to retrieve an access token. This token is then
+used to access the Keycloak API to resolve and edit users. The authentication is done on behalf of a user. Hence, you need to
 create a service account in Keycloak with the required permissions to read (and write) users. If you only want to
 retrieve user information, the service account only requires the role ``view-users``. If you also want to edit users,
 the role ``manage-users`` is required additionally.
@@ -920,7 +921,7 @@ the request mapping contains the parameter ``{"enabled": true}`` to enable the u
 ``false`` if you want to create the user account in a disabled state.
 
 Keycloak does not support setting the user password during user creation. This would be a separate API call to
-another endpoint. This is actually not implemented in privacyIDEA.
+another endpoint. This is currently not implemented in privacyIDEA.
 
 
 .. _usercache:
@@ -934,7 +935,7 @@ privacyIDEA does not implement local user management by design and relies on Use
 connect to external user stores instead. Consequently, privacyIDEA queries user stores quite frequently,
 e.g. to resolve a login name to a user ID while processing an authentication request, which
 may introduce a significant slowdown.
-In order to optimize the response time of authentication requests, privacyIDEA 2.19 introduces the *user cache*
+In order to optimize the response time of authentication requests, privacyIDEA provides a *user cache*
 which is located in the local database. It can be enabled in the system configuration (see :ref:`user_cache_timeout`).
 
 A user cache entry stores the association of a login name in a specific UserIdResolver with a specific
@@ -949,7 +950,7 @@ user ID will not be noticed by privacyIDEA until the corresponding cache entry e
 
 Expired cache entries are *not* deleted from the user cache table automatically. Instead, the tool
 :ref:`privacyidea-usercache-cleanup <privacyidea_usercache_cleanup>` should be used to delete
-expired cache entries from the database, e.g. in a cronjob. The Ubuntu packages and the Docker
+expired cache entries from the database, e.g. in a cron job. The Ubuntu packages and the Docker
 image run it daily, see :ref:`cleanup_jobs`.
 
 However, cache entries are removed at some defined events:
@@ -974,6 +975,5 @@ However, cache entries are removed at some defined events:
 .. rubric:: Footnotes
 
 .. [#serverpool] https://ldap3.readthedocs.io/en/latest/server.html#server-pool
-.. [#adreferrals] https://techcommunity.microsoft.com/t5/azure-active-directory-identity/referral-chasing/ba-p/243177
-.. [#osiam] http://osiam.github.io
+.. [#adreferrals] https://techcommunity.microsoft.com/blog/microsoft-entra-blog/referral-chasing/243177
 .. [#ldapschema] https://ldap3.readthedocs.io/en/latest/schema.html

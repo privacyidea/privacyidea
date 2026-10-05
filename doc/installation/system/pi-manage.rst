@@ -106,7 +106,7 @@ key to standard output or to the file given with ``-o``::
 
    pi-manage setup encrypt_enckey /etc/privacyidea/enckey -o /etc/privacyidea/enckey.enc
 
-Point ``PI_ENCFILE`` to the encrypted file. The server recognises an encrypted
+Point ``PI_ENCFILE`` to the encrypted file. The server recognizes an encrypted
 key and waits for the passphrase after every start. pi-manage cannot ask for
 it, so while the key is encrypted, commands that have to encrypt or decrypt
 data fail. Read more about the database encryption and the *enckey* in
@@ -373,7 +373,7 @@ Clean up challenges
 -------------------
 
 The challenges of challenge-response tokens are stored in a database table.
-Each challenge has a validity time. Challenges which haven't been answered,
+Each challenge has a validity time. Challenges that have not been answered
 persist in the database until they are cleaned up. The Ubuntu packages and the
 Docker image do this for you, see :ref:`cleanup_jobs`. To clean up all expired
 challenges use::

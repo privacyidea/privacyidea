@@ -3,8 +3,8 @@
 SimpleStats
 -----------
 
-The ``SimpleStats`` task module is a :ref:`periodic_tasks` to collect some basic statistics
-from the token database and write them to the time series database table ``MonitoringStats``.
+The ``SimpleStats`` task module is a task module for :ref:`periodic_tasks` that collects some basic statistics
+from the token database and writes them to the time series database table ``MonitoringStats``.
 
 Options
 ~~~~~~~

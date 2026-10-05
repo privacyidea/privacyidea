@@ -3,14 +3,11 @@
 Policies
 ========
 
-.. todo:: Policies may be outdated. How to check which components are missing?
-   And do we want to document all actions? I added a link to the :ref:`code_policy`.
-
 .. index:: policies, scope
 
-Policies can be used to define the reaction and behaviour of the system.
+Policies can be used to define the reaction and behavior of the system.
 
-Each policy defines the behaviour in a certain area, called scope.
+Each policy defines the behavior in a certain area, called scope.
 privacyIDEA knows these scopes:
 
 .. toctree::
@@ -36,7 +33,7 @@ The logic of the policies in the scopes is additive.
 
    *Policy Definition*
 
-Starting with privacyIDEA 2.5 you can use policy templates to ease the setup.
+You can use policy templates to ease the setup.
 
 .. toctree::
    :maxdepth: 1
@@ -77,8 +74,6 @@ Each policy can contain the following attributes:
   Policy conflicts can still occur if multiple policies with the same priority
   specify different values for the same action.
 
-.. versionadded:: 2.23
-
 **description**
     Use this to describe your policy in more detail.
 
@@ -87,14 +82,14 @@ Each policy can contain the following attributes:
   This is the important part of the policy.
   Each scope provides its own
   set of actions.
-  An action describes that something is `allowed` or
-  that some behaviour is configured.
+  An action describes that something is *allowed* or
+  that some behavior is configured.
   A policy can contain several actions.
-  Actions can be of type `boolean`, `string` or `integer`.
+  Actions can be of type ``bool``, ``string`` or ``integer``.
   Boolean actions are enabled by just adding this action - like
   ``scope=user:action=disable``, which allows the user to disable their own
   tokens.
-  `string` and `integer` actions require an additional value - like
+  ``string`` and ``integer`` actions require an additional value - like
   ``scope=authentication:action='otppin=userstore'``.
 
 
@@ -120,9 +115,11 @@ matches no value at all.
 
   If this field is left blank, this policy is valid for all resolvers.
 
-  .. note:: Starting with version 2.17 you can use the parameter
+  .. note:: You can use the parameter
      ``check_all_resolvers``. This is *Check all possible resolvers*
-     *of a user to match the resolver in this policy* in the WebUI.
+     *of a user to match the resolver in this policy* in the previous WebUI.
+     The WebUI does not offer this option. It can be set with the parameter
+     ``check_all_resolvers`` of ``POST /policy/<name>``.
 
      Assume a user *user@realm1* is contained in *resolver1* and *resolver2*
      in the realm *realm1*, where *resolver1* is the resolver with the
@@ -144,7 +141,7 @@ matches no value at all.
   If this field is left blank, this policy is valid for all users.
 
   .. note:: Starting with version 3.10 you can choose if the username and the
-    adminname has to match case-sensitive or not.
+    adminname have to match case-sensitively or not.
 
 **admin realm** and **admin user**
 
@@ -164,12 +161,10 @@ matches no value at all.
 
   The nodes are configured in pi.cfg. See :ref:`cfgfile`.
 
-.. versionadded:: 3.4
-
 **time**
 
   In the time field of a policy you can define a list of time ranges. A time
-  range can consist of day of weeks (*dow*) and of times in 24h format.
+  range can consist of days of the week (*dow*) and of times in 24h format.
   Possible values are::
 
      <dow>: <hh>-<hh>
@@ -186,8 +181,6 @@ matches no value at all.
      This can lead to unintended side effects. Carefully consider this before
      using time restricted policies.
 
-.. versionadded:: 2.12
-
 .. _client_policies:
 
 **client**
@@ -197,7 +190,7 @@ matches no value at all.
   their tokens depending on their IP addresses (like the internal network or
   remotely via the firewall).
 
-  You can enter several IP addresses or subnets divided by comma. Exclude item
+  You can enter several IP addresses or subnets divided by comma. Exclude an item
   by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
 
 **User Agent**
@@ -211,11 +204,9 @@ matches no value at all.
   Using conditions you can specify more advanced rules that determine whether
   a policy is valid for a request.
 
-  Conditions are described in
+  Conditions are described on the following page:
 
 .. toctree::
     :maxdepth: 1
 
     conditions
-
-.. versionadded:: 3.1
