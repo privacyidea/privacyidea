@@ -257,15 +257,11 @@ class APIPolicyTestCase(MyApiTestCase):
 
     def test_01d_update_keeps_omitted_values(self):
         policy_name = "keep_values"
+        expected = {"active": False, "check_all_resolvers": True, "user_case_insensitive": True,
+                    "priority": 3, "description": "keep me"}
         with self.app.test_request_context(f"/policy/{policy_name}",
                                            method="POST",
-                                           data={"scope": SCOPE.USER,
-                                                 "action": "disable",
-                                                 "active": "false",
-                                                 "check_all_resolvers": "true",
-                                                 "user_case_insensitive": "true",
-                                                 "priority": 3,
-                                                 "description": "keep me"},
+                                           json={"scope": SCOPE.USER, "action": "disable", **expected},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
@@ -279,8 +275,6 @@ class APIPolicyTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
 
         policy = get_policies(name=policy_name)[0]
-        expected = {"active": False, "check_all_resolvers": True, "user_case_insensitive": True,
-                    "priority": 3, "description": "keep me"}
         self.assertEqual(expected, {key: policy.get(key) for key in expected})
 
         delete_policy(policy_name)

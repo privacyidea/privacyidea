@@ -252,9 +252,11 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual(expected, {key: policy.get(key) for key in expected})
         delete_policy("keep_values")
 
-        set_policy(name="new_defaults", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE)
+        policy_id = set_policy(name="new_defaults", scope=SCOPE.ADMIN, action=PolicyAction.ENABLE, description="")
+        self.assertEqual([], PolicyDescription.query.filter_by(object_id=policy_id).all())
         policy = get_policies(name="new_defaults")[0]
-        expected = {"active": True, "check_all_resolvers": False, "user_case_insensitive": False, "priority": 1}
+        expected = {"active": True, "check_all_resolvers": False, "user_case_insensitive": False, "priority": 1,
+                    "description": None}
         self.assertEqual(expected, {key: policy.get(key) for key in expected})
         delete_policy("new_defaults")
 
@@ -311,13 +313,13 @@ class PolicyTestCase(MyTestCase):
 
     def test_04_delete_policy(self):
         d1 = PolicyDescription.query.filter_by().all()
-        self.assertEqual(len(d1), 5)
+        self.assertEqual(len(d1), 1)
         delete_policy(name="pol4")
         P = PolicyClass()
         pol4 = P.match_policies(name="pol4")
         self.assertTrue(pol4 == [], pol4)
         d1 = PolicyDescription.query.filter_by().all()
-        self.assertEqual(len(d1), 4)
+        self.assertEqual(len(d1), 0)
 
     def test_05_export_policies(self):
         P = PolicyClass()

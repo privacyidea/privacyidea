@@ -1573,7 +1573,7 @@ def set_policy(name: str | None = None, scope: str | None = None, action: str | 
     if description_db:
         if description is not None:
             description_db.description = description
-    else:
+    elif description:
         new_description = PolicyDescription(object_id=ret, object_type="policy", description=description)
         db.session.add(new_description)
     save_config_timestamp()
