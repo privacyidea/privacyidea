@@ -224,11 +224,9 @@
   },
   "conditional access details": {
     "light": [
-      "nested-interactive",
       "target-size"
     ],
     "dark": [
-      "nested-interactive",
       "target-size"
     ]
   },
