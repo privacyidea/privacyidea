@@ -1,12 +1,12 @@
 from email import message_from_string
 
-from privacyidea.lib.resolver import delete_resolver, save_resolver
-from privacyidea.lib.realm import delete_realm, set_realm, set_default_realm
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm, set_default_realm
 from .base import MyApiTestCase, PristineSqliteFixtures
 from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, set_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-from privacyidea.lib.smtpserver import delete_smtpserver, add_smtpserver
+from privacyidea.lib.smtpserver import add_smtpserver
 from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.passwordreset import create_recoverycode

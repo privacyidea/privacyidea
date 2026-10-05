@@ -533,7 +533,6 @@ class WebAuthnTokenTestCase(MyTestCase):
         This test inserts challenge rows using the old "user_verification" key and goes through
         verify_fido2_challenge() to confirm it can still be loaded correctly.
         """
-        import json
         from privacyidea.lib.fido2.challenge import verify_fido2_challenge
         from privacyidea.models import Challenge
 

@@ -28,7 +28,7 @@ from collections.abc import Sequence, Sized
 
 from pyrad import packet
 from pyrad.client import Timeout
-from pyrad.packet import AccessReject, AccessAccept, AccessChallenge
+from pyrad.packet import AccessReject, AccessAccept, AccessChallenge  # noqa: F401 re-exported for tests
 
 from .smtpmock import get_wrapped
 
