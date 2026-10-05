@@ -9,7 +9,7 @@ The token type *sshkey* is the public SSH key, that you can upload and assign
 to a user. The SSH key is only used for the application type **SSH** in
 conjunction with the :ref:`machines` concept.
 
-A user or the administrator can upload the public SSH key and assign to a user.
+A user or the administrator can upload the public SSH key and assign it to a user.
 
 
 .. figure:: images/sshkey.png

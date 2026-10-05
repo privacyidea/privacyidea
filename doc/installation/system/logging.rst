@@ -7,7 +7,7 @@ Debugging and Logging
 
 You can set ``PI_LOGLEVEL`` to a value 10 (Debug), 20 (Info), 30 (Warning),
 40 (Error) or 50 (Critical).
-If you experience problems, set ``PI_LOGLEVEL = 10`` restart the web service
+If you experience problems, set ``PI_LOGLEVEL = 10``, restart the web service
 and resume the operation. The log file ``privacyidea.log`` should contain
 some clues.
 
@@ -22,7 +22,7 @@ Advanced Logging
 ~~~~~~~~~~~~~~~~
 
 In the advanced logging you can use the Python logging configuration to
-define in a fine graded way which information should be logged where.
+define in a fine-grained way which information should be logged where.
 For more details see `python logging config <https://docs.python.org/3/library/logging.config.html#module-logging.config>`_.
 
 
@@ -34,7 +34,7 @@ in :ref:`cfgfile` like this::
 
    PI_LOGCONFIG = "/path/to/logging.yml"
 
-Since Version 3.3 the logging configuration can be written in YAML [#yaml]_.
+The logging configuration can also be written in YAML [#yaml]_.
 Such a YAML based configuration could look like this:
 
 .. code-block:: yaml
@@ -57,7 +57,7 @@ Such a YAML based configuration could look like this:
         formatter: detail
         level: ERROR
       file:
-        # Rollover the logfile at midnight
+        # Rotate the logfile at 1 MB, keep 5 old files
         class: logging.handlers.RotatingFileHandler
         backupCount: 5
         maxBytes: 1000000
@@ -66,7 +66,7 @@ Such a YAML based configuration could look like this:
         filename: /var/log/privacyidea/privacyidea.log
       syslog:
         class: logging.handlers.SysLogHandler
-        address: ('192.168.1.110', 514)
+        address: ['192.168.1.110', 514]
         formatter: detail
         level: INFO
 
@@ -84,7 +84,7 @@ Such a YAML based configuration could look like this:
       level: WARNING
 
 Different handlers can be used to send log messages to log-aggregators like
-splunk [#splunk]_ or logstash [#logstash]_.
+Splunk [#splunk]_ or Logstash [#logstash]_.
 
 The old `python logging config file format <https://docs.python.org/3/library/logging.config
 .html#logging-config-fileformat>`_ is also still supported::
@@ -107,7 +107,7 @@ The old `python logging config file format <https://docs.python.org/3/library/lo
       'admin2@example.com'], 'PI Error')
 
    [handler_file]
-   # Rollover the logfile at midnight
+   # Rotate the logfile at 10 MB, keep 14 old files
    class=logging.handlers.RotatingFileHandler
    backupCount=14
    maxBytes=10000000

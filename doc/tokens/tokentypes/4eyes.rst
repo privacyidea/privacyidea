@@ -5,8 +5,8 @@ Four Eyes
 
 .. index:: Four Eyes, 4 Eyes, Two Man
 
-Starting with version 2.6 privacyIDEA supports 4 Eyes Token. This is a meta
-token, that can be used to define, that two or more token must be used to
+privacyIDEA supports the 4 Eyes token. This is a meta
+token, that can be used to define, that two or more tokens must be used to
 authenticate. This way, you can set up a "two man rule".
 
 You can define, from which realm how many unique tokens need to be
@@ -48,9 +48,7 @@ The response looks like this in case of success::
      "result": {
        "status": true,
        "value": true
-     },
-     "version": "privacyIDEA 2.6dev0",
-     "versionnumber": "2.6dev0"
+     }
    }
 
 In case of a failed authentication the response looks like this::
@@ -67,17 +65,15 @@ In case of a failed authentication the response looks like this::
      "result": {
        "status": true,
        "value": false
-     },
-     "version": "privacyIDEA 2.6dev0",
-     "versionnumber": "2.6dev0"
+     }
    }
 
 Using Challenge Response mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Starting with version 3.5 it is also possible to use the 4eyes token in
+It is also possible to use the 4eyes token in
 multi challenge-response mode.
-This way in the first authentication response the users will either enter the
+This way in the first authentication request the users will either enter the
 OTP PIN of the 4eyes token or (if the 4eyes token has no PIN) enter the first
 token (OTP PIN + OTP value) of one of the users.
 After this a challenge is sent back, that further tokens need to be entered.
@@ -89,4 +85,4 @@ Every one of the required tokens is entered separately.
 
 .. warning:: But it does not verify, if these two unique tokens belong to
    the same user. Thus you should create a policy, that in such a realm a user
-   may only have on token.
+   may only have one token.

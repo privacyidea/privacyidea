@@ -6,7 +6,7 @@ WebUI
 .. index:: ! webui, ! WebUI
 
 privacyIDEA comes with a web-based user interface which is used to manage and configure
-the privacyIDEA server. It is also used a self-service portal for the average user, who
+the privacyIDEA server. It is also used as a self-service portal for the average user, who
 manages his own tokens. This section gives an overview on the interface and links the
 respective sections in the documentation.
 
@@ -20,13 +20,13 @@ Serving the WebUI
    ``static/``, and the WebUI it replaces moved to ``static_old/``.
 
 An installation needs no configuration for this: the WebUI in ``static/`` is what privacyIDEA
-serves. If `pi.cfg` still carries the two lines that enabled the preview::
+serves. If ``pi.cfg`` still carries the two lines that enabled the preview::
 
     PI_STATIC_FOLDER = "static_new/"
     PI_TEMPLATE_FOLDER = "static_new/dist/privacyidea-webui/browser/"
 
 they can be removed. They keep working for this version -- the paths are remapped to the new
-location and a warning is written to the log -- but they are not honoured in the next one.
+location and a warning is written to the log -- but they are not honored in the next one.
 
 .. _legacy_webui:
 
@@ -36,13 +36,13 @@ Serving the previous WebUI
 .. index:: legacy webui
 
 The WebUI of version 3.13 and earlier is still shipped, in ``static_old/``. To serve it instead,
-add both of these lines to `pi.cfg`::
+add both of these lines to ``pi.cfg``::
 
     PI_STATIC_FOLDER = "static_old/"
     PI_TEMPLATE_FOLDER = "static_old/templates/"
 
 The first selects the files the WebUI is served from, the second the templates privacyIDEA renders
-itself, such as the certificate request form. Both are needed.
+itself, such as the WebUI's ``index.html``. Both are needed.
 
 It is kept for one version so that a problem with the current WebUI does not hold up an update,
 and **is removed in the next version**. If you need it, please report what made you switch back.
@@ -96,7 +96,7 @@ is evaluated for the user who logs in:
   handed a copy of its ``sessionStorage`` by the browser, and therefore of the session.
 * ``browser`` - the token goes to ``localStorage``. Every tab of the browser shares the
   session, and it survives closing the browser until the JWT expires. This is the
-  behaviour of releases before the policy existed.
+  behavior of releases before the policy existed.
 
 The value is a deployment decision, not a user preference: the WebUI has no setting for
 it. Because the policy is matched against the principal that is logging in, admin realms
@@ -145,9 +145,8 @@ Dashboard
 
 .. index:: dashboard
 
-Starting with version 3.4, privacyIDEA includes a basic dashboard, which can be enabled
-by the WebUI policy :ref:`webui_admin_dashboard`. The new WebUI always shows the dashboard to
-administrators, regardless of this policy. The dashboard will be displayed as a starting page
+privacyIDEA includes a dashboard. The WebUI always shows the dashboard to administrators; the WebUI
+policy :ref:`webui_admin_dashboard` only affects the previous WebUI. The dashboard will be displayed as a starting page
 for administrators and contains information about token numbers, authentication requests,
 recent administrative changes, policies, event handlers and subscriptions. It uses the usual
 endpoints to fetch the information, so only information to which an administrator has read
@@ -182,10 +181,10 @@ relevant to the running privacyIDEA instance:
 * The certificate of every configured LDAP resolver that uses ``ldaps://`` or
   ``START_TLS``. Each entry links to the corresponding resolver detail page.
 * The TLS server certificate of every Keycloak resolver whose ``base_url`` is
-  an ``https://`` endpoint. The EntraID resolver is intentionally **not**
+  an ``https://`` endpoint. The Entra ID resolver is intentionally **not**
   probed this way, because it targets Microsoft-managed endpoints whose
   certificates rotate automatically.
-* The client-certificate credential of every EntraID resolver configured with
+* The client-certificate credential of every Entra ID resolver configured with
   ``client_credential_type = certificate``. The certificate is read from the
   resolver's ``private_key_file``; only its validity period is inspected (the
   private key and its passphrase are never needed). If that file holds only the
@@ -208,9 +207,9 @@ To check the privacyIDEA server certificate, set one or both of:
   certificate from. Targets must be reachable from the privacyIDEA process.
   Typical values:
 
-  * **Apache + uwsgi (Ubuntu deb package):** ``[{"host": "127.0.0.1", "port": 443}]``
+  * **Apache + mod_wsgi (Ubuntu deb package):** ``[{"host": "127.0.0.1", "port": 443}]``
     - probes Apache over loopback and reads the cert it actually serves.
-  * **Docker (nginx + gunicorn):** ``[{"host": "nginx", "port": 443}]`` or
+  * **Docker (Caddy + gunicorn):** ``[{"host": "caddy", "port": 443}]`` or
     whatever the docker-compose service name resolves to inside the network.
 
   A single probe target may also be given as a bare dict
@@ -245,10 +244,10 @@ Resolver timing
 
 .. index:: resolver timing, dashboard metrics
 
-The dashboard also shows a *Resolver Timing* panel that summarises the
+The dashboard also shows a *Resolver Timing* panel that summarizes the
 latency of every public ``UserIdResolver`` operation - ``checkPass``,
 ``getUserList``, ``getUserId``, and so on - across LDAP, SQL, HTTP-based
-(EntraID, Keycloak), and passwd resolvers. One row per resolver, sorted
+(Entra ID, Keycloak), and passwd resolvers. One row per resolver, sorted
 worst p95 first. The columns ``Avg`` / ``p95`` / ``Max`` are color-coded
 green below ``100 ms``, yellow below ``500 ms``, and red above. p95 is
 suppressed (``-``) for resolvers with fewer than 20 samples in the
@@ -276,7 +275,7 @@ Notification delivery
 
 .. index:: notification delivery, dashboard metrics
 
-The *Notification Delivery* panel summarises outbound message delivery
+The *Notification Delivery* panel summarizes outbound message delivery
 across the three notification channels:
 
 * **Push** - per configured push gateway identifier.
@@ -368,7 +367,7 @@ Conditional access
 
 .. index:: conditional access, dashboard metrics, user lock, blocklist
 
-The *Conditional Access* panel summarises what the conditional-access
+The *Conditional Access* panel summarizes what the conditional-access
 policies are configured to do and what they are currently enforcing:
 
 * **Enforcing policies** - enabled policies whose actions actually run.
@@ -407,7 +406,7 @@ policies are configured to do and what they are currently enforcing:
   the list is not narrowed at all.
 
 Every top-level row - *Enforcing policies*, *Users locked*, *IPs blocked* -
-links to the page it summarises; their *permanent*/*dry run only*/*disabled*
+links to the page it summarizes; their *permanent*/*dry run only*/*disabled*
 sub-counts and *Expired records* do not. The three areas are governed
 by separate rights (``conditional_access_policy_read``, ``user_lock_read``,
 ``blocklist_read``); the panel shows only the areas an administrator may
@@ -471,8 +470,8 @@ News
 
 .. index:: News, RSS
 
-privacyIDEA allows to fetch news via RSS feeds. This is supposed to help the administrator to keep up with information
-in regards to running your privacyIDEA. Per default privacyIDEA fetches news from privacyidea.org, netknights.it and
+privacyIDEA can fetch news via RSS feeds. This is supposed to help the administrator to keep up with information
+with regard to running privacyIDEA. Per default privacyIDEA fetches news from privacyidea.org, netknights.it and
 community.privacyidea.org.
 
 News can be displayed to the administrators and to normal users!
@@ -480,7 +479,7 @@ News can be displayed to the administrators and to normal users!
 You can use the policy :ref:`policy_rss_age` to define the age of the messages to fetch and the policy
 :ref:`policy_rss_feeds` to define the feeds to fetch. This way you can even provide your own feeds to your end users.
 
-Note that setting the `rss_age` to 0 will disable the News tab.
+Note that setting the ``rss_age`` to 0 will disable the *News* tab.
 
 .. _tokensview:
 
@@ -503,7 +502,7 @@ and to perform actions on this token. Read on here:
 
    :ref:`token_details`
 
-In the *Token Applications* the administrator can check for all SSH Keys attached to
+Under *Applications* in the token menu, the administrator can check for all SSH Keys attached to
 services and for HOTP tokens attached to machines for offline authentication.
 Also see :ref:`machines`.
 
@@ -515,7 +514,7 @@ Containers
 
 .. index:: containerview
 
-In the container view, administrators can see all the containers in all the realms they are allowed to manage. User can
+In the container view, administrators can see all the containers in all the realms they are allowed to manage. Users can
 only see their own containers. Each container can hold multiple tokens. A container can be in multiple realms, but can
 only be assigned to one user. You can click on a container to see more details and perform actions on the container and
 the tokens it contains.
@@ -544,16 +543,16 @@ The administrator can see all users fetched by :ref:`useridresolvers` located in
    within a realm. If you only define a useridresolver but no realm,
    you will not be able to see the users!
 
-You can select one of the realms in the left drop down box. The administrator
-will only see the realms in the drop down box, that he is allowed to manage.
+You can select one of the realms in the *Select Realm* drop-down box. The administrator
+will only see the realms in the drop-down box, that he is allowed to manage.
 
 
 .. figure:: images/usersview.png
    :width: 500
 
-   *The Users view list all users in a realm.*
+   *The Users view lists all users in a realm.*
 
-The list shows the users from the select realm. The username, surname,
+The list shows the users from the selected realm. The username, surname,
 given name, email and phone are filled according to the definition of
 the useridresolver.
 
@@ -593,12 +592,12 @@ managing SSH keys or doing offline OTP. In most cases there is no need to manage
 
 .. _config:
 
-Config
-------
+Configuration
+-------------
 
-The configuration tab is the heart of the privacyIDEA server. It contains the general
-:ref:`system_config`, allows configuring :ref:`policies` which are important to configure
-behavior of the system, manages the :ref:`eventhandler` and lets the user set up :ref:`periodic_tasks`.
+The *Configuration* menu is the heart of the privacyIDEA server. It contains the general
+:ref:`system_config` and lets the user set up :ref:`periodic_tasks`. The :ref:`policies`, which are important to
+configure behavior of the system, and the :ref:`eventhandler` are managed under the separate menu *Policies*.
 
 .. figure:: ../configuration/images/system-config.png
    :width: 500
@@ -629,16 +628,15 @@ endpoint that served the request and what conditional access did about it.
 
 .. _components:
 
-Components
-----------
+Known Clients
+-------------
 
-.. index:: Components
+.. index:: Components, Known Clients
 
-Starting with privacyIDEA 2.15 you can see privacyIDEA components in the Web UI.
-privacyIDEA collects authenticating clients with their User Agent. Usually
-this is a type like *PAM*, *FreeRADIUS*, *Wordpress*, *OwnCloud*, ...
+privacyIDEA collects authenticating clients with their User Agent and lists them under *Audit > Known Clients*.
+Usually this is a type like *PAM*, *FreeRADIUS*, *Wordpress*, *OwnCloud*, ...
 For more information, you may read on :ref:`application_plugins`.
-This overview helps you to understand your network and keep track which clients
+This overview helps you to understand your network and keep track of which clients
 are connected to your network.
 
 .. figure:: images/componentsview.png
@@ -648,4 +646,4 @@ are connected to your network.
 
 
 Subscriptions, e.g. with `NetKnights <https://netknights.it/en/>`_, the
-company behind privacyIDEA, can also be viewed and managed in this tab.
+company behind privacyIDEA, can be viewed and managed in the menu *Subscription*.

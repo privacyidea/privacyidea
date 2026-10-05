@@ -9,11 +9,11 @@ An **API client** is a machine identity for an integration that talks to
 privacyIDEA — a Windows credential provider, a Keycloak or ADFS plugin, an Entra
 ID connector, and so on. The client authenticates with an **API key** sent in
 the ``X-API-Key`` HTTP header, independent of any user session, so that
-per-client behaviour can be configured and audited.
+per-client behavior can be configured and audited.
 
 On top of API clients, privacyIDEA offers a persistent **"remember this device"**
 mechanism: after a full authentication, a client can obtain a rotating cookie and
-later ask privacyIDEA whether the device is recognised, so it can skip the second
+later ask privacyIDEA whether the device is recognized, so it can skip the second
 factor on subsequent logins.
 
 Both features are **off by default** and gated by policy.
@@ -78,7 +78,7 @@ can discover whether it is available with :http:get:`/validate/capabilities`.
 
 .. note:: ``capabilities`` answers at the **client** level ("is the feature
    available to me?"). Whether it applies to a specific user is decided when a
-   cookie is issued and recognised, so a policy scoped to particular users or
+   cookie is issued and recognized, so a policy scoped to particular users or
    realms may still report ``true`` to the client.
 
 Issuing the cookie
@@ -92,32 +92,29 @@ relative ``Max-Age`` and an ``Expires`` (a non-browser client should rely on
 ``Max-Age``), and holds only a
 rotating ``series_id:counter`` token — **never** the API key.
 
-Opt in **once per device** (the establishing login), not on every request: each
-opt-in creates a new remembered device, so opting in on every login accumulates them.
-
-Recognising the device
+Recognizing the device
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 On a later login the client calls :http:post:`/validate/remember_device` with the
 stored cookie and the user. This is **not an authentication**: it verifies no
 credential, triggers no challenge, and is recorded under its own audit action. It
-simply answers whether the device is recognised, and the calling client decides
+simply answers whether the device is recognized, and the calling client decides
 whether to skip the second factor (enforcing the first factor remains the
 client's responsibility).
 
 On a hit the cookie is **rotated** (the counter is incremented) and a new cookie
 is returned; the client must store it. A remembered device is bound to the user's
 resolver-stable identity (resolver, user id and realm), not to the login name,
-so a remembered device survives a login rename and is never recognised for a
+so a remembered device survives a login rename and is never recognized for a
 *different* account that later reuses a freed login. Recognition also confirms
 the bound user still resolves, so deleting or removing a user revokes their
 remembered devices.
 
-Recognition is subject to :ref:`conditional_access`, because a recognised device
+Recognition is subject to :ref:`conditional_access`, because a recognized device
 is what lets a client skip the second factor. While a user lock or a source-IP
 block is in force - or a policy's *deny* action decides the request - the answer
-is "not recognised", and the presented cookie is not read at all: it is neither
-rotated nor cleared, so the device is recognised again once the restriction
+is "not recognized", and the presented cookie is not read at all: it is neither
+rotated nor cleared, so the device is recognized again once the restriction
 lifts. The client is told only what was configured on
 the policy, exactly as at ``/validate/check``; with nothing configured the
 *body* of a refusal is identical to that of an ordinary miss.
@@ -131,7 +128,7 @@ the policy, exactly as at ``/validate/check``; with nothing configured the
    lock — a worse trade against a party that is already trusted enough to hold a
    key, and that can learn the same thing from ``/validate/check``.
 
-On a miss the answer is simply "not recognised". The cookie is only cleared (a
+On a miss the answer is simply "not recognized". The cookie is only cleared (a
 ``Set-Cookie`` with a past expiry) when it is genuinely dead - an unknown or
 expired series, or a detected theft. If the presented cookie is still live but
 belongs to a *different* user of the same client (a shared browser, where the
@@ -140,7 +137,7 @@ left untouched so that one user logging in does not wipe another user's
 remembered device.
 
 .. note:: Not clearing on a wrong-user miss is deliberate and does not weaken
-   security. A foreign cookie is never *recognised* (the user must match), the
+   security. A foreign cookie is never *recognized* (the user must match), the
    cookie is a bearer token that possession already governs, and theft detection
    only ever acts on the owning user's series - so the soft miss changes none of
    those. Clearing a remembered device when a *different* user appears is not a
@@ -207,7 +204,7 @@ device cookies immediately, and comes in two forms:
   every remembered device for this realm now").
 
 .. note:: The IP address and user agent shown for a device are those of the API
-   client's request. For a centralised integration such as an IdP that is the
+   client's request. For a centralized integration such as an IdP that is the
    integration itself, not the end user's browser or device.
 
 Remembered devices are also removed automatically when they expire, when the user or the

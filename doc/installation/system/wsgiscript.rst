@@ -43,10 +43,10 @@ Running several instances with the Apache webserver
 ---------------------------------------------------
 
 You can run several instances of privacyIDEA on one Apache2 server by defining
-several `WSGIScriptAlias` definitions pointing to different wsgi-scripts,
+several ``WSGIScriptAlias`` definitions pointing to different wsgi-scripts,
 which again reference different config files with different database definitions.
 
-To run further Apache instances add additional lines in your Apache config::
+To run further privacyIDEA instances, add additional lines in your Apache config::
 
     WSGIScriptAlias /instance1 /etc/privacyidea1/privacyideaapp.wsgi
     WSGIScriptAlias /instance2 /etc/privacyidea2/privacyideaapp.wsgi

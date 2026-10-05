@@ -14,7 +14,7 @@ API :ref:`rest_token`, :ref:`rest_system`, :ref:`rest_realm` and
 Admin policies are implemented as decorators in :ref:`code_policy` and
 :ref:`policy_decorators`.
 
-Starting with privacyIDEA 2.4 admin policies can also store a field "admin
+Admin policies can also store a field "admin
 realm". This is used, if you define realms to be superuser realms. See
 :ref:`cfgfile` for information how to do this. Read :ref:`faq_admins` for
 more information on the admin realms.
@@ -31,7 +31,7 @@ All administrative actions also refer to the defined user realm. Meaning
 an administrator may have many rights concerning one user realm and only a few
 rights concerning another.
 
-Creating a policy with ``scope:admin``, ``admin-realm:helpdesk``,
+Creating a policy with ``scope:admin``, ``adminrealm:helpdesk``,
 ``adminuser:frank``, ``action:enable`` and ``realm:sales``
 means that the administrator *frank* in the admin-realm *helpdesk* is allowed
 to enable tokens in the user-realm *sales*. The fields ``user`` and ``resolver``
@@ -67,7 +67,7 @@ is not allowed to list any tokens.
    create the resulting rights of the administrator.
    So if there are multiple matching policies for different realms,
    the admin will have list rights on all mentioned realms
-   independent on the priority of the policies.
+   independent of the priority of the policies.
 
 enroll
 ~~~~~~
@@ -114,7 +114,7 @@ type: ``bool``
 Tokens can have additional token information, which can be
 viewed in the :ref:`token_details`.
 
-If the ``set`` action is defined, the is administrator allowed
+If the ``set`` action is defined, the administrator is allowed
 to set those token properties like ``description``, ``max_failcount``
 or ``validity_period_start`` at the ``/token/set`` endpoints
 (see :ref:`rest_token`).
@@ -132,10 +132,10 @@ setdescription
 
 type: ``bool``
 
-The admin is allowed to set the description of tokens via the endpoint `/token/descriptipon`.
+The admin is allowed to set the description of tokens via the endpoint ``/token/description``.
 
 .. note:: An admin can also be allowed to set the description of a token by
-   granting the aforementioned policy `set`.
+   granting the aforementioned policy ``set``.
 
 setpin
 ~~~~~~
@@ -240,8 +240,8 @@ use when setting the OTP PIN.
 
 .. note:: There can be token type specific policies like
    ``spass_otp_pin_maxlength``, ``spass_otp_pin_minlength`` and
-   ``spass_otp_pin_contents``. If suche a token specific policy exists, it takes
-   priority of the common PIN policy.
+   ``spass_otp_pin_contents``. If such a token specific policy exists, it takes
+   priority over the common PIN policy.
 
 otp_pin_minlength
 ~~~~~~~~~~~~~~~~~
@@ -268,7 +268,7 @@ This defines which characters are allowed when the admin sets an OTP PIN.
 
 **n** are digits matching [0-9].
 
-**s** are special characters matching [\[\].:,;-_<>+*!/()=?$§%&#~\^].
+**s** are special characters, i.e. the ASCII punctuation characters ``!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~``.
 
 **[allowedchars]** is a specific list of allowed characters.
 
@@ -306,7 +306,7 @@ characters ``+`` and ``-``.
 
 ``[123456]``
 
-   allows the digtits 1-6 to be used.
+   allows the digits 1-6 to be used.
    *1122* would be a valid PIN.
    *1177* would not be a valid PIN.
 
@@ -374,7 +374,7 @@ allowed to import token seeds from a token file, thus
 creating many new token objects in the system's database.
 
 The right to upload tokens can be limited to certain realms.
-Thus the administrator could only upload tokens into realm they are allowed to
+Thus the administrator could only upload tokens into the realms they are allowed to
 manage.
 
 delete
@@ -428,6 +428,18 @@ Listing or counting the users by whether they own a token additionally requires 
 :ref:`policy_tokenlist` action in every realm the users are listed from, since it tells
 who owns a token.
 
+.. _policy_get_user_internal_attributes:
+
+get_user_internal_attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+The administrator is allowed to read the privacyIDEA-internal attributes of a user via
+``GET /user/internal_attribute``. privacyIDEA writes these attributes itself, e.g. the FIDO2
+user ID ``fido2_user_id``. They can not be changed through this endpoint. An administrator
+restricted to certain realms can only read the attributes of users in these realms.
+
 .. _policy_getchallenges:
 
 getchallenges
@@ -437,6 +449,12 @@ type: ``bool``
 
 If the ``getchallenges`` action is defined, the administrator is
 allowed to check the status of open challenge requests.
+
+.. index:: getchallenges
+
+This policy allows the administrator to retrieve a list of active challenges
+of a challenge response token. The administrator can view these challenges
+in the web UI.
 
 .. _policy_cancelchallenge:
 
@@ -599,17 +617,6 @@ keys from the endpoint *getrandom*. This is an endpoint in :ref:`rest_system`.
 number generator. Creating API keys for the Yubico Validation Protocol uses
 this endpoint.
 
-getchallenges
-~~~~~~~~~~~~~
-
-type: ``bool``
-
-.. index:: getchallenges
-
-This policy allows the administrator to retrieve a list of active challenges
-of a challenge response token. The administrator can view these challenges
-in the web UI.
-
 .. _lost_token:
 
 losttoken
@@ -716,7 +723,7 @@ smtpserver_write
 type: ``bool``
 
 To be able to define new :ref:`smtpserver` or delete existing ones, the
-administrator needs this rights ``smtpserver_write``.
+administrator needs the right ``smtpserver_write``.
 
 .. _policy_smtpserver_read:
 
@@ -824,6 +831,7 @@ Allow the administrator to read the :ref:`privacyideaserver_config` definitions.
 
 .. _policywrite:
 .. _policyread:
+.. _policy_policyread:
 .. _policydelete:
 
 policywrite, policyread, policydelete
@@ -865,6 +873,7 @@ Allow the administrator to write, read or delete machine resolvers.
 
 .. _configwrite:
 .. _configread:
+.. _policy_configread:
 .. _configdelete:
 
 configwrite, configread, configdelete
@@ -961,7 +970,7 @@ hide_audit_columns
 
 type: ``string``
 
-This species a blank separated list of audit columns, that should be removed
+This specifies a blank-separated list of audit columns, that should be removed
 from the response and also from the WebUI.
 For example a value ``sig_check log_level`` will hide these two columns.
 
@@ -1121,16 +1130,12 @@ type: ``bool``
 
 If set the administrator is allowed to call the API
 ``/validate/triggerchallenge``. This API can be used to send an OTP SMS to
-user without having specified the PIN of the SMS token.
+a user without having specified the PIN of the SMS token.
 
 A common setup is that one administrative account only has this single
 permission enabled and is only used for triggering challenges.
 
-.. versionadded:: 2.17
-
 .. _admin_policy_2step:
-.. _hotp-2step:
-.. _totp-2step:
 
 hotp_2step and totp_2step
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1150,34 +1155,26 @@ Such a policy can also be set for the user. See :ref:`user_policy_2step`.
    ensures that the user has successfully scanned the QR code.
 
 .. _admin_policy_hashlib:
-.. _hotp-hashlib:
-.. _totp-hashlib:
 
-hotp_hashlib and totp_hashlib
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+hotp_hashlib, totp_hashlib and daypassword_hashlib
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``string``
 
-Force the admin to enroll HOTP/TOTP Tokens with the specified hashlib.
+Force the admin to enroll HOTP, TOTP or DayPassword tokens with the specified hashlib.
 The corresponding input selector will be disabled in the web UI.
 Possible values are *sha1*, *sha256* and *sha512*, default is *sha1*.
 
-.. versionadded:: 3.2
-
 .. _admin_policy_otplen:
-.. _hotp-otplen:
-.. _totp-otplen:
 
-hotp_otplen and totp_otplen
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+hotp_otplen, totp_otplen and daypassword_otplen
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``integer``
 
-Force the admin to enroll HOTP/TOTP Tokens with the specified otp length.
-The corresponding input selector will be disabled in the web UI. This policy prevails on the value given on the System Config page (OTP length of newly enrolled tokens)
+Force the admin to enroll HOTP, TOTP or DayPassword tokens with the specified OTP length.
+The corresponding input selector will be disabled in the web UI. This policy takes precedence over the value given on the System Config page (OTP length of newly enrolled tokens).
 Possible values are *6* or *8*, default is *6*.
-
-.. versionadded:: 3.2
 
 .. _admin_policy_force-server-generate:
 
@@ -1203,7 +1200,15 @@ Enforce the timestep of the time-based OTP token.
 A corresponding input selection will be disabled/hidden in the web UI.
 Possible values are *30* or *60*, default is *30*.
 
-.. versionadded:: 3.2
+.. _admin_policy_daypassword_timestep:
+
+daypassword_timestep
+~~~~~~~~~~~~~~~~~~~~
+
+type: ``string``
+
+Enforce the time step of the DayPassword token, for example ``24h``. The value is a number followed by one
+of the units *y*, *d*, *h*, *m* or *s*.
 
 .. _policy_system_documentation:
 
@@ -1213,7 +1218,7 @@ system_documentation
 type: ``bool``
 
 The administrator is allowed to export a complete system documentation
-including resolvers and realm.
+including resolvers and realms.
 The documentation is created as restructured text.
 
 sms_gateways
@@ -1226,8 +1231,6 @@ system-wide in the :ref:`token settings <sms_token_config>`.
 This policy takes a blank-separated list of configured :ref:`SMS gateways <sms_gateway_config>`.
 It allows the administrator to select an individual SMS gateway during token enrollment.
 
-.. versionadded:: 3.0
-
 indexedsecret_force_attribute
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1238,8 +1241,6 @@ user attribute is set as the secret.
 The admin does not know the secret and can not change the secret.
 
 For more details of this token type see :ref:`indexedsecret_token`.
-
-.. versionadded:: 3.3
 
 .. _admin_trusted_attestation_CA:
 
@@ -1258,8 +1259,6 @@ If an attestation certificate is required, see the enrollment policy
 :ref:`require_attestation`.
 
 
-.. versionadded:: 3.5
-
 .. _admin_set_custom_user_attributes:
 .. _policy_set_custom_user_attributes:
 
@@ -1269,10 +1268,10 @@ set_custom_user_attributes
 type: ``string``
 
 This policy defines which additional attributes an administrator is allowed to set.
-It can also define, to which value the admin is allowed to set such attribute.
+It can also define, to which value the admin is allowed to set such an attribute.
 For allowing all values, the asterisk ("*") is used.
 
-.. note:: Commas are not allowed in policy actions value, so the setting has to
+.. note:: Commas are not allowed in policy action values, so the setting has to
    be defined by separating colons (":") and spaces.
 
 Each key is enclosed in colons and followed by a list of values separated by whitespaces,
@@ -1290,8 +1289,6 @@ attribute "department" with the allowed values of "sales" or "finance".
 
 ``:*: 1 2`` means that the administrator can set any other additional attribute
 either to the value "1" or to the value "2".
-
-.. versionadded:: 3.6
 
 .. _admin_delete_custom_user_attributes:
 
@@ -1311,12 +1308,10 @@ Example:
     ``attr1 attr2 department``
 
 The administrator is allowed to delete the attributes "attr1", "attr2" and
-the attributes "department" of the corresponding users.
+the attribute "department" of the corresponding users.
 
 .. note:: If this policy is not set, the admin is not allowed to delete any
    custom user attributes.
-
-.. versionadded:: 3.6
 
 .. _admin_machinelist:
 .. _policy_machinelist:
@@ -1336,7 +1331,7 @@ manage_machine_tokens
 type: ``bool``
 
 The administrator is allowed to attach and detach tokens to machines to enable the use with
-one of the available appliactions. See :ref:`machines`.
+one of the available applications. See :ref:`machines`.
 
 .. _policy_fetch_authentication_items:
 
@@ -1373,8 +1368,10 @@ It grants access to the :ref:`rest_subscriptions`.
 set_hsm_password
 ~~~~~~~~~~~~~~~~
 
+type: ``bool``
+
 The administrator is able to set the password of the hardware security module.
-It grants access to the `/system/hsm` endpoint (see :ref:`rest_system`).
+It grants access to the ``/system/hsm`` endpoint (see :ref:`rest_system`).
 
 
 .. _policy_container_info:
@@ -1463,7 +1460,7 @@ type: ``bool``
 
 The administrator is allowed to assign users to containers.
 
-Note that the condition ``realm`` for this action is also evaluated to true if the token is in no realm.
+Note that the condition ``realm`` for this action is also evaluated to true if the container is in no realm.
 
 .. versionadded:: 3.10
 
@@ -1558,7 +1555,7 @@ container_template_list
 type: ``bool``
 
 The administrator is allowed to list container templates and see the template properties.
-In combination with the ```container_list`` policy, the administrator is allowed to compare templates with containers.
+In combination with the ``container_list`` policy, the administrator is allowed to compare templates with containers.
 
 .. versionadded:: 3.11
 

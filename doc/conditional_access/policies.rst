@@ -153,14 +153,14 @@ committing before the other is counted. A narrower race, where several such
 requests all commit before any of them is evaluated, can still let this
 particular crossing go unfired; the count keeps climbing regardless, so later
 requests remain subject to whatever higher stage the policy defines next.
-Enable **re-trigger above threshold** for an action that should fire on
+Enable *Re-trigger while above the threshold* for an action that should fire on
 every further request instead, for as long as the count stays in the range its
 stage owns - at or above its own threshold, below the next stage's. Each stage
 therefore owns one range of counts, and only the stage owning the *current*
 count acts, so escalation is a hand-over rather than an overlay.
 
 This is a live read of the count, not a state the policy remembers: should the
-count later drop back into a milder stage's range - the time window ageing old
+count later drop back into a milder stage's range - the time window aging old
 failures out, or a successful login where ``reset_on_success`` applies - that
 stage's re-triggering action fires again. ``DENY`` defaults to re-trigger, as it
 is a one-time action denying only the current request, and follows the same
@@ -171,7 +171,7 @@ can count, so the very count that would carry it past the next threshold stops
 climbing while the refusal holds.
 
 It is worth giving the **highest** stage's restricting action - its lock, block
-or ``DENY`` - re-trigger above threshold. Because a fire-once action only fires
+or ``DENY`` - *Re-trigger while above the threshold*. Because a fire-once action only fires
 on the evaluation that carries the count from below the threshold to at or
 above it, a subject whose count is already past it *before* that evaluation
 stays unrestricted: failures that predate the policy, or an administrator who
@@ -248,6 +248,26 @@ Actions
     ``EMAIL_ADMIN`` on a ``source_ip`` policy is not guaranteed to have,
     since that target also applies where no user could be resolved at all.
 
+Which actions a policy may use depends on its target:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 40 40
+
+   * - Target
+     - Actions
+     - Count modes
+   * - ``user``
+     - LOCK_USER, PERMANENT_LOCK_USER, EMAIL_USER, EMAIL_ADMIN, DENY
+     - PER_REQUEST, PER_ATTEMPT
+   * - ``source_ip``
+     - BLOCK_IP, PERMANENT_BLOCK_IP, EMAIL_ADMIN, DENY
+     - DISTINCT_USERS, PER_REQUEST, PER_ATTEMPT
+
+.. note:: ``BLOCK_IP`` in a ``user`` policy is not available: a user policy
+   knows nothing about how many accounts an address attacked. Use a
+   ``source_ip`` policy with ``DISTINCT_USERS`` for that.
+
 .. _conditional_access_policies_exceptions:
 
 Exempting a subject
@@ -280,26 +300,6 @@ policy will look for it.
    ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` (see
    :ref:`conditional_access_never_block`) instead: an address is a fact of the
    connection rather than a claim of the request.
-
-Which actions a policy may use depends on its target:
-
-.. list-table::
-   :header-rows: 1
-   :widths: 20 40 40
-
-   * - Target
-     - Actions
-     - Count modes
-   * - ``user``
-     - LOCK_USER, PERMANENT_LOCK_USER, EMAIL_USER, EMAIL_ADMIN, DENY
-     - PER_REQUEST, PER_ATTEMPT
-   * - ``source_ip``
-     - BLOCK_IP, PERMANENT_BLOCK_IP, EMAIL_ADMIN, DENY
-     - DISTINCT_USERS, PER_REQUEST, PER_ATTEMPT
-
-.. note:: ``BLOCK_IP`` in a ``user`` policy is not available: a user policy
-   knows nothing about how many accounts an address attacked. Use a
-   ``source_ip`` policy with ``DISTINCT_USERS`` for that.
 
 Templates
 ---------
@@ -359,7 +359,7 @@ the very next matching request is the point.
 
 .. warning:: Counting events from before enforcement began can leave a policy
    silent rather than strict. A stage fires as the count *reaches* its
-   threshold (unless the action sets *retrigger above threshold*), so a count
+   threshold (unless the action sets *Re-trigger while above the threshold*), so a count
    that already sits above a threshold never reaches it: that stage stays quiet
    until the old events age out of the time window and the count climbs through
    the threshold again. On a busy policy the count may not drop below the

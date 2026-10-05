@@ -3,7 +3,7 @@
 Extended Policy Conditions
 --------------------------
 
-Since privacyIDEA 3.1, *extended policy conditions* allow defining more advanced
+*Extended policy conditions* allow defining more advanced
 rules for policy matching, i.e. for determining which policies are valid for a
 specific request.
 
@@ -26,14 +26,14 @@ consists of the following parts:
    of the incoming request on which the condition is applied.
  * ``Comparator`` defines the comparison to be performed. The available comparators are predefined, see `Comparators`_.
  * ``Value`` determines the value the property should be compared against.
- * ``Handle Missing Data`` defines the behaviour of the system if the data required to check the condition is missing.
+ * ``Handle Missing Data`` defines the behavior of the system if the data required to check the condition is missing.
    See `Handle Missing Data`_ for more information.
 
 Sections
 ~~~~~~~~
 
-privacyIDEA implements the sections ``userinfo``, ``token``, ``tokeninfo``, ``HTTP Request Headers``,
-``HTTP Environment``, ``Container``, ``Container Info``, and ``Request Data``.
+privacyIDEA implements the sections ``userinfo``, ``token``, ``tokeninfo``, ``HTTP Request header``,
+``HTTP Environment``, ``container``, ``container_info``, and ``Request Data``.
 
 userinfo
 ^^^^^^^^
@@ -56,13 +56,13 @@ The validity of a policy condition with section ``userinfo`` is determined as fo
 
    Likewise, privacyIDEA raises an error if ``Key`` refers to an unknown userinfo
    attribute, or if the condition definition is invalid due to some other reasons.
-   More detailed information are then written to the logfile.
+   More detailed information is then written to the logfile.
 
    To avoid raising an error, define the :ref:`policy_condition_handle_missing_data` option.
 
 As an example for a correct and useful ``userinfo`` condition, let us assume
 that you have configured a realm *ldaprealm* with a single LDAP resolver called
-*ldapres*. This resolver is configured to fetch users from a OpenLDAP server,
+*ldapres*. This resolver is configured to fetch users from an OpenLDAP server,
 with the following attribute mapping:
 
 .. code-block:: json
@@ -150,7 +150,7 @@ action ``delete`` and the token condition ``active``, ``<``, ``1``. For an inact
 would evaluate to ``0`` and thus be smaller than ``1``. An ``active`` token would evaluate to ``1``.
 This would allow the user to delete only inactive tokens, but not still active tokens.
 
-HTTP Request Header
+HTTP Request header
 ^^^^^^^^^^^^^^^^^^^
 
 The section ``HTTP Request header`` can be used to define conditions that are checked against
@@ -182,14 +182,14 @@ endpoint like ``/validate/check`` or ``/auth``.
 
 .. note:: privacyIDEA raises an error if ``Key`` refers to an unknown environment key.
    The log file then contains information about the available keys.
-   The behaviour is similar to the extended conditions of HTTP Request Header.
+   The behavior is similar to the extended conditions of ``HTTP Request header``.
    To avoid raising an error, define the :ref:`policy_condition_handle_missing_data` option.
 
 Container
 ^^^^^^^^^
 .. versionadded:: 3.12
 
-For container requests, the section ``Container`` can be used to define conditions that are checked against the
+For container requests, the section ``container`` can be used to define conditions that are checked against the
 container attributes. To get the container attributes, the function
 :py:meth:`privacyidea.lib.containerclass.TokenContainerClass.get_as_dict()` is used. Hence, all defined
 keys in the returned dictionary can also be used in the condition as key, e.g. ``type``, ``serial``, ``states``.
@@ -202,7 +202,7 @@ Container Info
 ^^^^^^^^^^^^^^
 .. versionadded:: 3.12
 
-The ``Container Info`` condition works the same way as userinfo but matches the container info instead.
+The ``container_info`` condition works the same way as userinfo but matches the container info instead.
 
 The condition can only be evaluated when a valid container serial is available which is the case for most container
 endpoints. It does not work for the actions ``container_list`` (:http:get:`/container/`),
@@ -256,13 +256,13 @@ The following comparators can be used in definitions of policy conditions:
 
 
 If you want to define a policy that e.g. only matches users from Active Directory that are in a
-VPN User group, you would first need to map the `memberOf` attribute in the LDAP resolver to a certain
-attribute like `"groups": "memberOf"`. Then you need to define the extended condition:
+VPN User group, you would first need to map the ``memberOf`` attribute in the LDAP resolver to a certain
+attribute like ``"groups": "memberOf"``. Then you need to define the extended condition::
 
    "groups" contains "CN=VPN Users,OU=Groups,DC=example,DC=com"
 
 If you however want to define a policy that matches e.g. a certain username from a list,
-you would have to define an extended condition like:
+you would have to define an extended condition like::
 
    "username" in "alice,bob,charlie"
 
@@ -273,22 +273,23 @@ Handle Missing Data
 ~~~~~~~~~~~~~~~~~~~~
 .. versionadded:: 3.12
 
-There might be the case, that a condition shall be evaluated, but the required data to check the condition is missing.
+A condition may need to be evaluated while the data required to check it is missing.
 For example, an admin is doing a request and hence the user object is not available or even if the user object is
 available, the defined key may not be included in the user attributes. This could be avoided with well thought out and
 elaborated conditions. However, this might not hold for all scenarios.
 
-There are three different options how the system should handle if the data is missing to check the condition:
-    * ``Raise an error``: The system will raise a PolicyError and abort the request.
-    * ``Condition is false``: The condition is evaluated to false, hence the policy will not be applied.
-    * ``Condition is true``: The condition is evaluated to true, hence the policy will be applied.
+There are three options for how the system handles missing data when checking the condition:
 
-The default behaviour is to raise an error. This is the most strict behaviour and prevents policy misconfigurations
-from going unnoticed. It is also applied for policies defined in privacyIDEA versions < 3.12 and was the behaviour in
+* ``Raise an error``: The system will raise a PolicyError and abort the request.
+* ``Condition is false``: The condition is evaluated to false, hence the policy will not be applied.
+* ``Condition is true``: The condition is evaluated to true, hence the policy will be applied.
+
+The default behavior is to raise an error. This is the most strict behavior and prevents policy misconfigurations
+from going unnoticed. It is also applied for policies defined in privacyIDEA versions < 3.12 and was the behavior in
 previous versions.
 
 Generally, the usage of conditions is an advanced feature and requires further knowledge about the data available in
-the related requests. We highly recommend to evaluate the correct behaviour of the policies in a test environment,
+the related requests. We highly recommend evaluating the correct behavior of the policies in a test environment,
 especially when using ``Condition is false/true``.
 
 
@@ -301,7 +302,7 @@ privacyIDEA encounters a policy condition that evaluates neither to true nor
 false, but simply *invalid* due to a misconfiguration, privacyIDEA throws an
 error and the current request is aborted.
 
-This behaviour can be changed by setting the `Handle Missing Data`_ option
-to ``Condition is false`` or ``Condition is true``. However, this only avoids to throw an error if the required data
+This behavior can be changed by setting the `Handle Missing Data`_ option
+to ``Condition is false`` or ``Condition is true``. However, this only avoids throwing an error if the required data
 is missing (e.g. no token or user in the request). If an invalid section or comparator is used, an error will still be
 raised.

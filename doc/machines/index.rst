@@ -5,21 +5,21 @@ Applications and Machines or Services
 
 .. index:: machines, services, client machines
 
-privacyIDEA supports authentication schemes, that happen on other machines or services with special applications.
+privacyIDEA supports authentication schemes that happen on other machines or services with special applications.
 
 privacyIDEA lets you define Machine Resolvers to connect to existing machine
 stores. The idea is for users to be able to authenticate
 on those client machines.
-Not in all cases an online authentication request is possible,
-so that authentication items
-can be passed to those client machines.
+An online authentication request is not always possible,
+so authentication items
+can also be passed to those client machines.
 
-In addition you need to define, which application or service on the client machine
+In addition, you need to define which application or service on the client machine
 the user should authenticate
-to. Different application require different authentication items.
+to. Different applications require different authentication items.
 
 Therefore privacyIDEA can define application types.
-At the moment privacyIDEA knows the application
+At the moment privacyIDEA knows the applications
 ``luks``, ``offline`` and ``ssh``. You can write your own application class,
 which is defined in
 :ref:`code_application_class`.
@@ -44,7 +44,7 @@ Parameters:
 
 When the SSH token type is assigned to a client, the user specified in the
 user parameter
-can login with the private key of the SSH token.
+can log in with the private key of the SSH token.
 
 The ``service_id`` identifies the SSH servers or group of SSH servers, where the login is allowed to occur.
 Read more about :ref:`serviceids`.
@@ -102,18 +102,18 @@ The privacyideaadm repository contains an alternative Python script
 Check the documentation of privacyideaadm whether your version of the script
 supports the ``service_id`` setting.
 
-.. warning:: In a productive environment do not disable the check of the TLS
+.. warning:: In a production environment do not disable the check of the TLS
     certificate (``insecure="-k"`` in the shell script, ``nosslcheck=True``
-    in the Python script), otherwise you are vulnerable to man in the middle
+    in the Python script), otherwise you are vulnerable to man-in-the-middle
     attacks.
 
 Managing in the WebUI
 .....................
 
-The administrator can view all SSH keys attached to service in the WebUI at *Tokens -> Token Applications*. There the
-administrator can filter for service_ids., to find all SSH keys that are attached e.g. to webservers.
+The administrator can view all SSH keys attached to a service in the WebUI at *Token -> Applications*. There the
+administrator can filter for service IDs to find all SSH keys that are attached e.g. to webservers.
 
-.. note:: To disable a SSH key for all servers, you simply can disable the
+.. note:: To disable an SSH key for all servers, you simply can disable the
     distinct SSH token in privacyIDEA.
 
 .. _application_luks:
@@ -121,7 +121,7 @@ administrator can filter for service_ids., to find all SSH keys that are attache
 LUKS
 ----
 
-Currently working token types: Yubikey Challenge Response
+Currently working token types: YubiKey challenge response
 
 Parameters:
 
@@ -132,7 +132,7 @@ Parameters:
 These authentication items need to be pulled on the client machine from
 the privacyIDEA server.
 
-Thus, the following script need to be executed with root rights (able to
+Thus, the following script needs to be executed with root rights (able to
 write to LUKS) on the client machine::
 
    privacyidea-luks-assign @secrets.txt --clearslot --name salt-minion
@@ -149,15 +149,15 @@ Currently working token types: HOTP, WebAuthn/Passkey.
 
 Parameters:
 
-``user`` The local user, who should authenticate. (Only needed when calling
-machine/get_auth_items)
+``user`` The local user who should authenticate. (Only needed when calling
+:http:get:`/machine/authitem`)
 
 ``count`` The number of OTP values passed to the client. This is specific to HOTP token.
 
-The offline application triggers when the client calls a /validate/check.
+The offline application triggers when the client calls ``/validate/check``.
 If the user authenticates successfully with the correct token (serial number)
 and this very token is attached to the machine with an offline application,
-the response to validate/check is extended with a "auth_items" object.
+the response to ``/validate/check`` is extended with an ``auth_items`` object.
 
 .. _hotp_offline:
 
@@ -182,23 +182,23 @@ that matches the input.
 
 WebAuthn/Passkey
 ................
-For WebAuthn/Passkey token, the auth_items object contains the parameters ``rpId``, ``pubKey`` and ``credentialId``.
+For WebAuthn/Passkey token, the ``auth_items`` object contains the parameters ``rpId``, ``pubKey`` and ``credentialId``.
 These can be used by a client to verify a FIDO2 assertion locally.
 Because WebAuthn/Passkey token can have their credentials offline on multiple machines, the client has to identify itself via the UserAgent in the headers.
 By default, the UserAgent is checked for the following keys (in order): ["ComputerName", "Hostname", "MachineName", "Windows", "Linux", "Mac"].
 If the UserAgent does not contain any of these keys, there will be no offline data returned!
-The list of keys to check can be extended by setting OFFLINE_MACHINE_KEYS = ["key1", "key2", ...] in pi.cfg. These keys will appended to the default list and will be checked after them, the order is preserved.
+The list of keys to check can be extended by setting ``OFFLINE_MACHINE_KEYS = ["key1", "key2"]`` in the :ref:`cfgfile`. These keys will be appended to the default list and will be checked after them, the order is preserved.
 
 Refill
 ......
 If a client with offline HOTP values runs out of OTP values, it can request a refill of the list.
 This is done using :http:post:`/validate/offlinerefill`
 
-If that endpoints returns an error, it indicates that the token has been unmarked for offline use, or the refilltoken
+If that endpoint returns an error, it indicates that the token has been unmarked for offline use, or the refilltoken
 is out of sync. Therefore, clients managing WebAuthn/Passkey offline data should also call this endpoint regularly.
 
 
 Managing in the WebUI
 .....................
 
-The administrator can view all offline tokens in the WebUI at *Tokens -> Token Applications*.
+The administrator can view all offline tokens in the WebUI at *Token -> Applications*.

@@ -12,7 +12,7 @@ Enrollment policies take the realms, the client (see :ref:`policies`)
 and the user settings into account.
 
 Technically enrollment policies control the use of the
-REST API :ref:`rest_token` and specially the *init* and *assign*-methods.
+REST API :ref:`rest_token` and especially the *init* and *assign* methods.
 
 Technically the decorators in :ref:`code_api_policy` are used.
 
@@ -93,7 +93,7 @@ This sets the label for a newly enrolled smartphone token.
 Possible tags to be replaced are ``{user}``, ``{realm}``, ``{serial}``,
 ``{givenname}`` and ``{surname}``.
 
-The default behaviour is to use the serial number.
+The default behavior is to use the serial number.
 
 .. note:: This is useful to identify the token in the Authenticator App.
 
@@ -136,7 +136,7 @@ PIN is set as the OTP PIN.
 .. note:: Requirements are:
 
   1. The user must have no other tokens assigned.
-  2. The token must be not assigned to any user.
+  2. The token must not be assigned to any user.
   3. The token must be located in the realm of the authenticating user.
   4. (The user needs to enter the correct userstore password)
 
@@ -168,7 +168,7 @@ type: ``string``
 
 If the ``otp_pin_random`` policy is defined, you can use this policy to
 define, what should happen with the random pin.
-The action value take the class of a PinHandler like
+The action value takes the class of a PinHandler like
 ``privacyidea.lib.pinhandling.base.PinHandler``.
 The base PinHandler just logs the PIN to the log file. You can add classes to
 send the PIN via email or print it in a letter.
@@ -196,10 +196,10 @@ successfully. But the detail-response contains the keys "next_pin_change" and
 trigger the change of the PIN using the API */token/setpin*. See
 :ref:`rest_token`.
 
-.. note:: If the application does not honour the "pin_change" attribute, then
+.. note:: If the application does not honor the "pin_change" attribute, then
    the user can still authenticate with their old PIN.
 
-.. note:: Starting with version 3.4 privacyIDEA also allows forcing the user to
+.. note:: privacyIDEA also allows forcing the user to
    change the PIN in such a case using the policy :ref:`policy_change_pin_via_validate`.
 
 .. _policy_change_pin_every:
@@ -224,7 +224,7 @@ encrypt_pin
 type: ``bool``
 
 If set the OTP PIN of a token will be encrypted. The default
-behaviour is to hash the OTP PIN, which is safer.
+behavior is to hash the OTP PIN, which is safer.
 
 registration.length
 ~~~~~~~~~~~~~~~~~~~
@@ -254,7 +254,7 @@ pw.length
 type: ``integer``
 
 This is the length if the password of a password token (pw token) is automatically generated
-with the `genkey` parameter.
+with the ``genkey`` parameter.
 The default length is 12.
 
 pw.contents
@@ -293,10 +293,10 @@ should have. You can use
 
 **Example:**
 
-The action *lostTokenPWLen=10, lostTokenPWContents=Cns* could generate a
+The action ``losttoken_PW_length=10, losttoken_PW_contents=Cns`` could generate a
 password like *AC#!49MK))*.
 
-.. note:: If you combine ``8`` with e.g. ``C`` there will be double characters
+.. note:: If you combine ``8`` with e.g. ``C`` there will be duplicate characters
    like "A", "B"... Thus, those characters will have a higher probability of being
    part of the password. Also, ``C`` would again add the character "I", which is
    not part of Base58.
@@ -314,15 +314,15 @@ yubikey_access_code
 
 type: ``string``
 
-This is a 12 character long access code in hex format to be used to initialize Yubikeys.
+This is a 12 character long access code in hex format to be used to initialize YubiKeys.
 This access code is not actively used by the privacyIDEA server. It is meant to be read by
-an admin client or enrollment client, so the component initializing the Yubikey can use this
+an admin client or enrollment client, so the component initializing the YubiKey can use this
 access code without the operator knowing the code.
 
-If a yubikey uses an access code, Yubikeys can only be re-initialized by a person who knows this code.
-You could choose a company-wide access code, so that Yubikeys can only be re-initialized by your own system.
+If a YubiKey uses an access code, YubiKeys can only be re-initialized by a person who knows this code.
+You could choose a company-wide access code, so that YubiKeys can only be re-initialized by your own system.
 
-You can add two access codes separated by a colon to change from one access code to the other.
+You can add two access codes separated by a colon to change from one access code to the other::
 
    313233343536:414243444546
 
@@ -364,10 +364,8 @@ They control the key generation during the 2step token enrollment (see :ref:`2st
 The ``serversize`` is the optional size (in bytes) of the server's key part.
 The ``clientsize`` is the size (in bytes) of the smartphone's key part.
 The ``difficulty`` is a parameter for the key generation.
-In the implementation in version 2.21 PBKDF2 is used. In this case the ``difficulty``
+PBKDF2 is used. In this case the ``difficulty``
 specifies the number of rounds.
-
-.. versionadded:: 2.21
 
 .. _force_app_pin:
 .. _hotp-force-app-pin:
@@ -378,7 +376,7 @@ force_app_pin
 
 type: ``bool``
 
-This is a token type specific parameter (with ``hotp_`` or ``totp_`` prefix).
+This is a token type specific parameter (with ``hotp_``, ``totp_``, ``daypassword_`` or ``push_`` prefix).
 During enrollment with the privacyIDEA Authenticator smartphone app this policy is used
 to force the user to protect the token with a pin (unrelated to the token pin).
 
@@ -389,8 +387,6 @@ to force the user to protect the token with a pin (unrelated to the token pin).
 .. note::
    Starting with privacyIDEA 3.13, the :ref:`policy_app_force_unlock` policy is recommended. This will also set
    app_force_unlock=pin in the QR code.
-
-.. versionadded:: 3.1
 
 
 .. _policy_firebase_config:
@@ -407,13 +403,11 @@ The policy name is retained for backwards compatibility. The administrator can
 create several gateway configurations (see :ref:`sms_gateway_config`), which can
 be selected depending on the user's realm or the IP address.
 
-Starting with version 3.6, if the push token is supposed to run in poll-only mode,
+If the push token is supposed to run in poll-only mode,
 then the entry "poll only" can be selected instead of a push gateway configuration.
 In this mode, no push gateway is used during enrollment or authentication.
 Note that you also need to set the authentication policy
 :ref:`policy_auth_push_allow_poll` to allow the push token to poll for challenges.
-
-.. versionadded:: 3.0
 
 push_registration_url
 ~~~~~~~~~~~~~~~~~~~~~
@@ -429,7 +423,9 @@ WebUI.
 push_ttl
 ~~~~~~~~
 
-This is the time (in minutes) how long the privacyIDEA server
+type: ``integer``
+
+This is the time (in minutes) for which the privacyIDEA server
 accepts the response of the second registration step.
 The smartphone could have connection issues, so the second step
 could take some time to happen.
@@ -439,7 +435,9 @@ could take some time to happen.
 push_ssl_verify
 ~~~~~~~~~~~~~~~
 
-type: ``integer``
+type: ``string``
+
+allowed values: ``0``, ``1``
 
 The smartphone needs to verify the SSL certificate of the privacyIDEA server during
 the enrollment of push tokens. By default, the verification is enabled. To disable
@@ -448,8 +446,8 @@ verification during authentication, see :ref:`policy_push_ssl_verify_auth`.
 
 .. _policy_use_pia_scheme:
 
-use_pia_scheme
-~~~~~~~~~~~~~~
+push_use_pia_scheme
+~~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
@@ -502,13 +500,13 @@ with.
 
 This id needs to be a registrable suffix of or equal to the effective domain
 for each webservice the tokens should be used with. This means if the token is
-being enrolled on – for example – `https://login.example.com`, them the relying
-party ID may be either `login.example.com`, or `example.com`, but not – for
-instance – `m.login.example.com`, or `com`. Similarly, a token enrolled with a
-relying party ID of `login.example.com` might be used by
-`https://login.example.com`, or even `https://m.login.example.com:1337`, but not
-by `https://example.com` (because the RP ID `login.example.com` is not a valid
-relying party ID for the domain `example.com`).
+being enrolled on – for example – ``https://login.example.com``, then the relying
+party ID may be either ``login.example.com``, or ``example.com``, but not – for
+instance – ``m.login.example.com``, or ``com``. Similarly, a token enrolled with a
+relying party ID of ``login.example.com`` might be used by
+``https://login.example.com``, or even ``https://m.login.example.com:1337``, but not
+by ``https://example.com`` (because the RP ID ``login.example.com`` is not a valid
+relying party ID for the domain ``example.com``).
 
 .. note:: This action needs to be set to be able to enroll WebAuthn tokens. For
     an overview of all the settings required for the use of WebAuthn, see
@@ -584,7 +582,7 @@ hexadecimal string (usually grouped using dashes, although these are
 optional) identifying one particular model of authenticator. To limit
 enrollment to a few known-good authenticator models, simply specify the AAGUIDs
 for each model of authenticator that is acceptable. If multiple policies with
-this action apply, the set of acceptable authenticators will be the union off
+this action apply, the set of acceptable authenticators will be the union of
 all authenticators allowed by the various policies.
 
 If this action is not configured, all authenticators will be deemed acceptable,
@@ -606,7 +604,7 @@ out a new WebAuthn token will have to provide some form of verification. This
 might be biometric identification, or knowledge-based, depending on the
 authenticator used.
 
-This defaults to `preferred`, meaning user verification will be performed if
+This defaults to ``preferred``, meaning user verification will be performed if
 supported by the token.
 
 .. note:: User verification is different from user presence checking. The
@@ -614,9 +612,8 @@ supported by the token.
     action on the token, which is usually done by tapping a button on the
     authenticator). User verification goes beyond this by ascertaining that the
     user is indeed the same user each time (for example through biometric
-    means). Only set this to `required` if you know for a fact that you have
-    authenticators, which actually support some form of user verification (these
-    are still quite rare in practice).
+    means). Only set this to ``required`` if you know for a fact that you have
+    authenticators, which actually support some form of user verification.
 
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_authn_user_verification_requirement`.
@@ -636,7 +633,7 @@ algorithms are acceptable to your model of authenticator.
 
 The default is to allow both ECDSA and RSASSA-PSS.
 
-The Order of preferred algorithms is `ECDSA > RSASSA-PSS > RSASSA-PKCS1-v1_5`
+The order of preferred algorithms is ``ECDSA > RSASSA-PSS > RSASSA-PKCS1-v1_5``.
 
 .. note:: Not all authenticators will support all algorithms. It should not
     usually be necessary to configure this action. Do *not* change this
@@ -652,24 +649,24 @@ type: ``string``
 This action configures whether to request attestation data when enrolling a new
 WebAuthn token. Attestation is used to verify that the authenticator being
 enrolled has been made by a trusted manufacturer. Since depending on the
-authenticator this may include personally identifying information, `indirect`
-attestation can be requested. If `indirect` attestation is requested the client
+authenticator this may include personally identifying information, ``indirect``
+attestation can be requested. If ``indirect`` attestation is requested the client
 may pseudonymize the attestation data. Attestation can also be turned off
 entirely.
 
-The default is to request `direct` (full) attestation from the authenticator.
+The default is to request ``direct`` (full) attestation from the authenticator.
 
 .. note:: In a normal business context it will not be necessary to change this.
-    If this is set to `none`,
+    If this is set to ``none``,
     :ref:`policy_webauthn_enroll_authenticator_attestation_level` must also be none.
 
-.. note:: Authenticators enrolled with this option set to `none` can not be
+.. note:: Authenticators enrolled with this option set to ``none`` can not be
     filtered using :ref:`policy_webauthn_enroll_req` and
     :ref:`policy_webauthn_enroll_authenticator_selection_list` or
     :ref:`policy_webauthn_authz_req` and
     :ref:`policy_webauthn_authz_authenticator_selection_list`, respectively. Applying
     these filters is not possible without attestation information, since the
-    fields these actions rely upon will be missing. With `indirect` attestation,
+    fields these actions rely upon will be missing. With ``indirect`` attestation,
     checking may be possible (depending on the client). If any of
     :ref:`policy_webauthn_enroll_req`,
     :ref:`policy_webauthn_enroll_authenticator_selection_list`,
@@ -686,24 +683,24 @@ webauthn_authenticator_attestation_level
 type: ``string``
 
 This action determines whether and how strictly to check authenticator
-attestation data. Set this to `none` to allow any authenticator, even if the
-attestation information is missing completely. If this is set to `trusted`,
+attestation data. Set this to ``none`` to allow any authenticator, even if the
+attestation information is missing completely. If this is set to ``trusted``,
 strict checking is performed. No authenticator is allowed, unless it contains
 attestation information signed by a certificate trusted for attestation.
 
 .. note:: Currently the certificate that signed the attestation needs to be
     trusted directly. Traversal of the trust path is not yet supported!
 
-The default is `untrusted`. This will perform the attestation check like normal,
+The default is ``untrusted``. This will perform the attestation check like normal,
 but will not fail the attestation, if the attestation is self-signed, or signed
 by an unknown certificate.
 
-.. note:: In order to be able to use `trusted` attestation, a directory needs
+.. note:: In order to be able to use ``trusted`` attestation, a directory needs
     to be provided, containing the certificates trusted for attestation. See
     :ref:`webauthn_otp_token` for details.
 
-.. note:: If this is set to `untrusted`, a manipulated token could send a
-    self-signed attestation message with modified a modified AAGUID and faked
+.. note:: If this is set to ``untrusted``, a manipulated token could send a
+    self-signed attestation message with a modified AAGUID and faked
     certificate fields in order to bypass :ref:`policy_webauthn_enroll_req` and
     :ref:`policy_webauthn_enroll_authenticator_selection_list`, or
     :ref:`policy_webauthn_authz_req` and
@@ -716,7 +713,7 @@ by an unknown certificate.
 passkey_attestation_conveyance_preference
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-type: string
+type: ``string``
 
 This action configures the attestation conveyance preference for the passkey enrollment. Possible values are
 ``none``, ``indirect``, ``direct`` and ``enterprise``. The default is ``none``.
@@ -738,7 +735,7 @@ This policy is separate from :ref:`policy_webauthn_enroll_authenticator_attestat
 passkey_user_label
 ~~~~~~~~~~~~~~~~~~~
 
-type: string
+type: ``string``
 
 This action configures the name of the passkey that the authenticator shows in the credential selection when
 the user logs in (and during registration). It is the value that lets a user tell passkeys apart, for example
@@ -899,7 +896,7 @@ certificate_ca_connector
 
 type: ``string``
 
-During enrollment of a `certificate` token the user needs to specify the CA connector
+During enrollment of a *certificate* token the user needs to specify the CA connector
 from which the CSR should be signed.
 This policy adds the given CA connector parameter to the request.
 The list of CA connectors is read from the configured connectors.
@@ -915,7 +912,7 @@ certificate_template
 
 type: ``string``
 
-During enrollment of a `certificate` token the user needs to specify the certificate template that should be used
+During enrollment of a *certificate* token the user needs to specify the certificate template that should be used
 for enrollment. This policy adds the given template parameter to the request.
 The administrator needs to add the name of the template manually in this policy.
 
@@ -930,7 +927,7 @@ certificate_request_subject_component
 
 type: ``string``
 
-During enrollment of a `certificate` by creating a request, privacyIDEA can add additional
+During enrollment of a *certificate* token by creating a request, privacyIDEA can add additional
 components to the request subject.
 
 This can be "email" (The email of the user read from the userstore) and/or "realm", which
@@ -939,18 +936,12 @@ is written to the Organizational Unit (OU) of the request.
 .. note:: A couple of certificate templates on the Microsoft CA will not allow
    having the email component directly in the subject!
 
-.. rubric:: Footnotes
-
-.. [#rpid] https://w3.org/TR/webauthn-2/#rp-id
-.. [#webauthnrelyingparty] https://w3.org/TR/webauthn-2/#webauthn-relying-party
-
-
 .. _policy_require_description:
 
 require_description
 ~~~~~~~~~~~~~~~~~~~~
 
-type: ``list``
+type: ``string``
 
 To prevent tokens from becoming unidentifiable after a device loss, a description can
 be enforced with the "require_description policy". The desired token-types can be
@@ -966,7 +957,7 @@ type: ``string``
 
 This action can be used to validate the email address of the user during enrollment.
 The administrator specifies the Python module that should be used to validate the email address.
-The modules can be defined in the `pi.cfg` file.
+The modules can be defined in the ``pi.cfg`` file.
 See :ref:`picfg_email_validators` for more information.
 
 .. _policy_app_force_unlock:
@@ -976,8 +967,11 @@ app_force_unlock
 
 type: ``string``
 
+allowed values: ``any``, ``biometric``, ``pin``
+
+This is a token type specific parameter (with ``hotp_``, ``totp_``, ``daypassword_`` or ``push_`` prefix).
 This policy can be used to force the privacyIDEA Authenticator App to secure the token with a pin or
-biometric. If you select any, the token can be unlocked with both.
+biometric. If you select *any*, the token can be unlocked with both.
 
 The app then requires the selected authentication method every time the token is used or its data is
 revealed, for example when an OTP value is displayed or a push request is accepted or declined. If the
@@ -989,3 +983,8 @@ app stores the token data in the secure storage provided by the operating system
 ``biometric`` does not make the key unusable when the user later adds or removes a fingerprint or face.
 
 .. note:: This needs the privacyIDEA Authenticator app 4.6.1 or higher.
+
+.. rubric:: Footnotes
+
+.. [#rpid] https://www.w3.org/TR/webauthn-3/#rp-id
+.. [#webauthnrelyingparty] https://www.w3.org/TR/webauthn-3/#webauthn-relying-party

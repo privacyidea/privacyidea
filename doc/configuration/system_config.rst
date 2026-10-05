@@ -1,11 +1,11 @@
-.. index:: system config, token default settings,
+.. index:: system config, token default settings
 .. _system_config:
 
 System Config
 -------------
 
-The system configuration has three logical topics: Settings,
-token default settings and GUI settings.
+The system configuration has two logical topics: Settings and
+token default settings.
 
 .. figure:: images/system-config.png
    :width: 500
@@ -53,7 +53,7 @@ Clear failcounter after minutes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When the failcounter reaches the maximum, the token gets a timestamp of the time the max fail count was reached.
-After the specified amount of minutes have passed since that timestamp, any authentication attempt will clear the fail
+After the specified number of minutes has passed since that timestamp, any authentication attempt will clear the fail
 counter.
 
 A ``0`` means that the automatic clearing of the fail counter is not used.
@@ -61,8 +61,6 @@ A ``0`` means that the automatic clearing of the fail counter is not used.
 .. note:: After the maximum failcounter is reached, new requests will not update the mentioned timestamp.
 
 Also see :ref:`brute_force`.
-
-.. todo:: Add description for ``Do not use an authentication counter per token.``
 
 
 Do not use an authentication counter per token.
@@ -136,7 +134,7 @@ for the privacyIDEA system will always be the RADIUS server, which issues
 the authentication request. But you can allow the RADIUS server IP to
 send another client information (in this case the RADIUS client) so that
 the policy is evaluated for the RADIUS client. A RADIUS server
-may add the API parameter *client* with a new IP address. A HTTP reverse
+may add the API parameter *client* with a new IP address. An HTTP reverse
 proxy may append the respective client IP to the ``X-Forwarded-For`` HTTP
 header.
 
@@ -149,7 +147,7 @@ mapping to other IP networks.
 
    10.1.2.0/24 > 192.168.0.0/16
 
-Proxies in the sub net 10.1.2.0/24 may mask as client IPs 192.168.0.0/16. In
+Proxies in the subnet 10.1.2.0/24 may mask as client IPs 192.168.0.0/16. In
 this case the policies for the corresponding client in 192.168.x.x apply.
 
 ::
@@ -178,7 +176,7 @@ which may in turn use a ``client`` parameter to mask as any client in the subnet
    at: the effective address (``source_ip``), the address the connection actually came from
    (``peer_ip``), which of the two - or which forwarded hop - was chosen (``source_ip_source``), and the
    whole path that was considered (``ip_chain``). The ``X-Forwarded-For`` chain and any ``client``
-   parameter are recorded **even when this setting is empty** and they are therefore not honoured, so the
+   parameter are recorded **even when this setting is empty** and they are therefore not honored, so the
    log shows what a request claimed as well as what privacyIDEA believed. Only ``source_ip`` is ever used
    for a decision; everything past ``peer_ip`` is client-supplied.
 
@@ -221,10 +219,10 @@ Max Failcount of newly enrolled tokens
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This setting defines the maximum failcounter for newly enrolled tokens. If the
-failcounter exceeds this number the token can not be used unless it is reset.
+failcounter exceeds this number the token cannot be used unless it is reset.
 
 .. note:: In fact the failcounter will only increase up to this maximum failcount (``Maxfail``).
-   Even if more failed authentication request occur, the failcounter will
+   Even if more failed authentication requests occur, the failcounter will
    not be increased.
 
 .. index:: syncwindow

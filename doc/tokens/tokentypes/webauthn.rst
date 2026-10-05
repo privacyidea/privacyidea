@@ -3,7 +3,7 @@
 WebAuthn
 --------
 
-.. index:: WebAuth, FIDO2
+.. index:: WebAuthn, FIDO2
 
 .. note:: For new deployments the :ref:`passkey` token type is recommended over
     WebAuthn. The passkey token is a re-implementation on top of a maintained
@@ -15,9 +15,9 @@ WebAuthn
     :ref:`policy_webauthn_enroll_authenticator_attestation_level` = ``trusted``)
     is required, which the passkey token does not provide.
 
-Starting with version 3.4 privacyIDEA supports WebAuthn tokens. The
+privacyIDEA supports WebAuthn tokens. The
 administrator or the user himself can register a WebAuthn device and use this
-WebAuthn token to login to the privacyIDEA WebUI or to authenticate against
+WebAuthn token to log in to the privacyIDEA WebUI or to authenticate against
 applications.
 
 When enrolling the token, a key pair is generated and the public key is sent to

@@ -28,6 +28,12 @@ Possible Options
 Options can be passed to the script. Your script has to take care of the
 parsing of these parameters.
 
+background
+..........
+
+This option is required. With ``wait`` privacyIDEA waits for the script to complete, which can block the
+request. With ``background`` the script runs in the background and the HTTP request returns early.
+
 logged_in_role
 ..............
 
@@ -47,6 +53,12 @@ there is no logged in user, *none* will be passed.
 The script will be called with the parameter::
 
    --logged_in_user <username>@<realm>
+
+raise_error
+...........
+
+Only available if **background** is set to ``wait``. If the script can not be started or fails with an error
+code, an exception is raised in the HTTP request.
 
 realm
 .....
@@ -76,3 +88,10 @@ Add ``--user <username>`` as script parameter. If no username is given,
    passes the parameters above. To call a tool like :ref:`get_unused_tokens`, which
    expects its own command and arguments, put a small wrapper script into the script
    directory that ignores the parameters and calls the tool.
+
+Code
+~~~~
+
+.. automodule:: privacyidea.lib.eventhandler.scripthandler
+   :members:
+   :undoc-members:

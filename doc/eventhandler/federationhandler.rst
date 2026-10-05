@@ -22,41 +22,49 @@ forward
 
 A request (usually an authentication request *validate_check*) can be
 forwarded to another privacyIDEA instance. The administrator can
-define privacyIDEA instances centrally at *config* -> *privacyIDEA servers*.
+define privacyIDEA instances centrally, see :ref:`privacyideaserver_config`.
 
 In addition to the privacyIDEA instance the action ``forward`` takes the
 following parameters:
 
-**client_ip** The original client IP will be passed to the child privacyIDEA
-server. Otherwise the child privacyIDEA server will use the parent
-privacyIDEA server as client.
+**forward_client_ip**
+  The original client IP will be passed to the child privacyIDEA
+  server. Otherwise the child privacyIDEA server will use the parent
+  privacyIDEA server as client.
 
-.. note:: You need to configure the allow override client in the child
-   privacyIDEA server.
+  .. note:: You need to configure the :ref:`override_client` setting
+     (``OverrideAuthorizationClient``) on the child privacyIDEA server.
 
-**realm** The forwarding request will change the realm to the specified realm.
+**forward_authorization_token**
+  The authorization header of the original request will be passed to the child
+  privacyIDEA server. This makes it possible to also forward requests like token and system
+  requests.
+
+**realm**
+  The forwarding request will change the realm to the specified realm.
   This might be necessary since the child privacyIDEA server could have
   different realms than the parent privacyIDEA server.
 
-**resolver** The forwarding request will change the resolver to the specified
+**resolver**
+  The forwarding request will change the resolver to the specified
   resolver. This might be necessary since the child privacyIDEA server could
   have different resolvers than the parent privacyIDEA server.
 
-One simple possibility would be, that a user has a token in the parent
+One simple possibility would be that a user has a token in the parent
 privacyIDEA server and in the child privacyIDEA server. Configuring a forward
 event handler on the parent with the condition ``result_value = False`` would
-have the effect, that the user can either authenticate with the parent's
+have the effect that the user can either authenticate with the parent's
 token or with the child's token on the parent privacyIDEA server.
 
-Federation can be used, if privacyIDEA was introduced in a subdivision of a
-larger company. When privacyIDEA should be enrolled to the complete company
+Federation can be used if privacyIDEA was introduced in a subdivision of a
+larger company. When privacyIDEA should be rolled out to the whole company
 you can use federation. Instead of dropping the privacyIDEA instance in the
-subdivision and installing on single central privacyIDEA, the subdivision can
+subdivision and installing one single central privacyIDEA, the subdivision can
 still go on using the original privacyIDEA system (child) and the company
 will install a new top level privacyIDEA system (parent).
 
-Using the federation handler you can setup many other, different scenarios we
-can not think of, yet.
+Using the federation handler you can set up many other, different scenarios we
+cannot think of yet.
 
 Code
 ~~~~

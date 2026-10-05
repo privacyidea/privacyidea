@@ -8,31 +8,31 @@ Token Enrollment Wizard
 The enrollment wizard helps the user to enroll his first token. When
 enrolling the first token, we assume, that the user is not very familiar with
 the privacyIDEA web UI. So the enrollment wizard only contains a very
-reduced API.
+reduced interface.
 
 Necessary requirements for the enrollment wizard
 ------------------------------------------------
 
- * The enrollment wizard will only be displayed, if the user has no token
-   assigned, yet. Thus the user must be able to login to the web UI with his
-   userstore password. This is the default behaviour or set the corresponding
-   policy.
+* The enrollment wizard will only be displayed, if the user has no token
+  assigned, yet. Thus the user must be able to log in to the web UI with his
+  userstore password. This is the default behavior; otherwise set the
+  corresponding policy.
 
- * Set a policy in scope *webui* and activate the policy action
-   :ref:`policy_token_wizard`.
+* Set a policy in scope *webui* and activate the policy action
+  :ref:`policy_token_wizard`.
 
- * The user will not be able to choose a token type. But the default token
-   type will be enrolled.
+* The user will not be able to choose a token type. But the default token
+  type will be enrolled.
 
-You can see the token enrollment wizard in action here:
+You can see the token enrollment wizard in action (recorded with the previous WebUI) here:
 https://www.youtube.com/watch?v=diAGbsiG8_A
 
 
 Customization
 -------------
 
-There are two dialog windows in the wizard. You can configure the text in the
-wizard in your html templates defined in these files:
+There are two dialog windows in the wizard. You can add your own text to them
+in HTML templates.
 
 Before the token is enrolled you can add your custom text in these two files:
 
@@ -46,7 +46,7 @@ Before the token is enrolled you can add your custom text in these two files:
     static/public/customize/token-enrollment.wizard.pre.top.html
     static/public/customize/token-enrollment.wizard.pre.bottom.html
 
-When it is enrolled and the user needs to do something (e.g. scanning the qr-code),
+When it is enrolled and the user needs to do something (e.g. scanning the QR code),
 you can modify the text here:
 
 *Previous WebUI*::
@@ -59,9 +59,9 @@ you can modify the text here:
     static/public/customize/token-enrollment.wizard.post.top.html
     static/public/customize/token-enrollment.wizard.post.bottom.html
 
-.. note:: You can change the directory static_old/customize to a URL that fits
-   your needs the best by defining a variable PI_CUSTOMIZATION in the file
-   pi.cfg. This way you can put all modifications in one place apart from the
+.. note:: You can change the directory ``static_old/customize`` to a URL that fits
+   your needs the best by defining a variable ``PI_CUSTOMIZATION`` in the file
+   ``pi.cfg``. This way you can put all modifications in one place apart from the
    original code.
 
    This is only possible in the previous WebUI.
@@ -74,7 +74,7 @@ Example
 
 Your privacyIDEA system is running in the URL sub path ``/pi``.
 The files could be addressed via a path component ``mydesign`` (in this case ``pi/mydesign``).
-Thus the WebUI will look for the files in the URL path ``/pi/mydesign/views/includes/``.
+Thus the previous WebUI will look for the files in the URL path ``/pi/mydesign/views/includes/``.
 
 So you set in ``pi.cfg``::
 

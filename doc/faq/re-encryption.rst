@@ -4,11 +4,11 @@ Re-Encrypting data
 ------------------
 
 You might need to reencrypt your token data, i.e. the secret OTP keys of your tokens.
-It could be since you are changing your security module or you think your encryption key is compromised.
+This may be because you are changing your security module or you think your encryption key is compromised.
 
 privacyIDEA provides tools to reencrypt your token data.
 
-Note, that currently we do not reencrypt configuration data like LDAP resolver passwords.
+Note that currently we do not reencrypt configuration data like LDAP resolver passwords.
 
 Reencryption is currently done offline. You will have to export your existing tokens and reimport the tokens to
 the system with the new security module or encryption key.
@@ -36,7 +36,7 @@ Updating tokens
 ~~~~~~~~~~~~~~~
 
 You can then turn to the system with the new security module or encryption key.
-Note, that the new privacyIDEA system actually has to contain the tokens!
+Note that the new privacyIDEA system actually has to contain the tokens!
 
 Use the :ref:`update command <token_janitor_update>` to store the secret OTP keys with the new encryption
 mechanism::

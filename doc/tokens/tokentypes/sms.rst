@@ -1,7 +1,7 @@
 .. _sms_token:
 
 SMS Token
---------
+---------
 
 .. index:: SMS token
 

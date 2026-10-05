@@ -4,7 +4,7 @@ Performance considerations
 --------------------------
 
 You can test performance using the apache bench from the apache utils.
-Creating a simple pass token for a user, eases the performance testing.
+Creating a simple pass token for a user eases the performance testing.
 
 Then you can run::
 
@@ -55,7 +55,7 @@ highest performance.
 Config caching
 ~~~~~~~~~~~~~~
 
-Starting with privacyIDEA 2.15 privacyIDEA uses a Cache per instance and process to
+privacyIDEA uses a cache per instance and process to
 cache system configuration, resolver, realm and policies.
 
 As the configuration might have been changed in the database by another process
@@ -126,15 +126,15 @@ Response
 ~~~~~~~~
 
 You can strip the authentication response to get a slight increase in performance
-by using the policy ``no_details_on_success``.
+by using the policy :ref:`policy_no_detail_on_success`.
 
 
 Clean configuration
 ~~~~~~~~~~~~~~~~~~~
 
-Remove unused resolvers and policies. Have a realm with several resolvers is
+Remove unused resolvers and policies. Having a realm with several resolvers is
 a bit slower than one realm with one resolver. Finding the user in the first
-resolver is faster than in the last resolver.
-Although e.g. the LDAP resolver utilizes caching.
+resolver is faster than in the last resolver, although e.g. the LDAP resolver
+uses caching.
 
 Also see :ref:`performance_tokenview`.

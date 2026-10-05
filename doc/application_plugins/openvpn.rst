@@ -7,11 +7,11 @@ OTP with OpenVPN
 
 .. index:: PAM, OpenVPN
 
-This section describes, how you can setup OpenVPN to authenticate against
+This section describes how you can set up OpenVPN to authenticate against
 privacyIDEA. There are basically three ways to integrate OpenVPN with
 privacyIDEA:
 
-1. use the privacyidea_pam.py module for PAM
+1. use the privacyIDEA PAM module
 2. integrate OpenVPN directly with RADIUS
 3. use the PAM module for RADIUS in OpenVPN
 
@@ -29,7 +29,7 @@ enter a password consisting of a static part he knows and the OTP part which
 the user needs to generate with the OTP token he possesses.
 
 Another addition you most probably want to make is adding the following option
-to both the client and the server configuration:
+to both the client and the server configuration::
 
    reneg-sec 0
 
@@ -41,7 +41,7 @@ and certificate/smartcard).
 
 When using OTP authentication, note that this default value may cause the
 end user to be challenged to reauthorize once per hour. The OpenVPN client
-with the option --auth-user-pass prompts for username and password for
+with the option ``--auth-user-pass`` prompts for username and password for
 every renegotiation.
 
 Network-Manager does not rechallenge the user and the VPN connection hangs,
@@ -55,38 +55,42 @@ If you are also requiring client certificates, the user needs
 
 to establish a VPN connection.
 
-privacyidea_pam.py module for OpenVPN
-=====================================
+privacyIDEA PAM module for OpenVPN
+==================================
 
 For this the PAM stack is used. To get the basic information
 about integrating privacyIDEA with PAM, read :ref:`pam_plugin`.
 Since we do not use RADIUS this is the least complex configuration and for
 most installations probably the preferred one. The biggest drawback is that
-you need to install the *privacyidea-pam* package on your OpenVPN server.
-As long as the package is not part of your distribution you need to handle
-updates/security fixes manually or by using the packages provided by
-privacyIDEA.
+you need to install the privacyIDEA PAM module ``pam_privacyidea.so`` on your
+OpenVPN server. As long as the module is not part of your distribution you need
+to handle updates/security fixes manually, e.g. with the releases of the
+`privacyidea-pam <https://github.com/privacyidea/privacyidea-pam/releases>`_
+project.
 
 You can create a file */etc/pam.d/openvpn* on your OpenVPN server that
 basically looks like this::
 
-   auth    [success=1 default=ignore]      pam_python.so
-       /path/to/privacyidea_pam.py url=https://your.privacyidea.server
+   auth    [success=1 default=ignore]      pam_privacyidea.so url=https://your.privacyidea.server
    auth    requisite           pam_deny.so
    auth    required            pam_permit.so
    session sufficient          pam_permit.so
    account sufficient          pam_permit.so
 
+The options of ``pam_privacyidea.so``, e.g. ``realm=``, are described in the
+`README <https://github.com/privacyidea/privacyidea-pam/blob/main/README.md>`_
+of the PAM module.
+
 Then you need to configure the OpenVPN server like this::
 
    port 1194
    [...]
-   plugin /usr/lib/openvpn/openvpn-auth-pam.so openvpn
+   plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so openvpn
 
 The important line is the last line, which tells OpenVPN to use the PAM stack
 to authenticate the user and within the PAM stack the configuration for
-"openvpn". On certain distributions the library might be located at
-*/usr/lib64/openvpn/plugin/lib/openvpn-auth-pam.so*.
+"openvpn". On certain distributions the library might be located elsewhere, e.g. at
+*/usr/lib64/openvpn/plugins/openvpn-plugin-auth-pam.so*.
 
 Integration of OpenVPN directly with RADIUS
 ===========================================
@@ -97,7 +101,7 @@ distribution. Before you can configure your OpenVPN you need to install freeradi
 on your privacyIDEA server and configure it according to :ref:`freeradius`.
 Be sure that RADIUS works before you start.
 
-Copy the file */usr/share/doc/openvpn-auth-radius/examples/radiusplugn.cnf* into */etc/openvpn*
+Copy the file */usr/share/doc/openvpn-auth-radius/examples/radiusplugin.cnf* into */etc/openvpn*
 and adapt it to your configuration. The most important parts of the file should contain::
 
   # The NAS identifier which is sent to the RADIUS server
@@ -112,7 +116,7 @@ and adapt it to your configuration. The most important parts of the file should 
         authport=1812
         # The name or ip address of the radius server.
         name=<your-radius-server>
-        # How many times should the plugin send the if there is no response?
+        # How many times should the plugin send the request if there is no response?
         retry=1
         # How long should the plugin wait for a response?
         wait=1
@@ -120,21 +124,9 @@ and adapt it to your configuration. The most important parts of the file should 
         sharedsecret=<shared-secret>
   }
 
-After the changes restart your OpenVPN service and keep a look at the
+After the changes restart your OpenVPN service and keep an eye on the
 logs of OpenVPN on your access server as well as the freeradius logs on
 your RADIUS server.
-
-If you use *privacyidea-radius* 2.6 or earlier, make sure you have the
-following entry in */etc/freeradius/sites-enabled/privacyidea*::
-
-  [...]
-  accounting {
-        detail
-  }
-  [...]
-
-Otherwise RADIUS will authenticate your user, but refuse to add the
-accounting data that the OpenVPN plugin sends and the connection will fail.
 
 Using the PAM module for RADIUS in OpenVPN
 ==========================================
@@ -157,7 +149,7 @@ Then you need to configure the OpenVPN server like this::
 
    port 1194
    [...]
-   plugin /usr/lib/openvpn/openvpn-auth-pam.so openvpn
+   plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so openvpn
 
 Now we need to tell the PAM plugin which RADIUS server to use. Modify the
 file */etc/pam_radius_auth.conf* to point to your RADIUS server and add

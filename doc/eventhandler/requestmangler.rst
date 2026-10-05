@@ -39,8 +39,8 @@ If you simply want to set a parameter to a fixed value you only need the options
 * *parameter*: as the name of the parameter you want to set and
 * *value*: to set to a fixed value.
 
-If you can to set a parameter based on the value of another parameter, you can use the regex notation
-**()** and the python string formatting tags **{0}**, **{1}**.
+If you want to set a parameter based on the value of another parameter, you can use the regex notation
+**()** and the Python string formatting tags **{0}**, **{1}**.
 
 **Example 1**
 
@@ -61,8 +61,8 @@ with an empty realm will be modified to::
    username=surname.givenname@example.com
    realm=example.com
 
-since, the pattern ``.*@(.*)`` will match the email address and extract the domain after the "@"
-sign. The python tag "{0}" will be replaced with the matching domainname.
+since the pattern ``.*@(.*)`` will match the email address and extract the domain after the "@"
+sign. The Python tag "{0}" will be replaced with the matching domain name.
 
 **Example 2**
 

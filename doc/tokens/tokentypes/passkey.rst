@@ -5,7 +5,7 @@ Passkey
 
 .. index:: Passkey, FIDO2
 
-Starting with version 3.11 privacyIDEA supports Passkey token.
+Starting with version 3.11 privacyIDEA supports the passkey token.
 A passkey is a FIDO authentication credential based on FIDO standards, that allows a user to sign in to apps and
 websites with the same process that they use to unlock their device (biometrics, PIN, or pattern).
 Passkeys are FIDO cryptographic credentials that are tied to a user’s account on a website or application.
@@ -13,7 +13,7 @@ Passkeys are phishing resistant and secure by design. They inherently help reduc
 such as phishing, credential stuffing, and other remote attacks.
 
 This is a variation of the WebAuthn token, which is also a FIDO2 token supported by privacyIDEA.
-Therefore, it inherits the configuration of the Webauthn token, which is described here: :ref:`webauthn_otp_token`.
+Therefore, it inherits the configuration of the WebAuthn token, which is described here: :ref:`webauthn_otp_token`.
 The Passkey token always requests to be created as a resident credential, i.e. the option
 ``resident_key`` is always set to ``required``, in contrast to the WebAuthn token, which does not request a resident
 key.
@@ -26,7 +26,7 @@ Passkeys are eligible for offline use as specified here :ref:`application_offlin
 :ref:`policy_enroll_via_multichallenge`. However, these features also have to be implemented in the client application.
 
 Using passkeys in different browsers and environments can yield different user experiences. Most, if not all browsers,
-will not allow enrollment of a passkey to a authenticator which does not have a PIN set, i.e. user verification is
+will not allow enrollment of a passkey to an authenticator which does not have a PIN set, i.e. user verification is
 always required for enrollment. Therefore, :ref:`policy_webauthn_enroll_user_verification_requirement` does not
 affect passkey enrollment. The same policy :ref:`policy_webauthn_authn_user_verification_requirement` is available in
 the scope authentication and that policy does affect passkey authentication. A login to the WebUI with a passkey always
@@ -81,7 +81,7 @@ credential, and requesting attestation works against both goals:
 
 privacyIDEA currently only archives the attestation certificate; there is no trust-chain validation, AAGUID
 allow-listing or filtering of passkey tokens based on attestation data. If attestation-based filtering or trust
-validation is required, use the :ref:`webauthn_otp_token` instead.
+validation is required, use the :ref:`WebAuthn token <webauthn>` instead.
 
 .. _passkey_device_type:
 
@@ -115,7 +115,7 @@ of each other.
     as passkeys synced by the passkey manager of the operating system. It does not keep out an authenticator that
     reports ``single_device`` although it can export or sync the key, whether because of a faulty implementation or
     because it was manipulated on purpose, for example a software authenticator. If you need assurance that the
-    key cannot leave the hardware, use the :ref:`webauthn_otp_token` and set
+    key cannot leave the hardware, use the :ref:`WebAuthn token <webauthn>` and set
     :ref:`policy_webauthn_enroll_authenticator_attestation_level` to ``trusted``.
 
 Avoiding double registration
