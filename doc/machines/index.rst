@@ -194,8 +194,12 @@ Refill
 If a client with offline HOTP values runs out of OTP values, it can request a refill of the list.
 This is done using :http:post:`/validate/offlinerefill`
 
-If that endpoints returns an error, it indicates that the token has been unmarked for offline use, or the refilltoken
-is out of sync. Therefore, clients managing WebAuthn/Passkey offline data should also call this endpoint regularly.
+If that endpoint returns an error with the error code ``905``, the token can no longer be used offline: it has been
+unmarked for offline use, disabled or deleted, or the refilltoken is out of sync. Therefore, clients managing
+WebAuthn/Passkey offline data should also call this endpoint regularly. A wrong OTP value or a refusal by
+:ref:`conditional_access` is answered with the error code ``401`` instead; it does not invalidate the offline data,
+so clients should keep it. If ``hide_specific_error_message_for_offline_refill`` is set, every failed refill is
+answered with the error code ``401``.
 
 For an HOTP token the client sends the last PIN and OTP value the user entered. Only the OTP value is verified, against
 the offline values issued to the client; the PIN is not checked and is only used to compute the new offline values. The
@@ -203,8 +207,9 @@ refilltoken is therefore what authorizes a refill.
 
 A refill is subject to :ref:`conditional_access`: a lock of the token owner, a block of the source IP or a *deny*
 action refuses it before the refilltoken is checked, so no new offline values are issued and the refilltoken is not
-rotated. Every refill is recorded in the :ref:`authentication_log` as ``OFFLINE_REFILL_SUCCESS`` or
-``OFFLINE_REFILL_FAIL``.
+rotated. Such a refusal is recorded in the :ref:`authentication_log` as ``USER_LOCKED``, ``IP_BLOCKED`` or
+``ACCESS_DENIED``. A refill that passes conditional access is recorded as ``OFFLINE_REFILL_SUCCESS`` or
+``OFFLINE_REFILL_FAIL``, unless the request is missing the ``serial``, ``refilltoken`` or ``pass`` parameter.
 
 
 Managing in the WebUI

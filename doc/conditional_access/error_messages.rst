@@ -197,7 +197,8 @@ silent rejection carries none either.
 
 **The offline refill** (``/validate/offlinerefill``) answers every failure with
 an error response, so a rejection is one too: HTTP ``400`` with the privacyIDEA
-error code ``401``, the code a wrong OTP is answered with. A silent rejection
+error code ``401``, the code a wrong OTP is answered with. With
+``hide_auth_error_status`` set, the HTTP status is ``401`` instead. A silent rejection
 says ``Failed offline token refill``, and like every other failed refill it is
 masked when ``hide_specific_error_message_for_offline_refill`` is set. A
 configured message is shown either way, see
@@ -260,9 +261,11 @@ empty and do not set ``show_default_ca_error_message`` - that is the default. Th
 masking policies are neither needed for it nor sufficient against a message an
 administrator configured.
 
-``hide_auth_error_status`` (:ref:`policies_hardening`) changes nothing about a
-rejection: a refused login already returns the ``401`` that policy normalises
-to, and a refused ``/validate`` request already returns the ordinary ``200``.
+``hide_auth_error_status`` (:ref:`policies_hardening`) only affects the offline
+refill, whose rejection it turns from HTTP ``400`` into ``401`` like every other
+failed refill. A refused login already returns the ``401`` that policy
+normalises to, and a refused ``/validate`` request already returns the ordinary
+``200``.
 
 Where the reason always is
 --------------------------
