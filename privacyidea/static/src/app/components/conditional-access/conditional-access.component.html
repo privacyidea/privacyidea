@@ -362,6 +362,8 @@
               [checked]="policy.enabled"
               [disableRipple]="true"
               [disabled]="!authService.actionAllowed('conditional_access_policy_write') || reorderMode()"
+              aria-label="Toggle Enabled"
+              i18n-aria-label="@@conditionalAccess.toggleEnabled"
               i18n-matTooltip="@@conditionalAccess.toggleEnabled"
               matTooltip="Toggle Enabled" />
           </td>
@@ -385,6 +387,8 @@
               [checked]="policy.dry_run"
               [disableRipple]="true"
               [disabled]="!authService.actionAllowed('conditional_access_policy_write') || reorderMode()"
+              aria-label="Toggle Dry Run (evaluate but do not enforce)"
+              i18n-aria-label="@@conditionalAccess.toggleDryRunEvaluate"
               i18n-matTooltip="@@conditionalAccess.toggleDryRunEvaluate"
               matTooltip="Toggle Dry Run (evaluate but do not enforce)" />
           </td>

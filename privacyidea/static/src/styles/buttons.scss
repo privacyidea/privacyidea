@@ -603,3 +603,14 @@ $button-low-contrast-variant: linear-gradient(
 .settings-container .mat-button-toggle-appearance-standard:not(.mat-button-toggle-checked) {
   background-color: var(--table-color);
 }
+
+// Forced colors (Windows High Contrast) replace backgrounds with system colors, which takes a button's focus state
+// layer with them; an outline survives, so keyboard focus is marked with one.
+@media (forced-colors: active) {
+  .mdc-button:focus-visible,
+  .mdc-icon-button:focus-visible,
+  .mat-mdc-menu-item:focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}

@@ -236,7 +236,9 @@
                 mat-cell>
                 <button
                   (click)="deleteOption(row.key)"
+                  aria-label="Delete"
                   color="warn"
+                  i18n-aria-label="@@common.delete"
                   mat-icon-button>
                   <mat-icon>delete</mat-icon>
                 </button>
@@ -328,7 +330,9 @@
                   <button
                     (click)="addOption()"
                     [disabled]="!newOptionKey()"
+                    aria-label="Add"
                     color="primary"
+                    i18n-aria-label="@@common.add"
                     mat-icon-button>
                     <mat-icon>add</mat-icon>
                   </button>
@@ -393,7 +397,9 @@
                 mat-cell>
                 <button
                   (click)="deleteHeader(row.key)"
+                  aria-label="Delete"
                   color="warn"
+                  i18n-aria-label="@@common.delete"
                   mat-icon-button>
                   <mat-icon>delete</mat-icon>
                 </button>
@@ -485,7 +491,9 @@
                   <button
                     (click)="addHeader()"
                     [disabled]="!newHeaderKey()"
+                    aria-label="Add"
                     color="primary"
+                    i18n-aria-label="@@common.add"
                     mat-icon-button>
                     <mat-icon>add</mat-icon>
                   </button>

@@ -249,6 +249,8 @@
             [ngClass]="'col-width-' + columnWidths['active']"
             mat-cell>
             <mat-slide-toggle
+              aria-label="Toggle Active Status"
+              i18n-aria-label="@@common.toggleActiveStatus"
               i18n-matTooltip="@@common.toggleActiveStatus"
               matTooltip="Toggle Active Status"
               [checked]="task.active"

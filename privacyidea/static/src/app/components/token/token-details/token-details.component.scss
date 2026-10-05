@@ -96,12 +96,14 @@
 }
 
 .action-button-warn-secondary {
+  // Orange that keeps 4.5:1 on the card in both themes.
+  --warn-secondary-color: light-dark(#aa570e, #e88a3c);
   background: var(--mat-sys-surface-container-lowest) !important;
-  color: #c46314 !important;
-  border-color: #c46314 !important;
+  color: var(--warn-secondary-color) !important;
+  border-color: var(--warn-secondary-color) !important;
 
   .mat-icon {
-    color: #c46314 !important;
+    color: var(--warn-secondary-color) !important;
   }
 
   &:hover:not(:disabled) {

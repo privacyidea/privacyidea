@@ -219,6 +219,8 @@
                     [checked]="element.active"
                     [disableRipple]="true"
                     [disabled]="!authService.actionAllowed('eventhandling_write')"
+                    aria-label="Toggle Active Status"
+                    i18n-aria-label="@@common.toggleActiveStatus"
                     i18n-matTooltip="@@common.toggleActiveStatus"
                     matTooltip="Toggle Active Status"></mat-slide-toggle>
                 }

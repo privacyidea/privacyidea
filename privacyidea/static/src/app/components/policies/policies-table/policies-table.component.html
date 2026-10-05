@@ -196,6 +196,7 @@
                         (click)="togglePolicyActive(policy); $event.stopPropagation()"
                         [checked]="policy.active"
                         [disableRipple]="true"
+                        [aria-label]="policy.active ? 'Deactivate policy' : 'Activate policy'"
                         [matTooltip]="policy.active ? 'Deactivate policy' : 'Activate policy'" />
                     </div>
                   }
