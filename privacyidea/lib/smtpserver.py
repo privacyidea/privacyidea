@@ -73,11 +73,11 @@ class SMTPServer:
 
     def send_email(self, recipient, subject, body, sender=None,
                    reply_to=None, mimetype="plain"):
-        return self.test_email(self.config.get(), recipient, subject, body, sender, reply_to, mimetype)
+        return self.send_email_with_config(self.config.get(), recipient, subject, body, sender, reply_to, mimetype)
 
     @staticmethod
-    def test_email(config, recipient, subject, body, sender=None,
-                   reply_to=None, mimetype="plain"):
+    def send_email_with_config(config, recipient, subject, body, sender=None,
+                               reply_to=None, mimetype="plain"):
         """
         Sends an email via the configuration.
 
