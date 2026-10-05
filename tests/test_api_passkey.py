@@ -610,7 +610,12 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("status", res.json["result"])
             self.assertTrue(res.json["result"]["status"])
             self.assertIn("value", res.json["result"])
-            self.assertEqual(1, res.json["result"]["value"])
+            # The row id of the new binding, not a count - it is 1 only while this is the first machinetoken row the
+            # database ever issued, which depends on what ran before and on how the backend allocates the sequence.
+            # Carried to the DELETE below rather than assumed there a second time.
+            machine_token_id = res.json["result"]["value"]
+            self.assertIsInstance(machine_token_id, int)
+            self.assertGreater(machine_token_id, 0)
 
         # A successful authentication should return the offline data now
         challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
@@ -705,7 +710,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertFalse(offline["response"])
 
         # Disable offline for the token
-        with self.app.test_request_context(f'/machine/token/{serial}/offline/{machine_token_id}',
+        with self.app.test_request_context(f'/machine/token/{serial}/offline/1',
                                            method='DELETE',
                                            headers=self.pk_headers):
             res = self.app.full_dispatch_request()
