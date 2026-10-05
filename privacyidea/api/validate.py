@@ -255,10 +255,14 @@ def _hide_offline_refill_error() -> bool:
 def _refuse_offline_refill(message: str | None) -> tuple[Response, int]:
     """
     Answer a refill conditional access refused the way every failed refill is answered: an error response. A silent
-    rejection says what a wrong refilltoken says, and is masked like it; a configured message is shown either way,
-    as it is past ``hide_specific_error_message`` on the other endpoints.
+    rejection is masked like any other failure; a configured message is shown either way, as it is past
+    ``hide_specific_error_message`` on the other endpoints.
+
+    A ``ValidateError`` (401), the code a wrong OTP is answered with, and never a ``ParameterError`` (905): the
+    privacyIDEA Credential Provider reads 905 on a refill as "no longer an offline token" and deletes the
+    WebAuthn/Passkey offline data, which a restriction that lifts again must not cost.
     """
-    error = ParameterError(message or _("Token is not an offline token or refill token is incorrect"))
+    error = ValidateError(message or _("Failed offline token refill"))
     if not message and _hide_offline_refill_error():
         return send_error("Failed offline token refill", error_code=Error.VALIDATE), get_auth_error_status_code(error)
     return send_error(str(error), error_code=error.id), get_auth_error_status_code(error)

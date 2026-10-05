@@ -1101,7 +1101,7 @@ class OfflineRefillGateTestCase(_GateContract, _UserGateContract, _PostResponseG
     event_name = "validate_offlinerefill"
     endpoint_path = "/validate/offlinerefill"
     serial = "CA_GATE_OFFLINE"
-    refill_failure = "Token is not an offline token or refill token is incorrect"
+    refill_failure = "Failed offline token refill"
 
     #: The stored refilltoken and token counter before the request under assertion, so a refusal is "changed nothing".
     before: tuple[str, int] = ("", 0)
@@ -1153,9 +1153,10 @@ class OfflineRefillGateTestCase(_GateContract, _UserGateContract, _PostResponseG
     def _assert_refused(self, response: Response, message: str | None = None) -> None:
         self.assertEqual(400, response.status_code, response.json)
         error = response.json["result"]["error"]
-        self.assertEqual(Error.PARAMETER, error["code"], response.json)
-        # Silent, it says what a wrong refilltoken says, so it cannot be told apart from one.
-        self.assertEqual(f"ERR905: {message or self.refill_failure}", error["message"], response.json)
+        # The code a wrong OTP is answered with. Never 905, which the Credential Provider reads as "no longer an
+        # offline token" and deletes the WebAuthn/Passkey offline data for.
+        self.assertEqual(Error.VALIDATE, error["code"], response.json)
+        self.assertEqual(f"ERR401: {message or self.refill_failure}", error["message"], response.json)
         self.assertNotIn("auth_items", response.json)
         # Refused before any token work: nothing was handed out, so nothing rotated and the counter did not move.
         token = get_one_token(serial=self.serial)
@@ -1177,7 +1178,7 @@ class OfflineRefillGateTestCase(_GateContract, _UserGateContract, _PostResponseG
                                                  "refilltoken": "a" * 2 * REFILLTOKEN_LENGTH},
                                            environ_base={"REMOTE_ADDR": BLOCKED_IP}):
             response = self.app.full_dispatch_request()
-        self.assertEqual(f"ERR905: {self.refill_failure}", response.json["result"]["error"]["message"])
+        self.assertEqual(f"ERR401: {self.refill_failure}", response.json["result"]["error"]["message"])
         assert_authentication_log([AuthEventType.IP_BLOCKED])
 
     def test_a_silent_refusal_is_masked_like_any_failed_refill(self):

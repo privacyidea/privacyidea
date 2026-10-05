@@ -196,12 +196,17 @@ mirror image: an ordinary failed push answer carries no ``detail`` at all, so a
 silent rejection carries none either.
 
 **The offline refill** (``/validate/offlinerefill``) answers every failure with
-an error response, HTTP ``400`` with the privacyIDEA error code ``905``, so a
-rejection is one too. A silent rejection says what a wrong refilltoken says,
-``Token is not an offline token or refill token is incorrect``, and like every
-other failed refill it is replaced by ``Failed offline token refill`` when
-``hide_specific_error_message_for_offline_refill`` is set. A configured message
-is shown either way, see :ref:`conditional_access_error_messages_masking`.
+an error response, so a rejection is one too: HTTP ``400`` with the privacyIDEA
+error code ``401``, the code a wrong OTP is answered with. A silent rejection
+says ``Failed offline token refill``, and like every other failed refill it is
+masked when ``hide_specific_error_message_for_offline_refill`` is set. A
+configured message is shown either way, see
+:ref:`conditional_access_error_messages_masking`.
+
+A rejection never carries the error code ``905``, which the privacyIDEA
+Credential Provider reads as the token no longer being marked for offline use:
+it would delete the WebAuthn/Passkey offline data of the machine, and the user
+would have to log in online again once the restriction is lifted.
 
 ``/validate/polltransaction`` is not gated - it reads the status of a challenge
 rather than attempting an authentication - and so never produces a rejection
