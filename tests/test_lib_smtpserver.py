@@ -149,10 +149,10 @@ class SMTPServerTestCase(MyTestCase):
         s = dict(identifier=identifier, server=server, port=port,
                  username=username, password=password, sender=sender,
                  tls=tls)
-        r = SMTPServer.test_email(s, recipient,
-                                  "Test Email from privacyIDEA",
-                                  "This is a test email from privacyIDEA. "
-                                  "The configuration %s is working." % identifier)
+        r = SMTPServer.send_email_with_config(s, recipient,
+                                              "Test Email from privacyIDEA",
+                                              "This is a test email from privacyIDEA. "
+                                              f"The configuration {identifier} is working.")
         self.assertTrue(r)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
@@ -161,8 +161,8 @@ class SMTPServerTestCase(MyTestCase):
 
         # Now with an already prepared MIME email
         msg = MIMEImage(binascii.a2b_base64(PNG_IMG))
-        r = SMTPServer.test_email(s, recipient, "Test Email with image",
-                                  msg)
+        r = SMTPServer.send_email_with_config(s, recipient, "Test Email with image",
+                                              msg)
         self.assertTrue(r)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
@@ -187,10 +187,10 @@ class SMTPServerTestCase(MyTestCase):
         s = dict(identifier=identifier, server=server, port=port,
                  username=username, password=password, sender=sender,
                  tls=tls)
-        r = SMTPServer.test_email(s, recipient,
-                                  "Test Email from privacyIDEA",
-                                  "This is a test email from privacyIDEA. "
-                                  "The configuration %s is working." % identifier)
+        r = SMTPServer.send_email_with_config(s, recipient,
+                                              "Test Email from privacyIDEA",
+                                              "This is a test email from privacyIDEA. "
+                                              f"The configuration {identifier} is working.")
         self.assertTrue(r)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
@@ -199,8 +199,8 @@ class SMTPServerTestCase(MyTestCase):
 
         # Now with an already prepared MIME email
         msg = MIMEImage(binascii.a2b_base64(PNG_IMG))
-        r = SMTPServer.test_email(s, recipient, "Test Email with image",
-                                  msg)
+        r = SMTPServer.send_email_with_config(s, recipient, "Test Email with image",
+                                              msg)
         self.assertTrue(r)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
@@ -232,8 +232,8 @@ class SMTPServerTestCase(MyTestCase):
             "<p>Hier ist ansonsten noch viel mehr Text, der zu "
             "Zeilenumbrüchen führt</p>\n",
             "html", "utf-8")
-        r = SMTPServer.test_email(s, "user@example.com",
-                                  "Regression CRLF", body)
+        r = SMTPServer.send_email_with_config(s, "user@example.com",
+                                              "Regression CRLF", body)
         self.assertTrue(r)
 
         sent = smtpmock.get_sent_message()

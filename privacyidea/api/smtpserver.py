@@ -218,10 +218,10 @@ def test():
              tls=tls, timeout=timeout, smime=smime, dont_send_on_error=dont_send_on_error,
              private_key=private_key, private_key_password=private_key_password,
              certificate=certificate)
-    r = SMTPServer.test_email(s, recipient,
-                              "Test Email from privacyIDEA",
-                              "This is a test email from privacyIDEA. "
-                              f"The configuration {identifier} is working.")
+    r = SMTPServer.send_email_with_config(s, recipient,
+                                          "Test Email from privacyIDEA",
+                                          "This is a test email from privacyIDEA. "
+                                          f"The configuration {identifier} is working.")
 
     g.audit_object.log({'success': r > 0,
                         'info': r})
