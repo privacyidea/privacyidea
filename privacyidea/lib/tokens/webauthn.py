@@ -286,7 +286,6 @@ class WebAuthnUser:
                  user_id,
                  user_name,
                  user_display_name,
-                 icon_url,
                  credential_id,
                  public_key,
                  sign_count,
@@ -300,8 +299,6 @@ class WebAuthnUser:
         :type user_name: basestring
         :param user_display_name: The human-readable name of the user.
         :type user_display_name: basestring
-        :param icon_url: An optional icon url.
-        :type icon_url: basestring
         :param credential_id: The ID of the credential.
         :type credential_id: basestring
         :param public_key: The credential public key.
@@ -324,7 +321,6 @@ class WebAuthnUser:
         self.user_id = user_id
         self.user_name = user_name
         self.user_display_name = user_display_name
-        self.icon_url = icon_url
         self.credential_id = credential_id
         self.public_key = public_key
         self.sign_count = sign_count
