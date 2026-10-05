@@ -197,6 +197,15 @@ This is done using :http:post:`/validate/offlinerefill`
 If that endpoints returns an error, it indicates that the token has been unmarked for offline use, or the refilltoken
 is out of sync. Therefore, clients managing WebAuthn/Passkey offline data should also call this endpoint regularly.
 
+For an HOTP token the client sends the last PIN and OTP value the user entered. Only the OTP value is verified, against
+the offline values issued to the client; the PIN is not checked and is only used to compute the new offline values. The
+refilltoken is therefore what authorizes a refill.
+
+A refill is subject to :ref:`conditional_access`: a lock of the token owner, a block of the source IP or a *deny*
+action refuses it before the refilltoken is checked, so no new offline values are issued and the refilltoken is not
+rotated. Every refill is recorded in the :ref:`authentication_log` as ``OFFLINE_REFILL_SUCCESS`` or
+``OFFLINE_REFILL_FAIL``.
+
 
 Managing in the WebUI
 .....................

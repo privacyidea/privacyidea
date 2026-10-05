@@ -195,6 +195,14 @@ from conditional access.
 mirror image: an ordinary failed push answer carries no ``detail`` at all, so a
 silent rejection carries none either.
 
+**The offline refill** (``/validate/offlinerefill``) answers every failure with
+an error response, HTTP ``400`` with the privacyIDEA error code ``905``, so a
+rejection is one too. A silent rejection says what a wrong refilltoken says,
+``Token is not an offline token or refill token is incorrect``, and like every
+other failed refill it is replaced by ``Failed offline token refill`` when
+``hide_specific_error_message_for_offline_refill`` is set. A configured message
+is shown either way, see :ref:`conditional_access_error_messages_masking`.
+
 ``/validate/polltransaction`` is not gated - it reads the status of a challenge
 rather than attempting an authentication - and so never produces a rejection
 message.
@@ -216,7 +224,9 @@ Interaction with the masking policies
 **A configured conditional access message is not masked.** Neither
 ``hide_specific_error_message`` (:ref:`authentication scope <authentication_policies>`)
 nor ``no_detail_on_fail`` (:ref:`authorization scope <authorization_policies>`)
-removes it, and neither does the combination of both.
+removes it, and neither does the combination of both. The same holds for
+``hide_specific_error_message_for_offline_refill`` (token scope) on the offline
+refill.
 
 Those two policies exist to suppress what privacyIDEA *volunteers by default* -
 which factor failed, why a token refused, which serial was tried. A conditional
