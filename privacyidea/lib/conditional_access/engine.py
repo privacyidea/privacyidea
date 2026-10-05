@@ -438,11 +438,11 @@ def _resolved(user: "User") -> bool:
     return bool(user and user.uid and user.resolver and user.realm)
 
 
-#: The resolver and realm a local database admin's lock row carries. They have neither, and the empty pair is
-#: what tells their row apart from a user's, whose three key columns are all set by definition (see
-#: :class:`LockSubject`).
-_INTERNAL_ADMIN_RESOLVER = ""
-_INTERNAL_ADMIN_REALM = ""
+#: The resolver and realm a local database admin's lock row carries. They have neither, so the row holds a value no
+#: resolver or realm name can take (see :func:`~privacyidea.lib.utils.sanity_name_check`). Not the empty string:
+#: Oracle stores that as NULL, which the primary key refuses.
+_INTERNAL_ADMIN_RESOLVER = "#"
+_INTERNAL_ADMIN_REALM = "#"
 
 
 @dataclass(frozen=True)
@@ -460,11 +460,12 @@ class LockSubject:
       :class:`~privacyidea.lib.conditional_access.authentication_log.AuthenticationLogVisibilityScope`).
 
     The *state* row keys both shapes on the same three columns (see
-    :class:`~privacyidea.models.conditional_access_policy.UserLockState`): a local admin is stored with an empty
-    resolver and realm and the login name as the uid. That can never be mistaken for a user, whose row is only
-    ever written for a principal with all three set - which is what :func:`_resolved` means, and what the manual
-    :func:`~privacyidea.lib.conditional_access.state.lock_user` enforces as well. So only the *log filters* differ
-    between the shapes, and they are the one thing this is asked for on the counting path.
+    :class:`~privacyidea.models.conditional_access_policy.UserLockState`): a local admin is stored with the
+    placeholder resolver and realm ``#`` and the login name as the uid. That can never be mistaken for a user,
+    whose row is only ever written for a principal resolved in a real resolver and realm - which is what
+    :func:`_resolved` means, and what the manual :func:`~privacyidea.lib.conditional_access.state.lock_user`
+    enforces as well. So only the *log filters* differ between the shapes, and they are the one thing this is
+    asked for on the counting path.
 
     Build one through :meth:`for_user` or :meth:`for_internal_admin` rather than by hand: each answers ``None``
     for a principal it cannot identify, which is how "nobody here to count or lock" reaches the callers.
@@ -475,7 +476,7 @@ class LockSubject:
     #: The login name: the identity itself for a local admin, and for a user the login the state row denormalizes
     #: so a management view can name them without a live resolver lookup.
     username: str | None = None
-    #: Which of the two shapes this is. Not derived from the empty resolver/realm, so what a row means never has
+    #: Which of the two shapes this is. Not derived from the placeholder resolver/realm, so what a row means never has
     #: to be inferred from what it lacks.
     internal_admin: bool = False
 

@@ -95,7 +95,7 @@ class ConditionalAccessStateApiTestCase(MyApiTestCase):
         account removed and recreated under a different one leaves behind. Written directly, there being no
         supported way to produce it: lock_internal_admin only ever writes the spelling the admin table holds.
         """
-        db.session.add(UserLockState(resolver="", uid=uid, realm="", username=uid,
+        db.session.add(UserLockState(resolver="#", uid=uid, realm="#", username=uid,
                                      user_role=str(AuthLogUserRole.ADMIN_INTERNAL)))
         db.session.commit()
 

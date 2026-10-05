@@ -125,9 +125,11 @@ class UserLockStateTestCase(MyTestCase):
             lock = lock_internal_admin("lockadmin", duration_seconds=600)
             self.assertFalse(lock["permanent"])
             self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), lock["user_role"])
+            # The login name is the key, completed by a placeholder for the resolver and realm they do not have -
+            # which is not what the lock reports: an admin has neither, so both are empty there.
+            self.assertEqual(("", ""), (lock["resolver"], lock["realm"]))
             row = db.session.query(UserLockState).one()
-            # The login name is the key; there is no resolver or realm to put in one.
-            self.assertEqual(("", "lockadmin", ""), (row.resolver, row.uid, row.realm))
+            self.assertEqual(("#", "lockadmin", "#"), (row.resolver, row.uid, row.realm))
             self.assertEqual("lockadmin", row.username)
             self.assertEqual(RestrictionCause.MANUAL, row.lock_cause)
         finally:
@@ -198,7 +200,7 @@ class UserLockStateTestCase(MyTestCase):
         create_db_admin("lockadmin", password="secret")
         try:
             lock_internal_admin("lockadmin")
-            db.session.add(UserLockState(resolver="", uid="LockAdmin", realm="", username="LockAdmin",
+            db.session.add(UserLockState(resolver="#", uid="LockAdmin", realm="#", username="LockAdmin",
                                          user_role=str(AuthLogUserRole.ADMIN_INTERNAL)))
             db.session.commit()
 

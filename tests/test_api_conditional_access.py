@@ -2124,21 +2124,21 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertEqual(self.user.resolver, entry["resolver"], entry)
 
     def test_a_rejected_admin_login_is_recorded_as_an_admin(self):
-        # An admin is refused by a source-IP block (never by a user lock: a local database admin has no
-        # (resolver, uid, realm) identity to lock). /auth files an admin under "administrator" rather than under
+        # An admin refused by a source-IP block. /auth files an admin under "administrator" rather than under
         # "user", so a rejected admin login has to be found by that same filter.
         db.session.add(BlockList(ip=BLOCKED_IP, block_expires_at=utc_now() + timedelta(seconds=600)))
         db.session.commit()
         self.assertEqual(401, self._auth("testadmin", "testpw", remote_addr=BLOCKED_IP).status_code)
         entry = self.find_most_recent_audit_entry(action="*/auth")
         self.assertEqual("testadmin", entry["administrator"], entry)
-        self.assertEqual("", entry["user"], entry)
+        # Blank rather than "": Oracle stores an empty string as NULL.
+        self.assertFalse(entry["user"], entry)
         self.assertEqual(AUTH_RESPONSE.REJECT, entry["authentication"], entry)
         # A local database admin lives in no realm, so the entry names none - the same blank the view writes for the
         # login it lets through. The gate logged the realm it had guessed from the login name before it knew this was
         # an admin at all, and the rejection has to undo that rather than leave it standing.
-        self.assertEqual("", entry["realm"], entry)
-        self.assertEqual("", entry["resolver"], entry)
+        self.assertFalse(entry["realm"], entry)
+        self.assertFalse(entry["resolver"], entry)
 
     def test_a_rejected_admin_realm_login_is_named_as_fully_as_an_accepted_one(self):
         # An admin who *is* a user - one in a superuser realm - keeps the identity columns an ordinary login gets,
@@ -2153,7 +2153,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
             self.app.config["SUPERUSER_REALM"] = []
         entry = self.find_most_recent_audit_entry(action="*/auth")
         self.assertEqual("cornelius", entry["administrator"], entry)
-        self.assertEqual("", entry["user"], entry)
+        self.assertFalse(entry["user"], entry)
         self.assertEqual(self.user.realm, entry["realm"], entry)
         self.assertEqual(self.user.resolver, entry["resolver"], entry)
 
@@ -2686,8 +2686,8 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         lock = self._admin_lock(self.testadmin)
         self.assertIsNotNone(lock, "the second failure did not lock the local admin")
         # Keyed by the login name, with no resolver or realm to key on, and saying which kind of principal it
-        # locks so nothing has to read that off the two columns it leaves empty.
-        self.assertEqual(("", self.testadmin, ""), (lock.resolver, lock.uid, lock.realm))
+        # locks so nothing has to read that off the two columns holding a placeholder.
+        self.assertEqual(("#", self.testadmin, "#"), (lock.resolver, lock.uid, lock.realm))
         self.assertEqual(self.testadmin, lock.username)
         self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), lock.user_role)
 

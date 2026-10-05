@@ -2368,7 +2368,7 @@ class PIManageConditionalAccessTestCase(CliTestCase):
             self.assertEqual(0, res.exit_code, res.output)
             self.assertIn("Locked local admin cliadmin", res.output, res)
             row = UserLockState.query.one()
-            self.assertEqual(("", "cliadmin", ""), (row.resolver, row.uid, row.realm))
+            self.assertEqual(("#", "cliadmin", "#"), (row.resolver, row.uid, row.realm))
 
             res = runner.invoke(pi_manage, ["conditionalaccess", "unlock-user", "cliadmin", "--admin"])
             self.assertEqual(0, res.exit_code, res.output)

@@ -120,14 +120,16 @@ def _state_condition(states: list[str] | None, now: datetime) -> ColumnElement[b
 
 
 def _locked_user_dict(row: UserLockState, now: datetime) -> dict:
+    # A local database admin has no resolver or realm; their row only holds a placeholder to complete its key.
+    internal_admin = row.user_role == str(AuthLogUserRole.ADMIN_INTERNAL)
     return {
-        "resolver": row.resolver,
+        "resolver": "" if internal_admin else row.resolver,
         "uid": row.uid,
-        "realm": row.realm,
+        "realm": "" if internal_admin else row.realm,
         # Denormalized login captured at lock time (survives resolver deletion).
         "username": row.username,
-        # Which kind of principal this row locks. A local database admin is keyed by login name alone, so their row
-        # carries an empty resolver and realm - this is what says the row means that, rather than a user whose
+        # Which kind of principal this row locks. A local database admin is keyed by login name alone, so their
+        # resolver and realm are reported empty - this is what says the row means that, rather than a user whose
         # realm has gone missing.
         "user_role": row.user_role,
         "permanent": row.lock_expires_at is None,
@@ -578,7 +580,7 @@ def _delete_internal_admin_locks(uids: list[str], visibility_scopes: list | None
     Delete the local-admin lock rows keyed on any of *uids*, within *visibility_scopes*. Shared by the two
     unlock entry points, which differ only in how they arrive at the names.
     """
-    # The empty resolver and realm a local admin's row carries are taken from the subject rather than spelled out
+    # The placeholder resolver and realm a local admin's row carries are taken from the subject rather than spelled out
     # again here, so the two stay one definition; only the uid differs between the names.
     subject = LockSubject.for_internal_admin(uids[0])
     conditions = [UserLockState.resolver == subject.resolver, UserLockState.realm == subject.realm,
