@@ -225,7 +225,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
     Passkeys can be used with cross-device sign-in, similar to how push token work
     """
 
-    def test_token_init_with_policies(self):
+    def test_01_token_init_with_policies(self):
         # Test if setting the policies alters the registration data correctly
         # Create a passkey token so excludeCredentials is not empty
         serial = self._enroll_static_passkey()
@@ -266,7 +266,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(serial_2)
 
-    def test_token_init_user_name_policy(self):
+    def test_01b_token_init_user_name_policy(self):
         # Without the policy, the user name and display name default to the login name
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
@@ -301,7 +301,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                  passkey_registration["user"]["displayName"])
         remove_token(serial)
 
-    def test_authenticate_no_uv(self):
+    def test_02_authenticate_no_uv(self):
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         self.assertIn("user_verification", passkey_challenge)
@@ -327,7 +327,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=transaction_id, endpoint='/validate/check')
         remove_token(serial)
 
-    def test_authenticate_wrong_uv(self):
+    def test_03_authenticate_wrong_uv(self):
         """
         Wrong UV meaning user verification is required but the authenticator data does not contain the UV flag
         """
@@ -362,7 +362,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=transaction_id, endpoint='/validate/check')
         remove_token(serial)
 
-    def test_authenticate_with_uv(self):
+    def test_04_authenticate_with_uv(self):
         serial = self._enroll_static_passkey()
         self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
                                      action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
@@ -391,7 +391,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def test_trigger_with_pin(self):
+    def test_05_trigger_with_pin(self):
         """
         By default, passkeys are not triggered using the PIN, because the flow of authentication is very different
         from our other token types. However, it is possible to enable this behavior with the
@@ -491,7 +491,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def test_validate_check_wrong_serial(self):
+    def test_06_validate_check_wrong_serial(self):
         """
         Challenges triggered via /validate/check should be bound to a specific serial.
         Trying to answer the challenge with a token with a different serial should fail.
@@ -535,7 +535,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=transaction_id, endpoint='/validate/check')
         remove_token(token.token.serial)
 
-    def test_trigger_challenge(self):
+    def test_07_trigger_challenge(self):
         """
         Test if the challenge is returned by /validate/triggerchallenge. The response would be sent to
         /validate/check and that is already tested. Requires the passkey_trigger_with_pin policy to be set.
@@ -601,7 +601,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial1)
         remove_token(serial2)
 
-    def test_offline(self):
+    def test_08_offline(self):
         serial = self._enroll_static_passkey()
         data = {"serial": serial, "machineid": 0, "application": "offline", "resolver": ""}
         with self.app.test_request_context('/machine/token', method='POST', data=data, headers=self.pk_headers):
@@ -705,7 +705,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertFalse(offline["response"])
 
         # Disable offline for the token
-        with self.app.test_request_context(f'/machine/token/{serial}/offline/1',
+        with self.app.test_request_context(f'/machine/token/{serial}/offline/{machine_token_id}',
                                            method='DELETE',
                                            headers=self.pk_headers):
             res = self.app.full_dispatch_request()
@@ -733,7 +733,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(905, error["code"])
         remove_token(serial)
 
-    def test_enroll_passkey_via_multichallenge(self):
+    def test_09_enroll_passkey_via_multichallenge(self):
         spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
         action = "enroll_via_multichallenge=PASSKEY, enroll_via_multichallenge_text=enrollVia multichallenge test text"
         self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH, action=action)
@@ -886,7 +886,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(spass_token.get_serial())
         remove_token(passkey_serial)
 
-    def test_auth_success(self):
+    def test_10_auth_success(self):
         """
         To use a passkey with /auth, the challenge is initiated via /validate/initialize and
         then answered via /validate/check.
@@ -932,7 +932,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=transaction_id, endpoint='/auth')
         remove_token(serial)
 
-    def test_auth_fail_uv(self):
+    def test_11_auth_fail_uv(self):
         """
         Test an authentication with a wrong response and without user verification.
         """
@@ -956,7 +956,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=transaction_id, endpoint='/auth')
         remove_token(serial)
 
-    def test_auth_fail_signature(self):
+    def test_12_auth_fail_signature(self):
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
         data = self.authentication_response_uv
@@ -977,7 +977,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=transaction_id, endpoint='/auth')
         remove_token(serial)
 
-    def test_uv_in_challenge_data(self):
+    def test_13_uv_in_challenge_data(self):
         """
         The user_verification requirement is set in the challenge data. When a challenge is triggered, the value of the
         policy at that moment is stored in the challenge data and used for the authentication.
@@ -1006,7 +1006,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=transaction_id, endpoint='/auth')
         remove_token(serial)
 
-    def test_enroll_via_multichallenge_after_passkey(self):
+    def test_14_enroll_via_multichallenge_after_passkey(self):
         """
         Verify that enroll_via_multichallenge works after a passkey authentication.
         """
@@ -1046,7 +1046,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(evm_serial)
 
-    def test_cancel_enroll_via_multichallenge_hotp(self):
+    def test_15_cancel_enroll_via_multichallenge_hotp(self):
         """
         Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
         a successful authentication.
@@ -1113,7 +1113,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=enroll_transaction_id, endpoint='/validate/check')
         remove_token(serial)
 
-    def test_cancel_enroll_via_multichallenge_smartphone(self):
+    def test_16_cancel_enroll_via_multichallenge_smartphone(self):
         """
         Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
         a successful authentication.
@@ -1181,7 +1181,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def test_cancel_enroll_via_multichallenge_not_allowed(self):
+    def test_17_cancel_enroll_via_multichallenge_not_allowed(self):
         """
         Trying to cancel an enrollment via multichallenge that is not cancellable will result in a REJECT just like
         an authentication with a wrong OTP.
@@ -1245,7 +1245,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(evm_serial)  # the token still exists because the enrollment was not cancelled
 
-    def test_last_auth_policy(self):
+    def test_18_last_auth_policy(self):
         serial = self._enroll_static_passkey()
         self.set_policy_with_cleanup("last_auth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=1d")
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
@@ -1346,7 +1346,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def test_disabled_passkey(self):
+    def test_19_disabled_passkey(self):
         """
         Disabled passkeys should not be usable for authentication
         """
@@ -1402,7 +1402,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def test_disabled_passkey_auth(self):
+    def test_20_disabled_passkey_auth(self):
         """
         Disabled passkeys should not be usable for authentication
         """
@@ -1452,7 +1452,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def test_disabled_token_type(self):
+    def test_21_disabled_token_type(self):
         """
         The 'disable_token_type' policy will disable passkey, both for initialize and check.
         """
@@ -1504,7 +1504,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def test_auth_fail_missing_challenge(self):
+    def test_22_auth_fail_missing_challenge(self):
         """
         On /auth, answering with a transaction_id that has no challenge makes verification
         raise (challenge not found), which propagates as a failure; this must still log MFA_FAIL.
@@ -1529,7 +1529,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         transaction_id=transaction_id, endpoint='/auth')
         remove_token(serial)
 
-    def test_reset_all_user_tokens(self):
+    def test_22_reset_all_user_tokens(self):
         """
         A successful passkey authentication must reset the failcounter of all the
         user's tokens when the reset_all_user_tokens policy is set. Passkey auth
@@ -1563,7 +1563,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(other_token.get_serial())
 
-    def test_reset_all_user_tokens_not_set(self):
+    def test_23_reset_all_user_tokens_not_set(self):
         """
         Without the reset_all_user_tokens policy, a successful passkey
         authentication must not touch the failcounter of the user's other tokens.
@@ -1591,7 +1591,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(other_token.get_serial())
 
-    def test_auth_reset_all_user_tokens(self):
+    def test_24_auth_reset_all_user_tokens(self):
         """
         A successful passkey login via /auth must reset the failcounter of all
         the user's tokens when the reset_all_user_tokens policy is set. The /auth
@@ -1625,7 +1625,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(other_token.get_serial())
 
-    def test_auth_reset_all_user_tokens_not_set(self):
+    def test_25_auth_reset_all_user_tokens_not_set(self):
         """
         Without the reset_all_user_tokens policy, a successful passkey login via
         /auth must not touch the failcounter of the user's other tokens.
@@ -1653,7 +1653,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(other_token.get_serial())
 
-    def test_authenticate_restrict_authenticator_device_type_scoped_to_realm(self):
+    def test_26_authenticate_restrict_authenticator_device_type_scoped_to_realm(self):
         """
         A SCOPE.AUTH passkey_allowed_authenticator_device_types policy scoped to the token owner's realm must
         still be enforced on the usernameless/discoverable login path, where the request never contains a user
@@ -1681,7 +1681,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def test_disabled_token_type_scoped_to_realm(self):
+    def test_27_disabled_token_type_scoped_to_realm(self):
         """
         A SCOPE.AUTH disabled_token_types policy scoped to the token owner's realm must still be enforced on
         the usernameless/discoverable login path, where the request never contains a user parameter and the
@@ -1711,7 +1711,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def test_locked_owner_rejected_before_token_work(self):
+    def test_28_locked_owner_rejected_before_token_work(self):
         """A locked passkey owner is rejected at /validate/check by the
         conditional-access pre-check. The request is username-less, so the owner is
         resolved from the credential_id before any token work runs — closing the
@@ -1740,9 +1740,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self._clear()
             remove_token(serial)
 
-    def test_locked_owner_rejected_at_auth_before_token_work(self):
+    def test_28a_locked_owner_rejected_at_auth_before_token_work(self):
         """
-        The /auth half of test_locked_owner_rejected_before_token_work. The two endpoints resolve a username-less
+        The /auth half of test_28. The two endpoints resolve a username-less
         passkey request by different code: /validate/check through the gate's own identity resolver, /auth in
         before_request, which has already put the owner on request.User by the time the login gate runs. A lock
         enforced on one therefore proves nothing about the other, and this is the endpoint a browser actually
@@ -1768,11 +1768,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self._clear()
             remove_token(serial)
 
-    def test_restrict_authenticator_device_type_scoped_to_realm_on_auth(self):
+    def test_29_restrict_authenticator_device_type_scoped_to_realm_on_auth(self):
         """
-        The same realm-scoped SCOPE.AUTH restriction as
-        test_authenticate_restrict_authenticator_device_type_scoped_to_realm, but for the WebUI login
-        endpoint. /auth
+        The same realm-scoped SCOPE.AUTH restriction as test_26, but for the WebUI login endpoint. /auth
         resolves the credential_id to its owner in before_request, which runs before the prepolicies, so
         unlike /validate/check it needs no second policy evaluation. If that ordering ever changed, the
         restriction would silently downgrade to matching only unscoped policies.
@@ -1795,10 +1793,9 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
         remove_token(serial)
 
-    def test_disabled_token_type_on_auth(self):
+    def test_30_disabled_token_type_on_auth(self):
         """
-        The same disabled_token_types policy as test_disabled_token_type, at the WebUI login endpoint. /auth
-        refuses the answer
+        The same disabled_token_types policy as test_21, at the WebUI login endpoint. /auth refuses the answer
         before any token work, and the row says which type was turned off - the only place an admin can see why a
         login that never named a user failed.
         """
@@ -1829,7 +1826,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
 
 
-    def test_auth_requires_uv_for_initialize_challenge(self):
+    def test_31_auth_requires_uv_for_initialize_challenge(self):
         """
         A challenge from /validate/initialize is answered with the passkey alone. Without any policy, /auth refuses
         an assertion without user verification, while /validate/check accepts it, because there the policy default
@@ -1858,7 +1855,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(AUTH_RESPONSE.ACCEPT, res.json["result"]["authentication"], res.json)
         remove_token(serial)
 
-    def test_validate_check_rejects_passkey_of_other_user(self):
+    def test_32_validate_check_rejects_passkey_of_other_user(self):
         """
         A request that names a user is rejected when the passkey belongs to someone else. The failure is logged for
         the named user. Naming the owner of the passkey succeeds.
@@ -1901,7 +1898,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(self.user.login, res.json["detail"]["username"], res.json)
         remove_token(serial)
 
-    def test_auth_rejects_passkey_of_other_user(self):
+    def test_33_auth_rejects_passkey_of_other_user(self):
         """
         /auth with a username only accepts a passkey of that user; without a username, the owner is logged in.
         """
@@ -1928,7 +1925,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
         remove_token(serial)
 
-    def test_auth_requires_uv_for_challenge_bound_to_passkey(self):
+    def test_34_auth_requires_uv_for_challenge_bound_to_passkey(self):
         """
         A passkey answering a challenge that was triggered with the user and PIN also has to verify the user at /auth.
         """
@@ -1951,7 +1948,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(self.user.login, res.json["result"]["value"]["username"], res.json)
         remove_token(serial)
 
-    def test_locked_owner_rejected_when_request_has_only_a_realm(self):
+    def test_35_locked_owner_rejected_when_request_has_only_a_realm(self):
         """
         A username-less passkey request that carries a realm is gated on the owner of the passkey, not on a user
         without a login name.
@@ -1974,7 +1971,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self._clear()
             remove_token(serial)
 
-    def test_validate_check_rejects_user_that_does_not_resolve(self):
+    def test_36_validate_check_rejects_user_that_does_not_resolve(self):
         """
         A request that names a user who cannot be found, for example the user label of the passkey instead of the
         login name, is rejected. The passkey owner is not authenticated in place of the named user.
@@ -1995,7 +1992,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                   transaction_id=transaction_id)
         remove_token(serial)
 
-    def test_auth_with_username_of_other_realm(self):
+    def test_37_auth_with_username_of_other_realm(self):
         """
         /auth builds the named user from the username and the realm parameter, the way the WebUI sends them. For a user
         outside the default realm, the passkey only belongs to the named user when the realm is given.
@@ -2020,7 +2017,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(self.realm2, res.json["result"]["value"]["realm"], res.json)
         remove_token(serial)
 
-    def test_auth_login_mode(self):
+    def test_38_auth_login_mode(self):
         """
         login_mode=disable also blocks the passkey login. The other login modes only decide how a password is
         checked, so they do not affect it.
@@ -2083,7 +2080,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self.assertEqual(rollout_state, token.token.rollout_state)
         self.assertEqual(active, token.is_active())
 
-    def test_registration_for_enrolled_passkey(self):
+    def test_38_registration_for_enrolled_passkey(self):
         """
         An enrolled passkey does not take another registration at /validate/check and stays as it is.
         """
@@ -2106,7 +2103,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
         remove_token(serial)
 
-    def test_replayed_registration(self):
+    def test_39_replayed_registration(self):
         """
         Replaying a genuine registration response after the enrollment is completed is rejected: the token is
         enrolled and its enrollment challenge is gone.
@@ -2123,7 +2120,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
         remove_token(serial)
 
-    def test_registration_data_needs_the_challenge_of_the_token(self):
+    def test_40_registration_data_needs_the_challenge_of_the_token(self):
         """
         Registration data is only accepted with the enrollment challenge of the token it names: neither another
         transaction id for a pending passkey nor the pending challenge of another passkey.
@@ -2148,7 +2145,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(enrolled_serial)
         remove_token(pending_serial)
 
-    def test_enroll_via_multichallenge_needs_enrolled_passkey(self):
+    def test_41_enroll_via_multichallenge_needs_enrolled_passkey(self):
         """
         Answering the enroll_via_multichallenge challenge only logs the user in once the passkey is enrolled.
         """
@@ -2185,7 +2182,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         remove_token(serial)
         remove_token(spass_token.get_serial())
 
-    def test_token_init_enrollment_is_not_completed_by_validate_check(self):
+    def test_42_token_init_enrollment_is_not_completed_by_validate_check(self):
         """
         A passkey enrollment started at /token/init is only completed at /token/init. The registration sent to
         /validate/check with the serial and the transaction id of that enrollment is rejected and does not log the user
@@ -2205,7 +2202,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self._assert_persisted_state(serial, RolloutState.ENROLLED, True)
         remove_token(serial)
 
-    def test_auth_login_mode_of_the_named_user(self):
+    def test_43_auth_login_mode_of_the_named_user(self):
         """
         login_mode is decided for the user the passkey login is for: the named user, or the token owner if no user is
         named. The named user may be another owner of the token than the first one.
@@ -2234,7 +2231,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                     self.assertEqual(status_code, res.status_code, res.json)
         remove_token(serial)
 
-    def test_auth_login_mode_policies_of_same_priority(self):
+    def test_44_auth_login_mode_policies_of_same_priority(self):
         """
         Of the login_mode policies of the highest priority, the passkey login only asks whether one of them disables
         the login. Policies that disagree on the other modes do not refuse it.
@@ -2289,7 +2286,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 else:
                     self.assertNotIn(token_challenges[0]["challenge"], (CENSORED, None, ""), token_challenges)
 
-    def test_challenge_listing_censors_registration_nonce(self):
+    def test_45_challenge_listing_censors_registration_nonce(self):
         """
         The challenge listing censors the nonce of a passkey that waits for its registration, whether the enrollment
         was started with enroll_via_multichallenge or at /token/init. The nonce of an authentication challenge is
@@ -2320,7 +2317,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         self._assert_listed_nonces(enrolled_serial, censored=False, user=self.user)
         remove_token(enrolled_serial)
 
-    def test_validate_check_unknown_serial_is_logged(self):
+    def test_46_validate_check_unknown_serial_is_logged(self):
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -2337,7 +2334,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                         endpoint='/validate/check')
         remove_token(serial)
 
-    def test_validate_check_missing_transaction_id_is_not_logged(self):
+    def test_47_validate_check_missing_transaction_id_is_not_logged(self):
         """
         A passkey request without a transaction_id is malformed. It is rejected without an authentication-log row, so
         it does not count against the user it names.
@@ -2352,7 +2349,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         assert_authentication_log([])
         remove_token(serial)
 
-    def test_enroll_via_multichallenge_failure_is_logged(self):
+    def test_48_enroll_via_multichallenge_failure_is_logged(self):
         spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
         self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH,
                                      action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=PASSKEY")
@@ -2404,7 +2401,7 @@ class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     class Config(TestingConfig):
         WEBUI_PASSKEY_LOGIN_ENABLED = False
 
-    def test_webui_passkey_disabled(self):
+    def test_01_webui_passkey_disabled(self):
         self.assertFalse(get_app_config_value("WEBUI_PASSKEY_LOGIN_ENABLED", True))
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
@@ -2427,7 +2424,7 @@ class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
                                         reason=AuthEventReason.WEBUI_PASSKEY_LOGIN_DISABLED)
         remove_token(serial)
 
-    def test_challenge_bound_to_passkey_not_affected(self):
+    def test_02_challenge_bound_to_passkey_not_affected(self):
         """
         The switch covers the login without a username. A passkey answering a challenge that was triggered with the
         user and PIN can still log in.

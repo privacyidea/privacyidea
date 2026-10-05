@@ -2281,8 +2281,8 @@ class PollTransactionTestCase(ConditionalAccessApiTestCase):
         self.assertEqual(logs_before, len(get_authentication_logs()))
 
     # The /ttype/push authentication-path pre-check (locked owner / blocked IP rejected, enrollment not gated) is
-    # covered end-to-end with real signed push answers in tests/test_api_push_validate.py, since the pre-check lives
-    # in the push token's _api_endpoint_post auth branch.
+    # covered end-to-end with real signed push answers in tests/test_api_push_validate.py (test_18e / test_18f),
+    # since the pre-check lives in the push token's _api_endpoint_post auth branch.
 
 
 class SuspendedApiKeyTestCase(ConditionalAccessApiTestCase):
