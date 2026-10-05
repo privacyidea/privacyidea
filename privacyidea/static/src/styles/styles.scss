@@ -1011,7 +1011,7 @@ $corner-radii: (
 }
 
 .mat-pseudo-checkbox.mat-pseudo-checkbox-checked::after {
-  color: white !important;
+  color: var(--mat-sys-on-primary) !important;
 }
 
 .mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {

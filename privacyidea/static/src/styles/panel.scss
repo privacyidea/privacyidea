@@ -62,7 +62,7 @@ mat-panel-title.mat-expansion-panel-header-title .mat-icon {
 }
 
 .type-option .mat-pseudo-checkbox.mat-pseudo-checkbox-checked::after {
-  color: white !important;
+  color: var(--mat-sys-on-primary) !important;
 }
 
 .type-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
@@ -74,7 +74,7 @@ mat-panel-title.mat-expansion-panel-header-title .mat-icon {
 }
 
 .type-option.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
-  color: white !important;
+  color: var(--mat-sys-on-primary) !important;
 }
 
 .type-option.mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
