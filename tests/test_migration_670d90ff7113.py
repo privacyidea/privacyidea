@@ -1,7 +1,7 @@
 """
 Data transformation test for migration 670d90ff7113
 
-upgrade()   — the lock of a local admin moves from the empty resolver and realm to the placeholder '#'
+upgrade()   — the lock of a local admin moves from the empty resolver and realm to the placeholder '~internal'
 downgrade() — it moves back, except on Oracle, which cannot store the empty key and drops those locks instead
 """
 
@@ -75,7 +75,7 @@ class TestMigration670d90ff7113(MigrationTestBase):
 
         self._upgrade()
 
-        assert self._lock_keys() == {("#", "admin", "#"), USER_LOCK}
+        assert self._lock_keys() == {("~internal", "admin", "~internal"), USER_LOCK}
 
     def test_upgrade_leaves_a_user_lock_alone(self, flask_app):
         self._upgrade_to_parent([self._user_lock_row()])
@@ -86,7 +86,7 @@ class TestMigration670d90ff7113(MigrationTestBase):
 
     @pytest.mark.skipif(is_oracle(), reason="Oracle cannot store the empty key the downgrade restores")
     def test_downgrade_moves_a_local_admin_lock_back_to_the_empty_key(self, flask_app):
-        self._upgrade_with([self._lock_row("#", "admin", "#", "admin-internal"), self._user_lock_row()])
+        self._upgrade_with([self._lock_row("~internal", "admin", "~internal", "admin-internal"), self._user_lock_row()])
 
         self._downgrade()
 
@@ -94,7 +94,7 @@ class TestMigration670d90ff7113(MigrationTestBase):
 
     @pytest.mark.skipif(not is_oracle(), reason="Only Oracle drops the local admin locks on downgrade")
     def test_downgrade_drops_a_local_admin_lock_on_oracle(self, flask_app):
-        self._upgrade_with([self._lock_row("#", "admin", "#", "admin-internal"), self._user_lock_row()])
+        self._upgrade_with([self._lock_row("~internal", "admin", "~internal", "admin-internal"), self._user_lock_row()])
 
         self._downgrade()
 

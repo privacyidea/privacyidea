@@ -297,9 +297,9 @@ class UserLockState(MethodsMixin, db.Model):
     :func:`~privacyidea.models.utils.utc_now`).
 
     A **local database admin** is locked here too, and has none of those three values - only a login name. Their
-    row carries the login name as the ``uid`` with the placeholder ``#`` as ``resolver`` and ``realm``, which cannot
-    collide with a user's: no resolver or realm can be named ``#``. ``user_role`` says which of the two
-    a row is, so nothing has to infer it from what the row lacks; see
+    row carries the login name as the ``uid`` with the placeholder ``~internal`` as ``resolver`` and ``realm``,
+    which cannot collide with a user's: no resolver or realm can be named ``~internal``. ``user_role`` says which
+    of the two a row is, so nothing has to infer it from what the row lacks; see
     :class:`~privacyidea.lib.conditional_access.engine.LockSubject`, which is what builds both shapes.
 
     The row records the lock itself, not which policy produced it: what a stage

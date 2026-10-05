@@ -440,9 +440,10 @@ def _resolved(user: "User") -> bool:
 
 #: The resolver and realm a local database admin's lock row carries. They have neither, so the row holds a value no
 #: resolver or realm name can take (see :func:`~privacyidea.lib.utils.sanity_name_check`). Not the empty string:
-#: Oracle stores that as NULL, which the primary key refuses.
-_INTERNAL_ADMIN_RESOLVER = "#"
-_INTERNAL_ADMIN_REALM = "#"
+#: Oracle stores that as NULL, which the primary key refuses. "~" has no meaning anywhere privacyIDEA matches or
+#: splits a name and never needs encoding in a URL; "internal" is the word the row's ``user_role`` already uses.
+_INTERNAL_ADMIN_RESOLVER = "~internal"
+_INTERNAL_ADMIN_REALM = "~internal"
 
 
 @dataclass(frozen=True)
@@ -461,7 +462,7 @@ class LockSubject:
 
     The *state* row keys both shapes on the same three columns (see
     :class:`~privacyidea.models.conditional_access_policy.UserLockState`): a local admin is stored with the
-    placeholder resolver and realm ``#`` and the login name as the uid. That can never be mistaken for a user,
+    placeholder resolver and realm ``~internal`` and the login name as the uid. That can never be mistaken for a user,
     whose row is only ever written for a principal resolved in a real resolver and realm - which is what
     :func:`_resolved` means, and what the manual :func:`~privacyidea.lib.conditional_access.state.lock_user`
     enforces as well. So only the *log filters* differ between the shapes, and they are the one thing this is

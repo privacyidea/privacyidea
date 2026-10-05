@@ -2687,7 +2687,7 @@ class ConditionalAccessAuthTestCase(MyApiTestCase):
         self.assertIsNotNone(lock, "the second failure did not lock the local admin")
         # Keyed by the login name, with no resolver or realm to key on, and saying which kind of principal it
         # locks so nothing has to read that off the two columns holding a placeholder.
-        self.assertEqual(("#", self.testadmin, "#"), (lock.resolver, lock.uid, lock.realm))
+        self.assertEqual(("~internal", self.testadmin, "~internal"), (lock.resolver, lock.uid, lock.realm))
         self.assertEqual(self.testadmin, lock.username)
         self.assertEqual(str(AuthLogUserRole.ADMIN_INTERNAL), lock.user_role)
 
