@@ -1,5 +1,14 @@
 # Update Notes
 
+## Update from 3.14 to 3.15
+
+* **The job queue has been removed.** privacyIDEA always sends emails directly. Its worker `privacyidea-queue-huey`
+  could not start since privacyIDEA 3.11, so emails of an SMTP server with *Send mail from job queue* enabled were
+  queued but never sent. They are delivered again now. Remove `PI_JOB_QUEUE_CLASS` and every other `PI_JOB_QUEUE_*`
+  setting from your `pi.cfg`, they are ignored, and remove any service that runs `privacyidea-queue-huey`. Emails that
+  are still waiting in Redis are not sent. The schema update (`pi-manage setup update_db`) removes the `enqueue_job`
+  column from the `smtpserver` table, and an imported configuration that still contains the setting is accepted.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

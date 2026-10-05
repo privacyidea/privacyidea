@@ -45,7 +45,6 @@ from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.passwordreset import is_password_reset
 from privacyidea.lib.policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from privacyidea.lib.policy import PolicyClass, SCOPE, Match, REMOTE_USER
-from privacyidea.lib.queue import has_job_queue
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.subscriptions import subscription_status
 from privacyidea.lib.utils import get_client_ip, get_version_number, get_plugin_info_from_useragent
@@ -285,7 +284,6 @@ def get_render_context():
         'translation_warning': translation_warning,
         'password_reset': password_reset,
         'hsm_ready': hsm_ready,
-        'has_job_queue': str(has_job_queue()),
         'customization': customization,
         'custom_css': custom_css,
         'customization_menu_file': customization_menu_file,
