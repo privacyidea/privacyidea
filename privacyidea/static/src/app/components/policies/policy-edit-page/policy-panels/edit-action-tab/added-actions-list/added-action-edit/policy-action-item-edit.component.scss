@@ -38,6 +38,17 @@
   color: var(--mat-sys-on-surface-variant);
 }
 
+// The value of a boolean action that does not enable it, in the colour the policy table marks it with
+.detail-warning {
+  align-self: flex-start;
+  padding: 2px 4px;
+  border-radius: var(--border-radius);
+  background-color: color-mix(in srgb, var(--yellow-light), transparent 40%);
+  color: var(--mat-sys-on-surface);
+  font-weight: normal;
+  font-size: 0.75rem;
+}
+
 .detail-input {
   flex: 0 0 var(--input-width-l);
   display: flex;

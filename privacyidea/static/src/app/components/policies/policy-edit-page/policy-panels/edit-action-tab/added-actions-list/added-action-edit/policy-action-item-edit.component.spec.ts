@@ -125,4 +125,41 @@ describe("PolicyActionItemEditComponent", () => {
     deleteBtn.nativeElement.click();
     expect(spy).toHaveBeenCalled();
   });
+
+  describe("boolean action with a value that does not enable it", () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput("action", { name: "triggerchallenge", value: "hotp" });
+      fixture.componentRef.setInput("actionDetail", { type: "bool", desc: "Trigger a challenge" });
+      fixture.detectChanges();
+    });
+
+    it("shows the value and what saving the policy does", () => {
+      expect(component.valueDisablesAction()).toBe(true);
+      const warning = fixture.debugElement.query(By.css(".detail-warning")).nativeElement as HTMLElement;
+      expect(warning.textContent).toContain('"hotp"');
+    });
+
+    it("keeps the action enabled by setting its value to true", () => {
+      const spy = jest.spyOn(component.updateAction, "emit");
+      const keepButton = fixture.debugElement.query(By.css(".detail-value button")).nativeElement as HTMLElement;
+      keepButton.click();
+      expect(spy).toHaveBeenCalledWith(true);
+    });
+
+    it.each([true, "true", "TRUE", "1", ""])("shows nothing for the enabling value %p", (value) => {
+      fixture.componentRef.setInput("action", { name: "triggerchallenge", value });
+      fixture.detectChanges();
+      expect(component.valueDisablesAction()).toBe(false);
+      expect(fixture.debugElement.query(By.css(".detail-warning"))).toBeNull();
+      expect(fixture.debugElement.query(By.css(".detail-value button"))).toBeNull();
+    });
+
+    it("shows nothing for a string action with the value False", () => {
+      fixture.componentRef.setInput("action", { name: "container_ssl_verify", value: "False" });
+      fixture.componentRef.setInput("actionDetail", { type: "str", desc: "", value: ["True", "False"] });
+      fixture.detectChanges();
+      expect(component.valueDisablesAction()).toBe(false);
+      expect(fixture.debugElement.query(By.css(".detail-warning"))).toBeNull();
+    });
+  });
 });

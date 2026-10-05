@@ -30,6 +30,7 @@ import { SelectorButtonsComponent } from "@components/policies/policy-edit-page/
 import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyActionDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { boolActionValueEnablesAction } from "@utils/policy-action.utils";
 import {
   labeledOptions,
   POLICY_VOCABULARY_ACTIONS,
@@ -95,6 +96,17 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
 
   isBooleanAction(): boolean {
     return this.actionDetail()?.type === "bool";
+  }
+
+  /**
+   * A boolean action with a value that does not enable it. It still acts as enabled, but saving the policy removes it.
+   */
+  readonly valueDisablesAction = computed<boolean>(
+    () => this.isBooleanAction() && !boolActionValueEnablesAction(this.action().value)
+  );
+
+  keepActionEnabled(): void {
+    this.updateAction.emit(true as T);
   }
 
   handleRemoveAction() {

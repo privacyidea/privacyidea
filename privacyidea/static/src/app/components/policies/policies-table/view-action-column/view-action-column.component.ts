@@ -18,15 +18,17 @@
  **/
 
 import { Component, computed, inject, input, output } from "@angular/core";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
 import { PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { actionNameWithoutExclusion, actionValueIsInvalid, isExcludedActionName } from "@utils/policy-action.utils";
 import { POLICY_VOCABULARY_ACTIONS, valueDisplayLabel } from "@utils/value-label.utils";
 
 @Component({
   selector: "app-view-action-column",
   standalone: true,
-  imports: [FilterValueButtonComponent, HighlightPipe],
+  imports: [FilterValueButtonComponent, HighlightPipe, MatTooltipModule],
   templateUrl: "./view-action-column.component.html",
   styleUrl: "./view-action-column.component.scss"
 })
@@ -51,12 +53,20 @@ export class ViewActionColumnComponent {
    */
   readonly actionsList = computed(() => {
     const list = Object.entries(this.actions()).map(([name, value]) => {
-      const detail = this.policyService.getDetailsOfAction(name, this.scope());
+      const isExcluded = isExcludedActionName(name);
+      const detail = this.policyService.getDetailsOfAction(actionNameWithoutExclusion(name), this.scope());
+      const isBoolean = detail?.type === "bool";
+      // An invalid value is shown and marked, also the one of a boolean action: it does not enable the action, which
+      // still acts as enabled until saving the policy in the WebUI removes it.
+      const invalidValue = !isExcluded && !!detail && actionValueIsInvalid(detail, value);
       return {
         name,
         value,
         displayValue: valueDisplayLabel(value, detail?.value, { vocabulary: POLICY_VOCABULARY_ACTIONS.has(name) }),
-        isBoolean: detail?.type === "bool"
+        isBoolean,
+        invalidValue,
+        // The value of an excluded action has no effect
+        showValue: !isExcluded && (!isBoolean || invalidValue)
       };
     });
 
@@ -69,7 +79,7 @@ export class ViewActionColumnComponent {
     // display label it may be mapped to (e.g. "1" shown as "On").
     const matchesTerm = (entry: (typeof list)[number]): boolean => {
       if (terms.some((term) => entry.name.toLowerCase().includes(term))) return true;
-      if (entry.isBoolean) return false;
+      if (!entry.showValue) return false;
       const haystack = [String(entry.value).toLowerCase(), entry.displayValue.toLowerCase()];
       return terms.some((term) => haystack.some((text) => text.includes(term)));
     };

@@ -30,10 +30,18 @@
           [value]="action.name"
           (filterValue)="filterAction.emit($event)" />
       </span>
-      @if (!action.isBoolean) {
-        <span
-          class="action-value"
-          [innerHTML]="action.displayValue | highlight: highlightTerms()"></span>
+      @if (action.showValue) {
+        <span class="action-value">
+          @if (action.invalidValue) {
+            <span
+              class="invalid-value"
+              i18n-matTooltip="@@policy.invalidActionValue"
+              matTooltip="This value is invalid. Edit the policy to correct it."
+              [innerHTML]="action.displayValue | highlight: highlightTerms()"></span>
+          } @else {
+            <span [innerHTML]="action.displayValue | highlight: highlightTerms()"></span>
+          }
+        </span>
       }
     </div>
   }
