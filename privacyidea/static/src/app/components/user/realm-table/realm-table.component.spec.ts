@@ -209,6 +209,26 @@ describe("RealmTableComponent", () => {
     expect(row.resolversText).toContain("resNode sql Node 1 5");
   });
 
+  it("realmRows should list the resolvers of a node by priority, then by name", () => {
+    const realms: Realms = {
+      realmA: {
+        default: false,
+        resolver: [
+          { name: "resNoPrio", type: "ldap", node: "", priority: null },
+          { name: "resB", type: "sql", node: "", priority: 2 },
+          { name: "resA", type: "sql", node: "", priority: 2 },
+          { name: "resFirst", type: "ldap", node: "", priority: 1 }
+        ]
+      } as Realm
+    };
+
+    const ref = realmService.realmResource as unknown as MockHttpResourceRef<MockPiResponse<Realms> | undefined>;
+    ref.set(MockPiResponse.fromValue<Realms>(realms));
+
+    const names = component.realmRows()[0].resolverGroups[0].resolvers.map((r) => r.name);
+    expect(names).toEqual(["resFirst", "resA", "resB", "resNoPrio"]);
+  });
+
   it("realmRows should filter by selected node", () => {
     const realms: Realms = {
       realmA: {

@@ -66,6 +66,16 @@ export interface RealmResolver {
   priority: number | null;
 }
 
+/**
+ * Orders resolvers the way the backend searches them (get_ordered_resolvers): lowest priority number first,
+ * a missing priority counts as 1000, equal priorities by name.
+ */
+export function compareResolverPriority(a: RealmResolver, b: RealmResolver): number {
+  const byPriority = (a.priority || 1000) - (b.priority || 1000);
+  if (byPriority !== 0) return byPriority;
+  return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+}
+
 export interface RealmServiceInterface {
   selectedRealms: WritableSignal<string[]>;
   realmResource: HttpResourceRef<PiResponse<Realms> | undefined>;
