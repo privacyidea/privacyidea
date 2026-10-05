@@ -22,7 +22,6 @@ export const TOTP_HASHLIB = "totp.hashlib";
 export const TOTP_OTP_LENGTH = "totp.otplen";
 export const TOTP_TIME_STEP = "totp.timeStep";
 export const TOTP_TIME_WINDOW = "totp.timeWindow";
-export const TOTP_TIME_SHIFT = "totp.timeShift";
 
 // HOTP Token
 export const HOTP_HASHLIB = "hotp.hashlib";
@@ -61,9 +60,6 @@ export const TIQR_OCRASUITE = "tiqr.ocrasuite";
 // Remote Token
 export const REMOTE_SERVER = "remote.server";
 export const REMOTE_VERIFY_SSL = "remote.verify_ssl_certificate";
-
-// U2F Token
-export const U2F_APP_ID = "u2f.appId";
 
 // WebAuthn Token
 export const WEBAUTHN_TRUST_ANCHOR_DIR = "webauthn.trust_anchor_dir";

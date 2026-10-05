@@ -55,7 +55,6 @@ import { SystemService } from "@services/system/system.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokengroupService } from "@services/tokengroup/tokengroup.service";
 import { TokenService } from "@services/token/token.service";
-import { UiPolicyService } from "@services/ui-policy/ui-policy.service";
 import { UserService } from "@services/user/user.service";
 
 export const routes: Routes = [
@@ -100,7 +99,6 @@ export const routes: Routes = [
       TableUtilsService,
       TokengroupService,
       TokenService,
-      UiPolicyService,
       UserService
     ],
     children: [

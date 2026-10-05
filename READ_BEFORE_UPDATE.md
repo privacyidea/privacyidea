@@ -9,6 +9,23 @@
   are still waiting in Redis are not sent. The schema update (`pi-manage setup update_db`) removes the `enqueue_job`
   column from the `smtpserver` table, and an imported configuration that still contains the setting is accepted.
 
+* **The Sipgate SMS provider has been removed.** It sent through Sipgate's XML-RPC API, which Sipgate shut down on
+  January 1, 2022, so these gateways could not send anymore. An SMS gateway that still uses
+  `privacyidea.lib.smsprovider.SipgateSMSProvider.SipgateSMSProvider` is now refused with an error. Delete it, or
+  configure the gateway with another provider.
+
+* **Certificate requests in SPKAC format are no longer accepted.** They were produced by the HTML `<keygen>` element on
+  the `/certificate` enrollment page, which is removed as well. Browsers dropped `<keygen>` in 2017 (Chrome 57) and 2019
+  (Firefox 69). Certificate tokens are enrolled with a PKCS#10 request (PEM), as before.
+
+* **The `/token/init` response of HOTP and TOTP tokens no longer contains `oathurl`.** It was meant for the iOS app
+  *OATH Token*, which is no longer available. A Response Mangler event handler that deletes `/detail/oathurl` keeps
+  working, but logs a warning until the action is removed.
+
+* **Settings that had no effect have been removed:** `PI_DB_SAFE_STORE` in `pi.cfg` (no effect since 3.13), and the
+  token settings *Default Time Shift* of TOTP tokens (`totp.timeShift`), the U2F *AppID* (`u2f.appId`) and
+  `webauthn.appid`, which nothing read. Values that are already stored stay in the database and are ignored.
+
 ## Update from 3.13 to 3.14
 
 * **The new WebUI is now the default.** It moved from `static_new/` into `static/`, and the previous WebUI moved to

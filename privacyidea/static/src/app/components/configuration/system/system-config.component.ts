@@ -45,8 +45,6 @@ export interface SystemConfigParams {
   ReturnSamlAttributes?: boolean;
   ReturnSamlAttributesOnFail?: boolean;
   AutoResync?: boolean;
-  UiLoginDisplayHelpButton?: boolean;
-  UiLoginDisplayRealmBox?: boolean;
   AutoResyncTimeout?: string;
   OverrideAuthorizationClient?: string;
   UserCacheExpiration?: string;
@@ -106,9 +104,7 @@ export class SystemConfigComponent implements OnInit, OnDestroy {
           "IncFailCountOnFalsePin",
           "no_auth_counter",
           "PrependPin",
-          "AutoResync",
-          "UiLoginDisplayHelpButton",
-          "UiLoginDisplayRealmBox"
+          "AutoResync"
         ];
         booleanKeys.forEach((key) => {
           if (newParams[key] !== undefined) {

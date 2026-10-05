@@ -59,7 +59,7 @@ class AppTestCase(unittest.TestCase):
                       'resolver_blueprint', 'realm_blueprint', 'defaultrealm_blueprint',
                       'policy_blueprint', 'login_blueprint', 'jwtauth', 'user_blueprint',
                       'audit_blueprint', 'machineresolver_blueprint', 'machine_blueprint',
-                      'application_blueprint', 'caconnector_blueprint', 'cert_blueprint',
+                      'application_blueprint', 'caconnector_blueprint',
                       'ttype_blueprint', 'register_blueprint', 'smtpserver_blueprint',
                       'recover_blueprint', 'radiusserver_blueprint', 'periodictask_blueprint',
                       'privacyideaserver_blueprint', 'eventhandling_blueprint',

@@ -439,7 +439,6 @@ class CertificateTokenClass(TokenClass):
         TokenClass.update(self, token_params)
 
         request = get_optional(param, "request")
-        spkac = get_optional(param, "spkac")
         certificate = get_optional(param, "certificate")
         generate = get_optional(param, "genkey")
         template_name = get_optional(param, "template")
@@ -457,48 +456,44 @@ class CertificateTokenClass(TokenClass):
             self.write_tokeninfo("CA", ca)
             ca_connector = get_caconnector_object(ca)
         if request:
-            if not spkac:
-                # We only do the whole attestation checking in case we have no SPKAC
-                request = request.replace("\n", "")
-                if not request.startswith("-----BEGIN CERTIFICATE REQUEST-----"):
-                    request = "-----BEGIN CERTIFICATE REQUEST-----" + request
-                if not request.endswith("-----END CERTIFICATE REQUEST-----"):
-                    request = request + "-----END CERTIFICATE REQUEST-----"
-                request_csr = load_pem_x509_csr(to_byte_string(request))
-                # Restore the request string with newlines
-                request = request_csr.public_bytes(encoding=serialization.Encoding.PEM).decode('utf-8')
-                if not request_csr.is_signature_valid:
-                    raise PrivacyIDEAError("request has invalid signature.")
-                # If a request is sent, we can have an attestation certificate
-                attestation = get_optional(param, "attestation")
-                verify_attestation = get_optional(param, "verify_attestation")
-                if attestation:
-                    request_numbers = request_csr.public_key().public_numbers()
-                    attestation_cert = load_pem_x509_certificate(to_byte_string(attestation))
-                    attestation_numbers = attestation_cert.public_key().public_numbers()
-                    if request_numbers != attestation_numbers:
-                        log.warning("certificate request does not match attestation certificate.")
-                        raise PrivacyIDEAError("certificate request does not match attestation certificate.")
+            request = request.replace("\n", "")
+            if not request.startswith("-----BEGIN CERTIFICATE REQUEST-----"):
+                request = "-----BEGIN CERTIFICATE REQUEST-----" + request
+            if not request.endswith("-----END CERTIFICATE REQUEST-----"):
+                request = request + "-----END CERTIFICATE REQUEST-----"
+            request_csr = load_pem_x509_csr(to_byte_string(request))
+            # Restore the request string with newlines
+            request = request_csr.public_bytes(encoding=serialization.Encoding.PEM).decode('utf-8')
+            if not request_csr.is_signature_valid:
+                raise PrivacyIDEAError("request has invalid signature.")
+            # If a request is sent, we can have an attestation certificate
+            attestation = get_optional(param, "attestation")
+            verify_attestation = get_optional(param, "verify_attestation")
+            if attestation:
+                request_numbers = request_csr.public_key().public_numbers()
+                attestation_cert = load_pem_x509_certificate(to_byte_string(attestation))
+                attestation_numbers = attestation_cert.public_key().public_numbers()
+                if request_numbers != attestation_numbers:
+                    log.warning("certificate request does not match attestation certificate.")
+                    raise PrivacyIDEAError("certificate request does not match attestation certificate.")
 
-                    try:
-                        verified = verify_certificate_path(attestation_cert,
-                                                           param.get(ACTION.TRUSTED_CA_PATH))
-                    except Exception as e:
-                        # We could have file system errors during verification.
-                        log.debug(f"An error occurred while verifying the certificate path: {e}")
-                        log.debug(f"{traceback.format_exc()!s}")
-                        verified = False
+                try:
+                    verified = verify_certificate_path(attestation_cert,
+                                                       param.get(ACTION.TRUSTED_CA_PATH))
+                except Exception as e:
+                    # We could have file system errors during verification.
+                    log.debug(f"An error occurred while verifying the certificate path: {e}")
+                    log.debug(f"{traceback.format_exc()!s}")
+                    verified = False
 
-                    if not verified:
-                        log.warning("Failed to verify certificate chain of attestation certificate.")
-                        if verify_attestation:
-                            raise PrivacyIDEAError("Failed to verify certificate chain of attestation certificate.")
+                if not verified:
+                    log.warning("Failed to verify certificate chain of attestation certificate.")
+                    if verify_attestation:
+                        raise PrivacyIDEAError("Failed to verify certificate chain of attestation certificate.")
 
             # During the initialization process, we need to create the certificate
             # TODO: We should check for a pending CSR from the MSCA connector
-            request_id, certificate = ca_connector.sign_request(request,
-                                                                options={"spkac": spkac,
-                                                                         "template": template_name})
+            request_id, certificate = ca_connector.sign_request(request, options={"template": template_name})
         elif generate:
             """
             Create the certificate on behalf of another user. Now we need to create

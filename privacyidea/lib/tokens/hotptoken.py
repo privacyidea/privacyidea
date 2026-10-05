@@ -54,7 +54,6 @@ from privacyidea.api.lib.policyhelper import get_init_tokenlabel_parameters
 from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
-from privacyidea.lib.apps import create_oathtoken_url as cr_oath
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
 from privacyidea.lib.error import ParameterError
@@ -300,29 +299,13 @@ class HotpTokenClass(TokenClass):
                     "value": goo_url,
                     "img": create_img(goo_url)
                 }
-
-                oath_url = cr_oath(otpkey=otpkey,
-                                   user=user.login,
-                                   realm=user.realm,
-                                   type=tok_type,
-                                   serial=self.get_serial(),
-                                   tokenlabel=tokenlabel,
-                                   extra_data=extra_data)
-
-                response_detail["oathurl"] = {
-                    "description": _("URL for"
-                                     " OATH "
-                                     "token"),
-                    "value": oath_url,
-                    "img": create_img(oath_url)
-                }
             except KeyError as ex:
                 log.debug(f"{traceback.format_exc()!s}")
                 log.error(f'Unknown Tag {ex!s} in one of your policy definition'
                           )
             except Exception as ex:  # pragma: no cover
                 log.debug(f"{traceback.format_exc()!s}")
-                log.error(f'failed to set oath or google url: {ex!r}')
+                log.error(f'failed to set google url: {ex!r}')
 
         return response_detail
 

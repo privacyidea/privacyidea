@@ -62,10 +62,6 @@ This file implements the server part of the WebAuthn protocol.
 This file is tested in tests/test_lib_tokens_webauthn.py
 """
 
-# Default client extensions
-#
-DEFAULT_CLIENT_EXTENSIONS = {'appid': None}
-
 # Default authenticator extensions
 #
 DEFAULT_AUTHENTICATOR_EXTENSIONS = {}

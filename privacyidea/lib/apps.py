@@ -168,26 +168,3 @@ def create_google_authenticator_url(key=None, user=None,
            f"serial={url_serial}{_construct_extra_parameters(extra_data)}")
 
     return url
-
-
-@log_with(log)
-def create_oathtoken_url(otpkey=None, user=None, realm=None,
-                         type="hotp", serial="mylabel", tokenlabel="<s>",
-                         extra_data=None):
-    timebased = ""
-    if "totp" == type.lower():
-        timebased = "&timeBased=true"
-    # We need realm und user to be a string
-    realm = realm or ""
-    user = user or ""
-    extra_data = extra_data or {}
-
-    label = tokenlabel.replace("<s>",
-                               serial).replace("<u>",
-                                               user).replace("<r>", realm)
-    url_label = quote(label)
-
-    extra_parameters = _construct_extra_parameters(extra_data)
-    url = f"oathtoken:///addToken?name={url_label}&lockdown=true&key={otpkey}{timebased}{extra_parameters}"
-
-    return url
