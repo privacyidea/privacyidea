@@ -197,7 +197,7 @@ class SmsTokenClass(HotpTokenClass):
         :type ret: user defined
 
         :return: subsection if key exists or user defined
-        :rtype : s.o.
+        :rtype: dict or the type of ``ret``
         """
         sms_gateways = [gw.identifier for gw in get_smsgateway()]
         res = {'type': 'sms',

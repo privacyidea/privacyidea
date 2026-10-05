@@ -184,7 +184,7 @@ class PasswordTokenClass(TokenClass):
         This checks the static password
 
         :param anOtpVal: This contains the "OTP" value, which is the static
-        password
+            password
         :return: result of password check, 0 in case of success, -1 if fail
         :rtype: int
         """
