@@ -20,10 +20,11 @@ for (const route of ALL_PAGES) {
     await openPage(page, route.path);
     const snapshot = await page.locator("body").ariaSnapshot();
     const levels = [...snapshot.matchAll(HEADING)].map((m) => Number(m[1]));
-    expect(levels.length, "the page has a heading").toBeGreaterThan(0);
-    const jumps = levels.flatMap((level, i) =>
-      i > 0 && level > levels[i - 1] + 1 ? [`h${levels[i - 1]} -> h${level}`] : []
-    );
+    // The page is named by one h1; the headings the page draws itself follow, each at most one level below the last.
+    expect(levels.filter((l) => l === 1).length, "one h1").toBe(1);
+    expect(levels[0], "the h1 comes first").toBe(1);
+    const own = levels.slice(1);
+    const jumps = own.flatMap((level, i) => (i > 0 && level > own[i - 1] + 1 ? [`h${own[i - 1]} -> h${level}`] : []));
     expect(jumps).toEqual([]);
   });
 }

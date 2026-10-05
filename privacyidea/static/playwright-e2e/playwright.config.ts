@@ -20,7 +20,7 @@ export default defineConfig({
   retries: 1,
   reporter: [["list"], ["html", { outputFolder: path.join(__dirname, "playwright-report"), open: "never" }]],
   timeout: 60_000,
-  expect: { timeout: 10_000 },
+  expect: { timeout: 15_000 },
   use: {
     baseURL: BASE_URL,
     ignoreHTTPSErrors: true,

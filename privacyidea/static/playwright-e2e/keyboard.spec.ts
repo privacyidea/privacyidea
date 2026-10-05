@@ -21,6 +21,21 @@ test.describe("document structure", () => {
   }
 });
 
+test.describe("pages are told apart", () => {
+  test("each page has a title of its own that names it", async ({ page }) => {
+    test.setTimeout(300_000);
+    const titles = new Map<string, string>();
+    for (const route of ALL_PAGES) {
+      await openPage(page, route.path);
+      titles.set(route.name, await page.title());
+    }
+    const duplicates = [...titles]
+      .filter(([, t], i, all) => all.findIndex(([, other]) => other === t) !== i)
+      .map(([name, t]) => `${name}: ${t}`);
+    expect(duplicates).toEqual([]);
+  });
+});
+
 test.describe("tables are described", () => {
   for (const route of TABLE_PAGES) {
     test(`${route.name}: the table has an accessible name`, async ({ page }) => {
