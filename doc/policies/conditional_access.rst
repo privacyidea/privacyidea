@@ -56,3 +56,5 @@ administrator wrote on a stage.
 See :ref:`conditional_access_error_messages` for the whole picture: what each
 endpoint says, which restriction is described, and how the wording of a lock is
 stored.
+
+.. versionadded:: 3.14

@@ -67,7 +67,6 @@ If no value is set, the default is ``True``. It is highly recommended to use SSL
 
 .. versionadded:: 3.11
 
-
 Smartphone
 ..........
 
@@ -117,7 +116,6 @@ registered on the server or this policy changes.
 
 .. versionadded:: 3.11
 
-
 .. _container_policy_disable_client_unregister:
 
 disable_client_container_unregister
@@ -131,7 +129,6 @@ To prevent the user from unregistering the container, this action can be activat
 the container in the authenticator app as long as the smartphone is registered on the server or this policy changes.
 
 .. versionadded:: 3.11
-
 
 .. _container_policy_hide_specific_error_message:
 
@@ -147,3 +144,5 @@ to the endpoints ``/container/register/finalize``, ``/container/register/termina
 
 The corresponding policy for failed authentications is :ref:`policy_hide_specific_error_message` in the
 authentication scope.
+
+.. versionadded:: 3.13

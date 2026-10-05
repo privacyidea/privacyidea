@@ -21,6 +21,8 @@ unauthenticated requests have the ``version`` and ``versionnumber``
 fields removed, so the running privacyIDEA version is not exposed to
 anonymous clients.
 
+.. versionadded:: 3.14
+
 hide_auth_error_status
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -55,3 +57,5 @@ status codes.
     uniform status for that case as well would change the long-standing ``200``/``value``
     contract that RADIUS, SAML and other consumers rely on, and is out of scope for this
     policy.
+
+.. versionadded:: 3.14

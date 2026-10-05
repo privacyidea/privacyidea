@@ -53,6 +53,8 @@ how the authentication should be processed:
    The user does not have to pass any fixed password.
    Authentication is only done via the OTP value.
 
+.. versionadded:: 2.0
+
 .. _passthru_policy:
 
 passthru
@@ -85,6 +87,8 @@ for the RADIUS server.
    portal, the user could delete all their tokens and then authenticate with
    their static password again.
 
+.. versionadded:: 2.0
+
 .. _policy_passthru_ignore_rollout_state:
 
 passthru_ignore_rollout_state
@@ -99,6 +103,8 @@ When privacyIDEA checks whether the user has a token, tokens in one of the given
 rollout states are not counted. A user whose only tokens are in such a state is
 then authenticated as described in :ref:`passthru_policy`. Several rollout states
 can be given as a space-separated list.
+
+.. versionadded:: 3.14
 
 passthru_assign
 ~~~~~~~~~~~~~~~
@@ -131,6 +137,7 @@ Examples are
 
 .. warning:: This can be very time consuming if the number of OTP values to check is set too high!
 
+.. versionadded:: 3.1
 
 .. _passonnotoken:
 
@@ -147,6 +154,8 @@ for this user will always be true.
 .. warning:: Only use this if you know exactly what
    you are doing.
 
+.. versionadded:: 2.0
+
 .. _policy_passonnotoken_ignore_rollout_state:
 
 passonnotoken_ignore_rollout_state
@@ -162,6 +171,8 @@ rollout states are not counted. A user whose only tokens are in such a state is
 then authenticated as described in :ref:`passonnotoken`. Several rollout states
 can be given as a space-separated list.
 
+.. versionadded:: 3.14
+
 .. _passonnouser:
 
 passOnNoUser
@@ -175,6 +186,7 @@ If the user does not exist, the authentication request is successful.
 
 .. warning:: Only use this if you know exactly what you are doing.
 
+.. versionadded:: 2.0
 
 .. _smstext:
 
@@ -227,6 +239,7 @@ Default: *<otp>*
      Your OTP is {otp}
      @privacyidea.mydomain.com #{otp}
 
+.. versionadded:: 2.1
 
 smsautosend
 ~~~~~~~~~~~
@@ -238,6 +251,8 @@ type: ``bool``
 A new OTP value will be sent via SMS if the user authenticated
 successfully with their SMS token. Thus the user does not
 have to trigger a new SMS when they want to log in again.
+
+.. versionadded:: 2.1
 
 .. _emailtext:
 
@@ -281,6 +296,8 @@ an HTML file.
 .. note:: If a message text is supplied directly, the email is sent as plain text.
    If the email template is read from a file, an HTML-only email is sent instead.
 
+.. versionadded:: 2.3
+
 emailsubject
 ~~~~~~~~~~~~
 
@@ -293,6 +310,8 @@ You can use the same tags as mentioned in ``emailtext``.
 
 Default: Your OTP
 
+.. versionadded:: 2.3
+
 emailautosend
 ~~~~~~~~~~~~~
 
@@ -303,6 +322,7 @@ type: ``bool``
 If set, a new OTP Email will be sent, when successfully authenticated with an
 Email Token.
 
+.. versionadded:: 2.3
 
 .. _policy_set_realm:
 
@@ -328,7 +348,7 @@ client, but this username would not be found in the default realm.
 
 For in depth information about user and realm mapping read :ref:`realms`.
 
-.. versionadded:: 3.12
+.. versionadded:: 3.12.2
 
 .. _policy_mangle:
 
@@ -390,6 +410,8 @@ this::
 
    action: mangle=user/admin_(.*)/\\1/
 
+.. versionadded:: 2.5
+
 .. _policy_challenge_response:
 
 challenge_response
@@ -401,6 +423,7 @@ This is a list of token types for which challenge response can
 be used during authentication. The list is separated by whitespaces like
 *"hotp totp"*.
 
+.. versionadded:: 2.6
 
 .. _policy_disabled_token_types:
 
@@ -426,6 +449,8 @@ type: ``bool``
 When enabled, authentication attempts will be interpreted as either the PIN or the answer to a challenge.
 PIN concatenated with OTP can not be used anymore! It only works when authenticating with a username.
 
+.. versionadded:: 3.10
+
 .. _policy_change_pin_via_validate:
 
 change_pin_via_validate
@@ -443,6 +468,8 @@ successfully. E.g. if the user enters two different new PINs, the authentication
 
 .. note:: The application must support several consecutive challenge response requests.
 
+.. versionadded:: 3.4
+
 .. _policy_resync_via_multichallenge:
 
 resync_via_multichallenge
@@ -459,6 +486,8 @@ a challenge will be presented to the user saying "To resync your token, please e
 In contrast to the generic AutoResync a user has to enter the token PIN only once.
 
 .. note:: The application must support several consecutive challenge response requests.
+
+.. versionadded:: 3.7
 
 .. _policy_enroll_via_multichallenge:
 
@@ -527,6 +556,7 @@ When using the :ref:`policy_enroll_via_multichallenge_template` policy, the cont
 template. This allows the container to be enrolled with multiple tokens at once. Note that for these tokens, all
 enrollment policies are checked.
 
+.. versionadded:: 3.8
 
 .. _policy_enroll_via_multichallenge_text:
 
@@ -538,6 +568,7 @@ type: ``string``
 There is a default text that is shown to the user, when a token or container is enrolled via multichallenge. The
 administrator can change this text using this policy.
 
+.. versionadded:: 3.10
 
 .. _policy_enroll_via_multichallenge_template:
 
@@ -572,6 +603,8 @@ and the authentication succeeds.
 
 If this policy is not set, the user has to enroll the token or container. This is the default.
 
+.. versionadded:: 3.12
+
 .. _policy_enroll_via_multichallenge_passkey_offline:
 
 enroll_via_multichallenge_passkey_offline
@@ -594,6 +627,8 @@ type: ``bool``
 If a user authenticates successfully the failcounters of all of their tokens
 will be reset. This can be important, if using empty PINs or *otppin=None*.
 
+.. versionadded:: 2.15
+
 increase_failcounter_on_challenge
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -611,6 +646,8 @@ no further challenges for these tokens can be triggered.
 .. note:: It should be noted that for all tokens for which a challenge has been generated,
    the failcounter will be incremented. In the case of validate/triggerchallenge, the failcounters are increased for all tokens.
    In some cases it makes sense to use this policy together with :ref:`reset_all_user_tokens`.
+
+.. versionadded:: 3.8
 
 .. _policy_auth_cache:
 
@@ -692,6 +729,8 @@ in this timeframe.
 .. note:: The AuthCache only works for user authentication, not for
    authentication with serials.
 
+.. versionadded:: 2.20
+
 .. _policy_push_text_on_mobile:
 
 push_text_on_mobile
@@ -746,6 +785,8 @@ The text can contain the following tags, that will be filled:
    information about the client that triggered the challenge is available anymore.
    All four tags are empty then. The tags of the token owner are filled in both cases.
 
+.. versionadded:: 3.0
+
 .. _policy_push_title_on_mobile:
 
 push_title_on_mobile
@@ -761,6 +802,8 @@ a :ref:`push_token`.
 
 .. note:: In contrast to :ref:`policy_push_text_on_mobile`, tags are not replaced in
    the title.
+
+.. versionadded:: 3.0
 
 .. _policy_push_wait:
 
@@ -788,6 +831,8 @@ Sensible numbers might be 10 or 20 seconds.
    can block all available worker threads, which will cause privacyIDEA
    to become unresponsive if the number of open PUSH challenges exceeds
    the number of available worker threads!
+
+.. versionadded:: 3.1
 
 .. _policy_push_code_to_phone:
 
@@ -829,6 +874,8 @@ type: ``string``
 The message that the smartphone shows above the display code when
 :ref:`policy_push_code_to_phone` is active. The default is *Enter the code to log in*.
 
+.. versionadded:: 3.13
+
 .. _policy_push_challenge_text:
 
 push_challenge_text
@@ -847,7 +894,7 @@ or in combination with :ref:`policy_push_code_to_phone` to tell the user in more
 If this policy is not set, the PUSH token falls back to the generic :ref:`policy_challenge_text` policy and finally
 to the built-in default text.
 
-.. versionadded:: 3.13
+.. versionadded:: 3.13.1
 
 .. _policy_push_require_presence:
 
@@ -980,6 +1027,8 @@ The following options are available:
 
 The default is to ``allow`` polling
 
+.. versionadded:: 3.4
+
 .. _policy_push_ssl_verify_auth:
 
 push_ssl_verify
@@ -992,6 +1041,8 @@ allowed values: ``0``, ``1``
 The smartphone needs to verify the SSL certificate of the privacyIDEA server during
 the authentication with push tokens. By default, the verification is enabled. To disable
 verification during enrollment, see :ref:`policy_push_ssl_verify_enrollment`.
+
+.. versionadded:: 3.0
 
 .. _policy_challenge_text:
 .. _challenge-text:
@@ -1039,6 +1090,10 @@ tag.
     * {email_redacted} email address from the challenge in case of email token in redacted form.
     * {presence_answer} only for push token and only if require_presence is enabled.
 
+.. versionadded:: 2.23 ``challenge_text``
+
+.. versionadded:: 3.0 ``challenge_text_header`` and ``challenge_text_footer``
+
 .. _policy_indexedsecret:
 
 indexedsecret_challenge_text
@@ -1058,6 +1113,7 @@ be replaced with the list of the requested positions.
 
 For more details of this token type see :ref:`indexedsecret_token`.
 
+.. versionadded:: 3.3
 
 .. _policy_webauthn_challenge_text_auth:
 
@@ -1071,6 +1127,7 @@ their WebAuthn token during authentication. This might be different from the
 challenge text received during enrollment
 (see :ref:`policy_webauthn_challenge_text_enrollment`).
 
+.. versionadded:: 3.3
 
 .. _policy_passkey_challenge_text:
 
@@ -1084,6 +1141,7 @@ their passkey. The default text is *Please authenticate with your passkey!*. The
 used for the challenge of ``/validate/initialize`` and for a challenge that is triggered
 for a passkey token with :ref:`policy_passkey_trigger_by_pin`.
 
+.. versionadded:: 3.11
 
 .. _email-challenge-text:
 .. _sms-challenge-text:
@@ -1096,6 +1154,7 @@ type: ``string``
 With these actions the administrator may set alternative challenge texts for email
 and SMS tokens.
 
+.. versionadded:: 2.23
 
 .. _policy_indexedsecret_count:
 
@@ -1109,6 +1168,7 @@ a shared secret. The default number to ask is 2.
 
 The number of requested positions can be changed using this policy.
 
+.. versionadded:: 3.3
 
 .. _policy_webauthn_authn_allowed_transports:
 
@@ -1125,6 +1185,8 @@ space-separated list.
 
 The default is to allow all transports (equivalent to a value of ``usb ble nfc
 internal``).
+
+.. versionadded:: 3.3
 
 .. _policy_webauthn_authn_timeout:
 
@@ -1150,6 +1212,8 @@ The default timeout is 60 seconds.
 
 .. note:: If you set this policy you may also want to set
     :ref:`policy_webauthn_enroll_timeout`.
+
+.. versionadded:: 3.3
 
 .. _policy_webauthn_authn_user_verification_requirement:
 
@@ -1191,6 +1255,7 @@ supported by the token.
     ``user.name`` / ``user.displayName`` fields after user verification.
     See :ref:`passkey` for more detail.
 
+.. versionadded:: 3.3
 
 question_number
 ~~~~~~~~~~~~~~~
@@ -1206,6 +1271,8 @@ The default amount to ask is 1.
 .. note:: A question will be asked only once, unless the policy requires more questions to be asked,
    than the token has available answers.
 
+.. versionadded:: 3.5
+
 preferred_client_mode
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -1218,6 +1285,8 @@ will show you the correct login for your preferred client mode. For example if t
 then your client will automatically show you the login for a webauthn token.
 
 The default list is "interactive webauthn poll".
+
+.. versionadded:: 3.8
 
 client_mode_per_user
 ~~~~~~~~~~~~~~~~~~~~
@@ -1247,6 +1316,8 @@ It is advised to use a condition with this policy, for example on the user-agent
 .. note:: Make sure the user only has a WebAuthn **or** Passkey token assigned when using this policy.
     Triggering both types at the same time will probably result in a failed authentication because challenges are
     currently encoded differently for each token of these token types.
+
+.. versionadded:: 3.11.1
 
 .. _policy_passkey_authn_allowed_authenticator_device_types:
 
@@ -1319,6 +1390,8 @@ Other information is also removed from the ``detail`` object of the response.
     of the ``detail`` object is still collapsed. See
     :ref:`conditional_access_error_messages_masking`.
 
+.. versionadded:: 3.13
+
 .. _policy_remember_device:
 
 remember_device
@@ -1378,8 +1451,8 @@ has this many *live* devices for the client, further opt-ins issue no new cookie
 and the existing devices keep working. Unset or ``0`` means unlimited (the
 default). Scope it per realm/user like the other conditions.
 
-.. versionadded:: 3.14
-
 .. rubric:: Footnotes
 
 .. [#pythonre] https://docs.python.org/3/library/re.html
+
+.. versionadded:: 3.14

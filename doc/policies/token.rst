@@ -23,7 +23,6 @@ edited with non-empty values.
 
 .. versionadded:: 3.12
 
-
 .. _policy_hide_specific_error_message_for_ttype:
 
 hide_specific_error_message_for_ttype
@@ -40,6 +39,8 @@ This is useful when token-type-specific endpoints (TiQR, push,
 YubiKey) are exposed to untrusted networks and detailed error messages
 could leak server-side state.
 
+.. versionadded:: 3.13
+
 .. _policy_hide_specific_error_message_for_offline_refill:
 
 hide_specific_error_message_for_offline_refill
@@ -50,3 +51,5 @@ type: ``bool``
 If this policy is set, a failed refill of the offline OTP values at
 ``/validate/offlinerefill`` returns the generic error message "Failed offline token
 refill" instead of the specific one.
+
+.. versionadded:: 3.13

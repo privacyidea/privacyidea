@@ -7,6 +7,8 @@ Extended Policy Conditions
 rules for policy matching, i.e. for determining which policies are valid for a
 specific request.
 
+.. versionadded:: 3.1
+
 Conditions can be added to a policy via the WebUI. In order for a policy to
 take effect during the processing of a request, the request has to match not
 only the ordinary policy attributes (see :ref:`policies`), but also *all*
@@ -119,6 +121,8 @@ throws an error and the request is aborted.
 For the actions ``container_add_token`` and ``container_remove_token``, the user info condition is evaluated on the
 token and container owner. Only if both conditions are true, the action is allowed.
 
+.. versionadded:: 3.1
+
 
 tokeninfo
 ^^^^^^^^^
@@ -128,6 +132,8 @@ The tokeninfo condition works the same way as userinfo but matches the tokeninfo
 .. note:: Similar to the userinfo condition, a policy with an active tokeninfo condition will
    throw an exception whenever the token object cannot be determined (usually from the serial).
    To avoid raising an error, define the :ref:`policy_condition_handle_missing_data` option.
+
+.. versionadded:: 3.5
 
 token
 ^^^^^
@@ -150,6 +156,8 @@ action ``delete`` and the token condition ``active``, ``<``, ``1``. For an inact
 would evaluate to ``0`` and thus be smaller than ``1``. An ``active`` token would evaluate to ``1``.
 This would allow the user to delete only inactive tokens, but not still active tokens.
 
+.. versionadded:: 3.6
+
 HTTP Request header
 ^^^^^^^^^^^^^^^^^^^
 
@@ -169,6 +177,8 @@ of the required value.
    this certain IP address will always contain the header, that is to be checked.
    To avoid raising an error, define the :ref:`policy_condition_handle_missing_data` option.
 
+.. versionadded:: 3.2
+
 HTTP Environment
 ^^^^^^^^^^^^^^^^
 
@@ -185,10 +195,10 @@ endpoint like ``/validate/check`` or ``/auth``.
    The behavior is similar to the extended conditions of ``HTTP Request header``.
    To avoid raising an error, define the :ref:`policy_condition_handle_missing_data` option.
 
+.. versionadded:: 3.7
+
 Container
 ^^^^^^^^^
-.. versionadded:: 3.12
-
 For container requests, the section ``container`` can be used to define conditions that are checked against the
 container attributes. To get the container attributes, the function
 :py:meth:`privacyidea.lib.containerclass.TokenContainerClass.get_as_dict()` is used. Hence, all defined
@@ -198,26 +208,28 @@ The condition can only be evaluated when a valid container serial is available w
 endpoints. It does not work for the actions ``container_list`` (:http:get:`/container/`),
 ``container_create`` (:http:post:`/container/init`) and the template actions.
 
-Container Info
-^^^^^^^^^^^^^^
 .. versionadded:: 3.12
 
+Container Info
+^^^^^^^^^^^^^^
 The ``container_info`` condition works the same way as userinfo but matches the container info instead.
 
 The condition can only be evaluated when a valid container serial is available which is the case for most container
 endpoints. It does not work for the actions ``container_list`` (:http:get:`/container/`),
 ``container_create`` (:http:post:`/container/init`) and the template actions.
 
-Request Data
-^^^^^^^^^^^^
 .. versionadded:: 3.12
 
+Request Data
+^^^^^^^^^^^^
 This section can be used to define conditions based on the request data.
 The key defines the name of a request parameter. Check out the :ref:`rest_api` documentation for more information on
 the available request parameters for a specific request. Note that these are only the expected parameters.
 A requester could send any parameter in the request.
 
 Passwords are excluded from the request data, so they cannot be used in conditions.
+
+.. versionadded:: 3.12
 
 Comparators
 ~~~~~~~~~~~
@@ -235,10 +247,16 @@ The following comparators can be used in definitions of policy conditions:
   ``!matches`` evaluates to true if this is not the case.
 * ``<`` evaluates to true if the left value is smaller than the right value.
 * ``>`` evaluates to true if the left value is greater than the right value.
+
+  .. versionadded:: 3.6 ``<`` and ``>``
+
 * ``date_before`` evaluates to true if the left value is a date and time that occurs before the right value.
   Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
 * ``date_after`` evaluates to true if the left value is a date and time that occurs after the right value.
   Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
+
+  .. versionadded:: 3.12 ``date_before`` and ``date_after``
+
 * ``date_within_last`` evaluates to true if the left-hand value is a date and time that falls within the past time
   interval specified by the right-hand value. ``!date_within_last`` evaluates to true if this is not the case.
   The right-hand value must be a duration expressed as an integer
@@ -251,8 +269,13 @@ The following comparators can be used in definitions of policy conditions:
   * ``s`` for seconds
 
   For example, "7d" means "within the last 7 days", "2h" means "within the last 2 hours".
+
+  .. versionadded:: 3.12
+
 * ``string_contains`` evaluates to true if the left value (a string) contains the right value as a substring.
   ``!string_contains`` evaluates to true if this is not the case.
+
+  .. versionadded:: 3.12
 
 
 If you want to define a policy that e.g. only matches users from Active Directory that are in a
@@ -266,13 +289,13 @@ you would have to define an extended condition like::
 
    "username" in "alice,bob,charlie"
 
+.. versionadded:: 3.1
+
 
 .. _policy_condition_handle_missing_data:
 
 Handle Missing Data
 ~~~~~~~~~~~~~~~~~~~~
-.. versionadded:: 3.12
-
 A condition may need to be evaluated while the data required to check it is missing.
 For example, an admin is doing a request and hence the user object is not available or even if the user object is
 available, the defined key may not be included in the user attributes. This could be avoided with well thought out and
@@ -291,6 +314,8 @@ previous versions.
 Generally, the usage of conditions is an advanced feature and requires further knowledge about the data available in
 the related requests. We highly recommend evaluating the correct behavior of the policies in a test environment,
 especially when using ``Condition is false/true``.
+
+.. versionadded:: 3.12
 
 
 Error Handling

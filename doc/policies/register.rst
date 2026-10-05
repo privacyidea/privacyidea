@@ -71,6 +71,8 @@ type: ``string``
 This is the realm, in which a new user will be registered. If this realm is
 not specified, the user will be registered in the default realm.
 
+.. versionadded:: 2.10
+
 resolver
 ~~~~~~~~
 
@@ -81,6 +83,8 @@ resolver is not specified, **registration is not possible!**
 
 .. note:: This resolver must be an editable resolver, otherwise the user can
    not be created in this resolver.
+
+.. versionadded:: 2.10
 
 smtpconfig
 ~~~~~~~~~~
@@ -93,6 +97,8 @@ registration process.
 
 .. note:: If there is no *smtpconfig* or it is set to a wrong identifier, the user
    will get no notification email.
+
+.. versionadded:: 2.10
 
 .. _policy_requiredemail:
 
@@ -110,6 +116,8 @@ Only email addresses matching this regular expression are allowed to register.
 
    action: requiredemail=/.*@example\.com/
 
+.. versionadded:: 2.10
+
 registration_body
 ~~~~~~~~~~~~~~~~~
 
@@ -117,6 +125,8 @@ type: ``string``
 
 The body of the registration email. Use ``{regkey}`` as tag for the
 registration key.
+
+.. versionadded:: 2.15
 
 .. _register_policy_hide_specific_error_message:
 
@@ -130,3 +140,5 @@ If this policy is set, a failed registration returns the generic error message
 
 
 .. [#pythonre] https://docs.python.org/3/library/re.html
+
+.. versionadded:: 3.13

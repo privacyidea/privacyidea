@@ -47,6 +47,7 @@ login if a policy with the same priority sets another login mode.
    the web UI either for certain IP addresses (``client``) or for users in
    certain realms.
 
+.. versionadded:: 2.1
 
 .. index:: remote user
 .. _policy_remote_user:
@@ -102,6 +103,7 @@ in /etc/apache2/sites-available/privacyidea.conf::
                 </RequireAny>
         </Directory>
 
+.. versionadded:: 2.8
 
 .. index:: logout time
 
@@ -114,6 +116,8 @@ Set the timeout, after which a user in the WebUI will be logged out.
 The default timeout is 120 seconds.
 
 Being a policy this time can be set based on clients, realms and users.
+
+.. versionadded:: 2.2
 
 .. index:: logout time, timeout
 
@@ -129,6 +133,8 @@ The action taken when a user is idle beyond the ``logout_time`` limit. Defaults 
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`. The WebUI always logs the user out.
 
+.. versionadded:: 2.19
+
 .. index:: Audit view page size
 
 audit_page_size
@@ -139,6 +145,8 @@ type: ``integer``
 By default 10 entries are displayed on one page in the audit view.
 On big screens you might want to display more entries. Thus you can define in
 this policy how many audit entries should be displayed.
+
+.. versionadded:: 3.8
 
 .. index:: Token view page size
 
@@ -152,6 +160,8 @@ On big screens you might want to display more tokens. Thus you can define in
 this
 policy how many tokens should be displayed.
 
+.. versionadded:: 2.8
+
 .. index:: User view page size
 
 user_page_size
@@ -162,6 +172,8 @@ type: ``integer``
 By default 15 users are displayed on one page in the user view.
 On big screens you might want to display more users. Thus you can define in
 this policy how many users should be displayed.
+
+.. versionadded:: 2.8
 
 .. index:: policy template URL
 .. _policy_template_url:
@@ -181,6 +193,8 @@ or any other path reachable by the WebUI to provide custom policy templates.
 .. note:: When setting a ``policy_template_url`` policy the modified URL will only get
    active after the user has logged out and in again.
 
+.. versionadded:: 2.5
+
 .. index:: logout redirect
 .. _policy_logout_redirect:
 
@@ -195,6 +209,7 @@ with ``http://`` or ``https://``.
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
 
+.. versionadded:: 3.8
 
 .. index:: Default tokentype
 .. _policy_default_tokentype:
@@ -206,6 +221,8 @@ type: ``string``
 
 Defines the default tokentype when enrolling a new token in the WebUI. This
 tokentype will be selected when entering the enrollment dialog.
+
+.. versionadded:: 2.8
 
 .. index:: Default Container Type
 .. _policy_default_container_type:
@@ -260,6 +277,8 @@ instead, see :ref:`enrollment_wizard`.
 
 If you want to adapt the privacyIDEA look and feel even more, read :ref:`customize`.
 
+.. versionadded:: 2.10
+
 .. index:: Wizard, Token wizard
 
 tokenwizard_2nd_token
@@ -268,6 +287,8 @@ tokenwizard_2nd_token
 type: ``bool``
 
 The tokenwizard will be displayed in the token menu even if the user already has a token.
+
+.. versionadded:: 2.12
 
 .. _policy_container_wizard_type:
 
@@ -280,6 +301,8 @@ This policy defines the container type to be used in the container wizard. The c
 when the user has no container assigned. It shows a simplified view to create the first container. To activate the
 container wizard, at least this policy has to be defined. Read :ref:`container_wizard` for more information.
 
+.. versionadded:: 3.11
+
 .. _policy_container_wizard_template:
 
 container_wizard_template
@@ -291,6 +314,7 @@ This policy defines the template to be used in the container wizard. Note that t
 same container type as defined in the action ``container_wizard_type``. This policy is optional. If not set, no template
 will be used to create the container in the wizard.
 
+.. versionadded:: 3.11
 
 .. _policy_container_wizard_registration:
 
@@ -304,6 +328,7 @@ registration, the smartphone can be synchronized with the server. See :ref:`cont
 information.
 This policy is only applicable for smartphone containers and will be ignored for all other types.
 
+.. versionadded:: 3.11
 
 .. index:: Realm-box, Realm dropdown
 
@@ -326,6 +351,8 @@ dropdown (i.e. authenticate without selecting a specific realm). If ``-`` is
 the first entry, no realm is preselected and the user must explicitly choose
 one (or leave the field empty).
 
+.. versionadded:: 2.12
+
 .. index:: Search on Enter
 
 search_on_enter
@@ -343,6 +370,8 @@ search.
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
 
+.. versionadded:: 2.17
+
 user_details
 ~~~~~~~~~~~~
 
@@ -352,6 +381,8 @@ This action adds the user ID and the resolver name to the token list.
 
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
+
+.. versionadded:: 2.8
 
 .. index:: Customize baseline, customize footer
 .. _webui_custom_baseline:
@@ -376,6 +407,8 @@ This will only work with a valid subscription of privacyIDEA Enterprise Edition.
 
 If you want to adapt the privacyIDEA look and feel even more, read :ref:`customize`.
 
+.. versionadded:: 2.21
+
 .. index:: Customize menu
 .. _webui_custom_menu:
 
@@ -399,6 +432,8 @@ This will only work with a valid subscription of privacyIDEA Enterprise Edition.
 
 If you want to adapt the privacyIDEA look and feel even more, read :ref:`customize`.
 
+.. versionadded:: 2.21
+
 hide_buttons
 ~~~~~~~~~~~~
 
@@ -409,6 +444,8 @@ being disabled.
 
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
+
+.. versionadded:: 3.0
 
 deletion_confirmation
 ~~~~~~~~~~~~~~~~~~~~~
@@ -436,6 +473,8 @@ new token secret for the displayed token.
 This e.g. enables a user to transfer a softtoken to a new device while keeping the
 token number restricted to 1.
 
+.. versionadded:: 3.6
+
 login_text
 ~~~~~~~~~~
 
@@ -444,6 +483,8 @@ type: ``string``
 This way the text "Please sign in" on the login dialog can be changed. Since the policy can
 also depend on the IP address of the client, you can also choose different login texts depending
 on from where a user tries to log in.
+
+.. versionadded:: 3.0
 
 show_android_privacyidea_authenticator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -457,6 +498,8 @@ directly install the privacyIDEA Authenticator App for Android devices.
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
 
+.. versionadded:: 3.3
+
 show_ios_privacyidea_authenticator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -468,6 +511,8 @@ can directly install the privacyIDEA Authenticator App for iOS devices.
 
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
+
+.. versionadded:: 3.3
 
 show_custom_authenticator
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -491,6 +536,8 @@ Other scenarios are possible.
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
 
+.. versionadded:: 3.3
+
 show_node
 ~~~~~~~~~
 
@@ -502,6 +549,8 @@ corner next to the logo.
 This is useful, if you have a lot of different privacyIDEA nodes in a redundant setup or if you have
 test instances and production instances. This way you can easily distinguish the different instances.
 
+.. versionadded:: 3.5
+
 show_seed
 ~~~~~~~~~
 
@@ -511,6 +560,8 @@ If this is checked, the token seed will be additionally displayed as text during
 
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
+
+.. versionadded:: 3.0
 
 indexedsecret_preset_attribute
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -525,6 +576,8 @@ For more details of this token type see :ref:`indexedsecret_token`.
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
 
+.. versionadded:: 3.3
+
 .. index:: admin dashboard, dashboard
 
 .. _webui_admin_dashboard:
@@ -538,6 +591,8 @@ If this policy is activated, the static dashboard can be accessed by administrat
 It is displayed as a starting page in the WebUI and contains information about
 token numbers, authentication requests, recent administrative changes, policies,
 event handlers and subscriptions.
+
+.. versionadded:: 3.4
 
 .. deprecated:: 3.14
    The new WebUI ignores this policy and always shows the dashboard to administrators.
@@ -554,12 +609,16 @@ The dialog is contained in the template ``dialog.no.token.html``.
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
 
+.. versionadded:: 3.1
+
 hide_welcome_info
 ~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 If this is checked, the administrator will not see the default welcome dialog anymore.
+
+.. versionadded:: 2.20
 
 privacy_statement_link
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -571,6 +630,8 @@ in the WebUI baseline.
 
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
+
+.. versionadded:: 3.5
 
 .. _policy_rss_feeds:
 
@@ -596,6 +657,8 @@ This way you can display news feeds from the community, privacyIDEA and NetKnigh
 updates or other critical information.
 You can use your own internal news feeds, if you want to provide your own information to users.
 
+.. versionadded:: 3.11
+
 .. _policy_rss_age:
 
 rss_age
@@ -607,6 +670,7 @@ This defines the age of the displayed news feeds. The default is 180 days. You c
 
 .. note:: If you specify the age 0, then the UI tab "News" will be hidden.
 
+.. versionadded:: 3.11
 
 .. _policy_passkey_login:
 
@@ -621,7 +685,6 @@ The default behavior is to show the passkey login option on the login page.
 
 .. versionadded:: 3.13
 
-
 .. _policy_jwt_validity:
 
 jwt_validity
@@ -634,7 +697,6 @@ The default validity is 1 hour.
 You can specify different validity times in seconds.
 
 .. versionadded:: 3.10
-
 
 .. _policy_session_persistence:
 
@@ -659,3 +721,4 @@ and where every same-origin context can read it. The only upper bound on that to
 :ref:`policy_jwt_validity`; see :ref:`new_webui_hardening`.
 
 .. versionadded:: 3.14
+

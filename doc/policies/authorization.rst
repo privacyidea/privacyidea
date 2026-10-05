@@ -41,6 +41,8 @@ users by defining higher policy priorities.
     see the request as successful before it would be changed by this policy and
     match the event handler condition ``result value == True``.
 
+.. versionadded:: 3.4
+
 .. _tokentype_policy:
 
 tokentype
@@ -64,6 +66,8 @@ used up, even if the user was not authorized with this request.
    while allowing access to less sensitive areas
    with other token types.
 
+.. versionadded:: 2.0
+
 .. _application_tokentype_policy:
 
 application_tokentype
@@ -81,6 +85,7 @@ should be checked.
 E.g. when using this in *triggerchallenge*, an application could assure that only SMS tokens
 are used for authentication.
 
+.. versionadded:: 3.4
 
 serial
 ~~~~~~
@@ -100,6 +105,8 @@ used up, even if the user was not authorized with this request.
    like the YubiKey, while allowing access
    to less secure areas also with a Google
    Authenticator.
+
+.. versionadded:: 2.0
 
 .. _policy_tokeninfo:
 
@@ -123,6 +130,8 @@ Example::
    action = last_auth/^2018.*/
 
 This would mean the tokeninfo field needs to start with "2018".
+
+.. versionadded:: 2.22
 
 .. _policy_setrealm:
 
@@ -153,10 +162,14 @@ reasons. For this policy, the user has to be available in both realms!
 
 For in depth information about user and realm mapping read :ref:`realms`.
 
+.. versionadded:: 2.0
+
 .. _policy_no_detail_on_success:
 
 no_detail_on_success
 ~~~~~~~~~~~~~~~~~~~~
+.. versionadded:: 2.0
+
 .. deprecated:: 3.12
    Please use the :ref:`responsemanglerhandler` to delete the ``detail`` section.
 
@@ -173,6 +186,8 @@ this additional information will not be returned.
 
 no_detail_on_fail
 ~~~~~~~~~~~~~~~~~
+.. versionadded:: 2.0
+
 .. deprecated:: 3.12
    This policy breaks :term:`challenge-response <Challenge>` authentication.
 
@@ -199,6 +214,8 @@ api_key_required
 ~~~~~~~~~~~~~~~~
 
 type: ``bool``
+
+.. versionadded:: 2.4
 
 .. deprecated:: 3.14
    This policy and its ``Authorization`` JWT (minted by ``pi-manage api
@@ -259,6 +276,8 @@ time limit of successful authentications, the user will not be able to authentic
 explicitly passing the user's realm. Anyway, local admins are not affected by the number of successful user
 authentications.
 
+.. versionadded:: 2.8
+
 .. _policy_auth_max_fail:
 
 auth_max_fail
@@ -287,6 +306,8 @@ In case a local admin and a user in the default realm exist with the same userna
 authentications. Hence, if the admin reaches the time limit of failed authentications, the user will not be able to
 authenticate anymore, and vice versa.
 
+.. versionadded:: 2.8
+
 last_auth
 ~~~~~~~~~
 
@@ -300,6 +321,8 @@ if the token was not successfully used for 12 hours, 123 days or 2 years.
 
 The date of the last successful authentication is stored in the ``tokeninfo``
 field of a token and denoted in UTC.
+
+.. versionadded:: 2.8
 
 .. _policy_add_user_in_response:
 
@@ -318,6 +341,8 @@ to the response. A dictionary containing user information is added in
    need user data after a failed authentication must look the user up
    themselves.
 
+.. versionadded:: 2.15
+
 .. _policy_add_resolver_in_response:
 
 add_resolver_in_response
@@ -328,6 +353,8 @@ type: ``bool``
 In case of a successful authentication the resolver and realm of the user are added
 to the response. The names are added in
 ``detail->user-resolver`` and ``detail->user-realm``.
+
+.. versionadded:: 2.22
 
 .. _policy_webauthn_authz_authenticator_selection_list:
 
@@ -351,6 +378,8 @@ unless limited through some other action.
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_authenticator_selection_list`
 
+.. versionadded:: 3.3
+
 .. _policy_webauthn_authz_req:
 
 webauthn_req
@@ -373,6 +402,8 @@ in the attestation certificate matches accordingly the token can be enrolled.
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_req`
 
+.. versionadded:: 3.3
+
 .. _policy_require_auth_for_resolver_details:
 
 require_auth_for_resolver_details
@@ -389,3 +420,5 @@ individual resolver details.  The total status will be included either way.
 
 .. note:: In order to limit the amount of information exposed to third parties,
     it is recommended to activate this policy.
+
+.. versionadded:: 3.13

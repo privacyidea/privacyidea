@@ -36,6 +36,8 @@ This is the maximum allowed number of tokens in the specified realm.
    allowed number of tokens among the matching policies is enforced.
    Policy priorities are ignored.
 
+.. versionadded:: 2.0
+
 .. _policy_max_token_per_user:
 
 max_token_per_user
@@ -56,6 +58,8 @@ allowed to have assigned.
    allowed number of tokens among the matching policies is enforced.
    Policy priorities are ignored.
 
+.. versionadded:: 2.0
+
 max_active_token_per_user
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -68,6 +72,8 @@ number of tokens of a specific token type that a user is
 allowed to have assigned.
 
 .. note:: Inactive tokens will not be taken into account.
+
+.. versionadded:: 3.1
 
 tokenissuer
 ~~~~~~~~~~~
@@ -83,6 +89,8 @@ and ``{surname}`` in the issuer label.
 
 .. note:: A good idea is to set this to the instance name of your privacyIDEA
    installation or the name of your company.
+
+.. versionadded:: 2.9
 
 tokenlabel
 ~~~~~~~~~~
@@ -103,6 +111,8 @@ The default behavior is to use the serial number.
    You should rather use a label like ``"{user}@{realm}"``,
    which would result in ``"@"``.
 
+.. versionadded:: 2.0
+
 appimageurl
 ~~~~~~~~~~~
 
@@ -113,6 +123,8 @@ type: ``string``
 With this action the administrator may specify the URL to a token image which is included in the
 QR code during enrollment (key in otpauth URL: ``image``). It is used by the privacyIDEA Authenticator
 and some other smartphone apps like FreeOTP (supported file formats: PNG, JPG and GIF).
+
+.. versionadded:: 3.0
 
 .. _autoassignment:
 
@@ -145,7 +157,7 @@ PIN is set as the OTP PIN.
    In this case assigning the token is only a
    one-factor-authentication: the possession of the token.
 
-
+.. versionadded:: 2.1
 
 otp_pin_random
 ~~~~~~~~~~~~~~
@@ -157,6 +169,8 @@ is forced to set a certain OTP PIN.
 
 .. note:: To use the random PIN, you also need to define a
    :ref:`policy_pinhandling` policy.
+
+.. versionadded:: 2.1
 
 .. _policy_pinhandling:
 
@@ -178,6 +192,8 @@ A class of your own is declared in ``PI_PIN_HANDLER_MODULES``, see
 a warning to the log naming it.
 
 For more information see the base class :ref:`code_pinhandler`.
+
+.. versionadded:: 2.5
 
 .. _policy_change_pin_first_use:
 
@@ -202,6 +218,8 @@ trigger the change of the PIN using the API */token/setpin*. See
 .. note:: privacyIDEA also allows forcing the user to
    change the PIN in such a case using the policy :ref:`policy_change_pin_via_validate`.
 
+.. versionadded:: 2.13
+
 .. _policy_change_pin_every:
 
 change_pin_every
@@ -218,6 +236,8 @@ The date when the PIN needs to be changed is returned in the API response
 of */validate/check*. For more information see :ref:`policy_change_pin_first_use`.
 To specify the contents of the PIN see :ref:`user_policies`.
 
+.. versionadded:: 2.13
+
 encrypt_pin
 ~~~~~~~~~~~
 
@@ -225,6 +245,8 @@ type: ``bool``
 
 If set the OTP PIN of a token will be encrypted. The default
 behavior is to hash the OTP PIN, which is safer.
+
+.. versionadded:: 2.2
 
 registration.length
 ~~~~~~~~~~~~~~~~~~~
@@ -234,6 +256,8 @@ registration.length
 type: ``integer``
 
 This is the length of the generated registration codes.
+
+.. versionadded:: 3.5
 
 registration.contents
 ~~~~~~~~~~~~~~~~~~~~~
@@ -246,6 +270,8 @@ This defines what characters the registrationcodes should contain.
 
 This takes the same values as the admin policy :ref:`admin_policies_otp_pin_contents`.
 
+.. versionadded:: 3.5
+
 pw.length
 ~~~~~~~~~
 
@@ -256,6 +282,8 @@ type: ``integer``
 This is the length if the password of a password token (pw token) is automatically generated
 with the ``genkey`` parameter.
 The default length is 12.
+
+.. versionadded:: 3.7
 
 pw.contents
 ~~~~~~~~~~~
@@ -268,6 +296,8 @@ This is the content of an automatically generated password of a password token (
 
 This takes the same values as the admin policy :ref:`admin_policies_otp_pin_contents`.
 
+.. versionadded:: 3.7
+
 losttoken_PW_length
 ~~~~~~~~~~~~~~~~~~~
 
@@ -276,6 +306,8 @@ losttoken_PW_length
 type: ``integer``
 
 This is the length of the generated password for the lost token process.
+
+.. versionadded:: 2.1
 
 losttoken_PW_contents
 ~~~~~~~~~~~~~~~~~~~~~
@@ -301,6 +333,8 @@ password like *AC#!49MK))*.
    part of the password. Also, ``C`` would again add the character "I", which is
    not part of Base58.
 
+.. versionadded:: 2.1
+
 losttoken_valid
 ~~~~~~~~~~~~~~~
 
@@ -308,6 +342,8 @@ type: ``integer``
 
 This is how many days the replacement token for the lost token should
 be valid. After this many days the replacement can not be used anymore.
+
+.. versionadded:: 2.1
 
 yubikey_access_code
 ~~~~~~~~~~~~~~~~~~~
@@ -329,6 +365,8 @@ You can add two access codes separated by a colon to change from one access code
 .. note:: As long as the enrollment client does not read and use this access code, this configuration
    has no effect.
 
+.. versionadded:: 3.7
+
 papertoken_count
 ~~~~~~~~~~~~~~~~
 
@@ -337,6 +375,8 @@ type: ``integer``
 Defines how many OTP values should be generated (and printed) for the paper
 token.
 
+.. versionadded:: 2.17
+
 tantoken_count
 ~~~~~~~~~~~~~~
 
@@ -344,6 +384,7 @@ type: ``integer``
 
 Defines how many OTP values should be generated (and printed) for the TAN token.
 
+.. versionadded:: 2.23
 
 .. _2step_parameters:
 .. _hotp-2step-clientsize:
@@ -367,6 +408,8 @@ The ``difficulty`` is a parameter for the key generation.
 PBKDF2 is used. In this case the ``difficulty``
 specifies the number of rounds.
 
+.. versionadded:: 2.21
+
 .. _force_app_pin:
 .. _hotp-force-app-pin:
 .. _totp-force-app-pin:
@@ -388,6 +431,11 @@ to force the user to protect the token with a pin (unrelated to the token pin).
    Starting with privacyIDEA 3.13, the :ref:`policy_app_force_unlock` policy is recommended. This will also set
    app_force_unlock=pin in the QR code.
 
+.. versionadded:: 3.1 ``hotp_force_app_pin`` and ``totp_force_app_pin``
+
+.. versionadded:: 3.7.1 ``push_force_app_pin``
+
+.. versionadded:: 3.9 ``daypassword_force_app_pin``
 
 .. _policy_firebase_config:
 
@@ -409,6 +457,8 @@ In this mode, no push gateway is used during enrollment or authentication.
 Note that you also need to set the authentication policy
 :ref:`policy_auth_push_allow_poll` to allow the push token to poll for challenges.
 
+.. versionadded:: 3.0
+
 push_registration_url
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -420,6 +470,8 @@ This URL usually ends with ``/ttype/push``. Note that the smartphone app
 may connect to a different privacyIDEA URL than the URL of the privacyIDEA
 WebUI.
 
+.. versionadded:: 3.6
+
 push_ttl
 ~~~~~~~~
 
@@ -429,6 +481,8 @@ This is the time (in minutes) for which the privacyIDEA server
 accepts the response of the second registration step.
 The smartphone could have connection issues, so the second step
 could take some time to happen.
+
+.. versionadded:: 3.6
 
 .. _policy_push_ssl_verify_enrollment:
 
@@ -443,6 +497,7 @@ The smartphone needs to verify the SSL certificate of the privacyIDEA server dur
 the enrollment of push tokens. By default, the verification is enabled. To disable
 verification during authentication, see :ref:`policy_push_ssl_verify_auth`.
 
+.. versionadded:: 3.0
 
 .. _policy_use_pia_scheme:
 
@@ -476,6 +531,8 @@ token can not be used for authentication.
 
 .. note:: This does not work in combination with the admin policy :ref:`admin_policy_2step` and
   the user policy :ref:`user_policy_2step`.
+
+.. versionadded:: 3.7
 
 .. _policy_webauthn_enroll_relying_party_id:
 
@@ -512,6 +569,8 @@ relying party ID for the domain ``example.com``).
     an overview of all the settings required for the use of WebAuthn, see
     :ref:`webauthn_otp_token`.
 
+.. versionadded:: 3.3
+
 .. _policy_webauthn_enroll_relying_party_name:
 
 webauthn_relying_party_name
@@ -526,6 +585,8 @@ the entity whose web applications the WebAuthn tokens are used for.
 .. note:: This action needs to be set to be able to enroll WebAuthn tokens. For
     an overview of all the settings required for the use of WebAuthn, see
     :ref:`webauthn_otp_token`.
+
+.. versionadded:: 3.3
 
 .. _policy_webauthn_enroll_timeout:
 
@@ -552,6 +613,8 @@ The default timeout is 60 seconds.
 .. note:: If you set this policy you may also want to set
     :ref:`policy_webauthn_authn_timeout`.
 
+.. versionadded:: 3.3
+
 .. _policy_webauthn_enroll_authenticator_attachment:
 
 webauthn_authenticator_attachment
@@ -568,6 +631,8 @@ removed and plugged into a different device.
 
 The default is to allow both ``platform`` and ``cross-platform`` attachment
 for authenticators.
+
+.. versionadded:: 3.3
 
 .. _policy_webauthn_enroll_authenticator_selection_list:
 
@@ -590,6 +655,8 @@ unless limited through some other action.
 
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_authz_authenticator_selection_list`.
+
+.. versionadded:: 3.3
 
 .. _policy_webauthn_enroll_user_verification_requirement:
 
@@ -618,6 +685,8 @@ supported by the token.
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_authn_user_verification_requirement`.
 
+.. versionadded:: 3.3
+
 .. _policy_webauthn_enroll_public_key_credential_algorithms:
 
 webauthn_public_key_credential_algorithms
@@ -638,6 +707,8 @@ The order of preferred algorithms is ``ECDSA > RSASSA-PSS > RSASSA-PKCS1-v1_5``.
 .. note:: Not all authenticators will support all algorithms. It should not
     usually be necessary to configure this action. Do *not* change this
     preference, unless you are sure you know what you are doing!
+
+.. versionadded:: 3.8
 
 .. _policy_webauthn_enroll_authenticator_attestation_form:
 
@@ -675,6 +746,8 @@ The default is to request ``direct`` (full) attestation from the authenticator.
     to a request for a token without attestation information, access will be
     denied.
 
+.. versionadded:: 3.3
+
 .. _policy_webauthn_enroll_authenticator_attestation_level:
 
 webauthn_authenticator_attestation_level
@@ -708,6 +781,8 @@ by an unknown certificate.
     this is of concern for your attack scenarios, please make sure to properly
     configure your attestation roots!
 
+.. versionadded:: 3.3
+
 .. _policy_passkey_attestation_conveyance_preference:
 
 passkey_attestation_conveyance_preference
@@ -729,6 +804,8 @@ For these reasons, ``none`` is the recommended setting for passkeys; see :ref:`p
 
 This policy is separate from :ref:`policy_webauthn_enroll_authenticator_attestation_form` and
 :ref:`policy_webauthn_enroll_authenticator_attestation_level`, which are not used for passkey enrollment.
+
+.. versionadded:: 3.11
 
 .. _policy_passkey_user_label:
 
@@ -773,6 +850,8 @@ whole template resolves to an empty value, the login name of the user is used as
     the value is encoded as UTF-8, non-ASCII characters (e.g. accented letters or umlauts) take up more than one
     byte, so the effective number of characters may be lower than 64. Keep the template short enough that the
     resolved name stays within this limit.
+
+.. versionadded:: 3.14
 
 .. _policy_passkey_enroll_allowed_authenticator_device_types:
 
@@ -838,6 +917,7 @@ filtering fails and enrollment is denied.
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_authz_req`.
 
+.. versionadded:: 3.3
 
 .. _policy_webauthn_challenge_text_enrollment:
 
@@ -851,6 +931,7 @@ their WebAuthn token during enrollment. This might be different from the
 challenge text received during authentication
 (see :ref:`policy_webauthn_challenge_text_auth`).
 
+.. versionadded:: 3.3
 
 .. _policy_webauthn_avoid_double_registration:
 
@@ -866,6 +947,7 @@ Revoked tokens are not counted: once a webauthn token has been revoked, the
 same authenticator can be re-enrolled for the same user. Merely disabled
 tokens still block re-registration, since disabling is reversible.
 
+.. versionadded:: 3.8
 
 .. _require_attestation:
 
@@ -888,6 +970,7 @@ This policy can be set to:
 The trusted root certificate authorities and intermediate certificate authorities can be configured via
 the policies :ref:`admin_trusted_attestation_CA` and :ref:`user_trusted_attestation_CA`
 
+.. versionadded:: 3.5
 
 .. _policy_certificate_ca_connector:
 
@@ -904,6 +987,7 @@ The list of CA connectors is read from the configured connectors.
 .. note:: When using the privacyIDEA Smartcard Enrollment Tool, this policy
    needs to be set. Otherwise the enrollment will fail.
 
+.. versionadded:: 3.8
 
 .. _policy_certificate_template:
 
@@ -919,6 +1003,7 @@ The administrator needs to add the name of the template manually in this policy.
 .. note:: When using the privacyIDEA Smartcard Enrollment Tool in combination with a Microsoft CA,
    this policy needs to be set, otherwise the enrollment will fail.
 
+.. versionadded:: 3.8
 
 .. _policy_certificate_request_subject_component:
 
@@ -936,6 +1021,8 @@ is written to the Organizational Unit (OU) of the request.
 .. note:: A couple of certificate templates on the Microsoft CA will not allow
    having the email component directly in the subject!
 
+.. versionadded:: 3.8
+
 .. _policy_require_description:
 
 require_description
@@ -948,6 +1035,8 @@ be enforced with the "require_description policy". The desired token-types can b
 selected here. After setting up the policy, the selected token types can only be
 enrolled if a description is set during enrollment.
 
+.. versionadded:: 3.9
+
 .. _policy_email_validate:
 
 email_validation
@@ -959,6 +1048,8 @@ This action can be used to validate the email address of the user during enrollm
 The administrator specifies the Python module that should be used to validate the email address.
 The modules can be defined in the ``pi.cfg`` file.
 See :ref:`picfg_email_validators` for more information.
+
+.. versionadded:: 3.10
 
 .. _policy_app_force_unlock:
 
@@ -988,3 +1079,5 @@ app stores the token data in the secure storage provided by the operating system
 
 .. [#rpid] https://www.w3.org/TR/webauthn-3/#rp-id
 .. [#webauthnrelyingparty] https://www.w3.org/TR/webauthn-3/#webauthn-relying-party
+
+.. versionadded:: 3.13

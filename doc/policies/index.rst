@@ -53,9 +53,13 @@ Each policy can contain the following attributes:
      On a library level or during migration scripts policies with
      other characters could be created.
 
+.. versionadded:: 2.0
+
 **scope**
 
   The scope of the policy as described above.
+
+.. versionadded:: 2.0
 
 **priority**
 
@@ -74,8 +78,12 @@ Each policy can contain the following attributes:
   Policy conflicts can still occur if multiple policies with the same priority
   specify different values for the same action.
 
+.. versionadded:: 2.23
+
 **description**
     Use this to describe your policy in more detail.
+
+.. versionadded:: 3.10
 
 **action**
 
@@ -92,6 +100,8 @@ Each policy can contain the following attributes:
   ``string`` and ``integer`` actions require an additional value - like
   ``scope=authentication:action='otppin=userstore'``.
 
+.. versionadded:: 2.0
+
 
 Conditions
 ----------
@@ -106,6 +116,8 @@ matches no value at all.
   This is the realm, for which this policy is valid.
 
   If this field is left blank, this policy is valid for all realms.
+
+.. versionadded:: 2.0
 
 .. _check_all_resolvers:
 
@@ -132,6 +144,10 @@ matches no value at all.
      policy will match for all users, which are also contained in *resolver2*
      as a secondary resolver.
 
+.. versionadded:: 2.0
+
+.. versionadded:: 2.17 ``check_all_resolvers``
+
 **user**
 
   This is the user, for whom this policy is valid: the user who authenticates or acts on their own tokens, and in
@@ -143,12 +159,18 @@ matches no value at all.
   .. note:: Starting with version 3.10 you can choose if the username and the
     adminname have to match case-sensitively or not.
 
+.. versionadded:: 2.0
+
 **admin realm** and **admin user**
 
   Only in the scope *admin*: the realm and the login name of the administrator for whom this policy is valid,
   ``adminrealm`` and ``adminuser`` in the API. See :ref:`admin_policies`.
 
   If these fields are left blank, this policy is valid for all administrators.
+
+.. versionadded:: 2.4 *admin realm*
+
+.. versionadded:: 3.3 *admin user*
 
 **privacyIDEA Node**
 
@@ -160,6 +182,8 @@ matches no value at all.
   dedicated nodes.
 
   The nodes are configured in pi.cfg. See :ref:`cfgfile`.
+
+.. versionadded:: 3.4
 
 **time**
 
@@ -181,6 +205,8 @@ matches no value at all.
      This can lead to unintended side effects. Carefully consider this before
      using time restricted policies.
 
+.. versionadded:: 2.12
+
 .. _client_policies:
 
 **client**
@@ -193,11 +219,15 @@ matches no value at all.
   You can enter several IP addresses or subnets divided by comma. Exclude an item
   by prepending a minus sign (like ``10.2.0.0/16, -10.2.0.1, 192.168.0.1``).
 
+.. versionadded:: 2.0
+
 **User Agent**
 
   This is the user agent of the requesting client for which this action is valid. You can use this to define policies
   depending on the plugin. Multiple plugins can be selected from the drop-down list. But you can also add custom
   user agents. The matching is applied to the name, but not to the version. It is case-insensitive.
+
+.. versionadded:: 3.12
 
 **additional conditions**
 
@@ -210,3 +240,5 @@ matches no value at all.
     :maxdepth: 1
 
     conditions
+
+.. versionadded:: 3.1
