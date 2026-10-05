@@ -370,8 +370,7 @@ describe("NewSmtpServerComponent", () => {
         identifier: "existing-id",
         server: "smtp.example.com",
         sender: "sender@example.com",
-        tls: true,
-        enqueue_job: false
+        tls: true
       };
 
       await TestBed.configureTestingModule({

@@ -280,7 +280,7 @@ The *Notification Delivery* panel summarises outbound message delivery
 across the three notification channels:
 
 * **Push** - per configured push gateway identifier.
-* **SMS** - per configured SMS gateway identifier (HTTP, SMPP, Sipgate,
+* **SMS** - per configured SMS gateway identifier (HTTP, SMPP,
   SMTP-to-SMS, script).
 * **Email** - per configured SMTP server identifier.
 
@@ -291,13 +291,6 @@ against the channel row's total. Reads ``GET
 /system/health/notification_delivery`` (``since_seconds``, default
 ``3600``). The panel carries the same window picker in its header as
 *Resolver Timing*, with the same three choices and the same storage.
-
-.. note::
-
-   When the SMTP job queue is enabled (``enqueue_job=True`` on the SMTP
-   configuration), the email metric records dispatch success rather than
-   final delivery: the synchronous return value is ``True`` once the
-   job has been queued, regardless of what the worker eventually does.
 
 Authentication activity
 ~~~~~~~~~~~~~~~~~~~~~~~

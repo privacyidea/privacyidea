@@ -74,7 +74,6 @@ describe("SmtpService", () => {
     timeout: 120,
     sender: "",
     tls: true,
-    enqueue_job: false,
     smime: false,
     dont_send_on_error: true
   });
@@ -196,7 +195,6 @@ describe("SmtpService", () => {
           timeout: 120,
           sender: "",
           tls: true,
-          enqueue_job: false,
           smime: false,
           dont_send_on_error: true
         }

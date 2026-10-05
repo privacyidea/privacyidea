@@ -35,7 +35,6 @@ export interface SmtpServer {
   password?: string;
   description?: string;
   tls: boolean;
-  enqueue_job: boolean;
   certificate?: string;
   private_key?: string;
   private_key_password?: string;

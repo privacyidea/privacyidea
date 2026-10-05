@@ -33,7 +33,6 @@ from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD, is_censored, censor_dict)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.metrics import inc, observe
-from privacyidea.lib.queue import job, wrap_job, has_job_queue
 from privacyidea.lib.utils import fetch_one_resource, to_unicode
 from privacyidea.lib.utils.export import (register_import, register_export)
 from privacyidea.models import SMTPServer as SMTPServerDB, db
@@ -49,8 +48,6 @@ This module is tested in tests/test_lib_smtpserver.py
 
 log = logging.getLogger(__name__)
 TIMEOUT = 10
-
-SEND_EMAIL_JOB_NAME = "smtpserver.send_email"
 
 
 def _get_mail_debug_level():
@@ -76,13 +73,11 @@ class SMTPServer:
 
     def send_email(self, recipient, subject, body, sender=None,
                    reply_to=None, mimetype="plain"):
-        return send_or_enqueue_email(self.config.get(), recipient, subject, body, sender,
-                                     reply_to, mimetype)
+        return self.send_email_with_config(self.config.get(), recipient, subject, body, sender, reply_to, mimetype)
 
     @staticmethod
-    @job(SEND_EMAIL_JOB_NAME)
-    def test_email(config, recipient, subject, body, sender=None,
-                   reply_to=None, mimetype="plain"):
+    def send_email_with_config(config, recipient, subject, body, sender=None,
+                               reply_to=None, mimetype="plain"):
         """
         Sends an email via the configuration.
 
@@ -193,20 +188,6 @@ class SMTPServer:
         return success
 
 
-def send_or_enqueue_email(config, recipient, subject, body, sender=None, reply_to=None, mimetype="plain"):
-    """
-    According to the value of ``config["enqueue_job"]``, send the email directly or send a job
-    to the queue (if a queue is configured).
-    See ``SMTPServer.test_email`` for parameters.
-    :return: True if the job is sent to the queue, return value of ``SMTPServer.test_email`` otherwise
-    """
-    if has_job_queue() and config.get("enqueue_job", False):
-        send = wrap_job(SEND_EMAIL_JOB_NAME, True)
-    else:
-        send = SMTPServer.test_email
-    return send(config, recipient, subject, body, sender, reply_to, mimetype)
-
-
 def _record_email_send(identifier, start, success, error=False):
     labels = {"identifier": identifier}
     observe("email_send_duration_seconds", time.monotonic() - start, labels)
@@ -266,8 +247,7 @@ def send_email_data(mailserver, subject, message, mail_from,
     """
     dbserver = SMTPServerDB(identifier="emailtoken", server=mailserver,
                             sender=mail_from, username=username,
-                            password=password, port=port, tls=email_tls, timeout=timeout,
-                            enqueue_job=False)
+                            password=password, port=port, tls=email_tls, timeout=timeout)
     smtpserver = SMTPServer(dbserver)
     start = time.monotonic()
     try:
@@ -355,7 +335,7 @@ def list_smtpservers(identifier=None, server=None):
 @log_with(log)
 def add_smtpserver(identifier, server: str = None, port: int = 25, username: str = "", password: str = "",
                    sender: str = "", description: str = "", tls: bool = False, timeout: int = TIMEOUT,
-                   enqueue_job: bool = False, smime: bool = False, dont_send_on_error: bool = False,
+                   smime: bool = False, dont_send_on_error: bool = False,
                    private_key: str = "", private_key_password: str | None = None, certificate: str = ""):
     """
     This adds an smtp server to the smtp server database table.
@@ -409,8 +389,6 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
             smtp_server.description = description
         if timeout is not None:
             smtp_server.timeout = timeout
-        if enqueue_job is not None:
-            smtp_server.enqueue_job = enqueue_job
         if smime is not None:
             smtp_server.smime = smime
         if dont_send_on_error is not None:
@@ -425,7 +403,7 @@ def add_smtpserver(identifier, server: str = None, port: int = 25, username: str
         # Create new entry
         smtp_server = SMTPServerDB(identifier=identifier, server=server, port=port, username=username,
                                    password=encrypted_password, sender=sender, description=description, tls=tls,
-                                   timeout=timeout, enqueue_job=enqueue_job, smime=smime,
+                                   timeout=timeout, smime=smime,
                                    dont_send_on_error=dont_send_on_error, private_key=private_key,
                                    private_key_password=encrypted_private_key_password, certificate=certificate)
         db.session.add(smtp_server)
@@ -476,7 +454,8 @@ def import_smtpserver(data, name=None):
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
-        # condition is apparently not used anymore
+        # Exports of privacyIDEA 3.14 and older contain "enqueue_job", a setting that no longer exists.
+        res_data = {key: value for key, value in res_data.items() if key != "enqueue_job"}
         rid = add_smtpserver(res_name, **res_data)
         log.info(f'Import of SMTP server "{res_name!s}" finished,'
                  f' id: {rid!s}')

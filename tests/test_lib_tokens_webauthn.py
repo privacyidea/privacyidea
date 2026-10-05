@@ -131,7 +131,6 @@ EXPECTED_REGISTRATION_CLIENT_EXTENSIONS = {
     'appid': None,
     'loc': None
 }
-APP_ID = "http://localhost:5000"
 PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE = [
     CoseAlgorithm.ES256,
     CoseAlgorithm.PS256
@@ -235,7 +234,6 @@ class WebAuthnTokenTestCase(MyTestCase):
                    action=FIDO2PolicyAction.RELYING_PARTY_NAME + "=" + RP_NAME + ","
                           + FIDO2PolicyAction.RELYING_PARTY_ID + "=" + RP_ID)
         set_privacyidea_config(FIDO2ConfigOptions.TRUST_ANCHOR_DIR, TRUST_ANCHOR_DIR)
-        set_privacyidea_config(FIDO2ConfigOptions.APP_ID, APP_ID)
 
         self.user = User(login=USER_NAME, realm=self.realm1,
                          resolver=self.resolvername1)
@@ -773,7 +771,6 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
                                                            self.rp_name,
                                                            FIDO2PolicyAction.RELYING_PARTY_ID,
                                                            self.rp_id))
-        set_privacyidea_config(FIDO2ConfigOptions.APP_ID, self.app_id)
         self.user = User(login='hans', realm=self.realm1,
                          resolver=self.resolvername1)
         # TODO: extract token enrollment into a local function

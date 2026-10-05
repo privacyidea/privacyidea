@@ -85,13 +85,11 @@ from privacyidea.api.ttype import ttype_blueprint
 from privacyidea.api.user import user_blueprint
 from privacyidea.api.validate import validate_blueprint
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
-from privacyidea.lib import queue
 from privacyidea.lib.conditional_access.session import init_ca_session
 from privacyidea.lib.crypto import build_pass_context, init_hsm
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
 from privacyidea.models import db, NodeName
-from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.webui.login import (DEFAULT_LANGUAGE_LIST, WEBUI_DIST_PATH, login_blueprint,
                                      get_accepted_language)
 
@@ -202,7 +200,6 @@ def _register_blueprints(app):
     app.register_blueprint(machine_blueprint, url_prefix='/machine')
     app.register_blueprint(application_blueprint, url_prefix='/application')
     app.register_blueprint(caconnector_blueprint, url_prefix='/caconnector')
-    app.register_blueprint(cert_blueprint, url_prefix='/certificate')
     app.register_blueprint(ttype_blueprint, url_prefix='/ttype')
     app.register_blueprint(register_blueprint, url_prefix='/register')
     app.register_blueprint(smtpserver_blueprint, url_prefix='/smtpserver')
@@ -591,8 +588,6 @@ def create_app(config_name="development",
 
     babel.init_app(app, locale_selector=get_accepted_language)
 
-    queue.register_app(app)
-
     if initialize_hsm:
         with app.app_context():
             init_hsm()
@@ -691,8 +686,6 @@ def create_docker_app():
     app.jinja_env.filters["versioned"] = versioned_asset
 
     babel.init_app(app, locale_selector=get_accepted_language)
-
-    queue.register_app(app)
 
     if app.config.get(ConfigKey.HSM_INITIALIZE, False):
         with app.app_context():

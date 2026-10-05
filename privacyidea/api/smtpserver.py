@@ -37,7 +37,7 @@ from flask import (Blueprint,
 from flask import g
 
 from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
-                                        delete_smtpserver, send_or_enqueue_email)
+                                        delete_smtpserver, SMTPServer)
 from .lib.utils import (send_result)
 from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -75,8 +75,6 @@ def create(identifier=None):
         this server.
     :jsonparam tls: ``True`` to use STARTTLS, ``False`` (default) for plain.
     :jsonparam timeout: socket timeout in seconds, default ``10``.
-    :jsonparam enqueue_job: if ``True``, mail is queued via the privacyIDEA
-        job queue instead of being sent inline. Default ``False``.
     :jsonparam description: free-form description.
     :jsonparam smime: if ``True``, outgoing mail is S/MIME-signed using the
         configured key/certificate.
@@ -96,7 +94,6 @@ def create(identifier=None):
     tls = is_true(get_optional(param, "tls", default=False))
     description = get_optional(param, "description", default="")
     timeout = int(get_optional(param, "timeout") or 10)
-    enqueue_job = is_true(get_optional(param, "enqueue_job", default=False))
     smime = is_true(get_optional(param, "smime", default=False))
     dont_send_on_error = is_true(get_optional(param, "dont_send_on_error", default=False))
     private_key = get_optional(param, "private_key", default="")
@@ -105,8 +102,7 @@ def create(identifier=None):
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
-                       sender=sender, timeout=timeout, enqueue_job=enqueue_job,
-                       smime=smime, dont_send_on_error=dont_send_on_error,
+                       sender=sender, timeout=timeout, smime=smime, dont_send_on_error=dont_send_on_error,
                        private_key=private_key, private_key_password=private_key_password,
                        certificate=certificate)
 
@@ -124,7 +120,7 @@ def list_smtpservers_api():
 
     The result is a dictionary keyed by ``identifier``; each value contains
     ``server``, ``port``, ``username``, ``password``, ``sender``, ``tls``,
-    ``timeout``, ``enqueue_job``, ``description``, ``smime``,
+    ``timeout``, ``description``, ``smime``,
     ``dont_send_on_error``, ``private_key``, ``private_key_password`` and
     ``certificate``.
 
@@ -192,16 +188,14 @@ def test():
     :jsonparam sender: ``From:`` address used for the test message.
     :jsonparam tls: ``True`` to use STARTTLS, default ``False``.
     :jsonparam timeout: socket timeout in seconds, default ``10``.
-    :jsonparam enqueue_job: if ``True``, the test mail is queued via the
-        job queue instead of being sent inline. Default ``False``.
     :jsonparam smime: if ``True``, the test message is S/MIME-signed.
     :jsonparam dont_send_on_error: if ``True`` and S/MIME signing fails,
         the message is dropped instead of being sent unsigned.
     :jsonparam private_key: PEM-encoded S/MIME private key.
     :jsonparam private_key_password: passphrase for the S/MIME private key.
     :jsonparam certificate: PEM-encoded S/MIME certificate.
-    :status 200: ``True`` if the message was delivered (or queued)
-        successfully, ``False`` otherwise.
+    :status 200: ``True`` if the message was delivered successfully,
+        ``False`` otherwise.
     """
     param = request.all_data
     identifier = get_required(param, "identifier")
@@ -213,7 +207,6 @@ def test():
     tls = is_true(get_optional(param, "tls", default=False))
     recipient = get_required(param, "recipient")
     timeout = int(get_optional(param, "timeout") or 10)
-    enqueue_job = is_true(get_optional(param, "enqueue_job", default=False))
     smime = is_true(get_optional(param, "smime", default=False))
     dont_send_on_error = is_true(get_optional(param, "dont_send_on_error", default=False))
     private_key = get_optional(param, "private_key", default="")
@@ -222,14 +215,13 @@ def test():
 
     s = dict(identifier=identifier, server=server, port=port,
              username=username, password=password, sender=sender,
-             tls=tls, timeout=timeout, enqueue_job=enqueue_job,
-             smime=smime, dont_send_on_error=dont_send_on_error,
+             tls=tls, timeout=timeout, smime=smime, dont_send_on_error=dont_send_on_error,
              private_key=private_key, private_key_password=private_key_password,
              certificate=certificate)
-    r = send_or_enqueue_email(s, recipient,
-                              "Test Email from privacyIDEA",
-                              "This is a test email from privacyIDEA. "
-                              f"The configuration {identifier} is working.")
+    r = SMTPServer.send_email_with_config(s, recipient,
+                                          "Test Email from privacyIDEA",
+                                          "This is a test email from privacyIDEA. "
+                                          f"The configuration {identifier} is working.")
 
     g.audit_object.log({'success': r > 0,
                         'info': r})

@@ -29,13 +29,11 @@ from privacyidea.lib.error import CAError
 from privacyidea.lib.utils import int_to_hex, to_unicode
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector
 from cryptography import x509
-from cryptography.hazmat.primitives.serialization import Encoding
 from subprocess import Popen, PIPE  # nosec B404
 import yaml
 import datetime
 from pathlib import Path
 import shlex
-import re
 import logging
 import os
 import traceback
@@ -45,9 +43,6 @@ log = logging.getLogger(__name__)
 CA_SIGN = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} " \
           "-extensions {extension} -days {days} -in {csrfile} -out {" \
           "certificate} -batch"
-CA_SIGN_SPKAC = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} "\
-                "-extensions {extension} -days {days} -spkac {spkacfile} -out " \
-                "{certificate} -batch"
 
 CA_REVOKE = "openssl ca -keyfile {cakey} -cert {cacert} -config {config} "\
             "-revoke {certificate} -crl_reason {reason}"
@@ -346,11 +341,10 @@ class LocalCAConnector(BaseCAConnector):
                                 This is relative to the WorkingDir.
           * ``days``: Number of days the certificate should be valid (default 365,
                       can be overwritten by a given template setting)
-          * ``spkac``: Whether the CSR is in SPKAC format
           * ``extension``: The extension section to use from the config file
           * ``template``: The template to use for signing the certificate
 
-        :param csr: Certificate signing request (PEM string or SPKAC)
+        :param csr: Certificate signing request (PEM string)
         :type csr: str
         :param options: Additional options for signing the CSR (see above)
         :type options: dict
@@ -361,7 +355,6 @@ class LocalCAConnector(BaseCAConnector):
         # Sign the certificate for one year
         options = options or {}
         days = options.get("days", 365)
-        spkac = options.get("spkac")
         config = options.get(ATTR.OPENSSL_CNF,
                              self.config.get(
                                  ATTR.OPENSSL_CNF, "/etc/ssl/openssl.cnf"))
@@ -385,15 +378,10 @@ class LocalCAConnector(BaseCAConnector):
             extension = t_data.get("extensions", extension)
             days = t_data.get("days", days)
 
-        # Determine filename from the CN of the request
-        if spkac:
-            common_name = re.search("CN=(.*)", csr).group(0).split("=")[1]
-            csr_filename = common_name + ".txt"
-            certificate_filename = common_name + ".der"
-        else:
-            csr_obj = x509.load_pem_x509_csr(csr.encode())
-            csr_filename = self._filename_from_x509(csr_obj.subject, file_extension="req")
-            certificate_filename = self._filename_from_x509(csr_obj.subject, file_extension="pem")
+        # Determine filename from the subject of the request
+        csr_obj = x509.load_pem_x509_csr(csr.encode())
+        csr_filename = self._filename_from_x509(csr_obj.subject, file_extension="req")
+        certificate_filename = self._filename_from_x509(csr_obj.subject, file_extension="pem")
         csr_filename = csr_filename.replace(" ", "_")
         certificate_filename = certificate_filename.replace(" ", "_")
         # dump the file
@@ -402,19 +390,11 @@ class LocalCAConnector(BaseCAConnector):
             f.write(csr)
 
         # TODO: use the template name to set the days and the extension!
-        if spkac:
-            cmd = CA_SIGN_SPKAC.format(cakey=self.cakey, cacert=self.cacert,
-                                       days=days, config=config,
-                                       extension=extension,
-                                       spkacfile=os.path.join(csrdir, csr_filename),
-                                       certificate=os.path.join(certificatedir,
-                                                                certificate_filename))
-        else:
-            cmd = CA_SIGN.format(cakey=self.cakey, cacert=self.cacert,
-                                 days=days, config=config, extension=extension,
-                                 csrfile=os.path.join(csrdir, csr_filename),
-                                 certificate=os.path.join(certificatedir,
-                                                          certificate_filename))
+        cmd = CA_SIGN.format(cakey=self.cakey, cacert=self.cacert,
+                             days=days, config=config, extension=extension,
+                             csrfile=os.path.join(csrdir, csr_filename),
+                             certificate=os.path.join(certificatedir,
+                                                      certificate_filename))
         # run the command
         args = shlex.split(cmd)
         # the command is configured by the administrator: CA key, CA cert, number of days, the config file
@@ -426,17 +406,9 @@ class LocalCAConnector(BaseCAConnector):
             log.debug(f"Command that lead to the error: {cmd}")
             raise CAError("An error occurred during signing of the certificate")
 
-        with open(os.path.join(certificatedir, certificate_filename), "rb") as f:
+        with open(os.path.join(certificatedir, certificate_filename)) as f:
             certificate = f.read()
-
-        # We return the cert_obj.
-        if spkac:
-            cert_obj = x509.load_der_x509_certificate(certificate)
-            cert_result = cert_obj.public_bytes(Encoding.PEM).decode()
-        else:
-            # Already in PEM format
-            cert_result = certificate.decode()
-        return 0, cert_result
+        return 0, certificate
 
     def get_templates(self):
         """

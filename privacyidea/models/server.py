@@ -99,7 +99,6 @@ class SMTPServer(MethodsMixin, db.Model):
     tls: Mapped[bool | None] = mapped_column(Boolean, default=False)
     description: Mapped[str | None] = mapped_column(Unicode(2000), default='')
     timeout: Mapped[int | None] = mapped_column(Integer, default=10)
-    enqueue_job: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     smime: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     dont_send_on_error: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     private_key: Mapped[str | None] = mapped_column(Unicode(255), default="")
@@ -121,7 +120,6 @@ class SMTPServer(MethodsMixin, db.Model):
             "tls": self.tls,
             "description": self.description,
             "timeout": self.timeout,
-            "enqueue_job": self.enqueue_job,
             "smime": self.smime,
             "dont_send_on_error": self.dont_send_on_error,
             "private_key": self.private_key,

@@ -83,18 +83,6 @@
           matSuffix
           (clearButtonClick)="clearField(TOTP_HASHLIB); $event.stopPropagation()"></app-clear-button>
       </mat-form-field>
-
-      <mat-form-field
-        appearance="fill"
-        class="input-width-s">
-        <mat-label i18n="@@tokenTypeConfig.defaultTimeShift">Default Time Shift</mat-label>
-        <input
-          [value]="formData()[TOTP_TIME_SHIFT] ?? ''"
-          (input)="updateFormData(TOTP_TIME_SHIFT, $any($event.target).valueAsNumber)"
-          matInput
-          placeholder="0"
-          type="number" />
-      </mat-form-field>
     </div>
   </div>
 </mat-expansion-panel>

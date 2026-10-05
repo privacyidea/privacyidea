@@ -49,7 +49,6 @@ interface SmtpFormModel {
   password: string;
   description: string;
   tls: boolean;
-  enqueue_job: boolean;
   certificate: string;
   private_key: string;
   private_key_password: string;
@@ -68,7 +67,6 @@ const EMPTY_SMTP_FORM: SmtpFormModel = {
   password: "",
   description: "",
   tls: true,
-  enqueue_job: false,
   certificate: "",
   private_key: "",
   private_key_password: "",
@@ -176,7 +174,6 @@ export class NewSmtpServerComponent implements OnDestroy {
       password: data?.password || "",
       description: data?.description || "",
       tls: data?.tls ?? true,
-      enqueue_job: data?.enqueue_job ?? false,
       certificate: data?.certificate || "",
       private_key: data?.private_key || "",
       private_key_password: data?.private_key_password || "",

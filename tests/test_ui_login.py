@@ -215,7 +215,7 @@ class ConfigTestCase(MyApiTestCase):
             result = res.json.get("result")
             config = result.get("value")
             expected_entries = {"instance", "backendUrl", "browser_lang", "remote_user", "force_remote_user", "theme",
-                                "translation_warning", "password_reset", "hsm_ready", "has_job_queue", "customization",
+                                "translation_warning", "password_reset", "hsm_ready", "customization",
                                 "custom_css", "customization_menu_file", "customization_baseline_file", "realms",
                                 "show_node", "external_links", "login_text", "gdpr_link", "logo", "page_title",
                                 "otp_pin_set_random_user", "privacyideaVersionNumber", "passkey_login"}

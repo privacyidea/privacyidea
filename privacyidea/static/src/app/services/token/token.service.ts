@@ -94,7 +94,6 @@ export type TokenTypeKey =
   | "registration"
   | "tan"
   | "tiqr"
-  | "u2f"
   | "vasco"
   | "webauthn"
   | "passkey";

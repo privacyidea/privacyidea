@@ -49,8 +49,6 @@ export class MockSystemService implements SystemServiceInterface {
       ReturnSamlAttributes: "True",
       ReturnSamlAttributesOnFail: "False",
       AutoResync: "True",
-      UiLoginDisplayHelpButton: "False",
-      UiLoginDisplayRealmBox: "True",
       someOtherConfig: "test_value"
     };
 

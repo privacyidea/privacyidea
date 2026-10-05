@@ -58,10 +58,10 @@ class BaseCAConnector:
         CertificateDir: The directory where to save the certificates. This is
         relative to the WorkingDir.
 
-        :param csr: Certificate signing request (PEM format or SPKAC)
+        :param csr: Certificate signing request (PEM format)
         :type csr: str
         :param options: Additional options like the validity time or the
-            template or spkac=1
+            template
         :type options: dict
         :return: Returns a return value and the certificate in PEM format
         :rtype: tuple

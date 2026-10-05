@@ -30,7 +30,7 @@ shared secrets). The dispatcher only sets up the audit, policy and event
 context.
 
 Token classes that currently use this endpoint include TiQR
-(:ref:`code_tiqr_token`), push, U2F and Yubikey.
+(:ref:`code_tiqr_token`), push and Yubikey.
 """
 import copy
 import json
@@ -130,7 +130,7 @@ def token(ttype=None):
     token class.
 
     :param ttype: path component naming the token type
-        (e.g. ``tiqr``, ``push``, ``u2f``, ``yubikey``).
+        (e.g. ``tiqr``, ``push``, ``yubikey``).
     :status 200: token-type-dependent response.
     :status 400: the ``ttype`` does not match any registered token class.
     """

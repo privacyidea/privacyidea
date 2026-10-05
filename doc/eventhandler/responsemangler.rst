@@ -27,7 +27,7 @@ This action simply deletes the given JSON pointer from the response.
 
 **Example**
 
-You can use this to delete ``/detail/googleurl``, ``/detail/oathurl`` and ``/detail/otpkey``
+You can use this to delete ``/detail/googleurl`` and ``/detail/otpkey``
 in a ``/token/init`` event to hide the created QR code from the helpdesk admin.
 This way the QR code could be used internally, but could be hidden from
 the administrator.

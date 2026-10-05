@@ -11,12 +11,10 @@ from unittest.mock import patch
 
 from privacyidea.lib.crypto import encryptPassword, decryptPassword
 from privacyidea.lib.error import ResourceNotFoundError
-from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
                                         SMTPServer, send_email_identifier,
                                         send_email_data)
-from tests.queuemock import MockQueueTestCase
 from . import smtpmock
 from .base import MyTestCase
 
@@ -151,10 +149,10 @@ class SMTPServerTestCase(MyTestCase):
         s = dict(identifier=identifier, server=server, port=port,
                  username=username, password=password, sender=sender,
                  tls=tls)
-        r = SMTPServer.test_email(s, recipient,
-                                  "Test Email from privacyIDEA",
-                                  "This is a test email from privacyIDEA. "
-                                  "The configuration %s is working." % identifier)
+        r = SMTPServer.send_email_with_config(s, recipient,
+                                              "Test Email from privacyIDEA",
+                                              "This is a test email from privacyIDEA. "
+                                              f"The configuration {identifier} is working.")
         self.assertTrue(r)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
@@ -163,8 +161,8 @@ class SMTPServerTestCase(MyTestCase):
 
         # Now with an already prepared MIME email
         msg = MIMEImage(binascii.a2b_base64(PNG_IMG))
-        r = SMTPServer.test_email(s, recipient, "Test Email with image",
-                                  msg)
+        r = SMTPServer.send_email_with_config(s, recipient, "Test Email with image",
+                                              msg)
         self.assertTrue(r)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
@@ -189,10 +187,10 @@ class SMTPServerTestCase(MyTestCase):
         s = dict(identifier=identifier, server=server, port=port,
                  username=username, password=password, sender=sender,
                  tls=tls)
-        r = SMTPServer.test_email(s, recipient,
-                                  "Test Email from privacyIDEA",
-                                  "This is a test email from privacyIDEA. "
-                                  "The configuration %s is working." % identifier)
+        r = SMTPServer.send_email_with_config(s, recipient,
+                                              "Test Email from privacyIDEA",
+                                              "This is a test email from privacyIDEA. "
+                                              f"The configuration {identifier} is working.")
         self.assertTrue(r)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
@@ -201,8 +199,8 @@ class SMTPServerTestCase(MyTestCase):
 
         # Now with an already prepared MIME email
         msg = MIMEImage(binascii.a2b_base64(PNG_IMG))
-        r = SMTPServer.test_email(s, recipient, "Test Email with image",
-                                  msg)
+        r = SMTPServer.send_email_with_config(s, recipient, "Test Email with image",
+                                              msg)
         self.assertTrue(r)
         parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
@@ -234,8 +232,8 @@ class SMTPServerTestCase(MyTestCase):
             "<p>Hier ist ansonsten noch viel mehr Text, der zu "
             "Zeilenumbrüchen führt</p>\n",
             "html", "utf-8")
-        r = SMTPServer.test_email(s, "user@example.com",
-                                  "Regression CRLF", body)
+        r = SMTPServer.send_email_with_config(s, "user@example.com",
+                                              "Regression CRLF", body)
         self.assertTrue(r)
 
         sent = smtpmock.get_sent_message()
@@ -253,82 +251,6 @@ class SMTPServerTestCase(MyTestCase):
             "an empty body (issue #5217). This happens when the message "
             "is handed to smtplib as bytes (e.g. via as_bytes()) instead "
             "of as a str.")
-
-
-class SMTPServerQueueTestCase(MockQueueTestCase):
-    @smtpmock.activate
-    def test_01_enqueue_email(self):
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False, enqueue_job=True)
-        self.assertTrue(r > 0)
-
-        server = get_smtpserver("myserver")
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-        r = server.send_email(["recp@example.com"], "Hallo", "Body")
-        self.assertEqual(r, True)
-
-        queue = get_job_queue()
-        self.assertEqual(len(queue.enqueued_jobs), 1)
-        job_name, args, kwargs = queue.enqueued_jobs[0]
-        self.assertEqual(job_name, "smtpserver.send_email")
-        self.assertEqual(args[1], ["recp@example.com"])
-        self.assertEqual(args[2], "Hallo")
-        self.assertEqual(args[3], "Body")
-
-        # send_email returns True, even if the SMTP server will eventually reject the message
-        smtpmock.setdata(response={"fail@example.com": (550,
-                                                        "Message rejected")},
-                         support_tls=False)
-        r = server.send_email(["fail@example.com"], "Hallo", "Body")
-        self.assertEqual(r, True)
-        self.assertEqual(len(queue.enqueued_jobs), 2)
-        job_name, args, kwargs = queue.enqueued_jobs[1]
-        self.assertEqual(job_name, "smtpserver.send_email")
-        self.assertEqual(args[1], ["fail@example.com"])
-        self.assertEqual(args[2], "Hallo")
-        self.assertEqual(args[3], "Body")
-
-        delete_smtpserver("myserver")
-
-    @smtpmock.activate
-    def test_02_send_email_without_queue(self):
-        # enqueue_job is False!
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=False)
-        self.assertTrue(r > 0)
-
-        server = get_smtpserver("myserver")
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-        r = server.send_email(["recp@example.com"], "Hallo", "Body")
-        self.assertEqual(r, True)
-
-        smtpmock.setdata(response={"recp@example.com": (550,
-                                                        "Message rejected")},
-                         support_tls=False)
-        r = server.send_email(["recp@example.com"], "Hallo", "Body")
-        self.assertEqual(r, False)
-
-        # Use TLS
-        r = add_smtpserver(identifier="myserver", server="1.2.3.4", tls=True)
-        self.assertTrue(r > 0)
-        server = get_smtpserver("myserver")
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=True)
-        r = server.send_email(["recp@example.com"], "Hallo", "Body")
-        self.assertEqual(r, True)
-
-        # If we configure TLS but the server does not support this, we raise
-        # an error
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")},
-                         support_tls=False)
-        self.assertRaises(SMTPException, server.send_email,
-                          ["recp@example.com"], "Hallo", "Body")
-
-        # Assert that no
-        queue = get_job_queue()
-        self.assertEqual(queue.enqueued_jobs, [])
-
-        delete_smtpserver("myserver")
 
 
 class SendEmailMetricsTestCase(MyTestCase):
@@ -437,3 +359,13 @@ class SMTPServerExportImportTestCase(MyTestCase):
         self.assertEqual(reexported["expsmtp"]["password"], "smtppw")
         self.assertEqual(reexported["expsmtp"]["private_key_password"], "pkppw")
         delete_smtpserver("expsmtp")
+
+    def test_02_import_ignores_enqueue_job(self):
+        from privacyidea.lib.smtpserver import export_smtpserver, import_smtpserver
+        import_smtpserver({"legacysmtp": {"server": "mail.example", "port": 25, "sender": "pi@example.com",
+                                          "enqueue_job": True}})
+        exported = export_smtpserver(name="legacysmtp")
+        self.assertEqual("mail.example", exported["legacysmtp"]["server"])
+        self.assertEqual("pi@example.com", exported["legacysmtp"]["sender"])
+        self.assertNotIn("enqueue_job", exported["legacysmtp"])
+        delete_smtpserver("legacysmtp")
