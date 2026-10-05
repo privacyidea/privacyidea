@@ -7,7 +7,36 @@
       "target-size"
     ]
   },
+  "api client details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "api clients": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "api clients (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "api clients (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "api clients (loading)": {
     "light": [
       "target-size"
     ],
@@ -23,7 +52,31 @@
       "target-size"
     ]
   },
+  "audit (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "audit (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "authentication log": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "authentication log (loading)": {
     "light": [
       "target-size"
     ],
@@ -39,7 +92,44 @@
       "target-size"
     ]
   },
+  "blocklist (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "blocklist (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "ca connectors": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "ca connectors (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "ca connectors (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "ca connectors (loading)": {
     "light": [
       "target-size"
     ],
@@ -55,7 +145,39 @@
       "target-size"
     ]
   },
+  "challenges (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "challenges (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "clients": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "clients (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "clients (loading)": {
     "light": [
       "target-size"
     ],
@@ -71,11 +193,42 @@
       "target-size"
     ]
   },
+  "conditional access (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "conditional access (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "conditional access (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "conditional access create": {
     "light": [
       "target-size"
     ],
     "dark": [
+      "target-size"
+    ]
+  },
+  "conditional access details": {
+    "light": [
+      "nested-interactive",
+      "target-size"
+    ],
+    "dark": [
+      "nested-interactive",
       "target-size"
     ]
   },
@@ -87,6 +240,18 @@
       "target-size"
     ]
   },
+  "container details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "container more filter (menu)": {
+    "light": [],
+    "dark": []
+  },
   "container template create": {
     "light": [
       "color-contrast",
@@ -97,7 +262,31 @@
       "target-size"
     ]
   },
+  "container template details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "container templates": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "container templates (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "container templates (loading)": {
     "light": [
       "target-size"
     ],
@@ -113,6 +302,22 @@
       "target-size"
     ]
   },
+  "containers (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "containers (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "dashboard": {
     "light": [
       "target-size"
@@ -121,7 +326,19 @@
       "target-size"
     ]
   },
+  "delete policies (dialog)": {
+    "light": [],
+    "dark": []
+  },
   "event create": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "event details": {
     "light": [
       "target-size"
     ],
@@ -137,7 +354,52 @@
       "target-size"
     ]
   },
+  "events (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "events (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "events (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "locked users": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "locked users (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "locked users (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "machine details": {
     "light": [
       "target-size"
     ],
@@ -153,6 +415,14 @@
       "target-size"
     ]
   },
+  "machine resolver details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "machine resolvers": {
     "light": [
       "target-size"
@@ -161,7 +431,49 @@
       "target-size"
     ]
   },
+  "machine resolvers (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "machine resolvers (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "machine resolvers (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "machines": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "machines (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "machines (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "machines (loading)": {
     "light": [
       "target-size"
     ],
@@ -185,6 +497,14 @@
       "target-size"
     ]
   },
+  "periodic task details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "periodic tasks": {
     "light": [
       "target-size"
@@ -193,7 +513,49 @@
       "target-size"
     ]
   },
+  "periodic tasks (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "periodic tasks (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "periodic tasks (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "policies": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "policies (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "policies (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "policies (loading)": {
     "light": [
       "target-size"
     ],
@@ -211,7 +573,48 @@
       "target-size"
     ]
   },
+  "policy details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "policy scope filter (menu)": {
+    "light": [],
+    "dark": []
+  },
+  "privacyidea server details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "privacyidea servers": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "privacyidea servers (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "privacyidea servers (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "privacyidea servers (loading)": {
     "light": [
       "target-size"
     ],
@@ -227,7 +630,36 @@
       "target-size"
     ]
   },
+  "radius server details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "radius servers": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "radius servers (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "radius servers (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "radius servers (loading)": {
     "light": [
       "target-size"
     ],
@@ -243,7 +675,20 @@
       "target-size"
     ]
   },
+  "realms (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
   "resolver create": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "resolver details": {
     "light": [
       "target-size"
     ],
@@ -259,7 +704,49 @@
       "target-size"
     ]
   },
+  "resolvers (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "resolvers (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "resolvers (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "service ids": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "service ids (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "service ids (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "service ids (loading)": {
     "light": [
       "target-size"
     ],
@@ -275,7 +762,36 @@
       "target-size"
     ]
   },
+  "sms gateway details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "sms gateways": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "sms gateways (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "sms gateways (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "sms gateways (loading)": {
     "light": [
       "target-size"
     ],
@@ -291,7 +807,36 @@
       "target-size"
     ]
   },
+  "smtp server details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "smtp servers": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "smtp servers (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "smtp servers (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "smtp servers (loading)": {
     "light": [
       "target-size"
     ],
@@ -315,7 +860,19 @@
       "target-size"
     ]
   },
+  "token actions (menu)": {
+    "light": [],
+    "dark": []
+  },
   "token applications": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "token details": {
     "light": [
       "target-size"
     ],
@@ -347,6 +904,10 @@
       "target-size"
     ]
   },
+  "token more filter (menu)": {
+    "light": [],
+    "dark": []
+  },
   "token type config": {
     "light": [
       "target-size"
@@ -363,7 +924,44 @@
       "target-size"
     ]
   },
+  "tokengroups (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "tokengroups (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "tokengroups (loading)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "tokens": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "tokens (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "tokens (loading)": {
     "light": [
       "target-size"
     ],
@@ -387,7 +985,36 @@
       "target-size"
     ]
   },
+  "user details": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
   "users": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "users (error)": {
+    "light": [
+      "target-size"
+    ],
+    "dark": [
+      "target-size"
+    ]
+  },
+  "users (filtered)": {
+    "light": [
+      "target-size"
+    ]
+  },
+  "users (loading)": {
     "light": [
       "target-size"
     ],
