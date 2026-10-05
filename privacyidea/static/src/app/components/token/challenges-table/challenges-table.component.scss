@@ -15,5 +15,12 @@
   flex-direction: column;
   overflow: hidden;
 
+  // The table is as wide as its col-width-* tiers, not stretched across the card: a stretched table
+  // hands its spare width to every column in proportion, so no column stays at its tier.
+  .challenges-table {
+    width: auto;
+  }
+  @include table.scroll-region-fits-table;
+
   @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }

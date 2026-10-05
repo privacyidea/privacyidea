@@ -662,3 +662,14 @@ app-details-card .details-header {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+// A form field inside a col-width-* cell fills the cell instead of asking for Material's own 180px
+// infix, which would widen the column past its tier.
+.table-cell-field {
+  width: 100%;
+
+  .mat-mdc-form-field-infix {
+    min-width: 0;
+    width: auto;
+  }
+}

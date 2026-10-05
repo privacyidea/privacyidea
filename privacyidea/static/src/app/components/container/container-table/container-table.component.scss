@@ -13,6 +13,13 @@
   // is as wide as the table it stands in for, not the unrelated 44rem default.
   @include table.page-table-state-size(table.table-width(checkbox, m, s, m, xl, s, s, m));
 
+  // The table is as wide as its col-width-* tiers, not stretched across the card: a stretched table
+  // hands its spare width to every column in proportion, so no column stays at its tier.
+  .container-table {
+    width: auto;
+  }
+  @include table.scroll-region-fits-table;
+
   // In the self-service layout the scroll region takes its content height, not the full container.
   :host-context(body.self-service-layout) & .table-scroll-region {
     flex: 0 1 auto;

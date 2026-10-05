@@ -149,6 +149,18 @@
     color: var(--grey-base);
   }
 
+  // A link is a 24px-high target (WCAG 2.5.8). Its cell gives up its vertical padding so the row is exactly one
+  // target tall, and the links of adjacent rows sit end to end instead of overlapping.
+  td:has(a) {
+    padding-block: 0;
+  }
+
+  a {
+    display: inline-block;
+    line-height: 24px;
+    vertical-align: top;
+  }
+
   // A client can have many versions in use. The list stays on one line and scrolls
   // inside its cell rather than wrapping, which would make the row (and with it the
   // whole widget) taller. The full list is in the cell's tooltip.
@@ -183,12 +195,13 @@
   font-size: 10px;
   line-height: 1;
   font-weight: 700;
-  // Paired with the dot fill rather than with the page surface: the fills are the same
-  // in both themes, so the ink on them has to be too.
+  // Paired with the dot fill rather than with the page surface: the ink stays white on the
+  // darkened fills in both themes.
   color: hsl(0, 0%, 100%);
 
   &.dot-good {
-    background: var(--green-light);
+    // Darkened so the white count keeps 4.5:1 against the fill in both themes.
+    background: color-mix(in srgb, var(--green-light), black 32%);
   }
 
   &.dot-warn {
@@ -198,10 +211,12 @@
   }
 
   &.dot-bad {
-    background: var(--red-light);
+    // Darkened for the same reason as the green fill: the dark-theme red is 3.8:1 under white.
+    background: color-mix(in srgb, var(--red-light), black 32%);
   }
 
   &.dot-none {
-    background: var(--grey-base);
+    // Darkened like the other fills: the bare grey is 3.3:1 under white in the dark theme.
+    background: color-mix(in srgb, var(--grey-base), black 32%);
   }
 }

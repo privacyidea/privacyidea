@@ -200,7 +200,6 @@
                                     <a
                                       (click)="onClickResolver(res.name); $event.preventDefault()"
                                       (keydown.enter)="onClickResolver(res.name); $event.preventDefault()"
-                                      [attr.aria-label]="linkLabel(column.label)"
                                       class="resolver-name"
                                       role="button"
                                       tabindex="0">
@@ -284,7 +283,7 @@
                 @switch (column.key) {
                   @case ("name") {
                     <mat-form-field
-                      class="input-width-l margin-top-16"
+                      class="table-cell-field margin-top-16"
                       subscriptSizing="dynamic">
                       <mat-label i18n="@@realm.realmName">Realm Name</mat-label>
                       <input
