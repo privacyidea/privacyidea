@@ -19,7 +19,7 @@ from privacyidea.lib.error import (TokenAdminError,
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.realm import get_realms
-from privacyidea.lib.resolver import get_resolver_object
+from privacyidea.lib.resolver import get_resolver_list, get_resolver_object
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import SQL_LIKE_ESCAPE, convert_wildcard_to_sql_like, escape_sql_like
 from privacyidea.models.token import TOKENINFO_TYPE_SUFFIX
@@ -550,6 +550,45 @@ def _resolve_owner_logins(owners: list[TokenOwner]) -> ResolvedOwnerLogins:
             login_by_owner[(resolver_name, user_id)] = login_map.get(user_id) or ""
 
     return ResolvedOwnerLogins(login_by_owner, editable_by_resolver, unresolvable_owners)
+
+
+def get_orphaned_serials(tokens: list[TokenClass], orphaned_on_error: bool = True) -> set[str]:
+    """
+    Return the serials of the orphaned tokens among the given tokens, with one batch lookup per
+    resolver instead of one user store lookup per token.
+
+    A token is orphaned in the same cases as ``TokenClass.is_orphaned()`` decides for a single token:
+    its first owner belongs to a resolver that no longer exists, does not exist in the user store or
+    has no realm. If the user store can not be asked, ``orphaned_on_error`` decides.
+
+    :param tokens: The token objects to check, e.g. one chunk of the token janitor
+    :param orphaned_on_error: Whether a token is orphaned if its owner can not be looked up
+    :return: The serials of the orphaned tokens
+    """
+    token_by_id = {token.token.id: token for token in tokens}
+    owner_by_token_id = _get_owner_by_token_id(list(token_by_id))
+    resolvers = get_resolver_list()
+
+    orphaned_serials = set()
+    owners_to_resolve = {}
+    for token_id, owner in owner_by_token_id.items():
+        if owner.resolver and not resolvers.get(owner.resolver, {}).get("type"):
+            # The resolver of the owner was deleted, so the user can not exist any more. This has to be checked
+            # before the lookup, which reports a deleted resolver like one whose user store can not be reached.
+            orphaned_serials.add(token_by_id[token_id].token.serial)
+        else:
+            owners_to_resolve[token_id] = owner
+
+    resolved = _resolve_owner_logins(list(owners_to_resolve.values()))
+    for token_id, owner in owners_to_resolve.items():
+        owner_key = (owner.resolver, owner.user_id)
+        if owner_key in resolved.unresolvable_owners:
+            orphaned = orphaned_on_error
+        else:
+            orphaned = not resolved.login_by_owner.get(owner_key) or not owner.realm
+        if orphaned:
+            orphaned_serials.add(token_by_id[token_id].token.serial)
+    return orphaned_serials
 
 
 def _build_token_dicts(tokens: list[TokenClass], hidden_token_info: list[str] | None = None) -> list[dict]:

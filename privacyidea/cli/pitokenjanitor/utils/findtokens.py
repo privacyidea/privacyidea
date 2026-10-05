@@ -49,7 +49,8 @@ from yaml import safe_dump as yaml_safe_dump
 from privacyidea.lib.container import find_container_for_token, add_multiple_tokens_to_container
 from privacyidea.lib.error import PolicyError, ResolverError
 from privacyidea.lib.importotp import export_pskc
-from privacyidea.lib.token import unassign_token, remove_token, get_tokens_paginated_generator, export_tokens
+from privacyidea.lib.token import (unassign_token, remove_token, get_tokens_paginated_generator, export_tokens,
+                                   get_orphaned_serials)
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import parse_legacy_time, parse_timedelta
 from privacyidea.models import Token, TokenContainer
@@ -431,14 +432,16 @@ def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial:
                             add = False
                     else:
                         add = False
-            if orphaned is not None:
-                if token_obj.is_orphaned(orphaned_on_error) != orphaned:
-                    add = False
-
 
             if add:
                 # if everything matched, we append the token object
                 filtered_list.append(token_obj)
+
+        if orphaned is not None:
+            # Checked for the whole chunk at once, which asks each resolver once instead of once per token
+            orphaned_serials = get_orphaned_serials(filtered_list, orphaned_on_error)
+            filtered_list = [token_obj for token_obj in filtered_list
+                             if (token_obj.token.serial in orphaned_serials) == orphaned]
 
         yield filtered_list
 

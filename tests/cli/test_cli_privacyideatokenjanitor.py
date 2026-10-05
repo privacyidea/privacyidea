@@ -29,8 +29,8 @@ from privacyidea.cli.privacyideatokenjanitor import cli as pi_token_janitor
 from privacyidea.lib.error import ResolverError
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PasswdIdResolver
 from privacyidea.lib.token import enable_token, get_one_token, init_token
-from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
 from privacyidea.models.token import TokenOwner
 
@@ -114,7 +114,7 @@ class TokenJanitorFindTestCase(CliTestCase):
         init_token({"serial": "ORPHANERROR", "type": "hotp", "otpkey": OTP_KEY},
                    user=User("cornelius", "janitorrealm"))
         # The user store fails while the owner of the token is looked up
-        with mock.patch.object(TokenClass, "user", new_callable=mock.PropertyMock,
+        with mock.patch.object(PasswdIdResolver, "getUsername",
                                side_effect=ResolverError("user store not reachable")):
             result = self.invoke_find("--serial", "^ORPHANERROR$", "--orphaned", "true")
             self.assertEqual(0, result.exit_code, result.output)
