@@ -109,7 +109,9 @@
           <td
             *matCellDef="let element"
             mat-cell>
-            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+            <div
+              appScrollFocusable
+              [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
                   @if (element.serial) {
@@ -131,7 +133,7 @@
                   }
                 }
                 @default {
-                  @if (tableUtilsService.isLink(column.key)) {
+                  @if (tableUtilsService.isLink(column.key) && element[column.key]) {
                     <a
                       [attr.aria-label]="linkLabel(column.label)"
                       href="#">

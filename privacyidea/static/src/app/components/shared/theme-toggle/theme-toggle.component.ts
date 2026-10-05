@@ -20,7 +20,6 @@ import { Component, computed, inject } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ThemeService } from "@services/theme/theme.service";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 /**
  * Checkbox styled as a round knob that switches light and dark mode; checked means dark. Used by
@@ -30,7 +29,7 @@ import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip
  */
 @Component({
   selector: "app-theme-toggle",
-  imports: [TooltipAriaLabelDirective, MatIcon, MatTooltip],
+  imports: [MatIcon, MatTooltip],
   templateUrl: "./theme-toggle.component.html",
   styleUrl: "./theme-toggle.component.scss"
 })

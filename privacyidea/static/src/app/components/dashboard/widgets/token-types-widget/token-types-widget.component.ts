@@ -30,7 +30,6 @@ import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashbo
 import { TokenCount, TokenService, TokenServiceInterface, TokenTypeKey } from "@services/token/token.service";
 import { tokenTypes } from "@utils/token.utils";
 import { catchError, map, merge, Observable, of, scan } from "rxjs";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 export interface TokenTypeCount {
   key: TokenTypeKey;
@@ -47,7 +46,7 @@ interface TokenTypeAccumulator {
 @Component({
   selector: "app-token-types-widget",
   standalone: true,
-  imports: [TooltipAriaLabelDirective, MatTooltip, RouterLink, WidgetStateComponent],
+  imports: [MatTooltip, RouterLink, WidgetStateComponent],
   templateUrl: "./token-types-widget.component.html",
   styleUrl: "./token-types-widget.component.scss"
 })

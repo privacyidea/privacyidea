@@ -38,7 +38,6 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSelect, MatSelectChange, MatSelectModule } from "@angular/material/select";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 /** Keys that carry nothing but a modifier: they never move the highlight, so the marker stays put. */
 const MODIFIER_ONLY_KEYS = new Set(["Alt", "Control", "Meta", "Shift"]);
@@ -46,14 +45,7 @@ const MODIFIER_ONLY_KEYS = new Set(["Alt", "Control", "Meta", "Shift"]);
 @Component({
   selector: "app-multi-select-only",
   standalone: true,
-  imports: [
-    TooltipAriaLabelDirective,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatButtonModule,
-    MatTooltipModule,
-    MatIconModule
-  ],
+  imports: [MatFormFieldModule, MatSelectModule, MatButtonModule, MatTooltipModule, MatIconModule],
   templateUrl: "./multi-select-only.component.html",
   styleUrls: ["./multi-select-only.component.scss"]
 })

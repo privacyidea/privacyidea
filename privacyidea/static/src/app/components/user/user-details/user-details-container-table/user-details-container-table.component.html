@@ -121,7 +121,9 @@
               *matCellDef="let element"
               [ngClass]="{ 'input-width-l': column.key === 'description' }"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
                     <app-copyable [copyText]="element.serial">

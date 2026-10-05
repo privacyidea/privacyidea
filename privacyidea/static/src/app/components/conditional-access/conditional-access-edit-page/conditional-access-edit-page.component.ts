@@ -62,7 +62,6 @@ import {
   ConditionalAccessDryRunOffDialogData,
   ConditionalAccessDryRunOffDialogResult
 } from "../conditional-access-dry-run-off-dialog/conditional-access-dry-run-off-dialog.component";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 type TimeUnit = "seconds" | "minutes" | "hours";
 
@@ -96,7 +95,6 @@ const COUNT_MODE_LABELS: Record<string, string> = {
   selector: "app-conditional-access-edit-page",
   standalone: true,
   imports: [
-    TooltipAriaLabelDirective,
     DatePipe,
     FormField,
     MatButtonModule,

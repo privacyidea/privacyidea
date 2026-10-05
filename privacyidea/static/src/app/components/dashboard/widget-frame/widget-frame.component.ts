@@ -28,7 +28,6 @@ import { DashboardWidget, WidgetInstance, WidgetState } from "@models/dashboard"
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardLayoutService, DashboardLayoutServiceInterface } from "@services/dashboard/dashboard-layout.service";
 import { WidgetRegistryService, WidgetRegistryServiceInterface } from "@services/dashboard/widget-registry.service";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 interface DashboardWidgetLike {
   state?: () => WidgetState;
@@ -43,7 +42,6 @@ interface DashboardWidgetLike {
   selector: "app-widget-frame",
   standalone: true,
   imports: [
-    TooltipAriaLabelDirective,
     NgComponentOutlet,
     NgTemplateOutlet,
     MatIcon,

@@ -30,13 +30,11 @@ import { DashboardWidget, WidgetSize } from "@models/dashboard";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { CertificateHealthEntry, SystemService, SystemServiceInterface } from "@services/system/system.service";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-certificate-health-widget",
   standalone: true,
   imports: [
-    TooltipAriaLabelDirective,
     WidgetStateComponent,
     MatTooltipModule,
     DatePipe,

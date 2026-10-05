@@ -33,7 +33,6 @@ import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollm
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
   type: "applspec";
@@ -45,18 +44,7 @@ export interface ApplspecEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-applspec",
   standalone: true,
-  imports: [
-    TooltipAriaLabelDirective,
-    MatFormField,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
-    MatOption,
-    MatSelect,
-    MatError,
-    MatTooltip,
-    FormField
-  ],
+  imports: [MatFormField, MatInput, MatLabel, MatCheckbox, MatOption, MatSelect, MatError, MatTooltip, FormField],
   templateUrl: "./enroll-applspec.component.html",
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollApplspecComponent) }]
 })

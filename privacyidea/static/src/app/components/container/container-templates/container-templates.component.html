@@ -69,8 +69,6 @@
         aria-label="Container templates"
         i18n-aria-label="@@table.containerTemplates"
         mat-table
-        matSort
-        (matSortChange)="onSortChange($event)"
         [dataSource]="pagedContainerTemplates()"
         class="container-templates-table">
         <ng-container matColumnDef="select">
@@ -106,8 +104,7 @@
           <th
             mat-header-cell
             *matHeaderCellDef
-            mat-sort-header
-            [disabled]="!column.value.sortable || containerTemplateService.templates().length === 0"
+            [attr.aria-sort]="column.value.sortable ? ariaSort(column.key) : null"
             [class]="'col-' + column.key"
             [ngClass]="column.value.width ? 'col-width-' + column.value.width : 'col-width-flex'">
             <div class="table-header-container">
@@ -140,6 +137,17 @@
                     </button>
                   }
                 </div>
+              }
+              @if (column.value.sortable) {
+                <button
+                  mat-icon-button
+                  class="sort-button"
+                  [attr.aria-label]="column.value.label | sortByLabel"
+                  [disabled]="containerTemplateService.templates().length === 0"
+                  type="button"
+                  (click)="onSortClick(column.key)">
+                  <mat-icon>{{ tableUtilsService.getSortIcon(column.key, activeSort()) }}</mat-icon>
+                </button>
               }
             </div>
           </th>

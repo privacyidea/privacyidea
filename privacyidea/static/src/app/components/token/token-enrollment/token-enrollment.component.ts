@@ -88,7 +88,6 @@ import {
   NO_REALM_ONLY_TOKEN_TYPES,
   USER_REQUIRED_TOKEN_TYPES
 } from "./token-enrollment.constants";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 export const CUSTOM_DATE_FORMATS = {
   parse: { dateInput: "YYYY-MM-DD" },
@@ -136,7 +135,6 @@ export class CustomDateAdapter extends NativeDateAdapter {
 @Component({
   selector: "app-token-enrollment",
   imports: [
-    TooltipAriaLabelDirective,
     MatFormField,
     MatSelect,
     MatOption,

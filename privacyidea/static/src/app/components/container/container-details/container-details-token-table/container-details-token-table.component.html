@@ -100,7 +100,9 @@
             <td
               *matCellDef="let element"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
                     <app-copyable [copyText]="element.status !== 'missing' ? element.token.serial : ''">
@@ -167,7 +169,7 @@
                   }
                   @default {
                     @if (element.status !== "missing") {
-                      @if (tableUtilsService.isLink(column.key)) {
+                      @if (tableUtilsService.isLink(column.key) && element.token[column.key]) {
                         <a
                           [attr.aria-label]="linkLabel(column.label)"
                           href="#">

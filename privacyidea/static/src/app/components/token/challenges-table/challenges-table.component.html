@@ -119,7 +119,9 @@
               *matCellDef="let element"
               [ngClass]="'col-width-' + column.width"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
                     @if (element.serial) {

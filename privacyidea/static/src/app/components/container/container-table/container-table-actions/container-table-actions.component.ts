@@ -35,19 +35,10 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { forkJoin } from "rxjs";
 import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-container-table-actions",
-  imports: [
-    TooltipAriaLabelDirective,
-    MatButtonModule,
-    MatIcon,
-    MatMenuModule,
-    MatTooltipModule,
-    OverflowNavDirective,
-    RouterLink
-  ],
+  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective, RouterLink],
   templateUrl: "./container-table-actions.component.html"
 })
 export class ContainerTableActionsComponent {

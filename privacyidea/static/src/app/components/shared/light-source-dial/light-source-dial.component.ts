@@ -18,7 +18,6 @@
  **/
 import { Component, input, output } from "@angular/core";
 import { MatTooltip } from "@angular/material/tooltip";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 /**
  * One clickable stop on the dial. `slot` is its index on the 18-stop angle circle
@@ -40,7 +39,7 @@ export interface LightSourceDialItem {
  */
 @Component({
   selector: "app-light-source-dial",
-  imports: [TooltipAriaLabelDirective, MatTooltip],
+  imports: [MatTooltip],
   templateUrl: "./light-source-dial.component.html",
   styleUrl: "./light-source-dial.component.scss"
 })

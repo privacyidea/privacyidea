@@ -60,8 +60,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { catchError, forkJoin, map, Observable, of } from "rxjs";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 interface BulkActionResult {
   serial: string;
@@ -73,8 +73,8 @@ type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
 @Component({
   selector: "app-user-details-token-table",
   imports: [
+    ScrollFocusableDirective,
     SortByLabelPipe,
-    TooltipAriaLabelDirective,
     CopyableComponent,
     MatButton,
     MatCell,

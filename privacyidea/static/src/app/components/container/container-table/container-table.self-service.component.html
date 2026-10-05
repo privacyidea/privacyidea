@@ -89,7 +89,9 @@
               *matCellDef="let element"
               [ngClass]="'col-width-' + column.width"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
                     <app-copyable [copyText]="element.serial">
@@ -137,7 +139,7 @@
                     </button>
                   }
                   @default {
-                    @if (tableUtilsService.isLink(column.key)) {
+                    @if (tableUtilsService.isLink(column.key) && element[column.key]) {
                       <a
                         [attr.aria-label]="linkLabel(column.label)"
                         href="#">

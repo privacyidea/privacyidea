@@ -63,14 +63,14 @@ import { RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { forkJoin } from "rxjs";
-import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 @Component({
   selector: "app-user-details-container-table",
   imports: [
+    ScrollFocusableDirective,
     SortByLabelPipe,
-    TooltipAriaLabelDirective,
     CopyableComponent,
     MatHeaderRowDef,
     MatRowDef,

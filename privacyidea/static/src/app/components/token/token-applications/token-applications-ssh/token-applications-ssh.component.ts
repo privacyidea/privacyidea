@@ -45,11 +45,13 @@ import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 @Component({
   selector: "app-token-applications-ssh",
   standalone: true,
   imports: [
+    ScrollFocusableDirective,
     FilterByLabelPipe,
     SortByLabelPipe,
     InfoHintComponent,

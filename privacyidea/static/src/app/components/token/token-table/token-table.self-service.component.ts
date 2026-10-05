@@ -41,11 +41,13 @@ import { TokenTableComponent } from "./token-table.component";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
 import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 @Component({
   selector: "app-token-table-self-service",
   standalone: true,
   imports: [
+    ScrollFocusableDirective,
     TooltipAriaLabelDirective,
     SortByLabelPipe,
     TruncationTooltipDirective,

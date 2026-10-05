@@ -25,7 +25,7 @@ import { MatDividerModule } from "@angular/material/divider";
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
-import { MatSortModule, Sort } from "@angular/material/sort";
+import { Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
@@ -47,8 +47,9 @@ import { PaginatorCompactRangeDirective } from "@components/shared/directives/pa
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ViewTemplateTokensComponent } from "./view-template-tokens/view-template-tokens.component";
-import { FilterByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   new FilterOption<ContainerTemplate>({
@@ -99,10 +100,13 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   })
 ];
 
+const UNSORTED: Sort = { active: "", direction: "" };
+
 @Component({
   selector: "app-container-templates",
   standalone: true,
   imports: [
+    SortByLabelPipe,
     TooltipAriaLabelDirective,
     FilterByLabelPipe,
     CommonModule,
@@ -112,7 +116,6 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     MatMenuModule,
     MatDividerModule,
     MatTableModule,
-    MatSortModule,
     ContainerTemplatesFilterComponent,
     ContainerTemplatesTableActionsComponent,
     MatCheckbox,
@@ -177,6 +180,7 @@ export class ContainerTemplatesComponent {
   readonly pageIndex = signal(0);
   readonly pageSize = signal(10);
   readonly pageSizeOptions = signal([5, 10, 25, 100]);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   readonly activeSort = signal<Sort>({ active: "", direction: "" });
 
   readonly filteredContainerTemplates = computed(() => {
@@ -241,8 +245,16 @@ export class ContainerTemplatesComponent {
 
   readonly keepOrder = () => 0;
 
-  onSortChange(sort: Sort): void {
-    this.activeSort.set(sort);
+  onSortClick(column: string): void {
+    this.tableUtilsService.onSortButtonClick(column, this.activeSort, UNSORTED);
+  }
+
+  ariaSort(column: string): "ascending" | "descending" | "none" {
+    const { active, direction } = this.activeSort();
+    if (active !== column || direction === "") {
+      return "none";
+    }
+    return direction === "asc" ? "ascending" : "descending";
   }
 
   onPageEvent(event: PageEvent): void {
