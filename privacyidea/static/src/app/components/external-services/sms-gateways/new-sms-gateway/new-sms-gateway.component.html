@@ -255,6 +255,8 @@
                 mat-cell>
                 <mat-checkbox
                   (change)="toggleOptionSecret(row.key)"
+                  aria-label="Secret"
+                  i18n-aria-label="@@common.secret"
                   [checked]="row.secret"></mat-checkbox>
               </td>
             </ng-container>
@@ -410,6 +412,8 @@
                 mat-cell>
                 <mat-checkbox
                   (change)="toggleHeaderSecret(row.key)"
+                  aria-label="Secret"
+                  i18n-aria-label="@@common.secret"
                   [checked]="row.secret"></mat-checkbox>
               </td>
             </ng-container>

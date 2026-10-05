@@ -69,12 +69,14 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { UserRoleBadge, userRoleBadge } from "../user-roles";
 import { from } from "rxjs";
 import { concatMap, reduce } from "rxjs/operators";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-locked-users",
   templateUrl: "./locked-users.component.html",
   styleUrl: "./locked-users.component.scss",
   imports: [
+    TooltipAriaLabelDirective,
     InfoHintComponent,
     MatSuffix,
     TableStateComponent,

@@ -37,6 +37,7 @@ import {
   SystemService,
   SystemServiceInterface
 } from "@services/system/system.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 interface NotificationDeliverySections {
   push: NotificationChannelEntry[];
@@ -62,7 +63,13 @@ function withDeliveries(entries: NotificationChannelEntry[] | undefined): Notifi
 @Component({
   selector: "app-notification-delivery-widget",
   standalone: true,
-  imports: [MatTooltip, WidgetStateComponent, TableSortHeaderComponent, WidgetHeaderPickerComponent],
+  imports: [
+    TooltipAriaLabelDirective,
+    MatTooltip,
+    WidgetStateComponent,
+    TableSortHeaderComponent,
+    WidgetHeaderPickerComponent
+  ],
   templateUrl: "./notification-delivery-widget.component.html",
   styleUrl: "./notification-delivery-widget.component.scss"
 })

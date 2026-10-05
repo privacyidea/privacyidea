@@ -49,11 +49,13 @@ import {
   PendingChangesServiceInterface
 } from "@services/pending-changes/pending-changes.service";
 import { deepCopy } from "@utils/deep-copy.utils";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-container-template-edit-page",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     MatInputModule,
     MatCardModule,
     MatIconModule,

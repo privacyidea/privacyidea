@@ -61,6 +61,8 @@
       appScrollEdges
       class="table-scroll-region">
       <table
+      aria-label="Policies"
+      i18n-aria-label="@@table.policies"
       (matSortChange)="onSortChange($event)"
       [dataSource]="sortedFilteredPolicies()"
       class="policies-table row-striped"
@@ -118,6 +120,7 @@
                       (selectionChange)="setScopeFilter($event)" />
                   } @else {
                     <button
+                      [attr.aria-label]="column.value.label | filterByLabel"
                       (click)="$event.stopPropagation(); onFilterClick(column.key)"
                       [disabled]="policyService.allPolicies().length === 0"
                       class="filter-button"

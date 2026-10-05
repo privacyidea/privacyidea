@@ -151,6 +151,8 @@
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="Conditional access policies"
+        i18n-aria-label="@@table.conditionalAccess"
         [dataSource]="reorderMode() ? reorderDraft() : policyDataSource()"
         class="conditional-access-table"
         mat-table
@@ -164,6 +166,8 @@
             class="ca-checkbox-cell"
             mat-header-cell>
             <mat-checkbox
+              aria-label="Select all rows"
+              i18n-aria-label="@@common.selectAllRows"
               (change)="$event ? toggleAllRows() : null"
               [checked]="isAllSelected()"
               [disabled]="totalLength() === 0 || reorderMode()"
@@ -174,6 +178,8 @@
             class="ca-checkbox-cell"
             mat-cell>
             <mat-checkbox
+              aria-label="Select row"
+              i18n-aria-label="@@common.selectRow"
               (change)="$event ? toggleRow(policy) : null"
               (click)="$event.stopPropagation()"
               [checked]="isSelected(policy)"

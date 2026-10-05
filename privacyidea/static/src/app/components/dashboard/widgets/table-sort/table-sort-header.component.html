@@ -24,7 +24,7 @@
 >
 <button
   (click)="toggle()"
-  aria-label="Sort by {{ label() }}"
+  [attr.aria-label]="label() | sortByLabel"
   class="sort-button"
   i18n-aria-label="@@common.sortBy"
   mat-icon-button

@@ -306,6 +306,9 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   display: block;
 }
 
+// The status colors, darkened enough that the chips' white text keeps 4.5:1 against every one of them in both themes.
+$highlight-darken: 32%;
+
 .highlight-true,
 .highlight-warning,
 .highlight-false,
@@ -320,21 +323,21 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
 
   &.highlight-true,
   &.highlight-true-clickable {
-    background-color: var(--green-light);
+    background-color: color-mix(in srgb, var(--green-light), black $highlight-darken);
   }
 
   &.highlight-warning,
   &.highlight-warning-clickable {
-    background-color: var(--yellow-light-active);
+    background-color: color-mix(in srgb, var(--yellow-light-active), black $highlight-darken);
   }
 
   &.highlight-false,
   &.highlight-false-clickable {
-    background-color: var(--red-light);
+    background-color: color-mix(in srgb, var(--red-light), black $highlight-darken);
   }
 
   &.highlight-disabled {
-    background-color: var(--grey-light);
+    background-color: color-mix(in srgb, var(--grey-light), black $highlight-darken);
   }
 
   &.highlight-true-clickable,

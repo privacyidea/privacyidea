@@ -149,8 +149,7 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="realmMenu"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label="@@common.filterBy"
+                          [attr.aria-label]="column.label | filterByLabel"
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
@@ -158,8 +157,7 @@
                       } @else if (apiFilterKeyMap[column.key] === "rollout_state") {
                         <button
                           [matMenuTriggerFor]="rolloutStateMenu"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label="@@common.filterBy"
+                          [attr.aria-label]="column.label | filterByLabel"
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
@@ -167,8 +165,7 @@
                       } @else {
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label="@@common.filterBy"
+                          [attr.aria-label]="column.label | filterByLabel"
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0">
@@ -179,8 +176,7 @@
                     }
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                      aria-label="Sort by {{ column.label }}"
-                      i18n-aria-label="@@common.sortBy"
+                      [attr.aria-label]="column.label | sortByLabel"
                       class="sort-button"
                       mat-icon-button
                       type="button">
@@ -201,7 +197,7 @@
                     <mat-checkbox
                       (change)="tokenSelection.setRowSelected(tokenDetails, $event.checked)"
                       (click)="$event.stopPropagation()"
-                      [attr.aria-label]="selectRowLabel(tokenDetails.serial)"
+                      [aria-label]="selectRowLabel(tokenDetails.serial)"
                       [checked]="tokenSelection.isRowSelected(tokenDetails)"
                       [disabled]="!tokenSelection.hasVisibleRows()" />
                   }

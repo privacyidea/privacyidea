@@ -26,6 +26,7 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 
 import { ReasonDetailDialog } from "../../reason-detail-dialog/reason-detail-dialog";
 import { parseReasonDetail, ReasonDetail } from "../../reason-detail";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 /**
  * The authentication log's Reasons cell: why the request came out the way it did.
@@ -39,7 +40,7 @@ import { parseReasonDetail, ReasonDetail } from "../../reason-detail";
 @Component({
   selector: "app-reason-cell",
   standalone: true,
-  imports: [BreakableCodeComponent, MatButtonModule, MatIcon, MatTooltipModule],
+  imports: [TooltipAriaLabelDirective, BreakableCodeComponent, MatButtonModule, MatIcon, MatTooltipModule],
   templateUrl: "./reason-cell.html",
   styleUrl: "./reason-cell.scss"
 })

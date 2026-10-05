@@ -64,6 +64,8 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 type ComparisonStatus = "excess" | "missing" | "correct";
 
@@ -76,6 +78,8 @@ interface ContainerDetailTokenData {
 @Component({
   selector: "app-container-details-token-table",
   imports: [
+    SortByLabelPipe,
+    TooltipAriaLabelDirective,
     MatCell,
     MatFormField,
     MatHeaderCell,

@@ -47,6 +47,8 @@ import { PaginatorCompactRangeDirective } from "@components/shared/directives/pa
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ViewTemplateTokensComponent } from "./view-template-tokens/view-template-tokens.component";
+import { FilterByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   new FilterOption<ContainerTemplate>({
@@ -101,6 +103,8 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   selector: "app-container-templates",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
+    FilterByLabelPipe,
     CommonModule,
     KeyValuePipe,
     MatIconModule,

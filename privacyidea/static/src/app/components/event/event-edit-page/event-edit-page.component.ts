@@ -57,12 +57,14 @@ import { deepCopy } from "@utils/deep-copy.utils";
 import { EventSelectionComponent } from "./event-selection/event-selection.component";
 import { EventActionOptionValues, EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 export type eventTab = "events" | "action" | "conditions";
 
 @Component({
   selector: "app-event-edit-page",
   imports: [
+    TooltipAriaLabelDirective,
     MatIcon,
     EventActionTabComponent,
     EventConditionsTabComponent,

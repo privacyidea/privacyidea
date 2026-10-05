@@ -86,6 +86,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { concat, last, lastValueFrom, take } from "rxjs";
 import { RealmDeleteAttributesDialogComponent } from "./realm-delete-attributes-dialog/realm-delete-attributes-dialog.component";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 interface ResolverWithPriority {
   name: string;
@@ -111,6 +113,8 @@ const columnKeysMap = [
   selector: "app-realm-table",
   standalone: true,
   imports: [
+    SortByLabelPipe,
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     ClearableInputComponent,
     CopyableComponent,

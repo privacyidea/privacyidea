@@ -49,11 +49,13 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-privacyidea-servers",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,

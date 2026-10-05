@@ -44,11 +44,14 @@ import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 @Component({
   selector: "app-token-applications-offline",
   standalone: true,
   imports: [
+    FilterByLabelPipe,
+    SortByLabelPipe,
     InfoHintComponent,
     MatSuffix,
     RefocusAfterReloadDirective,

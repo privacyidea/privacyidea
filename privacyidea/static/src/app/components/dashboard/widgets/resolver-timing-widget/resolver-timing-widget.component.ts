@@ -38,6 +38,7 @@ import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashbo
 import { Resolvers, ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 import { ResolverTimingEntry, SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { forkJoin, of } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 export interface ResolverTimingRow {
   resolver: string;
@@ -62,6 +63,7 @@ function toMs(seconds: number | null | undefined): number | null {
   selector: "app-resolver-timing-widget",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     MatTooltip,
     WidgetStateComponent,
     TruncationTooltipDirective,

@@ -63,11 +63,13 @@ import { SystemService } from "@services/system/system.service";
 import { deepCopy } from "@utils/deep-copy.utils";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { firstValueFrom } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-periodic-task-edit",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     ScrollToTopDirective,
     StickyHeaderDirective,
     MatButtonModule,

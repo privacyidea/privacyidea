@@ -45,6 +45,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { lastValueFrom } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so table.page-table-state-size(table.table-width(...)) in the .scss (see table-width()
@@ -60,6 +61,7 @@ const columnKeysMap = [
   styleUrls: ["./machine-resolver.component.scss"],
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     MatTableModule,
 

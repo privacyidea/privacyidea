@@ -69,6 +69,8 @@ import { StringUtils } from "@utils/string.utils";
 import { ROLLOUT_STATE_VALUES, valueDisplayLabel } from "@utils/value-label.utils";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -91,6 +93,9 @@ const columnKeysMap = [
   selector: "app-token-table",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     TruncationTooltipDirective,
     InfoHintComponent,
     MatSuffix,

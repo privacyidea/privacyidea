@@ -66,6 +66,8 @@
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="Container templates"
+        i18n-aria-label="@@table.containerTemplates"
         mat-table
         matSort
         (matSortChange)="onSortChange($event)"
@@ -94,7 +96,7 @@
             (change)="selector.setRowSelected(row, $event.checked)"
             [checked]="selector.isRowSelected(row)"
             [disabled]="!row.name"
-            [attr.aria-label]="selectTemplateLabel(row.name)">
+            [aria-label]="selectTemplateLabel(row.name)">
           </mat-checkbox>
         </td>
       </ng-container>
@@ -120,14 +122,14 @@
                       class="filter-button"
                       [disabled]="containerTemplateService.templates().length === 0"
                       [matMenuTriggerFor]="containerTypeMenu"
-                      aria-label="Filter by {{ column.value.label }}"
-                      i18n-aria-label="@@common.filterBy"
+                      [attr.aria-label]="column.value.label | filterByLabel"
                       type="button"
                       (click)="$event.stopPropagation()">
                       <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
                     </button>
                   } @else {
                     <button
+                      [attr.aria-label]="column.value.label | filterByLabel"
                       mat-icon-button
                       class="filter-button"
                       [disabled]="containerTemplateService.templates().length === 0"

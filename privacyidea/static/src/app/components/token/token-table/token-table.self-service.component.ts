@@ -39,11 +39,15 @@ import { TableState } from "@core/models/table_state/table-state";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { TokenTableComponent } from "./token-table.component";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-token-table-self-service",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
+    SortByLabelPipe,
     TruncationTooltipDirective,
     MatTableModule,
     MatFormFieldModule,

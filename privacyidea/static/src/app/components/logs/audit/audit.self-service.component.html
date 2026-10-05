@@ -82,8 +82,7 @@
                   <div class="flex">
                     <button
                       (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                      aria-label="Filter by {{ column.label }}"
-                      i18n-aria-label="@@common.filterBy"
+                      [attr.aria-label]="column.label | filterByLabel"
                       class="filter-button"
                       mat-icon-button>
                       <mat-icon class="keyword-button-icon margin-left-0">

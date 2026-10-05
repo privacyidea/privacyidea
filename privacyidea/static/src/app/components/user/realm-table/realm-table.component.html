@@ -89,6 +89,7 @@
                   <div class="flex">
                     @if (!["actions", "resolvers"].includes(column.key)) {
                       <button
+                        [attr.aria-label]="column.label | sortByLabel"
                         (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                         class="sort-button"
                         mat-icon-button

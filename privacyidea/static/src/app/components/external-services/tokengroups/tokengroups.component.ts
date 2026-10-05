@@ -43,11 +43,13 @@ import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "@serv
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-tokengroups",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,

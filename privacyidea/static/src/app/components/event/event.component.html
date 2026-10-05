@@ -94,6 +94,8 @@
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="Event handlers"
+        i18n-aria-label="@@table.eventHandlers"
         [dataSource]="eventHandlerDataSource()"
         class="event-handler-table row-striped"
         mat-table>
@@ -109,6 +111,7 @@
                 @if (column !== "delete") {
                   <div class="flex">
                     <button
+                      [attr.aria-label]="columnKeysMap[column] | sortByLabel"
                       (click)="tableUtilsService.onSortButtonClick(column, sort)"
                       class="sort-button"
                       mat-icon-button

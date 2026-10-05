@@ -114,6 +114,8 @@
             class="table-checkbox"
             mat-header-cell>
             <mat-checkbox
+              aria-label="Select all rows"
+              i18n-aria-label="@@common.selectAllRows"
               (change)="toggleAllRows()"
               [checked]="isAllSelected()"
               [disabled]="dataSource().data.length === 0"
@@ -124,6 +126,8 @@
             class="table-checkbox"
             mat-cell>
             <mat-checkbox
+              aria-label="Select row"
+              i18n-aria-label="@@common.selectRow"
               (change)="toggleRow(row)"
               [checked]="selection().includes(row)" />
           </td>

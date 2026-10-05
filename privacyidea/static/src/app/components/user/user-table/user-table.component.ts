@@ -76,6 +76,8 @@ import { FilterValueGeneric, keywordlessTerms } from "@core/models/filter_value_
 import { TableState } from "@core/models/table_state/table-state";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so a table.page-table-state-size(table.table-width(...)) call in the .scss listing the same tiers
@@ -109,6 +111,9 @@ const userFilterOptions: FilterOption<UserData>[] = columnKeysMap.map(
 @Component({
   selector: "app-user-table",
   imports: [
+    TooltipAriaLabelDirective,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     TruncationTooltipDirective,
     InfoHintComponent,
     MatSuffix,

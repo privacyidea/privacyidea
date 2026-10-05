@@ -56,10 +56,14 @@ import { exactMatch, matchesFilterTerm, splitExactMatch } from "@utils/filter.ut
 import { of } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 @Component({
   selector: "app-event",
   imports: [
+    SortByLabelPipe,
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     CommonModule,
     MatTableModule,

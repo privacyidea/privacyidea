@@ -43,10 +43,12 @@ import {
 } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/user-settings/ui-preferences.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-ui-settings",
   imports: [
+    TooltipAriaLabelDirective,
     LightSourceDialComponent,
     MatButtonModule,
     MatButtonToggleModule,

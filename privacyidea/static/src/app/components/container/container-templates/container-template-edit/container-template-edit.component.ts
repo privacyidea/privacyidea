@@ -34,11 +34,13 @@ import {
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { ContainerTemplateEditBodyComponent } from "./container-template-edit-body/container-template-edit-body.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-container-template-edit",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     MatInputModule,
     MatCardModule,
     MatIconModule,

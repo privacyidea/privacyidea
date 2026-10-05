@@ -23,6 +23,7 @@ import { MatInput, MatLabel } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 export interface UserGroupsModel {
   active: boolean;
@@ -34,7 +35,17 @@ export interface UserGroupsModel {
 
 @Component({
   selector: "app-http-groups-attribute",
-  imports: [MatFormField, MatHint, MatInput, MatLabel, MatOption, MatSelect, MatSlideToggle, MatTooltip],
+  imports: [
+    TooltipAriaLabelDirective,
+    MatFormField,
+    MatHint,
+    MatInput,
+    MatLabel,
+    MatOption,
+    MatSelect,
+    MatSlideToggle,
+    MatTooltip
+  ],
   templateUrl: "./http-groups-attribute.component.html",
   styleUrl: "./http-groups-attribute.component.scss"
 })

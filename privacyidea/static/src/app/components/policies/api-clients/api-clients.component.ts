@@ -45,11 +45,13 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-api-clients",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     MatTableModule,
     MatPaginator,

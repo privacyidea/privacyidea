@@ -49,11 +49,13 @@ import { renderedRows, RowSelector } from "@services/table-utils/row-selector";
 import { firstValueFrom, lastValueFrom } from "rxjs";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-periodic-task",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,

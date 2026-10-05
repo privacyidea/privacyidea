@@ -37,6 +37,7 @@ import {
 } from "@services/appearance/appearance.service";
 import { ThemeService } from "@services/theme/theme.service";
 import { ThemeToggleComponent } from "@components/shared/theme-toggle/theme-toggle.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 interface AppearancePreset {
   depth: DepthLevel;
@@ -95,7 +96,14 @@ function presetLabel(preset: AppearancePreset): string {
  */
 @Component({
   selector: "app-appearance-widget",
-  imports: [LightSourceDialComponent, MatIcon, MatIconButton, MatTooltip, ThemeToggleComponent],
+  imports: [
+    TooltipAriaLabelDirective,
+    LightSourceDialComponent,
+    MatIcon,
+    MatIconButton,
+    MatTooltip,
+    ThemeToggleComponent
+  ],
   templateUrl: "./appearance-widget.component.html",
   styleUrl: "./appearance-widget.component.scss"
 })

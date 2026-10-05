@@ -21,11 +21,12 @@ import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { TableSortState } from "@components/dashboard/widgets/table-sort/table-sort";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 @Component({
   selector: "app-table-sort-header",
   standalone: true,
-  imports: [MatIconButton, MatIcon, TruncationTooltipDirective],
+  imports: [SortByLabelPipe, MatIconButton, MatIcon, TruncationTooltipDirective],
   templateUrl: "./table-sort-header.component.html",
   styleUrl: "./table-sort-header.component.scss"
 })

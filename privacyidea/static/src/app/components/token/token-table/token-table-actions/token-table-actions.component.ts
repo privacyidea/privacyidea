@@ -43,10 +43,19 @@ import { DocumentationService, DocumentationServiceInterface } from "@services/d
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { formatList, pluralize } from "@utils/i18n.utils";
 import { OverflowNavDirective } from "../../../shared/directives/overflow-nav/overflow-nav.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-token-table-actions",
-  imports: [MatButtonModule, MatIcon, MatMenuModule, MatTooltipModule, OverflowNavDirective, RouterLink],
+  imports: [
+    TooltipAriaLabelDirective,
+    MatButtonModule,
+    MatIcon,
+    MatMenuModule,
+    MatTooltipModule,
+    OverflowNavDirective,
+    RouterLink
+  ],
   templateUrl: "./token-table-actions.component.html",
   styleUrl: "./token-table-actions.component.scss"
 })

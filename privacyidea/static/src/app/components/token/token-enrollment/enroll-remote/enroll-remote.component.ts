@@ -36,11 +36,23 @@ import {
   RemoteEnrollmentData
 } from "@app/mappers/token-api-payload/remote-token-api-payload.mapper";
 import { EnrollmentArgs, EnrollTokenBase } from "@components/token/token-enrollment/enroll-token-base";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-enroll-remote",
   standalone: true,
-  imports: [MatFormField, MatInput, MatLabel, MatOption, MatSelect, MatCheckbox, MatError, MatTooltip, FormField],
+  imports: [
+    TooltipAriaLabelDirective,
+    MatFormField,
+    MatInput,
+    MatLabel,
+    MatOption,
+    MatSelect,
+    MatCheckbox,
+    MatError,
+    MatTooltip,
+    FormField
+  ],
   templateUrl: "./enroll-remote.component.html",
   providers: [{ provide: EnrollTokenBase, useExisting: forwardRef(() => EnrollRemoteComponent) }]
 })

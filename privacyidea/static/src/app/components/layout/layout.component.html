@@ -21,9 +21,7 @@
   class="layout"
   [class.with-secondary-toolbar]="hasSecondaryToolbar()"
   i18n-aria-label="@@nav.layout">
-  <main
-    aria-label="Main Router Outlet"
-    i18n-aria-label="@@nav.mainRouterOutlet">
+  <div>
     @if (authService.role() === "admin") {
       <div class="admin-layout">
         <app-navigation />
@@ -64,5 +62,5 @@
         mode="indeterminate" />
     }
     <app-debug-notice />
-  </main>
+  </div>
 </div>

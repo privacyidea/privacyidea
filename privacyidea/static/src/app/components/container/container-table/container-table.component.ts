@@ -70,6 +70,7 @@ import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { withUser } from "@utils/filter.utils";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -89,6 +90,8 @@ const columnsKeyMap = [
   selector: "app-container-table",
   standalone: true,
   imports: [
+    FilterByLabelPipe,
+    SortByLabelPipe,
     TruncationTooltipDirective,
     InfoHintComponent,
     MatSuffix,

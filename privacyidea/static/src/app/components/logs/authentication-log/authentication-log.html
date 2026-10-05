@@ -286,7 +286,7 @@
                 } @else {
                 <button
                   (click)="onKeywordClick(column.key)"
-                  aria-label="Filter by {{ column.label }}"
+                  [attr.aria-label]="column.label | filterByLabel"
                   class="filter-button"
                   i18n-aria-label="@@common.filterBy"
                   mat-icon-button>
@@ -295,7 +295,7 @@
                 } } @if (column.sortable) {
                 <button
                   (click)="onSortClick(column.key)"
-                  aria-label="Sort by {{ column.label }}"
+                  [attr.aria-label]="column.label | sortByLabel"
                   class="sort-button"
                   i18n-aria-label="@@common.sortBy"
                   mat-icon-button

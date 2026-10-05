@@ -52,11 +52,15 @@ import { PoliciesTableActionsComponent } from "./policies-table-actions/policies
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
 import { ViewConditionsColumnComponent } from "./view-conditions-column/view-conditions-column.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { FilterByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 @Component({
   selector: "app-policies-table",
   standalone: true,
   imports: [
+    FilterByLabelPipe,
+    TooltipAriaLabelDirective,
     CommonModule,
     KeyValuePipe,
     MatTableModule,

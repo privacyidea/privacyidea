@@ -22,6 +22,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { CopyableComponent } from "@components/shared/copyable/copyable.component";
 import { FilterValueButtonComponent } from "@components/shared/filter-value-button/filter-value-button.component";
 import { AuthenticationLogEntry } from "@services/authentication-log/authentication-log.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // What each recorded derivation is called in the column, and what the badge explains on hover. Mirrors
 // privacyidea.lib.utils.ClientIpSource. A value outside this table - including null, which is what an entry
@@ -70,7 +71,7 @@ const HOP_SOURCE_LABELS: Record<string, string> = {
 @Component({
   selector: "app-source-ip-cell",
   standalone: true,
-  imports: [CopyableComponent, FilterValueButtonComponent, MatIcon, MatTooltipModule],
+  imports: [TooltipAriaLabelDirective, CopyableComponent, FilterValueButtonComponent, MatIcon, MatTooltipModule],
   templateUrl: "./source-ip-cell.html",
   styleUrl: "./source-ip-cell.scss"
 })

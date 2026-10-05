@@ -21,11 +21,12 @@ import { Component, ElementRef, input, linkedSignal, output, viewChildren, Writa
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-selector-buttons",
   standalone: true,
-  imports: [MatButtonModule, MatIcon, MatTooltipModule],
+  imports: [TooltipAriaLabelDirective, MatButtonModule, MatIcon, MatTooltipModule],
   templateUrl: "./selector-buttons.component.html",
   styleUrl: "./selector-buttons.component.scss"
 })

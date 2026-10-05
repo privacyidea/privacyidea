@@ -26,12 +26,22 @@ import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { DialogAction } from "@models/dialog";
 import { assert } from "@utils/assert";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-dialog-wrapper",
   templateUrl: "./dialog-wrapper.component.html",
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatIcon, MatTooltipModule, A11yModule],
+  imports: [
+    TooltipAriaLabelDirective,
+    CommonModule,
+    MatDialogModule,
+    MatIconModule,
+    MatButton,
+    MatIcon,
+    MatTooltipModule,
+    A11yModule
+  ],
   styleUrls: ["./dialog-wrapper.component.scss"]
 })
 export class DialogWrapperComponent<R = unknown> implements OnInit {

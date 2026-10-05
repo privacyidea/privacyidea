@@ -22,13 +22,14 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-policy-scope-edit",
   templateUrl: "./policy-scope-edit.component.html",
   styleUrl: "./policy-scope-edit.component.scss",
   standalone: true,
-  imports: [MatFormFieldModule, MatSelectModule, MatTooltipModule]
+  imports: [TooltipAriaLabelDirective, MatFormFieldModule, MatSelectModule, MatTooltipModule]
 })
 export class PolicyScopeEditComponent {
   private readonly policyService: PolicyServiceInterface = inject(PolicyService);
