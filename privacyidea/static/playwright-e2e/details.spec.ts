@@ -77,7 +77,8 @@ test.describe("details, structure and keyboard", () => {
           };
         });
         if (!info) {
-          break;
+          // A page that re-renders as its data arrives can drop focus to the body for a moment; Tab goes on.
+          continue;
         }
         seen.push(info.id);
         if (!info.visible) {

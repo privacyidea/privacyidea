@@ -57,7 +57,7 @@ export function filterInput(page: Page) {
 // Backend calls the shell of the app needs to render at all; everything else a page loads can be held or failed.
 const SHELL_ENDPOINTS = [
   "config",
-  "auth",
+  "auth/rights",
   "user/settings",
   "realm",
   "defaultrealm",
