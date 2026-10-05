@@ -14,7 +14,7 @@ In this chapter we describe a way to install privacyIDEA on Red Hat Enterprise L
 its rebuilds like Rocky Linux and AlmaLinux, based on the installation via :ref:`pip_install`. It follows the
 approach used in the enterprise packages (see `RPM Repository`_).
 
-privacyIDEA needs Python 3.11 or newer. RHEL 10 ships Python 3.12 as its system Python. On RHEL 8 and 9 the
+privacyIDEA needs Python 3.10 or newer. RHEL 10 ships Python 3.12 as its system Python. On RHEL 8 and 9 the
 ``python3.11`` packages from the AppStream repository are used instead of the system Python.
 
 .. _centos_setup_services:

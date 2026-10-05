@@ -10,7 +10,7 @@ virtual environment. This way you keep all privacyIDEA code in one defined
 subdirectory.
 
 .. note::
-    privacyIDEA runs with Python 3.11 to 3.14. Other
+    privacyIDEA runs with Python 3.10 to 3.14. Other
     versions either do not work or are not tested.
 
 Setting up a virtual environment

@@ -42,7 +42,7 @@ add both of these lines to ``pi.cfg``::
     PI_TEMPLATE_FOLDER = "static_old/templates/"
 
 The first selects the files the WebUI is served from, the second the templates privacyIDEA renders
-itself, such as the WebUI's ``index.html``. Both are needed.
+itself, such as the certificate request form. Both are needed.
 
 It is kept for one version so that a problem with the current WebUI does not hold up an update,
 and **is removed in the next version**. If you need it, please report what made you switch back.
