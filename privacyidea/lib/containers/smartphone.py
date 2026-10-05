@@ -143,7 +143,7 @@ class SmartphoneContainer(TokenContainerClass):
         Initializes the registration: Generates a QR code containing all relevant data.
 
         :param server_url: URL of the server reachable for the client.
-        :param scope: The URL the client contacts to finalize the registration e.g. "https://pi.net/container/register/finalize".
+        :param scope: The URL the client contacts to finalize the registration e.g. ``https://privacyidea.example.com/container/register/finalize``.
         :param registration_ttl: Time to live of the registration link in minutes.
         :param ssl_verify: Whether the client shall use ssl.
         :param params: Container specific parameters in the format:
@@ -263,7 +263,7 @@ class SmartphoneContainer(TokenContainerClass):
             * timestamp (from the registration challenge)
             * serial of the container
             * scope: The URL the client contacts to finalize the registration, e.g.
-              "https://pi.net/container/register/finalize"
+              ``https://privacyidea.example.com/container/register/finalize``
             * device brand (optional)
             * device model (optional)
             * passphrase response if defined in the registration challenge
@@ -358,7 +358,7 @@ class SmartphoneContainer(TokenContainerClass):
         """
         Create a challenge for the container.
 
-        :param scope: The scope (endpoint) of the challenge, e.g. "https://pi.com/container/SMPH001/sync"
+        :param scope: The scope (endpoint) of the challenge, e.g. ``https://privacyidea.example.com/container/SMPH001/sync``
         :param validity_time: The validity time of the challenge in minutes.
         :param data: Additional data for the challenge.
         :return: A dictionary with the challenge data in the format:
@@ -405,7 +405,7 @@ class SmartphoneContainer(TokenContainerClass):
             * nonce (from the challenge)
             * timestamp (from the challenge)
             * serial of the container
-            * scope: The URL the client wants to contact, e.g. "https://pi.net/container/register/finalize"
+            * scope: The URL the client wants to contact, e.g. ``https://privacyidea.example.com/container/register/finalize``
             * ecc public key of the client in PEM format (optional)
             * container dict of the client (optional)
 

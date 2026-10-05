@@ -646,7 +646,7 @@ class IdResolver(UserIdResolver):
     def get_tls_context(ldap_uri=None, start_tls=False, tls_version=None, tls_verify=None,
                         tls_ca_file=None, tls_options=None):
         """
-        This method creates the Tls object to be used with ldap3.
+        This method creates the TLS object to be used with ldap3.
         """
         if ldap_uri.lower().startswith("ldaps") or is_true(start_tls):
             if not tls_version:
@@ -1251,7 +1251,7 @@ class IdResolver(UserIdResolver):
         LDAP servers. These are split and then added to the pool.
 
         See
-        https://github.com/cannatag/ldap3/blob/master/docs/manual/source/servers.rst#server-pool
+        https://ldap3.readthedocs.io/en/latest/server.html#server-pool
 
         :param urilist: The list of LDAP URIs, comma separated
         :type urilist: basestring
