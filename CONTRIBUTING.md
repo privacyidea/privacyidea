@@ -313,3 +313,40 @@ frontend), or if the developer wants both a functional (does the PR fix the
 bug?) and technical review (is the code okay?). If a developer requests
 multiple reviews, the PR description should explicitly state if *all* reviews
 should be positive, or if *one* positive review is sufficient.
+
+## Publishing Python releases to PyPI
+
+The `Python Release` workflow in `.github/workflows/python-dist.yml` builds the WebUI,
+checks the contents of the wheel and source distribution, and creates the GitHub release
+when a `v*` tag is pushed. Tags containing `dev` are excluded. After the GitHub release
+is created, a separate job publishes the same `python-dist` artifact to PyPI using
+[Trusted Publishing](https://docs.pypi.org/trusted-publishers/). The publishing job runs
+only in `privacyidea/privacyidea` and has the `id-token: write` permission; it does not
+check out or build the source code, or use a stored PyPI API token.
+
+Before the first automated upload, a PyPI project owner must check the existing publishers
+and, if needed, [register a GitHub Actions publisher](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
+for the existing `privacyIDEA` project with these values:
+
+| Field | Value |
+| --- | --- |
+| Repository owner | `privacyidea` |
+| Repository name | `privacyidea` |
+| Workflow filename | `python-dist.yml` |
+| Environment name | `pypi` |
+
+A repository administrator should configure the GitHub `pypi` environment and its
+deployment protection rules before enabling uploads. See the
+[GitHub environment documentation](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment).
+Maintainers must also confirm whether the internal GitLab pipelines or another release
+process already upload to PyPI, and coordinate the switch so that only one process
+uploads each distribution file. PyPI does not allow
+[filename reuse](https://pypi.org/help/#file-name-reuse).
+
+The publisher must be registered before pushing a release tag that includes this
+workflow change. Maintenance branches need the workflow change before their next
+release tag as well. Publication verifies package metadata and generates attestations
+through the [PyPA publishing action](https://github.com/pypa/gh-action-pypi-publish).
+Failures are reported by the publishing job; the workflow does not ignore already
+uploaded files. If an upload only partially succeeds, inspect the files on PyPI before
+choosing how to complete the release.
