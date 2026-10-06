@@ -106,12 +106,14 @@
           <ng-container matColumnDef="serial">
           <th
             *matHeaderCellDef
+            class="col-width-l"
             i18n="@@common.serial"
             mat-header-cell
             >Serial</th
           >
           <td
             *matCellDef="let token"
+            class="col-width-l"
             mat-cell>
             <div class="flex-row flex-nowrap ali-center">
               <a
@@ -131,12 +133,14 @@
         <ng-container matColumnDef="application">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             i18n="@@common.application"
             mat-header-cell
             >Application</th
           >
           <td
             *matCellDef="let token"
+            class="col-width-s"
             mat-cell>
             {{ token.application }}
           </td>
@@ -145,12 +149,14 @@
         <ng-container matColumnDef="options">
           <th
             *matHeaderCellDef
+            class="col-width-xl"
             i18n="@@common.options"
             mat-header-cell
             >Options</th
           >
           <td
             *matCellDef="let token"
+            class="col-width-xl"
             mat-cell>
             @if (!isEditing(token.id)) {
               @for (option of token.options | keyvalue; track option.key) {
@@ -191,12 +197,14 @@
         <ng-container matColumnDef="actions">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             i18n="@@common.actions"
             mat-header-cell
             >Actions</th
           >
           <td
             *matCellDef="let token"
+            class="col-width-s"
             mat-cell>
             <div class="flex just-center">
               @if (!isEditing(token.id)) {

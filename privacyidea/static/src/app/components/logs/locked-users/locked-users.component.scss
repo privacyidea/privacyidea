@@ -4,8 +4,8 @@
 .locked-users-table-container {
   @include styles.main-component-style;
   @include table.paginator-range-floor;
-  // The empty/error/loading panel fills the page like on every other table page.
-  @include table.page-table-state-size;
+  // The empty/error/loading panel is as wide as the col-width-* tiers of the columns.
+  @include table.page-table-state-size(table.table-width(checkbox, m, m, m, s, s, m, m, l));
   @include table.base-table-structure(".locked-users-table", ".locked-users-table-filter", ".table-scroll-container");
   // Flex column so the title/description, filter+paginator row and the actions
   // stay pinned and only the .table-scroll-region (flex: 1 1 auto, overflow: auto)

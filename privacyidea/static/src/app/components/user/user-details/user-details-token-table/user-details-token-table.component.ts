@@ -68,6 +68,17 @@ interface BulkActionResult {
   ok: boolean;
 }
 
+// The col-width-* tier (see --column-width-* in styles.scss) each column's header and cell are fixed to.
+const columnWidthTiers: Record<string, "s" | "m" | "l" | "xl"> = {
+  serial: "m",
+  tokentype: "s",
+  active: "s",
+  description: "l",
+  failcount: "s",
+  maxfail: "s",
+  container_serial: "m"
+};
+
 type BulkAction = "unassign" | "toggleActive" | "resetFailCount";
 
 @Component({
@@ -124,6 +135,10 @@ export class UserDetailsTokenTableComponent {
     "container_serial"
   );
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
+
+  columnWidthClass(key: string): string {
+    return `col-width-${columnWidthTiers[key] ?? "m"}`;
+  }
 
   get displayedColumns(): string[] {
     return ["select", ...this.columnsKeyMap.map((column) => column.key)];

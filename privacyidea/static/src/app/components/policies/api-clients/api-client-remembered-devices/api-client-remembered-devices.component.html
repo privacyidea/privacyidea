@@ -66,12 +66,14 @@
       <ng-container matColumnDef="user">
         <th
           *matHeaderCellDef
+          class="col-width-l"
           i18n="@@common.user"
           mat-header-cell
           >User</th
         >
         <td
           *matCellDef="let device"
+          class="col-width-l"
           mat-cell>
           @if (device.user) {
             <a
@@ -94,12 +96,14 @@
       <ng-container matColumnDef="ip_address">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@common.ipAddress"
           mat-header-cell
           >IP Address</th
         >
         <td
           *matCellDef="let device"
+          class="col-width-m"
           mat-cell>
           {{ device.ip_address || "-" }}
         </td>
@@ -108,12 +112,14 @@
       <ng-container matColumnDef="user_agent">
         <th
           *matHeaderCellDef
+          class="col-width-xl"
           i18n="@@common.userAgent"
           mat-header-cell
           >User Agent</th
         >
         <td
           *matCellDef="let device"
+          class="col-width-xl"
           mat-cell>
           {{ device.user_agent || "-" }}
         </td>
@@ -122,12 +128,14 @@
       <ng-container matColumnDef="created_at">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@token.created"
           mat-header-cell
           >Created</th
         >
         <td
           *matCellDef="let device"
+          class="col-width-m"
           mat-cell>
           {{ device.created_at | date: "yyyy-MM-dd HH:mm" }}
         </td>
@@ -136,12 +144,14 @@
       <ng-container matColumnDef="last_used_at">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@apiClient.lastUsed"
           mat-header-cell>
           Last used
         </th>
         <td
           *matCellDef="let device"
+          class="col-width-m"
           mat-cell>
           {{ (device.last_used_at | date: "yyyy-MM-dd HH:mm") || "-" }}
         </td>
@@ -150,12 +160,14 @@
       <ng-container matColumnDef="expires_at">
         <th
           *matHeaderCellDef
+          class="col-width-m"
           i18n="@@dashboard.expires"
           mat-header-cell
           >Expires</th
         >
         <td
           *matCellDef="let device"
+          class="col-width-m"
           mat-cell>
           {{ device.expires_at | date: "yyyy-MM-dd HH:mm" }}
         </td>
@@ -164,9 +176,11 @@
       <ng-container matColumnDef="actions">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           mat-header-cell></th>
         <td
           *matCellDef="let device"
+          class="col-width-s"
           mat-cell>
           @if (authService.actionAllowed("remembered_device_revoke")) {
             <button

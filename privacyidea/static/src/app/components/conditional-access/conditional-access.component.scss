@@ -12,16 +12,8 @@
     ".conditional-access-table-filter",
     ".table-scroll-container"
   );
-  // Approximates the table's real row width for the empty/error/loading state: select (48px),
-  // priority (140px), time-window (146px) and stages (72px, a single digit column narrower than
-  // any col-width-* tier) are fixed pixel columns; the rest are generous col-width-* tiers, since
-  // none of them carry a fixed width of their own today.
-  @include table.page-table-state-size(
-    calc(
-      48px + var(--column-width-l) + 140px + 146px + var(--column-width-l) + 72px + var(--column-width-s) +
-        var(--column-width-l) + 91px + 91px
-    )
-  );
+  // Sized from the col-width-* tiers its columns use, for the empty/error/loading state.
+  @include table.page-table-state-size(table.table-width(checkbox, l, s, m, xl, s, s, xl, s, s));
 
   @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
@@ -45,27 +37,6 @@
 // to its content width ends up with its value sitting on the border. Pad every cell of this
 // table instead - the checkbox column sets its own width and opts out.
 .conditional-access-table {
-  // A width of its own per column rather than its content's, so the columns, the table and the page keep
-  // their size whichever rows a filter leaves.
-  $column-widths: (
-    name: 256px,
-    priority: 140px,
-    time_window_seconds: 146px,
-    counter_types_to_track: 338px,
-    stages: 78px,
-    threshold: 99px,
-    actions: 289px,
-    enabled: 92px,
-    dry_run: 91px
-  );
-
-  @each $column, $width in $column-widths {
-    th.mat-column-#{$column},
-    td.mat-column-#{$column} {
-      width: $width;
-    }
-  }
-
   td.mat-mdc-cell:not(.ca-checkbox-cell),
   th.mat-mdc-header-cell:not(.ca-checkbox-cell) {
     padding-right: 16px;
@@ -78,34 +49,6 @@
   th.mat-sort-header-disabled:not(.ca-checkbox-cell) {
     padding-right: calc(16px + 18px);
   }
-}
-
-// The column the auto layout squeezes first, so it gets a floor: the scroll container breaks
-// words anywhere, which lets the header collapse to its longest word, and rearrange mode
-// swaps the paginated data source for the full draft list, lengthening the elastic text
-// columns next to it. A floor rather than a fixed width, so the wider padding a disabled
-// sort header carries grows the column instead of clipping the label.
-.ca-time-window-column {
-  box-sizing: border-box;
-  min-width: 146px;
-  white-space: nowrap;
-}
-
-// The two toggle columns hold a fixed-size control, so they get the same floor treatment as
-// the time window column - nothing in them justifies giving up width to the elastic text
-// columns when rearrange mode swaps in the full draft list.
-.ca-toggle-column {
-  box-sizing: border-box;
-  min-width: 91px;
-  white-space: nowrap;
-}
-
-// Fixed so the column is the same width in both states and entering rearrange mode does not
-// shift every column to its right. Set on the column (border-box) rather than on the inner
-// span, so the cell padding is included instead of adding to it.
-.ca-priority-column {
-  box-sizing: border-box;
-  width: 140px;
 }
 
 // Priority value and the rearrange arrows share one line, the arrows pinned to the right of

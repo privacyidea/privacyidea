@@ -101,6 +101,7 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              [ngClass]="columnWidthClass(column.key)"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
@@ -119,7 +120,7 @@
 
             <td
               *matCellDef="let element"
-              [ngClass]="{ 'input-width-l': column.key === 'description' }"
+              [ngClass]="columnWidthClass(column.key)"
               mat-cell>
               <div
                 appScrollFocusable

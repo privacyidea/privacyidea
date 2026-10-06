@@ -84,6 +84,13 @@ export class TokenApplicationsOfflineComponent {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "count", "rounds");
+  // The col-width-* tier (see --column-width-* in styles.scss) each column is fixed to: the serial is
+  // medium, the count and rounds numbers are small.
+  protected readonly columnWidths: Readonly<Record<string, "s" | "m" | "l" | "xl">> = {
+    serial: "m",
+    count: "s",
+    rounds: "s"
+  };
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);

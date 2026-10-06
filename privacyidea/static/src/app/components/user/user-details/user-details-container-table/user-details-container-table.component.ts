@@ -113,6 +113,19 @@ export class UserDetailsContainerTableComponent {
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "type", "states", "description", "realms");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
 
+  /** Width tier of each data column; the row-select column keeps its own checkbox width. */
+  private readonly columnWidthTiers: Record<string, "s" | "m" | "l" | "xl"> = {
+    serial: "m",
+    type: "s",
+    states: "s",
+    description: "l",
+    realms: "m"
+  };
+
+  columnWidthClass(key: string): string {
+    return `col-width-${this.columnWidthTiers[key] ?? "m"}`;
+  }
+
   get displayedColumns(): string[] {
     return ["select", ...this.columnsKeyMap.map((c) => c.key)];
   }

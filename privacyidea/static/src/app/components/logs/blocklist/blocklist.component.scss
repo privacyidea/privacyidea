@@ -3,8 +3,8 @@
 
 .blocklist-table-container {
   @include styles.main-component-style;
-  // The empty/error/loading panel fills the page like on every other table page.
-  @include table.page-table-state-size;
+  // The empty/error/loading panel is as wide as the col-width-* tiers of the columns.
+  @include table.page-table-state-size(table.table-width(checkbox, m, s, s, m, m, l));
   @include table.base-table-structure(".blocklist-table", ".blocklist-table-filter", ".table-scroll-container");
   display: flex;
   flex-direction: column;
@@ -19,26 +19,6 @@
   margin-bottom: 16px;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-// A width of its own per column rather than its content's, so the columns, the table and the page keep
-// their size whichever rows a filter leaves.
-.blocklist-table {
-  $column-widths: (
-    identifier: 190px,
-    state: 120px,
-    cause: 130px,
-    block_expires_at: 170px,
-    blocked_at: 170px,
-    error_message: 160px
-  );
-
-  @each $column, $width in $column-widths {
-    th.mat-column-#{$column},
-    td.mat-column-#{$column} {
-      width: $width;
-    }
-  }
 }
 
 // Column header: label plus its filter/sort control(s) on one row.

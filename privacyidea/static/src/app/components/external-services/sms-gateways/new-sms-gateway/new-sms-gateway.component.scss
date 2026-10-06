@@ -68,13 +68,17 @@
 }
 
 .actions-cell {
-  width: 1%;
   white-space: nowrap;
   text-align: right;
 }
 
 .add-footer-row td {
   padding-top: 8px;
+}
+
+// The add-row inputs fill their column's col-width-* tier.
+.add-footer-field {
+  width: 100%;
 }
 
 .add-button {

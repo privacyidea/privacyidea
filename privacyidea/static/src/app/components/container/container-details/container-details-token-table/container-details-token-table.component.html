@@ -82,6 +82,7 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              [ngClass]="'col-width-' + columnWidths[column.key]"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
@@ -99,6 +100,7 @@
             </th>
             <td
               *matCellDef="let element"
+              [ngClass]="'col-width-' + columnWidths[column.key]"
               mat-cell>
               <div
                 appScrollFocusable
@@ -188,6 +190,7 @@
         <ng-container matColumnDef="actions">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             mat-header-cell>
             <div
               class="flex just-center"
@@ -197,6 +200,7 @@
           </th>
           <td
             *matCellDef="let element"
+            class="col-width-s"
             mat-cell>
             <div class="flex-row just-center">
               @if (element.status !== "missing") {

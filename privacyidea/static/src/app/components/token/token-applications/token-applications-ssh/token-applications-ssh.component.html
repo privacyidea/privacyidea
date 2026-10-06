@@ -85,6 +85,7 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              class="col-width-m"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
@@ -114,6 +115,7 @@
             </th>
             <td
               *matCellDef="let element"
+              class="col-width-m"
               mat-cell>
               <div
                 appScrollFocusable

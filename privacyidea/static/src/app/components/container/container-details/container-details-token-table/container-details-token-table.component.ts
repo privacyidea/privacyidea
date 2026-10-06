@@ -115,6 +115,14 @@ export class ContainerDetailsTokenTableComponent implements AfterViewInit {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "tokentype", "active", "username");
+  // Width tier of each data column (see the col-width-* classes in styles.scss): the token type and
+  // the active state are short badges, the serial and the owner name need a medium column.
+  readonly columnWidths: Record<string, "s" | "m" | "l" | "xl"> = {
+    serial: "m",
+    tokentype: "s",
+    active: "s",
+    username: "m"
+  };
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   displayedColumns: string[] = [...this.columnKeys, "actions"];
   pageSize = 5;

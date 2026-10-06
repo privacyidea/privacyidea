@@ -191,17 +191,18 @@
       <ng-container matColumnDef="privacyideaAttr">
         <th
           *matHeaderCellDef
+          class="col-width-xl"
           i18n="@@resolver.privacyideaAttribute"
           mat-header-cell
           >PrivacyIDEA Attribute</th
         >
         <td
           *matCellDef="let row; let i = index"
-          class="input-width-l"
+          class="col-width-xl"
           mat-cell>
           @if (!row.isCustom) {
             <mat-form-field
-              class="input-width-l height-57"
+              class="height-57"
               subscriptSizing="dynamic">
               <mat-select
                 (selectionChange)="onPrivacyIdeaAttrChanged(i, $event.value)"
@@ -225,7 +226,6 @@
 
           @if (row.isCustom) {
             <mat-form-field
-              class="input-width-l"
               subscriptSizing="dynamic">
               <app-clearable-input
                 (clearButtonClick)="setCustomAttr(i, '')"
@@ -245,16 +245,16 @@
       <ng-container matColumnDef="userStoreAttr">
         <th
           *matHeaderCellDef
+          class="col-width-xl"
           i18n="@@resolver.userStoreAttribute"
           mat-header-cell
           >User Store Attribute</th
         >
         <td
           *matCellDef="let row; let i = index"
-          class="input-width-l"
+          class="col-width-xl"
           mat-cell>
           <mat-form-field
-            class="input-width-l"
             subscriptSizing="dynamic">
             <app-clearable-input
               (clearButtonClick)="row.userStoreAttr = ''; onMappingChanged()"
@@ -273,13 +273,14 @@
       <ng-container matColumnDef="actions">
         <th
           *matHeaderCellDef
+          class="col-width-s"
           i18n="@@common.actions"
           mat-header-cell
           >Actions</th
         >
         <td
           *matCellDef="let row; let i = index"
-          class="input-width-s text-center"
+          class="col-width-s text-center"
           mat-cell>
           @if (row.privacyideaAttr !== null || row.isCustom) {
             <div class="actions-buttons">

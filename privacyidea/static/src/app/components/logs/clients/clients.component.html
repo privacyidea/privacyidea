@@ -60,7 +60,7 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
-              [ngClass]="{ 'col-stripe': colIdx % 2 === 0 }"
+              [ngClass]="['col-width-' + column.width, colIdx % 2 === 0 ? 'col-stripe' : '']"
               mat-header-cell
               mat-sort-header>
               {{ column.label }}
@@ -69,7 +69,7 @@
               @if (!useApplicationRowSpan(column.key) || client.isFirst) {
                 <td
                   [attr.rowspan]="useApplicationRowSpan(column.key) ? client.rowspan : 1"
-                  [ngClass]="{ 'col-stripe': colIdx % 2 === 0 }"
+                  [ngClass]="['col-width-' + column.width, colIdx % 2 === 0 ? 'col-stripe' : '']"
                   mat-cell>
                   <div class="data-table-cell">
                     @if (column.key === "lastseen") {
