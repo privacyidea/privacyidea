@@ -133,6 +133,9 @@ for (const route of ALL_PAGES) {
       expect.soft(snapshot.match(UNNAMED) ?? [], "controls without a name").toEqual([]);
 
       // The page is named by one h1; the headings the page draws itself follow, each at most one level below the last.
+      // The h1 is read, not drawn: a clipped 1px box that takes no room.
+      const h1Box = await page.getByRole("heading", { level: 1 }).first().boundingBox();
+      expect.soft(h1Box?.height ?? 0, "the h1 is hidden visually").toBeLessThanOrEqual(2);
       const levels = [...snapshot.matchAll(HEADING)].map((m) => Number(m[1]));
       expect.soft(levels.filter((l) => l === 1).length, "one h1").toBe(1);
       expect.soft(levels[0], "the h1 comes first").toBe(1);

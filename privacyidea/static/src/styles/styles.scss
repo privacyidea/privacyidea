@@ -736,6 +736,19 @@ $corner-radii: (
   width: 50%;
 }
 
+// Out of sight, still read by assistive technology (the page's own heading, for one): a 1px box, clipped, off the layout.
+.visually-hidden {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .width-100 {
   width: 100%;
 }
