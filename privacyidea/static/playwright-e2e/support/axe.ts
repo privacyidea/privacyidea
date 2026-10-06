@@ -22,7 +22,10 @@ function readBaseline(): Baseline {
 }
 
 // Workers record their results side by side, so the read-modify-write of the one file is done under a lock: a directory
-// that only one worker can create at a time.
+// that only one worker can create at a time. A lock older than LOCK_STALE_MS belongs to a run that was killed and is
+// taken over.
+const LOCK_STALE_MS = 30_000;
+
 function writeBaseline(name: string, theme: string, rules: string[]): void {
   const lock = BASELINE_FILE + ".lock";
   for (;;) {
@@ -30,6 +33,11 @@ function writeBaseline(name: string, theme: string, rules: string[]): void {
       fs.mkdirSync(lock);
       break;
     } catch {
+      try {
+        if (Date.now() - fs.statSync(lock).mtimeMs > LOCK_STALE_MS) fs.rmdirSync(lock);
+      } catch {
+        // The holder released it in the meantime.
+      }
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
     }
   }

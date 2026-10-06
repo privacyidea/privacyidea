@@ -15,7 +15,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   await page.fill("#username", process.env["E2E_USER"] ?? "admin");
   await page.fill("#password", process.env["E2E_PASS"] ?? "admin");
   await page.click('button[type="submit"]');
-  await page.waitForURL(/\/(dashboard|tokens)/, { timeout: 20_000 });
+  await page.waitForURL((url) => !url.pathname.endsWith("/login"), { timeout: 20_000 });
   await context.storageState({ path: file });
   // The session lives in sessionStorage, which storageState does not save; support/test.ts restores it.
   const session = await page.evaluate(() => JSON.stringify(Object.fromEntries(Object.entries(sessionStorage))));

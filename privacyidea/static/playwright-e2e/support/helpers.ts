@@ -5,9 +5,7 @@ export async function openPage(page: Page, path: string): Promise<void> {
   await page.goto(path, { waitUntil: "networkidle" });
   await expectAdminPage(page);
   // Loading indicators come and go with the data; a page measured while one shows is not the settled page.
-  await expect(page.locator("mat-spinner, mat-progress-spinner, mat-progress-bar"))
-    .toHaveCount(0, { timeout: 5_000 })
-    .catch(() => undefined);
+  await expect(page.locator("mat-spinner, mat-progress-spinner, mat-progress-bar")).toHaveCount(0, { timeout: 15_000 });
   await settle(page);
   await forceTheme(page);
 }

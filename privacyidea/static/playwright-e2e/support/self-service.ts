@@ -25,7 +25,7 @@ export const selfTest = base.extend<object, { selfSession: string }>({
       await page.fill("#username", SELF_USER);
       await page.fill("#password", SELF_PASS);
       await page.click('button[type="submit"]');
-      await page.waitForURL(/\/(tokens|dashboard|users)/, { timeout: 20_000 });
+      await page.waitForURL((url) => !url.pathname.endsWith("/login"), { timeout: 20_000 });
       const session = await page.evaluate(() => JSON.stringify(Object.fromEntries(Object.entries(sessionStorage))));
       await context.close();
       await use(session);

@@ -10,7 +10,7 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test --config playwright-e2e/playwright.config.ts",
     "test:e2e:a11y": "playwright test --config playwright-e2e/playwright.config.ts accessibility",
-    "test:e2e:baseline": "E2E_UPDATE_BASELINE=1 playwright test --config playwright-e2e/playwright.config.ts accessibility details states overlays --retries=0 -g \"axe|theme|loading|error|filtered|empty|opens from the keyboard|has a name\"",
+    "test:e2e:baseline": "E2E_UPDATE_BASELINE=1 playwright test --config playwright-e2e/playwright.config.ts accessibility details states overlays login self-service --retries=0 -g \"axe|theme|loading|error|filtered|empty|opens from the keyboard|has a name\"",
     "start-hmr": "ng serve --hmr --port 4200",
     "lint": "ng lint",
     "lint:css-vars": "node tools/check-css-vars.mjs",

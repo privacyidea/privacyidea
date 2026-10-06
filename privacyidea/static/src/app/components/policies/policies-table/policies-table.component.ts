@@ -266,6 +266,12 @@ export class PoliciesTableComponent {
     return this.filterOptions.some((o) => o.key === columnKey);
   }
 
+  activeToggleLabel(policy: PolicyDetail): string {
+    return policy.active
+      ? $localize`:@@policy.deactivatePolicy:Deactivate policy`
+      : $localize`:@@policy.activatePolicy:Activate policy`;
+  }
+
   togglePolicyActive(policy: PolicyDetail): void {
     if (!policy.name) return;
     this.policyService.togglePolicyActive(policy);
