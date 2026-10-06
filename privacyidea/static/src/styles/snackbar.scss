@@ -25,7 +25,7 @@ $snackbar-darken: 30%;
   }
 
   &.success-snackbar {
-    --mat-snack-bar-container-color: color-mix(in srgb, var(--green-base), black $snackbar-darken);
+    --mat-snack-bar-container-color: color-mix(in srgb, var(--green-base), black #{$snackbar-darken});
     --mat-snack-bar-supporting-text-color: white;
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
@@ -34,7 +34,7 @@ $snackbar-darken: 30%;
   }
 
   &.error-snackbar {
-    --mat-snack-bar-container-color: color-mix(in srgb, var(--red-base), black $snackbar-darken);
+    --mat-snack-bar-container-color: color-mix(in srgb, var(--red-base), black #{$snackbar-darken});
     --mat-snack-bar-supporting-text-color: white;
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
@@ -43,7 +43,7 @@ $snackbar-darken: 30%;
   }
 
   &.warning-snackbar {
-    --mat-snack-bar-container-color: color-mix(in srgb, var(--yellow-base), black $snackbar-darken);
+    --mat-snack-bar-container-color: color-mix(in srgb, var(--yellow-base), black #{$snackbar-darken});
     --mat-snack-bar-supporting-text-color: white;
 
     .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
