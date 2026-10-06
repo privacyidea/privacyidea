@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 
 from flask import g, request
 
-from privacyidea.lib.policy import Match, SCOPE
+from privacyidea.lib.policy import Match, SCOPE, get_policies
 from privacyidea.lib.error import ResolverError, UserError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import get_realms
@@ -275,6 +275,99 @@ def admin_granted_realms(action: str, whole_realms: bool = False) -> list[str] |
             return None
         granted_realms.update(dict.fromkeys(realm_names))
     return list(granted_realms)
+
+
+def admin_granted_resolvers(action: str) -> set[str] | None:
+    """
+    The resolvers the logged-in admin's policies grant for *action*, as the union over every applicable policy.
+
+    A resolver belongs to the realms it is part of, so a policy grants the resolvers of the realms in its realm field,
+    narrowed to the resolvers in its resolver field if that is set. A policy with only a resolver field grants the
+    resolvers it names, whether they are part of a realm or not, and whether they exist yet or not. A resolver that is
+    part of no realm is therefore granted only by a policy that names it or that restricts no realm.
+
+    A policy scoped by user grants no resolver: the configuration of a user store concerns all of its users.
+
+    :param action: the policy action whose scoping to read, like ``resolverread``
+    :return: ``None`` for unrestricted - no active admin policy at all, or an applicable policy restricting neither
+        realm, resolver nor user - otherwise the set of granted resolver names, which may be empty
+    """
+    if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
+        return None
+    granted_resolvers = set()
+    all_realms = None
+    for policy in Match.admin(g, action=action).policies():
+        if _policy_usernames(policy.get("user"), case_insensitive=False) != ([], []):
+            continue
+        realm_names = policy_realm_names(policy.get("realm"))
+        resolver_names = _policy_field_names(policy.get("resolver"), lambda: get_resolver_list().keys())
+        if realm_names is None and resolver_names is None:
+            return None
+        if realm_names is None:
+            granted_resolvers.update(resolver_names)
+            continue
+        if all_realms is None:
+            all_realms = get_realms()
+        realm_resolvers = {entry.get("name") for realm in realm_names
+                           for entry in all_realms.get(realm, {}).get("resolver", [])}
+        if resolver_names is not None:
+            realm_resolvers &= set(resolver_names)
+        granted_resolvers.update(realm_resolvers)
+    return granted_resolvers
+
+
+def realms_granted(policy_realms: list[str] | None, granted_realms: list[str] | None,
+                   every_realm: bool = False) -> bool:
+    """
+    Whether an admin with *granted_realms* may act on an object bound to *policy_realms*, like a policy by its realm
+    field.
+
+    The rules of the token actions apply (see :func:`~privacyidea.api.lib.policyhelper.check_token_action_allowed`):
+    an object in several realms needs one of them to be granted, and an object bound to no particular realm is only
+    for an admin without a realm restriction. A realm field that is empty, or ``"*"`` without exclusions, binds the
+    object to every realm rather than to particular ones.
+
+    :param policy_realms: a realm field, read like :func:`policy_realm_names`
+    :param granted_realms: the result of :func:`admin_granted_realms`
+    :param every_realm: every realm of the field has to be granted, as
+        :func:`~privacyidea.api.lib.prepolicy.check_base_action` requires for the realms a request sets
+    :return: True if the admin is unrestricted or the field names granted realms; nothing is granted by an empty grant
+    """
+    if granted_realms is None:
+        return True
+    if not granted_realms:
+        return False
+    realm_names = policy_realm_names(policy_realms)
+    if realm_names is None:
+        return False
+    if every_realm:
+        return set(realm_names) <= set(granted_realms)
+    return bool(set(realm_names) & set(granted_realms))
+
+
+def policy_change_granted(name: str, new_realms: list[str] | None, granted_realms: list[str] | None,
+                          creates: bool = False) -> bool:
+    """
+    Whether an admin with *granted_realms* may change, create or delete the policy *name*.
+
+    The stored policy needs one granted realm, see :func:`realms_granted`. Realms set by the change all have to be
+    granted. *new_realms* None keeps the stored realms; a new policy (*creates*) without realms applies to every realm.
+
+    :param name: the name of the policy
+    :param new_realms: the realm names the change sets, or None if it keeps them
+    :param granted_realms: the result of :func:`admin_granted_realms`
+    :param creates: the change can create the policy, like ``POST /policy/<name>`` or an import
+    """
+    if granted_realms is None:
+        return True
+    existing = get_policies(name=name) if name else []
+    if any(not realms_granted(policy.get("realm"), granted_realms) for policy in existing):
+        return False
+    if new_realms is None and creates and not existing:
+        new_realms = []
+    if new_realms is None:
+        return True
+    return realms_granted(new_realms, granted_realms, every_realm=True)
 
 
 def policy_realm_names(policy_realms: list[str] | None) -> list[str] | None:

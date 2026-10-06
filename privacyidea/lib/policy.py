@@ -1673,7 +1673,7 @@ def export_policies(policies):
 
 
 @log_with(log)
-def import_policies(file_contents):
+def import_policies(file_contents, realms_allowed=None):
     """
     This function imports policies from a file.
 
@@ -1686,16 +1686,22 @@ def import_policies(file_contents):
 
     :param file_contents: The contents of the file
     :type file_contents: basestring
+    :param realms_allowed: optional callable taking the policy name and its realm list, returning whether the policy
+        may be imported; a policy it refuses is skipped
     :return: number of imported policies
     :rtype: int
     """
     policies = ConfigObj(file_contents.split('\n'), encoding="UTF-8")
     res = 0
     for policy_name, policy in policies.items():
+        realm = ast.literal_eval(policy.get("realm", "[]"))
+        if realms_allowed and not realms_allowed(policy_name, realm):
+            log.info(f"The policy {policy_name!s} is not imported, as its realms are not allowed.")
+            continue
         ret = set_policy(name=policy_name,
                          action=ast.literal_eval(policy.get("action")),
                          scope=policy.get("scope"),
-                         realm=ast.literal_eval(policy.get("realm", "[]")),
+                         realm=realm,
                          user=ast.literal_eval(policy.get("user", "[]")),
                          resolver=ast.literal_eval(policy.get("resolver", "[]")),
                          client=ast.literal_eval(policy.get("client", "[]")),

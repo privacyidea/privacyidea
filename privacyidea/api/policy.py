@@ -60,7 +60,9 @@ from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.config import get_privacyidea_node_names
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, policy_config_access
+from ..lib.realm import split_realms
+from ..lib.policies.helper import admin_granted_realms, realms_granted, policy_change_granted
 
 from flask import g
 from werkzeug.datastructures import FileStorage
@@ -82,6 +84,7 @@ policy_blueprint = Blueprint('policy_blueprint', __name__)
 @policy_blueprint.route('/enable/<name>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
+@prepolicy(policy_config_access, request, PolicyAction.POLICYWRITE)
 def enable_policy_api(name):
     """
     Enable a policy. The policy definition is preserved; only the
@@ -101,6 +104,7 @@ def enable_policy_api(name):
 @policy_blueprint.route('/disable/<name>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
+@prepolicy(policy_config_access, request, PolicyAction.POLICYWRITE)
 def disable_policy_api(name):
     """
     Disable a policy. The policy definition is preserved; only the
@@ -119,6 +123,7 @@ def disable_policy_api(name):
 @policy_blueprint.route('/<old_name>', methods=['PATCH'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
+@prepolicy(policy_config_access, request, PolicyAction.POLICYWRITE)
 def patch_policy_name_api(old_name):
     """
     Rename a policy. Only the policy's name is modified; all other
@@ -143,6 +148,7 @@ def patch_policy_name_api(old_name):
 @policy_blueprint.route('/<name>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.POLICYWRITE)
+@prepolicy(policy_config_access, request, PolicyAction.POLICYWRITE)
 def set_policy_api(name=None):
     """
     Create or update a policy. If a policy with the given ``name``
@@ -362,14 +368,18 @@ def get_policy(name=None, export=None):
     if active is not None:
         active = is_true(active)
 
+    # An admin restricted to some realms sees the policies of these realms, as with tokens
+    granted_realms = admin_granted_realms(PolicyAction.POLICYREAD)
     if not export:
         log.debug(f"retrieving policy name: {name!s}, realm: {realm!s}, scope: {scope!s}")
 
         policies = get_policies(name=name, realm=realm, scope=scope, active=active)
+        policies = [policy for policy in policies if realms_granted(policy.get("realm"), granted_realms)]
         ret = send_result(policies)
     else:
         # We want to export all policies
         policies = get_policies()
+        policies = [policy for policy in policies if realms_granted(policy.get("realm"), granted_realms)]
         ret = send_file(export_policies(policies), export, content_type='text/plain')
 
     g.audit_object.log({"success": True,
@@ -380,6 +390,7 @@ def get_policy(name=None, export=None):
 @policy_blueprint.route('/<name>', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.POLICYDELETE)
+@prepolicy(policy_config_access, request, PolicyAction.POLICYDELETE)
 def delete_policy_api(name=None):
     """
     Delete the named policy.
@@ -487,7 +498,11 @@ def import_policy_api(filename=None):
         log.error(f"Error loading/importing policy file. file {filename!s} empty!")
         raise ParameterError(_("Error loading policy. File empty!"))
 
-    policy_num = import_policies(file_contents=file_contents)
+    # An admin restricted to some realms imports only the policies they may write, the others are skipped
+    granted_realms = admin_granted_realms(PolicyAction.POLICYWRITE)
+    policy_num = import_policies(file_contents=file_contents,
+                                 realms_allowed=lambda policy_name, realms: policy_change_granted(
+                                     policy_name, split_realms(realms), granted_realms, creates=True))
     g.audit_object.log({"success": True,
                         'info': f"imported {policy_num:d} policies from file {filename!s}"})
 

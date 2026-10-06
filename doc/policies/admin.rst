@@ -37,6 +37,13 @@ means that the administrator *frank* in the admin-realm *helpdesk* is allowed
 to enable tokens in the user-realm *sales*. The fields ``user`` and ``resolver``
 do not name the administrator, but the users the administrator may act on.
 
+.. note:: Configuration objects that belong to no realm, like SMTP, RADIUS and
+   privacyIDEA servers, SMS gateways, CA connectors, the system configuration,
+   event handlers and periodic tasks, serve every realm. The user realm of an
+   admin policy does not restrict them: an administrator with ``smtpserver_write``
+   changes the SMTP servers of all realms, whatever realm the policy names. Do not
+   give such actions to administrators who should only act in some realms.
+
 .. note:: As long as no admin policy is defined all administrators
    are allowed to do everything.
 
@@ -833,9 +840,17 @@ type: ``bool``
 
 Allow the administrator to write, read or delete policies.
 
-.. note:: Currently the policies do not take into account resolvers
-   or realms. Having the right to read policies will allow the
-   administrator to see all policies.
+If the admin policy is bound to user realms, the administrator only sees and changes
+the policies of these realms, the same way as tokens: a policy needs one of these realms.
+A policy without a realm applies to every realm and stays out of reach. The realms a
+change sets must all be granted, so a new policy needs a realm. Importing a policy file
+skips the policies the administrator may not write.
+
+.. note:: An administrator who may write policies can grant rights to themselves
+   within their realms. Give ``policywrite`` only to administrators you trust with
+   every right in these realms.
+
+.. versionchanged:: 3.14 The realm of the admin policy restricts the policies.
 
 .. _resolverwrite:
 .. _resolverread:
@@ -848,9 +863,17 @@ type: ``bool``
 
 Allow the administrator to write, read or delete user resolvers and realms.
 
-.. note:: Currently the policies do not take into account resolvers
-   or realms. Having the right to read resolvers will allow the
-   administrator to see all resolvers and realms.
+If the admin policy is bound to user realms, the administrator only sees and changes
+the resolvers that are part of these realms. If the policy also names resolvers, only
+these resolvers of the realms are granted. A policy that names resolvers but no realm
+grants these resolvers, also if they are part of no realm yet. Otherwise a resolver
+that is part of no realm, and so a new resolver, needs a policy without a realm.
+
+Adding a resolver to a realm or removing it from a realm needs the right for the
+resolver as well. Changing or removing the default realm needs the right for the
+current default realm.
+
+.. versionchanged:: 3.14 The realm of the admin policy restricts the resolvers.
 
 .. _mresolverwrite:
 .. _mresolverread:

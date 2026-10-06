@@ -51,7 +51,7 @@ from ..lib.realm import (set_default_realm,
                          set_realm,
                          get_realms,
                          delete_realm)
-from ..api.lib.prepolicy import prepolicy, check_base_action
+from ..api.lib.prepolicy import prepolicy, check_base_action, realm_resolver_access, default_realm_access
 from ..lib.utils import reduce_realms, is_true
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import check_node_uuid_exists
@@ -75,6 +75,7 @@ defaultrealm_blueprint = Blueprint('defaultrealm_blueprint', __name__)
 @realm_blueprint.route('/<realm>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(realm_resolver_access, request, PolicyAction.RESOLVERWRITE)
 def set_realm_api(realm=None):
     """
     Create or reconfigure a realm. The realm is defined as a list of
@@ -264,6 +265,7 @@ def get_super_user_realms():
 @defaultrealm_blueprint.route('/<realm>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(default_realm_access, request, PolicyAction.RESOLVERWRITE)
 def set_default_realm_api(realm=None):
     """
     Set the default realm. The previous default (if any) is cleared
@@ -312,6 +314,7 @@ def set_default_realm_api(realm=None):
 @defaultrealm_blueprint.route('', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
+@prepolicy(default_realm_access, request, PolicyAction.RESOLVERDELETE)
 def delete_default_realm_api(realm=None):
     """
     Clear the default realm. The realm definitions themselves are not
@@ -495,6 +498,7 @@ def delete_realm_api(realm=None):
 @realm_blueprint.route('/<string:realm>/node/<string:nodeid>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(realm_resolver_access, request, PolicyAction.RESOLVERWRITE)
 def set_realm_node_api(realm, nodeid):
     """
     Create or reconfigure the resolver assignment for a realm on a

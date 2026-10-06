@@ -93,7 +93,8 @@ from privacyidea.lib.error import (PolicyError, RegistrationError,
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth_success,
-                                             DEFAULT_JWT_VALIDITY, admin_granted_realms, policy_realm_names)
+                                             DEFAULT_JWT_VALIDITY, admin_granted_realms, policy_realm_names,
+                                             admin_granted_resolvers, policy_change_granted)
 from privacyidea.lib.policy import Match, PolicyClass, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
 from privacyidea.lib.realm import get_realms, split_realms
@@ -388,6 +389,112 @@ def resolver_realm_access(request=None, action=None):
     if not resolver_realms & set(granted_realms):
         raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
 
+    return True
+
+
+def resolver_config_access(request=None, action=None):
+    """
+    Bind the configuration of the resolver named in the request to the resolvers the admin's policies grant, see
+    :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. A request without a resolver name configures
+    no stored resolver and passes.
+
+    :param request: The HTTP request
+    :param action: The action like PolicyAction.RESOLVERWRITE
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return True
+    resolver = get_optional(request.all_data, "resolver")
+    if not resolver:
+        return True
+    granted_resolvers = admin_granted_resolvers(action)
+    if granted_resolvers is not None and resolver not in granted_resolvers:
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(resolver))
+    return True
+
+
+def realm_resolver_access(request=None, action=None):
+    """
+    Allow a request to add a resolver to a realm or to remove one from it only if the admin's policies grant that
+    resolver, see :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. Resolvers that stay in the realm
+    are not checked, so an admin can keep a resolver they may not administer in a realm they may.
+
+    Covers ``POST /realm/<realm>`` (the node-less resolvers, from the ``resolvers`` parameter) and
+    ``POST /realm/<realm>/node/<nodeid>`` (the resolvers of the node, from the ``resolver`` list of the body).
+    Malformed resolver entries are left to the endpoint, which refuses them.
+
+    :param request: The HTTP request
+    :param action: The action like PolicyAction.RESOLVERWRITE
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return True
+    params = request.all_data
+    realm = params.get("realm")
+    node = params.get("nodeid")
+    if node:
+        entries = params.get("resolver")
+        requested = {entry.get("name") for entry in entries if isinstance(entry, dict)} \
+            if isinstance(entries, list) else set()
+    else:
+        resolvers = params.get("resolvers") or []
+        requested = set(resolvers if isinstance(resolvers, list) else resolvers.split(","))
+    current = {entry.get("name") for entry in get_realms(realm).get(realm, {}).get("resolver", [])
+               if (entry.get("node") or "") == (node or "")}
+    changed = requested ^ current
+    if not changed:
+        return True
+    granted_resolvers = admin_granted_resolvers(action)
+    if granted_resolvers is None:
+        return True
+    denied = sorted(changed - granted_resolvers)
+    if denied:
+        raise PolicyError(_("You are not allowed to administer the resolver {0!s}.").format(", ".join(denied)))
+    return True
+
+
+def default_realm_access(request=None, action=None):
+    """
+    Allow changing or removing the default realm only if the admin's policies grant the current default realm. The
+    default realm decides where users without a realm are looked up, so replacing it changes the realm of those users.
+    The new default realm of ``POST /defaultrealm/<realm>`` is checked by :func:`check_base_action`.
+
+    :param request: The HTTP request
+    :param action: The action like PolicyAction.RESOLVERDELETE
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return True
+    default_realm = get_default_realm()
+    if not default_realm:
+        return True
+    granted_realms = admin_granted_realms(action, whole_realms=True)
+    if granted_realms is not None and default_realm not in granted_realms:
+        raise PolicyError(_("You are not allowed to change the default realm {0!s}.").format(default_realm))
+    return True
+
+
+def policy_config_access(request=None, action=None):
+    """
+    Bind changing a policy to the realms the admin's policies grant for *action*, see
+    :func:`~privacyidea.lib.policies.helper.policy_change_granted`: the existing policy (``name`` or ``old_name`` in
+    the request) needs one granted realm, as a token does, and for ``POST /policy/<name>`` every realm the request
+    sets has to be granted, as :func:`check_base_action` requires for a realm parameter. An omitted realm keeps the
+    stored one, and a new policy without one applies to every realm, which only an admin without a realm restriction
+    may set.
+
+    :param request: The HTTP request
+    :param action: The action like PolicyAction.POLICYWRITE
+    """
+    if g.logged_in_user.get("role") != ROLE.ADMIN:
+        return True
+    granted_realms = admin_granted_realms(action)
+    if granted_realms is None:
+        return True
+    params = request.all_data
+    name = params.get("old_name") or params.get("name")
+    new_realms = None
+    if request.method == "POST" and "scope" in params:
+        new_realms = split_realms(params.get("realm")) if "realm" in params else None
+    if not policy_change_granted(name, new_realms, granted_realms, creates="scope" in params):
+        raise PolicyError(_("You are not allowed to administer the policy {0!s}.").format(name))
     return True
 
 
