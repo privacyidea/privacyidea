@@ -177,7 +177,7 @@
                         }
                       }
                       @case ("container_serial") {
-                        @if (authService.actionAllowed("container_list")) {
+                        @if (element[column.key] && authService.actionAllowed("container_list")) {
                           <app-copyable [copyText]="element[column.key]">
                             <a
                               (click)="contentService.navigateContainerDetails(element[column.key])"
