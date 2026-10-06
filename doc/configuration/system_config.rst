@@ -29,10 +29,6 @@ A name like *user@gmail.com* is only split if a realm *gmail.com* exists (see
 :ref:`relate_realm`). So you probably only want to disable splitting if users
 log in with email addresses whose domain is also the name of a realm.
 
-The option also enables the form ``realm\user``: a login name without @ is split
-at the last backslash into realm and login name. Disabling the option disables
-both forms.
-
 How a user is related to a realm is described here: :ref:`relate_realm`
 
 This option also affects the login via the :ref:`rest_auth`

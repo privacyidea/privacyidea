@@ -137,10 +137,6 @@ The token condition works on the database columns of the token. This would be
 ``description``, ``otplen``, ``count``, ``serial``, ``active`` but most importantly
 also ``failcount`` and ``tokentype``.
 
-Numeric and boolean columns (``otplen``, ``count``, ``failcount``, ``maxfail``,
-``active``, ``locked``, ``revoked``) can only be compared with ``<`` and ``>`` (booleans
-count as 0 and 1). ``equals`` and ``in`` compare with a string and never match them.
-
 .. note:: A policy with an active token condition will
    throw an exception whenever the token object cannot be determined.
    It will also throw an error, if the request ``Key`` does not exist

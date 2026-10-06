@@ -14,9 +14,6 @@ privacyIDEA server (default ``/etc/privacyidea/dictionary``), the *Timeout* per 
 seconds (default 5), the number of *Retries* (default 3), a *Description*, and
 *Require Message-Authenticator*.
 
-With *Require Message-Authenticator*, privacyIDEA adds a Message-Authenticator to its
-requests and rejects a response without a valid one.
-
 .. figure:: images/radius-server-config.png
    :width: 700
 

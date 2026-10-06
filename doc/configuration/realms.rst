@@ -85,12 +85,6 @@ user\@unknown  unknown  --                        --
     part after the *@* denotes a valid realm, the *realm* parameter will take
     precedence.
 
-.. note::
-    With :ref:`splitatsign` *true*, a login name of the form ``realm1\user``
-    (without *@*) is split as well, and the user is searched in the realm
-    ``realm1``. With :ref:`splitatsign` *false* the whole name is searched in
-    the default realm.
-
 .. _list_of_realms:
 
 List of Realms

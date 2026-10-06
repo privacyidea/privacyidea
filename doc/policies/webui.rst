@@ -77,10 +77,9 @@ If set to "allowed" a user can choose to use the REMOTE_USER or log in with
 credentials. If set to "force", the user can not switch to logging in with credentials but
 can only log in with the REMOTE_USER from the browser.
 
-.. note:: The policy is evaluated before the user is logged in. It is matched
-   against the login name and the realm taken from REMOTE_USER (``user@realm``),
-   or the default realm if REMOTE_USER contains no realm. A policy restricted to
-   another realm or another user does not take effect.
+.. note:: The policy is evaluated before the user is logged in. At this point
+   in time there is no realm known, so a policy to allow remote_user must not
+   select any realm.
 
 .. note:: The policy setting "force" only works on the UI level. On the API level
    the user could still log in with credentials! If you want to avoid this, see

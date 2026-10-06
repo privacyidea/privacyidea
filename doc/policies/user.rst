@@ -27,15 +27,8 @@ Technically user policies control the use of the REST API
 :ref:`rest_token` and are checked using :ref:`code_policy` and
 :ref:`policy_decorators`.
 
-.. note:: If the user scope contains no active policy at all, every action of this
-   scope is allowed to every user. This includes reading the audit log and the
-   authentication log, editing their data in an editable user store, and creating and deleting container templates. Only the actions that always need
-   their policy are excepted: :ref:`user_set_custom_user_attributes`,
-   :ref:`user_delete_custom_user_attributes`, ``otp_pin_set_random`` (needed by
-   ``setrandompin``) and ``sms_gateways`` (choosing a gateway at enrollment). As
-   soon as one active user policy exists - even one restricted to a realm, a client
-   or a user agent - users may only do what a matching policy allows; a policy for
-   one realm leaves the users of all other realms without any right.
+.. note:: If no user policy is defined, the user has
+   all actions available to them to manage their tokens.
 
 The following actions are available in the scope
 *user*:

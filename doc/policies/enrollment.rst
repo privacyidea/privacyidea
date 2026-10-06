@@ -647,9 +647,6 @@ authenticator used.
 This defaults to ``preferred``, meaning user verification will be performed if
 supported by the token.
 
-This action also sets the user verification requirement requested when
-enrolling passkeys.
-
 .. note:: User verification is different from user presence checking. The
     presence of a user will always be confirmed (by asking the user to take
     action on the token, which is usually done by tapping a button on the
@@ -843,12 +840,8 @@ on the authenticator or in the user's passkey manager, but cannot be used to aut
 This policy does not affect passkeys that are already enrolled. To also refuse them at login, use the
 :ref:`authentication policy of the same name <policy_passkey_authn_allowed_authenticator_device_types>`.
 
-.. warning:: The device type is reported in the authenticator data of the registration. privacyIDEA accepts
-    registrations without an attestation statement (the default, and also when one was requested), and then this
-    data is not signed: the client that relays the registration can change the reported device type. This policy
-    therefore only filters registrations whose client passes the authenticator's value through unchanged. To
-    enforce the device type, use the
-    :ref:`authentication policy of the same name <policy_passkey_authn_allowed_authenticator_device_types>`. See
+.. warning:: The device type is reported by the authenticator and is not backed by a verified attestation. The
+    policy keeps out honest synced passkeys, but not an authenticator that reports a wrong device type. See
     :ref:`passkey_device_type`.
 
 .. versionadded:: 3.14

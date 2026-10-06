@@ -13,9 +13,8 @@ Passkeys are phishing resistant and secure by design. They inherently help reduc
 such as phishing, credential stuffing, and other remote attacks.
 
 This is a variation of the WebAuthn token, which is also a FIDO2 token supported by privacyIDEA.
-It uses the WebAuthn configuration described in :ref:`webauthn_otp_token` (relying party ID and name, challenge
-validity time) and the WebAuthn policies for user verification and public key credential algorithms. The WebAuthn
-policies :ref:`policy_webauthn_enroll_timeout`, :ref:`policy_webauthn_enroll_authenticator_attachment` and
+Therefore, it inherits the configuration of the WebAuthn token, which is described here: :ref:`webauthn_otp_token`.
+The WebAuthn policies :ref:`policy_webauthn_enroll_timeout`, :ref:`policy_webauthn_enroll_authenticator_attachment` and
 :ref:`policy_webauthn_authn_allowed_transports` do not apply to passkeys; the registration timeout of a passkey is
 fixed at 12 seconds.
 The Passkey token always requests to be created as a resident credential, i.e. the option
@@ -30,11 +29,10 @@ Passkeys are eligible for offline use as specified here :ref:`application_offlin
 :ref:`policy_enroll_via_multichallenge`. However, these features also have to be implemented in the client application.
 
 Using passkeys in different browsers and environments can yield different user experiences. Most, if not all browsers,
-will not allow enrollment of a passkey to an authenticator which does not have a PIN set. The enrollment policy
-:ref:`policy_webauthn_enroll_user_verification_requirement` sets the user verification that privacyIDEA requests from
-the authenticator when a passkey is registered (default ``preferred``). The same policy
-:ref:`policy_webauthn_authn_user_verification_requirement` is available in the scope authentication and affects
-passkey authentication. A login to the WebUI with a passkey always
+will not allow enrollment of a passkey to an authenticator which does not have a PIN set, i.e. user verification is
+always required for enrollment. Therefore, :ref:`policy_webauthn_enroll_user_verification_requirement` does not
+affect passkey enrollment. The same policy :ref:`policy_webauthn_authn_user_verification_requirement` is available in
+the scope authentication and that policy does affect passkey authentication. A login to the WebUI with a passkey always
 requires user verification, and so does a login to the WebUI without a username with a WebAuthn token.
 
 .. note:: If user verification is **not** required on authentication and a user has multiple discoverable credentials

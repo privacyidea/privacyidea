@@ -7,10 +7,9 @@ Admin policies
 
 Admin policies are used to regulate the actions that administrators are
 allowed to do.
-Technically admin policies control the use of most of the REST
-API: :ref:`rest_token`, :ref:`rest_system`, :ref:`rest_realm` and
-:ref:`rest_resolver`, and also the audit, user, container, machine, policy,
-event, CA connector, monitoring and API client endpoints.
+Technically admin policies control the use of the REST
+API :ref:`rest_token`, :ref:`rest_system`, :ref:`rest_realm` and
+:ref:`rest_resolver`.
 
 Admin policies are implemented as decorators in :ref:`code_policy` and
 :ref:`policy_decorators`.
@@ -28,10 +27,9 @@ administrative users like helpdesk users in the IT department.
 
    *The Admin scope provides an additional field 'admin realm'.*
 
-Most administrative actions on tokens, containers and users also refer to the defined
-user realm. Meaning an administrator may have many rights concerning one user realm and
-only a few rights concerning another. The actions for the system configuration ignore
-the realm, and some others honor it only in part, see the individual actions.
+All administrative actions also refer to the defined user realm. Meaning
+an administrator may have many rights concerning one user realm and only a few
+rights concerning another.
 
 Creating a policy with ``scope:admin``, ``adminrealm:helpdesk``,
 ``adminuser:frank``, ``action:enable`` and ``realm:sales``
@@ -59,8 +57,8 @@ tokenlist
 
 type: ``bool``
 
-This allows the administrator to list the tokens that are in the specified realms
-(the token realms, not the realm of the owner).
+This allows the administrator to list existing tokens in the specified user realm.
+Note that the resolver in this policy is ignored.
 
 If the policy with the action ``tokenlist`` is not bound to any user realm, this acts
 as a wild card and the admin is allowed to list all tokens. The same holds for the realm ``*``.
@@ -482,9 +480,6 @@ This is a separate, write-scoped permission from ``getchallenges`` -
 admins who should only inspect open challenges must *not* be granted
 ``cancelchallenge``.
 
-Removing challenges that have already expired (``DELETE /token/challenges/expired``)
-is not governed by a policy; every administrator can do it.
-
 .. _policy_tokenrealms:
 
 tokenrealms
@@ -870,19 +865,16 @@ resolverwrite, resolverread, resolverdelete
 
 type: ``bool``
 
-Allow the administrator to write or delete user resolvers and realms, and to read the
-user resolvers.
+Allow the administrator to write, read or delete user resolvers and realms.
 
-.. note:: Reading resolvers (``GET /resolver/``) ignores the realm of the policy and
-   shows all resolvers. The list of realms (``GET /realm/``) needs no policy: an
-   administrator sees the realms named in their admin policies (all realms if one of
-   them names no realm), with the names and types of their resolvers.
+.. note:: Currently the policies do not take into account resolvers
+   or realms. Having the right to read resolvers will allow the
+   administrator to see all resolvers and realms.
 
 The WebUI also needs ``resolverread`` to offer editing and creating users: the *Edit*
 button in the user details needs ``updateuser`` and ``resolverread``, and *Create User*
 needs ``adduser`` and ``resolverread``, because it lists the editable user stores.
-Without ``resolverread`` both are hidden; the API endpoints themselves do not need
-``resolverread``.
+Without ``resolverread`` both are hidden.
 
 .. _mresolverwrite:
 .. _mresolverread:
@@ -969,10 +961,6 @@ auditlog_download
 type: ``bool``
 
 The administrator is allowed to download the audit log.
-
-The download contains the entries that the :ref:`policy_auditlog` policies of the
-administrator let them see. Grant ``auditlog_download`` together with an ``auditlog``
-policy that carries the realm restriction.
 
 .. note:: The :ref:`policy_auditlog_age` policy **is** applied to the
    download - older entries are excluded just as in the search view.
@@ -1590,8 +1578,6 @@ type: ``bool``
 The administrator is allowed to list containers, see their properties, and
 read the assigned tokens and users. This is the read counterpart to the
 container_* write actions and gates the :http:get:`/container/` endpoint.
-Tokens in a container that are outside the realms of the administrator's ``tokenlist``
-policies are listed with their serial only.
 
 .. versionadded:: 3.10
 

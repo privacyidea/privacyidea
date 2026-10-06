@@ -188,8 +188,7 @@ resolver values must name existing realms and resolvers.
 
   Times are the local time of the privacyIDEA server, compared at minute precision with
   both ends included: ``8-18`` means from 08:00 up to and including 18:00. A range can not
-  cross midnight (``22-6`` is rejected) or the end of the week: ``Fri-Mon`` is accepted but
-  never matches; write ``Fri-Sun: 0:00-23:59, Mon: 0:00-23:59`` instead. The current WebUI
+  cross midnight (``22-6`` is rejected). The current WebUI
   only accepts whole hours (``<dow>: <hh>-<hh>``), so the forms with minutes can only be set
   through the API.
 

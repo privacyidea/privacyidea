@@ -98,11 +98,10 @@ by it.
 .. warning:: The actions, e.g. ``--action delete``, ``--action disable`` or
    ``--action unassign``, are performed on **all** found tokens, without confirmation and
    without a dry run. Some filters are ignored if they are not given together:
-   ``--tokeninfo-key`` and the ``--tokeninfo-value`` options only filter together, and so do
-   ``--tokenattribute`` and the ``--tokenattribute-value`` options. If only one half is given, it
-   is ignored, e.g. ``--tokeninfo-value '^hardware$'`` without ``--tokeninfo-key`` finds all
-   tokens. An ignored filter does not reduce the set of found tokens. Always run the same
-   command without ``--action`` first and check the list of found tokens.
+   ``--tokeninfo-key`` only filters together with one of the ``--tokeninfo-value`` options, and
+   ``--tokenattribute`` only together with one of the ``--tokenattribute-value`` options. An
+   ignored filter does not reduce the set of found tokens. Always run the same command without
+   ``--action`` first and check the list of found tokens.
 
 ``--chunksize N`` reads the tokens from the database in chunks of *N* tokens instead of all at
 once. The action is then performed chunk by chunk, so do not combine it with an export to PSKC

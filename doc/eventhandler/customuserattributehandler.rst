@@ -57,9 +57,6 @@ This action deletes a custom user attribute on a certain event.
 
 This event handler action takes the options **attrkey** and **user** as described above.
 
-If **attrkey** is left empty, all custom attributes of the user are deleted each time the event fires. The WebUIs do
-not require the field. The user attributes from the user store are not affected.
-
 For example, on token enrollment you could set a custom user attribute to
 ``"new user"``. On the first successful login this
 custom user attribute could be automatically deleted using this event handler action.

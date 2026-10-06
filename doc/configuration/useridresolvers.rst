@@ -535,17 +535,15 @@ for parsing, e.g.
 For APIs which return ``200 OK`` also for a negative response, ``Special error handling`` can be activated to treat
 the request as unsuccessful if the response contains certain content.
 
-With the configuration in the image, a response
+The above configuration image will throw an error for a response
 
 .. code-block:: json
 
    { "success": false, "message": "There was an error!" }
 
-counts as failed, because it matches ``{ "success": false }``.
+because privacyIDEA will match ``{ "success": false }``.
 
-.. note:: If the response status is 400 or higher, or the special error handling matches, the request counts as
-   failed: the error is logged and the user information is returned empty. No error is raised. Only a request that
-   cannot be sent (connection, timeout or TLS error) raises an error.
+.. note:: If the HTTP response status is >= 400, the resolver will throw an exception.
 
 
 .. _advanced_http_resolver:
@@ -675,15 +673,15 @@ request as search parameters if they are available in the request. You can also 
 **Get User by ID**
 
 Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores the UID of the token
-owner. To resolve the complete user, this endpoint is used. If the request cannot be sent (connection, timeout or TLS
-error) or the access token cannot be obtained from the *Authorization* endpoint, an error is raised.
+owner. To resolve the complete user, this endpoint is used. If an error occurs, the resolver will only log it and not
+throw an exception.
 
 Possible tag: ``{userid}``
 
 **Get User by Name**
 
-Configure the endpoint to retrieve a single user for the username. If the request cannot be sent (connection, timeout
-or TLS error) or the access token cannot be obtained from the *Authorization* endpoint, an error is raised.
+Configure the endpoint to retrieve a single user for the username. If an error occurs, the resolver will only log it
+and not throw an exception.
 
 For example, this is used when a user tries to authenticate against privacyIDEA. To resolve the complete user and
 evaluate if the user exists, this endpoint is used.

@@ -253,9 +253,7 @@ only by its owner. The options are:
   points to a file outside of it, the key is not in the backup, and you have to
   keep a copy of it elsewhere.
 * ``-d <directory>`` writes the archive to another directory.
-* ``-c <directory>`` backs up another configuration directory. The command only
-  reads it, but refuses to run if the user running it may not write to it; this
-  applies to the default */etc/privacyidea* as well.
+* ``-c <directory>`` backs up another configuration directory.
 * ``-r <directory>`` also adds a FreeRADIUS configuration directory.
 
 .. warning:: If the backup includes the database dump and the encryption key

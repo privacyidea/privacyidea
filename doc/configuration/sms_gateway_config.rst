@@ -130,14 +130,8 @@ Options
 You can define additional options. These are sent as parameters in the GET or
 POST request.
 
-After the tags are replaced, privacyIDEA tries to parse each value as JSON and
-sends valid JSON as such. With ``SEND_DATA_AS_JSON`` this changes the type of a
-field: a bare ``{otp}`` with the OTP value ``123456`` is sent as the number
-123456, while ``012345`` stays a string (a JSON number has no leading zero). Put
-such a value in double quotes (``"{otp}"``) to always send a string. Values that
-are not valid JSON, like ``Your OTP: {otp}``, are sent as text. For PUSH messages
-the values are not parsed: an option ``["{phone}"]`` is sent as the text
-``["<device token>"]``.
+The options can have JSON or strings as values. privacyIDEA will try to
+parse the values as JSON and either send JSON or strings to the HTTP gateway.
 
 .. note:: You can use the tag ``{phone}`` to specify the phone number. The tag ``{otp}``
    will be replaced simply with the OTP value or with the contents created
@@ -268,8 +262,7 @@ Options:
  * **to**: ["{phone}"]
  * **text**: "Your OTP: {otp}"
 
-You can personalize the **text** option; it must include the *{otp}* value. The double quotes are only needed if
-the text would otherwise be valid JSON, e.g. a bare ``{otp}``.
+You can personalize the **text** option, but you must place it inside double-quotes and must include the *{otp}* value.
 
 SMPP Provider
 ~~~~~~~~~~~~~

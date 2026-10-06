@@ -245,9 +245,7 @@ Please take care that probably the PIN needs to be removed from the response
 using the *response mangler handler* after
 handling it with the notification handler.
 
-Use this action in the post position. In the pre position there is no response
-yet: the PIN is changed but not returned, so nobody knows it. The length of the
-PIN is set with the option **length** (1 to 31).
+The length of the PIN is set with the option **length** (1 to 31).
 
 add tokengroup
 ..............

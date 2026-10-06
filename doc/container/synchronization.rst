@@ -168,9 +168,8 @@ Synchronization
 ---------------
 
 When synchronizing, the server response is additionally encrypted to secure the token secrets included in the
-response. For each synchronization, the server generates its own X25519 key pair and computes the shared secret with
-the encryption public key of the client (ECDH). The shared secret is used as the key for AES-256
-in GCM mode. The response contains:
+response. For the encryption, the ECC Diffie-Hellman key exchange is used to create a session key. The response
+contains:
 
 * ``public_server_key``: the X25519 public key of the server, 32 raw bytes, urlsafe base64 encoded
 * ``encryption_algorithm``: ``AES``
