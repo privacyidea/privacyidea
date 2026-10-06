@@ -408,7 +408,7 @@ class EmailTokenTestCase(MyTestCase):
     def test_19_emailtext(self):
         # create a EMAILTEXT policy:
         p = set_policy(name="emailtext",
-                       action="{0!s}={1!s}".format(EMAILACTION.EMAILTEXT, "'Your {otp}'"),
+                       action=f"{EMAILACTION.EMAILTEXT}='Your {{otp}}'",
                        scope=SCOPE.AUTH)
         self.assertTrue(p > 0)
 

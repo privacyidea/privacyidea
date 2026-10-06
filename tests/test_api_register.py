@@ -75,8 +75,7 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
 
         # create policy
         r = set_policy(name="pol2", scope=SCOPE.REGISTER,
-                       action="{0!s}={1!s}, {2!s}={3!s}".format(PolicyAction.REALM, "register",
-                                                                PolicyAction.RESOLVER, "register"))
+                       action=f"{PolicyAction.REALM}=register, {PolicyAction.RESOLVER}=register")
 
         # Try to register, but missing parameter
         with self.app.test_request_context('/register',
@@ -154,7 +153,7 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
         smtpmock.setdata(response={"another@privacyidea.org": (200, "OK")})
         # Drop the realm part of pol2; keep the resolver mapping.
         set_policy(name="pol2", scope=SCOPE.REGISTER,
-                   action="{0!s}={1!s}".format(PolicyAction.RESOLVER, "register"))
+                   action=f"{PolicyAction.RESOLVER}=register")
         set_default_realm("register")
         try:
             with self.app.test_request_context('/register',
@@ -170,8 +169,7 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
         finally:
             # Restore the realm policy used by the remaining tests.
             set_policy(name="pol2", scope=SCOPE.REGISTER,
-                       action="{0!s}={1!s}, {2!s}={3!s}".format(PolicyAction.REALM, "register",
-                                                                PolicyAction.RESOLVER, "register"))
+                       action=f"{PolicyAction.REALM}=register, {PolicyAction.RESOLVER}=register")
             # Clean up the user we just created so test_99 stays idempotent.
             y = SQLResolver()
             y.loadConfig(self.parameters)

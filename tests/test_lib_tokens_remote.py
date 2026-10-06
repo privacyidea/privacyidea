@@ -89,7 +89,7 @@ class RemoteTokenTestCase(MyTestCase):
 
         info = token.get_class_info()
         self.assertTrue(info.get("title") == "Remote Token",
-                        "{0!s}".format(info.get("title")))
+                        f"{info.get('title')!s}")
 
         info = token.get_class_info("title")
         self.assertTrue(info == "Remote Token", info)

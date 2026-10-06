@@ -101,19 +101,15 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy that defines a default PIN policy
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       PolicyAction.OTPPINMAXLEN, "10",
-                       PolicyAction.OTPPINMINLEN, "4",
-                       PolicyAction.OTPPINCONTENTS, "cn"),
+                   action=f"{PolicyAction.OTPPINMAXLEN}=10,{PolicyAction.OTPPINMINLEN}=4,"
+                          f"{PolicyAction.OTPPINCONTENTS}=cn",
                    realm="home")
 
         # Set a policy that defines a SPASS PIN policy
         set_policy(name="pol2",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       "spass_otp_pin_maxlength", "11",
-                       "spass_otp_pin_minlength", "8",
-                       "spass_otp_pin_contents", "n"),
+                   action="spass_otp_pin_maxlength=11,spass_otp_pin_minlength=8,"
+                          "spass_otp_pin_contents=n",
                    realm="home")
         g.policy_object = PolicyClass()
 
@@ -573,10 +569,10 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy that defines the tokenlabel
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.TOKENLABEL, "<u>@<r>"))
+                   action=f"{PolicyAction.TOKENLABEL}=<u>@<r>")
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.TOKENISSUER, "myPI"))
+                   action=f"{PolicyAction.TOKENISSUER}=myPI")
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -1046,7 +1042,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
                    action=f"{PolicyAction.REGISTRATIONCODE_LENGTH!s}={6!s}")
         set_policy(name="reg_contents",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.REGISTRATIONCODE_CONTENTS, "+n"))
+                   action=f"{PolicyAction.REGISTRATIONCODE_CONTENTS}=+n")
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "registration"}
         init_token_length_contents(req)
@@ -1081,7 +1077,7 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
                    action=f"{PolicyAction.PASSWORD_LENGTH!s}={6!s}")
         set_policy(name="pw_contents",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.PASSWORD_CONTENTS, "+n"))
+                   action=f"{PolicyAction.PASSWORD_CONTENTS}=+n")
         # request, that matches the policy
         req.all_data = {"user": "cornelius", "realm": "home", "type": "pw"}
         init_token_length_contents(req)
@@ -1121,10 +1117,8 @@ class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # now create a policy for the CA connector and the template
         set_policy(name="ca",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s},{2!s}={3!s}".format(
-                       CERTIFICATE_ACTION.CA_CONNECTOR, "caconnector",
-                       CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE, "catemplate"
-                   ))
+                   action=f"{CERTIFICATE_ACTION.CA_CONNECTOR}=caconnector,"
+                          f"{CERTIFICATE_ACTION.CERTIFICATE_TEMPLATE}=catemplate")
         set_policy(name="sub1",
                    scope=SCOPE.ENROLL,
                    action=f"{CERTIFICATE_ACTION.CERTIFICATE_REQUEST_SUBJECT_COMPONENT!s}=email")

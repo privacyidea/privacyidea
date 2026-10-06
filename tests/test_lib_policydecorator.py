@@ -329,10 +329,8 @@ class LibPolicyTestCase(MyTestCase):
 
         set_policy(name="lost_pol2",
                    scope=SCOPE.ENROLL,
-                   action="%s=%s, %s=%s,"
-                          "%s=%s" % (PolicyAction.LOSTTOKENPWCONTENTS, "C",
-                                     PolicyAction.LOSTTOKENVALID, 5,
-                                     PolicyAction.LOSTTOKENPWLEN, 3))
+                   action=f"{PolicyAction.LOSTTOKENPWCONTENTS}=C, {PolicyAction.LOSTTOKENVALID}=5,"
+                          f"{PolicyAction.LOSTTOKENPWLEN}=3")
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -486,7 +484,7 @@ class LibPolicyTestCase(MyTestCase):
                    scope=SCOPE.AUTH,
                    realm=realm,
                    resolver=resolver,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTH_CACHE, "4h/5m"))
+                   action=f"{PolicyAction.AUTH_CACHE}=4h/5m")
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -533,7 +531,7 @@ class LibPolicyTestCase(MyTestCase):
                    scope=SCOPE.AUTH,
                    realm=realm,
                    resolver=resolver,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTH_CACHE, "4h"))
+                   action=f"{PolicyAction.AUTH_CACHE}=4h")
         g = FakeFlaskG()
         P = PolicyClass()
         g.policy_object = P
@@ -555,7 +553,7 @@ class LibPolicyTestCase(MyTestCase):
                    scope=SCOPE.AUTH,
                    realm=realm,
                    resolver=resolver,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTH_CACHE, "50s/2"))
+                   action=f"{PolicyAction.AUTH_CACHE}=50s/2")
 
         g = FakeFlaskG()
         g.policy_object = PolicyClass()
@@ -587,7 +585,7 @@ class LibPolicyTestCase(MyTestCase):
                    scope=SCOPE.AUTH,
                    realm=realm,
                    resolver=resolver,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTH_CACHE, "50s/2"))
+                   action=f"{PolicyAction.AUTH_CACHE}=50s/2")
 
         g = FakeFlaskG()
         g.policy_object = PolicyClass()

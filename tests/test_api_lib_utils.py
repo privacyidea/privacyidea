@@ -451,7 +451,7 @@ class UtilsTestCase(MyApiTestCase):
         # now check the /validate/check endpoint
         set_policy(name="otppin",
                    scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, "userstore"))
+                   action=f"{PolicyAction.OTPPIN}=userstore")
         init_token({"type": "spass", "serial": "spass1d"},
                    user=User("pwpercent", self.realm1))
         # fist the request fails due to a wrong otp pin

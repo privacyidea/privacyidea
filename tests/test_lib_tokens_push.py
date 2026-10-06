@@ -1595,6 +1595,7 @@ class PushTokenTestCase(MyTestCase):
                                r'required.',
                                PushTokenClass._check_timestamp_in_range, timestamp_fmt, 10)
         timestamp = datetime(2020, 11, 13, 13, 27, tzinfo=utc)
+        escaped_timestamp = timestamp.isoformat().replace('+', r'\+')
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
             mock_dt.now.return_value = timestamp + timedelta(minutes=9)
             PushTokenClass._check_timestamp_in_range(timestamp.isoformat(), 10)
@@ -1604,15 +1605,13 @@ class PushTokenTestCase(MyTestCase):
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
             mock_dt.now.return_value = timestamp + timedelta(minutes=9)
             self.assertRaisesRegex(PrivacyIDEAError,
-                                   r'Timestamp {0!s} not in valid '
-                                   r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
+                                   rf'Timestamp {escaped_timestamp} not in valid range.',
                                    PushTokenClass._check_timestamp_in_range,
                                    timestamp.isoformat(), 8)
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
             mock_dt.now.return_value = timestamp - timedelta(minutes=9)
             self.assertRaisesRegex(PrivacyIDEAError,
-                                   r'Timestamp {0!s} not in valid '
-                                   r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
+                                   rf'Timestamp {escaped_timestamp} not in valid range.',
                                    PushTokenClass._check_timestamp_in_range,
                                    timestamp.isoformat(), 8)
 

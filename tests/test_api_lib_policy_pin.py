@@ -171,9 +171,8 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy that defines PIN policy
         set_policy(name="pol1",
                    scope=SCOPE.USER,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(PolicyAction.OTPPINMAXLEN, "10",
-                                                                       PolicyAction.OTPPINMINLEN, "4",
-                                                                       PolicyAction.OTPPINCONTENTS, "cn"))
+                   action=f"{PolicyAction.OTPPINMAXLEN}=10,{PolicyAction.OTPPINMINLEN}=4,"
+                          f"{PolicyAction.OTPPINCONTENTS}=cn")
         g.policy_object = PolicyClass()
 
         req.all_data = {
@@ -296,9 +295,8 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy that defines PIN policy
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(PolicyAction.OTPPINMAXLEN, "10",
-                                                                       PolicyAction.OTPPINMINLEN, "4",
-                                                                       PolicyAction.OTPPINCONTENTS, "cn"),
+                   action=f"{PolicyAction.OTPPINMAXLEN}=10,{PolicyAction.OTPPINMINLEN}=4,"
+                          f"{PolicyAction.OTPPINCONTENTS}=cn",
                    realm="home")
         g.policy_object = PolicyClass()
 
@@ -418,8 +416,7 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Realm-scoped admin PIN policy that requires a complex PIN
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s},{2!s}={3!s}".format(PolicyAction.OTPPINMINLEN, "4",
-                                                           PolicyAction.OTPPINCONTENTS, "cn"),
+                   action=f"{PolicyAction.OTPPINMINLEN}=4,{PolicyAction.OTPPINCONTENTS}=cn",
                    realm="home")
         g.policy_object = PolicyClass()
 
@@ -469,10 +466,10 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # fallback generate_password() charset is alphanumeric only, so a special
         # character can only appear when the contents policy was actually applied.
         set_policy(name="pol_rand", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPINRANDOM, "12"),
+                   action=f"{PolicyAction.OTPPINRANDOM}=12",
                    realm="home")
         set_policy(name="pol_contents", scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPINCONTENTS, "s"),
+                   action=f"{PolicyAction.OTPPINCONTENTS}=s",
                    realm="home")
         g.policy_object = PolicyClass()
 
@@ -510,19 +507,15 @@ class PrePolicyPinTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a policy that defines a default PIN policy
         set_policy(name="pol1",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       PolicyAction.OTPPINMAXLEN, "10",
-                       PolicyAction.OTPPINMINLEN, "4",
-                       PolicyAction.OTPPINCONTENTS, "cn"),
+                   action=f"{PolicyAction.OTPPINMAXLEN}=10,{PolicyAction.OTPPINMINLEN}=4,"
+                          f"{PolicyAction.OTPPINCONTENTS}=cn",
                    realm="home")
 
         # Set a policy that defines a SPASS PIN policy
         set_policy(name="pol2",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       "spass_otp_pin_maxlength", "11",
-                       "spass_otp_pin_minlength", "8",
-                       "spass_otp_pin_contents", "n"),
+                   action="spass_otp_pin_maxlength=11,spass_otp_pin_minlength=8,"
+                          "spass_otp_pin_contents=n",
                    realm="home")
         g.policy_object = PolicyClass()
 

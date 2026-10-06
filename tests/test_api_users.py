@@ -79,7 +79,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         """
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username": "wordy@{0!s}".format("sqlrealm"),
+                                           data={"username": "wordy@sqlrealm",
                                                  "password": password}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -258,7 +258,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
             self.assertTrue(result.get("value"))
 
         # Delete the users
-        with self.app.test_request_context('/user/{0!s}/{1!s}'.format(resolver, "wordy2"),
+        with self.app.test_request_context(f'/user/{resolver}/wordy2',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -266,7 +266,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("value"))
 
-        with self.app.test_request_context('/user/{0!s}/{1!s}'.format(resolver, "wordy"),
+        with self.app.test_request_context(f'/user/{resolver}/wordy',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

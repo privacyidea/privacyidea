@@ -1299,7 +1299,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # user disableduser, realm: self.realm2, passwd: superSecret
         set_policy(name="disabled",
                    scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, "userstore"))
+                   action=f"{PolicyAction.OTPPIN}=userstore")
         # enroll two tokens
         r = init_token({"type": "spass", "serial": "spass1d"},
                        user=User("disableduser", self.realm2))
@@ -1345,7 +1345,7 @@ class ValidateAPITestCase(MyApiTestCase):
         user = "lockeduser"
         set_policy(name="locked",
                    scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, "tokenpin"))
+                   action=f"{PolicyAction.OTPPIN}=tokenpin")
         r = init_token({"type": "spass", "serial": "spass1l",
                         "pin": "locked"},
                        user=User(user, self.realm2))
