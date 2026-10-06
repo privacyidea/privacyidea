@@ -2599,7 +2599,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">859</context>
+          <context context-type="linenumber">858</context>
         </context-group>
       </trans-unit>
       <trans-unit id="periodicTask.successfullyDeleted" datatype="html">
@@ -3051,11 +3051,11 @@
         <target>ບັນທຶກການກຳນົດຄ່າລະບົບສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">148</context>
+          <context context-type="linenumber">144</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">169</context>
+          <context context-type="linenumber">165</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.failedSaveSystem" datatype="html">
@@ -3063,11 +3063,11 @@
         <target>ບໍ່ສາມາດບັນທຶກການກຳນົດຄ່າລະບົບໄດ້.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">152</context>
+          <context context-type="linenumber">148</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">174</context>
+          <context context-type="linenumber">170</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.errorSavingSystem" datatype="html">
@@ -3075,11 +3075,11 @@
         <target>ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກການກຳນົດຄ່າລະບົບ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">158</context>
+          <context context-type="linenumber">154</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">181</context>
+          <context context-type="linenumber">177</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.userCacheDeleted" datatype="html">
@@ -3087,7 +3087,7 @@
         <target>ລຶບ User cache ສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">194</context>
+          <context context-type="linenumber">190</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.failedDeleteUser" datatype="html">
@@ -3095,7 +3095,7 @@
         <target>ບໍ່ສາມາດລຶບ User cache ໄດ້.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">197</context>
+          <context context-type="linenumber">193</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.errorDeleting" datatype="html">
@@ -3103,7 +3103,7 @@
         <target>ເກີດຂໍ້ຜິດພາດໃນການລຶບ User cache.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">202</context>
+          <context context-type="linenumber">198</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.errorLoadingSystem" datatype="html">
@@ -3111,7 +3111,7 @@
         <target>ເກີດຂໍ້ຜິດພາດໃນການໂຫຼດເອກະສານລະບົບ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/system/system-config.component.ts</context>
-          <context context-type="linenumber">223</context>
+          <context context-type="linenumber">219</context>
         </context-group>
       </trans-unit>
       <trans-unit id="systemConfig.systemDocumentation" datatype="html">
@@ -3207,7 +3207,7 @@
         <target>ກະລຸນາປ້ອນ Client ID.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">304</context>
+          <context context-type="linenumber">302</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.failedGenerate" datatype="html">
@@ -3215,7 +3215,7 @@
         <target>ບໍ່ສາມາດສ້າງ API key ໄດ້.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">323</context>
+          <context context-type="linenumber">321</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.tokenConfiguration" datatype="html">
@@ -3223,7 +3223,7 @@
         <target>ບັນທຶກການກຳນົດຄ່າໂທເຄັນສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">371</context>
+          <context context-type="linenumber">369</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.failedSaveToken" datatype="html">
@@ -3231,7 +3231,7 @@
         <target>ບໍ່ສາມາດບັນທຶກການກຳນົດຄ່າໂທເຄັນໄດ້.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">378</context>
+          <context context-type="linenumber">376</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.errorSavingToken" datatype="html">
@@ -3239,7 +3239,7 @@
         <target>ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກການກຳນົດຄ່າໂທເຄັນ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-type-config.component.ts</context>
-          <context context-type="linenumber">383</context>
+          <context context-type="linenumber">381</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenTypeConfig.daypassword" datatype="html">
@@ -3816,78 +3816,6 @@
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/totp-config/totp-config.component.html</context>
           <context context-type="linenumber">60</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.defaultTimeShift" datatype="html">
-        <source>Default Time Shift</source>
-        <target>ການເລື່ອນເວລາເລີ່ມຕົ້ນ (Default Time Shift)</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/totp-config/totp-config.component.html</context>
-          <context context-type="linenumber">90</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.u2f" datatype="html" xml:space="preserve">
-        <source>U2F</source>
-        <target state="translated">U2F</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">21</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.u2fTokenHardware" datatype="html">
-        <source>The U2F token is a hardware token, that communicates with the browser.</source>
-        <target>U2F token ແມ່ນຮາດແວໂທເຄັນທີ່ຕິດຕໍ່ສື່ສານກັບບຣາວເຊີ.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">25</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.youNeedSetCorrect" datatype="html">
-        <source>You need to set the correct appId, which in fact is the URL of your privacyIDEA installation.</source>
-        <target>ທ່ານຕ້ອງກຳນົດ appId ທີ່ຖືກຕ້ອງ ເຊິ່ງກໍຄື URL ຂອງລະບົບ privacyIDEA ຂອງທ່ານ.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">28</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.appid" datatype="html" xml:space="preserve">
-        <source>AppID</source>
-        <target state="translated">AppID</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">35</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.appidRequired" datatype="html" xml:space="preserve">
-        <source>AppID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></source>
-        <target state="translated">AppID ແມ່ນ <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"/>ຈຳເປັນຕ້ອງມີ<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"/></target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">45</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.urlYourPrivacyidea" datatype="html">
-        <source>The URL of your privacyIDEA installation.<x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> This must be a valid FQDN with also a valid top level domain - otherwise you might receive a U2F Error 2 (Bad Request).<x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/></source>
-        <target>URL ຂອງລະບົບ privacyIDEA ຂອງທ່ານ.<x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/> ສິ່ງນີ້ຕ້ອງເປັນ FQDN ທີ່ຖືກຕ້ອງ ແລະ ມີ top level domain ທີ່ຖືກຕ້ອງ - ບໍ່ດັ່ງນັ້ນທ່ານອາດຈະໄດ້ຮັບຂໍ້ຜິດພາດ U2F Error 2 (Bad Request).<x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"/></target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">52</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.appidNeedsStart" datatype="html" xml:space="preserve">
-        <source>The AppID needs to start with &quot;https&quot;.</source>
-        <target state="translated">AppID ຕ້ອງເລີ່ມຕົ້ນດ້ວຍ &quot;https&quot;.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">61</context>
-        </context-group>
-      </trans-unit>
-      <trans-unit id="tokenTypeConfig.appidMustNotEnd" datatype="html" xml:space="preserve">
-        <source>The AppID must not end with a &quot;/&quot;.</source>
-        <target state="translated">AppID ຕ້ອງບໍ່ລົງທ້າຍດ້ວຍ &quot;/&quot;.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/configuration/token-type-config/token-types/u2f-config/u2f-config.component.html</context>
-          <context context-type="linenumber">68</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.webauthn" datatype="html" xml:space="preserve">
@@ -4587,7 +4515,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
-          <context context-type="linenumber">59</context>
+          <context context-type="linenumber">51</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component.html</context>
@@ -9030,20 +8958,12 @@
           <context context-type="linenumber">214</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="smtpServer.sendMailFromJob" datatype="html">
-        <source>Send mail from job queue</source>
-        <target>ສົ່ງເມລຈາກຄິວວຽກ (Job Queue)</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">221</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="smtpServer.sMime" datatype="html" xml:space="preserve">
         <source>S/MIME</source>
         <target state="translated">S/MIME</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">227</context>
+          <context context-type="linenumber">221</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.certificate" datatype="html">
@@ -9051,7 +8971,7 @@
         <target>ໃບຢັ້ງຢືນ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">240</context>
+          <context context-type="linenumber">234</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.pathCertificate" datatype="html">
@@ -9059,7 +8979,7 @@
         <target>ທີ່ຢູ່ (Path) ໄປຫາໄຟລ໌ໃບຢັ້ງຢືນ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">248</context>
+          <context context-type="linenumber">242</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.sMimeSigning" datatype="html">
@@ -9067,7 +8987,7 @@
         <target>ການເຊັນ S/MIME</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">258</context>
+          <context context-type="linenumber">252</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.donTSendSigning" datatype="html" xml:space="preserve">
@@ -9075,7 +8995,7 @@
         <target state="translated">ບໍ່ຕ້ອງສົ່ງຖ້າມີຂໍ້ຜິດພາດໃນການເຊັນ (signing error)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">264</context>
+          <context context-type="linenumber">258</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.privateKey" datatype="html">
@@ -9083,7 +9003,7 @@
         <target>ຄີສ່ວນຕົວ (Private Key)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">272</context>
+          <context context-type="linenumber">266</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.pathPrivateKey" datatype="html">
@@ -9091,7 +9011,7 @@
         <target>ທີ່ຢູ່ (Path) ໄປຫາໄຟລ໌ຄີສ່ວນຕົວ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">280</context>
+          <context context-type="linenumber">274</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.passwordPrivate" datatype="html">
@@ -9099,7 +9019,7 @@
         <target>ລະຫັດຜ່ານສຳລັບຄີສ່ວນຕົວ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">287</context>
+          <context context-type="linenumber">281</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user-new-resolver/http-resolver/http-resolver.component.html</context>
@@ -9111,7 +9031,7 @@
         <target>ຜູ້ຮັບສຳລັບການທົດສອບ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">306</context>
+          <context context-type="linenumber">300</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.sendTestEmail" datatype="html">
@@ -9119,7 +9039,7 @@
         <target>ສົ່ງອີເມລທົດສອບ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.html</context>
-          <context context-type="linenumber">321</context>
+          <context context-type="linenumber">315</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.filterSmtpServers" datatype="html">
@@ -14040,20 +13960,12 @@
           <context context-type="linenumber">41</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.youNeedConfirm" datatype="html">
-        <source>You need to confirm the registration with your token either by pushing the blinking button or by replugging your token. This depends on the actual token model.</source>
-        <target>ທ່ານຕ້ອງຢືນຢັນການລົງທະບຽນດ້ວຍ Token ຂອງທ່ານ ໂດຍການກົດປຸ່ມທີ່ກຳລັງກະພິບ ຫຼື ສຽບ Token ໃໝ່. ອັນນີ້ແມ່ນຂຶ້ນກັບລຸ້ນຂອງ Token ທີ່ທ່ານໃຊ້.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
-          <context context-type="linenumber">51</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="token.yourTokenSerialNumber" datatype="html" xml:space="preserve">
         <source>Your token with serial number <x id="INTERPOLATION" equiv-text="{{ data.enrollmentResponse.detail.serial }}"/> is not completely enrolled, yet. Please scan the QR code with the privacyIDEA Authenticator App or click <x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data.enrollmentResponse.detail.pushurl.value }}&quot;&gt;"/>this link<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> on your smartphone. It will send the missing registration data to the configured endpoint. Please note, that your smartphone needs internet access during the authentication process.</source>
         <target state="translated">ໂທເຄັນຂອງທ່ານທີ່ມີໝາຍເລກຊີຣຽວ (serial number) <x id="INTERPOLATION" equiv-text="{{ data.enrollmentResponse.detail.serial }}"/> ຍັງບໍ່ໄດ້ລົງທະບຽນສຳເລັດສົມບູນເທື່ອ. ກະລຸນາສະແກນ QR code ດ້ວຍແອັບ privacyIDEA Authenticator ຫຼື ຄລິກ<x id="START_LINK" ctype="x-a" equiv-text="&lt;a href=&quot;{{ data.enrollmentResponse.detail.pushurl.value }}&quot;&gt;"/>ລີ້ງນີ້<x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"/> ເທິງສະມາດໂຟນຂອງທ່ານ. ມັນຈະສົ່ງຂໍ້ມູນການລົງທະບຽນທີ່ຂາດຫາຍໄປໄປຍັງຈຸດປາຍທາງທີ່ຕັ້ງຄ່າໄວ້. ກະລຸນາຮັບຊາບວ່າ ສະມາດໂຟນຂອງທ່ານຈຳເປັນຕ້ອງມີອິນເຕີເນັດໃນລະຫວ່າງຂະບວນການຢືນຢັນຕົວຕົນ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component.html</context>
-          <context context-type="linenumber">67</context>
+          <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.tokenSuccessfullyRolled" datatype="html">
@@ -17923,7 +17835,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">930</context>
+          <context context-type="linenumber">929</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.cannotSaveContainerStatesAt" datatype="html">
@@ -17951,7 +17863,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1135</context>
+          <context context-type="linenumber">1134</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToAssignUser" datatype="html">
@@ -17963,7 +17875,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1194</context>
+          <context context-type="linenumber">1193</context>
         </context-group>
       </trans-unit>
       <trans-unit id="container.failedToSaveContainerInfos" datatype="html">
@@ -18843,7 +18755,7 @@
         <target>ບັນທຶກເຊີບເວີ SMTP ສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">116</context>
+          <context context-type="linenumber">115</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.failedSaveSmtp" datatype="html">
@@ -18851,7 +18763,7 @@
         <target>ບໍ່ສາມາດບັນທຶກເຊີບເວີ SMTP ໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">121</context>
+          <context context-type="linenumber">120</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.testEmailSent" datatype="html">
@@ -18859,7 +18771,7 @@
         <target>ສົ່ງອີເມວທົດສອບສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">133</context>
+          <context context-type="linenumber">132</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.failedSendTest" datatype="html">
@@ -18867,7 +18779,7 @@
         <target>ບໍ່ສາມາດສົ່ງອີເມວທົດສອບໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">140</context>
+          <context context-type="linenumber">139</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.successfullyDeleted" datatype="html">
@@ -18875,7 +18787,7 @@
         <target>ລຶບເຊີບເວີ SMTP ສຳເລັດແລ້ວ: <x id="IDENTIFIER" equiv-text="identifier"/>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">156</context>
+          <context context-type="linenumber">155</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.failedDeleteSmtp" datatype="html">
@@ -18883,7 +18795,7 @@
         <target>ບໍ່ສາມາດລຶບເຊີບເວີ SMTP ໄດ້. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/smtp/smtp.service.ts</context>
-          <context context-type="linenumber">162</context>
+          <context context-type="linenumber">161</context>
         </context-group>
       </trans-unit>
       <trans-unit id="subscription.failedToDeleteSubscription" datatype="html">
@@ -18935,7 +18847,7 @@
         <target>ຍົກເລີກການກຳນົດໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">826</context>
+          <context context-type="linenumber">825</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToDeleteTokens" datatype="html">
@@ -18943,7 +18855,7 @@
         <target>ລຶບໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">842</context>
+          <context context-type="linenumber">841</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.deleteSelectedTokens" datatype="html">
@@ -18951,7 +18863,7 @@
         <target>ລຶບໂທເຄັນທີ່ເລືອກ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">854</context>
+          <context context-type="linenumber">853</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedOne" datatype="html">
@@ -18959,7 +18871,7 @@
         <target>ລຶບ 1 ໂທເຄັນສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">879</context>
+          <context context-type="linenumber">878</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedOther" datatype="html">
@@ -18967,7 +18879,7 @@
         <target>ລຶບ <x id="COUNT" equiv-text="count_success"/> ໂທເຄັນສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">882</context>
+          <context context-type="linenumber">881</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.followingTokensFailedDelete" datatype="html">
@@ -18975,7 +18887,7 @@
         <target>ໂທເຄັນຕໍ່ໄປນີ້ລຶບບໍ່ສຳເລັດ: <x id="TOKENS" equiv-text="formatList(this.localeId, failedTokens)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">889</context>
+          <context context-type="linenumber">888</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.notAuthorizedDelete" datatype="html">
@@ -18983,7 +18895,7 @@
         <target>ເຈົ້າບໍ່ມີສິດລຶບໂທເຄັນຕໍ່ໄປນີ້: <x id="TOKENS" equiv-text="formatList(this.localeId, unauthorizedTokens)"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">895</context>
+          <context context-type="linenumber">894</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToResetFailCount" datatype="html">
@@ -18991,7 +18903,7 @@
         <target>ຣີເຊັດຈຳນວນຄັ້ງທີ່ຜິດພາດບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">946</context>
+          <context context-type="linenumber">945</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenDetail" datatype="html">
@@ -18999,7 +18911,7 @@
         <target>ຕັ້ງລາຍລະອຽດໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">975</context>
+          <context context-type="linenumber">974</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToGetCount" datatype="html">
@@ -19007,7 +18919,7 @@
         <target>ດຶງຂໍ້ມູນຈຳນວນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">996</context>
+          <context context-type="linenumber">995</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenInfo" datatype="html">
@@ -19015,7 +18927,7 @@
         <target>ຕັ້ງຂໍ້ມູນໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1018</context>
+          <context context-type="linenumber">1017</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToRevokeToken" datatype="html">
@@ -19023,7 +18935,7 @@
         <target>ຍົກເລີກການໃຊ້ງານໂທເຄັນ (revoke) ບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1077</context>
+          <context context-type="linenumber">1076</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToDeleteTokenInfo" datatype="html">
@@ -19031,7 +18943,7 @@
         <target>ລຶບຂໍ້ມູນໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1098</context>
+          <context context-type="linenumber">1097</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToUnassignUserFrom" datatype="html">
@@ -19039,7 +18951,7 @@
         <target>ຍົກເລີກການກຳນົດຜູ້ໃຊ້ຈາກທຸກໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1118</context>
+          <context context-type="linenumber">1117</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToAssignUserTo" datatype="html">
@@ -19047,7 +18959,7 @@
         <target>ກຳນົດຜູ້ໃຊ້ໃຫ້ທຸກໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1163</context>
+          <context context-type="linenumber">1162</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetPin" datatype="html">
@@ -19055,7 +18967,7 @@
         <target>ຕັ້ງລະຫັດ PIN ບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1216</context>
+          <context context-type="linenumber">1215</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetRandomPin" datatype="html">
@@ -19063,7 +18975,7 @@
         <target>ຕັ້ງລະຫັດ PIN ແບບສຸ່ມບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1237</context>
+          <context context-type="linenumber">1236</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToResyncOtpToken" datatype="html">
@@ -19071,7 +18983,7 @@
         <target>ຊິງໂຄໄນຊ໌ (Sync) ໂທເຄັນ OTP ຄືນໃໝ່ບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1261</context>
+          <context context-type="linenumber">1260</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToEnrollToken" datatype="html">
@@ -19079,7 +18991,7 @@
         <target>ລົງທະບຽນໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1302</context>
+          <context context-type="linenumber">1301</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToVerifyToken" datatype="html">
@@ -19087,7 +18999,7 @@
         <target>ກວດສອບໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1318</context>
+          <context context-type="linenumber">1317</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToMarkTokenAs" datatype="html">
@@ -19095,7 +19007,7 @@
         <target>ໝາຍໂທເຄັນວ່າເສຍບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1334</context>
+          <context context-type="linenumber">1333</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToPollTokenState" datatype="html">
@@ -19103,7 +19015,7 @@
         <target>ກວດສອບສະຖານະໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1361</context>
+          <context context-type="linenumber">1360</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenRealm" datatype="html">
@@ -19111,7 +19023,7 @@
         <target>ຕັ້ງ Realm ຂອງໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1385</context>
+          <context context-type="linenumber">1384</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToGetTokengroups" datatype="html">
@@ -19119,7 +19031,7 @@
         <target>ດຶງຂໍ້ມູນກຸ່ມໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1399</context>
+          <context context-type="linenumber">1398</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToSetTokenGroup" datatype="html">
@@ -19127,7 +19039,7 @@
         <target>ຕັ້ງກຸ່ມໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1423</context>
+          <context context-type="linenumber">1422</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedToImportTokens" datatype="html">
@@ -19135,7 +19047,7 @@
         <target>ນຳເຂົ້າໂທເຄັນບໍ່ສຳເລັດ. <x id="MESSAGE" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1441</context>
+          <context context-type="linenumber">1440</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokenGroup.successfullySaved" datatype="html">
@@ -19538,20 +19450,12 @@
           <context context-type="linenumber">173</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="token.u2fTokenToken" datatype="html">
-        <source>The U2F token is a token defined by the Fido Alliance. It is the predecessor to WebAuthn/Passkey, has been superseded by them, and therefore should not be used any more.</source>
-        <target>ໂທເຄັນ U2F ແມ່ນໂທເຄັນທີ່ກຳນົດໂດຍ Fido Alliance. ມັນເປັນລຸ້ນກ່ອນຂອງ WebAuthn/Passkey, ເຊິ່ງຕອນນີ້ຖືກແທນທີ່ໂດຍພວກມັນແລ້ວ, ດັ່ງນັ້ນຈຶ່ງບໍ່ຄວນນຳໃຊ້ມັນອີກຕໍ່ໄປ.</target>
-        <context-group purpose="location">
-          <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
-          <context context-type="linenumber">180</context>
-        </context-group>
-      </trans-unit>
       <trans-unit id="token.vascoTokenProprietary" datatype="html">
         <source>The VASCO token is a proprietary OTP token. You can paste the VASCO token blob in hex format.</source>
         <target>ໂທເຄັນ VASCO ແມ່ນໂທເຄັນ OTP ແບບລິຂະສິດສະເພາະ. ເຈົ້າສາມາດວາງ VASCO token blob ໃນຮູບແບບ hex ໄດ້.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
-          <context context-type="linenumber">187</context>
+          <context context-type="linenumber">180</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.webauthnToken" datatype="html">
@@ -19559,7 +19463,7 @@
         <target>ໂທເຄັນ WebAuthn ແມ່ນຂໍ້ມູນການຢືນຢັນຕົວຕົນທີ່ປ້ອງກັນການຟິດຊິງ (phishing) ເຊິ່ງໃຊ້ລະບົບລະຫັດ ແບບກະແຈສາທາລະນະເພື່ອພິສູດຕົວຕົນໂດຍບໍ່ຕ້ອງແບ່ງປັນລະຫັດລັບ. ໂທເຄັນ WebAuthn ຈະເກັບກະແຈທີ່ເຂົ້າລະຫັດໄວ້ໃນເຊີບເວີເພື່ອໃຫ້ສາມາດລົງທະບຽນໄດ້ບໍ່ຈຳກັດ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
-          <context context-type="linenumber">194</context>
+          <context context-type="linenumber">187</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.passkeyPhishing" datatype="html" xml:space="preserve">
@@ -19567,7 +19471,7 @@
         <target state="translated">Passkey ແມ່ນຂໍ້ມູນປະຈຳຕົວທີ່ທົນທານຕໍ່ການຫຼອກລວງ (phishing-resistant) ເຊິ່ງໃຊ້ວິທະຍາການເຂົ້າລະຫັດແບບກຸນແຈສາທາລະນະ (public-key cryptography) ເພື່ອພິສູດຕົວຕົນຂອງທ່ານໂດຍບໍ່ຕ້ອງແບ່ງປັນຄວາມລັບ. ກຸນແຈສ່ວນຕົວ (private key) ຈະຖືກເກັບຮັກສາໄວ້ຢ່າງປອດໄພໃນອຸປະກອນຢືນຢັນຕົວຕົນຂອງທ່ານ (ເຊັ່ນ: ໂທລະສັບ ຫຼື ຮາດແວຣ໌ໂທເຄັນ) ແລະ ຈະຖືກປົດລັອກສຳລັບການເຂົ້າສູ່ລະບົບແຕ່ລະຄັ້ງໂດຍໃຊ້ PIN, ລາຍນິ້ວມື ຫຼື ການສະແກນໃບໜ້າຂອງອຸປະກອນທ່ານ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/utils/token.utils.ts</context>
-          <context context-type="linenumber">201</context>
+          <context context-type="linenumber">194</context>
         </context-group>
       </trans-unit>
       <trans-unit id="dashboard.stateDaysAgoFew" datatype="html">
@@ -20363,7 +20267,7 @@
         <target>ລຶບ <x id="COUNT" equiv-text="count_success"/> ໂທເຄັນສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">880</context>
+          <context context-type="linenumber">879</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.successfullyDeletedMany" datatype="html">
@@ -20371,7 +20275,7 @@
         <target>ລຶບ <x id="COUNT" equiv-text="count_success"/> ໂທເຄັນສຳເລັດແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">881</context>
+          <context context-type="linenumber">880</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.enrollmentTokenCancelled" datatype="html" xml:space="preserve">
@@ -20379,7 +20283,7 @@
         <target state="translated">ການລົງທະບຽນຂອງໂທເຄັນ <x id="PH" equiv-text="tokenSerial"/> ຖືກຍົກເລີກແລ້ວ.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1056</context>
+          <context context-type="linenumber">1055</context>
         </context-group>
       </trans-unit>
       <trans-unit id="token.failedCancelEnrollment" datatype="html" xml:space="preserve">
@@ -20387,7 +20291,7 @@
         <target state="translated">ບໍ່ສາມາດຍົກເລີກການລົງທະບຽນໄດ້. <x id="PH" equiv-text="message"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/services/token/token.service.ts</context>
-          <context context-type="linenumber">1063</context>
+          <context context-type="linenumber">1062</context>
         </context-group>
       </trans-unit>
       <trans-unit id="valueLabel.off" datatype="html" xml:space="preserve">
@@ -24643,7 +24547,7 @@
         <target state="new">Delete SMTP Server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.ts</context>
-          <context context-type="linenumber">233</context>
+          <context context-type="linenumber">230</context>
         </context-group>
       </trans-unit>
       <trans-unit id="smtpServer.smtpServer" datatype="html">
@@ -24651,7 +24555,7 @@
         <target state="new">SMTP server</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/smtp-servers/new-smtp-server/new-smtp-server.component.ts</context>
-          <context context-type="linenumber">235</context>
+          <context context-type="linenumber">232</context>
         </context-group>
       </trans-unit>
       <trans-unit id="tokengroup.deleteTokengroup" datatype="html">
