@@ -6,7 +6,8 @@
 # it works end-to-end. Two layers of assurance:
 #   1. Static checks  — shellcheck, hadolint, compose config, python syntax.
 #   2. Build + smoke  — build the image, "compose up", then assert readiness,
-#                       admin authentication, and that pi-cron is running.
+#                       admin authentication, and that pi-cron is running; with
+#                       the bundled MariaDB and with an external PostgreSQL.
 #
 # Everything runs on pull requests that touch deploy/docker itself — those are
 # the changes most likely to break the deployment, and the feedback belongs in
@@ -60,8 +61,27 @@ jobs:
           docker run --rm -i hadolint/hadolint:v2.12.0@sha256:30a8fd2e785ab6176eed53f74769e04f125afb2f74a6c52aef7d463583b6d45e \
             hadolint --failure-threshold error - < deploy/docker/Dockerfile
 
-      - name: Validate compose file
-        run: docker compose -f deploy/docker/compose.yaml config --quiet
+      - name: Validate compose files
+        working-directory: deploy/docker
+        run: |
+          # compose.yaml refuses to load without the config files "make init" creates.
+          make init
+          docker compose config --quiet
+          COMPOSE_PROFILES=tls docker compose config --quiet
+          COMPOSE_FILE=compose.yaml:compose.external-db.yaml docker compose config --quiet
+          PI_IMAGE=privacyidea:ci docker compose -f compose.yaml -f compose.build.yaml config --quiet
+
+      - name: Check that compose.yaml names one release
+        working-directory: deploy/docker
+        run: |
+          # The containers warn when their image is another release than PI_COMPOSE_VERSION, so a release
+          # that changes only one of the two would warn at every start.
+          image="$(docker compose config --format json | jq -r '.services.pi.image')"
+          compose_version="$(docker compose config --format json | jq -r '.services.pi.environment.PI_COMPOSE_VERSION')"
+          if [ "${image##*:}" != "${compose_version}" ]; then
+            echo "compose.yaml pulls ${image}, but its PI_COMPOSE_VERSION is ${compose_version}"
+            exit 1
+          fi
 
       - name: Check helper scripts compile
         run: python3 -m py_compile deploy/docker/cron-runner.py deploy/docker/enckey-canary.py
@@ -71,6 +91,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     needs: static-checks
+    env:
+      # The image built from this commit. Every compose command below runs it through PI_IMAGE; without it,
+      # compose.yaml would pull the release it names.
+      PI_IMAGE: privacyidea:ci
     steps:
       # fetch-depth: 0 so setuptools-scm can derive the version from git tags
       # (the Dockerfile copies .git and builds the package with it).
@@ -79,18 +103,19 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Generate throwaway secrets
+      - name: Generate throwaway secrets and config
         working-directory: deploy/docker
         run: |
-          # Use the same generator operators use, so CI can never drift from the
-          # set of secrets compose requires (this is what missed the audit keypair
-          # before). Then pin a known admin password for the smoke test to log in.
-          ./scripts/init-secrets.sh
+          # Use the same target operators use, so CI can never drift from the
+          # secrets and config files compose requires (this is what missed the
+          # audit keypair before). Then pin a known admin password for the smoke
+          # test to log in.
+          make init
           printf 'smoke-test-admin-pw\n' > secrets/bootstrap_admin_password
           chmod 644 secrets/bootstrap_admin_password
 
-      - name: Build images
-        run: docker compose -f deploy/docker/compose.yaml build
+      - name: Build image
+        run: docker compose -f deploy/docker/compose.yaml -f deploy/docker/compose.build.yaml build
 
       - name: Start stack
         # "up -d" blocks on pi-init (service_completed_successfully) before
@@ -124,13 +149,74 @@ jobs:
           PI_SMOKE_PASSWORD: smoke-test-admin-pw
         run: ./deploy/docker/scripts/smoke-test.sh
 
+      - name: Start an external PostgreSQL
+        # The database for the external-database run below, on a network of its own.
+        # Its password holds characters the URI has to carry percent-encoded.
+        run: |
+          docker network create pi-external-db
+          docker run -d --name pi-external-postgres --network pi-external-db \
+            -e POSTGRES_USER=pi -e 'POSTGRES_PASSWORD=p@ss:w/rd%' -e POSTGRES_DB=pi \
+            --health-cmd 'pg_isready -U pi -d pi' --health-interval 2s --health-retries 60 \
+            postgres:17
+          for _ in $(seq 60); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' pi-external-postgres)" = healthy ] && exit 0
+            sleep 2
+          done
+          echo "PostgreSQL did not become healthy"
+          docker logs pi-external-postgres
+          exit 1
+
+      - name: External database
+        # compose.external-db.yaml takes the bundled MariaDB out of the stack and reads the
+        # URI from secrets/database_uri. The override only connects the privacyIDEA
+        # containers to the network of the test database.
+        working-directory: deploy/docker
+        env:
+          PI_SMOKE_PASSWORD: smoke-test-admin-pw
+        run: |
+          docker compose down -v
+          printf '%s\n' 'postgresql+psycopg2://pi:p%40ss%3Aw%2Frd%25@pi-external-postgres:5432/pi' > secrets/database_uri
+          chmod 644 secrets/database_uri
+          cat > compose.override.yaml <<'EOF'
+          services:
+            pi-init:
+              networks: [default, external-db]
+            pi:
+              networks: [default, proxy, external-db]
+            pi-cron:
+              networks: [default, external-db]
+          networks:
+            external-db:
+              external: true
+              name: pi-external-db
+          EOF
+          echo 'COMPOSE_FILE=compose.yaml:compose.external-db.yaml:compose.override.yaml' >> .env
+          docker compose up -d
+          services=$'\n'"$(docker compose ps -a --services)"$'\n'
+          if [[ "${services}" == *$'\ndb\n'* ]]; then
+            echo "the bundled db service was started with an external database"
+            exit 1
+          fi
+          ./scripts/smoke-test.sh
+          backup_output="$(./scripts/backup.sh)"
+          case "${backup_output}" in
+            *"not dumped"*) ;;
+            *) echo "backup.sh did not skip the database dump with an external database"
+               echo "${backup_output}"
+               exit 1 ;;
+          esac
+
       - name: Dump logs on failure
         if: failure()
-        run: docker compose -f deploy/docker/compose.yaml logs --no-color
+        # In the deployment directory and without "-f", so that the compose files of the
+        # external-database run are used once it has started.
+        working-directory: deploy/docker
+        run: docker compose logs --no-color
 
       - name: Tear down
         if: always()
-        run: docker compose -f deploy/docker/compose.yaml down -v
+        working-directory: deploy/docker
+        run: docker compose down -v
 
   notify-failure:
     needs: [static-checks, build-and-smoke]

@@ -12,6 +12,31 @@ if [ "$#" -gt 0 ]; then
     exec "$@"
 fi
 
+# compose.yaml states the release it was written for in PI_COMPOSE_VERSION. An
+# image of another minor version (PI_IMAGE set in .env) may expect settings that
+# file does not have, so say so before it runs. A build of unreleased code has a
+# development version and nothing to compare with. This is only a warning, so a
+# version that cannot be read skips it instead of stopping the container.
+minor_version() {
+    # "3.14", "3.14.1" and "3.15rc1" give 3.14, 3.14 and 3.15
+    echo "$1" | sed -n 's/^\([0-9]*\.[0-9]*\).*/\1/p'
+}
+if [ -n "${PI_COMPOSE_VERSION:-}" ]; then
+    IMAGE_VERSION="$(python3 -c 'import importlib.metadata as m; print(m.version("privacyIDEA"))' 2>/dev/null)" ||
+        IMAGE_VERSION=""
+    case "$IMAGE_VERSION" in
+        ""|*dev*|*+*) ;;
+        *)
+            IMAGE_MINOR_VERSION="$(minor_version "$IMAGE_VERSION")"
+            COMPOSE_MINOR_VERSION="$(minor_version "$PI_COMPOSE_VERSION")"
+            if [ -n "$IMAGE_MINOR_VERSION" ] && [ "$IMAGE_MINOR_VERSION" != "$COMPOSE_MINOR_VERSION" ]; then
+                echo "WARNING: this image is privacyIDEA ${IMAGE_VERSION}, but compose.yaml belongs to ${PI_COMPOSE_VERSION}." >&2
+                echo "  Take the deployment files of release ${IMAGE_VERSION} (see 'Upgrading' in README.Docker.md)." >&2
+            fi
+            ;;
+    esac
+fi
+
 # The application config (DockerConfig, selected by PI_CONFIG_NAME=docker) reads
 # the database URI, enckey, pepper and secret_key directly from the PI_DB_*,
 # PI_ENCFILE, PI_PEPPER_FILE and PI_SECRET_KEY_FILE variables set in the compose

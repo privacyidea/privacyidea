@@ -3,6 +3,14 @@
 # Compose environment overrides (may contain hostnames, tuning)
 .env
 
+# Config files of the deployment, created by "make init" from the *.template files
+privacyidea.env
+caddy.env
+mariadb.cnf
+
+# Your own changes to the compose files
+compose.override.yaml
+
 # Secret files (keys, passwords) — never commit
 secrets/*
 !secrets/README.md

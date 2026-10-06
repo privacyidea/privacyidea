@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+# Server options of the bundled MariaDB, in MariaDB's option file format. Copy to
+# mariadb.cnf and adjust ("make init" does the copy). mariadb.cnf is yours: an
+# update of these files never overwrites it. It is mounted into the db container
+# as /etc/mysql/conf.d/privacyidea.cnf and read when the server starts: after a
+# change, run "docker compose restart db" ("make restart" restarts only pi and
+# pi-cron).
+#
+# MariaDB refuses to read the file if it is writable by everyone; keep it at
+# mode 644.
+
+[mariadbd]
+# Memory for cached table and index data. The image's default is 128 MB; give a
+# dedicated host about half of its memory.
+#innodb_buffer_pool_size = 1G
+
+# Connections the server accepts at once. Each worker of pi and the scheduler in
+# pi-cron keeps a small pool open; the default of 151 suits a single node.
+#max_connections = 151
+
+# Seconds an idle connection stays open. Keep it above SQLALCHEMY_POOL_RECYCLE in
+# privacyidea.env, so that privacyIDEA refreshes its pooled connections before
+# the server closes them.
+#wait_timeout = 28800

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: CC0-1.0
 
 # Single-node privacyIDEA stack: one MariaDB plus the three roles of the
-# privacyIDEA image (init, web, cron), all built from the same Dockerfile and
+# privacyIDEA image (init, web, cron), all run from the same image and
 # selected by environment variables in entrypoint.sh:
 #   pi-init  PI_INIT_ONLY=true  — create tables, run migrations, bootstrap admin,
 #                                 install the enckey canary, then exit
@@ -10,10 +10,24 @@
 #   pi-cron  PI_CRON_MODE=true  — maintenance scheduler (table cleanups, audit
 #                                 rotate, UI-configured periodic tasks)
 #
+# Your own changes to this file belong in compose.override.yaml, which an update
+# of these files leaves alone. compose.external-db.yaml replaces the bundled
+# MariaDB with a database of yours. See README.Docker.md for both.
 
 name: privacyIDEA
 
-# Shared build + wiring for the three privacyIDEA roles. The three services below
+# Log rotation, used by every service. Docker's default json-file driver keeps the
+# whole output of a container, which fills /var/lib/docker over the months. Here
+# each container keeps at most 5 files of 10 MB; "docker compose logs" reads them.
+# This replaces a log driver set for the host in /etc/docker/daemon.json; to keep
+# that one, see "Logs" in README.Docker.md.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+# Shared image + wiring for the three privacyIDEA roles. The three services below
 # reuse this block via YAML anchors: "&pi-common" / "&pi-common-env" name these
 # mappings, and "<<: *pi-common" in a service merges their keys in. Each service
 # then only lists the env vars that make it an init/web/cron container; keys it
@@ -22,11 +36,19 @@ name: privacyIDEA
 # "x-" prefixes an extension field, which Compose ignores as a service — it just
 # holds the anchors.
 x-pi-common: &pi-common
-  build:
-    context: "../../"
-    dockerfile: ./deploy/docker/Dockerfile
-    network: host
-  # image: privacyidea/privacyidea:<tag>   # use instead of build: once published
+  # The release this file belongs to; the version is raised here, and in
+  # PI_COMPOSE_VERSION below, before a new release is tagged. Set PI_IMAGE in .env
+  # to run another version, or an image built from this source tree with
+  # compose.build.yaml. Never "latest": pi-init migrates the database to whatever
+  # image it runs.
+  image: ${PI_IMAGE:-harbor.netknights.it/privacyidea/privacyidea:3.14}
+  logging: *logging
+  # The privacyIDEA processes run as an unprivileged user and need no Linux
+  # capabilities, so none are kept.
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
   secrets:
     - enckey
     - secret_key
@@ -37,14 +59,18 @@ x-pi-common: &pi-common
     - audit_key_private
     - audit_key_public
   env_file:
-    # Optional: additional PRIVACYIDEA_-prefixed config keys, applied to all roles.
-    - ./example.env
+    # PRIVACYIDEA_-prefixed config keys, applied to all roles. Created by
+    # "make init" from privacyidea.env.template.
+    - ./privacyidea.env
   environment: &pi-common-env
+    # The release of this file, the same as in the image above. The containers
+    # warn when they run a different privacyIDEA version.
+    PI_COMPOSE_VERSION: "3.14"
     # These are DockerConfig's inputs: the DB connection parts (it builds the URI)
     # and the file-based secrets. All other privacyIDEA config is set as
-    # PRIVACYIDEA_<key> in example.env — kept out of here so this block stays a
-    # single, consistent group. PI_DB_* names also let pi-manage work when exec'd
-    # into the container manually.
+    # PRIVACYIDEA_<key> in privacyidea.env — kept out of here so this block stays
+    # a single, consistent group. PI_DB_* names also let pi-manage work when
+    # exec'd into the container manually.
     PI_DB_USER: pi
     PI_DB_HOST: db
     PI_DB_NAME: pi
@@ -56,19 +82,36 @@ x-pi-common: &pi-common
 
 services:
   db:
-    image: mariadb:10.6
+    image: mariadb:11.4
     restart: unless-stopped
+    logging: *logging
+    # Not cap_drop: the image's entrypoint starts as root to prepare the data
+    # directory, then switches to the mysql user.
+    security_opt:
+      - no-new-privileges:true
     environment:
       MARIADB_USER: pi
       MARIADB_PASSWORD_FILE: /run/secrets/mariadb_password
       MARIADB_ROOT_PASSWORD_FILE: /run/secrets/mariadb_root_password
       MARIADB_DATABASE: pi
+      # Runs mariadb-upgrade when the data directory was written by an older
+      # MariaDB version, so a version bump of the image above needs no manual step.
+      MARIADB_AUTO_UPGRADE: "1"
     secrets:
       - mariadb_password
       # Root password is needed by scripts/backup.sh and scripts/restore.sh.
       - mariadb_root_password
     volumes:
       - db-data:/var/lib/mysql
+      # Server options of yours, created by "make init" from mariadb.cnf.template.
+      # Long syntax, so that a missing file stops "up" instead of Docker creating
+      # a directory in its place.
+      - type: bind
+        source: ./mariadb.cnf
+        target: /etc/mysql/conf.d/privacyidea.cnf
+        read_only: true
+        bind:
+          create_host_path: false
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
@@ -110,8 +153,13 @@ services:
       # Bound to localhost only — this is plain HTTP and must not be exposed on
       # the network. For remote access, terminate TLS (the "tls" Caddy profile,
       # which reaches pi over the internal network) or your own reverse proxy.
-      # Change to "8080:8080" only if you accept unencrypted access.
+      # Change to "8080:8080" only if you accept unencrypted access (in
+      # compose.override.yaml, as "ports: !override", see the README).
       - "127.0.0.1:8080:8080"
+    networks:
+      default:
+      # The network Caddy reaches pi on, see "networks:" at the end.
+      proxy:
     environment:
       <<: *pi-common-env
       PI_CREATE_TABLES: "false"
@@ -136,6 +184,9 @@ services:
   pi-cron:
     <<: *pi-common
     restart: unless-stopped
+    # On a stop (make down, make upgrade) a running maintenance task may finish,
+    # but only for this long; a task still running then is killed.
+    stop_grace_period: 2m
     environment:
       <<: *pi-common-env
       PI_CRON_MODE: "true"
@@ -179,22 +230,38 @@ services:
       pi-init:
         condition: service_completed_successfully
 
-  # Optional TLS-terminating reverse proxy. Not started by default; enable with:
-  #   docker compose --profile tls up -d
-  # Set PI_SITE_ADDRESS in .env to the public hostname — Caddy then obtains and
-  # renews a Let's Encrypt certificate automatically (needs public DNS + ports
-  # 80/443 reachable). For an internal host without public DNS, add "tls internal"
-  # to the Caddyfile. When fronting with Caddy you can drop the pi "ports:" mapping
-  # above so the app is only reachable through TLS.
+  # Optional TLS-terminating reverse proxy. Not started by default; enable it with
+  # COMPOSE_PROFILES=tls in .env, so that every command (make up, make down, the
+  # scripts) includes it.
+  # Set PI_SITE_ADDRESS in caddy.env to the public hostname — Caddy then obtains
+  # and renews a Let's Encrypt certificate automatically (needs public DNS + ports
+  # 80/443 reachable). For an internal host without public DNS, set
+  # PI_CADDY_TLS="tls internal" there. When fronting with Caddy you can drop the
+  # pi "ports:" mapping above (in compose.override.yaml) so the app is only
+  # reachable through TLS.
   caddy:
     image: caddy:2
     profiles: ["tls"]
     restart: unless-stopped
+    logging: *logging
+    # Caddy runs as root in its image; binding ports 80 and 443 is the only
+    # privilege it needs.
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "80:80"
       - "443:443"
-    environment:
-      PI_SITE_ADDRESS: ${PI_SITE_ADDRESS:-localhost}
+    networks:
+      proxy:
+        ipv4_address: ${PI_PROXY_ADDRESS:-192.168.255.242}
+    env_file:
+      # PI_SITE_ADDRESS and PI_CADDY_TLS for the Caddyfile. Created by
+      # "make init" from caddy.env.template.
+      - ./caddy.env
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
@@ -222,6 +289,19 @@ secrets:
     file: ./secrets/audit_key_private
   audit_key_public:
     file: ./secrets/audit_key_public
+
+networks:
+  # Caddy and pi only. privacyIDEA sees every request through Caddy as coming
+  # from Caddy's fixed address PI_PROXY_ADDRESS, so that is the one address to
+  # name in the system setting "Override Authorization Clients" (see the README,
+  # section TLS). Docker gives pi, and the one-off containers of "make pimanage",
+  # addresses from PI_PROXY_IP_RANGE, which must not contain PI_PROXY_ADDRESS.
+  # Change all three in .env if the subnet collides with a network of yours.
+  proxy:
+    ipam:
+      config:
+        - subnet: ${PI_PROXY_SUBNET:-192.168.255.240/28}
+          ip_range: ${PI_PROXY_IP_RANGE:-192.168.255.248/29}
 
 volumes:
   db-data:

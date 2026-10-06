@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+
+# Builds the privacyIDEA image from this source tree instead of pulling a
+# release, for development and CI:
+#
+#   docker compose -f compose.yaml -f compose.build.yaml build   (or: make build)
+#
+# The image is tagged with PI_IMAGE, which has to be set to a local name such as
+# privacyidea:local, so that a build of unreleased code never carries the name
+# of a release. With PI_IMAGE in .env, every other command (make up, the scripts)
+# then runs the built image with compose.yaml alone.
+#
+# GIT_VERSION (e.g. GIT_VERSION=3.14.1.dev0 make build) is the version the
+# package is built as and the image's version label. Without it, the package
+# takes its version from git and the label stays empty.
+
+x-pi-build: &pi-build
+  image: ${PI_IMAGE:?set PI_IMAGE to a local image name such as privacyidea:local}
+  build:
+    context: "../../"
+    dockerfile: ./deploy/docker/Dockerfile
+    network: host
+    args:
+      GIT_VERSION: ${GIT_VERSION:-}
+
+services:
+  pi-init: *pi-build
+  pi: *pi-build
+  pi-cron: *pi-build
