@@ -33,7 +33,6 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatIconModule } from "@angular/material/icon";
-import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
@@ -43,7 +42,6 @@ import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 import { InfoHintComponent } from "@components/shared/info-hint/info-hint.component";
 import { TableStateComponent } from "@components/shared/table-state/table-state.component";
 import { TableState } from "@core/models/table_state/table-state";
@@ -75,7 +73,6 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     MatTableModule,
-    MatPaginator,
     MatSortModule,
     MatIconModule,
     MatButtonModule,
@@ -90,7 +87,6 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     InfoHintComponent,
     TableStateComponent,
     ScrollEdgesDirective,
-    PaginatorCompactRangeDirective,
     MatMenuModule
   ],
   templateUrl: "./conditional-access.component.html",
@@ -108,7 +104,6 @@ export class ConditionalAccessComponent implements OnDestroy {
   private readonly pendingChangesService = inject(PendingChangesService);
 
   filterString = signal<string>("");
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   totalLength = computed(() => this.policyService.policies().length);
   readonly tableState = new TableState({
     resource: this.policyService.policiesResource,
@@ -123,7 +118,6 @@ export class ConditionalAccessComponent implements OnDestroy {
   priorityReorderHint = $localize`:@@conditionalAccess.movePoliciesArrowsPriority:Move policies with the arrows in the Priority column to change the order they are evaluated in. Priority only decides which DENY policy is named when a request is refused; lock, block and email actions all run regardless of it.`;
   priorityReorderHintAriaLabel = $localize`:@@conditionalAccess.aboutRearrangingPriorities:About rearranging priorities`;
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
@@ -143,7 +137,6 @@ export class ConditionalAccessComponent implements OnDestroy {
   policyDataSource = computed(() => {
     const policies = this.policyService.policies();
     const dataSource = new MatTableDataSource(policies);
-    dataSource.paginator = this.paginator;
     dataSource.sort = this.sort;
     dataSource.filterPredicate = (policy: ConditionalAccessPolicy, filter: string) =>
       policy.name.toLowerCase().includes(filter) ||

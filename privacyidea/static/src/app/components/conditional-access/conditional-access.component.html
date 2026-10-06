@@ -51,13 +51,6 @@
           <app-table-actions-trigger [menu]="tableActionsMenu" />
         }
       </div>
-      <mat-paginator
-        appPaginatorCompactRange
-        [disabled]="reorderMode()"
-        [length]="totalLength()"
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSizeOptions()[1]"
-        showFirstLastButtons />
     </div>
 
     @if (authService.actionAllowed("conditional_access_policy_write")) {
