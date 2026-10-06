@@ -104,8 +104,11 @@ variable ``PRIVACYIDEA_CONFIGFILE``.
 
 The script works with the name of the node it runs on: ``PI_NODE`` from the configuration
 file, or ``PI_AUDIT_SERVERNAME`` if ``PI_NODE`` is not set, or ``localnode`` if neither is
-set. In a setup with several nodes, give every node its own ``PI_NODE``: nodes that end up
-with the same name all run the tasks assigned to that name. The option ``-n`` overrides the
+set. In a setup with several nodes, give every node its own ``PI_NODE``. Nodes that end up
+with the same name share one record of the last run of each task: when one of them has run a
+due task and recorded the run, the others find the task not due until its next scheduled
+time. Only nodes that check before that record is written run it as well, so whether a task
+runs on one or on several of these nodes depends on timing. The option ``-n`` overrides the
 node name.
 
 ``privacyidea-cron run_scheduled [-c] [-d] [-n NODE]``

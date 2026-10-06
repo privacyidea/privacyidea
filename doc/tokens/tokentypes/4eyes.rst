@@ -23,6 +23,10 @@ from *realm2* and one token from realm *sqlite* are present.
 Authentication is done by concatenating the OTP PINs and the OTP values of
 all tokens. The concatenation is split by the *separator* character.
 
+Only the OTP PINs and OTP values of the member tokens are checked. The PIN of
+the 4eyes token itself is not part of this authentication; it only starts the
+challenge response mode (see below).
+
 It does not matter, in which order the tokens from the realms are entered.
 
 **Example**
@@ -34,6 +38,10 @@ Authentication as::
 
 The three blocks separated by the *blank* are checked, if they match tokens
 in the realms *realm2* and *sqlite*.
+
+The separator is set during enrollment (one character; the WebUI suggests
+``|``, the API default is a blank). The example uses a blank; with ``|`` the
+password is ``pin123456|secret789434|key098123``.
 
 The response looks like this in case of success::
 
@@ -74,8 +82,9 @@ Using Challenge Response mode
 It is also possible to use the 4eyes token in
 multi challenge-response mode.
 This way in the first authentication request the users will either enter the
-OTP PIN of the 4eyes token or (if the 4eyes token has no PIN) enter the first
-token (OTP PIN + OTP value) of one of the users.
+OTP PIN of the 4eyes token or the first token (OTP PIN + OTP value) of one of
+the users - also if the 4eyes token has a PIN. No
+:ref:`policy_challenge_response` policy is needed.
 After this a challenge is sent back, that further tokens need to be entered.
 Every one of the required tokens is entered separately.
 

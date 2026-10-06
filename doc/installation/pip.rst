@@ -36,8 +36,9 @@ Now you are within the python virtual environment and you can proceed with the
 Deterministic Installation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The privacyIDEA package contains dependencies with a minimal required version. However, newest
-versions of dependencies are not always tested and might cause problems.
+The privacyIDEA package declares its dependencies without minimal versions (only ``ldap3`` has
+an upper bound), so pip may install any version of them. The newest versions of the dependencies
+are not always tested and might cause problems.
 To achieve a deterministic installation, you must install the pinned and tested
 versions of the dependencies *before* installing privacyIDEA::
 
@@ -69,15 +70,18 @@ the matching OS packages must be present:
 
 * ``postgres`` (``psycopg2``): needs the PostgreSQL client library and its
   headers (``libpq-dev`` / ``postgresql-devel``), the ``pg_config`` executable
-  they ship and a C compiler. Without them pip aborts with ``Error: pg_config
+  they ship, the Python development headers (``python3-dev`` /
+  ``python3-devel``, ``python3.11-devel`` with the ``python3.11`` packages of
+  RHEL 8 and 9) and a C compiler. Without them pip aborts with ``Error: pg_config
   executable not found``. The prebuilt ``psycopg2-binary`` wheel needs no build
   tools and is a practical choice for development and testing, but upstream
   advises against it in production, as it bundles its own libssl and libcrypto.
-* ``kerberos`` (``gssapi``): pip usually installs a prebuilt wheel, but the host
-  still needs the MIT Kerberos runtime libraries (``libkrb5`` / ``krb5-libs``) and
-  a valid ``/etc/krb5.conf`` for the realm. If pip has to build from source,
-  additionally install the Kerberos development headers (``libkrb5-dev`` /
-  ``krb5-devel``), ``krb5-config`` and a C compiler.
+* ``kerberos`` (``gssapi``): there are no prebuilt wheels for Linux, so pip
+  always builds it from source. Install the Kerberos development files
+  (``libkrb5-dev`` / ``krb5-devel``, which also provide ``krb5-config``), the
+  Python development headers (see above) and a C compiler. At runtime the host
+  needs the MIT Kerberos libraries (``libkrb5`` / ``krb5-libs``) and a valid
+  ``/etc/krb5.conf`` for the realm.
 * ``hsm`` (``PyKCS11``): additionally needs your HSM vendor's PKCS#11 module.
 
 .. note::
@@ -119,13 +123,23 @@ In addition to the database connection a new ``PI_PEPPER`` and ``SECRET_KEY``
 must be generated in order to secure the installation::
 
     PEPPER="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
-    echo "PI_PEPPER = '$PEPPER'" >> /path/to/pi.cfg
+    echo "PI_PEPPER = '$PEPPER'" >> /etc/privacyidea/pi.cfg
     SECRET="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
-    echo "SECRET_KEY = '$SECRET'" >> /path/to/pi.cfg
+    echo "SECRET_KEY = '$SECRET'" >> /etc/privacyidea/pi.cfg
 
 An encryption key for encrypting the secrets in the database and a key for
-signing the :ref:`audit` log is also needed (the following commands should be
-executed inside the virtual environment)::
+signing the :ref:`audit` log are also needed. The following commands write them
+to the paths set in ``PI_ENCFILE``, ``PI_AUDIT_KEY_PRIVATE`` and
+``PI_AUDIT_KEY_PUBLIC``, so first set these in ``pi.cfg`` to a place outside the
+virtual environment, e.g. ``/etc/privacyidea/enckey``,
+``/etc/privacyidea/private.pem`` and ``/etc/privacyidea/public.pem`` as in the
+example in :ref:`cfgfile`. Without them the files are created inside the virtual
+environment, next to the ``privacyidea`` package: they are lost when the virtual
+environment is recreated, and ``pi-manage backup create`` does not include them.
+Losing the encryption key makes the encrypted data in the database, e.g. the
+token secrets, unreadable.
+
+Execute the commands inside the virtual environment::
 
     (privacyidea)$ pi-manage setup create_enckey  # encryption key for the database
     (privacyidea)$ pi-manage setup create_audit_keys  # key for verification of audit log entries
@@ -153,9 +167,10 @@ Webserver
 .........
 
 To serve authentication requests and provide the management UI a
-`WSGI <https://wsgi.readthedocs.io/en/latest/index.html>`_ capable webserver
-like `Apache2 <https://httpd.apache.org/>`_ or `nginx <https://nginx.org/en>`_
-is needed.
+`WSGI <https://wsgi.readthedocs.io/en/latest/index.html>`_ server is needed,
+e.g. `Apache2 <https://httpd.apache.org/>`_ with ``mod_wsgi``, or uWSGI or
+gunicorn behind a web server like `nginx <https://nginx.org/en>`_. nginx itself
+cannot run the application, it forwards the requests to the WSGI server.
 
 Setup and configuration of a webserver can be a complex procedure depending on
 several parameters (host OS, SSL, internal network structure, ...).

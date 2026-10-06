@@ -21,8 +21,10 @@ delete
 
 This action simply deletes the given parameter from the request.
 
-E.g. you could in certain cases delete the ``transaction_id`` from a
-``/validate/check`` request. This way you would render challenge response inactive.
+E.g. you could in certain cases delete the ``transaction_id`` (and ``state``,
+which is accepted in its place) from a ``/validate/check`` request. Answers to a
+challenge are then no longer accepted; challenges are still triggered, and SMS,
+email or push messages are still sent.
 
 set
 ...

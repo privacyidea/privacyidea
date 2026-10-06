@@ -30,3 +30,7 @@ The import schema for TAN tokens via the OATH CSV file looks like this::
 
 The TANs are located in the 4th column. TANs are separated by blanks or whitespaces.
 The *<seed>* is not used with a TAN token. You can leave this blank or set to any (not used) value.
+
+All TANs of one token must have the same length: the OTP length of the token is the length of the first TAN, and
+TANs of another length are imported but never accepted. The same applies to the ``tans`` parameter of
+``/token/init``.

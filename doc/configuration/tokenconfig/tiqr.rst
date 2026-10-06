@@ -33,3 +33,7 @@ Configuration Parameters
    the URL of the *Registration Server* is used.
 
    During authentication the parameter ``operation=login`` is added.
+
+   The app receives this URL only in the enrollment data; the authentication QR
+   code carries no server URL. A change therefore does not reach apps that are
+   already enrolled.

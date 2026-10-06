@@ -20,4 +20,5 @@ attribute from the attribute mapping of the corresponding user resolver.
 
 The Indexed Secret Token can work in multi challenge authentication.
 This way each position is asked separately in consecutive challenges. To achieve this, the token needs
-the tokeninfo value ``multichallenge=1``.
+the tokeninfo entry ``multichallenge`` (e.g. ``multichallenge=1``). Any value switches this mode on, also ``0``;
+delete the entry to switch it off. The number of positions is set with :ref:`policy_indexedsecret_count`.

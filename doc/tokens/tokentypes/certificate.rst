@@ -11,9 +11,10 @@ privacyIDEA supports certificates. A user can
 * upload a certificate or
 * generate a certificate signing request within privacyIDEA.
 
-privacyIDEA does not sign certificate signing requests itself but connects to
-existing certificate authorities. To do so, you need to define a
-:ref:`CA connector <caconnectors>`.
+privacyIDEA signs certificate signing requests through a
+:ref:`CA connector <caconnectors>`, which you need to define: either a local CA
+that privacyIDEA runs with OpenSSL on its own server (the CA key is then stored
+on the privacyIDEA server) or an external CA such as a Microsoft CA.
 
 Certificates are attached to the user just like normal tokens. One token of
 type *certificate* always contains only one certificate.
@@ -30,6 +31,10 @@ You need to choose the CA connector. The certificate will be signed by
 the CA accordingly. Just like all other tokens the certificate token can be
 attached to a user.
 
+When a certificate token is revoked, privacyIDEA also revokes the certificate
+at the CA through the CA connector. With the local CA connector, a new CRL is
+created as well (see :ref:`caconnectors`).
+
 Generating Signing Requests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -42,11 +47,13 @@ server.
    *Generate a certificate signing request*
 
 When generating the certificate signing request this way the RSA key pair is
-generated on the server and the private key is available only on the server side.
+generated on the server.
 When the token is enrolled, the private key and the certificate are available in
 an encrypted PKCS12 container. The PKCS12 file is encrypted with the token PIN
 or, if the token has no PIN set, a random password will be generated and
-presented to the user only once.
+presented to the user only once. The private key is not stored in plain form;
+the encrypted PKCS12 container is kept in the token info (``pkcs12``) and can be
+downloaded again.
 
 .. figure:: images/enroll_certificate_pkcs12.png
    :width: 500

@@ -12,7 +12,15 @@ If you want to install the FreeRADIUS plugin on Ubuntu,
 this can be easily done since there is a ready-made package available (see
 :ref:`install_ubuntu_freeradius`).
 
-However, it can also be installed on other distributions.
+The package configures FreeRADIUS for privacyIDEA on every installation and
+upgrade: it removes all sites from ``/etc/freeradius/3.0/sites-enabled`` and
+enables only its own site ``privacyidea``, disables the ``eap`` module and
+enables the module ``perl-privacyidea``. Do not install it on a FreeRADIUS
+server that also serves other sites or EAP clients. With the package, the
+steps in *Setup* below are not needed: its site sets ``Auth-Type := Perl``
+itself.
+
+However, the plugin can also be installed on other distributions.
 The FreeRADIUS plugin is a Perl module that, e.g. on an Ubuntu/Debian system,
 requires the following packages to be installed:
 
@@ -92,7 +100,6 @@ But it can also look like this::
    [Default]
    URL = https://your.server/validate/check
    REALM = someRealm
-   RESCONF = someResolver
    SSL_CHECK = true
    DEBUG = true
    TIMEOUT = 10
@@ -125,8 +132,18 @@ A user can authenticate to the FreeRADIUS either with a simple username
 .. note:: The format of the realms is defined in
    ``/etc/freeradius/3.0/mods-available/realm`` as "suffix" and "ntdomain". I.e. you could
    also change the delimiter.
-   The "suffix" and "ntdomain" are referenced in the ``authorize`` section in
-   ``/etc/freeradius/3.0/sites-enabled/privacyidea``.
+   FreeRADIUS only splits the realm if "suffix" or "ntdomain" is called in the
+   ``authorize`` section of the site. The site ``privacyidea`` installed by the
+   ``privacyidea-radius`` package (``/etc/freeradius/3.0/sites-enabled/privacyidea``)
+   does not call them. Add them before ``perl-privacyidea``::
+
+      authorize {
+          suffix
+          ntdomain
+          [...]
+          perl-privacyidea
+          [...]
+      }
 
 The RADIUS server tries to split the realms according to the definition of
 "suffix" or "ntdomain". I.e. a ``User-Name`` "fred@realmRadius" would be
@@ -227,8 +244,28 @@ If you want to map such user values you need to add a section in
    [Mapping user]
    a_user_attribute = any_RADIUS_Attribute_even_vendor_specific
 
-This way you can map any user attribute like name, email, realm, group to any
-arbitrary RADIUS attribute.
+This way you can map a single-valued user attribute such as ``email``,
+``givenname`` or a custom user attribute to any arbitrary RADIUS attribute.
+The keys of ``detail->user`` are the user attributes in privacyIDEA; the realm
+is not one of them.
+
+An attribute that the resolver returns as a list, e.g. the group memberships
+from an LDAP resolver that lists them in ``MULTIVALUEATTRIBUTES`` (by default
+only ``mobile`` is a list), can not be mapped with ``[Mapping user]``. Use an
+``[Attribute <RADIUS attribute>]`` section instead. It adds one RADIUS
+attribute for every value that matches ``regex``, built from ``prefix``, the
+first group of ``regex`` and ``suffix``::
+
+   [Attribute Class]
+   dir = user
+   userAttribute = group
+   regex = (.*)
+
+With the policy :ref:`policy_add_resolver_in_response` the response also
+contains ``detail->user-realm`` and ``detail->user-resolver``. Map them in the
+``[Mapping]`` section, e.g. ``user-realm = <RADIUS attribute>``. The example
+``rlm_perl.ini`` of the plugin [#rlmPerl]_ contains further
+``[Attribute ...]`` examples.
 
 You can also address different sections in the privacyIDEA detail response by
 changing the keyword in ``rlm_perl.ini`` to ``[Mapping other_section]``.

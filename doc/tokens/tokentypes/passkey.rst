@@ -13,7 +13,11 @@ Passkeys are phishing resistant and secure by design. They inherently help reduc
 such as phishing, credential stuffing, and other remote attacks.
 
 This is a variation of the WebAuthn token, which is also a FIDO2 token supported by privacyIDEA.
-Therefore, it inherits the configuration of the WebAuthn token, which is described here: :ref:`webauthn_otp_token`.
+It uses the WebAuthn configuration described in :ref:`webauthn_otp_token` (relying party ID and name, challenge
+validity time) and the WebAuthn policies for user verification and public key credential algorithms. The WebAuthn
+policies :ref:`policy_webauthn_enroll_timeout`, :ref:`policy_webauthn_enroll_authenticator_attachment` and
+:ref:`policy_webauthn_authn_allowed_transports` do not apply to passkeys; the registration timeout of a passkey is
+fixed at 12 seconds.
 The Passkey token always requests to be created as a resident credential, i.e. the option
 ``resident_key`` is always set to ``required``, in contrast to the WebAuthn token, which does not request a resident
 key.
@@ -26,10 +30,11 @@ Passkeys are eligible for offline use as specified here :ref:`application_offlin
 :ref:`policy_enroll_via_multichallenge`. However, these features also have to be implemented in the client application.
 
 Using passkeys in different browsers and environments can yield different user experiences. Most, if not all browsers,
-will not allow enrollment of a passkey to an authenticator which does not have a PIN set, i.e. user verification is
-always required for enrollment. Therefore, :ref:`policy_webauthn_enroll_user_verification_requirement` does not
-affect passkey enrollment. The same policy :ref:`policy_webauthn_authn_user_verification_requirement` is available in
-the scope authentication and that policy does affect passkey authentication. A login to the WebUI with a passkey always
+will not allow enrollment of a passkey to an authenticator which does not have a PIN set. The enrollment policy
+:ref:`policy_webauthn_enroll_user_verification_requirement` sets the user verification that privacyIDEA requests from
+the authenticator when a passkey is registered (default ``preferred``). The same policy
+:ref:`policy_webauthn_authn_user_verification_requirement` is available in the scope authentication and affects
+passkey authentication. A login to the WebUI with a passkey always
 requires user verification, and so does a login to the WebUI without a username with a WebAuthn token.
 
 .. note:: If user verification is **not** required on authentication and a user has multiple discoverable credentials
@@ -79,9 +84,13 @@ credential, and requesting attestation works against both goals:
   consent dialog informing the user that information identifying their authenticator will be sent to the site,
   which can be confusing for end users and is not aligned with how passkeys are typically presented.
 
-privacyIDEA currently only archives the attestation certificate; there is no trust-chain validation, AAGUID
-allow-listing or filtering of passkey tokens based on attestation data. If attestation-based filtering or trust
-validation is required, use the :ref:`WebAuthn token <webauthn>` instead.
+If the authenticator sends an attestation statement, the WebAuthn library checks it: the signature of the
+statement, and for the ``apple``, ``android-key`` and ``android-safetynet`` formats the certificate chain up to the
+vendor root certificates built into the library. A registration that fails these checks is rejected. Beyond that,
+privacyIDEA only archives the leaf certificate: there is no configurable trust validation (the trust anchor directory
+of the WebAuthn token is not used), no AAGUID allow-listing and no filtering of passkey tokens based on attestation
+data. If attestation-based filtering or trust validation is required, use the :ref:`WebAuthn token <webauthn>`
+instead.
 
 .. _passkey_device_type:
 
@@ -105,18 +114,24 @@ in the :ref:`enrollment scope <policy_passkey_enroll_allowed_authenticator_devic
 :ref:`authentication scope <policy_passkey_authn_allowed_authenticator_device_types>`, and the two are independent
 of each other.
 
-.. warning:: The device type is reported by the authenticator itself. It is part of the signed authenticator data,
-    so neither the browser nor any other party between the authenticator and privacyIDEA can change it. The
-    signature is made with the passkey's own key, however, so it only proves that the authenticator holding the
-    key reported this device type, not that the device type is true. Only a verified attestation could vouch for
-    the authenticator, and privacyIDEA does not validate attestation for passkeys (see above).
+.. warning:: The device type is reported by the authenticator in its authenticator data. At **authentication**,
+    the authenticator data is signed with the passkey's own key, so the client between the authenticator and
+    privacyIDEA cannot change the reported device type; the signature only shows that the authenticator holding
+    the key reported it, not that it is true. At **enrollment**, privacyIDEA accepts registrations without an
+    attestation statement - with the default :ref:`policy_passkey_attestation_conveyance_preference` ``none``, and
+    also when ``direct`` was requested but the client sends no statement. The authenticator data of such a
+    registration is not signed, so the client that relays the registration can change the reported device type,
+    and the enrollment check only sees what the client reports.
 
-    The policy therefore reliably keeps out passkeys whose authenticator honestly reports ``multi_device``, such
-    as passkeys synced by the passkey manager of the operating system. It does not keep out an authenticator that
-    reports ``single_device`` although it can export or sync the key, whether because of a faulty implementation or
-    because it was manipulated on purpose, for example a software authenticator. If you need assurance that the
-    key cannot leave the hardware, use the :ref:`WebAuthn token <webauthn>` and set
-    :ref:`policy_webauthn_enroll_authenticator_attestation_level` to ``trusted``.
+    Use the :ref:`authentication policy <policy_passkey_authn_allowed_authenticator_device_types>` to enforce the
+    device type: it keeps out passkeys whose authenticator reports ``multi_device``, such as passkeys synced by the
+    passkey manager of the operating system. The
+    :ref:`enrollment policy <policy_passkey_enroll_allowed_authenticator_device_types>` only filters registrations
+    whose client passes the authenticator's value through unchanged. Neither keeps out an authenticator that
+    reports ``single_device`` although it can export or sync the key, for example a software authenticator or a
+    faulty implementation. If you need assurance that the key cannot leave the hardware, use the
+    :ref:`WebAuthn token <webauthn>` and set :ref:`policy_webauthn_enroll_authenticator_attestation_level` to
+    ``trusted``.
 
 Avoiding double registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -136,10 +151,10 @@ Relationship to the WebAuthn token
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Platform credentials (Touch ID, Windows Hello, synced platform passkeys) that
-were enrolled as WebAuthn tokens before the passkey token type existed are
-still usable through the usernameless passkey flow. See
-:ref:`webauthn_passkey_interop` for the encoding background and the
-recommendation to prefer the passkey token when both a passkey and a WebAuthn
-token are triggered for the same user in one transaction.
+were enrolled as WebAuthn tokens before the passkey token type existed (before
+3.11) are usable through the usernameless passkey flow once they have been used
+for one regular authentication with a user name, which records their credential
+ID. See :ref:`webauthn_passkey_interop` for how clients pass WebAuthn and
+passkey challenges to the authenticator.
 
 A non-exhaustive list of devices that are known to work can be found here :ref:`fido_device_matrix`.

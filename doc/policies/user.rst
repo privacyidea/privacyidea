@@ -27,8 +27,15 @@ Technically user policies control the use of the REST API
 :ref:`rest_token` and are checked using :ref:`code_policy` and
 :ref:`policy_decorators`.
 
-.. note:: If no user policy is defined, the user has
-   all actions available to them to manage their tokens.
+.. note:: If the user scope contains no active policy at all, every action of this
+   scope is allowed to every user. This includes reading the audit log and the
+   authentication log, editing their data in an editable user store, and creating and deleting container templates. Only the actions that always need
+   their policy are excepted: :ref:`user_set_custom_user_attributes`,
+   :ref:`user_delete_custom_user_attributes`, ``otp_pin_set_random`` (needed by
+   ``setrandompin``) and ``sms_gateways`` (choosing a gateway at enrollment). As
+   soon as one active user policy exists - even one restricted to a realm, a client
+   or a user agent - users may only do what a matching policy allows; a policy for
+   one realm leaves the users of all other realms without any right.
 
 The following actions are available in the scope
 *user*:
@@ -150,6 +157,10 @@ If the ``setrandompin`` action is defined, the user
 is allowed to call the endpoint that sets a random PIN on their
 specified token.
 
+The length of the PIN is set by the action ``otp_pin_set_random``; without a
+matching ``otp_pin_set_random`` policy the request fails. The current WebUI only
+offers the button when both actions apply.
+
 .. versionadded:: 3.2
 
 setdescription
@@ -244,8 +255,9 @@ auditlog
 
 type: ``bool``
 
-This action allows the user to view and search the audit log
-for actions with their own tokens.
+This action allows the user to view and search the audit entries recorded for
+their user name, realm and resolver. These are not limited to actions on their own
+tokens; entries without a resolver or with another resolver are not shown.
 
 To learn more about the audit log, see :ref:`audit`.
 
@@ -299,7 +311,8 @@ updateuser
 type: ``bool``
 
 If the ``updateuser`` action is defined, the user is allowed to change their
-attributes in the user store.
+attributes in the user store. In the current WebUI users can not edit their user
+data; the action applies to the REST API (``PUT /user/``) and to the previous WebUI.
 
 .. note:: To be able to edit the attributes, the resolver must be defined as
    editable.
@@ -373,6 +386,11 @@ If the user is located in an editable user store, this policy can define, if
 the user is allowed to perform a password reset. During the password reset an
 email with a link to reset the password is sent to the user.
 
+This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it
+as described in :ref:`legacy_webui`. The current WebUI offers no password reset, and
+the link in the email (``/#!/reset/...``) opens its login page. The endpoints of
+:ref:`rest_recover` can be used directly.
+
 .. versionadded:: 2.10
 
 .. _user_policy_2step:
@@ -422,7 +440,11 @@ type: ``string``
 
 Force the user to enroll HOTP, TOTP or DayPassword tokens with the specified hashlib.
 The corresponding input selector will be disabled/hidden in the web UI.
-Possible values are *sha1*, *sha256* and *sha512*, default is *sha1*.
+Possible values are *sha1*, *sha256* and *sha512*. Without this policy, the current WebUI presets
+*sha1* in the HOTP and TOTP forms (the token configuration value in the DayPassword form) and sends it.
+A REST API request that does not send the value gets the value of the token configuration
+(``hotp.hashlib``, ``totp.hashlib`` or ``daypassword.hashlib``), or *sha1* if it is not set there.
+The previous WebUI presets the hash algorithm from the token configuration.
 
 .. versionadded:: 2.0 ``hotp_hashlib`` and ``totp_hashlib``
 
@@ -440,7 +462,9 @@ type: ``integer``
 
 Force the user to enroll HOTP, TOTP or DayPassword tokens with the specified OTP length.
 The corresponding input selector will be disabled/hidden in the web UI.
-Possible values are *6* or *8*, default is *6*.
+Possible values are *6* or *8*. Without this policy, the current WebUI presets *6* and sends it.
+A REST API request that does not send the value gets the value of the system configuration
+(``DefaultOtpLen``), or *6* if it is not set there. The previous WebUI presets *6*.
 
 .. versionadded:: 2.0 ``hotp_otplen``
 
@@ -480,7 +504,10 @@ type: ``integer``
 
 Enforce the timestep of the time-based OTP token.
 A corresponding input selection will be disabled/hidden in the web UI.
-Possible values are *30* or *60*, default is *30*.
+Possible values are *30* or *60*. Without this policy, the current WebUI presets *30* and sends it.
+A REST API request that does not send the value gets the value of the token configuration
+(``totp.timeStep``), or *30* if it is not set there. The previous WebUI presets the time step from
+the token configuration.
 
 .. versionadded:: 2.0
 
@@ -521,6 +548,7 @@ If an attestation certificate is provided in addition, this policy holds the
 path to a directory that contains trusted CA paths.
 Each PEM encoded file in this directory needs to contain the root CA certificate
 at the first position and the consecutive intermediate certificates.
+Without this policy the directory ``/etc/privacyidea/trusted_attestation_ca`` is used.
 
 If an attestation certificate is required, see the enrollment policy
 :ref:`require_attestation`.
@@ -536,6 +564,8 @@ type: ``string``
 
 This defines how a user is allowed to set their own attributes.
 It uses the same setting as the admin policy :ref:`admin_set_custom_user_attributes`.
+In the current WebUI users can not edit their custom attributes; the action applies to
+the REST API (``POST /user/attribute``) and to the previous WebUI.
 
 .. note:: Using a '*' in this setting allows the user to set any attribute or any value and thus the user
    can overwrite existing attributes from the user store. If policies depending on user attributes
@@ -553,6 +583,8 @@ type: ``string``
 
 This defines how a user is allowed to delete their own attributes.
 It uses the same setting as the admin policy :ref:`admin_delete_custom_user_attributes`.
+In the current WebUI users can not edit their custom attributes; the action applies to
+the REST API (``DELETE /user/attribute/...``) and to the previous WebUI.
 
 .. note:: Using a '*' in this setting allows the user to delete any attribute and thus the user
    can change overwritten attributes and revert to the user store attributes.
@@ -680,6 +712,8 @@ container_template_create
 type: ``bool``
 
 This action allows users to create and edit container templates.
+Templates have no owner and are shared by all users and administrators: a user with this action can change (and set
+as default) every template, including the ones the administrators use.
 
 .. versionadded:: 3.11
 
@@ -689,6 +723,8 @@ container_template_delete
 type: ``bool``
 
 This action allows users to delete container templates.
+Templates have no owner and are shared by all users and administrators: a user with this action can delete every
+template, including the ones the administrators use.
 
 .. versionadded:: 3.11
 

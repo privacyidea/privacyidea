@@ -97,8 +97,9 @@ Integration of OpenVPN directly with RADIUS
 
 This configuration does not use PAM, so might be preferred in some installations.
 You will need the package *openvpn-auth-radius* which should be part of your
-distribution. Before you can configure your OpenVPN you need to install freeradius
-on your privacyIDEA server and configure it according to :ref:`freeradius`.
+distribution. Before you can configure your OpenVPN you need a FreeRADIUS
+server with the privacyIDEA plugin, configured according to :ref:`freeradius`.
+FreeRADIUS can run on the privacyIDEA server or on another machine.
 Be sure that RADIUS works before you start.
 
 Copy the file */usr/share/doc/openvpn-auth-radius/examples/radiusplugin.cnf* into */etc/openvpn*
@@ -124,9 +125,37 @@ and adapt it to your configuration. The most important parts of the file should 
         sharedsecret=<shared-secret>
   }
 
+Then load the plugin in the OpenVPN server configuration, with the path of
+``radiusplugin.cnf`` as argument::
+
+   plugin /usr/lib/openvpn/radiusplugin.so /etc/openvpn/radiusplugin.cnf
+
+On certain distributions the library might be located elsewhere.
+
 After the changes restart your OpenVPN service and keep an eye on the
 logs of OpenVPN on your access server as well as the freeradius logs on
 your RADIUS server.
+
+.. note:: The OpenVPN RADIUS plugin also sends accounting requests to the
+   ``acctport``. If they are not answered, it refuses the connection even
+   though the authentication succeeded. The site ``privacyidea`` installed by
+   the ``privacyidea-radius`` package only answers authentication requests.
+   Either add accounting inside the ``server`` section of this site
+   (``/etc/freeradius/3.0/sites-enabled/privacyidea``)::
+
+      listen {
+          type = acct
+          ipaddr = *
+          port = 0
+      }
+      accounting {
+          detail
+      }
+
+   or set ``nonfatalaccounting=true`` in ``radiusplugin.cnf``, so that the
+   connection does not depend on the accounting. Add the accounting to the
+   site ``privacyidea`` itself: the package removes all other sites from
+   ``sites-enabled`` when it is installed or upgraded.
 
 Using the PAM module for RADIUS in OpenVPN
 ==========================================

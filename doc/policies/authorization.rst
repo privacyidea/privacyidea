@@ -37,9 +37,11 @@ users by defining higher policy priorities.
     will be invalidated even if the *authorized* policy denies the access.
 
 .. note:: The actual "success" of the authentication can be changed to "failed" by this postpolicy.
-    Meaning pre-event handlers (:ref:`eventhandler_pre_and_post`) would still
-    see the request as successful before it would be changed by this policy and
-    match the event handler condition ``result value == True``.
+    Post-event handlers (:ref:`eventhandler_pre_and_post`) run before it: they
+    see the request as successful and match the event handler condition
+    ``result value == True``, although the response is a failure. Pre-event
+    handlers run before the request is processed and see no result. The same
+    holds for the postpolicies ``tokentype``, ``serial`` and ``tokeninfo``.
 
 .. versionadded:: 3.4
 
@@ -92,9 +94,11 @@ serial
 
 type: ``string``
 
-Users will only be authorized with the serial number.
-The string can hold a regular expression as serial
-number.
+Users will only be authorized with a token whose serial number matches.
+The value is one or more space-separated regular expressions that are
+searched anywhere in the serial; use ``^...$`` to match a whole serial.
+The values of all matching policies are collected regardless of their
+priority, and the token is accepted if any of them matches.
 
 This is checked after the authentication request, so a valid OTP value will be
 used up, even if the user was not authorized with this request.
@@ -144,7 +148,11 @@ This policy is checked before the user authenticates.
 The realm of the user matching this policy will be set to
 the realm in this action.
 
-This policy is only applied to :http:post:`/validate/check`.
+This policy is only applied to :http:post:`/validate/check` and :http:post:`/validate/radiuscheck`.
+
+Priorities are not evaluated for ``setrealm``: if the matching policies name more than one realm, the request fails
+with "Conflicting policies exist". If an authentication :ref:`policy_set_realm` policy matched, ``setrealm`` is not
+evaluated at all.
 
 Note, that this policy is evaluated, after the parameters of the request have been processed. This means,
 that the parameters like ``user`` and ``realm`` would already have to result in a valid user object. And thereafter this
@@ -258,8 +266,7 @@ If this value is exceeded, the authentication attempt is canceled.
 
 Specify the value like ``2/5m`` meaning 2 successful authentication requests
 per 5 minutes. If during the last 5 minutes 2 successful authentications were
-performed the authentication request is discarded. The used OTP value is
-invalidated.
+performed the authentication request is refused, and the OTP value stays valid.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
@@ -292,7 +299,7 @@ If this value is exceeded, authentication is not possible anymore. The user will
 If this policy is not defined, the normal behavior of the failcounter applies. (see :term:`FailCount`)
 
 Specify the value like ``2/1m`` meaning 2 failed authentication requests per minute. If during the last minute 2
-failed authentications were performed the authentication request is discarded. The used OTP value is invalidated.
+failed authentications were performed the authentication request is refused, and the OTP value stays valid.
 
 Allowed time specifiers are *s* (second), *m* (minute) and *h* (hour).
 
@@ -315,12 +322,15 @@ type: ``string``
 
 You can define if an authentication should fail, if the token was not
 successfully used for a certain time.
+A token without a recorded successful authentication (e.g. not used since its
+enrollment) is not refused; its first successful authentication starts the period.
 
 Specify a value like ``12h``, ``123d`` or ``2y`` to disallow authentication,
 if the token was not successfully used for 12 hours, 123 days or 2 years.
 
 The date of the last successful authentication is stored in the ``tokeninfo``
-field of a token and denoted in UTC.
+field ``last_auth`` with its UTC offset (in the server's local time; in UTC for
+passkey authentications).
 
 .. versionadded:: 2.8
 
@@ -367,10 +377,11 @@ This action configures a whitelist of authenticator models which may be
 authorized. It is a space-separated list of AAGUIDs. An AAGUID is a
 hexadecimal string (usually grouped using dashes, although these are
 optional) identifying one particular model of authenticator. To limit
-enrollment to a few known-good authenticator models, simply specify the AAGUIDs
-for each model of authenticator that is acceptable. If multiple policies with
-this action apply, the set of acceptable authenticators will be the union of
-all authenticators allowed by the various policies.
+authentication to a few known-good authenticator models, specify the AAGUIDs
+for each model of authenticator that is acceptable. The AAGUID recorded at the
+enrollment of the token is checked when the token authenticates. If multiple
+policies with this action apply, the set of acceptable authenticators will be the
+union of all authenticators allowed by the various policies.
 
 If this action is not configured, all authenticators will be deemed acceptable,
 unless limited through some other action.
@@ -395,9 +406,11 @@ The action can be specified like this::
     webauthn_req=subject/.*Yubico.*/
 
 The keyword can be "subject", "issuer" or "serial", followed by a
-regular expression. During registration of the WebAuthn authenticator the
-information is fetched from the attestation certificate. Only if the attribute
-in the attestation certificate matches accordingly the token can be enrolled.
+regular expression. When a WebAuthn token authenticates, the attestation
+certificate data recorded at its enrollment is checked, and the token is only
+accepted if the field matches. A token enrolled without attestation certificate
+data is refused while such a policy applies. If several values apply (from one or
+several policies), every one of them must match.
 
 .. note:: If you configure this, you will likely also want to configure
     :ref:`policy_webauthn_enroll_req`
@@ -411,14 +424,11 @@ require_auth_for_resolver_details
 
 type: ``bool``
 
-Usually, ``/healthz/resolversz`` will include in its response the name and status
-of each resolver individually, as well as the total status of all resolvers;
-without requiring any form of authentication.
+``/healthz/resolversz`` returns the names and states of the individual resolvers
+only to an authenticated administrator; every other request gets the total status.
 
-If this policy is set, admin credentials must be provided to receive the
-individual resolver details.  The total status will be included either way.
-
-.. note:: In order to limit the amount of information exposed to third parties,
-    it is recommended to activate this policy.
+If this policy is set, a request that sends an invalid or non-admin token is
+refused with 401 instead of receiving the total status. A request without a token
+receives the total status either way.
 
 .. versionadded:: 3.13

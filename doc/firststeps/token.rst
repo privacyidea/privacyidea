@@ -12,7 +12,7 @@ that you need to install on your smartphone.
 .. figure:: images/enroll1.png
    :width: 500
 
-   *The Token Enrollment Dialog*
+   *The token enrollment page*
 
 * In *Assign Token to a User*, check that *realm1* is selected in *Select Realm
   of User* and enter the username *root* in *Enter User*. When you start typing

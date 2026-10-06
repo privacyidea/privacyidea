@@ -102,10 +102,15 @@ endpoint::
     POST /token/init
 
     serial=<token serial>
+    type=<token type>
     otpkey=<base32check(client_component)>
     otpkeyformat=base32check
 
-Server and smartphone app then use PBKDF2 to generate the final secret (see [#rfc2898]_ for parameter names)::
+``type`` is the type of the token from the first step (``hotp`` or ``totp``). Without it the request is handled as
+HOTP, and the second step of a TOTP token fails with an error.
+
+Server and smartphone app then use PBKDF2 with HMAC-SHA1 as pseudorandom function to generate the final secret (see
+[#rfc2898]_ for parameter names)::
 
     secret = PBKDF2(P=hexlify(<server component>),
                     S=<client component>,
@@ -114,6 +119,9 @@ Server and smartphone app then use PBKDF2 to generate the final secret (see [#rf
 
 where ``hexlify(<server component>)`` denotes a hex-encoding (using lowercase letters)
 of the byte array which comprises the server component.
+
+PBKDF2 uses HMAC-SHA1 also for tokens with the hash algorithm SHA256 or SHA512. Only the output length
+``2step_output`` follows the hash algorithm of the token (20 bytes for SHA1, 32 for SHA256, 64 for SHA512).
 
 .. note::
 

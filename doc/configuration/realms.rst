@@ -28,19 +28,19 @@ If the user object cannot be created, a User Error E904 is returned.
 
 However, privacyIDEA can modify the given user related parameters and modify the user object.
 
-Parameters can be modified *before* they are evaluated to a user object.
-To do so, you have three different possibilities.
-
 You can use the policy :ref:`policy_set_realm` in the scope authentication if you want to set the realm to a specific
-value.
+value. It is evaluated *before* the parameters are evaluated to a user object.
+
+The other possibilities change the user *after* the user object has been initially created from the given parameters:
+
 You can use the policy :ref:`policy_mangle` in the scope authentication if you want to set the realm, the username
-or even the password. In this case you can use regular expressions to modify these values.
+or even the password. In this case you can use regular expressions to modify these values, and the user object is
+created again from the modified values.
 
-The third possibility to modify user parameters in the request is using the pre event handler
-:ref:`requestmanglerhandler`.
+The pre event handler :ref:`requestmanglerhandler` can modify user parameters in the request as well. The user object
+is only created again from the modified parameters if its option *reset_user* is checked.
 
-There is also a possibility to change the user object in the request, *after* the user object has been initially
-created from the given parameters. To do so you can use the policy :ref:`policy_setrealm` from the scope authorization.
+The policy :ref:`policy_setrealm` from the scope authorization sets the realm of the user object.
 
 .. _relate_realm:
 
@@ -85,6 +85,12 @@ user\@unknown  unknown  --                        --
     part after the *@* denotes a valid realm, the *realm* parameter will take
     precedence.
 
+.. note::
+    With :ref:`splitatsign` *true*, a login name of the form ``realm1\user``
+    (without *@*) is split as well, and the user is searched in the realm
+    ``realm1``. With :ref:`splitatsign` *false* the whole name is searched in
+    the default realm.
+
 .. _list_of_realms:
 
 List of Realms
@@ -105,9 +111,10 @@ The resolvers in the realm that are not assigned to a node are displayed under *
 
    *Realm list of all nodes*
 
-Selecting a specific node will only display the realms and resolvers for that node.
-Realms that do not have a specific configuration for the node will use the general settings that are also shown in the
-list under *All nodes*.
+Selecting a specific node lists only the realms that have at least one resolver assigned to that node; for these
+realms all resolvers are still shown, grouped by *All nodes* and by node. A realm that only has resolvers under *All
+nodes* is not listed for the node, although the node uses it: a node uses the resolvers under *All nodes* together with
+the resolvers assigned to it.
 
 .. figure:: images/realm_list_node.png
    :width: 500
@@ -135,7 +142,8 @@ Each realm has to have a unique name. The name of the realm is
 case insensitive. If you create a new realm with the same name
 as an existing realm, the existing realm gets overwritten.
 
-Select at least one resolver to create the realm. Optionally, a priority can be set for each resolver.
+Select the resolvers of the realm. Optionally, a priority can be set for each resolver. A realm without resolvers can be
+created as well, but it contains no users.
 
 If multiple nodes exist, you can select the resolvers and their priorities separately for each node. The resolvers
 selected under *All nodes* are not node specific, and these settings will be applied to all nodes.
@@ -251,14 +259,14 @@ defined. To get you up and running faster, the previous WebUI
 asks you whether it should create the first realm for you.
 The current WebUI does not offer this.
 
-If you answer "yes", it will create a resolver named ``deflocal``
+If you select *Create Realm*, it will create a resolver named ``deflocal``
 that contains all users from ``/etc/passwd`` and a realm named
 ``defrealm`` with this very resolver.
 
 Thus you can immediately start assigning and enrolling tokens.
 
-If you check "Do not ask again" this will be stored in
-a cookie in your browser.
+The dialog is shown at each administrator login as long as no realm
+exists.
 
 .. note:: The realm ``defrealm`` will be the default realm.
    So if you create a new realm manually and want this new

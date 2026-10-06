@@ -45,6 +45,15 @@ As soon as you enroll a new token for this user in privacyIDEA the user will
 authenticate with this very token within privacyIDEA and his authentication
 request will not be forwarded anymore.
 
+The passthru policy sends one RADIUS request and accepts the authentication
+only if the RADIUS server answers with Access-Accept. If the old system answers
+with a challenge (Access-Challenge), e.g. to ask for the next token code, the
+authentication fails. For such systems use the RADIUS token migration strategy
+above: with the PIN checked by the RADIUS server (the default), the RADIUS
+token passes the challenge of the old server on to the user if the
+authentication policy :ref:`policy_challenge_response` includes the token type
+``radius``.
+
 As soon as all users have a new token within privacyIDEA, you can switch off
 the old RADIUS server.
 

@@ -13,6 +13,17 @@ applications to authenticate users against privacyIDEA.
 You may also write your own application plugin or connect your own application
 to privacyIDEA. To do so, please check the :ref:`plugin_guide`.
 
+Some plugins need a subscription file for larger installations. privacyIDEA
+recognizes the plugin by the User-Agent of its requests. Without a
+subscription file, privacyIDEA serves the ownCloud and Nextcloud apps, the
+LDAP Proxy, the Credential Provider, the AD FS provider and the FreeRADIUS
+plugin as long as no more than 50 users have active tokens, and the PAM
+module and the SimpleSAMLphp, Keycloak and Shibboleth plugins as long as no
+more than 10000 users have active tokens. Above that number, a growing share
+of the requests of the plugin is rejected with the error "No subscription for
+your client.". For FreeRADIUS, the subscription file of the privacyIDEA
+server applies.
+
 .. _pam_plugin:
 
 Pluggable Authentication Module
@@ -89,15 +100,18 @@ well.
   the privacyIDEA system.
 
 * Setting the policy which tokens are valid for which users is done either in
-  ``~/.yubico/authorized_keys`` or in the file given by the ``authfile`` option
+  ``~/.yubico/authorized_yubikeys`` or in the file given by the ``authfile`` option
   in the PAM configuration. The API server will only validate the token, but
   not check any kind of policy.
 
 You can work around the restrictions by using a clever combination
 of tokentype *Yubikey* and *Yubico* as follows:
 
-* enroll a Yubikey token with ``privacyidea token yubikey_mass_enroll --yubimode YUBICO``
-  (see :ref:`privacyideaadm_enrollment`).
+* enroll a Yubikey token with
+  ``privacyidea token yubikey-mass-enroll --yubimode YUBICO --yubiprefixrandom 6``
+  (see :ref:`privacyideaadm_enrollment`). The option ``--yubiprefixrandom 6``
+  programs a random 12-character public ID starting with ``vv``. Without it the
+  Yubikey gets no public ID, and ``pam_yubico`` can not map it to a user.
 
 * do not set a token password.
 
@@ -115,12 +129,22 @@ following in your PAM config::
 
 The file ``/etc/yubikeys/authorized_yubikeys`` contains a line
 for each user with the username and the allowed tokens delimited
-by ":", for example::
+by ":". A token is given by its 12-character public ID, i.e. the
+``yubikey.prefix`` you noted above, for example::
 
-   <username>:<serial number1>:<prefix1>:<prefix2>
+   <username>:<prefix1>:<prefix2>
 
 How to configure the client ID (API ID) and the API key in privacyIDEA is
 described in :ref:`yubikey_token_config`.
+
+The second token below is of type *Yubico* (Yubico Cloud mode). By default it
+sends the OTP to the Yubico Cloud service, which does not know the AES key of
+this Yubikey, so every authentication with it would fail. Point it to
+privacyIDEA instead: in the Yubico token configuration (see
+:ref:`yubico_token_config`) set *Yubico URL* to
+``https://<privacyidea-server>/ttype/yubikey`` and set *API Client ID* and
+*API Key* to the Client ID and API key you created in the YubiKey AES mode
+configuration.
 
 
 Now create a second token representing the Yubikey, but this time
@@ -304,9 +328,9 @@ You can retrieve the nginx plugin from `GitHub <https://github.com/dhoffend/lua-
 
 To activate the OTP authentication on a "Location" you need to include the
 ``lua`` script that basically verifies the given credentials against the
-caching backend. New authentications will be sent to a different (internal)
-location via subrequest which points to the privacyIDEA authentication backend
-(via proxy_pass).
+caching backend. New authentications are sent by the plugin itself to the
+``/validate/check`` endpoint of privacyIDEA, using the library
+``lua-resty-http``, which has to be installed as well.
 
 For the basic configuration you need to include the following lines to your
 ``location`` block::
@@ -315,10 +339,10 @@ For the basic configuration you need to include the following lines to your
         # additional plugin configuration goes here #
         access_by_lua_file 'privacyidea.lua';
     }
-    location /privacyidea-validate-check {
-        internal;
-        proxy_pass https://privacyidea/validate/check;
-    }
+
+Since the request is sent from Lua, NGINX also needs a ``resolver`` to look up
+the host name of the privacyIDEA server and ``lua_ssl_trusted_certificate``
+with the CA certificates that verify its TLS certificate.
 
 You can customize the authentication plugin by setting some of the following
 variables in the secured ``location`` block::
@@ -334,8 +358,8 @@ variables in the secured ``location`` block::
     # privacyIDEA realm. leave empty == default
     set $privacyidea_realm 'somerealm'; # (optional)
 
-    # pointer to the internal validation proxy pass
-    set $privacyidea_uri "/privacyidea-validate-check";
+    # full URL of the privacyIDEA endpoint /validate/check
+    set $privacyidea_uri "https://privacyidea.example.com/validate/check";
 
     # the http realm presented to the user
     set $privacyidea_http_realm "Secure zone (use PIN + OTP)";
@@ -366,9 +390,9 @@ The ownCloud privacyIDEA App is available from the `ownCloud App Store
 <https://marketplace.owncloud.com/apps/twofactor_privacyidea>`_ and on
 `GitHub <https://github.com/privacyidea/privacyidea-owncloud-app>`__.
 
-The App requires a subscription file to work for more than ten users. You can
-get the subscription file from `NetKnights
-<https://netknights.it/en/products/privacyidea-owncloud-app/>`_.
+Without a subscription file, privacyIDEA serves the App as long as no more
+than 50 users have active tokens. You can get the subscription file from
+`NetKnights <https://netknights.it/en/products/privacyidea-owncloud-app/>`_.
 
 Nextcloud
 ---------

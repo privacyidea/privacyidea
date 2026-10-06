@@ -35,7 +35,10 @@ tokens.
 (see :ref:`user_policies`)
 
 *authentication* and *authorization* policies influence the */validate/*
-endpoint (:ref:`rest_validate`).
+endpoints (:ref:`rest_validate`). The authentication policies, and the
+authorization policies that are checked during the authentication such as
+``last_auth``, ``auth_max_success`` and ``auth_max_fail``, also act on the
+WebUI login of a user if :ref:`policy_login_mode` is set to ``privacyIDEA``.
 
 The :ref:`authentication_policies` define if an authentication request would
 be successful at all. So it defines how to really check the authentication
@@ -59,11 +62,16 @@ The logical part is performed by policy decorators. The decorators modify the
 behavior of the above-mentioned endpoints.
 
 Each policy has its own decorator. The decorator can be used on different
-functions, methods, endpoints. The decorators are implemented in
-``privacyidea/api/lib/prepolicy.py`` and ``privacyidea/api/lib/postpolicy.py``.
+functions, methods, endpoints. The decorators of the API endpoints are
+implemented in ``privacyidea/api/lib/prepolicy.py`` and
+``privacyidea/api/lib/postpolicy.py``.
 
 PrePolicy decorators are executed at the beginning of a request, PostPolicy
-decorators at the end of the request.
+decorators at the end of the request. Most authentication policies, e.g.
+:ref:`otppin_policy` and :ref:`passonnotoken`, and some authorization policies
+are implemented as decorators in ``privacyidea/lib/policydecorators.py`` around
+the authentication functions of the library; they act while the authentication
+is checked.
 
 To find the policies that apply to the request, a decorator uses the ``Match``
 class in ``privacyidea/lib/policy.py``. Its class methods, e.g.

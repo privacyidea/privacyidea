@@ -65,15 +65,20 @@ assigned yet and present you a list to choose from.
 View Audit Log
 ..............
 
-You can also click the button *Show audit log of user* which will take you to the
-:ref:`audit` log with a filter on this very user, so that you will only see
-audit entries regarding this user.
+You can also click the button *Show audit log of user*, which takes you to the
+:ref:`audit` log filtered on the login name of this user. The filter matches
+every entry whose user contains this name, in every realm: for the user ``ann``
+it also lists the entries of ``ann`` in other realms and of ``joanna``. For an
+exact match in one realm, change the filter to ``user: =ann realm: =<realm>``.
+The button *Show authentication log of user* next to it (policy action
+``authentication_log_read``) filters by user and realm.
 
 Edit user
 .........
 
 .. index:: Edit Users, Editable Resolver
 
-If the user is located in a resolver, that is marked as editable, the
-administrator will also see a button *Edit*. To read more about this,
+If the user is located in a resolver that is marked as editable, the
+administrator will also see a button *Edit*. The button requires the admin
+policy actions ``updateuser`` and ``resolverread``. To read more about this,
 see :ref:`manage_users`.

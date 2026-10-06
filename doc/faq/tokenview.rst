@@ -13,17 +13,18 @@ you configure the tokenview to display 15 tokens, only 15 tokens will be
 fetched using the ``LIMIT`` and ``OFFSET`` mechanisms of SQL.
 
 But what really influences the performance is the user resolver part.
-privacyIDEA does not store username, givenname or surname of the token owner.
-The token table only contains a "pointer" to the user object in the userstore.
-This pointer consists of the userresolver ID and the user ID in this resolver.
-This is useful, since the username or the surname of the user may change. At
-least in Germany the givenname only changes in very rare cases.
+privacyIDEA does not store the login name of the token owner.
+The token table only contains a "pointer" to the user object in the user store.
+This pointer consists of the user resolver ID and the user ID in this resolver.
+This is useful, since the login name of the user may change.
 
-This means that privacyIDEA needs to contact the userstore, to resolve the
-user ID to a username and a surname, givenname. Now you know that you will
-create 100 LDAP requests, if you choose to display 100 tokens on one page.
-
-Although we are doing some LDAP caching, this will not help with new pages.
+This means that privacyIDEA needs to contact the user store to resolve the user
+IDs of the listed tokens to login names. It looks up the users of each resolver
+together: the LDAP resolver needs one search per 100 users of the page, the
+SQL resolver one query per 500 users. Other resolvers (e.g. flat file, SCIM and
+HTTP-based resolvers) are still asked once per user. So with LDAP and SQL resolvers,
+the number of tokens on one page has little influence on the number of
+requests to the user store.
 
 We very much recommend using the search capabilities of the tokenview.
 

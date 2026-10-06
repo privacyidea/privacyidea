@@ -9,7 +9,11 @@ An **API client** is a machine identity for an integration that talks to
 privacyIDEA — a Windows credential provider, a Keycloak or ADFS plugin, an Entra
 ID connector, and so on. The client authenticates with an **API key** sent in
 the ``X-API-Key`` HTTP header, independent of any user session, so that
-per-client behavior can be configured and audited.
+privacyIDEA can recognize which integration sends a request. In this version
+that is only used for "remember this device": policies cannot be restricted to an
+API client, and the audit log does not record which client made a request. Only
+a request with a suspended key is recorded in the audit and the authentication
+log.
 
 On top of API clients, privacyIDEA offers a persistent **"remember this device"**
 mechanism: after a full authentication, a client can obtain a rotating cookie and
@@ -159,8 +163,10 @@ registered through other integrations.
 
 The detection is recorded as a ``DEVICE_TOKEN_REUSED`` authentication event, so a
 :ref:`conditional_access` policy can act on it. A replay is a security incident
-rather than a failed guess, which is why the ready-made rate-limiting templates
+rather than a failed guess, which is why the ready-made failed-attempt templates
 leave the event out and why a threshold of one is the sensible setting for it.
+The templates *Per-User Rate Limit* and *Per-IP Rate Limit (Distinct Accounts)*
+count every attempt and include it.
 
 .. warning:: Consider carefully what that one event should *do*. Notifying an
    administrator at a threshold of one is safe. **Locking** the account at a
@@ -203,11 +209,16 @@ device cookies immediately, and comes in two forms:
   created between listing and revoking — useful for incident response ("re-MFA
   every remembered device for this realm now").
 
-.. note:: The IP address and user agent shown for a device are those of the API
-   client's request. For a centralized integration such as an IdP that is the
-   integration itself, not the end user's browser or device.
+.. note:: The IP address shown for a device is the client IP privacyIDEA
+   determined for the request: the address of the integration, or the end user's
+   address if the integration passes it (as ``client`` parameter or in
+   ``X-Forwarded-For``) and :ref:`override_client` allows that for the
+   integration. The user agent is the plugin name from the integration's
+   ``User-Agent`` header, not the end user's browser or device.
 
-Remembered devices are also removed automatically when they expire, when the user or the
-client is deleted, or on theft detection. Expired rows are reclaimed by a
+Remembered devices are also removed automatically when they expire, when the
+client is deleted, or on theft detection. A device of a user who no longer
+resolves, e.g. after the user was deleted from the user store, is no longer
+recognized; its row is removed when it expires. Expired rows are reclaimed by a
 periodic cleanup (``pi-manage config remembered_device cleanup``), shipped as a daily
 job in the Ubuntu packages and the Docker image, see :ref:`cleanup_jobs`.

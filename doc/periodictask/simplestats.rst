@@ -43,8 +43,8 @@ The ``SimpleStats`` task module provides the following boolean options:
 
 **user_with_token**
 
-    If activated, the number of users which have at least one token assigned
-    will be monitored.
+    If activated, the number of users who have at least one enabled token will
+    be monitored. Users whose tokens are all disabled are not counted.
 
 .. note:: The statistics key, with which the time series is identified in the
     ``MonitoringStats`` table, is the same as the option name.

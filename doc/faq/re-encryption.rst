@@ -60,14 +60,19 @@ Configuration data is not reencrypted during this process.
 Thoughts about the configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We described how you can reencrypt the token data. Configuration data is not reencrypted.
-If you want to reencrypt the configuration data, you can use :ref:`pi-manage <pimanage>`
-to export and import the configuration.
+We described how you can re-encrypt the token data. Configuration data is not re-encrypted
+by the token janitor. To re-encrypt it, export the configuration with
+:ref:`pi-manage <pimanage>` on the system with the old encryption key and import it on the
+system with the new one::
 
-Export resolvers::
+    pi-manage config export -f yaml -o my-config.yaml
+    pi-manage config import -i my-config.yaml
 
-    pi-manage config export -t resolver -f yaml
-
-This will export the resolver configuration with the decrypted passwords. You could then import the configuration on
-the new system to encrypt the passwords again. However, you could also set the password in the configuration of
-the new system, this way it will be also encrypted correctly.
+Without ``-t``, all configuration types are exported. Resolvers are only one of the types
+that hold secrets: the export also contains the passwords and secrets of SMTP servers,
+RADIUS servers, SMS gateways, CA connectors and machine resolvers, and the system settings
+of the type password, all of them decrypted. Handle the file with care, and do not add
+``--censor``, which replaces the secrets with a placeholder. The import overwrites the
+configuration objects with the same name and encrypts their secrets with the new key.
+Instead of importing, you can also enter each password again in the configuration of the
+new system; this way it is also encrypted with the new key.

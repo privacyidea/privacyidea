@@ -6,8 +6,8 @@ OCRA
 .. index:: OCRA
 
 privacyIDEA supports common OCRA tokens.
-OCRA tokens can not be enrolled via the UI but need to be imported via a seed
-file.
+OCRA tokens can not be enrolled in the WebUI. Import them from a seed file, or
+create them with ``POST /token/init`` (``type=ocra``, ``otpkey``, ``ocrasuite``).
 The OATH CSV seed file would look like this::
 
     <serial>, <seed>, ocra, <ocrasuite>
@@ -58,7 +58,7 @@ This will result in a response like this::
                    {
                     "attributes": {
                     "qrcode": "data:image/png;base64, iVBORw0KG..RK5CYII=",
-                    "original_challenge": "83507112  ~320,00~cfbGSopfdDROOMjeu3IR",
+                    "original_challenge": "1234567890~423,40~HaUkAhEWEXmaVV1b2RCP",
                     "challenge": "f8a1818f35ae0cc64fe8a191961ec829487dfa82"
                     },
                     "serial": "ocra1234",
@@ -68,7 +68,7 @@ This will result in a response like this::
                 "threadid": 139847557760768,
                 "attributes": {
                 "qrcode": "data:image/png;base64, iVBO...CYII=",
-                "original_challenge": "83507112  ~320,00~cfbGSopfdDROOMjeu3IR",
+                "original_challenge": "1234567890~423,40~HaUkAhEWEXmaVV1b2RCP",
                 "challenge": "f8a1818f35ae0cc64fe8a191961ec829487dfa82"
                 },
                 "message": "Please answer the challenge",

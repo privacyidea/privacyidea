@@ -25,8 +25,13 @@ given during authentication should
 be split into the loginname *user* and the realm name *company*.
 In most cases this is the desired behavior so this is enabled by default.
 
-But if users log in with email addresses like *user@gmail.com* and
-*otheruser@outlook.com* you probably do not want to split.
+A name like *user@gmail.com* is only split if a realm *gmail.com* exists (see
+:ref:`relate_realm`). So you probably only want to disable splitting if users
+log in with email addresses whose domain is also the name of a realm.
+
+The option also enables the form ``realm\user``: a login name without @ is split
+at the last backslash into realm and login name. Disabling the option disables
+both forms.
 
 How a user is related to a realm is described here: :ref:`relate_realm`
 
@@ -40,10 +45,12 @@ Increase the failcounter if the wrong PIN was entered.
 
 If during authentication the given PIN matches a token but the OTP value is
 wrong, the failcounter of the tokens for which the PIN matches, is increased.
-If the given PIN does not match any token, by default no failcounter is
-increased. The latter behavior can be adapted by this option.
-If it is set and the given OTP PIN does not match
-any token, the failcounter of *all* tokens is increased.
+This option is enabled by default: if the given PIN does not match any token,
+the failcounter of every token of the user that can still be used (active, not
+revoked, below its maximum failcount, within its validity period) is increased
+by one. So a series of requests with wrong PINs for a user name can lock all
+tokens of that user. If the option is disabled, a wrong PIN does not increase
+any failcounter.
 
 
 .. index:: failcount
@@ -71,6 +78,8 @@ how often this authentication was successful. This is a per token counter.
 This information is written to the token database as a parameter of each token.
 
 This setting means that privacyIDEA does not track this information at all.
+Without the counter, the maximum number of authentications set for a token
+(``count_auth_max``, ``count_auth_success_max``) is not enforced.
 
 
 Prepend the PIN in front of the OTP value.
@@ -102,7 +111,11 @@ provides a wrong OTP value. AutoResync works like this:
 * If it is, the token counter is set and the user is successfully authenticated.
 
 .. note:: AutoResync works for all HOTP and TOTP based tokens including SMS and
-   Email tokens.
+   Email tokens. For TOTP tokens the **Auto resync timeout** is not used: the
+   second OTP value must belong to the time step directly after the remembered
+   one and lie within the sync window around the current time, which limits the
+   resync to about two time steps. Day password tokens are not resynchronized
+   automatically.
 
 
 .. index:: usercache
@@ -136,7 +149,9 @@ send another client information (in this case the RADIUS client) so that
 the policy is evaluated for the RADIUS client. A RADIUS server
 may add the API parameter *client* with a new IP address. An HTTP reverse
 proxy may append the respective client IP to the ``X-Forwarded-For`` HTTP
-header.
+header. The *client* parameter is only evaluated for ``/validate/``,
+``/ttype/`` and ``/auth`` requests; the ``X-Forwarded-For`` header for every
+request.
 
 This field takes a comma separated list of sequences of IP Networks
 mapping to other IP networks.
@@ -172,6 +187,10 @@ subnet may mask as any client in the subnet 192.168.x.x.
 With the same configuration, a proxy 10.0.0.18 may map to an application plugin in the subnet 10.1.2.x,
 which may in turn use a ``client`` parameter to mask as any client in the subnet 192.168.x.x.
 
+A nested entry only applies to requests that passed all listed hops. For requests that only pass the first proxy,
+or that come directly from the second, add separate entries such as ``10.0.0.18 > 10.1.2.0/24`` or
+``10.1.2.0/24 > 192.168.0.0/16``.
+
 .. note:: Every authentication-log entry records not only which client IP was used but how it was arrived
    at: the effective address (``source_ip``), the address the connection actually came from
    (``peer_ip``), which of the two - or which forwarded hop - was chosen (``source_ip_source``), and the
@@ -203,23 +222,31 @@ Token default settings
 OTP length of newly enrolled tokens
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This is the default length of the OTP value. If no OTP length is
-specified during enrollment, this value will be used. This affects all
-OATH-based tokens like SMS, Email, TOTP and HOTP.
+This is the default length of the OTP value of OATH-based tokens like SMS,
+Email, TOTP and HOTP. It is used when the enrollment request contains no OTP
+length, e.g. an API request without ``otplen``. The current WebUI always sends
+an OTP length for HOTP and TOTP tokens (6 unless changed in the dialog), so
+there this value only applies to Email and SMS tokens; the previous WebUI sends
+6 for every token type. An ``hotp_otplen`` or ``totp_otplen`` policy replaces
+the sent value on the server.
 
 Count Window of newly enrolled tokens
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This setting defines how many OTP values will be calculated during
-an authentication request to check for a match.
+an authentication request to check for a match. This applies to counter-based
+tokens (HOTP, Email, SMS). TOTP tokens use their time window instead, which a new
+TOTP token gets from the TOTP token configuration (``totp.timeWindow``, default
+180 seconds).
 
 .. index:: failcount
 
 Max Failcount of newly enrolled tokens
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This setting defines the maximum failcounter for newly enrolled tokens. If the
-failcounter exceeds this number the token cannot be used unless it is reset.
+This setting defines the maximum failcounter for newly enrolled tokens. When the
+failcounter reaches this number, the token cannot be used until the failcounter
+is reset (by an administrator, or automatically, see :ref:`clear_failcounter`).
 
 .. note:: In fact the failcounter will only increase up to this maximum failcount (``Maxfail``).
    Even if more failed authentication requests occur, the failcounter will
@@ -247,5 +274,15 @@ The challenge validity time
 This setting defines the timeout for a challenge response
 authentication. If the response is received after the given time interval, the
 response is not accepted anymore.
+
+A token type can have its own value in the config key
+``<Type>ChallengeValidityTime``, e.g. ``HotpChallengeValidityTime``,
+``TiqrChallengeValidityTime``, ``PushChallengeValidityTime`` (see
+:ref:`push_token`) or ``WebauthnChallengeValidityTime`` (see
+:ref:`webauthn_otp_token`); this setting is used for types without their own
+value. Email and SMS tokens do not use it: their challenges are valid for the
+*OTP validity time* of their token configuration (default 120 seconds for
+Email, 300 seconds for SMS), see :ref:`email_token_config` and
+:ref:`sms_token_config`.
 
 To clean up expired challenges read the :ref:`pimanage_challenge` section.

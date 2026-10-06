@@ -59,10 +59,11 @@ tokens, e.g. through ``privacyidea-authorizedkeys``, only the key of such a
 token is left out and the error is written to the log file; the keys of the
 other tokens are still handed out.
 
-The checksum covers the SSH key data wherever it is written, including the
-generic ``POST /token/info/<serial>/<key>`` endpoint. Changing the key type or
-the comment of an SSH key token that way keeps the checksum in sync, and the
-public key is kept encrypted even though that endpoint takes no value type.
+The checksum covers the SSH key data wherever privacyIDEA writes it, e.g.
+during enrollment and import. The generic token info endpoint
+(``POST /token/info/<serial>/<key>``) refuses the keys ``ssh_key``,
+``ssh_type`` and ``ssh_comment``, and ``POST /token/set`` ignores them; to
+change the key or its comment, enroll the token again.
 
 .. note:: SSH key tokens enrolled with privacyIDEA versions before 3.14 get
    their checksum computed by the database migration during the update. If

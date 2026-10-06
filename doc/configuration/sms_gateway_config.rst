@@ -58,15 +58,26 @@ Each provider type defines its own set of parameters.
 The following parameters can be used. These are parameters that define the
 behavior of the SMS Gateway definition.
 
+**ALLOW_PUSH**
+
+   ``yes`` lets the gateway deliver :ref:`push_token` notifications, see
+   *Using the HTTP provider for PUSH*.
+
 **CHECK_SSL**
 
    If the URL is secured via TLS (HTTPS), you can select whether the
-   certificate should be verified or not.
+   certificate should be verified or not. The certificate is verified unless
+   this is set to ``no``.
 
 **PROXY**, **HTTP_PROXY** and **HTTPS_PROXY**
 
-   You can specify a proxy to connect to the HTTP gateway. Use the specific values
-   to separate HTTP and HTTPS.
+   **HTTP_PROXY** and **HTTPS_PROXY**: the proxy for gateway URLs starting with
+   ``http://`` and ``https://``. **PROXY** is deprecated: it is only used if
+   neither HTTP_PROXY nor HTTPS_PROXY is set, and only for gateway URLs with the
+   same scheme as the proxy URL itself, so ``PROXY=http://proxy:3128`` is not used
+   for an ``https://`` gateway, and a proxy without a scheme is never used. For an
+   https gateway set HTTPS_PROXY. Without a matching setting, the proxy
+   environment variables of the privacyIDEA process apply, if any.
 
 **REGEXP**
 
@@ -90,12 +101,19 @@ behavior of the SMS Gateway definition.
 **RETURN_SUCCESS**
 
    You can either use ``RETURN_SUCCESS`` or ``RETURN_FAIL``.
+   If both are set, only ``RETURN_SUCCESS`` is checked.
    If the text of ``RETURN_SUCCESS`` is found in the HTTP response
    of the gateway, privacyIDEA assumes that the SMS was sent successfully.
 
+**SEND_DATA_AS_JSON**
+
+   ``yes``: a POST request sends the options as a JSON body; ``no`` (default):
+   as form data.
+
 **TIMEOUT**
 
-   The timeout for contacting the API and receiving a response.
+   The timeout in seconds (default 3) for connecting to the gateway and for each
+   read of the response, not for the whole request.
 
 **URL**
 
@@ -112,8 +130,14 @@ Options
 You can define additional options. These are sent as parameters in the GET or
 POST request.
 
-The options can have JSON or strings as values. privacyIDEA will try to
-parse the values as JSON and either send JSON or strings to the HTTP gateway.
+After the tags are replaced, privacyIDEA tries to parse each value as JSON and
+sends valid JSON as such. With ``SEND_DATA_AS_JSON`` this changes the type of a
+field: a bare ``{otp}`` with the OTP value ``123456`` is sent as the number
+123456, while ``012345`` stays a string (a JSON number has no leading zero). Put
+such a value in double quotes (``"{otp}"``) to always send a string. Values that
+are not valid JSON, like ``Your OTP: {otp}``, are sent as text. For PUSH messages
+the values are not parsed: an option ``["{phone}"]`` is sent as the text
+``["<device token>"]``.
 
 .. note:: You can use the tag ``{phone}`` to specify the phone number. The tag ``{otp}``
    will be replaced simply with the OTP value or with the contents created
@@ -233,7 +257,6 @@ Parameters:
  * **URL**: http://your-smseagle-url/api/v2/sms
  * **HTTP_METHOD**: POST
  * **RETURN_SUCCESS**: queued
- * **RETURN_FAIL**: REJECTED
  * **SEND_DATA_AS_JSON**: yes
 
 Headers:
@@ -245,7 +268,8 @@ Options:
  * **to**: ["{phone}"]
  * **text**: "Your OTP: {otp}"
 
-You can personalize the **text** option, but you must place it inside double-quotes and must include the *{otp}* value.
+You can personalize the **text** option; it must include the *{otp}* value. The double quotes are only needed if
+the text would otherwise be valid JSON, e.g. a bare ``{otp}``.
 
 Sipgate provider
 ~~~~~~~~~~~~~~~~

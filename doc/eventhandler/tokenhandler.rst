@@ -17,7 +17,8 @@ Possible Actions
 set tokenrealm
 ..............
 
-Here you can set the token realms of the token.
+Adds the given **realm** to the token realms of the token. With **only_realm** the given realm replaces all other
+realms of the token.
 
 E.g. you could use this action to automatically put all newly enrolled tokens
 into a special realm by attaching this action to the event *token_init*.
@@ -72,10 +73,17 @@ would create a TOTP token that uses the SHA256 hashing algorithm instead of SHA1
 ``genkey: 0`` overrides the default behavior of generating an OTP secret. Instead the
 fixed OTP secret "31323334" (``otpkey``) is used.
 
+The token is created directly, without the policies that apply to ``/token/init`` (for example the maximum number
+of tokens per user or realm, OTP PIN policies, the default hash algorithm and OTP length, or verify enrollment).
+
 If the tokentype is set to "email" or "sms", you can also specify an SMTP server or SMS gateway
 configuration for the token enrolled by selecting a configuration in the corresponding field
 (**smtp_identifier** or **sms_identifier**). If none is selected, then the default system configuration
 will be used.
+
+The options **dynamic_phone**, **dynamic_email**, **smtp_identifier**, **sms_identifier** and **motppin** only take
+effect together with the option **user**, which assigns the new token to the user of the request. Without it they
+are ignored; an email or SMS token then has no address or number and is not created (the failure is only logged).
 
 set description
 ...............
@@ -122,7 +130,7 @@ Only date without time:
 Date with time:
 
   * 2016/12/23 9:30am
-  * 2016/12/23 11:20:pm
+  * 2016/12/23 11:20pm
   * 23.12.2016 9:30
   * 23.12.2016 23:20
 
@@ -153,9 +161,13 @@ Here the count window of a token can be set. This requires an integer value.
 set tokeninfo
 .............
 
-Using the action ``set tokeninfo`` you can set any arbitrary tokeninfo
-attribute for the token. You need to specify the ``key`` of the
-tokeninfo and the ``value``.
+Using the action ``set tokeninfo`` you can set a tokeninfo attribute of the
+token. You need to specify the ``key`` of the tokeninfo and the ``value``.
+Keys that the token type maintains itself, such as ``count_auth``,
+``count_auth_success``, ``last_auth``, ``creation_date``, ``assignment_date``,
+``failcounter_exceeded`` or ``next_pin_change``, can not be set: the action
+skips them and logs a warning. The attributes named in the notes below
+(``timeStep``, ``hashlib``, ``phone``, ``timeWindow``) can be set.
 
 In the value field you can use the tag ``{now}`` to set the current timestamp.
 ``{current_time}`` is a deprecated alias for ``{now}``. In addition you can append
@@ -191,6 +203,8 @@ The tokeninfo is interpreted as an integer value.
 You can use a positive or a negative value as an *increment*. An increment like "-7" will
 decrease the current tokeninfo value by 7.
 If the tokeninfo does not exist, it will be created with the increment value.
+As with *set tokeninfo*, keys that the token type maintains itself can not be changed: the action skips them and
+logs a warning.
 
 set failcounter
 ...............
@@ -231,6 +245,10 @@ Please take care that probably the PIN needs to be removed from the response
 using the *response mangler handler* after
 handling it with the notification handler.
 
+Use this action in the post position. In the pre position there is no response
+yet: the PIN is changed but not returned, so nobody knows it. The length of the
+PIN is set with the option **length** (1 to 31).
+
 add tokengroup
 ..............
 
@@ -248,6 +266,8 @@ delete tokeninfo
 
 Using the action ``delete tokeninfo`` you can delete a tokeninfo attribute of the token.
 You need to specify the ``key`` of the tokeninfo that should be deleted.
+Keys that the token type maintains itself, including those that *set tokeninfo* can set (``timeStep``, ``hashlib``,
+``phone``, ``timeWindow``), can not be deleted: the action skips them and logs a warning.
 
 attach application
 ..................

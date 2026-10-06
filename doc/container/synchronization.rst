@@ -16,18 +16,25 @@ The synchronization enables the following use cases:
   to scan each token individually.
 * If new tokens are added to the container on the server, the user can synchronize the container with the
   privacyIDEA server to add the new tokens to the authenticator app.
-* If the user already has tokens on his smartphone, he can synchronize the container with the privacyIDEA server
-  to add the tokens to the container on the server.
+* If the user already has tokens on his smartphone, the first synchronization can add these tokens to the container
+  on the server. This requires the container policy ``initially_add_tokens_to_container`` (see
+  :ref:`container_policies`).
 * Perform a rollover for all tokens in case the token secrets might be compromised.
 * Transfer all tokens to a new smartphone and invalidate the tokens on the old smartphone. This might be required if
   the smartphone is lost or stolen or if the user switches to a new smartphone.
 
 Note that not all of these scenarios work for offline tokens. Offline tokens already existing on the smartphone
-can be synchronized with the server and also be automatically added to the container on the server. However, a transfer
-to a new device or a rollover is not possible, as this would renew the token secret and hence invalidate the
-offline OTP values.
+can be synchronized with the server and, with the policy ``initially_add_tokens_to_container``, also be added to the
+container on the server. However, a transfer to a new device or a rollover is not possible, as this would renew the
+token secret and hence invalidate the offline OTP values.
 
 Additionally, SMS tokens will not be synchronized, because they are not stored on the smartphone.
+
+With ``initially_add_tokens_to_container``, tokens from the app are added to the container on the server once after
+the registration or a rollover, in the first synchronization in which the policy applies; tokens the app reports in
+later synchronizations are not added. Only tokens that already exist on the server are added: a token assigned to a
+user only if this user is the owner of the container, an unassigned token only if it is in one of the realms of the
+container, and no token that is already in another container.
 
 Setup
 ~~~~~
@@ -50,10 +57,12 @@ To set up the smartphone synchronization properly, the following steps are requi
    To register the container on the smartphone, the user needs to scan the QR code. The QR code can be generated
    during the container creation or on the container details page.
    Optionally, the user can secure the registration with a passphrase. Either the passphrase from the user store
-   (beginning from version 3.12) or a manually defined passphrase can be used. When using an individual passphrase,
-   the passphrase prompt and response must be configured. The passphrase prompt will be displayed to the user in the
-   app, e.g. "Enter the last four digits of your employee ID.", and the passphrase response is the correct answer to
-   the prompt, the actual passphrase.
+   (beginning from version 3.12) or a manually defined passphrase can be used. The passphrase from the user store
+   requires that the container is assigned to a user: the app asks for the password of this user, and the server
+   checks it against the user store. For a container without owner the registration can not be completed.
+   When using an individual passphrase, the passphrase prompt and response must be configured. The passphrase prompt
+   will be displayed to the user in the app, e.g. "Enter the last four digits of your employee ID.", and the
+   passphrase response is the correct answer to the prompt, the actual passphrase.
    The registration is completed if the user scans the QR code and enters the correct passphrase.
 4. **Synchronize Container**:
    After a successful registration, the pi Authenticator app triggers a synchronization automatically. The user
@@ -76,9 +85,11 @@ The following endpoints must be reachable for the smartphone:
 Implementation Details
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To perform any action, the client first requests a challenge from the server. The client answers this challenge by
-signing a message containing a random nonce and the timestamp from the challenge and sends the response to the endpoint
-it wants to access. The server first verifies the response and then performs the requested action.
+For the registration, the server creates the challenge together with the QR code, and the QR code contains it (see
+:ref:`synchronization_registration`). For every other action, the client first requests a challenge from the server
+at :http:post:`/container/challenge`, which is only possible for a registered container. The client answers this
+challenge by signing a message containing the random nonce and the timestamp from the challenge and sends the response
+to the endpoint it wants to access. The server first verifies the response and then performs the requested action.
 For the signature, the Elliptic Curve Digital Signature Algorithm (ECDSA) with the curve ``secp384r1`` is used.
 
 Possible actions the client can perform are:
@@ -103,7 +114,7 @@ The following variables are included in the URI:
     * ``url``: URL of the privacyIDEA server
     * ``serial``: Container serial
     * ``key_algorithm``: The key algorithm to be used to generate the key pair
-    * ``hash_algorithm``: The hash algorithm to be used to generate the key pair
+    * ``hash_algorithm``: The hash algorithm the client uses for the ECDSA signatures, e.g. ``SHA256``
     * ``ssl_verify``: Whether the SSL certificate of the privacyIDEA server should be verified
     * ``passphrase``: Optional passphrase prompt, displayed to the user to enter the corresponding passphrase
     * ``send_passphrase``: Boolean value whether the passphrase should be sent to the server to finalize the
@@ -115,9 +126,9 @@ Example of a URI:
 .. code-block::
 
     pia://container/SMPH000588A4?issuer=privacyIDEA&ttl=10&nonce=97f94b36c199f4a0980720e18fcbcef99dbe871e
-    &time=2024-12-17T09%3A11%3A08.675629%2B00%3A00&url=https://privacyidea.example.com&serial=SMPH000588A4
+    &time=2024-12-17T09%3A11%3A08.675629%2B00%3A00&url=https%3A//privacyidea.example.com&serial=SMPH000588A4
     &key_algorithm=secp384r1&hash_algorithm=SHA256&ssl_verify=True
-    &passphrase=Enter%20the%20last%20four%20digits%20of%20your%20employee%20ID.
+    &passphrase=Enter%20the%20last%20four%20digits%20of%20your%20employee%20ID.&send_passphrase=False
 
 
 The server creates an entry in the challenge database with the scope (URL of the API endpoint the client needs to
@@ -136,10 +147,14 @@ parameters:
 
     container_serial: <serial>
     signature: <signature>
-    public_key: <ecc public key of the client in PEM format (curve secp384r1)>
+    public_client_key: <ecc public key of the client in PEM format (curve secp384r1)>
     device_brand: <device brand>
     device_model: <device model>
-    passphrase: <passphrase response>
+    passphrase: <password of the container owner, only if send_passphrase=True>
+
+``passphrase`` is only sent and read with the passphrase from the user store (``send_passphrase=True``); the server
+checks it against the user store of the container owner. An individual passphrase is not sent; it is only part of the
+signed message, and the server uses the passphrase response stored in the challenge to verify the signature.
 
 The server verifies the signature. If it is valid the registration is completed. See also
 :meth:`privacyidea.lib.containers.smartphone.SmartphoneContainer.finalize_registration`
@@ -153,7 +168,18 @@ Synchronization
 ---------------
 
 When synchronizing, the server response is additionally encrypted to secure the token secrets included in the
-response. For the encryption, the ECC Diffie-Hellman key exchange is used to create a session key.
+response. For each synchronization, the server generates its own X25519 key pair and computes the shared secret with
+the encryption public key of the client (ECDH). The shared secret is used as the key for AES-256
+in GCM mode. The response contains:
+
+* ``public_server_key``: the X25519 public key of the server, 32 raw bytes, urlsafe base64 encoded
+* ``encryption_algorithm``: ``AES``
+* ``encryption_params``: ``algorithm`` (``AES``), ``mode`` (``GCM``), ``init_vector`` (16 bytes) and ``tag``, the
+  last two urlsafe base64 encoded
+* ``container_dict_server``: the JSON-encoded container dictionary of the server, encrypted, urlsafe base64 encoded
+
+``policies`` (the container policies for the client) and ``server_url`` are not encrypted. See also
+:meth:`privacyidea.lib.containers.smartphone.SmartphoneContainer.encrypt_dict`.
 
 To synchronize the smartphone with the server, the authenticator app first requests a challenge at
 :http:post:`/container/challenge` for the container and a scope (the synchronization endpoint). This endpoint returns
@@ -166,7 +192,8 @@ with the server the app signs a message containing the parameters in the followi
     * timestamp (from the challenge)
     * serial of the container to synchronize
     * scope: The URL of the synchronization endpoint, e.g. ``https://privacyidea.example.com/container/synchronize``
-    * ECC public key of the client in PEM format (curve ``x25519``)
+    * X25519 public key of the client for the encryption: its 32 raw bytes, urlsafe base64 encoded with padding (the
+      same string as sent in ``public_enc_key_client``)
     * container dictionary of the client
 
 The container dictionary of the client contains the tokens that are already in the authenticator app in the
@@ -186,7 +213,7 @@ Finally, the synchronization endpoint :http:post:`/container/synchronize` is cal
 
     container_serial: <serial>
     signature: <signature>
-    public_key: <ecc encryption public key of the client in PEM format (curve x25519)>
+    public_enc_key_client: <X25519 public key of the client for the encryption, 32 raw bytes, urlsafe base64 encoded>
     container_dict_client: <container dictionary containing the tokens of the client>
 
 The server verifies the response of the challenge. See also
@@ -219,11 +246,13 @@ signature and if it is valid, the server initiates the rollover which is similar
 such as :ref:`container_policy_server_url` and a challenge is created. The endpoint returns a QR code containing the
 data as described for the :ref:`synchronization_registration`. This QR code is displayed in the authenticator app if
 the container shall be transferred to a new device. The new smartphone can scan the QR code and finalize the rollover
-at :http:post:`/container/register/finalize`. To differentiate between a registration and a rollover, a parameter
-``rollover = True`` has to be added in the request. This endpoint generates new token secrets and stores the new
-public key of the client. Now the old smartphone will not be able to synchronize with the server anymore and the tokens
-on the old smartphone are invalidated. The new smartphone can now synchronize with the server to get all tokens.
-After this initial synchronization the rollover process is completed.
+at :http:post:`/container/register/finalize` with the same parameters as a registration. The server recognizes the
+rollover from the registration state of the container; no extra parameter is needed. (A rollover started on the
+server uses :http:post:`/container/register/initialize` with ``rollover=1``, which requires the admin policy
+:ref:`policy_container_rollover` or the user policy ``container_rollover``.) The finalize endpoint generates new token
+secrets and stores the new public key of the client. Now the old smartphone will not be able to synchronize with the
+server anymore and the tokens on the old smartphone are invalidated. The new smartphone can now synchronize with the
+server to get all tokens. After this initial synchronization the rollover process is completed.
 
 
 Terminate Registration

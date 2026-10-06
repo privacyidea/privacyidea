@@ -11,11 +11,18 @@ privacyIDEA provides a security module that takes care of
 
  * encrypting the token seeds,
  * encrypting passwords from the configuration like the LDAP password,
- * creating random numbers,
- * and hashing values.
+ * and creating random numbers.
 
 .. note:: The Security Module concept can also be used to add a Hardware
    Security Module to perform the above mentioned tasks.
+
+.. note:: The hardware security modules below (*AES HSM* and *Encrypt Key*)
+   need the Python package ``PyKCS11`` and the PKCS#11 library of your HSM
+   vendor. The Ubuntu packages and the Docker image do not contain ``PyKCS11``.
+   Install it into the virtual environment of privacyIDEA
+   (``pip install PyKCS11``, or ``pip install "privacyidea[hsm]"`` for an
+   :ref:`installation from PyPI <pip_install>`). Without it, setting up the
+   module fails with ``NameError: name 'PyKCS11' is not defined``.
 
 Default Security Module
 -----------------------
@@ -30,7 +37,8 @@ accordingly.
 
 In addition you can encrypt this encryption key with an additional password.
 In this case, you need to enter the password each time the privacyIDEA server
-is restarted and the password for decrypting the *enckey* is kept in memory.
+is restarted. The server process then keeps the decrypted keys in memory, not
+the password.
 
 :ref:`pimanage` contains the instruction how to encrypt the *enckey*
 
@@ -51,8 +59,20 @@ with ``POST /system/hsm``::
 
     privacyidea -U <yourserver> --admin=<youradmin> securitymodule init
 
-.. note:: If the security module is not operational yet, you might get an
-   error message "HSM not ready.".
+.. note:: Each server process has its own security module. The password
+   unlocks only the process that receives the ``POST /system/hsm`` request, and
+   ``GET /system/hsm`` reports only the state of the process that answers it.
+   With several worker processes - e.g. uwsgi in the nginx setup of the Ubuntu
+   packages, or the gunicorn workers of the Docker image - every worker needs
+   the password separately, and a worker that is restarted or recycled starts
+   locked again. An encrypted *enckey* is therefore only practical with a
+   single, long-lived server process, such as the Apache setup of the Ubuntu
+   packages. With several workers, use an unencrypted *enckey* protected by its
+   file permissions, or a hardware security module with the password in
+   *pi.cfg*.
+
+.. note:: While the security module is not operational, every request that
+   needs the encryption keys fails with the error ``ERR707: hsm not ready!``.
 
 AES HSM Security Module
 -----------------------
@@ -70,6 +90,16 @@ To activate this module add the following to the configuration file
 
    PI_HSM_MODULE = "privacyidea.lib.security.aeshsm.AESHardwareSecurityModule"
 
+Create the three keys with ``pi-manage config hsm create_keys`` (see
+:ref:`pimanage`). The command uses the module, slot and password set in
+*pi.cfg* (``PI_HSM_MODULE``, ``PI_HSM_MODULE_MODULE``, ``PI_HSM_MODULE_SLOT``,
+``PI_HSM_MODULE_PASSWORD``), so the password has to be set there while you
+create the keys. It creates the keys with new labels (``token_``, ``config_``
+and ``value_`` followed by a random string) and prints the lines
+``PI_HSM_MODULE_KEY_LABEL_TOKEN``, ``PI_HSM_MODULE_KEY_LABEL_CONFIG`` and
+``PI_HSM_MODULE_KEY_LABEL_VALUE``. Add them to *pi.cfg*: the keys do not have
+the default labels described below.
+
 Additional attributes are
 
 ``PI_HSM_MODULE_MODULE`` which takes the pkcs11 library. This is the fully
@@ -83,15 +113,21 @@ not know the slot number. Then privacyIDEA will determine the one and only slot 
 use this one.
 
 
-``PI_HSM_MODULE_PASSWORD`` is the password to access the slot.
+``PI_HSM_MODULE_PASSWORD`` is the password to access the slot. If it is not set,
+the module starts without access to the keys and waits for the password like an
+encrypted *enckey*: send it with ``POST /system/hsm`` (see *Default Security
+Module* above). As there, the password unlocks only the server process that
+receives it.
 
 ``PI_HSM_MODULE_MAX_RETRIES`` is the number of times privacyIDEA retries a cryptographic
-operation like *decrypt*, *encrypt* or *random* if the first attempt with the HSM fails.
+operation like *decrypt*, *encrypt* or *random* after the PKCS11 library reported that the
+session is no longer valid (``CKR_SESSION_HANDLE_INVALID``). Before each retry, privacyIDEA
+initializes the PKCS11 library again and logs in to the slot. Other errors are not retried.
 The default value is 5.
 
 .. note:: Some PKCS11 libraries for network attached HSMs also implement a retry.
-   You should take this into account, since retries would multiply and it could take
-   a while till a request would finally fail.
+   If such a library reports a lost session, the retries multiply, and it could take
+   a while till a request finally fails.
 
 ``PI_HSM_MODULE_KEY_LABEL`` is the label prefix for the keys on the
 HSM (default: ``privacyidea``). In order to locate the keys, the
@@ -180,6 +216,10 @@ Moreover, you need to add the ``WSGIImportScript`` statement to your Apache2 con
 
     WSGIApplicationGroup %{GLOBAL}
     WSGIImportScript /etc/privacyidea/privacyideaapp.wsgi process-group=privacyidea application-group=%{GLOBAL}
+
+The Docker image has no WSGI script to change. There, set ``PI_INITIALIZE_HSM = True`` in *pi.cfg* or the
+environment variable ``PRIVACYIDEA_PI_INITIALIZE_HSM=true``; each worker then sets up the security module when it
+starts. The image does not contain ``PyKCS11`` (see above), so this needs an image that adds it.
 
 .. note:: Please note, that this security module uses a lock file, to handle concurrent access to the HSM.
    In certain cases of errors the lock directory could remain and not be cleaned up.

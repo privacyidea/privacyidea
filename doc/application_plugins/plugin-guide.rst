@@ -34,26 +34,41 @@ Challenge-response tokens have to be triggered to generate the challenge. This c
 2. Send the username and the password to ``/validate/check`` (see REST API :ref:`rest_validate`):
    This will trigger all tokens of the user that have the
    password as PIN (interesting with ``otppin=userstore`` policy! - see :ref:`otppin_policy`)
-3. Get an auth token for a service account via ``/auth`` (see REST API :ref:`rest_auth`): Then use the auth token in
-   the authorization header and use ``/validate/triggerchallenge`` with the username: This will trigger all tokens of the user,
-   regardless of their PIN. The downside is that a service account has to be configured in each plugin.
+3. Get an auth token for a service account via ``/auth`` (see REST API :ref:`rest_auth`). The service account has
+   to be an administrator that is allowed the admin policy action :ref:`policy_triggerchallenge` (as soon as any
+   admin policy is defined, this action has to be granted explicitly). Then use the auth token in the
+   authorization header and use ``/validate/triggerchallenge`` with the username: This will trigger all tokens of
+   the user, regardless of their PIN. The downside is that a service account has to be configured in each plugin.
 
 It is also important to note that 1. and 2. can return authentication success instantly,
 if ``passOnNoToken`` or ``passOnNoUser`` is configured in privacyIDEA. The plugin should be able to identify that and skip
 the check for the second factor.
+
+Passkeys are not triggered by these requests (unless the policy :ref:`policy_passkey_trigger_by_pin` is set).
+To offer a login with a passkey, the plugin requests a challenge with ``POST /validate/initialize`` and the
+parameter ``type=passkey``; no username is needed. The response contains the options for the browser's WebAuthn
+API (``navigator.credentials.get``) in ``detail.passkey`` and the ``transaction_id``. The plugin sends the result
+to ``/validate/check`` with the parameters ``transaction_id``, ``credential_id`` (the ID of the credential the
+browser returned), ``authenticatorData``, ``clientDataJSON``, ``signature`` and ``userHandle``, and with the
+origin of the login page in the HTTP header ``Origin``. If the request contains no ``user``, privacyIDEA
+authenticates the owner of the passkey and returns the login name in ``detail.username``.
+See :ref:`rest_validate` for both endpoints.
 
 When challenges are triggered, the response of privacyIDEA will also include a message for each challenge which can
 give the user directions on what to do to authenticate. These messages are configurable and it is a good idea to show them in your UI.
 This enables you to configure instructions for your users centrally in the privacyIDEA server.
 To summarize, it is useful to have a pre-authentication or "setup" step in your plugin so that challenge-response tokens
 can be triggered before any UI is shown. This way, if any challenges were triggered, their messages can be presented right away.
-Also your plugin will know which authentication modes it has to offer to serve the triggered tokens.
+Also your plugin will know which client modes it has to offer to serve the triggered tokens.
 
 Now let's briefly outline how PUSH and WebAuthn tokens work. A PUSH token is a challenge-response token which has to be confirmed on a smartphone.
 When a PUSH token is triggered, privacyIDEA generates a challenge for the authentication and waits for the response from the smartphone.
-The plugin is not notified when the challenge has been answered but has to request the status of the challenge itself, repeatedly (polling).
-When the plugin polled success for a challenge, it has to *try* to finalize the authentication by calling ``/validate/check`` with
-just the username and an empty pass parameter (see :ref:`authentication_mode_outofband`).
+The plugin is not notified when the challenge has been answered but has to request the status of the challenge itself,
+repeatedly (polling ``GET /validate/polltransaction`` with the ``transaction_id``).
+When the plugin polled success for a challenge, it has to *try* to finalize the authentication by calling
+``/validate/check`` with the username, the ``transaction_id`` of the challenge and an empty pass parameter
+(see :ref:`authentication_mode_outofband`). Without the ``transaction_id``, privacyIDEA does not treat the request
+as the answer to the challenge; for a push token without PIN it triggers a new push challenge instead.
 This call will take policies set in the server into account and will
 give the final result of authentication.
 
@@ -64,8 +79,10 @@ that will ensure the right formatting of the challenge and the
 resulting response. This means you can just take the challenge, pass it to the browser's WebAuthn API and then pass the response
 back to privacyIDEA.
 
-An authentication mode (see :ref:`authentication_modes`) defines what the UI should show and how the plugin should
-process the inputs. Currently there are 3 authentication modes: OTP, Push and WebAuthn.
+The client mode of a challenge (``client_mode`` in each entry of ``multi_challenge``, see :ref:`client_modes`)
+defines what the UI should show and how the plugin should process the inputs. Currently there are 3 client modes:
+``interactive`` (OTP mode below), ``poll`` (PUSH mode) and ``webauthn`` (WebAuthn, also used for passkeys).
+``detail.preferred_client_mode`` names the mode to show first.
 We usually present a button for each mode that is available and the page will then switch to that mode.
 
 *OTP mode* offers an input field for the user to enter their OTP and optionally their PIN. The OTP can be the usual

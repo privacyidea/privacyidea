@@ -32,12 +32,20 @@ First you might want to backup your program directory:
 
    tar -zcf privacyidea-old.tgz /opt/privacyidea
 
-and your database:
+and your database and configuration:
 
 .. code-block:: bash
 
    source /opt/privacyidea/bin/activate
    pi-manage backup create
+
+Run the backup as ``root``. Another user needs write access to
+``/etc/privacyidea/`` and has to pass a backup directory it can write to with
+``-d``, the default is ``/var/lib/privacyidea/backup/``. The archive contains a
+dump of the database and the configuration directory ``/etc/privacyidea/``, but
+not the encryption key: add ``-e`` to include it (only a key file inside that
+directory is added), or keep a copy of the key elsewhere. A MySQL/MariaDB or
+PostgreSQL dump needs ``mysqldump`` or ``pg_dump``. See :ref:`pimanage_backup`.
 
 Running upgrade
 ^^^^^^^^^^^^^^^
@@ -67,12 +75,20 @@ runs, unless you also pass ``-n``.
 Manual upgrade
 ^^^^^^^^^^^^^^
 
-Now you can upgrade the installation:
+Now you can upgrade the installation. Upgrade the package and then install the
+pinned dependencies of the new version (see
+:ref:`pip_deterministic_installation`):
 
 .. code-block:: bash
 
    source /opt/privacyidea/bin/activate
    pip install --upgrade privacyidea
+   pip install -r /opt/privacyidea/lib/privacyidea/requirements.txt
+
+Without the second command pip keeps the dependency versions of the previous
+release wherever they still fit, and installs dependencies that are new in this
+release in their newest version, a combination that was never tested. The
+second command can also downgrade a package.
 
 Usually you will need to upgrade/migrate the database:
 
@@ -125,7 +141,7 @@ using::
 RHEL upgrade
 ^^^^^^^^^^^^
 
-For a Red Hat Enterprise Linux (RHEL) installation run::
+If you installed privacyIDEA from the :ref:`RPM repository <rpm_installation>`, run::
 
  dnf upgrade
 

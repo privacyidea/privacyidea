@@ -22,8 +22,9 @@ Enrollment
 
 During enrollment of the token a QR code will be created to scan with a supported authenticator app.
 
-The day password token can only be enrolled with an authenticator app that supports
-TOTP tokens with arbitrary time periods.
+To scan the QR code, the authenticator app has to support the ``otpauth://daypassword/``
+URI (see the note below). An app that supports TOTP tokens with arbitrary time periods
+computes the same values if the secret, the period and the hash algorithm are entered by hand.
 
 .. Note :: The link in the QR code looks like this:
 

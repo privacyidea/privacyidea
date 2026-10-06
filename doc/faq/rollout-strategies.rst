@@ -54,7 +54,7 @@ event definition:
 * handler: *token*
 * condition:
 
-  * tokentype=TOTP
+  * tokentype=totp
   * count_auth_success=1
 
 * action=set tokeninfo
