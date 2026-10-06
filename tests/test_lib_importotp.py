@@ -2,6 +2,8 @@
 This test file tests the lib.importotp
 
 """
+# The token export fixtures below are line-oriented data that cannot be wrapped.
+# ruff: noqa: E501
 import gnupg
 import unittest
 

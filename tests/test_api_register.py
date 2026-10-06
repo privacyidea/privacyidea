@@ -40,7 +40,8 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
     usernames = ["corneliusReg", "corneliusRegFail"]
 
     def _resend_and_check_unspecific_error(self, status_code: int):
-        set_policy(name="hide_specific_error_message", scope=SCOPE.REGISTER, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
+        set_policy(name="hide_specific_error_message", scope=SCOPE.REGISTER,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
         try:
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, status_code, res)

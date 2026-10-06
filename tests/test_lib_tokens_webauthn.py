@@ -567,11 +567,14 @@ class WebAuthnTokenTestCase(MyTestCase):
             transaction_id=failing_transaction_id,
             token=self.token,
             params={
-                "credential_id": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA",
+                "credential_id": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsC"
+                                 "A",
                 "authenticatordata": "tPp8c-wXo6hFUbdedkHcOP1s-xkwOrHsxfvNfhI7wVcBAAAATQ",
-                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiMUJuU3Q0VFlIU3NObVFMblFLSnIxYWZCQmJKYndJdndQ"
+                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiMUJuU3Q0VFlIU3NObVFMblFLSnIxYWZCQmJKYndJ"
+                              "dndQ"
                               "aklFeDNmbXgtOCIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
-                "signaturedata": "MEYCIQC_kKwpVlWx7LQ5UXPjt0etsC45-EQHjvxq7oOHrdH_swIhAMSBzfY8JXJkP0zQMSQ39g2z-lLE1iAvZPM6"
+                "signaturedata": "MEYCIQC_kKwpVlWx7LQ5UXPjt0etsC45-EQHjvxq7oOHrdH_swIhAMSBzfY8JXJkP0zQMSQ39g2z-lLE1iAvZ"
+                                 "PM6"
                                  "0iWyPNtX",
                 "HTTP_ORIGIN": "https://cool.nils:5000",
             }
@@ -593,12 +596,14 @@ class WebAuthnTokenTestCase(MyTestCase):
             transaction_id=working_transaction_id,
             token=self.token,
             params={
-                "credential_id": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA",
+                "credential_id": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsC"
+                                 "A",
                 "authenticatordata": "tPp8c-wXo6hFUbdedkHcOP1s-xkwOrHsxfvNfhI7wVcFAAAATw",
-                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoialFjck15WUFjTENjM0FudXlpdWlGNzhDUGFYSDFLRUVz"
-                              "R0Vrbkd3aHJYbyIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
-                "signaturedata": "MEUCIAMH6YDQCT4mA0GAgCJ53EA2mOOk1vB-pghsmREk-0aOAiEAtG5T-2M_sFC9KBQS9ybJdPSTZvfofZmR9GbHT"
-                                 "-mBQrM",
+                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoialFjck15WUFjTENjM0FudXlpdWlGNzhDUGFYSDFL"
+                              "RUVzR0Vrbkd3aHJYbyIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFs"
+                              "c2V9",
+                "signaturedata": "MEUCIAMH6YDQCT4mA0GAgCJ53EA2mOOk1vB-pghsmREk-0aOAiEAtG5T-2M_sFC9KBQS9ybJdPSTZvfofZmR9"
+                                 "GbHT-mBQrM",
                 "HTTP_ORIGIN": "https://cool.nils:5000",
             }
         )

@@ -492,7 +492,8 @@ class API000TokenAdminRealmList(MyApiTestCase):
         self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": f"{self.realm3},{self.realm1}"}, self.at,
                                 'POST')
 
-        # set realm2 to a token in realm 1 shall fail: realm2 is not set, realm1 is kept due to user and realm3 is removed
+        # set realm2 to a token in realm 1 shall fail: realm2 is not set, realm1 is kept due to
+        # user and realm3 is removed
         self.request_assert_200(f"/token/realm/{t1.get_serial()}", {"realms": self.realm2}, self.at, 'POST')
         # check realm is not set
         t1_realms = t1.get_realms()

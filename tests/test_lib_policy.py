@@ -2319,7 +2319,8 @@ class PolicyTestCase(MyTestCase):
     def test_52_validate_actions(self):
         action_dict = {PolicyAction.ENABLE: True, PolicyAction.HIDE_TOKENINFO: "hashlib private_server_key",
                        PolicyAction.DISABLE: True}
-        action_str = f"{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}=hashlib private_server_key ,{PolicyAction.DISABLE}"
+        action_str = (f"{PolicyAction.ENABLE}, "
+                      f"{PolicyAction.HIDE_TOKENINFO}=hashlib private_server_key ,{PolicyAction.DISABLE}")
         action_list = [PolicyAction.ENABLE, PolicyAction.TOKENINFO, PolicyAction.DISABLE]
 
         # Valid actions for admin scope

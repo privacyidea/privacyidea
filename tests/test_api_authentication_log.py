@@ -560,8 +560,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
         log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver="otherresolver", uid="2",
                                  realm=self.realm1)
         # case-sensitive matching: same name capitalized should not match
-        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1.capitalize(), uid="2",
-                                 realm=self.realm1)
+        log_authentication_event(event_type=AuthEventType.LOGIN_SUCCESS, resolver=self.resolvername1.capitalize(),
+                                 uid="2", realm=self.realm1)
         db.session.commit()
         set_policy("authlog_resolver", scope=SCOPE.ADMIN, action=PolicyAction.AUTHENTICATION_LOG_READ,
                    resolver=self.resolvername1)

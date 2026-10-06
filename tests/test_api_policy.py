@@ -1174,7 +1174,8 @@ class APIPolicyConditionTestCase(MyApiTestCase):
                 self.assertEqual(challenge.get("serial"), hotp_token.get_serial())
 
                 message = challenge.get("message")
-                expected_message = f"Challenge for user Cornelius. The serial for the hotp token is {hotp_token.get_serial()}."
+                expected_message = ("Challenge for user Cornelius. The serial for the hotp token is "
+                                    f"{hotp_token.get_serial()}.")
                 self.assertEqual(expected_message, message)
         finally:
             # Clean up

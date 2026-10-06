@@ -439,8 +439,10 @@ def test_full_downgrade_restores_baseline_schema(flask_app):
     ASPECT_HINTS = {
         "columns": "downgrade() in the chain forgot to drop a column it added (or dropped one it shouldn't have)",
         "indexes": "downgrade() in the chain forgot to drop an index it added (or dropped one it shouldn't have)",
-        "foreign_keys": "downgrade() in the chain forgot to drop a foreign key it added (or dropped one it shouldn't have)",
-        "unique_constraints": "downgrade() in the chain forgot to drop a unique constraint it added (or dropped one it shouldn't have)",
+        "foreign_keys": "downgrade() in the chain forgot to drop a foreign key it added (or dropped one it shouldn't "
+                        "have)",
+        "unique_constraints": "downgrade() in the chain forgot to drop a unique constraint it added (or dropped one "
+                              "it shouldn't have)",
     }
     for table in baseline_tables:
         for aspect, hint in ASPECT_HINTS.items():
@@ -1058,7 +1060,8 @@ def test_each_migration_survives_round_trip(flask_app):
             "columns": "downgrade() likely forgot to drop a column, or upgrade() forgot to add one",
             "indexes": "downgrade() likely forgot to drop an index, or upgrade() forgot to recreate one",
             "foreign_keys": "downgrade() likely forgot to drop a foreign key, or upgrade() forgot to recreate one",
-            "unique_constraints": "downgrade() likely forgot to drop a unique constraint, or upgrade() forgot to recreate one",
+            "unique_constraints": "downgrade() likely forgot to drop a unique constraint, or upgrade() forgot to "
+                                  "recreate one",
         }
         for table in tables_first:
             for aspect, hint in ASPECT_HINTS.items():

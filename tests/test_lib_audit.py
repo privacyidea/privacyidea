@@ -192,8 +192,10 @@ class AuditTestCase(MyTestCase):
             self.Audit = getAudit(self.app.config)
             self.Audit.log({"action": "/validate/check",
                             "success": True})
-        # with mock.patch('privacyidea.models.audit._now', return_value=current_timestamp + datetime.timedelta(seconds=2)) as mock_dt:
-        with mock.patch("privacyidea.lib.auditmodules.sqlaudit._now", return_value=current_timestamp + datetime.timedelta(seconds=2)):
+        # with mock.patch('privacyidea.models.audit._now',
+        #                 return_value=current_timestamp + datetime.timedelta(seconds=2)) as mock_dt:
+        with mock.patch("privacyidea.lib.auditmodules.sqlaudit._now",
+                        return_value=current_timestamp + datetime.timedelta(seconds=2)):
             self.Audit.finalize_log()
 
         # freeze time at ``current_timestamp`` + 2.5s.

@@ -845,7 +845,8 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             user = result.get("value")[0]
-            # should contain all attributes ( resolver, editable and realm are added on lib layer not by the resolver itself)
+            # should contain all attributes ( resolver, editable and realm are added on lib layer
+            # not by the resolver itself)
             expected_attributes = {"userid", "username", "surname", "givenname", "email", "phone", "mobile",
                                    "description", "resolver", "editable", "realm",
                                    "custom1", "custom2", "custom3"}

@@ -909,7 +909,8 @@ class SCIMResolverTestCase(MyTestCase):
                       content_type='application/json',
                       body=self.BODY_ACCESSTOKEN)
         resolver = SCIMResolver()
-        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER,
+                             'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{}"})
 
         rid = resolver.getResolverId()
@@ -928,7 +929,8 @@ class SCIMResolverTestCase(MyTestCase):
                       content_type='application/json',
                       body=self.BODY_ACCESSTOKEN)
         resolver = SCIMResolver()
-        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER,
+                             'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{}"})
 
         r = resolver.checkPass("uid", "password")
@@ -944,7 +946,8 @@ class SCIMResolverTestCase(MyTestCase):
                       body=self.BODY_SINGLE_USER)
 
         resolver = SCIMResolver()
-        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER,
+                             'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{username: 'userName'}"})
 
         r = resolver.get_user_info("bjensen")
@@ -981,7 +984,8 @@ class SCIMResolverTestCase(MyTestCase):
                       body=self.BODY_USERS)
 
         resolver = SCIMResolver()
-        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER,
+                             'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{}"})
 
         users = resolver.getUserList()
@@ -2530,7 +2534,8 @@ class LDAPResolverTestCase(MyTestCase):
                   'UIDTYPE': 'DN',
                   'CACHE_TIMEOUT': '0',  # to disable the per-process cache
                   'recursive_group_search': True,
-                  'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                  'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn'
+                                         '={username},{base_dn}))',
                   'group_name_attribute': 'distinguishedName',
                   'group_attribute_mapping_key': 'groups',
                   'resolver': 'testpool',
@@ -2746,7 +2751,8 @@ class LDAPResolverTestCase(MyTestCase):
                                   '"givenname" : "givenName" }',
                       'UIDTYPE': 'objectGUID',
                       'recursive_group_search': True,
-                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941'
+                                             ':=cn={username},{base_dn}))',
                       'group_name_attribute': 'distinguishedName',
                       'group_attribute_mapping_key': 'groups'
                       })
@@ -2805,7 +2811,8 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual("Alice", user_info["givenname"])
 
         # specify attributes to receive, unknown attributes are ignored
-        user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "givenname", "phone", "groups", "unknown"])
+        user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "givenname", "phone", "groups",
+                                                                       "unknown"])
         self.assertSetEqual({"username", "givenname"}, set(user_info.keys()),
                             user_info)
         self.assertEqual("alice", user_info["username"])
@@ -2874,7 +2881,8 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'CACHE_TIMEOUT': 0,
                       'recursive_group_search': True,
-                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941'
+                                             ':=cn={username},{base_dn}))',
                       'group_name_attribute': 'distinguishedName',
                       'group_attribute_mapping_key': 'groups'
                       })
@@ -2927,7 +2935,8 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'CACHE_TIMEOUT': 120,
                       'recursive_group_search': True,
-                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941'
+                                             ':=cn={username},{base_dn}))',
                       'group_name_attribute': 'distinguishedName',
                       'group_attribute_mapping_key': 'groups'
                       })
@@ -2989,7 +2998,8 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'objectGUID',
                       'CACHE_TIMEOUT': 0,
                       'recursive_group_search': True,
-                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941'
+                                             ':=cn={username},{base_dn}))',
                       'group_name_attribute': 'distinguishedName',
                       'group_attribute_mapping_key': 'groups'
                       })
@@ -3538,7 +3548,9 @@ class ResolverTestCase(MyTestCase):
         with mock.patch("logging.Logger.warning") as mock_log:
             save_resolver({"resolver": "EntraID", "type": "entraidresolver",
                            CONFIG_GET_USER_BY_ID: "{'method': 'GET', 'endpoint': '/new/users/{userid}'}",
-                           CLIENT_CERTIFICATE: "{'PRIVATE_KEY_FILE': 'tests/new_cert.pem', 'PRIVATE_KEY_PASSWORD': 'Test123', 'CERTIFICATE_FINGERPRINT': '123456'}",
+                           CLIENT_CERTIFICATE: "{'PRIVATE_KEY_FILE': 'tests/new_cert.pem', "
+                                               "'PRIVATE_KEY_PASSWORD': 'Test123', "
+                                               "'CERTIFICATE_FINGERPRINT': '123456'}",
                            CLIENT_ID: "56789"})
             mock_log.assert_any_call("Config entry %s is not a dict. Cannot be stored.", CLIENT_CERTIFICATE)
         reso_list = get_resolver_list(filter_resolver_name="EntraID")

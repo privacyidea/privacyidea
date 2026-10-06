@@ -111,7 +111,8 @@ class APIHealthcheckTestCase(MyApiTestCase):
                 sql_resolvers = result_value.get("sqlresolver")
 
                 if ldap_expected_status is None:
-                    assert 'ldapresolver' not in result_value, "Expected missing 'ldapresolver' in result, but is present"
+                    assert 'ldapresolver' not in result_value, ("Expected missing 'ldapresolver' in result, "
+                                                                "but is present")
                 else:
                     assert ldap_resolvers is not None, "Expected 'ldapresolver' in result, but got None"
                     assert all(status == ldap_expected_status for status in ldap_resolvers.values()), (
