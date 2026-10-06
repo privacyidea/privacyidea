@@ -672,7 +672,13 @@ on your installation.
 
 Not included are tokens, local administrators, conditional access policies, API
 clients, service IDs, token groups and container templates. Set these up on the
-target instance separately.
+target instance separately. Entries of the global configuration whose key starts
+with ``__``, such as the config timestamp, belong to the instance that wrote them:
+they are neither exported nor imported.
+
+.. versionchanged:: 3.14.1 Entries whose key starts with ``__`` are left out of the
+   export and skipped by the import. Earlier versions exported them, and an import
+   of such an entry replaced the one of the target instance.
 
 This can be used to keep a versionable, human-readable copy of single
 configuration objects, or to transfer a configuration from one privacyIDEA

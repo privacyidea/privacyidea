@@ -341,6 +341,25 @@ class ConfigTestCase(MyTestCase):
         self.assertEqual(CENSORED, exported["ExpSecret"]["Value"])
         delete_privacyidea_config("ExpSecret")
 
+    def test_12d_export_import_skip_instance_internal_keys(self):
+        from privacyidea.lib.config import export_config, import_config
+        # Keys starting with "__" belong to this instance, like the config timestamp or an enckey canary
+        set_privacyidea_config("__test_internal", "this instance")
+        set_privacyidea_config("ExpPlain", "exported")
+        exported = export_config()
+        self.assertNotIn("__test_internal", exported)
+        self.assertNotIn("__timestamp__", exported)
+        self.assertEqual("exported", exported["ExpPlain"]["Value"])
+        self.assertEqual({}, export_config(name="__test_internal"))
+
+        # An export of another instance that still carries such keys does not replace the ones of this instance
+        import_config({"__test_internal": {"Value": "other instance"},
+                       "ExpPlain": {"Value": "imported"}})
+        self.assertEqual("this instance", get_from_config("__test_internal"))
+        self.assertEqual("imported", get_from_config("ExpPlain"))
+        delete_privacyidea_config("__test_internal")
+        delete_privacyidea_config("ExpPlain")
+
     def test_13_update_password_entry_without_type(self):
         from privacyidea.lib.crypto import decryptPassword
         set_privacyidea_config("SecretToUpdate", "first", typ="password")

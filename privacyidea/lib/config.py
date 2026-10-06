@@ -34,7 +34,6 @@ It provides functions to retrieve (get) and and set configuration.
 The code is tested in tests/test_lib_config
 """
 
-import copy
 import datetime
 import importlib
 import inspect
@@ -1204,21 +1203,31 @@ def _export_password(key: str, encrypted_value: str) -> str:
     return value
 
 
+def _is_internal_config_key(key: str) -> bool:
+    """
+    Whether a configuration key belongs to the instance that wrote it, such as the config timestamp or the enckey
+    canary of the container deployment, which only decrypts with that instance's key. These keys start with ``__``
+    and are neither exported nor imported: another instance has its own.
+    """
+    return key.startswith("__")
+
+
 @register_export()
 def export_config(name=None, censor=False):
     """Export the global configuration
 
     The value of a password-type entry is exported decrypted, so that the importing
-    instance can encrypt it with its own encryption key.
+    instance can encrypt it with its own encryption key. Keys internal to this
+    instance (starting with ``__``) are left out.
 
     :param censor: If True, the value of password-type entries is replaced with
         the ``__CENSORED__`` placeholder instead of being exported.
     """
-    c = copy.copy(get_config_object().config)
+    c = {key: values for key, values in get_config_object().config.items() if not _is_internal_config_key(key)}
     if name:
         c = {name: c[name]} if name in c.keys() else {}
-    # copy.copy is shallow, so build new dicts for the password-type entries
-    # instead of mutating the cached config object
+    # The values are still those of the cached config object, so build new dicts
+    # for the password-type entries instead of mutating them
     c = {key: ({**values, "Value": CENSORED if censor else _export_password(key, values.get("Value"))}
                if isinstance(values, dict) and values.get("Type") == "password"
                else values)
@@ -1228,12 +1237,18 @@ def export_config(name=None, censor=False):
 
 @register_import()
 def import_config(data, name=None):
-    """Import given server configuration"""
+    """Import given server configuration
+
+    Keys internal to an instance (starting with ``__``) are skipped, so that an
+    export of another instance cannot replace the ones of this instance.
+    """
     log.debug(f'Import server config: {data!s}')
     res = {}
-    data.pop('__timestamp__', None)
     for key, values in data.items():
         if name and name != key:
+            continue
+        if _is_internal_config_key(key):
+            log.info(f'Skipping import of the instance-internal configuration entry "{key}".')
             continue
         if is_censored(values.get('Value')):
             # A censored value means "keep the stored secret". On the same
