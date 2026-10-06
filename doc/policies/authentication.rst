@@ -358,10 +358,7 @@ endpoints (e.g. :http:post:`/validate/check`, :http:post:`/validate/triggerchall
 and ``/recover``. It is applied before the first user resolving to avoid unnecessary user store
 requests. This means, when this policy is evaluated there is no user object in the request, yet!
 
-Due to this, the *user* and *realm* fields of the policy are compared with the login name and the realm of the
-request (or the default realm); a *resolver* restriction is ignored. A condition on user attributes can not be
-evaluated: by default the request fails with an error, unless :ref:`policy_condition_handle_missing_data` says
-otherwise.
+Please note, due to this, it is not possible to use user-related conditions for this policy!
 
 Also, the given parameters can actually point to a non-existing user object.
 

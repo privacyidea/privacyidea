@@ -278,11 +278,7 @@ default which is shipped with privacyIDEA is
 
 You can change the server name of the privacyIDEA node, which will be logged
 to the audit log using the variable ``PI_AUDIT_SERVERNAME``. If this variable
-is not set, the value of ``PI_NODE`` is used. If neither is set, the host (and
-port, if given) from the ``Host`` header of each request is logged, for example
-``pi.example.com`` or ``10.0.0.5:5000``, so the value depends on how the client
-addressed the server. Set ``PI_NODE`` (or ``PI_AUDIT_SERVERNAME``) to log a
-fixed name.
+is not set, the value from ``PI_NODE`` or ``localnode`` will be used.
 
 You can run the database for the audit module on another database or even
 server. For this you can specify the database URI via ``PI_AUDIT_SQL_URI``.
@@ -519,12 +515,8 @@ A JWT can be created like this::
    in the JWT; otherwise the requests that work with the user, such as listing or
    enrolling the user's tokens, fail with the error that the user can not be
    found. Define the policies this user or administrator needs as usual.
-
-   An entry with ``"role": "admin"`` makes every JWT that matches it an
-   administrator, whether or not its realm is listed in ``SUPERUSER_REALM``.
-   Admin policies can only name admin realms from ``SUPERUSER_REALM``, though:
-   if the realm of the entry is not in this list, only admin policies without an
-   admin realm apply to this administrator.
+   If you are using an administrative user, the realm of this administrative user
+   must be defined in ``pi.cfg`` in the list ``SUPERUSER_REALM``.
 
 
 Token parameters
@@ -1199,12 +1191,10 @@ readable file or ``PI_PEPPER`` is not set. Without ``SECRET_KEY`` it generates a
 random key, and without ``PI_AUDIT_KEY_PRIVATE`` and ``PI_AUDIT_KEY_PUBLIC`` it
 switches off the signing of the audit log and of the responses.
 
-A normal installation uses the defaults of ``ProductionConfig`` in
-``privacyidea/config.py`` for any of ``SECRET_KEY``, ``PI_PEPPER``,
-``PI_ENCFILE``, ``PI_AUDIT_KEY_PRIVATE`` and ``PI_AUDIT_KEY_PUBLIC`` that
-``pi.cfg`` does not set. Set all five in ``pi.cfg``. ``ProductionConfig`` also takes ``SECRET_KEY``, ``DATABASE_URL``
-(the database URI) and ``PI_REDIS_URL`` from environment variables of the same
-name, without the ``PRIVACYIDEA_`` prefix; a value in ``pi.cfg`` overrides them.
+In a normal installation, ``ProductionConfig`` in ``privacyidea/config.py``
+takes ``SECRET_KEY``, ``DATABASE_URL`` (the database URI) and ``PI_REDIS_URL``
+from environment variables of the same name, without the ``PRIVACYIDEA_``
+prefix; a value in ``pi.cfg`` overrides them.
 The environment variable ``PI_CONFIG_NAME`` overrides the set of defaults the
 WSGI script selects (``config_name="production"``); it is meant for development
 and tests.

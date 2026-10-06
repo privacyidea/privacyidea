@@ -6,8 +6,8 @@ OCRA
 .. index:: OCRA
 
 privacyIDEA supports common OCRA tokens.
-OCRA tokens can not be enrolled in the WebUI. Import them from a seed file, or
-create them with ``POST /token/init`` (``type=ocra``, ``otpkey``, ``ocrasuite``).
+OCRA tokens can not be enrolled via the UI but need to be imported via a seed
+file.
 The OATH CSV seed file would look like this::
 
     <serial>, <seed>, ocra, <ocrasuite>

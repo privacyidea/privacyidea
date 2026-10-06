@@ -37,11 +37,9 @@ users by defining higher policy priorities.
     will be invalidated even if the *authorized* policy denies the access.
 
 .. note:: The actual "success" of the authentication can be changed to "failed" by this postpolicy.
-    Post-event handlers (:ref:`eventhandler_pre_and_post`) run before it: they
-    see the request as successful and match the event handler condition
-    ``result value == True``, although the response is a failure. Pre-event
-    handlers run before the request is processed and see no result. The same
-    holds for the postpolicies ``tokentype``, ``serial`` and ``tokeninfo``.
+    Meaning pre-event handlers (:ref:`eventhandler_pre_and_post`) would still
+    see the request as successful before it would be changed by this policy and
+    match the event handler condition ``result value == True``.
 
 .. versionadded:: 3.4
 
@@ -94,11 +92,9 @@ serial
 
 type: ``string``
 
-Users will only be authorized with a token whose serial number matches.
-The value is one or more space-separated regular expressions that are
-searched anywhere in the serial; use ``^...$`` to match a whole serial.
-The values of all matching policies are collected regardless of their
-priority, and the token is accepted if any of them matches.
+Users will only be authorized with the serial number.
+The string can hold a regular expression as serial
+number.
 
 This is checked after the authentication request, so a valid OTP value will be
 used up, even if the user was not authorized with this request.
@@ -424,11 +420,14 @@ require_auth_for_resolver_details
 
 type: ``bool``
 
-``/healthz/resolversz`` returns the names and states of the individual resolvers
-only to an authenticated administrator; every other request gets the total status.
+Usually, ``/healthz/resolversz`` will include in its response the name and status
+of each resolver individually, as well as the total status of all resolvers;
+without requiring any form of authentication.
 
-If this policy is set, a request that sends an invalid or non-admin token is
-refused with 401 instead of receiving the total status. A request without a token
-receives the total status either way.
+If this policy is set, admin credentials must be provided to receive the
+individual resolver details.  The total status will be included either way.
+
+.. note:: In order to limit the amount of information exposed to third parties,
+    it is recommended to activate this policy.
 
 .. versionadded:: 3.13

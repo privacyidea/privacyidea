@@ -39,13 +39,13 @@ and your database and configuration:
    source /opt/privacyidea/bin/activate
    pi-manage backup create
 
-Run the backup as ``root``. Another user needs write access to
-``/etc/privacyidea/`` and has to pass a backup directory it can write to with
-``-d``, the default is ``/var/lib/privacyidea/backup/``. The archive contains a
-dump of the database and the configuration directory ``/etc/privacyidea/``, but
-not the encryption key: add ``-e`` to include it (only a key file inside that
-directory is added), or keep a copy of the key elsewhere. A MySQL/MariaDB or
-PostgreSQL dump needs ``mysqldump`` or ``pg_dump``. See :ref:`pimanage_backup`.
+Run the backup as ``root``. Another user has to pass a backup directory it can
+write to with ``-d``, the default is ``/var/lib/privacyidea/backup/``. The
+archive contains a dump of the database and the configuration directory
+``/etc/privacyidea/``, but not the encryption key: add ``-e`` to include it
+(only a key file inside that directory is added), or keep a copy of the key
+elsewhere. A MySQL/MariaDB or PostgreSQL dump needs ``mysqldump`` or
+``pg_dump``. See :ref:`pimanage_backup`.
 
 Running upgrade
 ^^^^^^^^^^^^^^^

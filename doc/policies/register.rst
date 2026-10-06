@@ -23,8 +23,7 @@ I.e. a user that does not exist in a given realm and resolver can create a
 new account.
 
 .. note:: Registering new users is only possible, if there is a writeable
-   resolver and if a policy in the scope *register* defines at least *resolver*
-   and *smtpconfig*.
+   resolver and if the necessary policy in the scope *register* is defined.
    For editable UserIdResolvers see :ref:`useridresolvers`.
 
 If a register policy with the action *resolver* is defined, the login window
@@ -96,10 +95,8 @@ This is the unique identifier of the :ref:`smtpserver`. This SMTP server is
 used to send the notification email with the registration code during the
 registration process.
 
-.. note:: *smtpconfig* is required. Without it the registration is refused. If it
-   names an SMTP server configuration that does not exist, the registration fails
-   with an error after the user and the registration token were created, and they
-   are not removed.
+.. note:: If there is no *smtpconfig* or it is set to a wrong identifier, the user
+   will get no notification email.
 
 .. versionadded:: 2.10
 

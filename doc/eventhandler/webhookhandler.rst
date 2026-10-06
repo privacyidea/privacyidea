@@ -58,7 +58,7 @@ The data posted in the webhook.
     {logged_in_user}", then this text is sent: "This webhook is triggered by John".
     Possible placeholders are ``{admin}``, ``{realm}``, ``{action}``, ``{serial}``, ``{url}``, ``{user}``,
     ``{surname}``, ``{givenname}``, ``{username}``, ``{userrealm}``, ``{tokentype}``, ``{tokendescription}``,
-    ``{time}``, ``{date}``, ``{client_ip}``, ``{ua_browser}`` and ``{ua_string}``.
+    ``{time}``, ``{date}``, ``{client_ip}``, ``{ua_browser}``, ``{ua_string}`` and ``{challenge}``.
     For backward compatibility the aliases ``{logged_in_user}``, ``{token_serial}`` (= ``{serial}``),
     ``{token_owner}`` (= ``{givenname}``) and ``{user_realm}`` (= ``{userrealm}``) also work.
     The availability of the tags depends on the endpoint.

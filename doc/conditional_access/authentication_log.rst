@@ -306,12 +306,11 @@ request path:
 
 Every authentication reaches the server as a request, so an entry written by an
 authentication always names its endpoint; the column is empty only for an entry
-staged outside a view. A ``SUSPENDED_API_KEY_USED`` entry names the path of
-whatever request carried the key, which need not be one of the endpoints above.
-The recorded endpoint is what an *Endpoint* condition of a conditional access
-policy is matched against, see :ref:`conditional_access_policies`, so a policy
-can be limited to the endpoints it should watch: counting the failed
-authentications of an application without counting WebUI logins, for instance.
+staged outside a view. The same value is what an *Endpoint* condition of a
+conditional access policy is matched against, see
+:ref:`conditional_access_policies`, so a policy can be
+limited to the endpoints it should watch: counting the failed authentications
+of an application without counting WebUI logins, for instance.
 
 Searching
 ---------

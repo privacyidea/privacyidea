@@ -128,10 +128,8 @@ Counting and resetting
 With **reset the count on a successful login** - the default for a ``user``
 policy - the policy counts the failures **since the user's last successful
 login**, so a legitimate user is not locked by failures from days ago. Every
-threshold of the policy counts that way, the ``DENY`` decision included. A
-``DENY`` in force, however, also refuses the login that would reset it - it is
-decided before the credentials are checked - so in practice a denial lifts as
-the counted entries age out of the window.
+threshold of the policy counts that way, the ``DENY`` decision included, so a
+denial also lifts on a successful login and not only as the window drains.
 
 Turn it off to make a threshold mean *this many entries in the window* outright,
 whatever happened in between. That is what a rate limit wants: the shipped rate
@@ -243,11 +241,9 @@ Actions
 
 **DENY**
     Refuse this single request pre-authentication, without storing anything.
-    The rejection lifts by itself as the counted entries age out of the window.
-    Reset on success does not shorten it in practice: while the denial holds, it
-    refuses the successful login as well, see
-    :ref:`conditional_access_policies_counting`. Use it for a rate limit that
-    must not leave a lock behind.
+    The rejection lifts by itself as the counted entries age out of the window -
+    and, on a policy that resets on success, on the next successful login.
+    Use it for a rate limit that must not leave a lock behind.
 
 **EMAIL_USER**, **EMAIL_ADMIN**
     Notify the user, or an administrator, that the threshold was reached.
