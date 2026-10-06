@@ -330,3 +330,39 @@ class DockerConfigSecretKeyTestCase(unittest.TestCase):
             self.assertEqual(
                 self._docker_secret_key({"SECRET_KEY_FILE": plain, "PI_SECRET_KEY_FILE": alias}),
                 "PLAIN-VALUE")
+
+
+class DockerConfigDatabaseUriTestCase(unittest.TestCase):
+    """
+    DockerConfig builds the database URI from the PI_DB_* variables, with user and
+    password percent-encoded, so that SQLAlchemy reads them back unchanged whatever
+    characters they contain.
+
+    Evaluated at import time, so each case runs in a fresh subprocess, as in
+    DockerConfigSecretKeyTestCase.
+    """
+    _DB_ENV = ("PI_DB_USER", "PI_DB_PASSWORD", "PI_DB_PASSWORD_FILE", "PI_DB_HOST", "PI_DB_PORT", "PI_DB_NAME",
+               "PI_DB_DRIVER", "PI_DB_EXTRA_PARAMS", "SQLALCHEMY_DATABASE_URI", "SQLALCHEMY_DATABASE_URI_FILE")
+    _SCRIPT = ("import sys\n"
+               "import privacyidea.config as c\n"
+               "sys.stdout.write(c.DockerConfig.SQLALCHEMY_DATABASE_URI)\n")
+
+    def _docker_database_uri(self, extra_env: dict[str, str]) -> str:
+        env = {key: value for key, value in os.environ.items() if key not in self._DB_ENV}
+        env.update({"PI_DB_HOST": "db.example.org", "PI_DB_NAME": "pi"}, **extra_env)
+        result = subprocess.run([sys.executable, "-c", self._SCRIPT],
+                                env=env, cwd=dirname, capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+        return result.stdout
+
+    def test_01_special_characters_in_user_and_password(self):
+        from sqlalchemy.engine import make_url
+        uri = make_url(self._docker_database_uri({"PI_DB_USER": "pi@site", "PI_DB_PASSWORD": "p@ss:w/rd%?#"}))
+        self.assertEqual("pi@site", uri.username)
+        self.assertEqual("p@ss:w/rd%?#", uri.password)
+        self.assertEqual("db.example.org", uri.host)
+        self.assertEqual("pi", uri.database)
+
+    def test_02_url_safe_password_is_kept_as_is(self):
+        uri = self._docker_database_uri({"PI_DB_USER": "pi", "PI_DB_PASSWORD": "Ab0-_x", "PI_DB_PORT": "3307"})
+        self.assertEqual("mysql+pymysql://pi:Ab0-_x@db.example.org:3307/pi", uri)
