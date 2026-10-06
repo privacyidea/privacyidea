@@ -17,7 +17,13 @@ store*.
    *Users in SQL can be edited, when checking the checkbox.*
 
 In the *User Details* view, the administrator then can click the button *Edit*
-and modify the user data and also set a new password.
+and change the attributes of the user. The form shows one field for each
+attribute of the resolver's attribute mapping, except the username and the
+user ID. A new password can be set if the mapping contains ``password``, as in
+the resolver created by ``pi-manage config resolver create_internal`` (see
+:ref:`simple_local_user_setup`). Fields left empty are not written, so an
+attribute can not be cleared here. The button *Edit* requires the admin policy
+actions ``updateuser`` and ``resolverread``.
 
 .. figure:: images/user_edit.png
    :width: 500
@@ -30,6 +36,8 @@ and modify the user data and also set a new password.
    realms.
 
 If you want to add a user, you can click on *Create User* in the users view.
+The button requires the admin policy actions ``adduser`` and ``resolverread``
+and is only shown if at least one resolver is editable.
 
 .. figure:: images/user_add.png
    :width: 500

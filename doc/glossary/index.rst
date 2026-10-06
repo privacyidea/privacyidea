@@ -171,8 +171,11 @@ Glossary
         be split into the loginname *user* and the realm name *company*.
         In most cases this is the wanted behavior so this is enabled by default.
 
-        But given your users log in with email addresses like *user@gmail.com* and
-        *otheruser@outlook.com* you probably do not want to split.
+        A name like *user@gmail.com* is only split if a realm *gmail.com* exists. So you probably only want to
+        disable splitting if users log in with email addresses whose domain is also the name of a realm.
+
+        The option also enables the form ``realm\user``: a login name without @ is split at the last backslash
+        into realm and login name. Disabling the option disables both forms.
 
         How a user is related to a realm is described here: :ref:`relate_realm`
 
@@ -187,9 +190,12 @@ Glossary
 
         - Clientwait
 
-          The rollout is pending in the backend, like CSRs that need to be approved.
+          The server waits for the client to complete the enrollment, e.g. the second step of a two-step HOTP/TOTP
+          enrollment or the registration of a push, WebAuthn or passkey token.
 
         - Pending
+
+          The rollout is pending in the backend, e.g. a certificate request that the CA still has to approve.
 
         - Verify
 
@@ -201,6 +207,16 @@ Glossary
           that any check for "this token is ready" should compare against.
 
         - Failed
+
+          The enrollment failed, e.g. the CA could not be reached or refused the certificate request right away.
+
+        - Denied
+
+          The CA denied a pending certificate request.
+
+        - Broken
+
+          The token data could not be used, e.g. an SSH key of a type that is not allowed or without key data.
 
         .. versionchanged:: 3.14
            Fully enrolled tokens now consistently have ``rollout_state = "enrolled"``.
@@ -219,12 +235,13 @@ Glossary
         in privacyIDEA does not have any access to the Active Directory. The administrator can define
         policies to allow other admins, help desk users or even the user to manage custom attributes in privacyIDEA.
 
-        A user is identified by the user_id, the resolver_id and the realm_id.
+        A user is identified by the user_id, the resolver name and the realm_id.
         The additional attributes are stored in Key and Value.
         The Type can hold extra information like e.g. an encrypted value / password.
 
         .. note:: Since the users are external, i.e. no objects in this database, there is no
-            logical reference at the database level. Since users could be deleted from user stores without
+            reference to the user or the resolver at the database level (the resolver is stored by its name); only
+            the realm_id refers to the realm table. Since users could be deleted from user stores without
             privacyIDEA realizing that, this table could pile up with remnants of attributes.
 
    Scope
@@ -271,9 +288,12 @@ Glossary
             user@realm
 
    Events
-        Each **API call** is an **event** and you can bind arbitrary actions to each
-        event as you like. You can bind several actions to one event. These actions are executed
-        in the order of the priority one after another.
+        Most API calls of the token, container, user, authentication (``/auth``) and validation endpoints are
+        **events**, e.g. ``token_init`` or ``validate_check``. The configuration endpoints (policies, realms,
+        resolvers, system settings, SMTP and SMS configuration, event definitions, audit, machines, periodic tasks,
+        CA connectors, ...) do not trigger events. You can bind arbitrary actions to each event as you like. You can
+        bind several actions to one event. These actions are executed one after another in ascending order of their
+        *Ordering* value (lowest first).
 
         .. Note:: An action, that is triggered by an event can not trigger a new action. Only **events** (API calls)
            can trigger actions. E.g. if you are using the :ref:`tokenhandler` to create a new token, the creation
@@ -396,13 +416,21 @@ Glossary
         challenge response token exists for this user. In this case, the challenge is triggered and privacyIDEA expects a response.
         If the user now gives the answer expected from the server, the response is accepted and the authentication is successful.
 
-        Multi Challenge is basically a chain of challenges. It can be used to reset a PIN, e.g. with the :ref:`code_foureye_token`.
+        Multi Challenge has two meanings. In the response of an authentication request, ``multi_challenge`` is the
+        list of all challenges that were triggered, one entry per token. Challenges can also be chained, so that an
+        answer is followed by a further challenge instead of finishing the authentication. This is used to let the
+        user set a new PIN (:ref:`policy_change_pin_via_validate`), to resynchronize a token
+        (:ref:`policy_resync_via_multichallenge`), to enroll a token during the authentication
+        (:ref:`policy_enroll_via_multichallenge`), and by the :ref:`four_eyes_token` in challenge response mode to
+        ask for the further tokens one after another.
 
         **Challenges are triggered by:**
 
         * The user entering the PIN/Password of the token
 
         * Programmatically via a call to ``POST /validate/triggerchallenge``
+
+        * A call to ``POST /validate/initialize``, which starts a passkey challenge without a user
 
    Extended Policy Conditions
         :ref:`policy_conditions` allow defining more advanced rules

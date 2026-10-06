@@ -77,8 +77,9 @@ with the following attribute mapping:
     }
 
 
-You can further define ``groups`` to be a multi-value attribute by setting the
-*Multivalue Attributes* option to ``["groups"]``.
+You need to define ``groups`` as a multi-value attribute by setting the
+*Multivalue Attributes* option to ``["groups"]``; the ``contains`` conditions below
+raise an error otherwise.
 
 According to this mapping, users of *ldaprealm* will have userinfo entries
 ``phone``, ``mobile``, ``email``, ``groups``, ``surname`` and ``givenname``
@@ -136,13 +137,17 @@ The token condition works on the database columns of the token. This would be
 ``description``, ``otplen``, ``count``, ``serial``, ``active`` but most importantly
 also ``failcount`` and ``tokentype``.
 
+Numeric and boolean columns (``otplen``, ``count``, ``failcount``, ``maxfail``,
+``active``, ``locked``, ``revoked``) can only be compared with ``<`` and ``>`` (booleans
+count as 0 and 1). ``equals`` and ``in`` compare with a string and never match them.
+
 .. note:: A policy with an active token condition will
    throw an exception whenever the token object cannot be determined.
    It will also throw an error, if the request ``Key`` does not exist
    as a database column.
    To avoid raising an error, define the :ref:`policy_condition_handle_missing_data` option.
 
-.. note:: The matching is case-sensitive. Note, that e.g. token types are
+.. note:: The matching is case-sensitive, except with ``string_contains``. Note, that e.g. token types are
    stored in lower case in the database.
 
 **Example**: The administrator could define a dedicated policy in the scope *user* with the
@@ -156,10 +161,10 @@ HTTP Request header
 The section ``HTTP Request header`` can be used to define conditions that are checked against
 the request header key-value pairs.
 
-The ``Key`` specifies the request header key. It is case-sensitive.
+The ``Key`` is the name of the request header; it is not case-sensitive.
 
-privacyIDEA uses the ``Comparator`` to check if the value of a header is equal or a substring
-of the required value.
+privacyIDEA compares the value of the header with the ``Value`` using the ``Comparator``, e.g. ``equals``
+or ``string_contains`` (the header value contains the ``Value``).
 
 .. note:: privacyIDEA raises an error if ``Key`` refers to an unknown request header.
    If the header in question is missing, the policy can not get completely evaluated.
@@ -252,7 +257,8 @@ The following comparators can be used in definitions of policy conditions:
 
   For example, "7d" means "within the last 7 days", "2h" means "within the last 2 hours".
 * ``string_contains`` evaluates to true if the left value (a string) contains the right value as a substring.
-  ``!string_contains`` evaluates to true if this is not the case.
+  ``!string_contains`` evaluates to true if this is not the case. The comparison ignores upper and lower case; the
+  other string comparators are case-sensitive.
 
 
 If you want to define a policy that e.g. only matches users from Active Directory that are in a
@@ -305,4 +311,6 @@ error and the current request is aborted.
 This behavior can be changed by setting the `Handle Missing Data`_ option
 to ``Condition is false`` or ``Condition is true``. However, this only avoids throwing an error if the required data
 is missing (e.g. no token or user in the request). If an invalid section or comparator is used, an error will still be
-raised.
+raised. An error is also raised if the comparison itself is invalid: ``contains`` on a value that is not a list, ``<``
+or ``>`` on a value that is not an integer, ``matches`` on a value that is not a string or with an invalid regular
+expression, or ``date_before``/``date_after`` comparing a date with time zone to one without.

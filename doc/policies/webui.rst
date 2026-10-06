@@ -4,8 +4,9 @@ WebUI Policies
 --------------
 
 WebUI policies define the behavior of the WebUI.
-After activating WebUI policies, the UI must be reloaded once for the change to
-take effect.
+Changed WebUI policies take effect at the next login: the user has to log out and
+log in again. Policies that act on the login page take effect when the login page
+is reloaded.
 
 .. index:: WebUI Login, WebUI Policy, Login Policy, login mode
 .. _policy_login_mode:
@@ -26,14 +27,24 @@ administrators need to authenticate against privacyIDEA when logging into the We
 Meaning they can not log in with their domain password anymore but need to
 authenticate with one of their tokens.
 
+With *privacyIDEA* the WebUI login is checked like an authentication request,
+so authentication policies that match the user also apply to it, such as
+``passthru``, ``passOnNoToken`` and ``otppin``. With ``passOnNoToken`` a user
+without a token logs in with any password, with ``passthru`` with their user
+store password.
+
 If set to *login_mode=disable* the users and administrators of the specified
 realms can not log in to the UI anymore. This includes the login with a
 passkey. The other two values only decide what a password is checked against,
 so they do not affect the passkey login. A *disable* policy also refuses the
-login if a policy with the same priority sets another login mode.
+login if a policy with the same priority sets another login mode. Policies of
+the same priority that set *userstore* and *privacyIDEA* also refuse the
+password login. With different priorities the policy with the higher priority
+(lower number) applies.
 
 .. warning:: If you set this to ``privacyIDEA`` and the user deletes or disables
-   all of their tokens, they will not be able to log in anymore.
+   all of their tokens, they will not be able to log in anymore, unless an
+   authentication policy such as ``passthru`` or ``passOnNoToken`` matches them.
 
 .. note:: Administrators defined in the database using the pi-manage
    command can still log in with their normal passwords.
@@ -66,9 +77,10 @@ If set to "allowed" a user can choose to use the REMOTE_USER or log in with
 credentials. If set to "force", the user can not switch to logging in with credentials but
 can only log in with the REMOTE_USER from the browser.
 
-.. note:: The policy is evaluated before the user is logged in. At this point
-   in time there is no realm known, so a policy to allow remote_user must not
-   select any realm.
+.. note:: The policy is evaluated before the user is logged in. It is matched
+   against the login name and the realm taken from REMOTE_USER (``user@realm``),
+   or the default realm if REMOTE_USER contains no realm. A policy restricted to
+   another realm or another user does not take effect.
 
 .. note:: The policy setting "force" only works on the UI level. On the API level
    the user could still log in with credentials! If you want to avoid this, see
@@ -112,6 +124,8 @@ type: ``integer``
 
 Set the timeout, after which a user in the WebUI will be logged out.
 The default timeout is 120 seconds.
+The time counts from the last activity in the WebUI. Independent of activity, the session ends
+when the JWT expires, see :ref:`policy_jwt_validity`.
 
 Being a policy this time can be set based on clients, realms and users.
 
@@ -177,6 +191,10 @@ templates shipped with privacyIDEA.
 
 You can point this to an external URL (e.g. ``https://example.com/my-templates/``)
 or any other path reachable by the WebUI to provide custom policy templates.
+The templates are fetched by the browser, so an external server must allow cross-origin
+requests from the privacyIDEA host. With ``PI_ENABLE_CSP`` the content security policy only
+allows the privacyIDEA host and the two project hosts it lists (``community.privacyidea.org``,
+``privacyidea.readthedocs.io``).
 
 .. note:: When setting a ``policy_template_url`` policy the modified URL will only get
    active after the user has logged out and in again.
@@ -278,7 +296,8 @@ type: ``string``
 
 This policy defines the container type to be used in the container wizard. The container wizard is displayed in the ui
 when the user has no container assigned. It shows a simplified view to create the first container. To activate the
-container wizard, at least this policy has to be defined. Read :ref:`container_wizard` for more information.
+container wizard, at least this policy has to be defined. The user also needs the user action ``container_create``
+for the wizard. Read :ref:`container_wizard` for more information.
 
 .. _policy_container_wizard_template:
 
@@ -302,6 +321,7 @@ type: ``bool``
 In the container wizard, a QR code to register the created container on a smartphone will be displayed. After
 registration, the smartphone can be synchronized with the server. See :ref:`container_synchronization` for more
 information.
+The user also needs the user action ``container_register`` for the registration QR code.
 This policy is only applicable for smartphone containers and will be ignored for all other types.
 
 
@@ -323,8 +343,8 @@ list is preselected.
 
 You can include ``-`` as an entry in the list to add an empty option to the
 dropdown (i.e. authenticate without selecting a specific realm). If ``-`` is
-the first entry, no realm is preselected and the user must explicitly choose
-one (or leave the field empty).
+the first entry, the empty option is preselected and the login is sent without
+a realm unless the user picks one.
 
 .. index:: Search on Enter
 
@@ -369,7 +389,8 @@ The new file could be called ``mytemplates/mybase.html``.
    described in :ref:`legacy_webui`. The template ``templates/baseline.html`` is part of the
    previous WebUI.
 
-This will only work with a valid subscription of privacyIDEA Enterprise Edition.
+This policy takes effect as long as the number of assigned active tokens is within the free tier, or with a valid
+subscription of privacyIDEA Enterprise Edition. Otherwise it is ignored.
 
 .. note:: This policy is evaluated before login. So any realm or user setting will have no
    effect. But you can specify different baselines for different client IP addresses.
@@ -392,7 +413,8 @@ The new file could be called ``mytemplates/mymenu.html``.
    described in :ref:`legacy_webui`. The template ``templates/menu.html`` is part of the
    previous WebUI.
 
-This will only work with a valid subscription of privacyIDEA Enterprise Edition.
+This policy takes effect as long as the number of assigned active tokens is within the free tier, or with a valid
+subscription of privacyIDEA Enterprise Edition. Otherwise it is ignored.
 
 .. note:: This policy is evaluated before login. So any realm or user setting will have no
    effect. But you can specify different menus for different client IP addresses.
@@ -436,14 +458,22 @@ new token secret for the displayed token.
 This e.g. enables a user to transfer a softtoken to a new device while keeping the
 token number restricted to 1.
 
+The rollover also requires the action ``token_rollover`` in the user or admin scope (see
+:ref:`user_policies` and :ref:`admin_policies`). Without it the current WebUI shows no button, and
+the previous WebUI shows one whose request is refused. The current WebUI also shows no button for
+token types it can not roll over.
+
 login_text
 ~~~~~~~~~~
 
 type: ``string``
 
-This way the text "Please sign in" on the login dialog can be changed. Since the policy can
-also depend on the IP address of the client, you can also choose different login texts depending
-on from where a user tries to log in.
+This text is displayed on the login page above the login form; in the previous WebUI it replaces the
+text "Please sign in". Since the policy can also depend on the IP address of the client, you can also
+choose different login texts depending on from where a user tries to log in.
+
+This policy takes effect as long as the number of assigned active tokens is within the free tier, or with a valid
+subscription of privacyIDEA Enterprise Edition. Otherwise it is ignored.
 
 show_android_privacyidea_authenticator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -496,8 +526,9 @@ show_node
 
 type: ``bool``
 
-If this policy is activated the UI will display the name of the privacyIDEA node in the top left
-corner next to the logo.
+If this policy is activated the WebUI displays the name of the privacyIDEA node on the login page
+(below the login form) and, after an administrator logs in, in the profile panel at the right end of
+the top bar. The self-service views do not show it after login.
 
 This is useful, if you have a lot of different privacyIDEA nodes in a redundant setup or if you have
 test instances and production instances. This way you can easily distinguish the different instances.
@@ -572,6 +603,9 @@ in the WebUI baseline.
 .. note:: This applies to the previous WebUI only, which is served when ``pi.cfg`` selects it as
    described in :ref:`legacy_webui`.
 
+This policy takes effect as long as the number of assigned active tokens is within the free tier, or with a valid
+subscription of privacyIDEA Enterprise Edition. Otherwise it is ignored.
+
 .. _policy_rss_feeds:
 
 rss_feeds
@@ -588,9 +622,10 @@ The default is:
 
 .. code-block::
 
-    'Community News':'https://community.privacyidea.org/c/news.rss'-
-    'privacyIDEA News':'https://privacyidea.org/feed'-
-    'NetKnights News':'https://netknights.it/en/feed'
+    'Community News':'https://community.privacyidea.org/c/news.rss'-'privacyIDEA News':'https://privacyidea.org/feed'-'NetKnights News':'https://netknights.it/en/feed'
+
+Enter the value as one line: a line break between the feeds makes the value unreadable, and the default feeds are
+then used without a warning.
 
 This way you can display news feeds from the community, privacyIDEA and NetKnights informing you about new
 updates or other critical information.
@@ -603,7 +638,8 @@ rss_age
 
 type: ``integer``
 
-This defines the age of the displayed news feeds. The default is 180 days. You can specify a different age in days.
+This defines the age of the displayed news feeds. The default is 180 days for administrators and 0 for users, so
+users see no news unless a policy sets an age for them. You can specify a different age in days.
 
 .. note:: If you specify the age 0, then the UI tab "News" will be hidden.
 
@@ -644,13 +680,16 @@ session_persistence
 type: ``string``
 
 Where the WebUI keeps the session of the logged-in user. Allowed values are ``tab`` and
-``browser``, the default is ``tab``.
+``browser``, the default is ``tab``. This applies to the current WebUI only. The previous
+WebUI keeps no session across page reloads.
 
 With ``tab`` the session belongs to the browser tab it was opened in: it is kept in
 ``sessionStorage``, ends when that tab is closed, and another tab has to log in for
 itself. With ``browser`` the session is kept in ``localStorage``, is shared by all tabs
-of the browser and survives closing it, until the JWT expires -- the behavior of
-releases before this policy existed.
+of the browser and survives closing it, until the JWT expires.
+
+Releases before 3.14 did not keep a WebUI session across a page reload, so after the
+upgrade the WebUI starts at the login page whatever the policy says.
 
 The policy is evaluated for the principal that logs in, so admins and users can be given
 different values. Note that ``browser`` leaves a token that is usable until its expiry on

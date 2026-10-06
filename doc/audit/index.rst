@@ -33,8 +33,8 @@ Searching the audit log
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The audit log can be filtered in the WebUI and via the ``GET /audit/`` API by
-any audit column (``user``, ``realm``, ``serial``, ``action``, ...). Filter
-values are matched as follows:
+any audit column (``user``, ``realm``, ``serial``, ``action``, ...). The
+``GET /audit/`` API matches filter values as follows:
 
 * ``*`` is the wildcard and matches any sequence of characters. For example,
   ``action=*/token/init`` matches every action ending in ``/token/init`` and
@@ -42,7 +42,16 @@ values are matched as follows:
 * All other characters are matched literally. In particular ``%`` and ``_`` are
   *not* wildcards. A value that contains no ``*`` must match the column exactly.
 * A leading ``!`` negates the condition, e.g. ``authentication=!CHALLENGE``
-  returns the entries whose ``authentication`` is not ``CHALLENGE``.
+  returns the entries whose ``authentication`` is not ``CHALLENGE``. This does
+  not apply to ``success``: filter it with ``1`` (successful) or ``0``
+  (failed); a value with ``!``, e.g. ``!0``, selects the failed entries.
+
+The WebUI searches anywhere in the column: it wraps every filter value in ``*``
+before it sends it, so ``user: corn`` finds *cornelius*. Prefix a value with
+``=`` to match the whole column, e.g. ``serial: =OATH0001``. A negation has to
+be written this way too, e.g. ``authentication: =!CHALLENGE``; without the
+``=`` the WebUI searches for the text ``!CHALLENGE``. In the previous WebUI
+every value is searched anywhere in the column, and a negation is not possible.
 
 .. versionchanged:: 3.14 ``*`` is the only wildcard. Earlier versions also
    treated a literal ``%`` as a wildcard in the audit search; now ``%`` and
@@ -81,6 +90,10 @@ the command line::
 
 If there are more than 20000 log entries, this will clean up all old log entries, leaving only 18000 log entries.
 
+If neither ``--config`` nor ``--age`` is given, the command cleans by the number of entries, with the defaults
+``--highwatermark 10000`` and ``--lowwatermark 5000``: ``pi-manage audit rotate`` without options deletes all but the
+newest 5000 entries as soon as there are more than 10000.
+
 Cleaning based on the age:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -104,26 +117,26 @@ The config file is in a *YAML* format and looks like this::
 
     # DELETE auth requests of nils after 10 days
     - rotate: 10
-      user: nils
+      user: ^nils$
       action: .*/validate/check.*
 
     # DELETE auth requests of friedrich after 7 days
     - rotate: 7
-      user: friedrich
+      user: ^friedrich$
       action: .*/validate/check.*
 
     # Delete nagios user test auth directly
     - rotate: 0
-      user: nagiosuser
+      user: ^nagiosuser$
       action: POST /validate/check.*
 
     # Delete token listing after one month
     - rotate: 30
-      action: ^GET /token
+      action: ^GET /token/
 
     # Delete audit logs for token creation after 10 years
     - rotate: 3650
-      action: POST /token/init
+      action: ^POST /token/init$
 
     # Delete everything else after 6 months
     - rotate: 180
@@ -140,7 +153,8 @@ It is a good idea to have a *catch-all* rule at the end. A rule needs at least o
 .. note:: The keys "user", "action"... correspond to the column names of the audit table.
    You can use any column name here like "date", "action", "action_detail", "success", "serial", "administrator",
    "user", "realm"... for a complete list, see the model definition here: :class:`privacyidea.models.Audit`.
-   You may use Python regular expressions for matching.
+   The values are Python regular expressions that are searched anywhere in the column value: ``user: nils``
+   would also match *nilsson* and *anils*. Use ``^`` and ``$`` to match the whole value, as in the example above.
 
 You can then add a call like::
 
@@ -165,13 +179,16 @@ So you can simply specify a config file with only the content::
 
    PI_AUDIT_SQL_URI = <your database uri>
 
-Then you can call ``pi-manage`` like this::
+Then you can call ``pi-manage`` in the cron job like this::
 
    PRIVACYIDEA_CONFIGFILE=/etc/privacyidea/audit.cfg \
-   pi-manage audit rotate
+   pi-manage audit rotate --config /etc/privacyidea/audit.yaml
 
 This will read the configuration (only the database URI) from the config file
-``audit.cfg``.
+``audit.cfg`` and the rotation rules from ``audit.yaml``, so the user of the
+cron job needs read access to both. ``--age`` or the watermarks can be used the
+same way. Always give one of these options: without any of them, the command
+keeps only the newest 5000 entries (see above).
 
 .. _audit_table_size:
 
@@ -231,8 +248,11 @@ You can optionally set a custom logging name for the logger audit with::
    PI_AUDIT_LOGGER_QUALNAME = "pi-audit"
 
 It defaults to the module name ``privacyidea.lib.auditmodules.loggeraudit``.
-In contrast to the :ref:`sql_audit` you *need* a ``PI_LOGCONFIG`` otherwise
-the *Logger Audit* will not work correctly.
+Use the same name as ``qualname`` of the audit logger in the logging
+configuration below. In contrast to the :ref:`sql_audit` you *need* a logging
+configuration file that defines the audit logger (``PI_LOGCONFIG``, default
+``/etc/privacyidea/logging.cfg``), otherwise the *Logger Audit* will not work
+correctly.
 
 In the ``logging.cfg`` you then need to define the audit logger::
 
@@ -240,6 +260,7 @@ In the ``logging.cfg`` you then need to define the audit logger::
    handlers=audit
    qualname=privacyidea.lib.auditmodules.loggeraudit
    level=INFO
+   propagate=0
 
    [handler_audit]
    class=logging.handlers.RotatingFileHandler
@@ -251,6 +272,11 @@ In the ``logging.cfg`` you then need to define the audit logger::
 
 Note that the ``level`` always needs to be *INFO*. In this example, the
 audit log will be written to the file ``/var/log/privacyidea/audit.log``.
+
+``propagate=0`` keeps the audit entries out of the other log files. Without
+it, every entry is also passed to the handlers of the parent loggers (with the
+default name, those of the ``privacyidea`` logger) and ends up in the
+privacyIDEA log file as well.
 
 Finally you need to extend the following settings with the defined audit logger
 and audit handler::

@@ -39,18 +39,18 @@
   ```
 
   A configuration that still names `static_new` keeps working: the paths are remapped to the new location and a warning
-  is written to the log. **This fallback is only kept for this version**, so remove the lines during the update.
+  is written to the log. **A future version will stop honoring these paths**, so remove the lines during the update.
 
-  **To keep the previous WebUI** for this version, put both of these in your `pi.cfg`:
+  **To keep the previous WebUI**, put this in your `pi.cfg`:
 
   ```
   PI_STATIC_FOLDER = "static_old/"
-  PI_TEMPLATE_FOLDER = "static_old/templates/"
   ```
 
-  Both lines are needed: the first selects the files the WebUI is served from, the second the templates the server
-  renders itself. The previous WebUI will be **removed in the next version**, so treat this as a way to buy time for a
-  problem report, not as a permanent setting.
+  The templates the server renders itself are read from `static_old/templates/` by default; set
+  `PI_TEMPLATE_FOLDER = "static_old/templates/"` as well only if your `pi.cfg` points it to a folder of your own. The
+  previous WebUI will be **removed in a future version**, so treat this as a way to buy time for a problem report, not
+  as a permanent setting.
 
 * **The WebUI sources are no longer part of a release.** The Python packages ship the compiled WebUI
   (`static/dist/`) and the assets it is served with (`static/public/`), but not the Angular sources it is built from.
@@ -61,8 +61,9 @@
   public key and comment) in the encrypted OTP key field of the token. The checksum is verified whenever the public SSH
   key is fetched (e.g. by `privacyidea-authorizedkeys`), so manipulations of the database entries are detected and the
   key is refused. The database migration computes the checksum for all existing SSH key tokens — **run the schema
-  update** (`pi-manage setup update_db`), otherwise existing SSH key tokens will refuse to hand out their keys. Tokens
-  whose encrypted key cannot be decrypted are skipped by the migration and must be re-enrolled.
+  update** (`privacyidea-schema-upgrade`; `privacyidea-pip-update` runs it for you), otherwise existing SSH key tokens
+  will refuse to hand out their keys. Tokens whose encrypted key cannot be decrypted are skipped by the migration and
+  must be re-enrolled.
 
 * **Challenge table cleared** — The database migration deletes all rows from the `challenge` table. Challenge data is
   now stored in a new format (encrypted JSON dict) that is incompatible with previous versions. If you use long

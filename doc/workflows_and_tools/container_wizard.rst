@@ -32,6 +32,12 @@ Requirements for the container wizard
     :ref:`container_synchronization` for more information.
     However, this option is only available for smartphone containers.
 
+* If user policies are defined, the user also needs the user policy actions ``container_create``,
+  ``container_register`` for the registration QR code, and the enroll rights for the token types of the template
+  (e.g. ``enrollHOTP``). Without ``container_register`` the container is created without a registration QR code, and
+  tokens of the template that the user may not enroll are skipped. The previous WebUI applies the template only if
+  the user also has ``container_template_list``.
+
 If both the token wizard and the container wizard are enabled, the token wizard will be displayed first. After the
 token is enrolled, the user can move on to the container wizard. However, if the token type is supported by the
 container type it is recommended to only use the container wizard with a template containing the token.
@@ -40,7 +46,10 @@ Customization
 -------------
 
 The container wizard only shows required information without further text and instructions. To customize the view, you
-can configure HTML templates that are included on top and at the bottom of each view.
+can configure HTML templates that are included on top and at the bottom of each view. In the WebUI, a non-empty
+``*.top.html`` file replaces the default content on top: the title on the creation page, and the success message
+together with the instruction to scan the QR code after the creation. The WebUI removes scripts, ``<style>`` elements
+and ``style`` attributes from the ``pre`` and ``post`` files.
 
 
 For the creation page, add the following files to add your custom text:

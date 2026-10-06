@@ -22,9 +22,13 @@ One for the API call and more for the triggered actions.
 Events
 ------
 
-Each **API call** is an **event** and you can bind arbitrary actions to each
-event as you like. You can bind several actions to one event. These actions are executed
-in the order of the priority one after another.
+Most API calls of the token, container, user, authentication (``/auth``) and validation endpoints are **events**,
+e.g. ``token_init`` or ``validate_check``; the calls of the ``/ttype/``, token group, service ID, subscription and
+``/clients`` endpoints are events as well. The configuration endpoints (policies, realms, resolvers, system settings, SMTP and SMS
+configuration, event definitions, audit, machines, periodic tasks, CA connectors, ...) do not trigger events.
+You can bind arbitrary actions to each event as you like. You can bind several actions to one event. These actions
+are executed one after another in ascending order of their *Ordering* value (lowest first). Pre and post definitions
+run in separate passes.
 
 .. Note:: An action that is triggered by an event cannot trigger a new action. Only **events** (API calls)
    can trigger actions. E.g. if you are using the :ref:`tokenhandler` to create a new token, the creation
@@ -63,8 +67,9 @@ Example for Pre Handling
 The administrator can define an event definition that would trigger on the event ``validate_check`` in case the
 authenticating user does not have any token assigned.
 
-The *pre* event definition could call the Tokenhandler with the *enroll* action and enroll an email token with
-*dynamic_email* for this very user.
+The *pre* event definition could call the Tokenhandler with the *enroll* action and enroll an email token with the
+options *user* and *dynamic_email* for this very user (*dynamic_email* only takes effect together with *user*, see
+:ref:`event_token_enroll`).
 
 When the API request ``/validate/check`` is now processed, the user actually now has an email token and can authenticate
 via challenge response with this very email token without an administrator ever enrolling or assigning a token for this
@@ -110,7 +115,11 @@ the same conditions.
    Event Handlers are a mighty and complex tool to tweak the functioning of your privacyIDEA system. We recommend
    testing your definitions thoroughly to assure your expected outcome.
 
-Invalid conditions are evaluated to False. Errors are logged, but not raised to not break the request.
+If checking the conditions or running the action fails, the action is not performed, the error is logged and an audit
+entry with success *False* is written, and the request continues. If *Abort the request if the handler fails*
+(``abort_on_error``) is set for the definition, the request fails instead. Definitions of the :ref:`federationhandler`
+get this option enabled when it is not given, and the :ref:`scripthandler` with *raise_error* always fails the
+request. A condition the handler does not know is ignored, i.e. it counts as fulfilled.
 
 
 .. _condition_comparators:
@@ -127,15 +136,16 @@ comparators are available:
   dates in isoformat.
 * ``<`` evaluates to true if the left value is less than the right value. Allows comparison of integers and dates
   in isoformat.
-* ``matches`` evaluates to true if the left value matches the right value as a regular expression. Allows
-  comparison of strings.
+* ``matches`` evaluates to true if the whole left value matches the right value as a regular expression (use
+  ``.*World`` to find *World* anywhere). Allows comparison of strings.
   ``!matches`` evaluates to true if this is not the case.
 * ``in`` evaluates to true if the left value is contained in the comma-separated list on the right.
   Only allows strings.
   ``!in`` evaluates to true if this is not the case.
 * ``contains`` evaluates to true if the left value is a list containing the right value. Only allows strings.
   ``!contains`` evaluates to true if this is not the case.
-* ``string_contains`` evaluates to true if the left value (a string) contains the right value as a substring.
+* ``string_contains`` evaluates to true if the left value (a string) contains the right value as a substring,
+  ignoring upper and lower case.
   ``!string_contains`` evaluates to true if this is not the case.
 * ``date_before`` evaluates to true if the left value is a date and time that occurs before the right value.
   Both values must be a date in ISO format (e.g. "YYYY-MM-DD hh:mm:ss±hh:mm").
@@ -153,6 +163,10 @@ comparators are available:
   * ``s`` for seconds
 
   For example, "7d" means "within the last 7 days", "2h" means "within the last 2 hours".
+
+When two dates are compared, both must either contain a time zone offset or not. ``date_before`` and ``date_after``
+evaluate to false if only one of them has an offset; ``<`` and ``>`` make the event handler fail. ``{now}`` always
+contains the offset of the server.
 
 Usually, comparators should be wrapped in single quotes, e.g. ``'=='1000`` or ``'>'1000``. Due to backwards
 compatibility, the basic comparators (``==``, ``!=``, ``>``, ``<``) can also be used without quotes.
@@ -232,10 +246,11 @@ Those messages vary widely, for example::
 **last_auth**
 
 This condition checks if the last authentication is older than the specified
-time delta. The timedelta is specified with "h" (hours), "d" (days) or "y"
-(years). Specifying ``180d`` would mean that the action is triggered if the
-last successful authentication with the token was performed more than 180
-days ago.
+time delta. The timedelta is specified with "s" (seconds), "m" (minutes), "h"
+(hours), "d" (days) or "y" (years). Specifying ``180d`` would mean that the
+action is triggered if the last successful authentication with the token was
+performed more than 180 days ago. Tokens that were never used for a successful
+authentication do not match.
 
 This can be used to send notifications to users or administrators to inform
 them that there is a token that might be orphaned.
@@ -302,7 +317,8 @@ process.
 **serial**
 
 The action will only be triggered if the serial number of the token in the
-event matches the regular expression.
+event starts with a match of the regular expression, e.g. ``OATH`` matches
+*OATH0001*. Use ``.*`` in front to match anywhere and ``$`` to match the end.
 
 This is a good idea to combine with other conditions. E.g. only tokens with a
 certain kind of serial number like Google Authenticator will be deleted
@@ -376,8 +392,9 @@ are not assigned to a user are pushed into a kind of storage realm.
 
 **tokenresolver**
 
-The resolver of the token for which this event should apply. The action is also triggered if the token (the token
-owner) is in no resolver at all.
+The action is only triggered if one of the realms of the token contains one of the given resolvers. The resolver of
+the token owner is not checked; use the condition *resolver* for the resolver of the user. The action is also
+triggered if the token is in no realm.
 
 **tokentype**
 
@@ -402,8 +419,11 @@ where ``<fieldname>`` is the name of any user info field and ``<fieldvalue>`` is
 You can use the tag ``{now}`` for time-based comparisons. It is also possible to add offsets to ``{now}``
 in seconds (``s``), minutes (``m``), hours (``h``) or days (``d``)::
 
-    last_login '<' {now} - 7d
-    created '>' {now} - 1h
+    last_login '<' {now}-7d
+    created '>' {now}-1h
+
+The plus or minus must follow ``{now}`` without a blank. With blanks the offset is not applied and the value is
+compared as a string.
 
 This can be useful to e.g. trigger actions for users who have not logged in for a certain period of time.
 
@@ -443,9 +463,12 @@ value. You can use all :ref:`condition_comparators` that support integers. Valid
 The *challenge_session* condition can compare the value of the session attribute of
 a challenge against a regular expression. Usual values of the session are:
 
-*enrollment* during a multi challenge enrollment process and
+*enrollment* during a multi challenge enrollment process,
 
-*challenge_declined* if the challenge of a PUSH token was declined by the user.
+*challenge_declined* if the challenge of a PUSH token was declined by the user and
+
+*challenge_cancelled* if the user canceled a PUSH challenge in the app (decline reason *cancelled*). A definition
+that matches ``challenge_declined`` does not fire for it.
 
 This way, the administrator can check for declined PUSH authentications and take
 according actions to implement PUSH fatigue mitigations like
@@ -514,7 +537,8 @@ condition is not checked if the container has no owner, hence the action would b
 
 **container_last_authentication**
 
-The action is only triggered if the last authentication of the container is older than the specified time delta.
+The action is only triggered if the container authenticated within the specified time span, e.g. ``7d`` = the last
+authentication of the container lies within the last 7 days. A container that never authenticated does not match.
 The time value has to be an integer followed by a time unit.
 Supported units are: ``y`` (years), ``d`` (days), ``h`` (hours), ``m`` (minutes), ``s`` (seconds).
 Only one unit is allowed.
@@ -522,7 +546,8 @@ Examples: ``'8h', '7d', '1y'``
 
 **container_last_synchronization**
 
-The action is only triggered if the last synchronization of the container is older than the specified time delta.
+The action is only triggered if the container synchronized within the specified time span, e.g. ``7d`` = the last
+synchronization of the container lies within the last 7 days. A container that never synchronized does not match.
 The time value has to be an integer followed by a time unit.
 Supported units are: ``y`` (years), ``d`` (days), ``h`` (hours), ``m`` (minutes), ``s`` (seconds).
 Only one unit is allowed.

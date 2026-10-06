@@ -23,11 +23,12 @@ I.e. a user that does not exist in a given realm and resolver can create a
 new account.
 
 .. note:: Registering new users is only possible, if there is a writeable
-   resolver and if the necessary policy in the scope *register* is defined.
+   resolver and if a policy in the scope *register* defines at least *resolver*
+   and *smtpconfig*.
    For editable UserIdResolvers see :ref:`useridresolvers`.
 
-If a register policy is defined, the login window of the WebUI gets a new
-link "Register".
+If a register policy with the action *resolver* is defined, the login window
+gets a new link "Register".
 
 .. figure:: images/register.png
    :width: 500
@@ -91,8 +92,10 @@ This is the unique identifier of the :ref:`smtpserver`. This SMTP server is
 used to send the notification email with the registration code during the
 registration process.
 
-.. note:: If there is no *smtpconfig* or it is set to a wrong identifier, the user
-   will get no notification email.
+.. note:: *smtpconfig* is required. Without it the registration is refused. If it
+   names an SMTP server configuration that does not exist, the registration fails
+   with an error after the user and the registration token were created, and they
+   are not removed.
 
 .. _policy_requiredemail:
 
@@ -103,12 +106,15 @@ type: ``string``
 
 This is a regular expression according to [#pythonre]_.
 
-Only email addresses matching this regular expression are allowed to register.
+Only email addresses in which this regular expression is found are allowed to
+register. The expression is searched anywhere in the address, so anchor it with
+``^`` and ``$``. If several policies apply, an address matching any of them is
+allowed.
 
 **Example**: If you only want to allow email addresses from the domain
 *example.com*, a policy might look like this::
 
-   action: requiredemail=/.*@example\.com/
+   action: requiredemail=/^[^@]+@example\.com$/
 
 registration_body
 ~~~~~~~~~~~~~~~~~

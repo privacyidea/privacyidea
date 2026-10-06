@@ -17,10 +17,10 @@ With a suitable :ref:`policy_challenge_response` policy, it may also be used
 in the :ref:`challenge mode <authentication_mode_challenge>`.
 
 The HOTP token can also be used for offline scenarios. But be aware that the token will then not be usable for online authentications because
-the privacyIDEA server will provide the client that manages the offline authentication with a list of precalculated values and advance
-the counter on the server side beyond that list.
-For example, if a token is marked for offline use, privacyIDEA might provide the offline application with 100 pre-calculated OTP values.
-If the token's counter on the smartphone is at 1, the server will provide the values for counters 1 through 100 and then set its own internal counter to 101.
+the privacyIDEA server will provide the client that manages the offline authentication with hashes of the next OTP values (each
+combined with the PIN) and advance the counter on the server side beyond these values.
+For example, if a token is marked for offline use, privacyIDEA might provide the offline application with the hashes of 100 OTP values.
+If the token's counter on the smartphone is at 1, the server will provide the hashes for counters 1 through 100 and then set its own internal counter to 101.
 Therefore, only the offline application can verify the OTP values for counters 1-100.
 See also :ref:`offline use of HOTP tokens <hotp_offline>`.
 Passkeys can also be used offline and do not have this limitation, see :ref:`offline use of passkeys <fido_offline>`.

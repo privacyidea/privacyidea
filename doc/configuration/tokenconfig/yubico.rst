@@ -15,8 +15,13 @@ the Yubico Cloud service or another (possibly self-hosted) validation server.
    *Configure the Yubico Cloud mode*
 
 To contact the Yubico Cloud service you need to get an API key and a Client
-ID from Yubico and enter them here in the config dialog. In that case you
-can leave the Yubico URL blank and privacyIDEA will use the Yubico servers.
+ID from Yubico and enter them here in the config dialog. If the Yubico URL is
+not set, privacyIDEA uses ``https://api.yubico.com/wsapi/2.0/verify``. Do not
+save the field empty after it was filled: a stored empty value is used as URL
+and every authentication with a Yubico token fails; delete the entry instead
+(``DELETE /system/yubico.url``). If no Client ID and API key are configured,
+privacyIDEA uses a built-in shared Client ID and API key and logs a warning;
+configure your own.
 
 You can use another validation host, e.g. a self-hosted validation server.
 If you use the privacyIDEA token type *Yubikey*, you can use the URL

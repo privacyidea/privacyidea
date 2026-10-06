@@ -105,9 +105,10 @@ In order to setup privacyIDEA a configuration file must be added in
     SUPERUSER_REALM = ['super']
     # Your database
     SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://pi:<dbsecret>@localhost/pi'
-    # This is used to encrypt the auth_token
+    # Signs the JWTs issued by /auth (changing it invalidates all issued JWTs)
     #SECRET_KEY = 't0p s3cr3t'
-    # This is used to encrypt the admin passwords
+    # Pepper for the hashes of the local admin passwords, the password reset
+    # codes and the API key secrets (changing it invalidates all of them)
     #PI_PEPPER = "Never know..."
     # This is used to encrypt the token data and token passwords
     PI_ENCFILE = '/etc/privacyidea/enckey'
@@ -171,6 +172,15 @@ the ldap ports::
 
     $ setsebool -P httpd_can_connect_ldap 1
 
+If privacyIDEA has to reach further services, enable the matching booleans as
+well: ``httpd_can_sendmail`` for SMTP servers, and ``httpd_can_network_connect``
+for all other outgoing connections, e.g. HTTP SMS gateways, push notifications,
+HTTP-based user stores (HTTP, Keycloak, Entra ID), RADIUS servers, other
+privacyIDEA servers, the Microsoft CA connector and Redis::
+
+    $ setsebool -P httpd_can_sendmail 1
+    $ setsebool -P httpd_can_network_connect 1
+
 If something does not seem right, check for "``denied``" entries in
 ``/var/log/audit/audit.log``
 
@@ -216,6 +226,13 @@ After a restart of the apache webserver (:code:`$ systemctl restart httpd`)
 everything should be up and running.
 You can log in with your admin user at ``https://<privacyidea server>`` and start
 enrolling tokens.
+
+This installation does not schedule any jobs. Set up the cron jobs described in
+:ref:`cleanup_jobs` (the example for an installation from PyPI there uses the
+paths and the user of this installation), otherwise periodic tasks do not run
+and several database tables grow without limit.
+
+Now you may proceed to :ref:`first_steps`.
 
 .. _rpm_installation:
 

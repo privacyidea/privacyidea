@@ -11,7 +11,11 @@ This way privacyIDEA can change the data sent back to the client, depending
 on certain conditions.
 
 All actions take a JSON pointer, which looks like a path variable like
-``/result/value``.
+``/result/value``. The JSON pointer can have at most three levels, like
+``/detail/googleurl/img``. A longer pointer is ignored (a warning is logged).
+List entries can not be addressed: a pointer into a list, e.g.
+``/detail/multi_challenge/0``, makes the handler fail. In both cases the value
+stays in the response.
 
 Possible Actions
 ~~~~~~~~~~~~~~~~

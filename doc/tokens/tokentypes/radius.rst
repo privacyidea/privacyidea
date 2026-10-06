@@ -10,7 +10,8 @@ RADIUS Server.
 
 When forwarding the authentication request, you can
 change the username
-and mangle the password.
+and check the PIN locally, so that only the remaining part of the password is
+forwarded (see *Check the PIN locally*).
 
 .. figure:: images/enroll_radius.png
    :width: 500
@@ -30,9 +31,8 @@ be forwarded. The configuration can be defined in :ref:`radiusserver_config`
 
 **RADIUS User**
 
-When forwarding the request to the RADIUS server, the authentication request
-will be issued for this user. If the user is left empty, the RADIUS request
-will be sent with the same user currently trying to authenticate.
+*RADIUS User* is required. The RADIUS request is always sent for this user
+name, not for the user who is authenticating.
 
 **RADIUS Secret**
 

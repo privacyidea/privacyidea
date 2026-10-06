@@ -59,9 +59,10 @@ compatible and frequently used with the software.
       - Thetis FIDO2 Security Key, Thetis Pro FIDO2
 
 .. note::
-   While privacyIDEA supports the standard CTAP2 protocol used by most FIDO2 devices,
-   specific "manage" features (such as resident credential management or bio-enrollment)
-   depend on the specific device firmware capabilities.
+   privacyIDEA acts as the WebAuthn relying party; the browser or the operating system
+   talks CTAP2 to the device. Device management functions such as resident credential
+   management or fingerprint enrollment are not part of privacyIDEA; they depend on the
+   device firmware and are done with the tools of the vendor or the operating system.
 
 Classic Hardware Tokens
 =======================

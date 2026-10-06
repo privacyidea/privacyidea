@@ -37,10 +37,16 @@ Then you can verify the fingerprint::
 
    gpg --import --import-options show-only --with-fingerprint NetKnights-Release.asc
 
-The fingerprint of the key is::
+The output must show the key ``NetKnights GmbH <release@netknights.it>`` with
+this fingerprint::
 
-   pub 4096R/AE250082 2017-05-16 NetKnights GmbH <release@netknights.it>
-   Key fingerprint = 0940 4ABB EDB3 586D EDE4 AD22 00F7 0D62 AE25 0082
+   pub   rsa4096 2017-05-16 [SC]
+         0940 4ABB EDB3 586D EDE4  AD22 00F7 0D62 AE25 0082
+   uid                      NetKnights GmbH <release@netknights.it>
+   sub   rsa4096 2017-05-16 [E]
+
+Other GnuPG versions arrange the output differently, but the fingerprint must
+be the same.
 
 Now you can add the signing key to your system::
 
@@ -93,6 +99,10 @@ have to run on the same machine as privacyIDEA.
 To install this module run::
 
    apt-get install privacyidea-radius
+
+The package enables its own FreeRADIUS site ``privacyidea`` and the module
+``perl-privacyidea``. It disables all other enabled sites and the ``eap``
+module, so install it on a FreeRADIUS server that serves nothing else.
 
 The ``privacyidea-radius`` package is available for Ubuntu 22.04 LTS and 24.04 LTS.
 

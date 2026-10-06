@@ -45,11 +45,15 @@ Each policy can contain the following attributes:
 **policy name**
 
   A unique name of the policy. The name is the identifier of
-  the policy. If you create a new policy with the same name,
-  the policy is overwritten.
+  the policy. If you save a policy under an existing name, the
+  existing policy is updated: the attributes sent in the request
+  replace the stored ones, all others keep their values. The
+  WebUI always sends the whole policy.
 
   .. note:: In the web UI and the API policies can only be created
-     with the characters 0-9, a-z, A-Z, "_", "-", " " and ".".
+     with the characters 0-9, a-z, A-Z, ``_``, ``-`` and ``.``.
+     The names ``check`` and names starting with ``pi-update-policy-``
+     are reserved.
      On a library level or during migration scripts policies with
      other characters could be created.
 
@@ -100,6 +104,11 @@ The fields *realm*, *resolver* and *user*, and *admin realm* and *admin user*, e
 values. ``*`` stands for every value, and a value with a leading ``!`` or ``-`` is excluded, also
 from ``*``: the realm ``*, !sales`` means every realm but *sales*. A field of nothing but exclusions
 matches no value at all.
+
+In *user* and *admin user* every value other than ``*`` is a regular expression that has to match
+the whole name: ``corn.*`` matches *cornelius*, while ``corn*`` means ``cor`` followed by any
+number of ``n``. A dot matches any character, so ``john.doe`` also matches *johnXdoe*. Realm and
+resolver values must name existing realms and resolvers.
 
 **realm**
 
@@ -176,6 +185,13 @@ matches no value at all.
      Mon-Fri: 8-18
 
   to define certain policies to be active throughout working hours.
+
+  Times are the local time of the privacyIDEA server, compared at minute precision with
+  both ends included: ``8-18`` means from 08:00 up to and including 18:00. A range can not
+  cross midnight (``22-6`` is rejected) or the end of the week: ``Fri-Mon`` is accepted but
+  never matches; write ``Fri-Sun: 0:00-23:59, Mon: 0:00-23:59`` instead. The current WebUI
+  only accepts whole hours (``<dow>: <hh>-<hh>``), so the forms with minutes can only be set
+  through the API.
 
   .. note:: If the time of a policy does not match, the policy is not found.
      This can lead to unintended side effects. Carefully consider this before

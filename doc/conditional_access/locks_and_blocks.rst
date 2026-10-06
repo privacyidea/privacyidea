@@ -20,8 +20,11 @@ runs out.
 
 Each entry also shows the error message the restriction carries - what the
 affected user is being told on the requests it refuses, or nothing where the stage
-said nothing. It is a copy taken when the restriction was written, see
-:ref:`conditional_access_error_messages_snapshot`.
+said nothing. It is a copy taken when a policy wrote the restriction, see
+:ref:`conditional_access_error_messages_snapshot`. A restriction set by hand
+carries none, also where it replaces one a policy wrote: the policy's copy is
+cleared together with its expiry and cause. Such a restriction is silent unless
+``show_default_ca_error_message`` is set.
 
 
 .. _conditional_access_policies_lifting:
@@ -31,9 +34,12 @@ Lifting locks and blocks
 
 *Logs → Locked Users* and *Logs → IP Blocklist* show the restrictions in force,
 with the permanent ones marked. An entry can be lifted individually or in bulk.
-Expired records restrict nobody; they are kept for the record and can be purged
-from the same pages. The Ubuntu packages and the Docker image purge them daily,
-see :ref:`cleanup_jobs`.
+Expired records restrict nobody. They are listed until they are purged - from
+the same pages, or daily by the Ubuntu packages and the Docker image, see
+:ref:`cleanup_jobs` - or until the next authentication request of that user, or
+from that address, removes them. A block on an address that has since been
+added to ``PI_CONDITIONAL_ACCESS_NEVER_BLOCK`` is removed the same way. The
+authentication log keeps the history.
 
 The same can be done on the command line with :ref:`pi-manage <pimanage>`::
 
@@ -49,15 +55,17 @@ The same can be done on the command line with :ref:`pi-manage <pimanage>`::
    pi-manage conditionalaccess clear-blocks
    pi-manage conditionalaccess purge-expired-blocks
 
-``unlock-user`` takes the login name as an argument and requires ``--realm``;
-add ``--resolver`` only if the login exists in more than one resolver. For a
+``unlock-user`` takes the login name as an argument and requires ``--realm``.
+It lifts every lock standing under that login name in the realm - if the login
+exists in more than one resolver, the locks of all of them; add ``--resolver``
+to lift only the lock of the user in that resolver. For a
 **local administrator** pass ``--admin`` instead of ``--realm``: such an account
 lives in the ``admin`` table rather than in a realm, so its login name is the
 whole identity, see :ref:`conditional_access_local_admins`.
 ``unlock-by-id`` does the same for a user that no longer resolves to a login,
-taking the stored ``--uid`` and ``--realm`` instead, again with ``--resolver``
-only to disambiguate a uid shared between resolvers. The two
-``clear-`` commands remove everything and ask for confirmation first, so pass
+taking the stored ``--uid`` and ``--realm`` instead; it too lifts every lock
+with that uid in the realm unless ``--resolver`` narrows it to one resolver. The
+two ``clear-`` commands remove everything and ask for confirmation first, so pass
 ``--yes`` when calling them from a script.
 
 .. note:: If you lock yourself out of the WebUI with a source IP policy, use
@@ -67,10 +75,14 @@ only to disambiguate a uid shared between resolvers. The two
    administrator account, ``pi-manage conditionalaccess unlock-user <login>
    --admin`` lifts it.
 
-Lifting a lock only undoes what a policy has already done - it will do it again
-on the next request. Switching the policy itself off, which is what a ``DENY``
-needs (it stores nothing that could be lifted), is described in
-:ref:`conditional_access_policies_cli`.
+Lifting a lock or a block only undoes what a policy has already done; the policy
+keeps counting. Whether it restricts again depends on the action: one with
+*Re-trigger while above the threshold* does so on the next request the policy
+tracks while the count is still in its stage's range, and a fire-once action
+only once the count has dropped below its threshold and reached it again, see
+:ref:`conditional_access_policies_stages`. Switching the policy itself off,
+which is what a ``DENY`` needs (it stores nothing that could be lifted), is
+described in :ref:`conditional_access_policies_cli`.
 
 .. _conditional_access_manual_restrictions:
 
@@ -178,8 +190,10 @@ you would use to undo it. Two things guard against that: a timed lock lifts
 itself, and ``pi-manage conditionalaccess unlock-user <login> --admin`` lifts one
 from the server without needing to log in. To keep such an account out of a
 policy altogether, give the policy a ``USER_ROLE NOT IN [admin-internal]``
-condition - the same break-glass condition the templates use, see
-:ref:`conditional_access_policies_exceptions`.
+condition, and read what that exemption costs in
+:ref:`conditional_access_policies_exceptions`. The shipped templates do not
+carry this condition, so a ``user`` policy created from a template reaches the
+local administrator like anybody else until you add it.
 
 
 .. _conditional_access_never_block:
@@ -203,10 +217,12 @@ client rather than by the operating system.
 The exemption is checked both when a block is created and when an existing one
 is enforced, so adding an address immediately stops a block already in force
 from taking effect. It withholds the block itself, not the whole policy: an
-exempt address is never blocked and is never refused by a ``DENY``, but a policy
-it trips still counts, still records what it did in the authentication log, and
-still runs the other actions of the stage - an ``EMAIL_ADMIN`` alongside the
-block is sent as usual.
+exempt address is never blocked and is never refused by the ``DENY`` of a
+``source_ip`` policy, but a policy it trips still counts, still records what it
+did in the authentication log, and still runs the other actions of the stage -
+an ``EMAIL_ADMIN`` alongside the block is sent as usual. ``user`` policies do
+not look at the address at all: their ``DENY`` and the locks they write apply to
+requests from an exempt address like to any other.
 
 .. warning:: A source IP is only meaningful if privacyIDEA sees the real client
    address. Behind a reverse proxy or a load balancer you have to configure

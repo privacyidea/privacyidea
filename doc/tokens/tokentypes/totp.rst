@@ -11,7 +11,7 @@ Roughly speaking the TOTP algorithm is the same algorithm as HOTP,
 where the event based counter is replaced by the unix timestamp.
 
 The TOTP algorithm has some parameters, like if the generated OTP value will
-be 6 digits or 8 digits or if the SHA1 or the SHA256 hashing algorithm is
+be 6 digits or 8 digits or if the SHA1, SHA256 or SHA512 hashing algorithm is
 used and the timestep being 30 or 60 seconds.
 
 The TOTP token implements the :ref:`authenticate mode <authentication_mode_authenticate>`.

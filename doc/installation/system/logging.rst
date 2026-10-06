@@ -11,10 +11,23 @@ If you experience problems, set ``PI_LOGLEVEL = 10``, restart the web service
 and resume the operation. The log file ``privacyidea.log`` should contain
 some clues.
 
-You can define the location of the logfile using the key ``PI_LOGFILE``.
-Usually it is set to::
+You can define the location of the logfile using the key ``PI_LOGFILE``. If it
+is not set, the file ``privacyidea.log`` is written to the working directory of
+the server process (or of ``pi-manage``). Set it to an absolute path, usually::
 
    PI_LOGFILE = "/var/log/privacyidea/privacyidea.log"
+
+The *pi.cfg* of the Ubuntu packages sets this path. The Docker image logs to
+standard error and ignores ``PI_LOGFILE``.
+
+.. note:: ``PI_LOGLEVEL`` and ``PI_LOGFILE`` only apply when privacyIDEA uses no
+   logging configuration file (see :ref:`advanced_logging`). As soon as it loads
+   such a file - the file set with ``PI_LOGCONFIG`` or, without that key,
+   ``/etc/privacyidea/logging.cfg`` - the levels, handlers and log files are
+   taken from that file only, and both keys are ignored. To debug, raise the
+   level in that file. If the file exists but cannot be loaded, privacyIDEA
+   writes the error to standard error and uses ``PI_LOGLEVEL`` and
+   ``PI_LOGFILE``.
 
 .. _advanced_logging:
 
@@ -28,6 +41,8 @@ For more details see `python logging config <https://docs.python.org/3/library/l
 
 You can also define a more detailed logging by specifying a
 log configuration file. By default the file is ``/etc/privacyidea/logging.cfg``.
+If this file exists and can be loaded, ``PI_LOGLEVEL`` and ``PI_LOGFILE`` are
+ignored.
 
 You can change the location of the logging configuration file
 in :ref:`cfgfile` like this::
@@ -40,6 +55,7 @@ Such a YAML based configuration could look like this:
 .. code-block:: yaml
 
     version: 1
+    disable_existing_loggers: false
     formatters:
       detail:
         class: privacyidea.lib.log.SecureFormatter
@@ -83,6 +99,12 @@ Such a YAML based configuration could look like this:
       - syslog
       level: WARNING
 
+Set ``disable_existing_loggers: false`` as in this example. Without it, every
+logger that already exists when privacyIDEA loads the file, e.g. the SQLAlchemy
+loggers, is switched off, unless the file names it or a logger above it (as
+``privacyidea`` is above ``privacyidea.lib.token``). A YAML file that configures
+only ``root`` would switch off all loggers of privacyIDEA.
+
 Different handlers can be used to send log messages to log-aggregators like
 Splunk [#splunk]_ or Logstash [#logstash]_.
 
@@ -122,15 +144,16 @@ The old `python logging config file format <https://docs.python.org/3/library/lo
    handlers=file,mail
    qualname=privacyidea
    level=DEBUG
+   propagate=0
 
    [logger_root]
    level=ERROR
    handlers=file
 
 
-.. note:: These examples define a mail handler, that will send emails
-   to certain email addresses, if an ERROR occurs. All other DEBUG messages will
-   be logged to a file.
+.. note:: These examples define a mail handler that sends emails to certain
+   email addresses if an ERROR occurs. All other messages are logged to a file:
+   DEBUG and higher in the cfg example, INFO and higher in the YAML example.
 
 .. note:: The filename extension is irrelevant in this case
 

@@ -5,7 +5,11 @@ Container Templates
 
 Typically, the same set of tokens is enrolled for multiple users. To simplify the token rollout, privacyIDEA supports
 container templates from version 3.11. A container template is a predefined set of tokens. Creating a container from a
-template enrolls all tokens from the template in the new container.
+template enrolls the tokens from the template in the new container. Each token is enrolled with the enrollment policies
+of the user or administrator who creates the container. A token they are not allowed to enroll (e.g. the token type is
+not allowed, the maximum number of tokens is reached, or a required description is missing) or that can not be created
+is skipped without an error: the container is created with the remaining tokens, and the response lists only the
+tokens that were created.
 
 Using container templates in combination with the synchronization feature allows for a simplified token rollout. The
 user only needs to scan the QR code for the container and gets all tokens on his smartphone without the need to scan
@@ -62,6 +66,9 @@ Generic
   just consists of the OTP pin or (if otppin=userstore is set) of the userstore
   password.
 * :ref:`tan_token` - TANs printed on a sheet of paper.
+* :ref:`tiqr_token` - A smartphone token that can be used to log in by only scanning a QR code.
+  The token must be assigned to a user, so it is only created if the template assigns it to the container owner and
+  the container has an owner, or if a user creates the container.
 * :ref:`totp_token` - time based One Time Password tokens.
 
 

@@ -46,6 +46,11 @@ with his old OTP PIN and the long password.
 
 The lost token is deactivated.
 
+The replacement password token is valid for 10 days; the enrollment policy
+``losttoken_valid`` (see :ref:`enrollment_policies`) sets another number of days.
+Only a token that is assigned to a user can be marked as lost; for a token
+without owner the process ends with an error after the confirmation.
+
 Running the process again for the same token issues another replacement and
 deactivates the one issued before it, so a password that was handed out earlier
 can no longer be used.
@@ -79,7 +84,9 @@ You can change the following token settings.
 
    If the login fail counter (*Fail Count*) reaches the *Max Count*, the user can not log in
    with this token anymore. The *Fail Count* has to be reset
-   to zero.
+   to zero, either manually (see *Reset Fail counter* below) or automatically:
+   if :ref:`clear_failcounter` is configured, the next authentication attempt
+   after this time resets it.
 
 **Description**
 
@@ -122,7 +129,7 @@ You can change the following token settings.
 
 **Information:** ``hashlib``
 
-   The HOTP algorithm can be used with SHA1 or SHA256.
+   The HOTP and TOTP algorithms can be used with SHA1, SHA256 or SHA512.
 
 **Information:** ``count_auth_max``
 
@@ -203,7 +210,9 @@ Unassign
 ---------
 
 In the token details view you can unassign the token. After that, the token
-can be assigned to a new user.
+can be assigned to a new user. Unassigning removes the OTP PIN and resets the
+fail counter. The token stays active and keeps its token realms; disable it if
+it must not be used until it is assigned again.
 
 Add to Container
 ----------------
@@ -231,7 +240,10 @@ be enabled again.
 Set PIN
 --------
 
-You can set the OTP PIN or the mOTP PIN for tokens in the *PIN Setup* section of the token details.
+You can set the OTP PIN of a token in the *PIN Setup* section of the token details: enter it in *PIN* and
+*Repeat PIN* and click *Set PIN* (policy action ``setpin``). *Random PIN* lets the server generate a PIN and shows it
+once (policy actions ``setrandompin`` and ``otp_pin_set_random``). The mOTP PIN of an mOTP token is set during
+enrollment; to change it later, use ``POST /token/setpin`` with the parameter ``userpin``.
 
 Reset Fail counter
 ------------------

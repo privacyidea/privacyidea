@@ -15,8 +15,9 @@ a second time.
 The length and the contents of the registration code can be configured using the
 :ref:`enrollment_policies` ``registration.length`` and ``registration.contents``.
 
-.. note:: The registration code can only be enrolled via the API to provide
-   automated smooth workflow to your needs.
+.. note:: Administrators can enroll a registration code in the WebUI or through
+   the API, e.g. to build an automated workflow. Users can not enroll it in the
+   WebUI.
 
 For a more detailed insight see the code documentation
 :ref:`code_registration_token`.

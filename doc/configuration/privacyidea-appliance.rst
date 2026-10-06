@@ -134,6 +134,12 @@ be overwritten during the setup.
 The appliance-tool can also set up an encrypted VPN that is used for the replication
 of the database.
 
+privacyIDEA does not coordinate token counters, fail counters and challenges
+between the nodes. Send authentication requests to one node at a time
+(active/passive, or a proxy that sends all writes to one node). If both nodes
+accept authentication requests, the same OTP value can be accepted on both nodes
+within the replication delay. See also :ref:`ha_setups`.
+
 .. figure:: images/appliance/database.png
    :width: 400px
 

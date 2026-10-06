@@ -21,8 +21,9 @@ The container list displays all containers that the user or administrator is all
 contained in a container, click on the container's row. Clicking on the container
 serial will open the container details page.
 
-The container list can be filtered by the serial, type, description, and container realms. The list can also be sorted
-by the serial, type, and description in ascending and descending order.
+The container list can be filtered by the serial, type, description, state, user, realm of the user, container realm,
+the serial of a contained token, the template and whether a user is assigned. The list can also be sorted by the
+serial, type, and description in ascending and descending order.
 
 Container Details
 ~~~~~~~~~~~~~~~~~
@@ -46,7 +47,8 @@ States
 ......
 
 A container can be in multiple states. However, there are also states that exclude each other, e.g. active and
-disabled. Exclusive states are displayed next to each other.
+disabled. When editing the states, selecting one of two exclusive states deselects the other, and at least one state
+must be selected. Editing the states requires the policy action ``container_state``.
 
 Realms
 ......
@@ -64,13 +66,13 @@ user's name redirects to the :ref:`user_details` page.
 Template
 ........
 
-If the container was created from a template, the template name is displayed. Clicking on the template name opens the
-template details page.
+If the container was created from a template, the template name is displayed.
 
 Additionally, the container can be compared to the template. This is useful if the template was changed after the
-container was created. Clicking *Compare to Template* marks the differences in the token list: token types contained
-in the template but not in the container are added as rows with the serial ``MISSING``, and tokens whose type is in the
-container but not in the template are highlighted.
+container was created. Clicking *Compare to Template* marks the differences in the token list. The number of tokens of
+each token type is compared: for every token the template defines but the container lacks, a row with the serial
+``MISSING`` is added, and tokens beyond the number the template defines for their type are highlighted, also if the
+type is in the template.
 
 Synchronization
 ...............
@@ -102,9 +104,10 @@ to ``registered``. In case the QR code gets lost or the passphrase needs to be c
 by clicking *Register* again. However, this is only possible while the registration is in the
 ``client_wait`` state.
 
-For registered containers, the time of the last synchronization and the last time a token from the container
-was used for a successful authentication are displayed. Note that these timestamps are only set for registered
-containers, hence the last authentication time stamp is not set yet for a newly registered container.
+The time of the last successful authentication with a token of the container (*Last Authentication*) is displayed for
+every container. For registered containers, the time of the last synchronization (*Last Synchronization*) is displayed
+as well. Both timestamps are reset when a registration or a rollover is started, hence they are not set yet for a newly
+registered container.
 
 If the container with all tokens shall be registered on a new smartphone, a rollover can be performed. Similar to
 the registration, clicking *Rollover* opens the *Container Rollover* dialog, where you can set a passphrase and
@@ -124,9 +127,12 @@ Tokens
 ......
 
 At the bottom of the container details page, all the tokens in the container are listed. You can enable and disable each
-token and assign the container's user as token owner. You can also remove or delete tokens from the container. The
-*Actions* menu of the token list applies these actions to all tokens of the container at once.
-If another user's token is in the container, the user will only see the serial and all token actions will be disabled.
+token, and assign the container's user as owner of a token that has no owner (*Assign Owner*). You can also remove or
+delete tokens from the container. The *Actions* menu of the token list applies these actions to all tokens of the
+container at once. *Assign All* is available while at least one token of the container has no owner, and it assigns
+every token of the container to the container's user: tokens that belong to another user are unassigned first, without
+a confirmation, which also removes their OTP PIN.
+If another user's token is in the container, the user only sees its serial, and actions on that token are refused.
 
 There are two ways to add tokens to the container. Firstly, a new token can be enrolled. The user will be redirected to
 the enrollment page where the user of the container and the container are pre-selected. The second option is to add an
@@ -158,7 +164,7 @@ For a simplified rollout, the container can be created from a template. This wil
 container. It is also possible to modify the template in place for the container. Note that the changes are only
 applied to this container and do not change the template itself. The container will not be linked to the template.
 
-After creating the container with a template, a new page opens which shows the enrollment information for each token.
+After creating the container with a template, a dialog shows the enrollment information for each token.
 For HOTP tokens, for example, the QR code to enroll the token on a smartphone is displayed.
 
 .. figure:: images/container_created_with_template.png
@@ -168,8 +174,9 @@ For HOTP tokens, for example, the QR code to enroll the token on a smartphone is
 
 For smartphone containers, there is an additional option on the create page to register the container on a smartphone.
 The registration can be secured with a passphrase. To do this, a prompt that is displayed to the user in the app, and
-the actual passphrase response must be set. After creating the container, a new page will open showing the registration
-QR code. Scan the QR code with the privacyIDEA authenticator app to finalize the registration.
+the actual passphrase response must be set. After creating the container, a dialog shows the registration QR code. The
+button next to *Create Container* (*Reopen enrollment dialog*) opens it again. Scan the QR code with the privacyIDEA
+authenticator app to finalize the registration.
 
 If you create a smartphone container including the registration and also use a template, only the registration QR code
 and no enrollment information will be displayed. It is not required to enroll the tokens on the smartphone individually.

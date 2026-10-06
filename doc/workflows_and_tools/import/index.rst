@@ -71,8 +71,7 @@ twice will overwrite the token data.
 
 **seed** is the secret key, that is used to calculate the OTP
 value. The seed is provided in a hexadecimal notation. 
-Depending on the length either the SHA1 or SHA256 hash algorithm 
-is identified.
+The hash algorithm is derived from the length of the seed, see the note below.
 
 **type** is either HOTP, TOTP or OCRA.
 
@@ -90,8 +89,8 @@ For TAN tokens it looks like this::
 
 The list of tans is a whitespace separated list.
 
-.. note:: The Hash algorithm (SHA1, SHA256, SHA512) is derived from the length of the **seed**.
-   If the length of the seed does not match any Hash algorithm, the default SHA1 is used.
+.. note:: The hash algorithm is derived from the length of the hexadecimal **seed**: 56 characters select SHA224,
+   64 characters SHA256, 96 characters SHA384 and 128 characters SHA512. With any other length SHA1 is used.
 
 Import format version 2
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -115,7 +114,13 @@ Yubikey CSV
 Here you can import the CSV file that is written by the :ref:`ykpersgui` [#yubipers]_,
 in the traditional format or in the *Yubico format*. The tool has reached its end of life,
 but files written with it can still be imported.
-privacyIDEA can import all Yubikey modes, either Yubico mode or HOTP mode.
+privacyIDEA imports YubiKeys in Yubico OTP (AES) mode and in OATH-HOTP mode. Lines for the static
+password mode are skipped.
+
+HOTP tokens from a Yubikey CSV file always get the OTP length 6. For YubiKeys programmed with 8 digits, use a PSKC
+file or the *Flexible format* described in :ref:`yubikey_enrollment_tools` and import it as :ref:`import_oath_csv`.
+The *Yubico format* does not record the slot: all serials end in ``_X``, so if both slots of a YubiKey are programmed
+in the same mode, only the later line is imported.
 
 .. figure:: yubikey.png
    :width: 500
@@ -138,8 +143,18 @@ from the file.
    If it is not specified, SHA1 is used as the default. The length of the
    seed is *not* used to determine the Hash algorithm.
 
-PSKC files can be encrypted - either with a password or an AES key. You can
-provide this during the upload.
+PSKC files can be encrypted - either with a password or an AES key. You can provide this during the upload: the
+*Pre Shared Key* as 32 hexadecimal characters (128 bit), or the *Password*, from which the key is derived with PBKDF2
+using the parameters given in the file. Encrypted values must use AES-128-CBC.
+
+For encrypted files, the *Verification Method for the Authenticity of Imported Tokens* (API parameter
+``pskcValidateMAC``) decides how the MAC of the encrypted values is handled:
+
+* *Abort operation on unverifiable token* (``check_fail_hard``, default): if the MAC of one token does not match,
+  no token of the file is imported.
+* *Skip tokens that can not be verified* (``check_fail_soft``): tokens with a wrong MAC are not imported, the others
+  are.
+* *Do not verify the authenticity* (``no_check``): the MAC is not checked.
 
 
 SafeNet XML

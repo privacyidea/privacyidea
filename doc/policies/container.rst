@@ -34,6 +34,9 @@ type: ``string``
 The URL of the privacyIDEA server, e.g. ``https://privacyidea.example.com/``. It is used to build URLs of API endpoints the container
 can contact for registration and synchronization. Note that the URL might differ from the server URL of the WebUI.
 
+This action is required: without it a container can not be registered or rolled over (the request fails with
+"Missing enrollment policy privacyIDEA_server_url").
+
 .. versionadded:: 3.11
 
 container_registration_ttl

@@ -86,8 +86,11 @@ OpenLDAP, Active Directory, FreeIPA, NetIQ eDirectory.
 Server Settings
 ~~~~~~~~~~~~~~~
 The ``Server URI`` can contain a comma separated list of servers.
-The servers are used to create a server pool and are used with a round robin
-strategy [#serverpool]_.
+The servers are used to create a server pool [#serverpool]_. By default the
+servers are used round robin; with the parameter ``SERVERPOOL_STRATEGY`` the
+strategy can be set to ``FIRST`` (the first reachable server of the list) or
+``RANDOM``. The previous WebUI offers this setting, the current WebUI does not
+(use the API).
 
 **Example**::
 
@@ -113,12 +116,13 @@ TLS Certificates
 When using TLS with LDAP, you can tell privacyIDEA to verify the certificate. The corresponding
 checkbox is visible in the WebUI if the target URL starts with *ldaps* or when using STARTTLS.
 
-You can specify a file with the trusted CA certificate, that signed the
-TLS certificate. The default CA filename is */etc/privacyidea/ldap-ca.crt*
-and can contain a list of base64 encoded CA certificates.
-If a CA file is specified, privacyIDEA will use it. If you leave the field empty
-it will also try the system certificate store (*/etc/ssl/certs/ca-certificates.crt*
-or */etc/ssl/certs/ca-bundle.crt*).
+You can specify a file with the trusted CA certificates that signed the TLS
+certificate of the LDAP server; it can contain several base64 encoded CA
+certificates. If the field is left empty, privacyIDEA uses
+*/etc/privacyidea/ldap-ca.crt* if that file exists when the server starts,
+otherwise the system store (*/etc/ssl/certs/ca-certificates.crt* or
+*/etc/ssl/certs/ca-bundle.crt*) - only one of these files, not a combination. A
+file added later is used after a restart.
 
 Binding
 """""""
@@ -137,6 +141,15 @@ integrated into the AD Domain. A basic setup and more information on the Kerbero
 authentication can be found in the corresponding
 `GitHub Wiki <https://github.com/privacyidea/privacyidea/wiki/concept:-LDAP-resolver-with-Kerberos-auth>`_.
 
+SASL Kerberos needs the optional dependency ``gssapi``, for the service bind as
+well as for user password checks (extra ``kerberos``, see :ref:`pip_extras`).
+For the user password check, privacyIDEA uses the value of the attribute
+mapping key ``upn`` as Kerberos principal, and the login name if there is no
+``upn``. With NTLM, the user password check binds as
+``<domain of the Bind-DN>\<username>``, where the user name is the value of the
+first login name attribute; so the first login name attribute must be
+``sAMAccountName``.
+
 Caching
 """""""
 
@@ -148,8 +161,8 @@ Server Pools
 """"""""""""
 
 The ``Server pool retry rounds`` and ``Server pool skip timeout`` settings configure the behavior of
-the LDAP server pool. When establishing an LDAP connection, the resolver uses a round-robin
-strategy to select an LDAP server from the pool. If the current server is not reachable, it is removed
+the LDAP server pool. When establishing an LDAP connection, the resolver uses the configured strategy
+(round robin by default) to select an LDAP server from the pool. If the current server is not reachable, it is removed
 from the pool and will be re-inserted after the number of seconds specified in the *skip timeout*.
 If the pool is empty after a round, a timeout is added before the next round is started.
 The ldap3 module defaults system wide to 10 seconds before starting the next round.
@@ -286,7 +299,8 @@ Define a search filter to get the groups of the user. The following tags can be 
 
     * ``{base_dn}``: The base DN of the users as defined in ``Base DN``
     * ``{username}``: The username of the user to search for
-    * All keys defined in the attribute mapping surrounded by curly braces
+    * All keys defined in the attribute mapping surrounded by curly braces, if the attribute has a single value (a
+      multivalue attribute is not replaced)
 
 For example, a valid search filter could be::
 
@@ -307,6 +321,10 @@ e.g., ``distinguishedName``.
 **User Info Key**
 
 The key to store the groups in the user info (attribute mapping key).
+
+*Search Filter for User Groups*, *Group Name Attribute* and *User Info Key* are all required. If one of them is empty,
+the recursive search is not performed, without an error (only an info entry in the log). The WebUIs do not mark them
+as required.
 
 No anonymous referral chasing
 """""""""""""""""""""""""""""
@@ -363,6 +381,8 @@ The SQL resolver uses `SQLAlchemy <http://sqlalchemy.org>`_ internally.
 In the field ``Driver`` you need to set a driver name as defined by the
 `SQLAlchemy dialects <https://docs.sqlalchemy.org/en/20/dialects/>`_
 like ``mysql+pymysql`` or ``postgresql+psycopg2``.
+The *Database Encoding* (default ``latin1``) is used to decode column values
+that the database driver returns as bytes.
 
 In the *Table, Mapping, Pool & Editable* section you can specify how the users are
 identified.
@@ -393,15 +413,18 @@ password. This is used, if you are doing user authentication against the SQL
 database.
 
 .. note:: There is no standard way to store passwords in an SQL database.
-   privacyIDEA supports the most
-   common ways like WordPress hashes starting with *$P* or *$S*. Secure hashes
-   starting with *{SHA}* or salted secure hashes starting with *{SSHA}*,
-   *{SSHA256}* or *{SSHA512}*. Password hashes of length 64 are interpreted as
-   OTRS sha256 hashes.
+   privacyIDEA can verify these password hash formats: phpass as used by
+   WordPress (``$P$``, ``$H$``), its Drupal variant (``$S$``), ``{SHA}``,
+   ``{SSHA}``, ``{SSHA256}`` and ``{SSHA512}`` (the identifier also in lower
+   case, and with the ownCloud prefix ``1|``), MD5-crypt (``$1$``), bcrypt
+   (``$2a$``, ``$2b$``, ``$2y$``), SHA-256-crypt (``$5$``), SHA-512-crypt
+   (``$6$``), and hashes of 64 hex characters as OTRS SHA-256.
 
-You can mark the users as ``Editable``. The ``Password_Hash_Type`` can be
-used to determine which hash algorithm should be used, if a password of an
-editable user is written to the database.
+You can mark the users as ``Editable``. The ``Password_Hash_Type`` determines
+the hash that is written when the password of an editable user is set:
+``PHPASS``, ``SHA``, ``SSHA``, ``SSHA256`` (default), ``SSHA512``, ``OTRS``,
+``SHA256CRYPT``, ``SHA512CRYPT`` or ``MD5CRYPT``. The current WebUI does not
+offer ``SHA256CRYPT``.
 
 You can add an additional ``Where statement`` if you do not want to use
 all users from the table.
@@ -419,8 +442,11 @@ waits to get a connection from the pool.
    for the old connection settings will persist until the respective connections
    are closed by the SQL server or the web server is restarted.
 
-.. note:: The ``Additional connection parameters``
-   refer to the SQLAlchemy connection but are not used at the moment.
+.. note:: The *Connection Parameters* are appended to the SQLAlchemy
+   connection URL as query string, e.g. ``charset=utf8mb4&connect_timeout=3``
+   gives ``mysql+pymysql://user:password@host/db?charset=utf8mb4&connect_timeout=3``.
+   Which parameters are accepted depends on the database driver. *Test
+   Connection* uses them as well.
 
 .. _scim_resolver:
 
@@ -442,14 +468,11 @@ name and the ``Secret`` for this client.
 
 User information is then retrieved from the resource server.
 
-The available attributes for the ``Attribute mapping`` are:
-
- * username *(mandatory)*,
- * givenname,
- * surname,
- * phone,
- * mobile,
- * email.
+The SCIM resolver reads the attributes from the SCIM core schema: username and
+user ID = ``userName``, givenname = ``name.givenName``, surname =
+``name.familyName``, phone = the first entry of ``phoneNumbers``, email = the
+first entry of ``emails``; mobile is always empty. The ``Attribute mapping``
+field is currently not evaluated. It cannot check user passwords (``otppin=userstore`` does not work with it).
 
 .. _http_resolver:
 
@@ -512,15 +535,17 @@ for parsing, e.g.
 For APIs which return ``200 OK`` also for a negative response, ``Special error handling`` can be activated to treat
 the request as unsuccessful if the response contains certain content.
 
-The above configuration image will throw an error for a response
+With the configuration in the image, a response
 
 .. code-block:: json
 
    { "success": false, "message": "There was an error!" }
 
-because privacyIDEA will match ``{ "success": false }``.
+counts as failed, because it matches ``{ "success": false }``.
 
-.. note:: If the HTTP response status is >= 400, the resolver will throw an exception.
+.. note:: If the response status is 400 or higher, or the special error handling matches, the request counts as
+   failed: the error is logged and the user information is returned empty. No error is raised. Only a request that
+   cannot be sent (connection, timeout or TLS error) raises an error.
 
 
 .. _advanced_http_resolver:
@@ -603,9 +628,12 @@ The configuration is similar for each endpoint:
         { "username": "{Username}", "phone": "{Phone_Numbers.Phone}" }
 
       .. note::
-          If both response and attribute mappings are defined, the response mapping is applied first, followed by the
-          attribute mapping on the reformatted response. It is recommended to only use one of these mappings. However,
-          at least one mapping must be used.
+          For a single user, the response mapping is applied first and the attribute mapping is then applied to the
+          reformatted response. For the user list, the response mapping is applied to the whole response body, and
+          each listed user is translated with the attribute mapping only: without an attribute mapping every listed
+          user is empty. The *User List* endpoint must return a JSON array of user objects; a nested list such as
+          ``{"users": [...]}`` cannot be extracted with the response mapping, and the user list request then fails.
+          Use the attribute mapping for the user attributes.
 
     * **Special error handling** *(optional)*: If checked, the resolver will treat the request as unsuccessful if the response
       contains certain content. This is useful for APIs that return ``200 OK`` for a negative response.
@@ -622,6 +650,10 @@ Besides the generic endpoint settings, the ``username`` and ``password`` of a se
 authenticate.
 The password is stored encrypted in the database. If username and password are defined, they can be used as tags for
 the endpoint and request mapping, e.g. ``{"username": "{username}", "password": "{password}"}``.
+
+The response mapping of this endpoint defines the HTTP headers that are added to the requests for user lookups, the
+user list and creating, editing and deleting users, e.g. ``{"Authorization": "Bearer {access_token}"}``. The access
+token is not cached: privacyIDEA requests a new one for every request to the user store.
 
 **Check User Password**
 
@@ -643,15 +675,15 @@ request as search parameters if they are available in the request. You can also 
 **Get User by ID**
 
 Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores the UID of the token
-owner. To resolve the complete user, this endpoint is used. If an error occurs, the resolver will only log it and not
-throw an exception.
+owner. To resolve the complete user, this endpoint is used. If the request cannot be sent (connection, timeout or TLS
+error) or the access token cannot be obtained from the *Authorization* endpoint, an error is raised.
 
 Possible tag: ``{userid}``
 
 **Get User by Name**
 
-Configure the endpoint to retrieve a single user for the username. If an error occurs, the resolver will only log it
-and not throw an exception.
+Configure the endpoint to retrieve a single user for the username. If the request cannot be sent (connection, timeout
+or TLS error) or the access token cannot be obtained from the *Authorization* endpoint, an error is raised.
 
 For example, this is used when a user tries to authenticate against privacyIDEA. To resolve the complete user and
 evaluate if the user exists, this endpoint is used.
@@ -967,10 +999,11 @@ However, cache entries are removed at some defined events:
    can be found, ``resolverB`` is queried.
 
 .. note:: The user cache described here lives in privacyIDEA's own database and
-   stores only the login name / user ID association. If a Redis instance is
-   available, :ref:`redis_user_cache` additionally caches the *attributes* a
-   resolver returns, shared across all worker processes and nodes. The two are
-   independent: either, both, or neither can be enabled.
+   stores only the login name / user ID association. If Redis is configured and
+   ``PI_REDIS_CACHE_USERS`` is enabled, :ref:`redis_user_cache` caches the login
+   name / user ID lookups as well as the attributes a resolver returns, shared
+   across all worker processes and nodes. The two are independent: either, both,
+   or neither can be enabled.
 
 .. rubric:: Footnotes
 

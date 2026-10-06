@@ -34,16 +34,18 @@ eases the process of initializing a whole bunch of tokens.
 Run the command like this::
 
    privacyidea -U https://your.privacyidea.server -a admin token \
-   yubikey_mass_enroll --yubimode YUBICO
+   yubikey-mass-enroll --yubimode YUBICO --yubiprefixrandom 6
 
 This command initializes the device and creates a new token with the
-AES secret and prefix in privacyIDEA. You can enroll YubiKeys
+AES secret and prefix in privacyIDEA. ``--yubiprefixrandom 6`` gives the token
+the 12-character public ID (prefix) that Yubico mode expects; without it the
+YubiKey is programmed with an empty prefix. You can enroll YubiKeys
 in HOTP mode by using the option ``--yubimode OATH`` which is also the default.
 You can choose the slot with ``--yubislot``. For further help call
-``privacyidea token yubikey_mass_enroll`` with the ``--help`` option and refer to
+``privacyidea token yubikey-mass-enroll`` with the ``--help`` option and refer to
 the documentation of the tool [#privacyideaadmdocs]_.
 
-You can also use ``yubikey_mass_enroll`` with the option ``--filename`` to
+You can also use ``yubikey-mass-enroll`` with the option ``--filename`` to
 write the token configuration to the specified file, which can be imported
 later via the privacyIDEA WebUI at *Token* -> *Import*.
 There, select :ref:`import_oath_csv` and the file you just created.
@@ -115,11 +117,17 @@ To initialize one or more YubiKeys it is convenient to write the created token s
 which can be imported in the privacyIDEA WebUI. To do this, activate *Settings* -> *Log configuration output*.
 We recommend selecting *Yubico format*, since then privacyIDEA is able to detect the YubiKey mode and
 sets the serial accordingly by prepending UBOM or UBAM. PSKC format is also supported upon import.
+The *Yubico format* does not record the slot (all serials end in ``_X``) and imports HOTP tokens with the OTP
+length 6. If both slots of a YubiKey are programmed in the same mode, or for HOTP with 8 digits, use the *Flexible
+format* below.
 You may also use the *Flexible format* to set custom token serials upon import with :ref:`import_oath_csv`.
 
 To set a custom serial for Yubikey tokens, set the *Flexible format* to::
 
-   YUBIAES{serial}_{configSlot},{secretKeyTxt},yubikey
+   YUBIAES{serial}_{configSlot},{secretKeyTxt},yubikey,44
+
+The last column is the OTP length: 32 characters plus the length of the public ID, i.e. 44 for the default public ID
+of 12 characters. Without this column the token is imported with the OTP length 6 and does not authenticate.
 
 For YubiKeys in HOTP mode, set the output format as::
 

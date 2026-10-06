@@ -40,8 +40,10 @@ Local CA Connector
 
 The local CA connector calls a local OpenSSL configuration.
 
-An example *openssl.cnf* is provided in
-*/etc/privacyidea/CA/openssl.cnf*.
+The Ubuntu packages install an example *openssl.cnf* in
+*/etc/privacyidea/CA/*. Other installations (pip, Docker) do not ship one; use
+the *Easy Setup* below, which writes an openssl.cnf for the new CA. If a local
+CA connector has no openssl.cnf configured, */etc/ssl/openssl.cnf* is used.
 
 .. note:: This configuration and also this
    description is meant as an example. When setting up a production CA, you
@@ -55,7 +57,7 @@ Manual Setup
 
 2. Create your CA certificate::
 
-       openssl req -days 1500 -new -x509 -keyout /etc/privacyidea/CA/ca.key \
+       openssl req -days 1500 -new -x509 -noenc -keyout /etc/privacyidea/CA/ca.key \
                    -out /etc/privacyidea/CA/ca.crt \
                    -config /etc/privacyidea/CA/openssl.cnf
 
@@ -63,6 +65,12 @@ Manual Setup
        touch /etc/privacyidea/CA/index.txt
        echo 01 > /etc/privacyidea/CA/serial
        chown -R privacyidea /etc/privacyidea/CA
+
+   ``-noenc`` requires OpenSSL 3; use ``-nodes`` with older versions. The local CA
+   connector can not supply a passphrase for the CA key, so the key must be stored
+   unencrypted and protected by its file permissions (``chmod 0600``, owned by the
+   user privacyIDEA runs as). With an encrypted key every certificate request fails
+   with "An error occurred during signing of the certificate".
 
 3. Now set up a local CA connector within privacyIDEA with the directory
    */etc/privacyidea/CA* and the files accordingly.
@@ -121,8 +129,11 @@ This way the administrator can define certificate templates with certain
 X.509 extensions like keyUsage, extendedKeyUsage, CDPs or AIAs and
 certificate validity periods.
 
-The extensions are defined in a YAML file and the location of this file is
-added to the CA connector definition.
+The templates are defined in a YAML file whose location is part of the CA
+connector definition (a relative path is relative to the working directory of
+the connector). Each template gives the validity in days and the name of an
+extension section of the openssl.cnf; the extensions themselves
+(keyUsage, CDPs, ...) are defined in that section.
 
 The file can look like this, defining three templates "user", "webserver" and
 "template3"::
@@ -162,7 +173,10 @@ The port on which the worker listens.
 
 **Connect via Proxy**
 
-Whether the worker is situated behind an HTTP proxy.
+Whether privacyIDEA connects to the worker through an HTTP proxy. There is no field for the
+proxy address: it is taken from the environment variable ``grpc_proxy``, ``https_proxy`` or
+``http_proxy`` of the privacyIDEA process. If unchecked, no proxy is used, even if these
+variables are set.
 
 **Domain CA**
 
@@ -174,9 +188,10 @@ running and the name of the CA like ``<hostname>\<name of CA>``.
 
 **Use SSL**
 
-This is a boolean parameter. If it is checked, then privacyIDEA will communicate to
-the CA worker via TLS. Depending on the worker configuration it will also be required
-to provide a client certificate for authentication.
+This is a boolean parameter. If it is checked, privacyIDEA connects to the CA worker via
+TLS with client certificate authentication. *CA certificate*, *Client certificate* and
+*Client private key* are then all required; if one is missing, the connector can not be
+used ("Incomplete TLS configuration").
 
 .. note:: In production use SSL should always be activated and a client certificate must
    be used for authentication.
@@ -216,8 +231,8 @@ To convert between PKCS1 and PKCS8 format you can use::
 
 This is the password of the encrypted client private key.
 
-.. note:: We strongly recommend protecting the file with a password. As encrypted key files
-   we only support PKCS8!
+.. note:: We strongly recommend protecting the file with a password. Encrypted keys can be in
+   PKCS#8 or PKCS#1 (PEM) format.
 
 
 
@@ -230,4 +245,8 @@ For quick setup, you can also configure a connector at the command line using
 
     pi-manage config ca create -t microsoft <name-of-connector>
 
-It will ask you all relevant questions and set up a connector in privacyIDEA.
+It asks for the hostname and port of the worker and whether to use an HTTP proxy, then lists the
+available CAs to choose from. It does not configure TLS: the CA listing only works with a worker that
+accepts connections without TLS, and the connector is saved with *Use SSL* off. Set *Use SSL* and the
+certificate files afterwards in the WebUI (see the note on SSL above). If the worker can not be reached,
+the command ends with an error.
