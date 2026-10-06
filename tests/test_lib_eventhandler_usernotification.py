@@ -1659,8 +1659,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
         self.assertTrue(res)
         # check, if the file was written with the correct contents
         with open("tests/testdata/testOATH123456.txt") as f:
-            l = f.read()
-        self.assertEqual(l, "OATH123456, Cornelius")
+            content = f.read()
+        self.assertEqual(content, "OATH123456, Cornelius")
         os.remove("tests/testdata/testOATH123456.txt")
 
         # Check what happens if we try to write outside of spooldir

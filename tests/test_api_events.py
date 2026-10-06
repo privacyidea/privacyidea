@@ -7,6 +7,7 @@ from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler
 from privacyidea.lib.eventhandler.customuserattributeshandler import ACTION_TYPE, USER_TYPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
+from privacyidea.lib.smtpserver import add_smtpserver
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from . import smtpmock
@@ -983,10 +984,6 @@ class CustomUserAttributeHandlerTestCase(MyApiTestCase):
         user.delete_attribute('foo')
 
 
-from privacyidea.lib.smtpserver import add_smtpserver
-from . import smtpmock
-
-
 class EventWrapperTestCase(MyApiTestCase):
     # Test the wrapper/decorator in lib/event.py
     # In other cases we test specific event handlers, but not the calling of the event handler
@@ -1252,12 +1249,12 @@ class ContainerHandlerTestCase(MyApiTestCase):
                 Hello {user},
 
                 the administrator {admin}@{realm} initialized a registration for your container {container_serial}.
-                To complete the registration, please scan the attached QR code or click on this link 
+                To complete the registration, please scan the attached QR code or click on this link
                 {container_url_value} on your smartphone.
-                
-                The QR code allows you to synchronize the tokens on your smartphone with the server. 
-                Be aware of no one else can see this QR code, otherwise your tokens might be compromised. 
-                
+
+                The QR code allows you to synchronize the tokens on your smartphone with the server.
+                Be aware of no one else can see this QR code, otherwise your tokens might be compromised.
+
                 <img src={container_url_img}>
 
                 To check your container you may login to the Web UI:
@@ -1312,10 +1309,10 @@ class ContainerHandlerTestCase(MyApiTestCase):
 
         msg = """
                 Hello {user},
-                
+
                 the administrator {admin}@{realm} performed the action
                 {action} on your container {container_serial}.
-                
+
                 To check your tokens you may login to the Web UI:
                 {url}
                 """
@@ -1429,12 +1426,12 @@ class ContainerHandlerTestCase(MyApiTestCase):
                 the administrator {admin}@{realm} initialized a rollover for your container {container_serial}.
                 To complete the rollover, please scan the attached QR code or click on this link {container_url_value}
                 on your smartphone.
-                
-                The QR code allows you to synchronize the tokens on your smartphone with the server. 
-                Be aware of no one else can see this QR code, otherwise your tokens might be compromised. 
-                
+
+                The QR code allows you to synchronize the tokens on your smartphone with the server.
+                Be aware of no one else can see this QR code, otherwise your tokens might be compromised.
+
                 <img src={container_url_img}>
-                
+
                 After the rollover is completed, the tokens and container on the old device are not valid anymore.
 
                 To check your container you may login to the Web UI:

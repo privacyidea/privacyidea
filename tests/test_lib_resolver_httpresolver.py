@@ -2027,7 +2027,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # User ID does not exists
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=404,
-                      body="""{"error": {"code": "Request_ResourceNotFound", 
+                      body="""{"error": {"code": "Request_ResourceNotFound",
                                "message": "Resource '12345789' does not exist or one of its queried reference-property objects are not present."}}"""
                       )
         self.assertDictEqual({}, resolver.get_user_info(user_id))
@@ -2073,7 +2073,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # User ID does not exists
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=404,
-                      body="""{"error": {"code": "Request_ResourceNotFound", 
+                      body="""{"error": {"code": "Request_ResourceNotFound",
                                        "message": "Resource '12345789' does not exist or one of its queried reference-property objects are not present."}}"""
                       )
         self.assertEqual("", resolver.getUsername(user_id))
@@ -2104,7 +2104,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # User ID does not exists
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{quoted_user_name}", status=404,
-                      body="""{"error": {"code": "Request_ResourceNotFound", 
+                      body="""{"error": {"code": "Request_ResourceNotFound",
                                                "message": "Resource 'AdeleV@contoso.com' does not exist."}}"""
                       )
         self.assertEqual("", resolver.getUserId(user_name))
@@ -2565,7 +2565,7 @@ class EntraIDResolverTestCase(MyTestCase):
         resolver = self.set_up_resolver()
 
         responses.add(responses.POST, "https://graph.microsoft.com/v1.0/users", status=403,
-                      body="""{"error": {"code": "Authorization_RequestDenied", 
+                      body="""{"error": {"code": "Authorization_RequestDenied",
                                "message": "Insufficient privileges to complete the operation."}}""")
 
         user_data = {"username": "AdeleV@contoso.com",
@@ -2599,7 +2599,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # No permission
         responses.add(responses.PATCH, f"https://graph.microsoft.com/v1.0/users/{uid}", status=403,
-                      body="""{"error": {"code": "Authorization_RequestDenied", 
+                      body="""{"error": {"code": "Authorization_RequestDenied",
                                "message": "Insufficient privileges to complete the operation."}}""")
         self.assertFalse(resolver.update_user(uid, new_params))
 
@@ -2628,7 +2628,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # No permission
         responses.add(responses.DELETE, f"https://graph.microsoft.com/v1.0/users/{uid}", status=403,
-                      body="""{"error": {"code": "Authorization_RequestDenied", 
+                      body="""{"error": {"code": "Authorization_RequestDenied",
                                "message": "Insufficient privileges to complete the operation."}}""")
         self.assertFalse(resolver.delete_user(uid))
 
@@ -2835,7 +2835,7 @@ class KeycloakResolverTestCase(MyTestCase):
 
         # Mock users API
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                 "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
                                 {"username": "albert", "firstName": "Albert", "lastName": "Einstein",
                                  "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
@@ -2866,7 +2866,7 @@ class KeycloakResolverTestCase(MyTestCase):
         # Mock users API
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users?username=eli&exact=false",
                       status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                             "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
                                             {"username": "eli", "firstName": "Elizabeth", "lastName": "Einstein",
                                              "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
@@ -2879,7 +2879,7 @@ class KeycloakResolverTestCase(MyTestCase):
         responses.add(responses.GET,
                       "http://localhost:8080/admin/realms/master/users?username=eli&firstName=Elizabeth&exact=false",
                       status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                                     "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
                                                     {"username": "eli", "firstName": "Elizabeth", "lastName": "Einstein",
                                                      "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
@@ -2895,7 +2895,7 @@ class KeycloakResolverTestCase(MyTestCase):
         # Mock users API
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users?username=eli&exact=true",
                       status=200,
-                      body="""[{"username": "eli", "firstName": "Elizabeth", "lastName": "Einstein", 
+                      body="""[{"username": "eli", "firstName": "Elizabeth", "lastName": "Einstein",
                                 "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
 
         user_list = resolver.getUserList({"username": "eli"})
@@ -2920,7 +2920,7 @@ class KeycloakResolverTestCase(MyTestCase):
 
         # Mock users API
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                     "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
         # Mock groups API
         responses.add(responses.GET,
@@ -2947,7 +2947,7 @@ class KeycloakResolverTestCase(MyTestCase):
 
         # Mock users API
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                         "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
         # Mock groups API
         responses.add(responses.GET,
@@ -2974,7 +2974,7 @@ class KeycloakResolverTestCase(MyTestCase):
         # Mock users API
         for _ in range(2):
             responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                          body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                          body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                             "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
         # Mock groups API
         responses.add(responses.GET,
@@ -3183,7 +3183,7 @@ class KeycloakResolverTestCase(MyTestCase):
                                callback=self.add_user_callback)
         # After creating the user we need to fetch the user id
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                      body="""[{"username": "ezott", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "ezott", "firstName": "Elizabeth", "lastName": "Zott",
                       "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
 
         user_data = {"username": "ezott",
@@ -3394,7 +3394,7 @@ class KeycloakResolverTestCase(MyTestCase):
         # Get user by id
         responses.add(responses.GET,
                       "http://localhost:8080/admin/realms/master/users/6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0",
-                      status=200, body="""{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      status=200, body="""{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                             "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}""")
 
         def user_list_callback(request):

@@ -613,7 +613,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
 
         # check, that the tokenowner table does not contain a NULL entry
-        r = db.session.query(TokenOwner).filter(TokenOwner.token_id == None).first()
+        r = db.session.query(TokenOwner).filter(TokenOwner.token_id.is_(None)).first()
         self.assertIsNone(r)
 
         # delete the policy

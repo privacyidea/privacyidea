@@ -1144,7 +1144,7 @@ class WebAuthn(MyApiTestCase):
         delete_policies(["wan1", "wan2", "uv_req"])
         try:
             remove_token(webauthn_serial)
-        except:
+        except ResourceNotFoundError:
             pass
 
 

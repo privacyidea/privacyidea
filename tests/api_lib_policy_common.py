@@ -2,12 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Shared mixin and constants for split test_api_lib_policy_*.py files."""
 
-"""
-This test file tests the api.lib.policy.py
-
-The api.lib.policy.py depends on lib.policy and on flask!
-"""
-
 from flask import Request, g
 from werkzeug.test import EnvironBuilder
 

@@ -38,11 +38,6 @@ class MyCSRReply:
         self.requestId = request_id or 4711
 
 
-class MyCertReply:
-    def __init__(self, certificate):
-        self.cert = certificate
-
-
 class MyCSRStatusReply:
     def __init__(self, disposition):
         self.disposition = disposition
@@ -69,9 +64,6 @@ class CAServiceMock:
 
     def GetCAs(self, _carequest):
         return MyCAReply(self.cas)
-
-    def GetCertificate(self, _get_certificate_request):
-        return MyCertReply(certificate=self.certificate)
 
     def GetCSRStatus(self, _csr_status_request):
         return MyCSRStatusReply(disposition=self.disposition)

@@ -7,13 +7,14 @@ from privacyidea.lib.crypto import encryptPassword
 from privacyidea.lib.error import ResourceNotFoundError, ParameterError
 from privacyidea.models import TokenInfo, db
 
-HOSTSFILE = "tests/testdata/hosts"
 from .base import MyTestCase
 from privacyidea.lib.machine import (attach_token, detach_token, add_option,
                                      delete_option, list_machine_tokens,
                                      list_token_machines, get_auth_items)
 from privacyidea.lib.token import init_token, get_tokens, remove_token
 from privacyidea.lib.machineresolver import save_resolver
+
+HOSTSFILE = "tests/testdata/hosts"
 
 
 sshkey = "ssh-rsa " \

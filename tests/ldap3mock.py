@@ -371,7 +371,7 @@ class Connection:
                     if isinstance(values_from_directory, bytes):
                         values_from_directory = values_from_directory.decode(
                             "utf-8")
-                    elif type(values_from_directory) == int:
+                    elif isinstance(values_from_directory, int):
                         values_from_directory = f"{values_from_directory!s}"
                     if value == values_from_directory:
                         entry["type"] = "searchResEntry"

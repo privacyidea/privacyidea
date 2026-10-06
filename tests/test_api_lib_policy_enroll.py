@@ -41,6 +41,7 @@ from privacyidea.lib.tokens.tantoken import TANAction
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (generate_charlists_from_pin_policy,
                                    CHARLIST_CONTENTPOLICY, check_pin_contents)
+from .api_lib_policy_common import PrePolicyHelperMixin
 from .base import (MyApiTestCase)
 
 HOSTSFILE = "tests/testdata/hosts"
@@ -74,8 +75,6 @@ XjcD3ygUfTVbCzPYBmLPwvt+80AxgT2Nd6E612L/fbI9clv5DsvMwnVeSvlP1wXo
 5BampVY4p5CQRFLlCQa9fGWZrT+ArC9Djo0mHf32x6pEsSz0zMOlmjHrh+ChVkAs
 tA==
 -----END CERTIFICATE REQUEST-----"""
-
-from .api_lib_policy_common import PrePolicyHelperMixin
 
 
 class PrePolicyEnrollTestCase(PrePolicyHelperMixin, MyApiTestCase):

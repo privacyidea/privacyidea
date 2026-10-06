@@ -1133,8 +1133,7 @@ class LDAPResolverTestCase(MyTestCase):
             def _search_with_ref(*args, **kwargs):
                 results = original_search(*args, **kwargs)
                 # paged_search returns an iterator
-                for result in results:
-                    yield result
+                yield from results
                 yield {'type': 'searchResRef', 'foo': 'bar'}
 
             mock_search.side_effect = _search_with_ref

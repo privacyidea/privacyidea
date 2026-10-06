@@ -22,6 +22,7 @@ from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT,
                                                   PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.utils import hexlify_and_unicode
+from .api_lib_policy_common import PrePolicyHelperMixin
 from .base import (MyApiTestCase)
 from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
                                        ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN)
@@ -57,8 +58,6 @@ XjcD3ygUfTVbCzPYBmLPwvt+80AxgT2Nd6E612L/fbI9clv5DsvMwnVeSvlP1wXo
 5BampVY4p5CQRFLlCQa9fGWZrT+ArC9Djo0mHf32x6pEsSz0zMOlmjHrh+ChVkAs
 tA==
 -----END CERTIFICATE REQUEST-----"""
-
-from .api_lib_policy_common import PrePolicyHelperMixin
 
 
 class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
