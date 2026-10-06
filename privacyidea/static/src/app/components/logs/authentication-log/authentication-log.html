@@ -434,15 +434,11 @@
           aria-label="Data Row"
           i18n-aria-label="@@authLog.dataRow"
           mat-row></tr>
-        <tr
-          *matNoDataRow
-          aria-label="No Data Row"
-          i18n-aria-label="@@common.noDataRow">
-          <td
-            [attr.colspan]="visibleColumnKeys().length"
-            aria-label="No Data Cell"
-            i18n-aria-label="@@common.noDataCell">
-            {{ noDataText() }}
+        <tr *matNoDataRow>
+          <td [attr.colspan]="visibleColumnKeys().length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
           </td>
         </tr>
       </table>

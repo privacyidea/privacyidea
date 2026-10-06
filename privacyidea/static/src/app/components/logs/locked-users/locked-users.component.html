@@ -410,16 +410,11 @@
           *matRowDef="let row; columns: displayedColumns"
           mat-row></tr>
 
-        <tr
-          *matNoDataRow
-          aria-label="No Data Row"
-          i18n-aria-label="@@common.noDataRow">
-          <td
-            [attr.colspan]="displayedColumns.length"
-            aria-label="No Data Cell"
-            i18n="@@lockedUsers.noLockedUsersFound"
-            i18n-aria-label="@@common.noDataCell">
-            No locked users found.
+        <tr *matNoDataRow>
+          <td [attr.colspan]="displayedColumns.length">
+            <app-table-state
+              [status]="tableState.rowStatus()"
+              [table]="tableState" />
           </td>
         </tr>
       </table>

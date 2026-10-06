@@ -60,6 +60,12 @@
   width: 100%;
 }
 
+.drag-and-drop-zone:has(.file-input:focus-visible) {
+  // The file input is an invisible layer over the zone, so the zone shows where keyboard focus is.
+  outline: 2px solid var(--mat-sys-primary);
+  outline-offset: 2px;
+}
+
 .drag-and-drop-zone {
   display: flex;
   flex-direction: column;

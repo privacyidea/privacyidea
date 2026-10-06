@@ -501,6 +501,11 @@ $button-low-contrast-variant: linear-gradient(
   &:hover {
     box-shadow: var(--elevation-8);
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
 }
 
 .button-width-xs {

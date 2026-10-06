@@ -635,14 +635,6 @@ export class AuthenticationLog {
       .filter((size) => size > 0)
       .sort((a, b) => a - b)
   );
-  noDataText = computed(() =>
-    Object.keys(this.authenticationLogService.filterParams()).length > 0 ||
-    this.authenticationLogService.timestampFrom() ||
-    this.authenticationLogService.timestampTo()
-      ? $localize`:@@authLog.noAuthenticationLogEntries2:No authentication log entries matching the filter.`
-      : $localize`:@@authLog.noAuthenticationLogEntries:No authentication log entries.`
-  );
-
   onPageEvent(event: PageEvent): void {
     this.authenticationLogService.pageSize.set(event.pageSize);
     // mat-paginator emits a 0-based index; the service/API page is 1-based.
@@ -716,7 +708,10 @@ export class AuthenticationLog {
   readonly tableState = new TableState({
     resource: this.authenticationLogService.authenticationLogResource,
     count: () => this.totalLength(),
-    filterActive: () => this.authenticationLogService.authenticationLogFilter().isNotEmpty,
+    filterActive: () =>
+      this.authenticationLogService.authenticationLogFilter().isNotEmpty ||
+      !!this.authenticationLogService.timestampFrom() ||
+      !!this.authenticationLogService.timestampTo(),
     resetFilter: () => this.clearAllFilters()
   });
 

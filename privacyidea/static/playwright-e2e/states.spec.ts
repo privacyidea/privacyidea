@@ -75,6 +75,20 @@ for (const scheme of ["light", "dark"] as const) {
   });
 }
 
+// A filter that matches nothing. A search is itself audited with the serial it names, so the audit filter uses a
+// keyword no request carries. The server-side filters read "keyword: value" entries and ignore plain text; the
+// blocklist matches plain text against every column.
+const NO_MATCH = "zzzzqq";
+const NO_MATCH_FILTER: Record<string, string> = {
+  tokens: `serial: ${NO_MATCH}`,
+  challenges: `serial: ${NO_MATCH}`,
+  containers: `container_serial: ${NO_MATCH}`,
+  audit: `action: ${NO_MATCH}`,
+  "authentication log": `username: ${NO_MATCH}`,
+  "container templates": `name: ${NO_MATCH}`,
+  "locked users": `usernames: ${NO_MATCH}`
+};
+
 for (const scheme of ["light", "dark"] as const) {
   test.describe(`table state, a filter that matches nothing, ${scheme} theme`, () => {
     test.use({ colorScheme: scheme });
@@ -85,7 +99,7 @@ for (const scheme of ["light", "dark"] as const) {
         const input = filterInput(page);
         test.skip((await input.count()) === 0, "no filter on this page");
 
-        await applyFilter(page, "zzzzqq");
+        await applyFilter(page, NO_MATCH_FILTER[route.name] ?? NO_MATCH);
         const panel = page.locator(".table-state").first();
         await expect(panel, "the panel of a filter that matches nothing").toBeVisible({ timeout: 10_000 });
         await forceTheme(page);

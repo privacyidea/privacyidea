@@ -432,6 +432,8 @@ table.mat-mdc-table {
   padding: 0;
   width: 72px;
   max-width: 72px;
+  // The checkbox's empty label reaches past the cell, and the cell's ellipsis would print a "..." beside the box.
+  text-overflow: clip;
 }
 
 .details-card {

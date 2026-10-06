@@ -8,6 +8,38 @@ export interface FocusResult {
   checked: number;
 }
 
+// Resolves once the page's finite animations and transitions (a focus ring fades in) have run out and the browser has
+// painted the result.
+const painted = (page: Page) =>
+  page.evaluate(async () => {
+    const finite = document.getAnimations().filter((a) => (a.effect?.getComputedTiming().iterations ?? 1) !== Infinity);
+    await Promise.allSettled(finite.map((a) => a.finished));
+    await new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done())));
+  });
+
+// The box of the focused control once two frames in a row agree on it.
+async function settledRect(page: Page): Promise<{ x: number; y: number; width: number; height: number }> {
+  const measure = () =>
+    page.evaluate(
+      () =>
+        new Promise<{ x: number; y: number; width: number; height: number }>((done) =>
+          requestAnimationFrame(() => {
+            const r = (document.activeElement as HTMLElement).getBoundingClientRect();
+            done({ x: r.left, y: r.top, width: r.width, height: r.height });
+          })
+        )
+    );
+  let last = await measure();
+  for (let i = 0; i < 30; i++) {
+    const now = await measure();
+    if (now.x === last.x && now.y === last.y && now.width === last.width && now.height === last.height) {
+      return now;
+    }
+    last = now;
+  }
+  return last;
+}
+
 // Tabs through the page and returns the controls whose keyboard focus changes nothing on screen. A focused control
 // must look different from the same control unfocused: its surroundings are captured focused, focus is taken away,
 // and they are captured again; identical pixels mean no indicator. The walk goes on past the shell until `wanted`
@@ -43,14 +75,18 @@ export async function focusIndicatorMisses(page: Page, wanted = 40, maxStops = 1
         continue;
       }
       checkedControls.add(String(target.index));
+      // The page may still be scrolling the control into view; the clip follows it once it stands still.
+      const at = await settledRect(page);
+      await painted(page);
       const clip = {
-        x: Math.max(0, target.x),
-        y: Math.max(0, target.y),
-        width: Math.min(target.width, 1900),
-        height: Math.min(target.height, 400)
+        x: Math.max(0, at.x - 8),
+        y: Math.max(0, at.y - 8),
+        width: Math.min(at.width + 16, 1900),
+        height: Math.min(at.height + 16, 400)
       };
       const focused = await page.screenshot({ clip, animations: "disabled" });
       await page.evaluate(() => (document.activeElement as HTMLElement).blur());
+      await painted(page);
       const plain = await page.screenshot({ clip, animations: "disabled" });
       if (focused.equals(plain)) {
         invisible.push(target.name);
