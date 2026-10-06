@@ -8,6 +8,7 @@ on:
     paths:
       # Keep in sync with the paths linted by the "Run Ruff" step below.
       - 'privacyidea/**.py'
+      - 'tests/**.py'
       # Re-run when the Ruff config (rules, excludes) changes.
       - 'pyproject.toml'
       - '.github/workflows/ruff.yml'
@@ -29,4 +30,4 @@ jobs:
         # rule can't turn unrelated PRs red without an intentional bump here.
         run: python -m pip install "ruff==0.15.10"
       - name: Run Ruff
-        run: ruff check privacyidea
+        run: ruff check privacyidea tests
