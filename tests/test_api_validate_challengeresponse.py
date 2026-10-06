@@ -1,9 +1,8 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import datetime
-from datetime import timezone
 
-import mock
+from unittest import mock
 import responses
 
 from privacyidea.lib import _
@@ -38,7 +37,7 @@ class AChallengeResponse(MyApiTestCase):
         init_token({"type": "hotp", "serial": "hotp1", "otpkey": self.otpkey},
                    user=User(uid=1004, realm=self.realm1, resolver=self.resolvername1))
         # Define HOTP token to be challenge response
-        set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy(name="pol_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         set_pin(self.serial, "pin")
 
         with self.app.test_request_context('/validate/check',
@@ -548,15 +547,15 @@ class AChallengeResponse(MyApiTestCase):
         # challenge response request with both tokens.
         set_policy(name="pol_header",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=These are your options:<ul>".format(PolicyAction.CHALLENGETEXT_HEADER))
+                   action=f"{PolicyAction.CHALLENGETEXT_HEADER!s}=These are your options:<ul>")
         # Set a policy for the footer
         set_policy(name="pol_footer",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=</ul>.<b>Authenticate Now!</b>".format(PolicyAction.CHALLENGETEXT_FOOTER))
+                   action=f"{PolicyAction.CHALLENGETEXT_FOOTER!s}=</ul>.<b>Authenticate Now!</b>")
         # make HOTP a challenge response token
         set_policy(name="pol_hotp",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+                   action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
 
         init_token({"serial": "tok1",
                     "otpkey": self.otpkey,
@@ -589,7 +588,7 @@ class AChallengeResponse(MyApiTestCase):
         # make HOTP a challenge response token
         set_policy(name="pol_hotp",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+                   action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         init_token({"serial": "tok1",
                     "otpkey": self.otpkey,
                     "pin": "pin"}, user=User("cornelius", self.realm1))
@@ -1602,7 +1601,7 @@ class AChallengeResponse(MyApiTestCase):
         # If we wait long enough, the challenge has expired,
         # while the HOTP value 287082 in itself would still be valid.
         # However, the authentication with the expired transaction_id has to fail
-        new_utcnow = datetime.datetime.now(tz=timezone.utc).replace(tzinfo=None) + datetime.timedelta(minutes=12)
+        new_utcnow = datetime.datetime.now(tz=datetime.UTC).replace(tzinfo=None) + datetime.timedelta(minutes=12)
         new_now = datetime.datetime.now().replace(tzinfo=None) + datetime.timedelta(minutes=12)
         with mock.patch('privacyidea.models.utils.datetime') as mock_datetime:
             mock_datetime.utcnow.return_value = new_utcnow

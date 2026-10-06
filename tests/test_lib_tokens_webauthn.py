@@ -57,7 +57,7 @@ This depends on lib.tokenclass
 import os
 import unittest
 
-from mock import patch
+from unittest.mock import patch
 
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import set_privacyidea_config
@@ -75,7 +75,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
 from .base import MyTestCase
 
-TRUST_ANCHOR_DIR = "{}/testdata/trusted_attestation_roots".format(os.path.abspath(os.path.dirname(__file__)))
+TRUST_ANCHOR_DIR = f"{os.path.abspath(os.path.dirname(__file__))}/testdata/trusted_attestation_roots"
 REGISTRATION_RESPONSE_TMPL = {
     'clientData': b'eyJ0eXBlIjogIndlYmF1dGhuLmNyZWF0ZSIsICJjbGllbnRFeHRlbnNpb25zIjoge30sICJjaGFsbGVu'
                   b'Z2UiOiAiYlB6cFgzaEhRdHNwOWV2eUtZa2FadFZjOVVOMDdQVWRKMjJ2WlVkRHA5NCIsICJvcmlnaW4i'
@@ -766,10 +766,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
     def setUp(self):
         self.setUp_user_realms()
         set_policy(name="WebAuthn", scope=SCOPE.ENROLL,
-                   action='{0!s}={1!s},{2!s}={3!s}'.format(FIDO2PolicyAction.RELYING_PARTY_NAME,
-                                                           self.rp_name,
-                                                           FIDO2PolicyAction.RELYING_PARTY_ID,
-                                                           self.rp_id))
+                   action=f'{FIDO2PolicyAction.RELYING_PARTY_NAME!s}={self.rp_name!s},{FIDO2PolicyAction.RELYING_PARTY_ID!s}={self.rp_id!s}')
         self.user = User(login='hans', realm=self.realm1,
                          resolver=self.resolvername1)
         # TODO: extract token enrollment into a local function
@@ -828,7 +825,7 @@ class MultipleWebAuthnTokenTestCase(MyTestCase):
 
     # TODO: also test challenge-response with different tokens (webauthn + totp)
     def test_01_multiple_webauthntoken_auth(self):
-        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(PolicyAction.OTPPIN))
+        set_policy("otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN!s}=none")
         res, reply = check_user_pass(self.user, '', options=self.auth_options)
         self.assertFalse(res)
         self.assertIn('transaction_id', reply, reply)

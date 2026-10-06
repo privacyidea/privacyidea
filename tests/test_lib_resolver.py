@@ -20,7 +20,7 @@ import uuid
 from contextlib import contextmanager
 
 import ldap3
-import mock
+from unittest import mock
 import responses
 from ldap3.core.exceptions import LDAPOperationResult, LDAPAttributeError
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
@@ -353,7 +353,7 @@ class SQLResolverTestCase(MyTestCase):
         resolver = SQLResolver()
         result = resolver.testconnection(self.parameters)
         self.assertEqual(result[0], self.num_users)
-        self.assertTrue('Found {0!s} users.'.format(self.num_users) in result[1])
+        self.assertTrue(f'Found {self.num_users!s} users.' in result[1])
 
     def test_05_add_user_update_delete(self):
         resolver = SQLResolver()
@@ -1284,7 +1284,7 @@ class LDAPResolverTestCase(MyTestCase):
 
         user = "bob"
         user_id = resolver.getUserId(user)
-        self.assertTrue(user_id == "3", "{0!s}".format(user_id))
+        self.assertTrue(user_id == "3", f"{user_id!s}")
 
         rid = resolver.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
@@ -1333,7 +1333,7 @@ class LDAPResolverTestCase(MyTestCase):
                                 })
 
         self.assertTrue(res[0], res)
-        self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1], res[1])
+        self.assertTrue(f"{len(LDAPDirectory)!s}" in res[1], res[1])
         # 'Your LDAP config seems to be OK, 3 user objects found.'
 
     @ldap3mock.activate
@@ -1356,7 +1356,7 @@ class LDAPResolverTestCase(MyTestCase):
                                 })
 
         self.assertTrue(res[0], res)
-        self.assertTrue("{!s}".format(len(LDAPDirectory)) in res[1])
+        self.assertTrue(f"{len(LDAPDirectory)!s}" in res[1])
         self.assertTrue(res[1].startswith("Your LDAP config seems to be OK,"), res)
 
     @ldap3mock.activate
@@ -2016,7 +2016,7 @@ class LDAPResolverTestCase(MyTestCase):
         result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
-        user = "kölbel".encode('utf8')
+        user = "kölbel".encode()
         user_id = resolver.getUserId(user)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
@@ -2349,7 +2349,7 @@ class LDAPResolverTestCase(MyTestCase):
             mock_search.assert_not_called()
         self.assertIn('bob', CACHE[resolver.getResolverId()]['getUserId'])
         # assert requests later than CACHE_TIMEOUT seconds query the directory again
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.UTC)
         with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
                         wraps=datetime.datetime) as mock_datetime:
             # we now live CACHE_TIMEOUT + 2 seconds in the future
@@ -3139,7 +3139,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual("keule", user_info_map["1"]["surname"], user_info_map)
 
         # An entry that sat in the cache for longer than the timeout is fetched again
-        expired = datetime.datetime.now(tz=datetime.timezone.utc) - datetime.timedelta(seconds=240)
+        expired = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(seconds=240)
         CACHE[resolver.getResolverId()]["get_user_info"]["1"]["timestamp"] = expired
         with self._count_searches() as search_filters:
             user_info_map = resolver.get_user_info_batch(["1"], attributes=["username"])

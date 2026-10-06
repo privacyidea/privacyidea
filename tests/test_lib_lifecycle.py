@@ -1,7 +1,7 @@
 """
 This file contains the tests for the lifecycle module lib/lifecycle.py
 """
-from mock import mock
+from unittest import mock
 
 from privacyidea.lib.lifecycle import register_finalizer, call_finalizers
 from .base import MyTestCase

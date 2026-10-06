@@ -115,7 +115,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
         r = init_token({"type": "spass", "pin": "spass"}, user=User(
             login="frank", realm="ldaprealm"))
         self.assertTrue(r)
-        self.assertEqual("{0!s}".format(r.user), "<frank.catchall@ldaprealm>")
+        self.assertEqual(f"{r.user!s}", "<frank.catchall@ldaprealm>")
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -191,7 +191,7 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
 
         set_policy(name="pol_setrealm_01",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}={1!s}".format(PolicyAction.SETREALM, self.realm1))
+                   action=f"{PolicyAction.SETREALM!s}={self.realm1!s}")
 
         # Successfully test the token
         with self.app.test_request_context('/validate/check',
@@ -210,9 +210,9 @@ class AuthorizationPolicyTestCase(MyApiTestCase):
 
     def test_05_is_authorized(self):
         set_policy(name="auth01", scope=SCOPE.AUTHZ, priority=2,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTHORIZED, AUTHORIZED.DENY))
+                   action=f"{PolicyAction.AUTHORIZED!s}={AUTHORIZED.DENY!s}")
         set_policy(name="auth02", scope=SCOPE.AUTHZ, user="frank", priority=1,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTHORIZED, AUTHORIZED.ALLOW))
+                   action=f"{PolicyAction.AUTHORIZED!s}={AUTHORIZED.ALLOW!s}")
 
         # The user frank actually has a spass token and is authorized to authenticate by policy auth02
         with self.app.test_request_context('/validate/check',

@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 from contextlib import contextmanager, suppress
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
-import mock
+from unittest import mock
 
 from privacyidea.lib.auditmodules.base import Audit as BaseAudit
 from privacyidea.lib.error import ResourceNotFoundError
@@ -356,7 +356,7 @@ class APIAuditTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={'username': 'selfservice@{0!s}'.format(self.realm1a),
+                                           data={'username': f'selfservice@{self.realm1a!s}',
                                                  'password': 'test'}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -461,7 +461,7 @@ class APIAuditTestCase(MyApiTestCase):
         # Check that audit age policy is applied correctly
         Audit.query.delete()
         self.setUp_user_realms()
-        date = datetime.now(timezone.utc)
+        date = datetime.now(UTC)
         three_days = timedelta(days=3)
         # enroll policies are within last day and enable policies not
         audit = Audit(action="enroll", success=1, realm=self.realm1a)

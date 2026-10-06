@@ -27,7 +27,7 @@ import pytest
 import requests
 from dateutil.tz import tzlocal
 from flask import Response
-from mock import mock
+from unittest import mock
 
 from privacyidea.lib import _
 from privacyidea.lib.cache import redis_feature_enabled
@@ -120,7 +120,7 @@ def test_pack_serials():
 class API000TokenAdminRealmList(MyApiTestCase):
 
     def setUp(self):
-        super(API000TokenAdminRealmList, self).setUp()
+        super().setUp()
         self.setUp_user_realms()
         self.setUp_user_realm2()
 
@@ -322,7 +322,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
         remove_token(t2.token.serial)
 
         # disabling an active token from a user from resolver2 should fail
-        with self.app.test_request_context('/token/disable/{0!s}'.format(t1.token.serial),
+        with self.app.test_request_context(f'/token/disable/{t1.token.serial!s}',
                                            method='POST',
                                            data={},
                                            headers={'Authorization': self.at}):
@@ -335,7 +335,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
         t2 = init_token({'type': 'spass'}, user=User(login='nönäscii',
                                                      resolver=self.resolvername1,
                                                      realm=self.realm1))
-        with self.app.test_request_context('/token/disable/{0!s}'.format(t2.token.serial),
+        with self.app.test_request_context(f'/token/disable/{t2.token.serial!s}',
                                            method='POST',
                                            data={},
                                            headers={'Authorization': self.at}):
@@ -348,7 +348,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
         remove_token(t2.token.serial)
 
         # disabling an active token from no user should fail
-        with self.app.test_request_context('/token/disable/{0!s}'.format(token_no_user.token.serial),
+        with self.app.test_request_context(f'/token/disable/{token_no_user.token.serial!s}',
                                            method='POST',
                                            data={},
                                            headers={'Authorization': self.at}):
@@ -359,7 +359,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         # enable an inactive token from a user from resolver2 should fail
         t1.enable(enable=False)
-        with self.app.test_request_context('/token/enable/{0!s}'.format(t1.token.serial),
+        with self.app.test_request_context(f'/token/enable/{t1.token.serial!s}',
                                            method='POST',
                                            data={},
                                            headers={'Authorization': self.at}):
@@ -373,7 +373,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
                                                      resolver=self.resolvername1,
                                                      realm=self.realm1))
         t2.enable(enable=False)
-        with self.app.test_request_context('/token/enable/{0!s}'.format(t2.token.serial),
+        with self.app.test_request_context(f'/token/enable/{t2.token.serial!s}',
                                            method='POST',
                                            data={},
                                            headers={'Authorization': self.at}):
@@ -385,7 +385,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
 
         # enable an inactive token from no user should fail
         token_no_user.enable(enable=False)
-        with self.app.test_request_context('/token/enable/{0!s}'.format(token_no_user.token.serial),
+        with self.app.test_request_context(f'/token/enable/{token_no_user.token.serial!s}',
                                            method='POST',
                                            data={},
                                            headers={'Authorization': self.at}):
@@ -395,7 +395,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertEqual(result.get('error').get('code'), 303, result)
 
         # token delete should fail for a token assigned to a user from resolver2
-        with self.app.test_request_context('/token/{0!s}'.format(t1.token.serial),
+        with self.app.test_request_context(f'/token/{t1.token.serial!s}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -404,7 +404,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertEqual(result.get('error').get('code'), 303, result)
 
         # token delete should work for a token assigned to a user from resolver1
-        with self.app.test_request_context('/token/{0!s}'.format(t2.token.serial),
+        with self.app.test_request_context(f'/token/{t2.token.serial!s}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -414,7 +414,7 @@ class API000TokenAdminRealmList(MyApiTestCase):
             self.assertFalse(token_exist(t2.token.serial))
 
         # token delete should fail for a token assigned to no user
-        with self.app.test_request_context('/token/{0!s}'.format(token_no_user.token.serial),
+        with self.app.test_request_context(f'/token/{token_no_user.token.serial!s}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -1028,7 +1028,7 @@ class APIAttestationTestCase(MyApiTestCase):
         from privacyidea.lib.tokens.certificatetoken import ACTION, REQUIRE_ACTIONS
         set_policy(name="pol_verify",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.REQUIRE_ATTESTATION, REQUIRE_ACTIONS.REQUIRE_AND_VERIFY))
+                   action=f"{ACTION.REQUIRE_ATTESTATION!s}={REQUIRE_ACTIONS.REQUIRE_AND_VERIFY!s}")
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "certificate",
@@ -1045,7 +1045,7 @@ class APIAttestationTestCase(MyApiTestCase):
 
         # The admin enrolls the certificate, so we need an admin policy
         set_policy("pol1", scope=SCOPE.ADMIN,
-                   action="{0!s}=tests/testdata/attestation/".format(ACTION.TRUSTED_CA_PATH))
+                   action=f"{ACTION.TRUSTED_CA_PATH!s}=tests/testdata/attestation/")
         set_policy("pol2", scope=SCOPE.ADMIN,
                    action="enrollCERTIFICATE")
 
@@ -1070,7 +1070,7 @@ class APIAttestationTestCase(MyApiTestCase):
 class APITokenTestCase(MyApiTestCase):
 
     def setUp(self):
-        super(APITokenTestCase, self).setUp()
+        super().setUp()
         self.setUp_user_realms()
         self.setUp_user_realm2()
 
@@ -1199,7 +1199,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual([], token0.get("realms"), token0)
             self.assertEqual("", token0.get("user_realm"), token0)
             self.assertIn("creation_date", token0.get("info"), token0)
-            self.assertGreaterEqual(datetime.datetime.now(tz=datetime.timezone.utc),
+            self.assertGreaterEqual(datetime.datetime.now(tz=datetime.UTC),
                                     datetime.datetime.fromisoformat(token0.get("info").get("creation_date")),
                                     token0)
 
@@ -1214,7 +1214,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             tokenlist = result.get("value").get("tokens")
             # NO token assigned, yet
-            self.assertGreaterEqual(len(tokenlist), 0, "{0!s}".format(tokenlist))
+            self.assertGreaterEqual(len(tokenlist), 0, f"{tokenlist!s}")
 
         # get unassigned tokens
         with self.app.test_request_context('/token/',
@@ -1242,7 +1242,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             tokenlist = result.get("value").get("tokens")
             # NO token assigned, yet
-            self.assertTrue(len(tokenlist) == 1, "{0!s}".format(tokenlist))
+            self.assertTrue(len(tokenlist) == 1, f"{tokenlist!s}")
 
         # get inactive tokens
         with self.app.test_request_context('/token/',
@@ -2412,8 +2412,7 @@ class APITokenTestCase(MyApiTestCase):
         for timestep in ["30", "60"]:
             with self.app.test_request_context('/token/init',
                                                data={"type": "totp",
-                                                     "serial": "totp{0!s}".format(
-                                                         timestep),
+                                                     "serial": f"totp{timestep!s}",
                                                      "timeStep": timestep,
                                                      "genkey": "1"},
                                                method="POST",
@@ -2423,7 +2422,7 @@ class APITokenTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 self.assertTrue(result.get("value"))
 
-            token = get_tokens(serial="totp{0!s}".format(timestep))[0]
+            token = get_tokens(serial=f"totp{timestep!s}")[0]
             self.assertEqual(token.timestep, int(timestep))
 
     @pytest.mark.usefixtures("setup_local_ca")
@@ -2483,7 +2482,7 @@ class APITokenTestCase(MyApiTestCase):
         from privacyidea.lib.tokens.certificatetoken import ACTION, REQUIRE_ACTIONS
         set_policy(name="pol1",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(ACTION.REQUIRE_ATTESTATION, REQUIRE_ACTIONS.REQUIRE_AND_VERIFY))
+                   action=f"{ACTION.REQUIRE_ATTESTATION!s}={REQUIRE_ACTIONS.REQUIRE_AND_VERIFY!s}")
         with self.app.test_request_context('/token/init',
                                            data={"type": "certificate",
                                                  "request": REQUEST,
@@ -3146,7 +3145,7 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_28_enroll_app_with_image_url(self):
         set_policy("imgurl", scope=SCOPE.ENROLL,
-                   action="{0!s}=https://example.com/img.png".format(PolicyAction.APPIMAGEURL))
+                   action=f"{PolicyAction.APPIMAGEURL!s}=https://example.com/img.png")
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -3304,9 +3303,9 @@ class APITokenTestCase(MyApiTestCase):
                           result.get("error").get("message"))
 
         # Admin policy: admin is allowed to set random pin
-        set_policy("allowed_to_set_pin", scope=SCOPE.ADMIN, action="{0!s}".format(PolicyAction.SETRANDOMPIN))
+        set_policy("allowed_to_set_pin", scope=SCOPE.ADMIN, action=f"{PolicyAction.SETRANDOMPIN!s}")
         # at least we need a otppinrandom policy (but not with length 0
-        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=0".format(PolicyAction.OTPPINSETRANDOM))
+        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action=f"{PolicyAction.OTPPINSETRANDOM!s}=0")
 
         with self.app.test_request_context('/token/setrandompin',
                                            method='POST',
@@ -3319,7 +3318,7 @@ class APITokenTestCase(MyApiTestCase):
                           result.get("error").get("message"))
 
         # at least we need a otppinrandom policy
-        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=10".format(PolicyAction.OTPPINSETRANDOM))
+        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action=f"{PolicyAction.OTPPINSETRANDOM!s}=10")
 
         with self.app.test_request_context('/token/setrandompin',
                                            method='POST',
@@ -3339,7 +3338,7 @@ class APITokenTestCase(MyApiTestCase):
         set_policy("allowed_to_set_pin", scope=SCOPE.ADMIN, action=PolicyAction.SETRANDOMPIN)
 
         # What happens, if we have two contradicting policies:
-        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(PolicyAction.OTPPINSETRANDOM))
+        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action=f"{PolicyAction.OTPPINSETRANDOM!s}=9")
 
         with self.app.test_request_context('/token/setrandompin',
                                            method='POST',
@@ -3352,9 +3351,9 @@ class APITokenTestCase(MyApiTestCase):
             self.assertEqual(303, result.get("error").get("code"))
 
         # Now we adapt the priority of the policies:
-        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(PolicyAction.OTPPINSETRANDOM),
+        set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action=f"{PolicyAction.OTPPINSETRANDOM!s}=9",
                    priority=1)
-        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action="{0!s}=10".format(PolicyAction.OTPPINSETRANDOM),
+        set_policy("pinpolrandom", scope=SCOPE.ADMIN, action=f"{PolicyAction.OTPPINSETRANDOM!s}=10",
                    priority=2)
 
         with self.app.test_request_context('/token/setrandompin',
@@ -3373,7 +3372,7 @@ class APITokenTestCase(MyApiTestCase):
     def test_33_hide_tokeninfo_user(self):
         set_policy(name="hide_tokeninfo_user",
                    scope=SCOPE.USER,
-                   action="{0!s}=tokenkind unknown".format(PolicyAction.HIDE_TOKENINFO))
+                   action=f"{PolicyAction.HIDE_TOKENINFO!s}=tokenkind unknown")
         t = init_token({"genkey": 1}, tokenkind='testing',
                        user=User('cornelius', realm=self.realm1))
         add_tokeninfo(t.token.serial, 'blabla', value='SomeValue')
@@ -3424,8 +3423,7 @@ class APITokenTestCase(MyApiTestCase):
     def test_34_hide_tokeninfo_admin(self):
         set_policy(name="hide_tokeninfo_admin",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}=tokenkind unknown, {1!s}".format(PolicyAction.HIDE_TOKENINFO,
-                                                                  PolicyAction.TOKENLIST))
+                   action=f"{PolicyAction.HIDE_TOKENINFO!s}=tokenkind unknown, {PolicyAction.TOKENLIST!s}")
         t = init_token({"genkey": 1}, tokenkind='testing')
         add_tokeninfo(t.token.serial, 'blabla', value='SomeValue')
         for i in ['blabla', 'tokenkind']:
@@ -3481,10 +3479,10 @@ class APITokenTestCase(MyApiTestCase):
             f"challenge-cache contains {remaining} rows")
 
     def test_40_init_verify_hotp_token(self):
-        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=hotp top".format(PolicyAction.VERIFY_ENROLLMENT))
-        set_policy("verify_toks2", scope=SCOPE.ENROLL, action="{0!s}=HOTP email".format(PolicyAction.VERIFY_ENROLLMENT))
+        set_policy("verify_toks1", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT!s}=hotp top")
+        set_policy("verify_toks2", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT!s}=HOTP email")
         set_policy("require_description", scope=SCOPE.ENROLL,
-                   action="{0!s}=hotp".format(PolicyAction.REQUIRE_DESCRIPTION))
+                   action=f"{PolicyAction.REQUIRE_DESCRIPTION!s}=hotp")
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP"])
         # Enroll an HOTP token
         with self.app.test_request_context('/token/init',
@@ -3566,7 +3564,7 @@ class APITokenTestCase(MyApiTestCase):
         smtp_inst = smtp_mock.return_value
         smtp_inst.sendmail.return_value = {"user@example.com": (200, 'OK')}
 
-        set_policy("verify_toks1", scope=SCOPE.ENROLL, action="{0!s}=email".format(PolicyAction.VERIFY_ENROLLMENT))
+        set_policy("verify_toks1", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT!s}=email")
         set_policy("email_challenge_text", scope=SCOPE.AUTH,
                    action=f"email_{PolicyAction.CHALLENGETEXT}=ENTER EMAIL TOKEN")
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollEMAIL"])
@@ -3631,7 +3629,7 @@ class APITokenTestCase(MyApiTestCase):
 
         set_privacyidea_config("sms.identifier", smsgw_id)
         set_policy("verify_toks1", scope=SCOPE.ENROLL,
-                   action="{0!s}=sms".format(PolicyAction.VERIFY_ENROLLMENT))
+                   action=f"{PolicyAction.VERIFY_ENROLLMENT!s}=sms")
         sms_text = "YOUR SMS TOKEN: {otp}"
         set_policy(name="smstext", scope=SCOPE.AUTH,
                    action=f"{SMSAction.SMSTEXT}={sms_text}")
@@ -3685,7 +3683,7 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_43_init_verify_index_token(self):
         set_policy("verify_toks1", scope=SCOPE.ENROLL,
-                   action="{0!s}=indexedsecret".format(PolicyAction.VERIFY_ENROLLMENT))
+                   action=f"{PolicyAction.VERIFY_ENROLLMENT!s}=indexedsecret")
         # Enroll an indexed secret token
         SECRET = "ABCDEFGHIJHK"
         with self.app.test_request_context('/token/init',
@@ -3738,7 +3736,7 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_44_init_verify_paper_token(self):
         set_policy("verify_paper_toks", scope=SCOPE.ENROLL,
-                   action="{0!s}=paper".format(PolicyAction.VERIFY_ENROLLMENT))
+                   action=f"{PolicyAction.VERIFY_ENROLLMENT!s}=paper")
         # Enroll a PAPER token
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -3806,7 +3804,7 @@ class APITokenTestCase(MyApiTestCase):
 
     def test_45_init_verify_tan_token(self):
         set_policy("verify_tan_toks", scope=SCOPE.ENROLL,
-                   action="{0!s}=tan".format(PolicyAction.VERIFY_ENROLLMENT))
+                   action=f"{PolicyAction.VERIFY_ENROLLMENT!s}=tan")
         # Enroll a PAPER token
         with self.app.test_request_context('/token/init',
                                            method='POST',
@@ -3878,7 +3876,7 @@ class APITokenTestCase(MyApiTestCase):
         # set require_description policy with value = 'hotp'
         set_policy(name="require_description",
                    scope=SCOPE.ENROLL,
-                   action=["{0!s}=hotp".format(PolicyAction.REQUIRE_DESCRIPTION)])
+                   action=[f"{PolicyAction.REQUIRE_DESCRIPTION!s}=hotp"])
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={
@@ -4561,12 +4559,12 @@ class API00TokenPerformance(MyApiTestCase):
 
     def test_00_create_some_tokens(self):
         for i in range(0, self.token_count):
-            init_token({"genkey": 1, "serial": "perf{0!s:0>3}".format(i)})
+            init_token({"genkey": 1, "serial": f"perf{i!s:0>3}"})
         tokens = get_tokens(serial_wildcard="perf*")
         self.assertEqual(len(tokens), self.token_count)
 
         for i in range(0, 10):
-            init_token({"genkey": 1, "serial": "TOK{0!s:0>3}".format(i)})
+            init_token({"genkey": 1, "serial": f"TOK{i!s:0>3}"})
         tokens = get_tokens(serial_wildcard="TOK*")
         self.assertEqual(len(tokens), 10)
 
@@ -4798,7 +4796,7 @@ class API00TokenPerformance(MyApiTestCase):
         # Try to mark wildcard token as lost
         # Just to be clear, all tokens are assigned to the user cornelius
         for i in range(0, self.token_count):
-            assign_token("perf{0!s:0>3}".format(i), User("cornelius", self.realm1))
+            assign_token(f"perf{i!s:0>3}", User("cornelius", self.realm1))
 
         with self.app.test_request_context('/token/lost/perf*',
                                            method='POST',
@@ -4812,7 +4810,7 @@ class API00TokenPerformance(MyApiTestCase):
 
         # unassign tokens again
         for i in range(0, self.token_count):
-            unassign_token("perf{0!s:0>3}".format(i))
+            unassign_token(f"perf{i!s:0>3}")
 
         # Try to set tokeninfo
         with self.app.test_request_context('/token/info/perf*/newkey',
@@ -4905,7 +4903,7 @@ class APIDetermineUserFromSerialForPolicies(MyApiTestCase):
 class APIRolloutState(MyApiTestCase):
 
     def setUp(self):
-        super(APIRolloutState, self).setUp()
+        super().setUp()
         self.setUp_user_realms()
 
     def test_01_enroll_two_tokens(self):
@@ -4998,7 +4996,7 @@ class APIMSCACertTestCase(MyApiTestCase):
             self.assertIn("pkcs12_password", init_details, init_details)
 
             # Fetch the rolloutstate by fetching the token
-            with self.app.test_request_context('/token/?serial={0!s}'.format(cert_tok.token.serial),
+            with self.app.test_request_context(f'/token/?serial={cert_tok.token.serial!s}',
                                                method='GET',
                                                headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
@@ -5012,7 +5010,7 @@ class APIMSCACertTestCase(MyApiTestCase):
             mock_conncect_worker.return_value.disposition = 3
 
             # Fetch the rolloutstate again, now the token is enrolled
-            with self.app.test_request_context('/token/?serial={0!s}'.format(cert_tok.token.serial),
+            with self.app.test_request_context(f'/token/?serial={cert_tok.token.serial!s}',
                                                method='GET',
                                                headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
@@ -5042,7 +5040,7 @@ class APIMSCACertTestCase(MyApiTestCase):
             self.assertEqual(RolloutState.PENDING, cert_tok.rollout_state)
 
             # Fetch the rolloutstate by fetching the token
-            with self.app.test_request_context('/token/?serial={0!s}'.format(cert_tok.token.serial),
+            with self.app.test_request_context(f'/token/?serial={cert_tok.token.serial!s}',
                                                method='GET',
                                                headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
@@ -5056,7 +5054,7 @@ class APIMSCACertTestCase(MyApiTestCase):
             mock_conncect_worker.return_value.disposition = 2
 
             # Fetch the rolloutstate again, now the token is enrolled
-            with self.app.test_request_context('/token/?serial={0!s}'.format(cert_tok.token.serial),
+            with self.app.test_request_context(f'/token/?serial={cert_tok.token.serial!s}',
                                                method='GET',
                                                headers={'Authorization': self.at}):
                 res = self.app.full_dispatch_request()
@@ -5070,7 +5068,7 @@ class APIMSCACertTestCase(MyApiTestCase):
 class APITokengroupTestCase(MyApiTestCase):
 
     def setUp(self):
-        super(APITokengroupTestCase, self).setUp()
+        super().setUp()
         self.setUp_user_realms()
 
     def test_01_add_tokengroups(self):
@@ -5097,7 +5095,7 @@ class APITokengroupTestCase(MyApiTestCase):
         init_token({"serial": serial, "type": "spass"})
 
         # Assign token to tokengroup
-        with self.app.test_request_context('/token/group/{0!s}/gruppe1'.format(serial),
+        with self.app.test_request_context(f'/token/group/{serial!s}/gruppe1',
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -5106,7 +5104,7 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertGreaterEqual(value, 1)
 
         # Check token, there is the tokengroup "gruppe1"
-        with self.app.test_request_context('/token/?serial={0!s}'.format(serial),
+        with self.app.test_request_context(f'/token/?serial={serial!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -5116,7 +5114,7 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual(tok.get("tokengroup"), ["gruppe1"])
 
         # Delete the tokengroup from the token
-        with self.app.test_request_context('/token/group/{0!s}/gruppe1'.format(serial),
+        with self.app.test_request_context(f'/token/group/{serial!s}/gruppe1',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -5125,7 +5123,7 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual(value, 1)
 
         # Check token, there is no tokengroup
-        with self.app.test_request_context('/token/?serial={0!s}'.format(serial),
+        with self.app.test_request_context(f'/token/?serial={serial!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -5136,7 +5134,7 @@ class APITokengroupTestCase(MyApiTestCase):
 
         # Now assign the tokengroup grupp1 again.
         db.session.expunge_all()  # Clear session before re-adding the token group db entry
-        with self.app.test_request_context('/token/group/{0!s}/gruppe1'.format(serial),
+        with self.app.test_request_context(f'/token/group/{serial!s}/gruppe1',
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -5145,7 +5143,7 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertGreaterEqual(value, 1)
 
         # Now use the generic endpoint to SET tokengroups. We set "gruppe2", this will also remove "gruppe1"
-        with self.app.test_request_context('/token/group/{0!s}'.format(serial),
+        with self.app.test_request_context(f'/token/group/{serial!s}',
                                            method='POST',
                                            data={"groups": ["gruppe2"]},
                                            headers={'Authorization': self.at}):
@@ -5154,7 +5152,7 @@ class APITokengroupTestCase(MyApiTestCase):
             value = res.json['result']['value']
             self.assertGreaterEqual(value, 1)
         # Check that the token has gruppe2 assigned and not gruppe1
-        with self.app.test_request_context('/token/?serial={0!s}'.format(serial),
+        with self.app.test_request_context(f'/token/?serial={serial!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -5170,7 +5168,7 @@ class APITokengroupTestCase(MyApiTestCase):
         init_token({"serial": serial, "type": "spass"})
 
         # Assign token to non-existing tokengroup
-        with self.app.test_request_context('/token/group/{0!s}/gaga'.format(serial),
+        with self.app.test_request_context(f'/token/group/{serial!s}/gaga',
                                            method='POST',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -5181,7 +5179,7 @@ class APITokengroupTestCase(MyApiTestCase):
             self.assertEqual('The tokengroup does not exist.', result.get("error").get("message"))
 
         # Delete a non-existing tokengroup from the token
-        with self.app.test_request_context('/token/group/{0!s}/gaga'.format(serial),
+        with self.app.test_request_context(f'/token/group/{serial!s}/gaga',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()

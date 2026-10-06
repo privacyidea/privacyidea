@@ -296,7 +296,7 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="mangle1",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=user/.*(.{{4}}$)/\\1/".format(PolicyAction.MANGLE))
+                   action=f"{PolicyAction.MANGLE!s}=user/.*(.{{4}}$)/\\1/")
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -310,7 +310,7 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Set a mangle policy to remove blanks from realm name
         set_policy(name="mangle2",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=realm/\\s//".format(PolicyAction.MANGLE))
+                   action=f"{PolicyAction.MANGLE!s}=realm/\\s//")
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -347,7 +347,7 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # A user, for whom the login via REMOTE_USER is allowed.
         set_policy(name="ruser",
                    scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.ACTIVE!s}")
 
         r = is_remote_user_allowed(req)
         self.assertEqual(REMOTE_USER.ACTIVE, r)
@@ -356,7 +356,7 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Only allowed for user "super", but REMOTE_USER=admin
         set_policy(name="ruser",
                    scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE),
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.ACTIVE!s}",
                    user="super")
 
         r = is_remote_user_allowed(req)
@@ -378,7 +378,7 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # Now set the remote force policy
         set_policy(name="ruser",
                    scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.FORCE),
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.FORCE!s}",
                    user="super")
         self.assertEqual(REMOTE_USER.FORCE, is_remote_user_allowed(req))
 
@@ -513,7 +513,7 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="a_age",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}=1d".format(PolicyAction.AUDIT_AGE))
+                   action=f"{PolicyAction.AUDIT_AGE!s}=1d")
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -536,7 +536,7 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # set a policy to hide the "serial" and the "action" columns in the audit response
         set_policy(name="hide_audit_columns_admin",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}=serial action".format(PolicyAction.HIDE_AUDIT_COLUMNS))
+                   action=f"{PolicyAction.HIDE_AUDIT_COLUMNS!s}=serial action")
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
                             "role": "admin"}
@@ -553,7 +553,7 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # set a policy to hide the "number" and the "realm" columns in the audit response
         set_policy(name="hide_audit_columns_user",
                    scope=SCOPE.USER,
-                   action="{0!s}=number realm".format(PolicyAction.HIDE_AUDIT_COLUMNS))
+                   action=f"{PolicyAction.HIDE_AUDIT_COLUMNS!s}=number realm")
         g.logged_in_user = {"username": "user1",
                             "realm": "",
                             "role": "user"}
@@ -577,7 +577,7 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # set a policy to hide the "tokenkind" and the "unknown" tokeninfo values
         set_policy(name="hide_tokeninfo_admin",
                    scope=SCOPE.ADMIN,
-                   action="{0!s}=tokenkind unknown".format(PolicyAction.HIDE_TOKENINFO))
+                   action=f"{PolicyAction.HIDE_TOKENINFO!s}=tokenkind unknown")
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
                             "role": "admin"}
@@ -601,7 +601,7 @@ class PrePolicyAdminTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # set a policy to hide the "tokenkind" and the "unknown" entries from the tokeninfo
         set_policy(name="hide_tokeninfo_user",
                    scope=SCOPE.USER,
-                   action="{0!s}=tokenkind unknown".format(PolicyAction.HIDE_TOKENINFO))
+                   action=f"{PolicyAction.HIDE_TOKENINFO!s}=tokenkind unknown")
         g.logged_in_user = {"username": "user1",
                             "realm": "",
                             "role": "user"}

@@ -51,7 +51,7 @@ class PasswordTokenTestCase(MyTestCase):
 
         # check pin+otp:
         token.set_pin(self.serial1, "secretpin")
-        r = token.authenticate("secretpin{0!s}".format(self.password))
+        r = token.authenticate(f"secretpin{self.password!s}")
         self.assertTrue(r, r)
 
     def test_03_class_methods(self):

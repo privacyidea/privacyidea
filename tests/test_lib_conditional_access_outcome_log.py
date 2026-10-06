@@ -20,7 +20,7 @@ Unit tests for the conditional-access outcome log
 (:mod:`privacyidea.lib.conditional_access.outcome_log`): turning the engine's outcomes into
 ``conditional_access_outcome`` rows, and the contract that every outcome belongs to an authentication-log row.
 """
-from datetime import timedelta, timezone
+from datetime import timedelta, UTC
 from typing import Any
 
 from unittest import mock
@@ -95,9 +95,9 @@ class OutcomeLogTestCase(MyTestCase):
         expires_at = utc_now() + timedelta(seconds=600)
 
         outcome = outcome_for_stage(policy, stage, ConditionalAccessAction.LOCK_USER, 6, expires_at=expires_at)
-        self.assertDictEqual({"expires_at": expires_at.replace(tzinfo=timezone.utc).isoformat()}, outcome.info)
+        self.assertDictEqual({"expires_at": expires_at.replace(tzinfo=UTC).isoformat()}, outcome.info)
         # An aware value is left as it is rather than re-stamped.
-        aware = expires_at.replace(tzinfo=timezone.utc)
+        aware = expires_at.replace(tzinfo=UTC)
         self.assertDictEqual({"expires_at": aware.isoformat()},
                          outcome_for_stage(policy, stage, ConditionalAccessAction.BLOCK_IP, 6, expires_at=aware).info)
 

@@ -16,7 +16,7 @@
 # SPDX-FileCopyrightText: 2024 Nils Behlen <nils.behlen@netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from unittest.mock import patch
 
 from webauthn.helpers.structs import AttestationConveyancePreference
@@ -412,7 +412,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                      action=f"{PasskeyAction.EnableTriggerByPIN}=true")
         self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
                                      action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=discouraged")
-        self.set_policy_with_cleanup("challenge_text", scope=SCOPE.AUTH, action=f"passkey_challenge_text=test text")
+        self.set_policy_with_cleanup("challenge_text", scope=SCOPE.AUTH, action="passkey_challenge_text=test text")
 
         # Test with authz policy add_user_in_response
         self.set_policy_with_cleanup("user_in_response", scope=SCOPE.AUTHZ,
@@ -1286,7 +1286,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertTrue(res.json["result"]["status"])
 
         # Set last_auth of 3 days ago to the token info
-        last_auth_date = datetime.now(timezone.utc) - timedelta(days=3)
+        last_auth_date = datetime.now(UTC) - timedelta(days=3)
         token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth_date.isoformat(timespec="seconds"))
 
         # Authentication will fail because the last_auth predates the policy time window
@@ -1319,7 +1319,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                              f"{token.get_serial()}", error.get("message"))
 
         # Change last_auth to 1 hour ago, authentication will succeed
-        last_auth_date = datetime.now(timezone.utc) - timedelta(hours=1)
+        last_auth_date = datetime.now(UTC) - timedelta(hours=1)
         token.write_tokeninfo(PolicyAction.LASTAUTH, last_auth_date.isoformat(timespec="seconds"))
         with self.app.test_request_context('/validate/check', method='POST',
                                            data=data,

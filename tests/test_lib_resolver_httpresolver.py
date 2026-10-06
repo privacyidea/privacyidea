@@ -1,9 +1,8 @@
 import copy
 import json
-from typing import Optional, Union
 from urllib.parse import quote
 
-import mock
+from unittest import mock
 import pytest
 import responses
 from requests.exceptions import SSLError
@@ -1535,7 +1534,7 @@ class HTTPResolverTestCase(MyTestCase):
 
 
 class ConfidentialClientApplicationMock:
-    def __init__(self, client_id: str, authority: str, client_credential: Union[str, dict[str, str]]):
+    def __init__(self, client_id: str, authority: str, client_credential: str | dict[str, str]):
         self.client_id = client_id
         self.authority = authority
         self.client_credential = client_credential
@@ -1563,7 +1562,7 @@ class ConfidentialClientApplicationMockError(ConfidentialClientApplicationMock):
 
 class EntraIDResolverTestCase(MyTestCase):
 
-    def set_up_resolver(self, config_update: Optional[dict] = None):
+    def set_up_resolver(self, config_update: dict | None = None):
         resolver = EntraIDResolver()
         config = {CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value,
                   CLIENT_SECRET: "secret", TENANT: "organization"}
@@ -3116,7 +3115,7 @@ class KeycloakResolverTestCase(MyTestCase):
         self.assertEqual("6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0", user_id)
 
         # Mock users API: found no matching user
-        responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users", status=200, body="[]")
+        responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200, body="[]")
         user_id = resolver.getUserId(user_name)
         self.assertEqual("", user_id)
 

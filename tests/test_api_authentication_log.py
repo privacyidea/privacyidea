@@ -23,7 +23,7 @@ covered in test_api_authentication_event_logging.py.
 import datetime
 import inspect
 
-import mock
+from unittest import mock
 
 from privacyidea.api.authentication_log import _ENTRY_FILTER_PARAMS
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthEventReason,
@@ -49,8 +49,8 @@ class AuthenticationLogApiTestCase(AuthLogTestCase):
     OTHER_REALM = "otherrealm"
     # A window around "now", since seeded rows take the current time and the statistics endpoint requires an explicit
     # one at both ends.
-    STATS_START = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=1)).isoformat()
-    STATS_END = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)).isoformat()
+    STATS_START = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=1)).isoformat()
+    STATS_END = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1)).isoformat()
 
     def _seed(self, include_no_realm=False):
         # Seeds LOGIN_SUCCESS + MFA_FAIL in realm1 and a LOGIN_SUCCESS in another realm, plus an optional null-realm row

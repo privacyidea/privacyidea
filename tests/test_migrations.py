@@ -570,11 +570,11 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
     ]
 
     assert not filtered_diffs, (
-        f"The database schema does not match the SQLAlchemy models after upgrading "
-        f"to head. The following differences were detected:\n"
+        "The database schema does not match the SQLAlchemy models after upgrading "
+        "to head. The following differences were detected:\n"
         + "\n".join(str(d) for d in filtered_diffs)
         + "\n\nThis means either a migration is missing or incomplete. "
-        f"Run `flask db migrate` to generate the missing migration."
+        "Run `flask db migrate` to generate the missing migration."
     )
 
 
@@ -915,7 +915,7 @@ def test_all_down_revisions_point_to_existing_revisions():
         if down not in all_revisions
     ]
     assert not bad, (
-        f"The following migrations have a down_revision that does not exist:\n"
+        "The following migrations have a down_revision that does not exist:\n"
         + "\n".join(f"  {r} -> {d}" for r, d in bad)
     )
 

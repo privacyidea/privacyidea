@@ -527,7 +527,7 @@ class TiQRTokenTestCase(MyApiTestCase):
         # Calculate Response with the challenge.
         response = ocra_object.get_response(challenge)
 
-        encoded_user_id = "{!s}_{!s}".format(user, self.realm1).encode('utf-8')
+        encoded_user_id = f"{user!s}_{self.realm1!s}".encode()
         # First, send a wrong response
         req.all_data = {"response": "12345",
                         "userId": encoded_user_id,
@@ -537,7 +537,7 @@ class TiQRTokenTestCase(MyApiTestCase):
         self.assertEqual(r[0], "plain")
         # check the failed response count
         fcnt1 = token.get_max_failcount() - token.get_failcount()
-        self.assertRegex(r[1], r"INVALID_RESPONSE:{0!s}".format(fcnt1))
+        self.assertRegex(r[1], rf"INVALID_RESPONSE:{fcnt1!s}")
 
         # Try another wrong response
         req.all_data = {"response": "67890",
@@ -548,7 +548,7 @@ class TiQRTokenTestCase(MyApiTestCase):
         self.assertEqual(r[0], "plain")
         # check the failed response count
         fcnt2 = token.get_max_failcount() - token.get_failcount()
-        self.assertRegex(r[1], r"INVALID_RESPONSE:{0!s}".format(fcnt2))
+        self.assertRegex(r[1], rf"INVALID_RESPONSE:{fcnt2!s}")
         # has the failcounter decreased?
         self.assertEqual(fcnt1 - 1, fcnt2)
 

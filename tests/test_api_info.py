@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 from .base import MyApiTestCase
 from urllib.parse import urlencode
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
-import mock
+from unittest import mock
 
 
 class RSSTest(MyApiTestCase):

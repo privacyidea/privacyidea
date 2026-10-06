@@ -8,7 +8,7 @@ time. A timing assertion would say the same thing far less reliably, so this cou
 """
 from contextlib import contextmanager
 
-import mock
+from unittest import mock
 from sqlalchemy import delete, event, select
 from sqlalchemy.engine import Engine
 

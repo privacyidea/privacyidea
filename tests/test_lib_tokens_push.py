@@ -5,10 +5,10 @@ import json
 import logging
 import time
 from base64 import b32decode, b32encode
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from threading import Timer
 
-import mock
+from unittest import mock
 import responses
 import rfc8785
 from cryptography.exceptions import InvalidSignature
@@ -143,8 +143,8 @@ class PushTokenTestCase(MyTestCase):
 
     def _poll_request(self, serial):
         """Build the signed request the smartphone sends to poll for challenges."""
-        timestamp = datetime.now(timezone.utc).isoformat()
-        signature = self.smartphone_private_key.sign(f"{serial}|{timestamp}".encode("utf8"),
+        timestamp = datetime.now(UTC).isoformat()
+        signature = self.smartphone_private_key.sign(f"{serial}|{timestamp}".encode(),
                                                      padding.PKCS1v15(), hashes.SHA256())
         request = Request(EnvironBuilder(method="GET", headers={}).get_environ())
         request.all_data = {"serial": serial, "timestamp": timestamp, "signature": b32encode(signature)}
@@ -844,13 +844,13 @@ class PushTokenTestCase(MyTestCase):
 
         # This is what the smartphone answers.
         # create the signature:
-        sign_data = "{0!s}|{1!s}".format(challenge, tokenobj.token.serial)
+        sign_data = f"{challenge!s}|{tokenobj.token.serial!s}"
         signature = b32encode_and_unicode(
             self.smartphone_private_key.sign(sign_data.encode("utf-8"),
                                              padding.PKCS1v15(),
                                              hashes.SHA256()))
         # Try an invalid signature first
-        wrong_sign_data = "{}|{}".format(challenge, tokenobj.token.serial[1:])
+        wrong_sign_data = f"{challenge}|{tokenobj.token.serial[1:]}"
         wrong_signature = b32encode_and_unicode(
             self.smartphone_private_key.sign(wrong_sign_data.encode("utf-8"),
                                              padding.PKCS1v15(),
@@ -868,7 +868,7 @@ class PushTokenTestCase(MyTestCase):
 
         # Correct signature for the wrong challenge should result in failure
         wrong_challenge = b32encode_and_unicode(geturandom())
-        wrong_sign_data = "{}|{}".format(wrong_challenge, tokenobj.token.serial)
+        wrong_sign_data = f"{wrong_challenge}|{tokenobj.token.serial}"
         wrong_signature = b32encode_and_unicode(
             self.smartphone_private_key.sign(wrong_sign_data.encode("utf-8"),
                                              padding.PKCS1v15(),
@@ -887,7 +887,7 @@ class PushTokenTestCase(MyTestCase):
         wrong_key = rsa.generate_private_key(public_exponent=65537,
                                              key_size=4096,
                                              backend=default_backend())
-        wrong_sign_data = "{}|{}".format(challenge, tokenobj.token.serial)
+        wrong_sign_data = f"{challenge}|{tokenobj.token.serial}"
         wrong_signature = b32encode_and_unicode(
             wrong_key.sign(wrong_sign_data.encode("utf-8"),
                            padding.PKCS1v15(),
@@ -944,8 +944,7 @@ class PushTokenTestCase(MyTestCase):
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PushAction.FIREBASE_CONFIG,
-                                               self.firebase_config_name))
+                   action=f"{PushAction.FIREBASE_CONFIG!s}={self.firebase_config_name!s}")
         # create push token
         tokenobj = self._create_push_token()
         serial = tokenobj.get_serial()
@@ -992,7 +991,7 @@ class PushTokenTestCase(MyTestCase):
                                               transaction_id=transaction_id)
         challenge = challengeobject_list[0].challenge
 
-        sign_data = "{0!s}|{1!s}|decline".format(challenge, tokenobj.token.serial)
+        sign_data = f"{challenge!s}|{tokenobj.token.serial!s}|decline"
         signature = b32encode_and_unicode(
             self.smartphone_private_key.sign(sign_data.encode("utf-8"),
                                              padding.PKCS1v15(),
@@ -1056,8 +1055,7 @@ class PushTokenTestCase(MyTestCase):
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PushAction.FIREBASE_CONFIG,
-                                               self.firebase_config_name))
+                   action=f"{PushAction.FIREBASE_CONFIG!s}={self.firebase_config_name!s}")
         # create push token
         tokenobj = self._create_push_token()
         serial = tokenobj.get_serial()
@@ -1068,9 +1066,9 @@ class PushTokenTestCase(MyTestCase):
 
         # Set a loginmode policy
         set_policy("webui", scope=SCOPE.WEBUI,
-                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a PUSH_WAIT action which will be ignored by privacyIDEA
-        set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=20".format(PushAction.WAIT))
+        set_policy("push1", scope=SCOPE.AUTH, action=f"{PushAction.WAIT!s}=20")
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
                         '.from_service_account_file') as mySA:
             # alternative: side_effect instead of return_value
@@ -1105,7 +1103,7 @@ class PushTokenTestCase(MyTestCase):
         challenge = challengeobject_list[0].challenge
         # This is what the smartphone answers.
         # create the signature:
-        sign_data = "{0!s}|{1!s}".format(challenge, tokenobj.token.serial)
+        sign_data = f"{challenge!s}|{tokenobj.token.serial!s}"
         signature = b32encode_and_unicode(
             self.smartphone_private_key.sign(sign_data.encode("utf-8"),
                                              padding.PKCS1v15(),
@@ -1593,8 +1591,8 @@ class PushTokenTestCase(MyTestCase):
     def test_07_check_timestamp(self):
         timestamp_fmt = 'broken_timestamp_010203'
         self.assertRaisesRegex(PrivacyIDEAError,
-                               r'Could not parse timestamp {0!s}. ISO-Format '
-                               r'required.'.format(timestamp_fmt),
+                               rf'Could not parse timestamp {timestamp_fmt!s}. ISO-Format '
+                               r'required.',
                                PushTokenClass._check_timestamp_in_range, timestamp_fmt, 10)
         timestamp = datetime(2020, 11, 13, 13, 27, tzinfo=utc)
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
@@ -1685,7 +1683,7 @@ class PushTokenTestCase(MyTestCase):
         # check for timestamp of wrong type
         request = Request(builder.get_environ())
         request.all_data = {'serial': 'SPASS01',
-                            'timestamp': datetime.now(timezone.utc),
+                            'timestamp': datetime.now(UTC),
                             'signature': 'unknown'}
         self.assertRaisesRegex(PrivacyIDEAError,
                                r'Could not parse timestamp .*\. ISO-Format required.',
@@ -1694,7 +1692,7 @@ class PushTokenTestCase(MyTestCase):
         # check for timezone unaware timestamp (we assume UTC then)
         request = Request(builder.get_environ())
         request.all_data = {'serial': 'SPASS01',
-                            'timestamp': datetime.now(timezone.utc).isoformat(),
+                            'timestamp': datetime.now(UTC).isoformat(),
                             'signature': 'unknown'}
         self.assertRaisesRegex(PrivacyIDEAError,
                                r'Could not verify signature!',

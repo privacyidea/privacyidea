@@ -4,7 +4,7 @@ import datetime
 import json
 import time
 
-import mock
+from unittest import mock
 import responses
 from dateutil.tz import tzlocal
 from testfixtures import Replace, test_datetime
@@ -1124,7 +1124,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # set policy for timelimit
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=2/20s".format(PolicyAction.AUTHMAXSUCCESS))
+                   action=f"{PolicyAction.AUTHMAXSUCCESS!s}=2/20s")
 
         for i in [1, 2]:
             with self.app.test_request_context('/validate/check',
@@ -1159,7 +1159,7 @@ class ValidateAPITestCase(MyApiTestCase):
         # set policy for timelimit
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=2/20s".format(PolicyAction.AUTHMAXFAIL))
+                   action=f"{PolicyAction.AUTHMAXFAIL!s}=2/20s")
 
         for i in [1, 2]:
             with self.app.test_request_context('/validate/check',
@@ -1378,8 +1378,7 @@ class ValidateAPITestCase(MyApiTestCase):
         serial = "t23"
         set_policy(name="pass_no",
                    scope=SCOPE.AUTH,
-                   action="{0!s},{1!s}".format(PolicyAction.PASSONNOTOKEN,
-                                               PolicyAction.PASSONNOUSER))
+                   action=f"{PolicyAction.PASSONNOTOKEN!s},{PolicyAction.PASSONNOUSER!s}")
 
         r = init_token({"type": "spass", "serial": serial,
                         "pin": pin}, user=User(user, self.realm2))
@@ -1489,12 +1488,8 @@ class ValidateAPITestCase(MyApiTestCase):
         # Now we set a policy, that a non existing user will authenticate
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action="{0}, {1}, {2}, {3}=none".format(
-                       PolicyAction.RESETALLTOKENS,
-                       PolicyAction.PASSONNOUSER,
-                       PolicyAction.PASSONNOTOKEN,
-                       PolicyAction.OTPPIN
-                   ),
+                   action=f"{PolicyAction.RESETALLTOKENS}, {PolicyAction.PASSONNOUSER}, {PolicyAction.PASSONNOTOKEN}, "
+                          f"{PolicyAction.OTPPIN}=none",
                    realm=self.realm1)
         # Check that the non existing user MisterX is allowed to authenticate
         with self.app.test_request_context('/validate/check',
@@ -1605,9 +1600,9 @@ class ValidateAPITestCase(MyApiTestCase):
         self.assertTrue(r)
 
         set_policy("emailtext", scope=SCOPE.AUTH,
-                   action="{0!s}=Dein <otp>".format(EMAILACTION.EMAILTEXT))
+                   action=f"{EMAILACTION.EMAILTEXT!s}=Dein <otp>")
         set_policy("emailsubject", scope=SCOPE.AUTH,
-                   action="{0!s}=Dein OTP".format(EMAILACTION.EMAILSUBJECT))
+                   action=f"{EMAILACTION.EMAILSUBJECT!s}=Dein OTP")
 
         # Trigger challenge for serial number
         with self.app.test_request_context('/validate/triggerchallenge',
@@ -1642,8 +1637,7 @@ class ValidateAPITestCase(MyApiTestCase):
                     "type": "hotp",
                     "otpkey": self.otpkey,
                     "pin": pin}, user)
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            PolicyAction.CHALLENGERESPONSE))
+        set_policy("test49", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         # both tokens will be a valid challenge response token!
 
         transaction_id = None
@@ -1777,8 +1771,7 @@ class ValidateAPITestCase(MyApiTestCase):
                     "type": "hotp",
                     "otpkey": self.otpkey,
                     "pin": pinB}, user)
-        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            PolicyAction.CHALLENGERESPONSE))
+        set_policy("test48", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         # both tokens will be a valid challenge response token!
 
         transaction_id = None
@@ -1881,8 +1874,7 @@ class ValidateAPITestCase(MyApiTestCase):
                     "type": "hotp",
                     "otpkey": self.otpkey,
                     "pin": pin}, user)
-        set_policy("test48", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            PolicyAction.CHALLENGERESPONSE))
+        set_policy("test48", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         # both tokens will be a valid challenge response token!
 
         # One token is locked
@@ -1993,7 +1985,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # policy only allows HOTP.
         set_policy("onlyHOTP", scope=SCOPE.AUTHZ,
-                   action="{0!s}=hotp".format(PolicyAction.TOKENTYPE))
+                   action=f"{PolicyAction.TOKENTYPE!s}=hotp")
 
         # He can not authenticate with the spass token!
         with self.app.test_request_context('/validate/check',
@@ -2010,7 +2002,7 @@ class ValidateAPITestCase(MyApiTestCase):
 
         # Define a passthru policy
         set_policy("passthru", scope=SCOPE.AUTH,
-                   action="{0!s}=userstore".format(PolicyAction.PASSTHRU))
+                   action=f"{PolicyAction.PASSTHRU!s}=userstore")
 
         # A user with a passthru policy can authenticate, since he has not tokentype
         with self.app.test_request_context('/validate/check',
@@ -2053,8 +2045,8 @@ class ValidateAPITestCase(MyApiTestCase):
                     "email": "hallo@example.com",
                     "pin": "email"}, user)
 
-        set_policy("chalsms", SCOPE.AUTH, "sms_{0!s}=check your sms".format(PolicyAction.CHALLENGETEXT))
-        set_policy("chalemail", SCOPE.AUTH, "email_{0!s}=check your email".format(PolicyAction.CHALLENGETEXT))
+        set_policy("chalsms", SCOPE.AUTH, f"sms_{PolicyAction.CHALLENGETEXT!s}=check your sms")
+        set_policy("chalemail", SCOPE.AUTH, f"email_{PolicyAction.CHALLENGETEXT!s}=check your email")
 
         # Challenge Response with email
         with self.app.test_request_context('/validate/check',
@@ -2101,9 +2093,9 @@ class ValidateAPITestCase(MyApiTestCase):
         delete_policy("chalemail")
 
         # Challenge_text with tags
-        set_policy("chalsms", SCOPE.AUTH, "sms_challenge_text=Hello {user}\, please enter "
+        set_policy("chalsms", SCOPE.AUTH, r"sms_challenge_text=Hello {user}\, please enter "
                                           "the otp sent to {phone},  increase_failcounter_on_challenge")
-        set_policy("chalemail", SCOPE.AUTH, "email_challenge_text=Hello {user}\, please enter "
+        set_policy("chalemail", SCOPE.AUTH, r"email_challenge_text=Hello {user}\, please enter "
                                             "the otp sent to {email},  increase_failcounter_on_challenge")
 
         with self.app.test_request_context('/validate/check',
@@ -2280,7 +2272,7 @@ class ValidateAPITestCase(MyApiTestCase):
     def test_33_auth_cache(self):
         init_token({"otpkey": self.otpkey},
                    user=User("cornelius", self.realm1))
-        set_policy(name="authcache", action="{0!s}=4m".format(PolicyAction.AUTH_CACHE), scope=SCOPE.AUTH)
+        set_policy(name="authcache", action=f"{PolicyAction.AUTH_CACHE!s}=4m", scope=SCOPE.AUTH)
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
@@ -2409,7 +2401,7 @@ class ValidateAPITestCase(MyApiTestCase):
                    user=User("cornelius", self.realm1))
         # Hotp and totp are allowed for trigger challenge
         set_policy(name="pol_chalresp", scope=SCOPE.AUTH,
-                   action="{0!s}=hot totp".format(PolicyAction.CHALLENGERESPONSE))
+                   action=f"{PolicyAction.CHALLENGERESPONSE!s}=hot totp")
 
         # trigger a challenge for both tokens
         with self.app.test_request_context('/validate/triggerchallenge',
@@ -2459,10 +2451,10 @@ class ValidateAPITestCase(MyApiTestCase):
                    tokenkind="software", user=User("cornelius", self.realm1))
         init_token({"type": "spass", "serial": "hardwareToken", "pin": "hardware1"},
                    tokenkind="hardware", user=User("cornelius", self.realm1))
-        set_policy(name="always_deny_access", action="{0!s}=deny_access".format(PolicyAction.AUTHORIZED),
+        set_policy(name="always_deny_access", action=f"{PolicyAction.AUTHORIZED!s}=deny_access",
                    scope=SCOPE.AUTHZ, priority=100)
         # policy to allow tokens, condition is deactivated. All tokens will be authorized
-        set_policy(name="allow_hardware_tokens", action="{0!s}=grant_access".format(PolicyAction.AUTHORIZED),
+        set_policy(name="allow_hardware_tokens", action=f"{PolicyAction.AUTHORIZED!s}=grant_access",
                    scope=SCOPE.AUTHZ, priority=1,
                    conditions=[("tokeninfo", "tokenkind", "equals", "hardware", False)])
 
@@ -2615,7 +2607,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
 
         # check last authentication
-        auth_time = datetime.datetime.now(datetime.timezone.utc)
+        auth_time = datetime.datetime.now(datetime.UTC)
         last_auth = container.last_authentication
         time_diff = abs((auth_time - last_auth).total_seconds())
         self.assertLessEqual(time_diff, 2)
@@ -3121,7 +3113,7 @@ class ValidateAPITestCase(MyApiTestCase):
         token.save()
 
         # lastauth: currently 200, should be 401
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         thirty_days_ago = now - datetime.timedelta(days=30)
         token.write_tokeninfo(PolicyAction.LASTAUTH, thirty_days_ago.strftime(AUTH_DATE_FORMAT))
         set_policy("lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=7d")

@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
@@ -239,7 +239,7 @@ class APIEventsTestCase(MyApiTestCase):
                              "themis")
 
         # delete event
-        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/{ev1_id!s}',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -295,7 +295,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res)
 
         # The options and conditions must still be there
-        with self.app.test_request_context('/event/{0!s}'.format(ev_id),
+        with self.app.test_request_context(f'/event/{ev_id!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -321,7 +321,7 @@ class APIEventsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res)
 
-        with self.app.test_request_context('/event/{0!s}'.format(ev_id),
+        with self.app.test_request_context(f'/event/{ev_id!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -331,7 +331,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event.get("conditions"), {})
 
         # cleanup
-        with self.app.test_request_context('/event/{0!s}'.format(ev_id),
+        with self.app.test_request_context(f'/event/{ev_id!s}',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -416,7 +416,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event_list[0].get("active"), True)
 
         # disable event
-        with self.app.test_request_context('/event/disable/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/disable/{ev1_id!s}',
                                            method='POST',
                                            headers={
                                                'Authorization': self.at}):
@@ -435,7 +435,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event_list[0].get("active"), False)
 
         # Enable event
-        with self.app.test_request_context('/event/enable/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/enable/{ev1_id!s}',
                                            method='POST',
                                            headers={
                                                'Authorization': self.at}):
@@ -454,7 +454,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(event_list[0].get("active"), True)
 
         # delete event
-        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/{ev1_id!s}',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -593,7 +593,7 @@ class APIEventsTestCase(MyApiTestCase):
             ev1_id = result.get('value')
 
         # check the event
-        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/{ev1_id!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -616,7 +616,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), ev1_id, result)
 
         # check the event
-        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/{ev1_id!s}',
                                            method='GET',
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
@@ -626,7 +626,7 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertEqual(result.get("value")[0].get("position"), "pre")
 
         # delete event
-        with self.app.test_request_context('/event/{0!s}'.format(ev1_id),
+        with self.app.test_request_context(f'/event/{ev1_id!s}',
                                            method='DELETE',
                                            headers={
                                                'Authorization': self.at}):
@@ -822,7 +822,7 @@ class EventParameterAllowlistTestCase(MyApiTestCase):
 
 class CustomUserAttributeHandlerTestCase(MyApiTestCase):
     def setUp(self):
-        super(CustomUserAttributeHandlerTestCase, self).setUp()
+        super().setUp()
         self.setUp_user_realms()
 
     def test_01_user_attribute_with_handler_tokenowner(self):
@@ -1161,7 +1161,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         # Init rollover
         set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"},
                    priority=2)
-        result = self.request_assert_success(f'container/register/initialize',
+        result = self.request_assert_success('container/register/initialize',
                                              {"container_serial": container.serial, "rollover": True},
                                              self.at, 'POST')
         init_result = result["result"]["value"]
@@ -1171,7 +1171,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         self.assertFalse(totp.is_active())
 
         # Finalize rollover fails
-        self.request_assert_error(f'container/register/finalize',
+        self.request_assert_error('container/register/finalize',
                                   {"container_serial": container.serial},
                                   self.at, 'POST')
         # Check that tokens are disabled
@@ -1179,12 +1179,12 @@ class ContainerHandlerTestCase(MyApiTestCase):
         self.assertFalse(totp.is_active())
 
         # Finalize rollover success
-        scope = f"https://pi.net/container/register/finalize"
+        scope = "https://pi.net/container/register/finalize"
         mock_smph = MockSmartphone()
         params = mock_smph.register_finalize(init_result["nonce"], init_result["time_stamp"],
                                              scope, container.serial)
 
-        self.request_assert_success(f'container/register/finalize',
+        self.request_assert_success('container/register/finalize',
                                     params,
                                     self.at, 'POST')
 
@@ -1219,7 +1219,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
                         position="post")
 
         # login with token
-        self.request_assert_success(f'/validate/check',
+        self.request_assert_success('/validate/check',
                                     {"serial": hotp.get_serial(),
                                      "pass": "1234"},
                                     None, 'POST')
@@ -1280,7 +1280,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
                          support_tls=False)
 
         with mock.patch("logging.Logger.warning") as mock_log:
-            self.request_assert_success(f'/container/register/initialize',
+            self.request_assert_success('/container/register/initialize',
                                         {"container_serial": container.serial},
                                         self.at, 'POST')
 
@@ -1464,7 +1464,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
         ContainerEventTestCase.register_smartphone(container)
 
         with mock.patch("logging.Logger.warning") as mock_log:
-            self.request_assert_success(f'/container/register/initialize',
+            self.request_assert_success('/container/register/initialize',
                                         {"container_serial": container.serial, "rollover": True},
                                         self.at, 'POST')
 
@@ -1511,7 +1511,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
                            PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
 
         with mock.patch("logging.Logger.warning") as mock_log:
-            self.request_assert_success(f'/container/register/initialize',
+            self.request_assert_success('/container/register/initialize',
                                         {"container_serial": container.serial},
                                         self.at, 'POST')
 

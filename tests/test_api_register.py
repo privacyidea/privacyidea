@@ -108,7 +108,7 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
         # Set SMTP config and policy
         add_smtpserver("myserver", "1.2.3.4", sender="pi@localhost")
         set_policy("pol3", scope=SCOPE.REGISTER,
-                   action="{0!s}=myserver".format(PolicyAction.EMAILCONFIG))
+                   action=f"{PolicyAction.EMAILCONFIG!s}=myserver")
         with self.app.test_request_context('/register',
                                            method='POST',
                                            data={"username": "corneliusReg",

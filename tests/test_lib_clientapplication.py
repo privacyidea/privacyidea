@@ -1,7 +1,7 @@
 """
 This test file tests the lib.clientapplicaton.py
 """
-import mock
+from unittest import mock
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 

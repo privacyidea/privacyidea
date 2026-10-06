@@ -9,7 +9,7 @@ This test file tests the modules:
 import json
 import os
 
-import mock
+from unittest import mock
 import responses
 from sqlalchemy import select
 
@@ -41,11 +41,11 @@ class SMSTestCase(MyTestCase):
 
     def test_00_SMSError(self):
         err = SMSError(100, "Some Error")
-        text = "{0!r}".format(err)
+        text = f"{err!r}"
         self.assertTrue(text == "SMSError(error_id=100, description='Some "
                                 "Error')", text)
 
-        text = "{0!s}".format(err)
+        text = f"{err!s}"
         self.assertTrue(text == "Some Error", text)
 
     def test_01_get_provider_class(self):
@@ -372,7 +372,7 @@ class SmtpSMSTestCase(MyTestCase):
 
 
 class ScriptSMSTestCase(MyTestCase):
-    directory = "{0!s}/tests/testdata/scripts/".format(os.getcwd())
+    directory = f"{os.getcwd()!s}/tests/testdata/scripts/"
 
     def test_01_fail_no_script(self):
         # The script does not exist

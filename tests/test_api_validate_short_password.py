@@ -55,7 +55,7 @@ class ValidateShortPasswordTestCase(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": "{0!s}{1!s}".format(pin, self.valid_otp_values[0])}):
+                                                 "pass": f"{pin!s}{self.valid_otp_values[0]!s}"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
@@ -66,7 +66,7 @@ class ValidateShortPasswordTestCase(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": "{0!s}{1!s}".format(pin, self.valid_yubi_otps[0])}):
+                                                 "pass": f"{pin!s}{self.valid_yubi_otps[0]!s}"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")

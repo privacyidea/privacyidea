@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey, 
 from cryptography.hazmat.primitives.asymmetric.ed448 import Ed448PublicKey, Ed448PrivateKey
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 from cryptography.hazmat.primitives.asymmetric.x448 import X448PublicKey, X448PrivateKey
-from mock import call
+from unittest.mock import call
 import binascii
 
 from privacyidea.config import TestingConfig
@@ -191,7 +191,7 @@ class CryptoTestCase(MyTestCase):
         self.assertEqual(decryptPin(pin3), '1234')
 
     def test_01_encrypt_decrypt_pass(self):
-        r = encryptPassword("passwörd".encode('utf8'))
+        r = encryptPassword("passwörd".encode())
         # encryptPassword returns unicode
         self.assertTrue(isinstance(r, str))
         pin = decryptPassword(r)
@@ -276,7 +276,7 @@ class CryptoTestCase(MyTestCase):
         # TODO: add checks for broken paddings/encrypted values and malformed enc_data
 
         # check some data generated with 2.23
-        s = 'passwörd'.encode('utf8')
+        s = 'passwörd'.encode()
         iv_hex = 'cd5245a2875007d30cc049c2e7eca0c5'
         enc_data_hex = '7ea55168952b33131077f4249cf9e52b5f2b572214ace13194c436451fe3788c'
         self.assertEqual(s, decrypt(binascii.unhexlify(enc_data_hex),
@@ -878,7 +878,7 @@ class SignObjectTestCase(MyTestCase):
         # now test a broken signature
         data = 'short text'
         sig = so.sign(data)
-        sig_broken = sig[:-1] + '{:x}'.format((int(sig[-1], 16) + 1) % 16)
+        sig_broken = sig[:-1] + f'{(int(sig[-1], 16) + 1) % 16:x}'
         self.assertFalse(so.verify(data, sig_broken))
 
         # test with non hex string

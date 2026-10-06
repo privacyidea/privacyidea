@@ -21,7 +21,7 @@ from .base import MyApiTestCase
 class RegistrationValidity(MyApiTestCase):
 
     def setUp(self):
-        super(RegistrationValidity, self).setUp()
+        super().setUp()
         self.setUp_user_realms()
 
     def test_00_registrationtoken_with_validity_period(self):
@@ -206,7 +206,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": quote("test{0!s}".format(password))}):
+                                                 "pass": quote(f"test{password!s}")}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
@@ -266,7 +266,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": quote("test{0!s}".format(password))}):
+                                                 "pass": quote(f"test{password!s}")}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
@@ -279,7 +279,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
                                            method='POST',
                                            data={"user": "cornelius",
                                                  "service_id": "wrong",
-                                                 "pass": quote("test{0!s}".format(password))}):
+                                                 "pass": quote(f"test{password!s}")}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json
@@ -292,7 +292,7 @@ class RegistrationAndPasswordToken(MyApiTestCase):
                                            method='POST',
                                            data={"user": "cornelius",
                                                  "service_id": "thunderbird",
-                                                 "pass": quote("test{0!s}".format(password))}):
+                                                 "pass": quote(f"test{password!s}")}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
             data = res.json

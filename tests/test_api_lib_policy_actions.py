@@ -73,7 +73,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="email1",
                    scope=SCOPE.REGISTER,
-                   action=r"{0!s}=/.*@mydomain\..*".format(PolicyAction.REQUIREDEMAIL))
+                   action=rf"{PolicyAction.REQUIREDEMAIL!s}=/.*@mydomain\..*")
         g.policy_object = PolicyClass()
         # request, that matches the policy
         req.all_data = {"email": "user@mydomain.net"}
@@ -108,7 +108,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # and only use the last 4 characters of the username
         set_policy(name="recover",
                    scope=SCOPE.USER,
-                   action="{0!s}".format(PolicyAction.RESYNC))
+                   action=f"{PolicyAction.RESYNC!s}")
         g.policy_object = PolicyClass()
         req.all_data = {"user": "cornelius", "realm": self.realm1}
         # There is a user policy without password reset, so an exception is
@@ -119,7 +119,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
         # The password reset is allowed
         set_policy(name="recover",
                    scope=SCOPE.USER,
-                   action="{0!s}".format(PolicyAction.PASSWORDRESET))
+                   action=f"{PolicyAction.PASSWORDRESET!s}")
         g.policy_object = PolicyClass()
         r = check_anonymous_user(req, PolicyAction.PASSWORDRESET)
         self.assertEqual(r, True)
@@ -143,7 +143,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # set to allow deleting the department
         set_policy("set_custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=department sth".format(PolicyAction.DELETE_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.DELETE_USER_ATTRIBUTES!s}=department sth")
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "department"}
         check_custom_user_attributes(req, "delete")
 
@@ -153,13 +153,13 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # Allow to delete diffkey
         set_policy("set_custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=difkey".format(PolicyAction.DELETE_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.DELETE_USER_ATTRIBUTES!s}=difkey")
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "difkey"}
         check_custom_user_attributes(req, "delete")
 
         # Now we set the policy to allow to delete any attribute
         set_policy("set_custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=*".format(PolicyAction.DELETE_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.DELETE_USER_ATTRIBUTES!s}=*")
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "department"}
         check_custom_user_attributes(req, "delete")
         req.all_data = {"user": "cornelius", "realm": self.realm1, "attrkey": "anykey"}
@@ -173,8 +173,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
                         "key": "department", "value": "finance"}
         self.assertRaises(PolicyError, check_custom_user_attributes, req, "set")
         set_policy("set_custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=:department: finance devel :color: * :*: 1 2 ".format(
-                       PolicyAction.SET_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.SET_USER_ATTRIBUTES!s}=:department: finance devel :color: * :*: 1 2 ")
         # Allow to set to finance
         check_custom_user_attributes(req, "set")
         req.all_data = {"user": "cornelius", "realm": self.realm1,
@@ -206,7 +205,7 @@ class PrePolicyActionsTestCase(PrePolicyHelperMixin, MyApiTestCase):
 
         # Now you can set any key to any value
         set_policy("set_custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=:*: *".format(PolicyAction.SET_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.SET_USER_ATTRIBUTES!s}=:*: *")
         req.all_data = {"user": "cornelius", "realm": self.realm1,
                         "key": "size", "value": "3"}
         check_custom_user_attributes(req, "set")

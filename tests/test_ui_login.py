@@ -86,9 +86,9 @@ class LoginUITestCase(MyTestCase):
     def test_04_custom_menu_baseline(self):
         # We provide a non-existing file, so we can not read "privacyIDEA" in the footer.
         set_policy("custom1", scope=SCOPE.WEBUI,
-                   action="{0!s}=mytemplates/nonexist_base.html".format(PolicyAction.CUSTOM_BASELINE))
+                   action=f"{PolicyAction.CUSTOM_BASELINE!s}=mytemplates/nonexist_base.html")
         set_policy("custom2", scope=SCOPE.WEBUI,
-                   action="{0!s}=mytemplates/nonexist_menu.html".format(PolicyAction.CUSTOM_MENU))
+                   action=f"{PolicyAction.CUSTOM_MENU!s}=mytemplates/nonexist_menu.html")
 
         with self.app.test_request_context('/',
                                            method='GET'):
@@ -99,7 +99,7 @@ class LoginUITestCase(MyTestCase):
 
     def test_05_custom_login_text(self):
         set_policy("logtext", scope=SCOPE.WEBUI,
-                   action="{0!s}=Go for it!".format(PolicyAction.LOGIN_TEXT))
+                   action=f"{PolicyAction.LOGIN_TEXT!s}=Go for it!")
         with self.app.test_request_context('/',
                                            method='GET'):
             res = self.app.full_dispatch_request()
@@ -119,7 +119,7 @@ class LoginUITestCase(MyTestCase):
 
         # test login with remote_user policy set
         set_policy("remote_user", scope=SCOPE.WEBUI,
-                   action="{0!s}=allowed".format(PolicyAction.REMOTE_USER))
+                   action=f"{PolicyAction.REMOTE_USER!s}=allowed")
         with self.app.test_request_context('/',
                                            method='GET',
                                            environ_base={'REMOTE_USER': 'foo'}):
@@ -129,7 +129,7 @@ class LoginUITestCase(MyTestCase):
 
     def test_07_privacy_statement_link(self):
         set_policy("gdpr_link", scope=SCOPE.WEBUI,
-                   action="{0!s}=https://privacyidea.org/".format(PolicyAction.GDPR_LINK))
+                   action=f"{PolicyAction.GDPR_LINK!s}=https://privacyidea.org/")
         with self.app.test_request_context('/',
                                            method='GET'):
             res = self.app.full_dispatch_request()

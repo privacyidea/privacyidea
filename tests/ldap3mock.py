@@ -46,7 +46,7 @@ from ast import literal_eval
 import uuid
 from ldap3.utils.conv import escape_bytes
 import ldap3
-from mock import Mock
+from unittest.mock import Mock
 import re
 import pyparsing
 
@@ -77,7 +77,7 @@ def wrapper%(signature)s:
 
 
 def _convert_objectGUID(item):
-    item = uuid.UUID("{{{0!s}}}".format(item)).bytes_le
+    item = uuid.UUID(f"{{{item!s}}}").bytes_le
     item = escape_bytes(item)
     return item
 
@@ -102,11 +102,11 @@ class CallList(Sequence, Sized):
         self._calls = []
 
 
-class Connection(object):
+class Connection:
 
-    class Extend(object):
+    class Extend:
 
-        class Standard(object):
+        class Standard:
 
             def __init__(self, connection):
                 self.connection = connection
@@ -209,7 +209,7 @@ class Connection(object):
             # If we get here the user doesn't exist so continue
             self.result["description"] = "failure"
             self.result["result"] = 32
-            self.result["message"] = "Error no such object: {0}".format(dn)
+            self.result["message"] = f"Error no such object: {dn}"
             return False
 
         # Delete the entry object for the user
@@ -237,7 +237,7 @@ class Connection(object):
             # If we get here the user doesn't exist so continue
             self.result["description"] = "failure"
             self.result["result"] = 32
-            self.result["message"] = "Error no such object: {0!s}".format(dn)
+            self.result["message"] = f"Error no such object: {dn!s}"
             return False
 
         # extract the hash we are interested in
@@ -332,7 +332,7 @@ class Connection(object):
             match_using_regex = True
             #regex = check_escape(value)
             regex = value.replace('*', '.*')
-            regex = "^{0}$".format(regex)
+            regex = f"^{regex}$"
 
         for entry in candidates:
             dn = to_unicode(entry.get("dn"))
@@ -372,7 +372,7 @@ class Connection(object):
                         values_from_directory = values_from_directory.decode(
                             "utf-8")
                     elif type(values_from_directory) == int:
-                        values_from_directory = "{0!s}".format(values_from_directory)
+                        values_from_directory = f"{values_from_directory!s}"
                     if value == values_from_directory:
                         entry["type"] = "searchResEntry"
                         matches.append(entry)
@@ -388,7 +388,7 @@ class Connection(object):
             match_using_regex = True
             #regex = check_escape(value)
             regex = value.replace('*', '.*')
-            regex = "^{0}$".format(regex)
+            regex = f"^{regex}$"
 
         for entry in candidates:
             found = False
@@ -457,7 +457,7 @@ class Connection(object):
         deDuped = list()
         for entry in results:
             dn = entry.get("dn")
-            if not dn in found:
+            if dn not in found:
                 found[dn] = 1
                 deDuped.append(entry)
 
@@ -646,7 +646,7 @@ class Connection(object):
             s_filter = expr.parse_string(search_filter).as_list()[0]
         except pyparsing.ParseBaseException as exx:
             # Just for debugging purposes
-            s = "{!s}".format(exx)
+            s = f"{exx!s}"
 
         for item in s_filter:
             if item[0] in self.operation:
@@ -660,7 +660,7 @@ class Connection(object):
         return True
 
 
-class Ldap3Mock(object):
+class Ldap3Mock:
 
     def __init__(self):
         self._calls = CallList()
@@ -680,7 +680,7 @@ class Ldap3Mock(object):
                 with open(DIRECTORY, 'w+') as f:
                     f.write(str(directory))
                     self.directory = directory
-            except OSError as e:
+            except OSError:
                 raise
 
     def set_exception(self, exc=True):
@@ -688,10 +688,10 @@ class Ldap3Mock(object):
 
     def _load_data(self, directory):
         try:
-            with open(directory, 'r') as f:
+            with open(directory) as f:
                 data = f.read()
                 return literal_eval(data)
-        except OSError as e:
+        except OSError:
             raise
 
     @property
@@ -756,7 +756,7 @@ class Ldap3Mock(object):
         return self.con_obj
 
     def start(self):
-        import mock
+        from unittest import mock
 
         def unbound_on_Server(host, port,
                               use_ssl,

@@ -1,7 +1,7 @@
 import logging
 
 import responses
-from mock import mock
+from unittest import mock
 from testfixtures import LogCapture
 
 from privacyidea.lib.config import set_privacyidea_config

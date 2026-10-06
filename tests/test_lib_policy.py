@@ -8,7 +8,7 @@ import pathlib
 import re
 
 import dateutil
-import mock
+from unittest import mock
 from werkzeug.datastructures.headers import Headers, EnvironHeaders
 
 from privacyidea.lib.auditmodules.base import Audit
@@ -198,10 +198,10 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(len(policies) == 2, policies)
         # find policies with user admin and just as case-insensitive police with Admin
         policies = P.match_policies(scope="admin", adminuser="admin")
-        self.assertTrue(len(policies) == 2, "{0!s}".format(len(policies)))
+        self.assertTrue(len(policies) == 2, f"{len(policies)!s}")
         # find policies with user Admin and no case-sensitive police with admin
         policies = P.match_policies(scope="admin", adminuser="Admin")
-        self.assertTrue(len(policies) == 1, "{0!s}".format(len(policies)))
+        self.assertTrue(len(policies) == 1, f"{len(policies)!s}")
         # find policies with resolver2 and authorization. THe result should
         # be pol2 and pol2a
         policies = P.match_policies(resolver="resolver2", scope=SCOPE.AUTHZ)
@@ -1109,7 +1109,7 @@ class PolicyTestCase(MyTestCase):
         user = User(login="cornelius",
                     realm="test_realm")
         # The user, that is created, is cornelius.reso1@realm1
-        user_str = "{0!s}".format(user)
+        user_str = f"{user!s}"
         self.assertEqual("<cornelius.reso1@test_realm>", user_str)
         # But the user "cornelius" is also contained in other resolves in
         # this realm
@@ -2185,7 +2185,7 @@ class PolicyTestCase(MyTestCase):
         policy_class = PolicyClass()
 
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.SETPIN,
-                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, "\+49.*", True,
+                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, r"\+49.*", True,
                                 ConditionHandleMissingData.RAISE_ERROR.value)])
 
         # Policy matches
@@ -2206,7 +2206,7 @@ class PolicyTestCase(MyTestCase):
 
         # ---- Condition is true on missing data ----
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.SETPIN,
-                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, "\+49.*", True,
+                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, r"\+49.*", True,
                                 ConditionHandleMissingData.IS_TRUE.value)])
         # missing user object
         policies = policy_class.match_policies(user_object=None)
@@ -2220,7 +2220,7 @@ class PolicyTestCase(MyTestCase):
 
         # ---- Condition is false on missing data ----
         set_policy("policy", scope=SCOPE.USER, action=PolicyAction.SETPIN,
-                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, "\+49.*", True,
+                   conditions=[(ConditionSection.USERINFO, "phone", PrimaryComparators.MATCHES, r"\+49.*", True,
                                 ConditionHandleMissingData.IS_FALSE.value)])
         # missing user object
         policies = policy_class.match_policies(user_object=None)

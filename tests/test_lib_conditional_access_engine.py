@@ -24,10 +24,10 @@ de-duplication, dry-run, and the LOCK_USER / PERMANENT_LOCK_USER actions).
 import ipaddress
 from collections.abc import Sequence
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from email import message_from_string
 
-import mock
+from unittest import mock
 
 from privacyidea.lib.conditional_access import engine
 from privacyidea.lib.conditional_access.authentication_event_types import (AuthEventType, AuthLogUserRole,
@@ -1318,7 +1318,7 @@ class ConditionalAccessEngineTestCase(ConditionalAccessTestCase):
         self.assertEqual(str(ConditionalAccessAction.LOCK_USER), outcomes[0].action_type)
         # The recorded expiry is the one that ended up in the state row, so the history says how long the lock
         # lasted even after the row is gone - stored as an aware ISO-8601 string since `info` is a JSON column.
-        self.assertEqual({"expires_at": self._state().lock_expires_at.replace(tzinfo=timezone.utc).isoformat()},
+        self.assertEqual({"expires_at": self._state().lock_expires_at.replace(tzinfo=UTC).isoformat()},
                          outcomes[0].info)
 
     def test_enforced_permanent_lock_records_no_expiry(self):

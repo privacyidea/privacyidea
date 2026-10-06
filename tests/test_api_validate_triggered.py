@@ -13,12 +13,12 @@ from .base import MyApiTestCase
 class TriggeredPoliciesTestCase(MyApiTestCase):
 
     def setUp(self):
-        super(TriggeredPoliciesTestCase, self).setUp()
+        super().setUp()
         self.setUp_user_realms()
 
     def test_00_two_policies(self):
-        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=none".format(PolicyAction.OTPPIN))
-        set_policy("lastauth", scope=SCOPE.AUTHZ, action="{0!s}=1s".format(PolicyAction.LASTAUTH))
+        set_policy("otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN!s}=none")
+        set_policy("lastauth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH!s}=1s")
 
         # Create a Spass token
         init_token({"serial": "triggtoken", "type": "spass"})

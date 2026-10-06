@@ -61,7 +61,7 @@ class CallList(Sequence, Sized):
         self._calls = []
 
 
-class RadiusMock(object):
+class RadiusMock:
 
     def __init__(self):
         self._calls = CallList()
@@ -121,7 +121,7 @@ class RadiusMock(object):
         return reply
 
     def start(self):
-        import mock
+        from unittest import mock
 
         def unbound_on_send(Client, pkt, *a, **kwargs):
             return self._on_request(Client, pkt,  *a, **kwargs)

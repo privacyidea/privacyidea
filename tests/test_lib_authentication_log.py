@@ -16,9 +16,9 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, UTC
 
-import mock
+from unittest import mock
 from sqlalchemy import event
 from sqlalchemy.exc import InvalidRequestError
 
@@ -375,7 +375,7 @@ class AuthenticationLogTestCase(MyTestCase):
     def test_get_authentication_logs_timestamp_filters(self):
         from unittest.mock import patch
 
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         past = now - timedelta(hours=2)
         future = now + timedelta(hours=2)
 
@@ -418,7 +418,7 @@ class AuthenticationLogTestCase(MyTestCase):
     def test_cleanup_removes_old_entries(self):
         from unittest.mock import patch
 
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         old_ts = now - timedelta(days=30)
         recent_ts = now - timedelta(hours=1)
 
@@ -445,7 +445,7 @@ class AuthenticationLogTestCase(MyTestCase):
         # The retention path deletes set-based, which runs no ORM cascade and cannot rely on the foreign key
         # (SQLite does not enforce it): an orphaned reason row would be picked up by the next entry that reuses the
         # freed id.
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         with patch('privacyidea.models.utils.datetime') as mock_dt:
             mock_dt.now.return_value.replace.return_value = now - timedelta(days=30)
             old_id = log_authentication_event(event_type=AuthEventType.NO_USABLE_TOKEN, resolver="res1", uid="u1",
@@ -479,7 +479,7 @@ class AuthenticationLogTestCase(MyTestCase):
         entry = get_authentication_log_event(event_id)
         assert entry is not None
         self.assertIsNone(entry.timestamp.tzinfo)
-        self.assertEqual(timezone.utc, entry.aware_timestamp.tzinfo)
+        self.assertEqual(UTC, entry.aware_timestamp.tzinfo)
         self.assertEqual(entry.timestamp, entry.aware_timestamp.replace(tzinfo=None))
 
     def test_failed_write_is_swallowed_and_not_persisted(self):
@@ -740,7 +740,7 @@ class AuthenticationLogDBTestCase(MyTestCase):
         self.assertEqual("testuser", auth_log_dict["username"])
         self.assertEqual(AuthLogUserRole.ADMIN_EXTERNAL, auth_log_dict["user_role"])
         self.assertEqual(AuthEventType.LOGIN_SUCCESS, auth_log_dict["event_type"])
-        log_time_tz_aware = log_time_utc_naive.replace(tzinfo=timezone.utc)
+        log_time_tz_aware = log_time_utc_naive.replace(tzinfo=UTC)
         self.assertEqual(log_time_tz_aware.isoformat(), auth_log_dict["timestamp"])
         self.assertEqual("192.168.1.1", auth_log_dict["source_ip"])
         self.assertEqual("10.0.0.5", auth_log_dict["peer_ip"])

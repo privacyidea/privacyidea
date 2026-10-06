@@ -4,7 +4,7 @@ This test file tests the lib.subscriptions.py
 import time
 from datetime import datetime, timedelta
 
-import mock
+from unittest import mock
 import requests
 
 from privacyidea.lib.framework import get_app_local_store

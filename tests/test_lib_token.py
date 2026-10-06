@@ -20,7 +20,7 @@ import hashlib
 import json
 import logging
 
-import mock
+from unittest import mock
 from dateutil import parser
 from dateutil.tz import tzlocal
 from sqlalchemy import select
@@ -154,7 +154,7 @@ class TokenTestCase(MyTestCase):
         # get tokens of type TOTP and HOTP
         spass_token = init_token(param={'serial': 'SPAS01', 'type': 'spass'})
         self.assertIn("creation_date", spass_token.get_tokeninfo(), spass_token)
-        create_now = datetime.datetime.now(tz=datetime.timezone.utc)
+        create_now = datetime.datetime.now(tz=datetime.UTC)
         with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime",
                         wraps=datetime.datetime) as mock_datetime:
             mock_datetime.now.return_value = create_now
@@ -332,7 +332,7 @@ class TokenTestCase(MyTestCase):
     def test_05_get_num_tokens_in_realm(self):
         # one active token
         self.assertEqual(1, get_num_tokens_in_realm(self.realm1),
-                         "{0!r}".format(get_num_tokens_in_realm(self.realm1)))
+                         f"{get_num_tokens_in_realm(self.realm1)!r}")
         # No active tokens
         self.assertEqual(0, get_num_tokens_in_realm(self.realm1, active=False))
 
@@ -709,13 +709,13 @@ class TokenTestCase(MyTestCase):
         serial = "NEWREALM01"
         init_token({"serial": serial, "otpkey": "1234567890123456"})
         realms = get_realms_of_token(serial)
-        self.assertEqual(realms, [], "{0!s}".format(realms))
+        self.assertEqual(realms, [], f"{realms!s}")
         set_realms(serial, [self.realm1])
         realms = get_realms_of_token(serial)
-        self.assertEqual(realms, [self.realm1], "{0!s}".format(realms))
+        self.assertEqual(realms, [self.realm1], f"{realms!s}")
         remove_token(serial=serial)
         realms = get_realms_of_token(serial)
-        self.assertTrue(realms == [], "{0!s}".format(realms))
+        self.assertTrue(realms == [], f"{realms!s}")
 
         # Testing that set_realm always sets the realm of the token owner
         with mock.patch("logging.Logger.info") as mock_log:
@@ -975,7 +975,7 @@ class TokenTestCase(MyTestCase):
         r = set_max_failcount(serial, 112)
         self.assertTrue(r == 1, r)
         self.assertTrue(tokenobject.token.maxfail == 112,
-                        "{0!s}".format(tokenobject.token.maxfail))
+                        f"{tokenobject.token.maxfail!s}")
         remove_token(serial)
 
     def test_31_copy_token_pin(self):
@@ -990,8 +990,7 @@ class TokenTestCase(MyTestCase):
 
         # Now compare the pinhash
         self.assertTrue(tobject1.token.pin_hash == tobject2.token.pin_hash,
-                        "{0!s} <> {1!s}".format(tobject1.token.pin_hash,
-                                                tobject2.token.pin_hash))
+                        f"{tobject1.token.pin_hash!s} <> {tobject2.token.pin_hash!s}")
 
         remove_token(serial1)
         remove_token(serial2)
@@ -1035,7 +1034,7 @@ class TokenTestCase(MyTestCase):
         self.assertTrue(r.get("pin"), r)
         self.assertTrue(r.get("init"), r)
         self.assertTrue(r.get("user"), r)
-        self.assertTrue(r.get("serial") == "lost{0!s}".format(serial1), r)
+        self.assertTrue(r.get("serial") == f"lost{serial1!s}", r)
         self.assertTrue(parser.parse(r.get("end_date")) <= end_date, r)
         remove_token("losttoken")
         remove_token("lostlosttoken")
@@ -1133,11 +1132,10 @@ class TokenTestCase(MyTestCase):
         hotp_tokenobject.enable(True)
 
         # Set HOTP as challenge response
-        set_policy("check_token_list_CR", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
-            PolicyAction.CHALLENGERESPONSE))
+        set_policy("check_token_list_CR", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=HOTP")
 
-        hotp_tokenobject.write_tokeninfo("next_pin_change", "{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
-        hotp_tokenobject.write_tokeninfo("next_password_change", "{0!s}".format(datetime.datetime(2019, 1, 7, 0, 0)))
+        hotp_tokenobject.write_tokeninfo("next_pin_change", f"{datetime.datetime(2019, 1, 7, 0, 0)!s}")
+        hotp_tokenobject.write_tokeninfo("next_password_change", f"{datetime.datetime(2019, 1, 7, 0, 0)!s}")
 
         # Now the HOTP is a valid C/R token
         res, reply = check_token_list(tokenobject_list, "hotppin")
@@ -1214,7 +1212,7 @@ class TokenTestCase(MyTestCase):
         disabled_token.enable(False)
         for i in range(10):
             failcounter_token.inc_failcount()
-        start = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=10)
+        start = datetime.datetime.now(datetime.UTC) - datetime.timedelta(days=10)
         end = start + datetime.timedelta(days=5)
         invalid_token.set_validity_period_start(start.isoformat())
         invalid_token.set_validity_period_end(end.isoformat())
@@ -1332,7 +1330,7 @@ class TokenTestCase(MyTestCase):
         r, reply = check_user_pass(user, "passwordasdf")
         self.assertFalse(r)
         self.assertTrue(reply.get("message") == 'The user has no tokens '
-                                                'assigned', "{0!s}".format(reply))
+                                                'assigned', f"{reply!s}")
 
         user = User("cornelius", realm=self.realm1)
         r, _reply = check_user_pass(user, "hotppin868912")
@@ -2008,8 +2006,7 @@ class TokenTestCase(MyTestCase):
         token_c = init_token({"type": "hotp", "otpkey": self.otpkey, "pin": pin}, user)
         for i in range(0, 10):
             token_c.inc_failcount()
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=HOTP".format(
-            PolicyAction.CHALLENGERESPONSE))
+        set_policy("test49", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=HOTP")
         # both tokens will be a valid challenge response token!
         r, r_dict = check_token_list([token_a, token_b], pin, user)
         multi_challenge = r_dict.get("multi_challenge")
@@ -2366,7 +2363,7 @@ class TokenTestCase(MyTestCase):
 
     def test_59_weigh_token_types(self):
 
-        class dummy_token(object):
+        class dummy_token:
             def __init__(self, type):
                 self.type = type
 

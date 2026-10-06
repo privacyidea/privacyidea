@@ -22,7 +22,7 @@ before any token logic runs, and the full loop where repeated failures trip a
 policy stage and lock the user.
 """
 from unittest import mock
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 from privacyidea.api.lib import conditional_access as ca_gate
 from privacyidea.lib.conditional_access import engine as ca_engine
@@ -185,8 +185,8 @@ class ConditionalAccessValidateTestCase(MyApiTestCase):
 
     def _outcome_statistics(self, query_string: dict | None = None, status: int = 200) -> dict:
         """Read the outcome history over a window around now, since the rows written here take the current time."""
-        query = {"start_time": (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat(),
-                 "end_time": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()}
+        query = {"start_time": (datetime.now(UTC) - timedelta(hours=1)).isoformat(),
+                 "end_time": (datetime.now(UTC) + timedelta(hours=1)).isoformat()}
         query.update(query_string or {})
         with self.app.test_request_context("/conditionalaccess/outcomes/statistics", method="GET",
                                            query_string=query, headers={"Authorization": self.at}):

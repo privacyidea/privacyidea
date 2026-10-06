@@ -5,7 +5,7 @@ This tests api/periodictask.py
 """
 import jwt
 from contextlib import contextmanager
-import mock
+from unittest import mock
 from dateutil.parser import parse as parse_timestamp
 
 from privacyidea.lib.periodictask import TASK_MODULES
@@ -135,7 +135,7 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertEqual(result_dict['options'], {'something': '123', 'else': 'True'})
 
         # get one
-        status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
+        status_code, data = self.simulate_request(f'/periodictask/{ptask_id1}', method='GET')
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value']['id'], ptask_id1)
 
@@ -165,7 +165,7 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertIn('some other task', [task['name'] for task in data['result']['value']], data)
 
         # get updated task
-        status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
+        status_code, data = self.simulate_request(f'/periodictask/{ptask_id1}', method='GET')
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value']['id'], ptask_id1)
         self.assertEqual(data['result']['value']['ordering'], 2)
@@ -176,11 +176,11 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         last_update = parse_timestamp(data['result']['value']['last_update'])
 
         # enable
-        status_code, data = self.simulate_request('/periodictask/enable/{}'.format(ptask_id1), method='POST')
+        status_code, data = self.simulate_request(f'/periodictask/enable/{ptask_id1}', method='POST')
         self.assertEqual(status_code, 200)
 
         # get updated task
-        status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
+        status_code, data = self.simulate_request(f'/periodictask/{ptask_id1}', method='GET')
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value']['name'], 'new name')
         self.assertEqual(data['result']['value']['active'], True)
@@ -189,11 +189,11 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         last_update = parse_timestamp(data['result']['value']['last_update'])
 
         # disable
-        status_code, data = self.simulate_request('/periodictask/disable/{}'.format(ptask_id1), method='POST')
+        status_code, data = self.simulate_request(f'/periodictask/disable/{ptask_id1}', method='POST')
         self.assertEqual(status_code, 200)
 
         # get updated task
-        status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
+        status_code, data = self.simulate_request(f'/periodictask/{ptask_id1}', method='GET')
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value']['name'], 'new name')
         self.assertEqual(data['result']['value']['active'], False)
@@ -201,22 +201,22 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
                            last_update)
 
         # disable again without effect
-        status_code, data = self.simulate_request('/periodictask/disable/{}'.format(ptask_id1), method='POST')
+        status_code, data = self.simulate_request(f'/periodictask/disable/{ptask_id1}', method='POST')
         self.assertEqual(status_code, 200)
 
         # get updated task
-        status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
+        status_code, data = self.simulate_request(f'/periodictask/{ptask_id1}', method='GET')
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value']['name'], 'new name')
         self.assertEqual(data['result']['value']['active'], False)
 
         # delete
-        status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='DELETE')
+        status_code, data = self.simulate_request(f'/periodictask/{ptask_id1}', method='DELETE')
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value'], ptask_id1)
 
         # get updated task impossible now
-        status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id1), method='GET')
+        status_code, data = self.simulate_request(f'/periodictask/{ptask_id1}', method='GET')
         self.assertEqual(status_code, 404)
         self.assertFalse(data['result']['status'], False)
 
@@ -227,7 +227,7 @@ class APIPeriodicTasksTestCase(MyApiTestCase):
         self.assertEqual(len(data['result']['value']), 1)
 
         # delete the second task as well
-        status_code, data = self.simulate_request('/periodictask/{}'.format(ptask_id2), method='DELETE')
+        status_code, data = self.simulate_request(f'/periodictask/{ptask_id2}', method='DELETE')
         self.assertEqual(status_code, 200)
         self.assertEqual(data['result']['value'], ptask_id2)
 

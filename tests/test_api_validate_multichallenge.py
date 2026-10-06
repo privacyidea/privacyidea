@@ -2,9 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 import datetime
 from base64 import b32encode
-from datetime import timezone
 
-import mock
+from unittest import mock
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
@@ -61,7 +60,7 @@ class MultiChallenge(MyApiTestCase):
         # Create policy change pin on first use
         set_policy("first_use", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
         set_policy("via_validate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
-        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", PolicyAction.ENROLLPIN])
 
         with self.app.test_request_context('/token/init', method='POST',
@@ -123,7 +122,7 @@ class MultiChallenge(MyApiTestCase):
         # Now try to authenticate with the "newpin"
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": "newpin{0!s}".format(self.valid_otp_values[2])}):
+                                                 "pass": f"newpin{self.valid_otp_values[2]!s}"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json['result']
@@ -140,7 +139,7 @@ class MultiChallenge(MyApiTestCase):
         # Create policy change pin on first use
         set_policy("first_use", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
         set_policy("via_validate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
-        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", PolicyAction.ENROLLPIN])
 
         with self.app.test_request_context('/token/init', method='POST',
@@ -155,7 +154,7 @@ class MultiChallenge(MyApiTestCase):
         # 1st authentication creates a PIN change challenge via challenge response
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": "test{0!s}".format(self.valid_otp_values[1])}):
+                                                 "pass": f"test{self.valid_otp_values[1]!s}"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json['result']
@@ -191,7 +190,7 @@ class MultiChallenge(MyApiTestCase):
         # Now try to authenticate with the "newpin"
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": "newpin{0!s}".format(self.valid_otp_values[2])}):
+                                                 "pass": f"newpin{self.valid_otp_values[2]!s}"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json['result']
@@ -284,10 +283,10 @@ class MultiChallenge(MyApiTestCase):
         # Create policy change pin on first use
         set_policy("first_use", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_FIRST_USE)
         set_policy("via_validate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
-        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy("hotp_chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         challenge_header = "Choose one: <ul>"
         set_policy("challenge_header", scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(PolicyAction.CHALLENGETEXT_HEADER, challenge_header))
+                   action=f"{PolicyAction.CHALLENGETEXT_HEADER!s}={challenge_header!s}")
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollHOTP", PolicyAction.ENROLLPIN])
 
         with self.app.test_request_context('/token/init', method='POST',
@@ -302,14 +301,14 @@ class MultiChallenge(MyApiTestCase):
         # 1st authentication creates a PIN change challenge via challenge response
         with self.app.test_request_context('/validate/check', method='POST',
                                            data={"user": "cornelius",
-                                                 "pass": "test{0!s}".format(self.valid_otp_values[1])}):
+                                                 "pass": f"test{self.valid_otp_values[1]!s}"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             result = res.json['result']
             self.assertFalse(result.get("value"))
             details = res.json['detail']
             # check that the challenge header is contained in the message
-            self.assertEqual("{0!s}<li>Please enter a new PIN</li>\n".format(challenge_header),
+            self.assertEqual(f"{challenge_header!s}<li>Please enter a new PIN</li>\n",
                              details.get("message"))
 
         remove_token(self.serial)
@@ -326,10 +325,7 @@ class MultiChallenge(MyApiTestCase):
         # set policy
         from privacyidea.lib.tokens.pushtoken import POLL_ONLY
         set_policy("push2", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       PushAction.FIREBASE_CONFIG, POLL_ONLY,
-                       PushAction.REGISTRATION_URL, REGISTRATION_URL,
-                       PushAction.TTL, TTL))
+                   action=f"{PushAction.FIREBASE_CONFIG!s}={POLL_ONLY!s},{PushAction.REGISTRATION_URL!s}={REGISTRATION_URL!s},{PushAction.TTL!s}={TTL!s}")
 
         pin = "otppin"
         # create push token for user with PIN
@@ -365,8 +361,8 @@ class MultiChallenge(MyApiTestCase):
                     "otpkey": "31323334353637383930313233343536373839AA",
                     "pin": pin}, user=User("selfservice", self.realm1))
         set_policy("test49", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp totp, {1!s}=  poll   webauthn ".format(
-                       PolicyAction.CHALLENGERESPONSE, PolicyAction.PREFERREDCLIENTMODE))
+                   action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp totp, "
+                          f"{PolicyAction.PREFERREDCLIENTMODE!s}=  poll   webauthn ")
 
         # authenticate with PIN to trigger challenge-response
         with self.app.test_request_context('/validate/check',
@@ -396,8 +392,7 @@ class MultiChallenge(MyApiTestCase):
                     "type": "hotp",
                     "otpkey": self.otpkey,
                     "pin": pin}, user)
-        set_policy("test49", scope=SCOPE.AUTH, action="{0!s}=hotp".format(
-            PolicyAction.CHALLENGERESPONSE))
+        set_policy("test49", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
 
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -504,7 +499,7 @@ class MultiChallenge(MyApiTestCase):
 
         # answer challenge: custom user attribute shall be set
         # We do poll only, so we need to poll
-        timestamp = datetime.datetime.now(timezone.utc).isoformat()
+        timestamp = datetime.datetime.now(datetime.UTC).isoformat()
         sign_string = f"{serial}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'), padding.PKCS1v15(), hashes.SHA256())
         # now check that we receive the challenge when polling

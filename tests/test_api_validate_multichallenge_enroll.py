@@ -5,7 +5,7 @@ import logging
 import re
 import time
 
-import mock
+from unittest import mock
 import responses
 from testfixtures import log_capture
 
@@ -38,7 +38,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
     # container in the container tests
 
     def setUp(self):
-        super(MultiChallengeEnrollTest, self).setUp()
+        super().setUp()
         # The requests in this class must not rely on request-local data another request left behind: every
         # blueprint's before_request has to initialize its own. Hence, g is reset here and after each request.
         self.reset_flask_g()
@@ -92,11 +92,11 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set enroll policy
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=hotp")
 
         # Set force_app_pin
         set_policy("pol_forcepin", scope=SCOPE.ENROLL,
-                   action="hotp_{0!s}=True".format(PolicyAction.FORCE_APP_PIN))
+                   action=f"hotp_{PolicyAction.FORCE_APP_PIN!s}=True")
         # Set token default
         set_privacyidea_config("hotp.hashlib", "sha256")
         # Now we should get an authentication Challenge
@@ -205,7 +205,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set enroll policy
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=totp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=totp")
 
         # Set totp_hashlib=sha256 user policy
         set_policy("pol_sha256", scope=SCOPE.USER,
@@ -311,12 +311,12 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=email".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=email")
         # Challenge header and footer should not disturb the enrollment text
         set_policy("pol_challengetext_head", scope=SCOPE.AUTH,
-                   action="{0!s}=challenge-head".format(PolicyAction.CHALLENGETEXT_HEADER))
+                   action=f"{PolicyAction.CHALLENGETEXT_HEADER!s}=challenge-head")
         set_policy("pol_challengetext_foot", scope=SCOPE.AUTH,
-                   action="{0!s}=challenge-foot".format(PolicyAction.CHALLENGETEXT_FOOTER))
+                   action=f"{PolicyAction.CHALLENGETEXT_FOOTER!s}=challenge-foot")
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -407,7 +407,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=email".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=email")
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -481,10 +481,10 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=sms".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=sms")
         # Set an individual text
         set_policy("pol_multienroll_text", scope=SCOPE.AUTH,
-                   action="{0!s}='Phone number enter you must!'".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEXT))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEXT!s}='Phone number enter you must!'")
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -561,7 +561,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # 1. set policies.
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
         set_policy("pol_validator", scope=SCOPE.ENROLL,
-                   action="{0!s}=tests.testdata.gmailvalidator".format(PolicyAction.EMAILVALIDATION))
+                   action=f"{PolicyAction.EMAILVALIDATION!s}=tests.testdata.gmailvalidator")
 
         # 2. authenticate user via passthru
         with self.app.test_request_context('/validate/check',
@@ -578,7 +578,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         # Set Policy scope:auth, action:enroll_via_multichallenge=email
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=email".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=email")
         # Now we should get an authentication Challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -985,9 +985,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # passthru + enroll a HOTP token via multichallenge, but make the enrollment optional so it can be cancelled
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=hotp")
         set_policy("pol_multienroll_optional", scope=SCOPE.AUTH,
-                   action="{0!s}=true".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL!s}=true")
 
         # Authenticate via passthru, which triggers the enrollment challenge
         with self.app.test_request_context('/validate/check',
@@ -1045,7 +1045,7 @@ class MultiChallengeEnrollTest(MyApiTestCase):
         # passthru + enroll a HOTP token via multichallenge, but without the optional flag the enrollment is mandatory
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=hotp")
 
         # Authenticate via passthru, which triggers the enrollment challenge
         with self.app.test_request_context('/validate/check',
@@ -1092,9 +1092,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
 
         set_policy("pol_passthru", scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU)
         set_policy("pol_multienroll", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE!s}=hotp")
         set_policy("pol_multienroll_optional", scope=SCOPE.AUTH,
-                   action="{0!s}=true".format(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
+                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL!s}=true")
 
         # alice starts her own optional enrollment and receives the transaction
         with self.app.test_request_context('/validate/check', method='POST',

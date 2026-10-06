@@ -1,7 +1,7 @@
 """Base test configuration to set up/teardown tests."""
 import pathlib
 import unittest
-import mock
+from unittest import mock
 from sqlalchemy import Sequence, select, text
 from sqlalchemy.exc import DatabaseError
 from sqlalchemy.orm.session import close_all_sessions
@@ -81,7 +81,7 @@ def skip_unless_admin_lookup_folds_case(testcase):
                           "reached under a second spelling")
 
 
-class FakeFlaskG(object):
+class FakeFlaskG:
     policy_object = None
     logged_in_user = {}
     audit_object = None
@@ -339,13 +339,13 @@ class MyTestCase(unittest.TestCase):
                     realm=self.realm1,
                     resolver=self.resolvername1)
 
-        user_str = "{0!s}".format(user)
+        user_str = f"{user!s}"
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "{0!r}".format(user)
+        user_repr = f"{user!r}"
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 
@@ -365,13 +365,13 @@ class MyTestCase(unittest.TestCase):
                     realm=self.realm2,
                     resolver=self.resolvername1)
 
-        user_str = "{0!s}".format(user)
+        user_str = f"{user!s}"
         self.assertTrue(user_str == "<root.resolver1@realm2>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "{0!r}".format(user)
+        user_repr = f"{user!r}"
         expected = "User(login='root', realm='realm2', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 
@@ -391,13 +391,13 @@ class MyTestCase(unittest.TestCase):
                     realm=self.realm3,
                     resolver=self.resolvername3)
 
-        user_str = "{0!s}".format(user)
+        user_str = f"{user!s}"
         self.assertTrue(user_str == "<root.reso3@realm3>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "{0!r}".format(user)
+        user_repr = f"{user!r}"
         expected = "User(login='root', realm='realm3', resolver='reso3')"
         self.assertTrue(user_repr == expected, user_repr)
 
@@ -422,13 +422,13 @@ class MyTestCase(unittest.TestCase):
                     realm=self.realm4,
                     resolver=self.resolvername3)
 
-        user_str = "{0!s}".format(user)
+        user_str = f"{user!s}"
         self.assertTrue(user_str == "<root.reso3@realm4>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "{0!r}".format(user)
+        user_repr = f"{user!r}"
         expected = "User(login='root', realm='realm4', resolver='reso3')"
         self.assertTrue(user_repr == expected, user_repr)
 
@@ -541,5 +541,5 @@ class MyApiTestCase(MyTestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(MyApiTestCase, cls).setUpClass()
+        super().setUpClass()
         cls.cls_auth(cls.app)

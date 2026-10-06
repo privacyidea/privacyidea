@@ -69,7 +69,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         self.setUp_user_realm3()
 
     def test_26a_webauthn_auth_validate_triggerchallenge(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -129,7 +129,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_26b_webauthn_auth_validate_check(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -194,7 +194,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_26c_webauthn_auth_auth(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -233,7 +233,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_27a_webauthn_authz_validate_check(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -286,7 +286,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_27b_webauthn_authz_auth(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -339,7 +339,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_28_webauthn_enroll(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         rp_id = RP_ID
@@ -488,7 +488,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn2")
 
     def test_29a_webauthn_request_token_init(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -598,7 +598,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_29b_webauthn_request_validate_triggerchallenge(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -675,7 +675,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_29c_webauthn_request_auth_authn(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -722,7 +722,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_29d_webauthn_request_auth_authz(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -773,7 +773,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_29e_webauthn_request_validate_check_authn(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request
@@ -820,7 +820,7 @@ class PrePolicyWebauthnTestCase(PrePolicyHelperMixin, MyApiTestCase):
         delete_policy("WebAuthn")
 
     def test_29f_webauthn_request_validate_check_authz(self):
-        class RequestMock(object):
+        class RequestMock:
             pass
 
         # Normal request

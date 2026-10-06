@@ -23,7 +23,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.params import MAX_PAGE_SIZE, get_optional_int, get_pagination_params
 import jwt
-import mock
+from unittest import mock
 import datetime
 import warnings
 from urllib.parse import quote
@@ -97,7 +97,7 @@ class UtilsTestCase(MyApiTestCase):
                           required_role="user")
 
         # create a jwt with a trusted private key
-        with open("tests/testdata/jwt_sign.key", "r") as f:
+        with open("tests/testdata/jwt_sign.key") as f:
             key = f.read()
 
         # successful authentication with wildcard user, starting with an "h" and ending with "s"
@@ -180,7 +180,7 @@ class UtilsTestCase(MyApiTestCase):
             mock_log.assert_any_call("A given JWT definition does not match.")
 
     def test_03b_verify_auth_token_requires_username(self):
-        with open("tests/testdata/jwt_sign.key", "r") as f:
+        with open("tests/testdata/jwt_sign.key") as f:
             key = f.read()
         secret = self.app.config["SECRET_KEY"]
         wildcard_entry = {"public_key": pubtest_key, "algorithm": "RS256", "role": "user", "realm": "realm1",
@@ -221,7 +221,7 @@ class UtilsTestCase(MyApiTestCase):
         # Here we check, if the username from the trusted JWT appears in the audit log.
         # This means that the username is read in the correct way from the JWT and
         # also used in the correct way for policy handling.
-        with open("tests/testdata/jwt_sign.key", "r") as f:
+        with open("tests/testdata/jwt_sign.key") as f:
             key = f.read()
         self.setUp_user_realms()
 
@@ -301,7 +301,7 @@ class UtilsTestCase(MyApiTestCase):
         init_token(params)
         # Test viewargs
         with mock.patch("logging.Logger.debug") as mock_log:
-            with self.app.test_request_context('/token/{0!s}'.format(serial),
+            with self.app.test_request_context(f'/token/{serial!s}',
                                                method='DELETE',
                                                headers={"Authorization": self.at}):
                 res = self.app.full_dispatch_request()
@@ -550,7 +550,7 @@ class UtilsTestCase(MyApiTestCase):
         self.assertEqual(get_optional(params, "c", default="default_val"), "default_val")
 
     def test_14_get_required_timestamp(self):
-        self.assertEqual(datetime.datetime(2026, 3, 1, 12, 30, tzinfo=datetime.timezone.utc),
+        self.assertEqual(datetime.datetime(2026, 3, 1, 12, 30, tzinfo=datetime.UTC),
                          get_required_timestamp({"start": "2026-03-01T12:30:00+00:00"}, "start"))
         # Naive values parse too, and keep no timezone of their own.
         self.assertEqual(datetime.datetime(2026, 3, 1, 12, 30),
@@ -569,7 +569,7 @@ class UtilsTestCase(MyApiTestCase):
         self.assertIn("end_time", str(caught.exception))
 
     def test_15_get_optional_timestamp(self):
-        self.assertEqual(datetime.datetime(2026, 3, 1, 12, 30, tzinfo=datetime.timezone.utc),
+        self.assertEqual(datetime.datetime(2026, 3, 1, 12, 30, tzinfo=datetime.UTC),
                          get_optional_timestamp({"start": "2026-03-01T12:30:00+00:00"}, "start"))
 
         # Absent and empty both fall back, since neither expresses a filter.

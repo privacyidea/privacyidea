@@ -10,7 +10,7 @@ import os
 import types
 import unittest
 
-from mock import mock
+from unittest import mock
 from sqlalchemy import event, text
 from sqlalchemy.pool import NullPool
 
@@ -81,7 +81,7 @@ class AuditTestCase(MyTestCase):
         # with search filter
         tot = self.Audit.get_total({"action": "action2",
                                     "bullshit": "value"})
-        self.assertTrue(tot == 2, "Total numbers: {0!s}".format(tot))
+        self.assertTrue(tot == 2, f"Total numbers: {tot!s}")
 
     def test_02_filter_search(self):
         # Prepare some audit entries:
@@ -829,10 +829,9 @@ class AuditFileTestCase(OverrideConfigTestCase):
                 a.finalize_log()
                 capture.check_present(
                     ('privacyidea.lib.auditmodules.loggeraudit', 'INFO',
-                     '{{"action": "No PI_AUDIT_LOGGER_QUALNAME given", "duration": "0:00:02", '
-                     '"policies": "", "startdate": "{startdate}", '
-                     '"timestamp": "{timestamp}"}}'.format(timestamp=current_utc_time.isoformat(),
-                                                           startdate=startdate_time.isoformat())))
+                     '{"action": "No PI_AUDIT_LOGGER_QUALNAME given", "duration": "0:00:02", '
+                     f'"policies": "", "startdate": "{startdate_time.isoformat()}", '
+                     f'"timestamp": "{current_utc_time.isoformat()}"}}'))
 
         # Now change the qualname to 'pi-audit'
         current_utc_time = datetime.datetime(2020, 3, 4, 5, 6, 8)
@@ -846,10 +845,9 @@ class AuditFileTestCase(OverrideConfigTestCase):
                 a.finalize_log()
                 capture.check_present(
                     ('pi-audit', 'INFO',
-                     '{{"action": "PI_AUDIT_LOGGER_QUALNAME given", "duration": "0:00:08", '
-                     '"policies": "", "startdate": "{startdate}", '
-                     '"timestamp": "{timestamp}"}}'.format(timestamp=current_utc_time.isoformat(),
-                                                           startdate=startdate_time.isoformat())))
+                     '{"action": "PI_AUDIT_LOGGER_QUALNAME given", "duration": "0:00:08", '
+                     f'"policies": "", "startdate": "{startdate_time.isoformat()}", '
+                     f'"timestamp": "{current_utc_time.isoformat()}"}}'))
 
 
 class ContainerAuditTestCase(OverrideConfigTestCase):

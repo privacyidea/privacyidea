@@ -7,15 +7,15 @@ lib/event.py (the decorator)
 import json
 import os
 from collections import OrderedDict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
-import mock
+from unittest import mock
 import requests.exceptions
 import responses
 from dateutil.parser import parse as parse_date_string
 from dateutil.tz import tzlocal
 from flask import Request, Response
-from mock import patch
+from unittest.mock import patch
 from sqlalchemy import select
 from testfixtures import log_capture
 from werkzeug.test import EnvironBuilder
@@ -1092,7 +1092,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # set last auth to 2 days ago: condition shall not match
-        container._db_container.last_seen = datetime.now(timezone.utc) - timedelta(days=2)
+        container._db_container.last_seen = datetime.now(UTC) - timedelta(days=2)
         container._db_container.save()
         r = event_handler.check_condition(options)
         self.assertFalse(r)
@@ -1119,7 +1119,7 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertFalse(r)
 
         # set last auth to 1 year ago: condition shall not match
-        container._db_container.last_updated = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=365)
+        container._db_container.last_updated = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=365)
         container._db_container.save()
         r = event_handler.check_condition(options)
         self.assertFalse(r)
@@ -1523,7 +1523,7 @@ class ScriptEventTestCase(MyTestCase):
 
         script_name = "ls.sh"
         d = os.getcwd()
-        d = "{0!s}/tests/testdata/scripts/".format(d)
+        d = f"{d!s}/tests/testdata/scripts/"
         self.app.config['PI_SCRIPT_HANDLER_DIRECTORY'] = d
         t_handler = ScriptEventHandler()
         res = t_handler.do(script_name, options=options)
@@ -1569,7 +1569,7 @@ class ScriptEventTestCase(MyTestCase):
 
         script_name = "fail.sh"
         d = os.getcwd()
-        d = "{0!s}/tests/testdata/scripts/".format(d)
+        d = f"{d!s}/tests/testdata/scripts/"
         self.app.config['PI_SCRIPT_HANDLER_DIRECTORY'] = d
         t_handler = ScriptEventHandler()
         self.assertRaises(Exception, t_handler.do, script_name, options=options)
@@ -1605,7 +1605,7 @@ class ScriptEventTestCase(MyTestCase):
 
         script_name = "ls.sh"
         d = os.getcwd()
-        d = "{0!s}/tests/testdata/scripts/".format(d)
+        d = f"{d!s}/tests/testdata/scripts/"
         self.app.config['PI_SCRIPT_HANDLER_DIRECTORY'] = d
         t_handler = ScriptEventHandler()
         # first check that the db session is not synced by default
@@ -4566,7 +4566,7 @@ class CustomUserAttributesTestCase(MyTestCase):
 class WebhookTestCase(MyTestCase):
 
     def setUp(self):
-        super(WebhookTestCase, self).setUp()
+        super().setUp()
         self.setUp_user_realms()
 
     # ── helpers ──────────────────────────────────────────────────────

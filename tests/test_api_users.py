@@ -116,7 +116,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         # create realm
         realm = "realm1"
         resolvers = "r1, r2"
-        with self.app.test_request_context('/realm/{0!s}'.format(realm),
+        with self.app.test_request_context(f'/realm/{realm!s}',
                                            data={"resolvers": resolvers},
                                            method='POST',
                                            headers={"Authorization": self.at}):
@@ -234,7 +234,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         # "wordy2", he updated his own password.
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username": "wordy@{0!s}".format(realm),
+                                           data={"username": f"wordy@{realm!s}",
                                                  "password": "newPassword"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -309,7 +309,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         with self.app.test_request_context('/user/',
                                            method='GET',
                                            query_string=urlencode(
-                                               {"username": "wördy".encode('utf-8')}),
+                                               {"username": "wördy".encode()}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -321,7 +321,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         with self.app.test_request_context('/user/',
                                            method='PUT',
                                            query_string=urlencode(
-                                               {"user": "wördy".encode('utf-8'),
+                                               {"user": "wördy".encode(),
                                                 "resolver": resolver,
                                                 "password": "passwort"}),
                                            headers={'Authorization': self.at}):
@@ -333,7 +333,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         # Get user authentication and update by user.
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username": "wördy@{0!s}".format(realm).encode('utf-8'),
+                                           data={"username": f"wördy@{realm!s}".encode(),
                                                  "password": "passwort"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -350,7 +350,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         with self.app.test_request_context('/user/',
                                            method='PUT',
                                            query_string=urlencode(
-                                               {"user": "wördy2".encode('utf-8'),
+                                               {"user": "wördy2".encode(),
                                                 "resolver": resolver,
                                                 "password": "newPassword"}),
                                            headers={'Authorization': wordy_auth_token}):
@@ -363,7 +363,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
         # "wördy2", he updated his own password.
         with self.app.test_request_context('/auth',
                                            method='POST',
-                                           data={"username": "wördy@{0!s}".format(realm).encode('utf-8'),
+                                           data={"username": f"wördy@{realm!s}".encode(),
                                                  "password": "newPassword"}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -402,7 +402,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
 
         # Allow to set custom attributes
         set_policy("custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=:*:*".format(PolicyAction.SET_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.SET_USER_ATTRIBUTES!s}=:*:*")
 
         # Check that the user has not attribute
         with self.app.test_request_context('/user/attribute',
@@ -515,7 +515,7 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
 
         # Now we delete the additional user attribute
         set_policy("custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=*".format(PolicyAction.DELETE_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.DELETE_USER_ATTRIBUTES!s}=*")
         with self.app.test_request_context('/user/attribute/newattribute/cornelius/realm1',
                                            method='DELETE',
                                            headers={'Authorization': self.at}):
@@ -550,13 +550,13 @@ class APIUsersTestCase(PristineSqliteFixtures, MyApiTestCase):
 
         # Check, which attributes the admin is allowed to set or delete
         set_policy("custom_attr", scope=SCOPE.ADMIN,
-                   action="{0!s}=:hello: one two".format(PolicyAction.SET_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.SET_USER_ATTRIBUTES!s}=:hello: one two")
         set_policy("custom_attr2", scope=SCOPE.ADMIN,
-                   action="{0!s}=:hello2: * :hello: three".format(PolicyAction.SET_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.SET_USER_ATTRIBUTES!s}=:hello2: * :hello: three")
         set_policy("custom_attr3", scope=SCOPE.ADMIN,
-                   action="{0!s}=:*: on off".format(PolicyAction.SET_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.SET_USER_ATTRIBUTES!s}=:*: on off")
         set_policy("custom_attr4", scope=SCOPE.ADMIN,
-                   action="{0!s}=*".format(PolicyAction.DELETE_USER_ATTRIBUTES))
+                   action=f"{PolicyAction.DELETE_USER_ATTRIBUTES!s}=*")
         with self.app.test_request_context('/user/editable_attributes/',
                                            method='GET',
                                            query_string={"user": "cornelius@realm1"},

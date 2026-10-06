@@ -117,7 +117,7 @@ class MachineTokenTestCase(MyTestCase):
             elif option.mt_key == "option2":
                 self.assertEqual("valü2", option.mt_value)
             else:
-                self.fail("Unspecified Option! {0!s}".format(option.mt_key))
+                self.fail(f"Unspecified Option! {option.mt_key!s}")
 
         r = delete_option(serial=self.serial, application="luks",
                           hostname="gandalf", key="option1")

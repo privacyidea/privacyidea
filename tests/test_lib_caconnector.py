@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from io import StringIO
 
-import mock
+from unittest import mock
 from cryptography import x509
 from sqlalchemy import select
 
@@ -301,9 +301,9 @@ class LocalCATestCase(MyTestCase):
 
         _, cert = cacon.sign_request(REQUEST_USER)
         cert_obj = x509.load_pem_x509_certificate(cert.encode())
-        self.assertEqual("{0!r}".format(cert_obj.issuer),
+        self.assertEqual(f"{cert_obj.issuer!r}",
                          "<Name(CN=CA001,O=privacyidea,ST=Hessen,C=DE)>")
-        self.assertEqual("{0!r}".format(cert_obj.subject),
+        self.assertEqual(f"{cert_obj.subject!r}",
                          "<Name(CN=usercert,O=privacyidea,ST=Hessen,C=DE)>")
 
         # Check output files
@@ -324,7 +324,7 @@ class LocalCATestCase(MyTestCase):
         _, cert = cacon.sign_request(REQUEST_USER, options={"template": "webserver"})
         cert_obj = x509.load_pem_x509_certificate(cert.encode())
         expires = cert_obj.not_valid_after_utc
-        ddiff = expires - datetime.datetime.now(tz=datetime.timezone.utc)
+        ddiff = expires - datetime.datetime.now(tz=datetime.UTC)
         # The certificate is signed for 750 days
         self.assertTrue(ddiff.days > 740, ddiff.days)
         self.assertTrue(ddiff.days < 760, ddiff.days)
@@ -559,7 +559,7 @@ class CreateLocalCATestCase(MyTestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(CreateLocalCATestCase, cls).setUpClass()
+        super().setUpClass()
         cls.workdir = tempfile.mkdtemp()
 
     @classmethod

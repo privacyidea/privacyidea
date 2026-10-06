@@ -7,7 +7,7 @@ lengths: they check the length of the stored value instead of relying on the dat
 reject it.
 """
 from flask import Response
-from mock import mock
+from unittest import mock
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 
