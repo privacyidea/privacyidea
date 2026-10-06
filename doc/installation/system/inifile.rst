@@ -33,11 +33,13 @@ The file should contain the following contents::
    SUPERUSER_REALM = ['super', 'administrators']
    # Your database
    SQLALCHEMY_DATABASE_URI = 'sqlite:////etc/privacyidea/data.sqlite'
-   # Signs the JWT that /auth issues. Use the same value on all processes and nodes
-   SECRET_KEY = 't0p s3cr3t'
+   # Signs the JWT that /auth issues. Use the same value on all processes and nodes.
+   # Generate a random value, see below
+   # SECRET_KEY = ...
    # Added to local admin passwords, password reset codes and API key secrets
-   # before they are hashed. Changing it invalidates all of them
-   PI_PEPPER = "Never know..."
+   # before they are hashed. Changing it invalidates all of them.
+   # Generate a random value, see below
+   # PI_PEPPER = ...
    # This is used to encrypt the token data and token passwords
    PI_ENCFILE = '/etc/privacyidea/enckey'
    # This is used to sign the audit log
@@ -57,6 +59,16 @@ The file should contain the following contents::
 
 .. note:: The config file is parsed as python code, so you can use variables to
    set the path and you need to take care of the indentation.
+
+Generate your own random values for ``SECRET_KEY`` and ``PI_PEPPER`` and add them
+to the file, for example::
+
+    PEPPER="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
+    echo "PI_PEPPER = '$PEPPER'" >> /etc/privacyidea/pi.cfg
+    SECRET="$(tr -dc A-Za-z0-9_ </dev/urandom | head -c24)"
+    echo "SECRET_KEY = '$SECRET'" >> /etc/privacyidea/pi.cfg
+
+Never use values from an example or from another installation.
 
 If ``SECRET_KEY`` is not set, privacyIDEA generates a random key at start. Each
 worker process can then have a key of its own, so a JWT issued by one process is
