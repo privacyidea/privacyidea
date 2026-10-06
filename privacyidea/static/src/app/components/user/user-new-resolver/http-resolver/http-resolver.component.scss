@@ -18,13 +18,12 @@
   width: 100%;
   margin-bottom: 1rem;
 
-  .mat-column-privacyideaAttr,
-  .mat-column-userStoreAttr {
-    width: 300px;
+  // The form fields fill the column tier of their cell.
+  mat-form-field {
+    width: 100%;
   }
 
   .mat-column-actions {
-    width: 80px;
     text-align: center;
   }
 
@@ -67,7 +66,7 @@
 
 .mat-button-toggle-appearance-standard.mat-button-toggle-checked {
   background-color: var(--mat-sys-primary-base-active);
-  color: white;
+  color: var(--mat-sys-on-primary);
 }
 
 .height-57 {

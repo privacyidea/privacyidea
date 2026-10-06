@@ -22,6 +22,8 @@ $field-input-height: 56px;
 // Size of the filter trigger sitting next to that input, on every table, and of the icon in it.
 $filter-trigger-size: 40px;
 $filter-trigger-icon-size: 24px;
+// The room the trigger takes beside the filter field: its size plus the margin-left-8 every table puts on it.
+$filter-trigger-reserve: $filter-trigger-size + 8px;
 
 $table-max-width: 20rem;
 $gap-small: 8px;
@@ -410,7 +412,7 @@ $checkbox-column-width: 72px;
 // and the paginator with its full range label (475px fits "11 – 20 of 250" or "1 – 10 of 1234"), plus
 // PaginatorCompactRangeDirective's 8px engage margin and the card's own 2 * 16px padding
 // (main-component-style).
-$filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
+$filter-row-min-width: calc(616px + #{$filter-trigger-reserve} + 475px + 8px + 2 * 16px);
 
 // A routed page's own table rows (.filter-paginator-container) need genuine room to show their
 // full "of Z" total rather than getting squeezed into it - and squeezing them below this is never
@@ -439,10 +441,8 @@ $filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
 // Never below $filter-row-min-width, though, however narrow the table: this card has no explicit
 // width of its own, so without that floor it shrinks to fit its filter row at the row's bare minimum,
 // leaving PaginatorCompactRangeDirective no slack at all - it would show the compact range with no
-// total even on a full HD screen with plenty of room to spare - and it would widen the card as soon
-// as the table scrolled, when the actions trigger appears in that row, shifting the whole table
-// sideways mid-scroll. Only the card grows for it: the table's own scroll region keeps to the table's
-// width (scroll-region-fits-table above).
+// total even on a full HD screen with plenty of room to spare. Only the card grows for it: the
+// table's own scroll region keeps to the table's width (scroll-region-fits-table above).
 @mixin paginator-range-floor($min-width: 1520px) {
   min-width: min(max($min-width, $filter-row-min-width), 100cqw);
 }
@@ -456,12 +456,19 @@ $filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
 // max-height, which needs that height guessed up front. $trigger-class is the icon button that
 // opens the equivalent actions as a mat-menu, placed next to the table's filter.
 @mixin actions-row-collapse($row-class, $inner-class, $trigger-class: ".table-actions-trigger") {
-  // app-table-actions-trigger draws the same button inside its own view, out of reach of this
-  // component's scoped styles, so its host element (which this component's template owns) is what
-  // gets hidden and shown.
+  // The trigger always occupies its room beside the filter field, shown or not, so the filter row has the same
+  // width whether or not the table is scrolled and the card, the field and the table below stay put. The field
+  // gives that room up. app-table-actions-trigger draws the same button inside its own view, out of reach of this
+  // component's scoped styles, so its host element (which this component's template owns) is what gets hidden and
+  // shown.
   #{$trigger-class},
   app-table-actions-trigger {
-    display: none;
+    visibility: hidden;
+  }
+
+  .filter-actions-group:has(> #{$trigger-class}, > app-table-actions-trigger)
+    > :not(#{$trigger-class}, app-table-actions-trigger) {
+    max-width: calc(var(--input-width-xxl) - #{$filter-trigger-reserve});
   }
 
   #{$row-class} {
@@ -483,18 +490,9 @@ $filter-row-min-width: calc(616px + 48px + 475px + 8px + 2 * 16px);
       margin-bottom: 0;
     }
 
-    #{$trigger-class} {
-      display: inline-flex;
-    }
-
+    #{$trigger-class},
     app-table-actions-trigger {
-      display: contents;
-    }
-
-    // The trigger (plus its margin-left-8) takes its room from the filter field, so the filter row keeps the width
-    // it had before and the table below does not grow when the header turns sticky.
-    .filter-actions-group > .mat-mdc-form-field {
-      max-width: calc(var(--input-width-xxl) - #{$filter-trigger-size} - 8px);
+      visibility: visible;
     }
   }
 }

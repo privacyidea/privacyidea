@@ -137,8 +137,7 @@
                         <button
                           [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
                           [matMenuTriggerFor]="realmMenu"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label="@@common.filterBy"
+                          [attr.aria-label]="column.label | filterByLabel"
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
@@ -146,8 +145,7 @@
                       } @else if (apiFilterKeyMap[column.key] === "rollout_state") {
                         <button
                           [matMenuTriggerFor]="rolloutStateMenu"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label="@@common.filterBy"
+                          [attr.aria-label]="column.label | filterByLabel"
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0 ms--filter-list"></mat-icon>
@@ -155,8 +153,7 @@
                       } @else {
                         <button
                           (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                          aria-label="Filter by {{ column.label }}"
-                          i18n-aria-label="@@common.filterBy"
+                          [attr.aria-label]="column.label | filterByLabel"
                           class="filter-button"
                           mat-icon-button>
                           <mat-icon class="keyword-button-icon margin-left-0">
@@ -167,8 +164,7 @@
                     }
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                      aria-label="Sort by {{ column.label }}"
-                      i18n-aria-label="@@common.sortBy"
+                      [attr.aria-label]="column.label | sortByLabel"
                       class="sort-button"
                       mat-icon-button
                       type="button">
@@ -183,29 +179,33 @@
               [class.table-checkbox]="column.key === 'select'"
               [ngClass]="column.key === 'select' ? null : 'col-width-' + column.width"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("select") {
                     <mat-checkbox
                       (change)="tokenSelection.setRowSelected(tokenDetails, $event.checked)"
                       (click)="$event.stopPropagation()"
-                      [attr.aria-label]="selectRowLabel(tokenDetails.serial)"
+                      [aria-label]="selectRowLabel(tokenDetails.serial)"
                       [checked]="tokenSelection.isRowSelected(tokenDetails)"
                       [disabled]="!tokenSelection.hasVisibleRows()" />
                   }
                   @case ("serial") {
-                    <app-copyable [copyText]="tokenDetails.serial">
-                      <a
-                        (click)="contentService.tokenSelected(tokenDetails.serial)"
-                        (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
-                        (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        class="flex ali-center"
-                        role="button"
-                        tabindex="0">
-                        {{ tokenDetails[column.key] }}
-                      </a>
-                    </app-copyable>
+                    @if (tokenDetails.serial) {
+                      <app-copyable [copyText]="tokenDetails.serial">
+                        <a
+                          (click)="contentService.tokenSelected(tokenDetails.serial)"
+                          (keydown.enter)="contentService.tokenSelected(tokenDetails.serial)"
+                          (keydown.space)="$event.preventDefault(); contentService.tokenSelected(tokenDetails.serial)"
+                          [appTruncationTooltip]="tokenDetails.serial"
+                          class="cell-truncate"
+                          role="button"
+                          tabindex="0">
+                          {{ tokenDetails[column.key] }}
+                        </a>
+                      </app-copyable>
+                    }
                   }
                   @case ("active") {
                     @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
@@ -237,7 +237,7 @@
                     <div [ngClass]="{ 'realm-list': (tokenDetails[column.key]?.length || 0) > 1 }">
                       @for (realm of tokenDetails[column.key]; track realm; let idx = $index) {
                         <app-copyable [copyText]="realm">
-                          <span [attr.aria-label]="linkLabel(column.label)">
+                          <span>
                             {{ realm }}
                           </span>
                         </app-copyable>
@@ -245,53 +245,56 @@
                     </div>
                   }
                   @case ("container_serial") {
-                    <app-copyable [copyText]="tokenDetails.container_serial">
-                      <a
-                        (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
-                        (keydown.enter)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
-                        (keydown.space)="
-                          $event.preventDefault();
-                          contentService.navigateContainerDetails(tokenDetails.container_serial)
-                        "
-                        [attr.aria-label]="linkLabel(column.label)"
-                        role="button"
-                        tabindex="0">
-                        {{ tokenDetails[column.key] }}
-                      </a>
-                      <app-filter-value-button
-                        class="margin-left-8"
-                        column="container_serial"
-                        [value]="tokenDetails.container_serial"
-                        (filterValue)="addFilterValue('container_serial', $event)" />
-                    </app-copyable>
+                    @if (tokenDetails.container_serial) {
+                      <app-copyable [copyText]="tokenDetails.container_serial">
+                        <a
+                          (click)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
+                          (keydown.enter)="contentService.navigateContainerDetails(tokenDetails.container_serial)"
+                          (keydown.space)="
+                            $event.preventDefault();
+                            contentService.navigateContainerDetails(tokenDetails.container_serial)
+                          "
+                          [appTruncationTooltip]="tokenDetails.container_serial"
+                          class="cell-truncate"
+                          role="button"
+                          tabindex="0">
+                          {{ tokenDetails[column.key] }}
+                        </a>
+                        <app-filter-value-button
+                          column="container_serial"
+                          [value]="tokenDetails.container_serial"
+                          (filterValue)="addFilterValue('container_serial', $event)" />
+                      </app-copyable>
+                    }
                   }
                   @case ("username") {
-                    <app-copyable [copyText]="tokenDetails[column.key]">
-                      <a
-                        (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
-                        (keydown.enter)="
-                          contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
-                        "
-                        (keydown.space)="
-                          $event.preventDefault();
-                          contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
-                        "
-                        [attr.aria-label]="linkLabel(column.label)"
-                        role="button"
-                        tabindex="0">
-                        {{ tokenDetails[column.key] }}
-                      </a>
-                      <app-filter-value-button
-                        class="margin-left-8"
-                        column="username"
-                        [value]="tokenDetails[column.key]"
-                        (filterValue)="filterByUser($event, tokenDetails.user_realm)" />
-                    </app-copyable>
+                    @if (tokenDetails[column.key]) {
+                      <app-copyable [copyText]="tokenDetails[column.key]">
+                        <a
+                          (click)="contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])"
+                          (keydown.enter)="
+                            contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
+                          "
+                          (keydown.space)="
+                            $event.preventDefault();
+                            contentService.userSelected(tokenDetails[column.key], tokenDetails['user_realm'])
+                          "
+                          [appTruncationTooltip]="tokenDetails[column.key]"
+                          class="cell-truncate"
+                          role="button"
+                          tabindex="0">
+                          {{ tokenDetails[column.key] }}
+                        </a>
+                        <app-filter-value-button
+                          column="username"
+                          [value]="tokenDetails[column.key]"
+                          (filterValue)="filterByUser($event, tokenDetails.user_realm)" />
+                      </app-copyable>
+                    }
                   }
                   @default {
-                    @if (tableUtilsService.isLink(column.key)) {
+                    @if (tableUtilsService.isLink(column.key) && tableUtilsService.getDisplayText(column.key, tokenDetails)) {
                       <a
-                        [attr.aria-label]="linkLabel(column.label)"
                         href="#">
                         {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
                       </a>

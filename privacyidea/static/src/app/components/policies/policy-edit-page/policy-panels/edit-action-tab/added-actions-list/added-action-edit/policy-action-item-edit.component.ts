@@ -66,6 +66,9 @@ export class PolicyActionItemEditComponent<T extends string | number | boolean =
 
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
+  /** Names the value controls after the action they belong to. */
+  readonly valueLabel = computed(() => this.action().name);
+
   readonly inputIsValid = computed<boolean>(() => {
     const actionDetail = this.actionDetail();
     const actionValue = this.action()?.value;

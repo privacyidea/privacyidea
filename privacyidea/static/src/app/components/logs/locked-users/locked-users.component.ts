@@ -70,6 +70,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { UserRoleBadge, userRoleBadge } from "../user-roles";
 import { from } from "rxjs";
 import { concatMap, reduce } from "rxjs/operators";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-locked-users",
@@ -77,6 +78,7 @@ import { concatMap, reduce } from "rxjs/operators";
   styleUrl: "./locked-users.component.scss",
   imports: [
     TableActionsTriggerComponent,
+    TooltipAriaLabelDirective,
     InfoHintComponent,
     MatSuffix,
     TableStateComponent,

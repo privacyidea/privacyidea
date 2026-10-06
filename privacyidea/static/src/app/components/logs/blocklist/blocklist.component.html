@@ -96,6 +96,8 @@
             class="table-checkbox"
             mat-header-cell>
             <mat-checkbox
+              aria-label="Select all rows"
+              i18n-aria-label="@@common.selectAllRows"
               (change)="toggleAllRows()"
               [checked]="isAllSelected()"
               [disabled]="dataSource().data.length === 0"
@@ -106,6 +108,8 @@
             class="table-checkbox"
             mat-cell>
             <mat-checkbox
+              aria-label="Select row"
+              i18n-aria-label="@@common.selectRow"
               (change)="toggleRow(row)"
               [checked]="selection().includes(row)" />
           </td>
@@ -115,6 +119,7 @@
         <ng-container matColumnDef="identifier">
           <th
             *matHeaderCellDef
+            class="col-width-m"
             mat-header-cell>
             <div class="header-cell">
               <span i18n="@@common.sourceIp">Source IP</span>
@@ -131,6 +136,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-m"
             mat-cell>
             <span class="ip-cell">
               <span>{{ row.identifier }}</span>
@@ -155,6 +161,7 @@
         <ng-container matColumnDef="state">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             mat-header-cell>
             <div class="header-cell">
               <span i18n="@@common.state">State</span>
@@ -171,6 +178,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-s"
             mat-cell>
             <span [ngClass]="blockStateClass(row)">
               {{ blockState(row) | titlecase }}
@@ -182,6 +190,7 @@
         <ng-container matColumnDef="cause">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             mat-header-cell>
             <div class="header-cell">
               <span i18n="@@common.cause">Cause</span>
@@ -198,6 +207,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-s"
             mat-cell>
             {{ blockCauseLabel(row) }}
           </td>
@@ -207,6 +217,7 @@
         <ng-container matColumnDef="block_expires_at">
           <th
             *matHeaderCellDef
+            class="col-width-m"
             mat-header-cell>
             <div class="header-cell">
               <span i18n="@@blocklist.expiry">Expiry</span>
@@ -223,6 +234,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-m"
             mat-cell>
             @if (row.permanent) {
               <span>-</span>
@@ -238,6 +250,7 @@
         <ng-container matColumnDef="blocked_at">
           <th
             *matHeaderCellDef
+            class="col-width-m"
             mat-header-cell>
             <div class="header-cell">
               <span i18n="@@blocklist.blocked">Blocked</span>
@@ -254,6 +267,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-m"
             mat-cell>
             <span>
               {{ row.blocked_at | date: "yyyy-MM-dd HH:mm:ss" }}
@@ -264,6 +278,7 @@
         <ng-container matColumnDef="error_message">
           <th
             *matHeaderCellDef
+            class="col-width-l"
             mat-header-cell>
             <span class="header-cell">
               <span i18n="@@common.errorMessage">Error Message</span>
@@ -271,6 +286,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-l"
             mat-cell>
             <app-expandable-message [text]="row.error_message" />
           </td>
@@ -304,7 +320,17 @@
       hint="IP addresses blocked by a conditional-access policy are listed here."
       i18n-heading="@@blocklist.noBlockedIps"
       i18n-hint="@@blocklist.ipsBlockedByPolicy"
-      icon="block" />
+      icon="block">
+      @if (authService.actionAllowed("blocklist_set")) {
+        <button
+          (click)="blockIp()"
+          class="action-button-primary button-width-m"
+          mat-stroked-button>
+          <mat-icon>lock</mat-icon>
+          <span i18n="@@blocklist.blockIp">Block IP</span>
+        </button>
+      }
+    </app-table-state>
   }
 </div>
 

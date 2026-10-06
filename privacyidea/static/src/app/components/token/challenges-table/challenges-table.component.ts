@@ -54,6 +54,8 @@ import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so the columns line up on the same scale other tables use and the table-state placeholder
@@ -71,6 +73,9 @@ const columnKeysMap = [
   standalone: true,
   imports: [
     TableActionsTriggerComponent,
+    ScrollFocusableDirective,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     InfoHintComponent,
     MatSuffix,
     RefocusAfterReloadDirective,

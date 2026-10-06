@@ -110,8 +110,7 @@
                     @if (apiFilterKeys.includes(column.key)) {
                       <button
                         (click)="onFilterClick(column.key)"
-                        aria-label="Filter by {{ column.label }}"
-                        i18n-aria-label="@@common.filterBy"
+                        [attr.aria-label]="column.label | filterByLabel"
                         class="filter-button"
                         mat-icon-button
                         type="button">
@@ -122,8 +121,7 @@
                     }
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, userService.sort)"
-                      aria-label="Sort by {{ column.label }}"
-                      i18n-aria-label="@@common.sortBy"
+                      [attr.aria-label]="column.label | sortByLabel"
                       class="sort-button"
                       mat-icon-button
                       type="button">
@@ -140,32 +138,44 @@
                 <div>
                   @switch (column.key) {
                     @case ("username") {
+                      @if (element[column.key]) {
+                        <app-copyable [copyText]="element[column.key]">
+                          <a
+                            (click)="onClickUsername(element)"
+                            [appTruncationTooltip]="element[column.key]"
+                            class="cell-truncate"
+                            routerLink="/users/details/{{ element.username }}">
+                            {{ element[column.key] }}
+                          </a>
+                        </app-copyable>
+                      }
+                    }
+                    @case ("userid") {
                       <app-copyable [copyText]="element[column.key]">
-                        <a
-                          (click)="onClickUsername(element)"
-                          [attr.aria-label]="linkLabel(column.label)"
-                          routerLink="/users/details/{{ element.username }}">
+                        <span
+                          [appTruncationTooltip]="element[column.key]"
+                          class="cell-truncate">
                           {{ element[column.key] }}
-                        </a>
+                        </span>
                       </app-copyable>
                     }
                     @case ("resolver") {
-                      <app-copyable [copyText]="element[column.key]">
-                        @if (resolverLinkAllowed()) {
-                          <a
-                            [attr.aria-label]="linkLabel(column.label)"
-                            [routerLink]="resolverLink(element[column.key])">
+                      @if (element[column.key]) {
+                        <app-copyable [copyText]="element[column.key]">
+                          @if (resolverLinkAllowed()) {
+                            <a
+                              [routerLink]="resolverLink(element[column.key])">
+                              {{ element[column.key] }}
+                            </a>
+                          } @else {
                             {{ element[column.key] }}
-                          </a>
-                        } @else {
-                          {{ element[column.key] }}
-                        }
-                        <app-filter-value-button
-                          class="margin-left-8"
-                          column="resolver"
-                          [value]="element[column.key]"
-                          (filterValue)="addFilterValue('resolver', $event)" />
-                      </app-copyable>
+                          }
+                          <app-filter-value-button
+                            column="resolver"
+                            [value]="element[column.key]"
+                            (filterValue)="addFilterValue('resolver', $event)" />
+                        </app-copyable>
+                      }
                     }
                     @default {
                       <span>

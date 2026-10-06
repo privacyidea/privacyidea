@@ -21,13 +21,14 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ThemeService } from "@services/theme/theme.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 type ThemeIcon = "light_mode" | "dark_mode";
 
 @Component({
   selector: "app-theme-switcher",
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, MatTooltipModule],
+  imports: [TooltipAriaLabelDirective, MatIconModule, MatButtonModule, MatTooltipModule],
   templateUrl: "./theme-switcher.component.html",
   styleUrls: ["./theme-switcher.component.scss"]
 })

@@ -20,6 +20,7 @@ import { Component, input } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 /**
  * A muted info icon that reveals a longer explanation in a tooltip on hover/focus,
@@ -30,7 +31,7 @@ import { MatTooltip } from "@angular/material/tooltip";
   selector: "app-info-hint",
   templateUrl: "./info-hint.component.html",
   styleUrls: ["./info-hint.component.scss"],
-  imports: [MatIcon, MatIconButton, MatTooltip]
+  imports: [TooltipAriaLabelDirective, MatIcon, MatIconButton, MatTooltip]
 })
 export class InfoHintComponent {
   readonly text = input.required<string>();

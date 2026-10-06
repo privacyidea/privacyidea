@@ -102,6 +102,8 @@
             class="table-checkbox"
             mat-header-cell>
             <mat-checkbox
+              aria-label="Select all rows"
+              i18n-aria-label="@@common.selectAllRows"
               (change)="toggleAllRows()"
               [checked]="isAllSelected()"
               [disabled]="dataSource().data.length === 0"
@@ -112,6 +114,8 @@
             class="table-checkbox"
             mat-cell>
             <mat-checkbox
+              aria-label="Select row"
+              i18n-aria-label="@@common.selectRow"
               (change)="toggleRow(row)"
               [checked]="selection().includes(row)" />
           </td>
@@ -120,6 +124,7 @@
         <ng-container matColumnDef="username">
           <th
             *matHeaderCellDef
+            class="col-width-m"
             mat-header-cell>
             <span class="header-cell">
               <span i18n="@@common.username">Username</span>
@@ -145,6 +150,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-m"
             mat-cell>
             <span class="username-cell">
               @if (authService.actionAllowed("userlist") && row.username && !isLocalAdmin(row)) {
@@ -191,6 +197,7 @@
         <ng-container matColumnDef="realm">
           <th
             *matHeaderCellDef
+            class="col-width-m"
             mat-header-cell>
             <span class="header-cell">
               <span i18n="@@common.realm">Realm</span>
@@ -213,6 +220,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-m"
             mat-cell>
             @if (row.realm) {
               <a [routerLink]="ROUTE_PATHS.USERS_REALMS">{{ row.realm }}</a>
@@ -225,6 +233,7 @@
         <ng-container matColumnDef="resolver">
           <th
             *matHeaderCellDef
+            class="col-width-m"
             mat-header-cell>
             <span class="header-cell">
               <span i18n="@@common.resolver">Resolver</span>
@@ -247,6 +256,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-m"
             mat-cell>
             @if (authService.actionAllowed("resolverread") && row.resolver) {
               <a [routerLink]="['/users/resolvers/details', row.resolver]">{{ row.resolver }}</a>
@@ -259,6 +269,7 @@
         <ng-container matColumnDef="state">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             mat-header-cell>
             <span class="header-cell">
               <span i18n="@@common.state">State</span>
@@ -272,6 +283,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-s"
             mat-cell>
             <span [ngClass]="lockStateClass(row)">{{ lockStateLabel(row) }}</span>
           </td>
@@ -281,6 +293,7 @@
         <ng-container matColumnDef="cause">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             mat-header-cell>
             <span class="header-cell">
               <span i18n="@@common.cause">Cause</span>
@@ -294,6 +307,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-s"
             mat-cell>
             {{ lockCauseLabel(row) }}
           </td>
@@ -303,6 +317,7 @@
         <ng-container matColumnDef="lock_expires_at">
           <th
             *matHeaderCellDef
+            class="col-width-m"
             mat-header-cell>
             <span class="header-cell">
               <span i18n="@@lockedUsers.lockExpiry">Lock Expiry</span>
@@ -319,6 +334,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-m"
             mat-cell>
             @if (row.permanent) {
               <span class="lock-date">-</span>
@@ -331,6 +347,7 @@
         <ng-container matColumnDef="locked_at">
           <th
             *matHeaderCellDef
+            class="col-width-m"
             mat-header-cell>
             <span class="header-cell">
               <span i18n="@@valueLabelLocked">Locked</span>
@@ -347,6 +364,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-m"
             mat-cell>
             {{ row.locked_at | date: "yyyy-MM-dd HH:mm:ss" }}
           </td>
@@ -355,6 +373,7 @@
         <ng-container matColumnDef="error_message">
           <th
             *matHeaderCellDef
+            class="col-width-l"
             mat-header-cell>
             <span class="header-cell">
               <span i18n="@@common.errorMessage">Error Message</span>
@@ -371,6 +390,7 @@
           </th>
           <td
             *matCellDef="let row"
+            class="col-width-l"
             mat-cell>
             <span class="flex ali-center">
               <app-expandable-message [text]="row.error_message" />

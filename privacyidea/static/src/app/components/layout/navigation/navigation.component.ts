@@ -49,6 +49,7 @@ import { UiPreferencesService, UiPreferencesServiceInterface } from "@services/u
 import { ROUTE_PATHS } from "@app/route_paths";
 import { LANDING_PAGE_ROUTES } from "@core/landing-page";
 import { OverflowNavDirective } from "../../shared/directives/overflow-nav/overflow-nav.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 export interface NavItem {
   icon: string;
@@ -72,6 +73,7 @@ export interface SubNavSection {
   selector: "app-navigation",
   host: { "[class.has-custom-logo]": "customLogo()" },
   imports: [
+    TooltipAriaLabelDirective,
     MatToolbar,
     MatIconButton,
     MatIconModule,

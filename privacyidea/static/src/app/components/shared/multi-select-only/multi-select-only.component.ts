@@ -52,6 +52,8 @@ const MODIFIER_ONLY_KEYS = new Set(["Alt", "Control", "Meta", "Shift"]);
 export class MultiSelectOnlyComponent<T = string | number> {
   // Inputs
   readonly label = input<string>("");
+  // The select's name when it has no visible label.
+  readonly ariaLabel = input<string>("");
   readonly items = input<T[] | Set<T> | T[] | undefined>([]);
   readonly selectedItems = input<T[]>([]);
   readonly tooltipText = input<string>("");

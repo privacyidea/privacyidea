@@ -198,12 +198,14 @@
             <ng-container matColumnDef="key">
               <th
                 *matHeaderCellDef
+                class="col-width-m"
                 i18n="@@common.key"
                 mat-header-cell
                 >Key</th
               >
               <td
                 *matCellDef="let row"
+                class="col-width-m"
                 mat-cell>
                 {{ row.key }}
               </td>
@@ -212,12 +214,14 @@
             <ng-container matColumnDef="value">
               <th
                 *matHeaderCellDef
+                class="col-width-l"
                 i18n="@@common.value"
                 mat-header-cell
                 >Value</th
               >
               <td
                 *matCellDef="let row"
+                class="col-width-l"
                 mat-cell>
                 {{ row.value }}
               </td>
@@ -226,17 +230,20 @@
             <ng-container matColumnDef="actions">
               <th
                 *matHeaderCellDef
+                class="col-width-s"
                 i18n="@@common.actions"
                 mat-header-cell
                 >Actions</th
               >
               <td
                 *matCellDef="let row"
-                class="actions-cell"
+                class="actions-cell col-width-s"
                 mat-cell>
                 <button
                   (click)="deleteOption(row.key)"
+                  aria-label="Delete"
                   color="warn"
+                  i18n-aria-label="@@common.delete"
                   mat-icon-button>
                   <mat-icon>delete</mat-icon>
                 </button>
@@ -246,15 +253,19 @@
             <ng-container matColumnDef="secret">
               <th
                 *matHeaderCellDef
+                class="col-width-s"
                 i18n="@@common.secret"
                 mat-header-cell
                 >Secret</th
               >
               <td
                 *matCellDef="let row"
+                class="col-width-s"
                 mat-cell>
                 <mat-checkbox
                   (change)="toggleOptionSecret(row.key)"
+                  aria-label="Secret"
+                  i18n-aria-label="@@common.secret"
                   [checked]="row.secret"></mat-checkbox>
               </td>
             </ng-container>
@@ -269,10 +280,11 @@
             <ng-container matColumnDef="footerKey">
               <td
                 *matFooterCellDef
+                class="col-width-m"
                 mat-footer-cell>
                 <mat-form-field
                   appearance="fill"
-                  class="input-width-m">
+                  class="add-footer-field">
                   <mat-label i18n="@@smsGateway.optionName">Option Name</mat-label>
                   <app-clearable-input
                     (clearButtonClick)="newOptionKey.set('')"
@@ -289,10 +301,11 @@
             <ng-container matColumnDef="footerValue">
               <td
                 *matFooterCellDef
+                class="col-width-l"
                 mat-footer-cell>
                 <mat-form-field
                   appearance="fill"
-                  class="input-width-m">
+                  class="add-footer-field">
                   <mat-label i18n="@@common.value">Value</mat-label>
                   <app-clearable-input
                     (clearButtonClick)="newOptionValue.set('')"
@@ -309,6 +322,7 @@
             <ng-container matColumnDef="footerSecret">
               <td
                 *matFooterCellDef
+                class="col-width-s"
                 mat-footer-cell>
                 <mat-checkbox
                   (change)="newOptionSecret.set(!newOptionSecret())"
@@ -321,12 +335,15 @@
             <ng-container matColumnDef="footerActions">
               <td
                 *matFooterCellDef
+                class="col-width-s"
                 mat-footer-cell>
                 <div class="add-button">
                   <button
                     (click)="addOption()"
                     [disabled]="!newOptionKey()"
+                    aria-label="Add"
                     color="primary"
+                    i18n-aria-label="@@common.add"
                     mat-icon-button>
                     <mat-icon>add</mat-icon>
                   </button>
@@ -353,12 +370,14 @@
             <ng-container matColumnDef="key">
               <th
                 *matHeaderCellDef
+                class="col-width-m"
                 i18n="@@common.key"
                 mat-header-cell
                 >Key</th
               >
               <td
                 *matCellDef="let row"
+                class="col-width-m"
                 mat-cell>
                 {{ row.key }}
               </td>
@@ -367,12 +386,14 @@
             <ng-container matColumnDef="value">
               <th
                 *matHeaderCellDef
+                class="col-width-l"
                 i18n="@@common.value"
                 mat-header-cell
                 >Value</th
               >
               <td
                 *matCellDef="let row"
+                class="col-width-l"
                 mat-cell>
                 {{ row.value }}
               </td>
@@ -381,17 +402,20 @@
             <ng-container matColumnDef="actions">
               <th
                 *matHeaderCellDef
+                class="col-width-s"
                 i18n="@@common.actions"
                 mat-header-cell
                 >Actions</th
               >
               <td
                 *matCellDef="let row"
-                class="actions-cell"
+                class="actions-cell col-width-s"
                 mat-cell>
                 <button
                   (click)="deleteHeader(row.key)"
+                  aria-label="Delete"
                   color="warn"
+                  i18n-aria-label="@@common.delete"
                   mat-icon-button>
                   <mat-icon>delete</mat-icon>
                 </button>
@@ -401,15 +425,19 @@
             <ng-container matColumnDef="secret">
               <th
                 *matHeaderCellDef
+                class="col-width-s"
                 i18n="@@common.secret"
                 mat-header-cell
                 >Secret</th
               >
               <td
                 *matCellDef="let row"
+                class="col-width-s"
                 mat-cell>
                 <mat-checkbox
                   (change)="toggleHeaderSecret(row.key)"
+                  aria-label="Secret"
+                  i18n-aria-label="@@common.secret"
                   [checked]="row.secret"></mat-checkbox>
               </td>
             </ng-container>
@@ -424,10 +452,11 @@
             <ng-container matColumnDef="footerKey">
               <td
                 *matFooterCellDef
+                class="col-width-m"
                 mat-footer-cell>
                 <mat-form-field
                   appearance="fill"
-                  class="input-width-m">
+                  class="add-footer-field">
                   <mat-label i18n="@@smsGateway.headerName">Header Name</mat-label>
                   <app-clearable-input
                     (clearButtonClick)="newHeaderKey.set('')"
@@ -444,10 +473,11 @@
             <ng-container matColumnDef="footerValue">
               <td
                 *matFooterCellDef
+                class="col-width-l"
                 mat-footer-cell>
                 <mat-form-field
                   appearance="fill"
-                  class="input-width-m">
+                  class="add-footer-field">
                   <mat-label i18n="@@common.value">Value</mat-label>
                   <app-clearable-input
                     (clearButtonClick)="newHeaderValue.set('')"
@@ -464,6 +494,7 @@
             <ng-container matColumnDef="footerSecret">
               <td
                 *matFooterCellDef
+                class="col-width-s"
                 mat-footer-cell>
                 <mat-checkbox
                   (change)="newHeaderSecret.set(!newHeaderSecret())"
@@ -476,12 +507,15 @@
             <ng-container matColumnDef="footerActions">
               <td
                 *matFooterCellDef
+                class="col-width-s"
                 mat-footer-cell>
                 <div class="flex ali-center just-center">
                   <button
                     (click)="addHeader()"
                     [disabled]="!newHeaderKey()"
+                    aria-label="Add"
                     color="primary"
+                    i18n-aria-label="@@common.add"
                     mat-icon-button>
                     <mat-icon>add</mat-icon>
                   </button>

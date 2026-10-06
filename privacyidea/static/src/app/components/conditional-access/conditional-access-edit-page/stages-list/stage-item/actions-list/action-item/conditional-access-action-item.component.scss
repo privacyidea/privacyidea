@@ -1,5 +1,21 @@
 // Each action is a collapsible panel: the header shows the action type and its
 // one-line description, the body holds the type select and value fields.
+.ca-action-row {
+  align-items: flex-start;
+  display: flex;
+  gap: 8px;
+
+  > .ca-action-item {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// Level with the panel's 48px header.
+.ca-action-remove {
+  margin-top: 4px;
+}
+
 .ca-action-item.mat-expansion-panel {
   --mat-expansion-container-background-color: var(--mat-sys-surface-container-lowest);
 }

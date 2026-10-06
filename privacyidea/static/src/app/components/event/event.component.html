@@ -82,6 +82,8 @@
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="Event handlers"
+        i18n-aria-label="@@table.eventHandlers"
         [dataSource]="eventHandlerDataSource()"
         class="event-handler-table row-striped"
         mat-table>
@@ -97,6 +99,7 @@
                 @if (column !== "delete") {
                   <div class="flex">
                     <button
+                      [attr.aria-label]="columnKeysMap[column] | sortByLabel"
                       (click)="tableUtilsService.onSortButtonClick(column, sort)"
                       class="sort-button"
                       mat-icon-button
@@ -204,6 +207,8 @@
                     [checked]="element.active"
                     [disableRipple]="true"
                     [disabled]="!authService.actionAllowed('eventhandling_write')"
+                    aria-label="Toggle Active Status"
+                    i18n-aria-label="@@common.toggleActiveStatus"
                     i18n-matTooltip="@@common.toggleActiveStatus"
                     matTooltip="Toggle Active Status"></mat-slide-toggle>
                 }

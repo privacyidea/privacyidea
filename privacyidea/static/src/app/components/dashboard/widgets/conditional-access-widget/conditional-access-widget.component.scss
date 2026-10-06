@@ -187,6 +187,11 @@ td.ca-highlight-cell {
 
 .ca-more {
   margin: 0;
-  padding: 4px 16px;
+  padding: 0 16px;
   text-align: right;
+
+  a {
+    display: inline-block;
+    line-height: 24px;
+  }
 }

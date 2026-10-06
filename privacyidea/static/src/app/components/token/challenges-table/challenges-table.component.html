@@ -83,8 +83,7 @@
                   @if (apiFilterKeys.includes(column.key)) {
                     <button
                       (click)="onKeywordClick(column.key)"
-                      aria-label="Filter by {{ column.label }}"
-                      i18n-aria-label="@@common.filterBy"
+                      [attr.aria-label]="column.label | filterByLabel"
                       class="filter-button"
                       mat-icon-button
                       type="button">
@@ -95,8 +94,7 @@
                   }
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    aria-label="Sort by {{ column.label }}"
-                    i18n-aria-label="@@common.sortBy"
+                    [attr.aria-label]="column.label | sortByLabel"
                     class="sort-button"
                     mat-icon-button
                     type="button">
@@ -109,25 +107,28 @@
               *matCellDef="let element"
               [ngClass]="'col-width-' + column.width"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    <app-copyable [copyText]="element.serial">
-                      <a
-                        role="button"
-                        tabindex="0"
-                        (click)="serialClicked(element)"
-                        (keydown.enter)="serialClicked(element)"
-                        (keydown.space)="$event.preventDefault(); serialClicked(element)"
-                        class="flex ali-center">
-                        {{ element.serial }}
-                      </a>
-                      <app-filter-value-button
-                        class="margin-left-8"
-                        column="serial"
-                        [value]="element.serial"
-                        (filterValue)="addFilterValue('serial', $event)" />
-                    </app-copyable>
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
+                        <a
+                          role="button"
+                          tabindex="0"
+                          (click)="serialClicked(element)"
+                          (keydown.enter)="serialClicked(element)"
+                          (keydown.space)="$event.preventDefault(); serialClicked(element)"
+                          class="flex ali-center">
+                          {{ element.serial }}
+                        </a>
+                        <app-filter-value-button
+                          column="serial"
+                          [value]="element.serial"
+                          (filterValue)="addFilterValue('serial', $event)" />
+                      </app-copyable>
+                    }
                   }
                   @case ("transaction_id") {
                     <span class="flex ali-center">

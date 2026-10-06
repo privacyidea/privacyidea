@@ -87,6 +87,8 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 import { concat, last, lastValueFrom, take } from "rxjs";
 import { RealmDeleteAttributesDialogComponent } from "./realm-delete-attributes-dialog/realm-delete-attributes-dialog.component";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
+import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 
 interface ResolverWithPriority {
   name: string;
@@ -113,6 +115,8 @@ const columnKeysMap = [
   standalone: true,
   imports: [
     TableActionsTriggerComponent,
+    SortByLabelPipe,
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     ClearableInputComponent,
     CopyableComponent,
@@ -148,10 +152,6 @@ const columnKeysMap = [
   styleUrl: "./realm-table.component.scss"
 })
 export class RealmTableComponent implements OnDestroy, OnInit {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   // Services
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);

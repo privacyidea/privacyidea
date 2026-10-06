@@ -44,11 +44,16 @@ import { filterMatchTooltip, inlineFilterHint } from "@utils/filter-hint.utils";
 import { exactMatch } from "@utils/filter.utils";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { ScrollFocusableDirective } from "@components/shared/directives/scroll-focusable.directive";
 
 @Component({
   selector: "app-token-applications-offline",
   standalone: true,
   imports: [
+    ScrollFocusableDirective,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     InfoHintComponent,
     MatSuffix,
     RefocusAfterReloadDirective,
@@ -73,16 +78,19 @@ import { PaginatorCompactRangeDirective } from "@components/shared/directives/pa
   styleUrls: ["./token-applications-offline.component.scss"]
 })
 export class TokenApplicationsOfflineComponent {
-  protected linkLabel(label: string): string {
-    return $localize`:@@common.linkLabel:${label}:LABEL: link`;
-  }
-
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "count", "rounds");
+  // The col-width-* tier (see --column-width-* in styles.scss) each column is fixed to: the serial is
+  // medium, the count and rounds numbers are small.
+  protected readonly columnWidths: Readonly<Record<string, "s" | "m" | "l" | "xl">> = {
+    serial: "m",
+    count: "s",
+    rounds: "s"
+  };
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   length = computed(() => this.machineService.tokenApplications()?.length ?? 0);

@@ -55,6 +55,7 @@ import { NotificationService, NotificationServiceInterface } from "@services/not
 import { BlocklistBlockDialogComponent } from "./blocklist-block-dialog/blocklist-block-dialog.component";
 import { from } from "rxjs";
 import { concatMap, reduce } from "rxjs/operators";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-blocklist",
@@ -62,6 +63,7 @@ import { concatMap, reduce } from "rxjs/operators";
   styleUrl: "./blocklist.component.scss",
   imports: [
     TableActionsTriggerComponent,
+    TooltipAriaLabelDirective,
     TableStateComponent,
     RefocusAfterReloadDirective,
     ScrollToTopDirective,

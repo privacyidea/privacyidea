@@ -307,6 +307,9 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   display: block;
 }
 
+// The status colors, darkened enough that the chips' white text keeps 4.5:1 against every one of them in both themes.
+$highlight-darken: 32%;
+
 .highlight-true,
 .highlight-warning,
 .highlight-false,
@@ -321,21 +324,21 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
 
   &.highlight-true,
   &.highlight-true-clickable {
-    background-color: var(--green-light);
+    background-color: color-mix(in srgb, var(--green-light), black $highlight-darken);
   }
 
   &.highlight-warning,
   &.highlight-warning-clickable {
-    background-color: var(--yellow-light-active);
+    background-color: color-mix(in srgb, var(--yellow-light-active), black $highlight-darken);
   }
 
   &.highlight-false,
   &.highlight-false-clickable {
-    background-color: var(--red-light);
+    background-color: color-mix(in srgb, var(--red-light), black $highlight-darken);
   }
 
   &.highlight-disabled {
-    background-color: var(--grey-light);
+    background-color: color-mix(in srgb, var(--grey-light), black $highlight-darken);
   }
 
   &.highlight-true-clickable,
@@ -646,4 +649,25 @@ app-details-card .details-header {
 // rather than with the middle of the whole field.
 .mat-mdc-text-field-wrapper:has(app-clearable-input) .mat-mdc-form-field-icon-suffix:has(> app-info-hint) {
   align-self: flex-end;
+}
+
+// A cell value cut to the width its column leaves it, kept on one line with an ellipsis instead of breaking anywhere.
+// Paired with appTruncationTooltip for the rest of the value. A flex item of the copyable row, hence min-width: 0 to
+// let it shrink below its content. Also the hook the collapsed cell actions key on (see styles.scss).
+.cell-truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// A form field inside a col-width-* cell fills the cell instead of asking for Material's own 180px
+// infix, which would widen the column past its tier.
+.table-cell-field {
+  width: 100%;
+
+  .mat-mdc-form-field-infix {
+    min-width: 0;
+    width: auto;
+  }
 }

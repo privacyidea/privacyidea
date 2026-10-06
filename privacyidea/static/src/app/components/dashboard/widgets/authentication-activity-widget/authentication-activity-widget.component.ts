@@ -51,6 +51,7 @@ import { PolicyAction } from "@services/auth/policy-actions";
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { toFilterDisplay } from "@utils/date-format.utils";
 import { Observable, switchMap } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 const LOG_READ: PolicyAction = "authentication_log_read";
 
@@ -90,6 +91,7 @@ export interface ActivitySummary {
   selector: "app-authentication-activity-widget",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     InfoHintComponent,
     MatButtonToggleModule,
     MatIcon,

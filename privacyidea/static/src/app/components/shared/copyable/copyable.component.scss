@@ -1,0 +1,14 @@
+// Placed in a flex container (as the token and container tables wrap their cell content), the host would keep its
+// content's width - a truncating value then never shrinks and is clipped by the cell instead, taking its actions with it.
+:host {
+  min-width: 0;
+}
+
+// The value's actions (a projected filter button, then the copy button) as one group: their 24px targets touch, so the
+// spacing to the value is this group's margin alone, whichever action comes first.
+.copyable-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  margin-left: 8px;
+}

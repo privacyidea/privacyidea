@@ -84,6 +84,8 @@
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="Periodic tasks"
+        i18n-aria-label="@@table.periodicTasks"
         [dataSource]="periodicTasksDataSource()"
         class="periodic-task-table"
         mat-table
@@ -235,6 +237,8 @@
             [ngClass]="'col-width-' + columnWidths['active']"
             mat-cell>
             <mat-slide-toggle
+              aria-label="Toggle Active Status"
+              i18n-aria-label="@@common.toggleActiveStatus"
               i18n-matTooltip="@@common.toggleActiveStatus"
               matTooltip="Toggle Active Status"
               [checked]="task.active"

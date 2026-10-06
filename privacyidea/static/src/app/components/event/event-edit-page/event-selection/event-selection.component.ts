@@ -19,7 +19,6 @@
 
 import { Component, computed, effect, inject, input, linkedSignal, output, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { MatIconButton } from "@angular/material/button";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
@@ -28,7 +27,7 @@ import { EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-selection",
-  imports: [FormsModule, MatIconButton, MatChipsModule, MatExpansionModule, MatIcon, ClearableInputComponent],
+  imports: [FormsModule, MatChipsModule, MatExpansionModule, MatIcon, ClearableInputComponent],
   templateUrl: "./event-selection.component.html",
   styleUrl: "./event-selection.component.scss"
 })

@@ -63,11 +63,13 @@ import { SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gat
 import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { forkJoin, lastValueFrom } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-token-type-config",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     MatExpansionModule,
     MatButtonModule,
     MatIconModule,

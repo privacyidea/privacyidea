@@ -45,10 +45,12 @@ import { tokenTypes } from "@utils/token.utils";
 import { map } from "rxjs";
 import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 @Component({
   selector: "app-token-enrollment-wizard",
   imports: [
+    TooltipAriaLabelDirective,
     FormField,
     MatNativeDateModule,
     MatDatepickerModule,

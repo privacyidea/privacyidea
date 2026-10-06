@@ -79,6 +79,7 @@
         <ng-container [matColumnDef]="column.key">
           <th
             *matHeaderCellDef
+            [ngClass]="'col-width-' + columnWidths[column.key]"
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
@@ -86,8 +87,7 @@
                 @if (machineService.offlineApiFilterKeys.includes(column.key)) {
                   <button
                     (click)="onKeywordClick(column.key)"
-                    aria-label="Filter by {{ column.label }}"
-                    i18n-aria-label="@@common.filterBy"
+                    [attr.aria-label]="column.label | filterByLabel"
                     class="filter-button"
                     mat-icon-button
                     type="button">
@@ -98,8 +98,7 @@
                 }
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                  aria-label="Sort by {{ column.label }}"
-                  i18n-aria-label="@@common.sortBy"
+                  [attr.aria-label]="column.label | sortByLabel"
                   class="sort-button"
                   mat-icon-button
                   type="button">
@@ -110,31 +109,33 @@
           </th>
           <td
             *matCellDef="let element"
+            [ngClass]="'col-width-' + columnWidths[column.key]"
             mat-cell>
-            <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+            <div
+              appScrollFocusable
+              [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
-                  <app-copyable [copyText]="element.serial">
-                    <a
-                      (click)="contentService.tokenSelected(element.serial)"
-                      (keydown.enter)="contentService.tokenSelected(element.serial)"
-                      (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
-                      [attr.aria-label]="linkLabel(column.label)"
-                      role="button"
-                      tabindex="0">
-                      {{ element[column.key] }}
-                    </a>
-                    <app-filter-value-button
-                      class="margin-left-8"
-                      column="serial"
-                      [value]="element.serial"
-                      (filterValue)="addFilterValue('serial', $event)" />
-                  </app-copyable>
+                  @if (element.serial) {
+                    <app-copyable [copyText]="element.serial">
+                      <a
+                        (click)="contentService.tokenSelected(element.serial)"
+                        (keydown.enter)="contentService.tokenSelected(element.serial)"
+                        (keydown.space)="$event.preventDefault(); contentService.tokenSelected(element.serial)"
+                        role="button"
+                        tabindex="0">
+                        {{ element[column.key] }}
+                      </a>
+                      <app-filter-value-button
+                        column="serial"
+                        [value]="element.serial"
+                        (filterValue)="addFilterValue('serial', $event)" />
+                    </app-copyable>
+                  }
                 }
                 @default {
-                  @if (tableUtilsService.isLink(column.key)) {
+                  @if (tableUtilsService.isLink(column.key) && element[column.key]) {
                     <a
-                      [attr.aria-label]="linkLabel(column.label)"
                       href="#">
                       {{ element[column.key] }}
                     </a>

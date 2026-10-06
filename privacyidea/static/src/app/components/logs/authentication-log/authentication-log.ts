@@ -73,6 +73,7 @@ import { PaginatorCompactRangeDirective } from "@components/shared/directives/pa
 import { PaginatorPageSizeTooltipDirective } from "@components/shared/directives/paginator-page-size-tooltip.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
 import { TruncationTooltipDirective } from "@components/shared/directives/truncation-tooltip.directive";
+import { BreakableCodeComponent } from "@components/shared/breakable-code/breakable-code.component";
 import { MultiSelectFilterComponent } from "@components/shared/multi-select-filter/multi-select-filter.component";
 import { MultiSelectFilterOption } from "@components/shared/multi-select-filter/multi-select-filter-option";
 import { MultiSelectMenuComponent } from "@components/shared/multi-select-filter/multi-select-menu/multi-select-menu.component";
@@ -93,6 +94,8 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { toFilterDisplay } from "@utils/date-format.utils";
 import { USER_ROLE_CONFIG, UserRoleBadge, userRoleBadge as roleBadgeFor } from "../user-roles";
+import { FilterByLabelPipe, SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // CSS highlight class per event outcome; outcome values come from the backend's AuthEventOutcome (GET
 // /authenticationlog/eventtypes), and this file only maps each one to a color.
@@ -279,6 +282,9 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
 @Component({
   selector: "app-authentication-log",
   imports: [
+    TooltipAriaLabelDirective,
+    FilterByLabelPipe,
+    SortByLabelPipe,
     InfoHintComponent,
     MatSuffix,
     TableStateComponent,
@@ -308,6 +314,7 @@ const TRUNCATED_COLUMN_CLASSES: Record<string, string> = {
     ScrollToTopDirective,
     ScrollEdgesDirective,
     TruncationTooltipDirective,
+    BreakableCodeComponent,
     DatePipe,
     ClearableInputComponent,
     ConditionalAccessCell,

@@ -82,11 +82,13 @@
           <ng-container [matColumnDef]="column.key">
             <th
               *matHeaderCellDef
+              [ngClass]="'col-width-' + columnWidths[column.key]"
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
                 <div class="flex">
                   <button
+                    [attr.aria-label]="column.label | sortByLabel"
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                     class="sort-button"
                     mat-icon-button
@@ -98,8 +100,11 @@
             </th>
             <td
               *matCellDef="let element"
+              [ngClass]="'col-width-' + columnWidths[column.key]"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
                     <app-copyable [copyText]="element.status !== 'missing' ? element.token.serial : ''">
@@ -110,7 +115,6 @@
                         <a
                           (click)="contentService.tokenSelected(element.token.serial)"
                           (keydown.enter)="contentService.tokenSelected(element.token.serial)"
-                          [attr.aria-label]="linkLabel(column.label)"
                           class="cursor-pointer"
                           role="button"
                           tabindex="0">
@@ -145,7 +149,6 @@
                             (keydown.enter)="
                               contentService.userSelected(element.token[column.key], element.token['user_realm'])
                             "
-                            [attr.aria-label]="linkLabel(column.label)"
                             class="cursor-pointer"
                             role="button"
                             tabindex="0">
@@ -166,9 +169,8 @@
                   }
                   @default {
                     @if (element.status !== "missing") {
-                      @if (tableUtilsService.isLink(column.key)) {
+                      @if (tableUtilsService.isLink(column.key) && element.token[column.key]) {
                         <a
-                          [attr.aria-label]="linkLabel(column.label)"
                           href="#">
                           {{ element.token[column.key] }}
                         </a>
@@ -188,6 +190,7 @@
         <ng-container matColumnDef="actions">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             mat-header-cell>
             <div
               class="flex just-center"
@@ -197,6 +200,7 @@
           </th>
           <td
             *matCellDef="let element"
+            class="col-width-s"
             mat-cell>
             <div class="flex-row just-center">
               @if (element.status !== "missing") {

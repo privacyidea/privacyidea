@@ -165,6 +165,11 @@
     --mat-button-text-label-text-color: var(--mat-sys-primary-base-active);
   }
 
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: -2px;
+  }
+
   // A badge on the icon (see .icon-badge in icon.scss) keeps its own, smaller size.
   .material-icons:not(.icon-badge-overlay),
   .mat-icon:not(.icon-badge-overlay),

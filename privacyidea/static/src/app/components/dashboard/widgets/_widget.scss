@@ -47,6 +47,18 @@
   tr:not(:last-child) td {
     border-bottom: 1px solid var(--mat-sys-outline-variant);
   }
+
+  // A link in a row is a 24px-high target (WCAG 2.5.8). The row's own padding is given up for it, so the row stays
+  // about as tall as a padded one and the targets of adjacent rows sit end to end instead of overlapping.
+  td:has(a) {
+    padding-block: 0;
+  }
+
+  a {
+    display: inline-block;
+    min-height: 24px;
+    line-height: 24px;
+  }
 }
 
 // The dense time-range preset group a chart widget puts beside its brush, so the widgets offering one look alike:

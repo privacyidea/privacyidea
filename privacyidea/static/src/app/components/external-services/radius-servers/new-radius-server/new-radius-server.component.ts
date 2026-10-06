@@ -40,6 +40,7 @@ import {
   RadiusServerService,
   RadiusServerServiceInterface
 } from "@services/radius-server/radius-server.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 interface RadiusFormModel {
   identifier: string;
@@ -73,6 +74,7 @@ const EMPTY_RADIUS_FORM: RadiusFormModel = {
   selector: "app-new-radius-server",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     FormField,
     MatFormFieldModule,
     MatInputModule,

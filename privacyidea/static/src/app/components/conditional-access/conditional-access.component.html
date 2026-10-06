@@ -139,6 +139,8 @@
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="Conditional access policies"
+        i18n-aria-label="@@table.conditionalAccess"
         [dataSource]="reorderMode() ? reorderDraft() : policyDataSource()"
         class="conditional-access-table"
         mat-table
@@ -152,6 +154,8 @@
             class="ca-checkbox-cell"
             mat-header-cell>
             <mat-checkbox
+              aria-label="Select all rows"
+              i18n-aria-label="@@common.selectAllRows"
               (change)="$event ? toggleAllRows() : null"
               [checked]="isAllSelected()"
               [disabled]="totalLength() === 0 || reorderMode()"
@@ -162,6 +166,8 @@
             class="ca-checkbox-cell"
             mat-cell>
             <mat-checkbox
+              aria-label="Select row"
+              i18n-aria-label="@@common.selectRow"
               (change)="$event ? toggleRow(policy) : null"
               (click)="$event.stopPropagation()"
               [checked]="isSelected(policy)"
@@ -172,6 +178,7 @@
         <ng-container matColumnDef="name">
           <th
             *matHeaderCellDef
+            class="col-width-l"
             i18n="@@common.name"
             mat-header-cell
             mat-sort-header
@@ -179,6 +186,7 @@
           >
           <td
             *matCellDef="let policy"
+            class="col-width-l"
             mat-cell>
             @if (reorderMode()) {
               <span class="flex ali-center">{{ policy.name }}</span>
@@ -213,7 +221,7 @@
         <ng-container matColumnDef="priority">
           <th
             *matHeaderCellDef
-            class="ca-priority-column"
+            class="col-width-s"
             i18n="@@policy.priority"
             mat-header-cell
             mat-sort-header
@@ -221,7 +229,7 @@
           >
           <td
             *matCellDef="let policy"
-            class="ca-priority-column"
+            class="col-width-s"
             mat-cell>
             <span class="ca-priority-cell">
               <span class="ca-priority-value">{{ reorderMode() ? draftPriority(policy) : policy.priority }}</span>
@@ -254,7 +262,7 @@
         <ng-container matColumnDef="time_window_seconds">
           <th
             *matHeaderCellDef
-            class="ca-time-window-column"
+            class="col-width-m"
             i18n="@@conditionalAccess.timeWindowS"
             mat-header-cell
             mat-sort-header>
@@ -262,7 +270,7 @@
           </th>
           <td
             *matCellDef="let policy"
-            class="ca-time-window-column"
+            class="col-width-m"
             mat-cell>
             {{ policy.time_window_seconds }}
           </td>
@@ -271,12 +279,14 @@
         <ng-container matColumnDef="counter_types_to_track">
           <th
             *matHeaderCellDef
+            class="col-width-xl"
             i18n="@@conditionalAccess.trackedEventTypes"
             mat-header-cell>
             Tracked Event Types
           </th>
           <td
             *matCellDef="let policy"
+            class="col-width-xl"
             mat-cell>
             {{ policy.counter_types_to_track.join(", ") }}
           </td>
@@ -285,14 +295,14 @@
         <ng-container matColumnDef="stages">
           <th
             *matHeaderCellDef
-            class="text-center"
+            class="col-width-s text-center"
             i18n="@@conditionalAccess.stages"
             mat-header-cell>
             Stages
           </th>
           <td
             *matCellDef="let policy"
-            class="text-center"
+            class="col-width-s text-center"
             mat-cell>
             {{ policy.stages.length }}
           </td>
@@ -301,12 +311,14 @@
         <ng-container matColumnDef="threshold">
           <th
             *matHeaderCellDef
+            class="col-width-s"
             i18n="@@conditionalAccess.threshold"
             mat-header-cell>
             Threshold
           </th>
           <td
             *matCellDef="let policy"
+            class="col-width-s"
             mat-cell>
             {{ thresholdDisplay(policy) }}
           </td>
@@ -315,12 +327,14 @@
         <ng-container matColumnDef="actions">
           <th
             *matHeaderCellDef
+            class="col-width-xl"
             i18n="@@common.actions"
             mat-header-cell
             >Actions</th
           >
           <td
             *matCellDef="let policy"
+            class="col-width-xl"
             mat-cell>
             {{ actionsDisplay(policy) }}
           </td>
@@ -329,7 +343,7 @@
         <ng-container matColumnDef="enabled">
           <th
             *matHeaderCellDef
-            class="ca-toggle-column"
+            class="col-width-s"
             i18n="@@conditionalAccess.enabled3"
             mat-header-cell
             mat-sort-header>
@@ -337,13 +351,15 @@
           </th>
           <td
             *matCellDef="let policy"
-            class="ca-toggle-column"
+            class="col-width-s"
             mat-cell>
             <mat-slide-toggle
               (click)="onToggleEnabled(policy); $event.stopPropagation()"
               [checked]="policy.enabled"
               [disableRipple]="true"
               [disabled]="!authService.actionAllowed('conditional_access_policy_write') || reorderMode()"
+              aria-label="Toggle Enabled"
+              i18n-aria-label="@@conditionalAccess.toggleEnabled"
               i18n-matTooltip="@@conditionalAccess.toggleEnabled"
               matTooltip="Toggle Enabled" />
           </td>
@@ -352,14 +368,14 @@
         <ng-container matColumnDef="dry_run">
           <th
             *matHeaderCellDef
-            class="ca-toggle-column"
+            class="col-width-s"
             i18n="@@conditionalAccess.dryRun2"
             mat-header-cell>
             Dry Run
           </th>
           <td
             *matCellDef="let policy"
-            class="ca-toggle-column"
+            class="col-width-s"
             mat-cell>
             <mat-slide-toggle
               #dryRunToggle="matSlideToggle"
@@ -367,6 +383,8 @@
               [checked]="policy.dry_run"
               [disableRipple]="true"
               [disabled]="!authService.actionAllowed('conditional_access_policy_write') || reorderMode()"
+              aria-label="Toggle Dry Run (evaluate but do not enforce)"
+              i18n-aria-label="@@conditionalAccess.toggleDryRunEvaluate"
               i18n-matTooltip="@@conditionalAccess.toggleDryRunEvaluate"
               matTooltip="Toggle Dry Run (evaluate but do not enforce)" />
           </td>

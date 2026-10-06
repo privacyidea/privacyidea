@@ -36,6 +36,7 @@ import {
   SubscriptionState,
   SubscriptionStatus
 } from "@services/subscription/subscription.service";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 /**
  * A row of the overview: the server, a section header, or one component. Section
@@ -88,6 +89,7 @@ function sectionLabel(section: string): string {
   selector: "app-subscriptions-widget",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     WidgetStateComponent,
     MatTooltipModule,
     MatIcon,

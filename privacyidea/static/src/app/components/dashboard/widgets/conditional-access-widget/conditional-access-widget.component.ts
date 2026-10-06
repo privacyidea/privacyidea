@@ -60,6 +60,7 @@ import {
 import { DashboardDataRef, DashboardDataStore } from "@services/dashboard/dashboard-data-store.service";
 import { formatLocalDateTime } from "@utils/date-format.utils";
 import { forkJoin, Observable, of, switchMap } from "rxjs";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // Cap on how many lock records the widget fetches for the list; beyond it the widget defers to the locked-users page,
 // as its footer states.
@@ -153,6 +154,7 @@ function isExpired(entry: BlocklistEntry): boolean {
   selector: "app-conditional-access-widget",
   standalone: true,
   imports: [
+    TooltipAriaLabelDirective,
     InfoHintComponent,
     MatIcon,
     MatButtonToggleModule,

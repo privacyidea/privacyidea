@@ -79,6 +79,8 @@
       appScrollEdges
       class="table-scroll-region">
       <table
+        aria-label="Token groups"
+        i18n-aria-label="@@table.tokengroups"
         [dataSource]="tokengroupDataSource()"
         class="tokengroups-table"
         mat-table
@@ -89,6 +91,8 @@
             class="table-checkbox"
             mat-header-cell>
             <mat-checkbox
+              aria-label="Select all rows"
+              i18n-aria-label="@@common.selectAllRows"
               (change)="$event.checked ? selector.selectAllRows() : selector.deselectAllRows()"
               [checked]="selector.allRowsSelected()"
               [disabled]="!selector.hasVisibleRows()"
@@ -99,6 +103,8 @@
             class="table-checkbox"
             mat-cell>
             <mat-checkbox
+              aria-label="Select row"
+              i18n-aria-label="@@common.selectRow"
               (change)="selector.setRowSelected(row, $event.checked)"
               (click)="$event.stopPropagation()"
               [checked]="selector.isRowSelected(row)" />

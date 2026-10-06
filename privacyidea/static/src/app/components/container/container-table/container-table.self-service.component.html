@@ -76,8 +76,7 @@
                 <div class="flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    aria-label="Sort by {{ column.label }}"
-                    i18n-aria-label="@@common.sortBy"
+                    [attr.aria-label]="column.label | sortByLabel"
                     class="sort-button"
                     mat-icon-button
                     type="button">
@@ -90,25 +89,29 @@
               *matCellDef="let element"
               [ngClass]="'col-width-' + column.width"
               mat-cell>
-              <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+              <div
+                appScrollFocusable
+                [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    <app-copyable [copyText]="element.serial">
-                      <a
-                        (click)="contentService.navigateContainerDetails(element.serial)"
-                        (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
-                        [attr.aria-label]="linkLabel(column.label)"
-                        role="button"
-                        tabindex="0">
-                        {{ element[column.key] }}
-                      </a>
-                    </app-copyable>
+                    @if (element.serial) {
+                      <app-copyable [copyText]="element.serial">
+                        <a
+                          (click)="contentService.navigateContainerDetails(element.serial)"
+                          (keydown.enter)="contentService.navigateContainerDetails(element.serial)"
+                          [appTruncationTooltip]="element.serial"
+                          class="cell-truncate"
+                          role="button"
+                          tabindex="0">
+                          {{ element[column.key] }}
+                        </a>
+                      </app-copyable>
+                    }
                   }
                   @case ("realms") {
                     <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
                       @for (realm of element[column.key]; track realm; let idx = $index) {
                         <a
-                          [attr.aria-label]="linkLabel(column.label)"
                           href="#">
                           {{ realm }}
                         </a>
@@ -136,9 +139,8 @@
                     </button>
                   }
                   @default {
-                    @if (tableUtilsService.isLink(column.key)) {
+                    @if (tableUtilsService.isLink(column.key) && element[column.key]) {
                       <a
-                        [attr.aria-label]="linkLabel(column.label)"
                         href="#">
                         {{ element[column.key] }}
                       </a>

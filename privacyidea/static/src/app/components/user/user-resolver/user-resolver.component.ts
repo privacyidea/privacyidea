@@ -45,6 +45,7 @@ import { Resolver, ResolverService } from "@services/resolver/resolver.service";
 import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { RefocusAfterReloadDirective } from "@components/shared/directives/refocus-after-reload.directive";
 import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges.directive";
+import { TooltipAriaLabelDirective } from "@components/shared/directives/tooltip-aria-label.directive";
 
 // width: the col-width-* tier (see --column-width-* in styles.scss) each column's cell is fixed
 // to, so page-table-state-size's min-width (see table-width() in table.scss) can be sized from
@@ -59,6 +60,7 @@ const columnKeysMap = [
   standalone: true,
   imports: [
     TableActionsTriggerComponent,
+    TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
     NgClass,
     MatTableModule,

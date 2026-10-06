@@ -17,17 +17,20 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-@if (template().container_type) {
-  <mat-chip-listbox [multiple]="false">
+@if (template().container_type && availableTokenTypes().length) {
+  <mat-chip-set>
     @for (type of availableTokenTypes(); track type) {
-      <mat-chip
-        class="clickable-chip"
-        (click)="onAddToken(type)">
-        {{ _toTitleCase(type) }}
-        <mat-icon matChipTrailingIcon>add</mat-icon>
+      <mat-chip class="clickable-chip">
+        <button
+          class="chip-action"
+          type="button"
+          (click)="onAddToken(type)">
+          {{ _toTitleCase(type) }}
+          <mat-icon>add</mat-icon>
+        </button>
       </mat-chip>
     }
-  </mat-chip-listbox>
+  </mat-chip-set>
 }
 <div class="added-tokens-list">
   @for (token of tokens(); track $index) {
