@@ -11,18 +11,27 @@
     "light": [],
     "dark": []
   },
+  "api clients (empty)": {
+    "light": [],
+    "dark": []
+  },
   "api clients (error)": {
     "light": [],
     "dark": []
   },
   "api clients (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "api clients (loading)": {
     "light": [],
     "dark": []
   },
   "audit": {
+    "light": [],
+    "dark": []
+  },
+  "audit (empty)": {
     "light": [],
     "dark": []
   },
@@ -34,7 +43,11 @@
     "light": [],
     "dark": []
   },
-  "authentication log": {
+  "authentication log (empty)": {
+    "light": [],
+    "dark": []
+  },
+  "authentication log (error)": {
     "light": [],
     "dark": []
   },
@@ -43,6 +56,10 @@
     "dark": []
   },
   "blocklist": {
+    "light": [],
+    "dark": []
+  },
+  "blocklist (empty)": {
     "light": [],
     "dark": []
   },
@@ -58,18 +75,27 @@
     "light": [],
     "dark": []
   },
+  "ca connectors (empty)": {
+    "light": [],
+    "dark": []
+  },
   "ca connectors (error)": {
     "light": [],
     "dark": []
   },
   "ca connectors (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "ca connectors (loading)": {
     "light": [],
     "dark": []
   },
   "challenges": {
+    "light": [],
+    "dark": []
+  },
+  "challenges (empty)": {
     "light": [],
     "dark": []
   },
@@ -85,6 +111,10 @@
     "light": [],
     "dark": []
   },
+  "clients (empty)": {
+    "light": [],
+    "dark": []
+  },
   "clients (error)": {
     "light": [],
     "dark": []
@@ -97,16 +127,20 @@
     "light": [],
     "dark": []
   },
-  "conditional access (error)": {
+  "conditional access (empty)": {
     "light": [],
     "dark": []
   },
-  "conditional access (filtered)": {
+  "conditional access (error)": {
+    "dark": [],
     "light": []
   },
-  "conditional access (loading)": {
-    "light": [],
+  "conditional access (filtered)": {
     "dark": []
+  },
+  "conditional access (loading)": {
+    "dark": [],
+    "light": []
   },
   "conditional access create": {
     "light": [],
@@ -124,19 +158,23 @@
     "light": [],
     "dark": []
   },
-  "container more filter (menu)": {
-    "light": [],
-    "dark": []
-  },
   "container template create": {
     "light": [],
-    "dark": []
+    "dark": [
+      "color-contrast"
+    ]
   },
   "container template details": {
     "light": [],
-    "dark": []
+    "dark": [
+      "color-contrast"
+    ]
   },
   "container templates": {
+    "light": [],
+    "dark": []
+  },
+  "container templates (empty)": {
     "light": [],
     "dark": []
   },
@@ -152,6 +190,10 @@
     "light": [],
     "dark": []
   },
+  "containers (empty)": {
+    "light": [],
+    "dark": []
+  },
   "containers (error)": {
     "light": [],
     "dark": []
@@ -161,12 +203,8 @@
     "dark": []
   },
   "dashboard": {
-    "light": [
-      "target-size"
-    ],
-    "dark": [
-      "target-size"
-    ]
+    "light": [],
+    "dark": []
   },
   "delete policies (dialog)": {
     "light": [],
@@ -184,11 +222,16 @@
     "light": [],
     "dark": []
   },
+  "events (empty)": {
+    "light": [],
+    "dark": []
+  },
   "events (error)": {
     "light": [],
     "dark": []
   },
   "events (filtered)": {
+    "dark": [],
     "light": []
   },
   "events (loading)": {
@@ -196,6 +239,10 @@
     "dark": []
   },
   "locked users": {
+    "light": [],
+    "dark": []
+  },
+  "locked users (empty)": {
     "light": [],
     "dark": []
   },
@@ -223,12 +270,17 @@
     "light": [],
     "dark": []
   },
+  "machine resolvers (empty)": {
+    "light": [],
+    "dark": []
+  },
   "machine resolvers (error)": {
     "light": [],
     "dark": []
   },
   "machine resolvers (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "machine resolvers (loading)": {
     "light": [],
@@ -238,12 +290,17 @@
     "light": [],
     "dark": []
   },
+  "machines (empty)": {
+    "light": [],
+    "dark": []
+  },
   "machines (error)": {
     "light": [],
     "dark": []
   },
   "machines (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "machines (loading)": {
     "light": [],
@@ -254,8 +311,8 @@
     "dark": []
   },
   "periodic task create": {
-    "light": [],
-    "dark": []
+    "dark": [],
+    "light": []
   },
   "periodic task details": {
     "light": [],
@@ -265,12 +322,17 @@
     "light": [],
     "dark": []
   },
+  "periodic tasks (empty)": {
+    "light": [],
+    "dark": []
+  },
   "periodic tasks (error)": {
     "light": [],
     "dark": []
   },
   "periodic tasks (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "periodic tasks (loading)": {
     "light": [],
@@ -280,24 +342,33 @@
     "light": [],
     "dark": []
   },
-  "policies (error)": {
-    "light": [],
-    "dark": []
-  },
-  "policies (filtered)": {
+  "policies (empty)": {
+    "dark": [],
     "light": []
   },
-  "policies (loading)": {
+  "policies (error)": {
+    "dark": [],
+    "light": []
+  },
+  "policies (filtered)": {
     "light": [],
     "dark": []
+  },
+  "policies (loading)": {
+    "dark": [],
+    "light": []
   },
   "policy create": {
     "light": [],
-    "dark": []
+    "dark": [
+      "color-contrast"
+    ]
   },
   "policy details": {
     "light": [],
-    "dark": []
+    "dark": [
+      "color-contrast"
+    ]
   },
   "policy scope filter (menu)": {
     "light": [],
@@ -311,12 +382,17 @@
     "light": [],
     "dark": []
   },
+  "privacyidea servers (empty)": {
+    "light": [],
+    "dark": []
+  },
   "privacyidea servers (error)": {
     "light": [],
     "dark": []
   },
   "privacyidea servers (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "privacyidea servers (loading)": {
     "light": [],
@@ -334,12 +410,17 @@
     "light": [],
     "dark": []
   },
+  "radius servers (empty)": {
+    "light": [],
+    "dark": []
+  },
   "radius servers (error)": {
     "light": [],
     "dark": []
   },
   "radius servers (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "radius servers (loading)": {
     "light": [],
@@ -350,7 +431,8 @@
     "dark": []
   },
   "realms (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "resolver create": {
     "light": [],
@@ -364,12 +446,17 @@
     "light": [],
     "dark": []
   },
+  "resolvers (empty)": {
+    "dark": [],
+    "light": []
+  },
   "resolvers (error)": {
-    "light": [],
-    "dark": []
+    "dark": [],
+    "light": []
   },
   "resolvers (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "resolvers (loading)": {
     "light": [],
@@ -379,12 +466,17 @@
     "light": [],
     "dark": []
   },
+  "service ids (empty)": {
+    "light": [],
+    "dark": []
+  },
   "service ids (error)": {
     "light": [],
     "dark": []
   },
   "service ids (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "service ids (loading)": {
     "light": [],
@@ -402,20 +494,25 @@
     "light": [],
     "dark": []
   },
+  "sms gateways (empty)": {
+    "light": [],
+    "dark": []
+  },
   "sms gateways (error)": {
     "light": [],
     "dark": []
   },
   "sms gateways (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "sms gateways (loading)": {
     "light": [],
     "dark": []
   },
   "smtp create": {
-    "light": [],
-    "dark": []
+    "dark": [],
+    "light": []
   },
   "smtp server details": {
     "light": [],
@@ -425,28 +522,32 @@
     "light": [],
     "dark": []
   },
+  "smtp servers (empty)": {
+    "light": [],
+    "dark": []
+  },
   "smtp servers (error)": {
     "light": [],
     "dark": []
   },
   "smtp servers (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "smtp servers (loading)": {
     "light": [],
     "dark": []
   },
   "subscription": {
-    "light": [],
-    "dark": []
+    "dark": [],
+    "light": []
   },
   "system config": {
     "light": [],
     "dark": []
   },
   "token actions (menu)": {
-    "light": [],
-    "dark": []
+    "light": []
   },
   "token applications": {
     "light": [],
@@ -457,8 +558,12 @@
     "dark": []
   },
   "token enrollment": {
-    "light": [],
-    "dark": []
+    "light": [
+      "aria-input-field-name"
+    ],
+    "dark": [
+      "aria-input-field-name"
+    ]
   },
   "token get serial": {
     "light": [],
@@ -469,14 +574,17 @@
     "dark": []
   },
   "token more filter (menu)": {
-    "light": [],
     "dark": []
   },
   "token type config": {
+    "dark": [],
+    "light": []
+  },
+  "tokengroups": {
     "light": [],
     "dark": []
   },
-  "tokengroups": {
+  "tokengroups (empty)": {
     "light": [],
     "dark": []
   },
@@ -485,13 +593,18 @@
     "dark": []
   },
   "tokengroups (filtered)": {
-    "light": []
+    "light": [],
+    "dark": []
   },
   "tokengroups (loading)": {
     "light": [],
     "dark": []
   },
   "tokens": {
+    "light": [],
+    "dark": []
+  },
+  "tokens (empty)": {
     "light": [],
     "dark": []
   },
@@ -519,12 +632,16 @@
     "light": [],
     "dark": []
   },
+  "users (empty)": {
+    "light": [],
+    "dark": []
+  },
   "users (error)": {
     "light": [],
     "dark": []
   },
   "users (filtered)": {
-    "light": []
+    "dark": []
   },
   "users (loading)": {
     "light": [],
