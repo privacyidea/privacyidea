@@ -983,7 +983,7 @@
         <target>ການດຳເນີນການ (Actions)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">333</context>
+          <context context-type="linenumber">326</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/machines/machine-details/machine-details.component.html</context>
@@ -1079,11 +1079,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">118</context>
+          <context context-type="linenumber">111</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">480</context>
+          <context context-type="linenumber">473</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/machines/machine-details/machine-details.component.html</context>
@@ -1535,7 +1535,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">186</context>
+          <context context-type="linenumber">179</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
@@ -2003,11 +2003,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">101</context>
+          <context context-type="linenumber">94</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">465</context>
+          <context context-type="linenumber">458</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/configuration/periodic-task/periodic-task-edit/periodic-task-edit.component.html</context>
@@ -10277,7 +10277,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">228</context>
+          <context context-type="linenumber">221</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/policies/policies-table/policies-table.component.ts</context>
@@ -10917,7 +10917,7 @@
         <target>ລະຖິ້ມ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">248</context>
+          <context context-type="linenumber">241</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component.ts</context>
@@ -14601,11 +14601,11 @@
         <target>ເປີດ/ປິດ ການໃຊ້ງານ</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">85</context>
+          <context context-type="linenumber">78</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">451</context>
+          <context context-type="linenumber">444</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table-actions/token-table-actions.component.ts</context>
@@ -20363,11 +20363,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">361</context>
+          <context context-type="linenumber">354</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">364</context>
+          <context context-type="linenumber">357</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.enabled2" datatype="html">
@@ -20387,11 +20387,11 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">386</context>
+          <context context-type="linenumber">379</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">389</context>
+          <context context-type="linenumber">382</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.dryRun2" datatype="html">
@@ -21703,15 +21703,15 @@
         <target state="new">New Conditional Access</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">77</context>
+          <context context-type="linenumber">70</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">430</context>
+          <context context-type="linenumber">423</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">444</context>
+          <context context-type="linenumber">437</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/navigation/navigation.component.html</context>
@@ -21723,11 +21723,11 @@
         <target state="new">Toggle Dry Run</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">93</context>
+          <context context-type="linenumber">86</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">458</context>
+          <context context-type="linenumber">451</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.saveOrder" datatype="html">
@@ -21735,11 +21735,11 @@
         <target state="new">Save Order</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">110</context>
+          <context context-type="linenumber">103</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">473</context>
+          <context context-type="linenumber">466</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.reorderPriorities" datatype="html">
@@ -21747,11 +21747,11 @@
         <target state="new">Reorder Priorities</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">130</context>
+          <context context-type="linenumber">123</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">488</context>
+          <context context-type="linenumber">481</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.timeWindowS" datatype="html">
@@ -21759,7 +21759,7 @@
         <target state="new">Time Window (s)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">269</context>
+          <context context-type="linenumber">262</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.trackedEventTypes" datatype="html">
@@ -21767,7 +21767,7 @@
         <target state="new">Tracked Event Types</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">285</context>
+          <context context-type="linenumber">278</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.stages" datatype="html">
@@ -21775,7 +21775,7 @@
         <target state="new">Stages</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">301</context>
+          <context context-type="linenumber">294</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.threshold" datatype="html">
@@ -21783,7 +21783,7 @@
         <target state="new">Threshold</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">317</context>
+          <context context-type="linenumber">310</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.enabled3" datatype="html">
@@ -21791,7 +21791,7 @@
         <target state="new">Enabled</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">350</context>
+          <context context-type="linenumber">343</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.dryRun2" datatype="html">
@@ -21799,7 +21799,7 @@
         <target state="new">Dry Run</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">374</context>
+          <context context-type="linenumber">367</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.noConditionalAccessPolicies" datatype="html">
@@ -21807,7 +21807,7 @@
         <target state="new">No conditional-access policies yet</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">416</context>
+          <context context-type="linenumber">409</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.createConditionalAccessPolicy2" datatype="html">
@@ -21815,7 +21815,7 @@
         <target state="new">Create a conditional-access policy to see it here.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">417</context>
+          <context context-type="linenumber">410</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.movePoliciesArrowsPriority" datatype="html">
@@ -21823,7 +21823,7 @@
         <target state="new">Move policies with the arrows in the Priority column to change the order they are evaluated in. Priority only decides which DENY policy is named when a request is refused; lock, block and email actions all run regardless of it.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">123</context>
+          <context context-type="linenumber">118</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.aboutRearrangingPriorities" datatype="html">
@@ -21831,7 +21831,7 @@
         <target state="new">About rearranging priorities</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">124</context>
+          <context context-type="linenumber">119</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.discardNewOrder" datatype="html">
@@ -21839,7 +21839,7 @@
         <target state="new">Discard the new order?</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">246</context>
+          <context context-type="linenumber">239</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.rearrangedEvaluationOrderHas" datatype="html">
@@ -21847,7 +21847,7 @@
         <target state="new">The rearranged evaluation order has not been saved. Discard the changes?</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">247</context>
+          <context context-type="linenumber">240</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.moveUpSoEvaluated" datatype="html">
@@ -21855,7 +21855,7 @@
         <target state="new">Move <x id="PH" equiv-text="policy.name"/> up, so it is evaluated earlier</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">303</context>
+          <context context-type="linenumber">296</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.moveDownSoEvaluated" datatype="html">
@@ -21863,7 +21863,7 @@
         <target state="new">Move <x id="PH" equiv-text="policy.name"/> down, so it is evaluated later</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">307</context>
+          <context context-type="linenumber">300</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.movedPosition" datatype="html">
@@ -21871,7 +21871,7 @@
         <target state="new"><x id="PH" equiv-text="policy.name"/> moved to position <x id="PH_1" equiv-text="position"/> of <x id="PH_2" equiv-text="total"/></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">327</context>
+          <context context-type="linenumber">320</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.policyHasConditionsNo" datatype="html">
@@ -21879,7 +21879,7 @@
         <target state="new">This policy has conditions that are no longer valid.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">374</context>
+          <context context-type="linenumber">367</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.deActivateSelectedPolicies" datatype="html">
@@ -21887,7 +21887,7 @@
         <target state="new">(De)activate Selected Policies</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">430</context>
+          <context context-type="linenumber">423</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.followingPoliciesWillToggled" datatype="html">
@@ -21895,7 +21895,7 @@
         <target state="new">The following policies will be toggled:</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">431</context>
+          <context context-type="linenumber">424</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.enabled" datatype="html">
@@ -21903,7 +21903,7 @@
         <target state="new">enabled</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">432</context>
+          <context context-type="linenumber">425</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.disabled" datatype="html">
@@ -21911,7 +21911,7 @@
         <target state="new">disabled</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">433</context>
+          <context context-type="linenumber">426</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.toggleDryRunSelected" datatype="html">
@@ -21919,7 +21919,7 @@
         <target state="new">Toggle Dry Run For Selected Policies</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">462</context>
+          <context context-type="linenumber">455</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.dryRunModeFollowing" datatype="html">
@@ -21927,7 +21927,7 @@
         <target state="new">The dry-run mode of the following policies will be toggled:</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">463</context>
+          <context context-type="linenumber">456</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.dryRun" datatype="html">
@@ -21935,7 +21935,7 @@
         <target state="new">dry-run</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">464</context>
+          <context context-type="linenumber">457</context>
         </context-group>
       </trans-unit>
       <trans-unit id="conditionalAccess.enforce" datatype="html">
@@ -21943,7 +21943,7 @@
         <target state="new">enforce</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.ts</context>
-          <context context-type="linenumber">465</context>
+          <context context-type="linenumber">458</context>
         </context-group>
       </trans-unit>
       <trans-unit id="uiSettings.landingPage" datatype="html">
@@ -24503,7 +24503,7 @@
         <target state="new">Conditional access policies</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">142</context>
+          <context context-type="linenumber">135</context>
         </context-group>
       </trans-unit>
       <trans-unit id="common.selectAllRows" datatype="html">
@@ -24511,7 +24511,7 @@
         <target state="new">Select all rows</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">157</context>
+          <context context-type="linenumber">150</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
@@ -24567,7 +24567,7 @@
         <target state="new">Select row</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/conditional-access/conditional-access.component.html</context>
-          <context context-type="linenumber">169</context>
+          <context context-type="linenumber">162</context>
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/external-services/ca-connectors/ca-connectors.component.html</context>
