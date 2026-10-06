@@ -6,7 +6,6 @@ from base64 import b32encode
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from passlib.hash import argon2
 
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy

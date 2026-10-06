@@ -1,7 +1,6 @@
 import base64
 import json
 from contextlib import contextmanager
-from typing import Optional
 from .pkcs11mock import PKCS11Mock
 from privacyidea.lib.policy import SCOPE, PolicyAction, delete_policy, set_policy
 from privacyidea.lib.resolver import delete_resolver, save_resolver
@@ -87,10 +86,10 @@ class APIHealthcheckTestCase(MyApiTestCase):
     @ldap3mock.activate
     def test_resolversz(self):
         def check_resolvers(expected_status_code: int,
-                            expected_status: Optional[str] = None,
-                            ldap_expected_status: Optional[str] = None,
-                            sql_expected_status: Optional[str] = None,
-                            auth_token: Optional[str] = None) -> None:
+                            expected_status: str | None = None,
+                            ldap_expected_status: str | None = None,
+                            sql_expected_status: str | None = None,
+                            auth_token: str | None = None) -> None:
             headers = {'Authorization': auth_token} if auth_token is not None else {}
             with self.app.test_request_context('/healthz/resolversz', method='GET', headers=headers):
                 res = self.app.full_dispatch_request()
@@ -112,7 +111,8 @@ class APIHealthcheckTestCase(MyApiTestCase):
                 sql_resolvers = result_value.get("sqlresolver")
 
                 if ldap_expected_status is None:
-                    assert 'ldapresolver' not in result_value, "Expected missing 'ldapresolver' in result, but is present"
+                    assert 'ldapresolver' not in result_value, ("Expected missing 'ldapresolver' in result, "
+                                                                "but is present")
                 else:
                     assert ldap_resolvers is not None, "Expected 'ldapresolver' in result, but got None"
                     assert all(status == ldap_expected_status for status in ldap_resolvers.values()), (

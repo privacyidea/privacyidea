@@ -3,7 +3,7 @@ This test file tests the lib.tokens.smstoken
 """
 import logging
 
-import mock
+from unittest import mock
 import responses
 from testfixtures import log_capture
 
@@ -67,13 +67,13 @@ class SMSTokenTestCase(MyTestCase):
                     realm=self.realm1,
                     resolver=self.resolvername1)
 
-        user_str = "{0!s}".format(user)
+        user_str = f"{user!s}"
         self.assertTrue(user_str == "<root.resolver1@realm1>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "{0!r}".format(user)
+        user_repr = f"{user!r}"
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertTrue(user_repr == expected, user_repr)
 
@@ -425,7 +425,7 @@ class SMSTokenTestCase(MyTestCase):
         for pol_text, result_text in smstext_tests.items():
             # create a SMSTEXT policy:
             p = set_policy(name="smstext",
-                           action="{0!s}={1!s}".format(SMSAction.SMSTEXT, pol_text),
+                           action=f"{SMSAction.SMSTEXT!s}={pol_text!s}",
                            scope=SCOPE.AUTH)
             self.assertTrue(p > 0)
 

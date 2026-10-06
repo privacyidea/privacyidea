@@ -8,7 +8,7 @@ time. A timing assertion would say the same thing far less reliably, so this cou
 """
 from contextlib import contextmanager
 
-import mock
+from unittest import mock
 from sqlalchemy import delete, event, select
 from sqlalchemy.engine import Engine
 
@@ -122,7 +122,8 @@ class TokenListLookupTestCase(MyTestCase):
         # The owners and the containers of the page are each read with one query, not one per token
         self.assertEqual(1, count_containing(statements, "tokenowner.token_id IN"), statements)
         self.assertEqual(1, count_containing(statements, "FROM tokencontainertoken"), statements)
-        self.assertSetEqual({self.container_serial}, set(token["container_serial"] for token in result["tokens"]), result)
+        self.assertSetEqual({self.container_serial}, set(token["container_serial"] for token in result["tokens"]),
+                            result)
 
     @ldap3mock.activate
     def test_02_convert_token_objects_to_dicts_costs_one_search(self):

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-import mock
+from unittest import mock
 
 from privacyidea.lib.subscriptions import DASHBOARD_PLUGINS, GithubRelease
 from privacyidea.models import ClientApplication, Subscription, db

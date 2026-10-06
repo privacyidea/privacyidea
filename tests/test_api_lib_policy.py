@@ -503,7 +503,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # to "any_pin"
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTOASSIGN, AUTOASSIGNVALUE.NONE),
+                   action=f"{PolicyAction.AUTOASSIGN!s}={AUTOASSIGNVALUE.NONE!s}",
                    client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
@@ -554,7 +554,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         resp = jsonify(res)
 
         set_policy(name="pol2", scope=SCOPE.ENROLL,
-                  action="{0!s}={1!s}".format(PolicyAction.AUTOASSIGN, AUTOASSIGNVALUE.NONE),
+                  action=f"{PolicyAction.AUTOASSIGN!s}={AUTOASSIGNVALUE.NONE!s}",
                   client="10.0.0.0/8")
         g.policy_object = PolicyClass()
         # rejected_by_conditional_access reads true off the latest staged event's type - exactly what the real
@@ -606,7 +606,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # to "userstore"
         set_policy(name="pol2",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PolicyAction.AUTOASSIGN, AUTOASSIGNVALUE.USERSTORE),
+                   action=f"{PolicyAction.AUTOASSIGN!s}={AUTOASSIGNVALUE.USERSTORE!s}",
                    client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
@@ -1002,7 +1002,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol_qr1", scope=SCOPE.WEBUI, action=PolicyAction.SHOW_ANDROID_AUTHENTICATOR)
         set_policy(name="pol_qr2", scope=SCOPE.WEBUI, action=PolicyAction.SHOW_IOS_AUTHENTICATOR)
         set_policy(name="pol_qr3", scope=SCOPE.WEBUI,
-                   action="{0!s}=http://privacyidea.org".format(PolicyAction.SHOW_CUSTOM_AUTHENTICATOR))
+                   action=f"{PolicyAction.SHOW_CUSTOM_AUTHENTICATOR!s}=http://privacyidea.org")
 
         android_url_image = create_img(DEFAULT_ANDROID_APP_URL)
         ios_url_image = create_img(DEFAULT_IOS_APP_URL)
@@ -1024,7 +1024,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Test if the webui gets the information about the preset attribute for indexedsecret token
         set_policy(name="pol_indexed1", scope=SCOPE.WEBUI,
-                   action="indexedsecret_{0!s}=preattr".format(PIIXACTION.PRESET_ATTRIBUTE))
+                   action=f"indexedsecret_{PIIXACTION.PRESET_ATTRIBUTE!s}=preattr")
 
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
@@ -1036,7 +1036,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Test if the webui gets the information, that a normal user has force_attribute
         set_policy(name="pol_indexed_force", scope=SCOPE.USER,
-                   action="indexedsecret_{0!s}=force".format(PIIXACTION.FORCE_ATTRIBUTE))
+                   action=f"indexedsecret_{PIIXACTION.FORCE_ATTRIBUTE!s}=force")
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
@@ -1047,7 +1047,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Test if the logout_redirect URL is set
         redir_uri = 'https://redirect.to'
         set_policy(name="pol_logout_redirect", scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(PolicyAction.LOGOUT_REDIRECT, redir_uri))
+                   action=f"{PolicyAction.LOGOUT_REDIRECT!s}={redir_uri!s}")
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
@@ -1164,7 +1164,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         set_policy(name="pol_pagesize",
                    scope=SCOPE.WEBUI,
                    realm=self.realm1,
-                   action="{0!s}=177".format(PolicyAction.TOKENPAGESIZE))
+                   action=f"{PolicyAction.TOKENPAGESIZE!s}=177")
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
         jresult = new_response.json
@@ -1176,7 +1176,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
                    scope=SCOPE.WEBUI,
                    realm=self.realm1,
                    user="root",
-                   action="{0!s}=177".format(PolicyAction.TOKENPAGESIZE))
+                   action=f"{PolicyAction.TOKENPAGESIZE!s}=177")
         # This way the user "cornelius" gets the default pagesize again
         g.policy_object = PolicyClass()
         new_response = get_webui_settings(req, resp)
@@ -1513,7 +1513,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # change PIN every day. The next_pin_change will be
         set_policy(name="pol2", scope=SCOPE.ENROLL,
-                   action="{0!s}=1d".format(PolicyAction.CHANGE_PIN_EVERY))
+                   action=f"{PolicyAction.CHANGE_PIN_EVERY!s}=1d")
         g.policy_object = PolicyClass()
         save_pin_change(req, resp)
         ti = token.get_tokeninfo("next_pin_change")
@@ -1540,11 +1540,11 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy for the header
         set_policy(name="pol_header",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=These are your options:<ul>".format(PolicyAction.CHALLENGETEXT_HEADER))
+                   action=f"{PolicyAction.CHALLENGETEXT_HEADER!s}=These are your options:<ul>")
         # Set a policy for the footer
         set_policy(name="pol_footer",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=Happy authenticating!".format(PolicyAction.CHALLENGETEXT_FOOTER))
+                   action=f"{PolicyAction.CHALLENGETEXT_FOOTER!s}=Happy authenticating!")
         g.policy_object = PolicyClass()
 
         req.all_data = {
@@ -1576,7 +1576,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         # We do no html list
         set_policy(name="pol_header",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=These are your options:".format(PolicyAction.CHALLENGETEXT_HEADER))
+                   action=f"{PolicyAction.CHALLENGETEXT_HEADER!s}=These are your options:")
         g.policy_object = PolicyClass()
         resp = jsonify(res)
 
@@ -1621,7 +1621,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(resp, new_resp)
 
         # Define a generic policy, that denies the request
-        set_policy("auth01", scope=SCOPE.AUTHZ, action="{0!s}={1!s}".format(PolicyAction.AUTHORIZED, AUTHORIZED.DENY),
+        set_policy("auth01", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED!s}={AUTHORIZED.DENY!s}",
                    priority=2)
         g.policy_object = PolicyClass()
 
@@ -1629,7 +1629,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertRaises(ValidateError, is_authorized, req, resp)
 
         # Now we set a 2nd policy with a higher priority
-        set_policy("auth02", scope=SCOPE.AUTHZ, action="{0!s}={1!s}".format(PolicyAction.AUTHORIZED, AUTHORIZED.ALLOW),
+        set_policy("auth02", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHORIZED!s}={AUTHORIZED.ALLOW!s}",
                    priority=1, client="10.0.0.0/8")
         g.policy_object = PolicyClass()
 
@@ -1676,7 +1676,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         self.assertEqual(resp, new_resp)
 
         # Define a verify enrollment policy
-        set_policy("verify_toks", scope=SCOPE.ENROLL, action="{0!s}=hotp".format(PolicyAction.VERIFY_ENROLLMENT))
+        set_policy("verify_toks", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT!s}=hotp")
         g.policy_object = PolicyClass()
 
         new_resp = check_verify_enrollment(req, resp)

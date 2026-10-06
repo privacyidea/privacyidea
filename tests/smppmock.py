@@ -20,7 +20,7 @@ limitations under the License.
 """
 
 from collections import namedtuple
-from mock import Mock
+from unittest.mock import Mock
 
 from collections.abc import Sequence, Sized
 
@@ -57,7 +57,7 @@ class CallList(Sequence, Sized):
         self._calls = []
 
 
-class SmppMock(object):
+class SmppMock:
 
     def __init__(self):
         self._calls = CallList()
@@ -120,7 +120,7 @@ class SmppMock(object):
         return SubmitSMMock
 
     def start(self):
-        import mock
+        from unittest import mock
 
         def unbound_on_init(SMPP, host, port):
             return self._on_init(SMPP, host, port)

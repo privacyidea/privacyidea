@@ -34,11 +34,11 @@ PWFILE = "tests/testdata/passwd"
 RESOLVER = "cli_expired_users_resolver"
 REALM = "cli_expired_users_realm"
 # An Active Directory account that never expires is read from LDAP as the largest possible datetime
-NEVER_EXPIRES = datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.timezone.utc)
+NEVER_EXPIRES = datetime.datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=datetime.UTC)
 
 
 def days_from_now(days: int) -> datetime.datetime:
-    return datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(days=days)
+    return datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(days=days)
 
 
 def user_entry(login: str, account_expires: datetime.datetime | None,

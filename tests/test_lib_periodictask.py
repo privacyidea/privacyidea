@@ -4,11 +4,11 @@ This file contains the tests for periodic tasks.
 In particular, this tests
 lib/periodictask.py
 """
-from datetime import timedelta, datetime, timezone
+from datetime import timedelta, datetime, UTC
 
 from dateutil.parser import parse as parse_timestamp
 from dateutil.tz import gettz, tzutc
-from mock import mock
+from unittest import mock
 from sqlalchemy import select
 
 from privacyidea.lib.error import ParameterError, ResourceNotFoundError
@@ -215,12 +215,12 @@ class BasePeriodicTaskTestCase(MyTestCase):
             "KEY2": True,
             "key3": "öfføff",
         }
-        time_before = datetime.now(timezone.utc).replace(tzinfo=None)
+        time_before = datetime.now(UTC).replace(tzinfo=None)
         task1_id = set_periodic_task("task1", "0 5 * * *", ["localhost"], "some.module", 2, options, False)
         task2_id = set_periodic_task("some other task", "0 6 * * *", ["localhost", "pinode"], "some.other.module", 1,
                                      {"foo": "bar"},
                                      True)
-        time_after = datetime.now(timezone.utc).replace(tzinfo=None)
+        time_after = datetime.now(UTC).replace(tzinfo=None)
 
         # Check that the tasks have been created correctly in the db
         task1 = db.session.scalars(select(PeriodicTask).where(PeriodicTask.id == task1_id)).first()
@@ -268,7 +268,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
             "active": False,
             "interval": "0 5 * * *",
             # we get a timezone-aware datetime here
-            "last_update": task1.last_update.replace(tzinfo=timezone.utc),
+            "last_update": task1.last_update.replace(tzinfo=UTC),
             "nodes": ["localhost"],
             "taskmodule": "some.module",
             "ordering": 2,
@@ -281,21 +281,21 @@ class BasePeriodicTaskTestCase(MyTestCase):
             "last_runs": {}}, task1.get())
 
         # register a run
-        set_periodic_task_last_run(task1.id, "localhost", datetime(2018, 3, 4, 5, 6, 7, tzinfo=timezone.utc))
+        set_periodic_task_last_run(task1.id, "localhost", datetime(2018, 3, 4, 5, 6, 7, tzinfo=UTC))
         last_runs_task1 = db.session.scalars(
             select(PeriodicTaskLastRun).where(PeriodicTaskLastRun.periodictask_id == task1.id)).all()
         self.assertEqual(1, len(last_runs_task1))
         self.assertEqual("localhost", last_runs_task1[0].node)
-        self.assertEqual(datetime(2018, 3, 4, 5, 6, 7, tzinfo=timezone.utc),
-                         last_runs_task1[0].timestamp.replace(tzinfo=timezone.utc))
+        self.assertEqual(datetime(2018, 3, 4, 5, 6, 7, tzinfo=UTC),
+                         last_runs_task1[0].timestamp.replace(tzinfo=UTC))
 
         # Update task1
-        time_before = datetime.now(timezone.utc).replace(tzinfo=None)
+        time_before = datetime.now(UTC).replace(tzinfo=None)
         set_periodic_task("task one", "0 8 * * *", ["localhost", "otherhost"], "some.module", 3, {
             "KEY2": "value number 2",
             "key 4": 1234
         }, True, id=task1.id)
-        time_after = datetime.now(timezone.utc).replace(tzinfo=None)
+        time_after = datetime.now(UTC).replace(tzinfo=None)
         # Check that the tasks have been updated correctly in the db
         task1 = db.session.scalars(select(PeriodicTask).where(PeriodicTask.id == task1_id)).first()
         self.assertEqual("task one", task1.name)
@@ -319,7 +319,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
                 self.fail(f"Unexpected option key {opt.key}")
 
         # the first run for otherhost
-        set_periodic_task_last_run(task1.id, "otherhost", datetime(2018, 8, 9, 10, 11, 12, tzinfo=timezone.utc))
+        set_periodic_task_last_run(task1.id, "otherhost", datetime(2018, 8, 9, 10, 11, 12, tzinfo=UTC))
         last_runs_task1 = db.session.scalars(
             select(PeriodicTaskLastRun).where(PeriodicTaskLastRun.periodictask_id == task1.id)).all()
         self.assertEqual(2, len(last_runs_task1))
@@ -334,8 +334,8 @@ class BasePeriodicTaskTestCase(MyTestCase):
             select(PeriodicTaskLastRun).where(PeriodicTaskLastRun.periodictask_id == task1.id)).all()
         self.assertEqual(1, len(last_runs_task1))
         self.assertEqual("otherhost", last_runs_task1[0].node)
-        self.assertEqual(datetime(2018, 8, 9, 10, 11, 12, tzinfo=timezone.utc), last_runs_task1[0].timestamp.replace(
-            tzinfo=timezone.utc))
+        self.assertEqual(datetime(2018, 8, 9, 10, 11, 12, tzinfo=UTC), last_runs_task1[0].timestamp.replace(
+            tzinfo=UTC))
 
         # Delete task removes its last runs and options
         task1_id = task1.id
@@ -501,7 +501,7 @@ class BasePeriodicTaskTestCase(MyTestCase):
                 "key1": "value",
                 "key2": "foo"
             }, active=False)
-        current_utc_time_with_tz = current_utc_time.replace(tzinfo=timezone.utc)
+        current_utc_time_with_tz = current_utc_time.replace(tzinfo=UTC)
         self.assertEqual(current_utc_time_with_tz, get_periodic_task_by_id(task2)["last_update"])
         self.assertEqual(get_periodic_task_by_id(task2)["last_runs"], {})
 

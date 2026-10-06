@@ -21,7 +21,7 @@ from tests.base import MyTestCase
 def _local_cache(results):
     """Give the per-process cache a copy, as a worker that probed earlier would have."""
     previous = dict(health._CACHE)
-    health._CACHE["certificates"] = (datetime.datetime.now(tz=datetime.timezone.utc), results)
+    health._CACHE["certificates"] = (datetime.datetime.now(tz=datetime.UTC), results)
     try:
         yield
     finally:
@@ -39,7 +39,7 @@ def _make_cert(days_until_expiry: int, subject_cn: str = "test.example.com",
     """Generate a self-signed cert that expires ``days_until_expiry`` from now."""
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048,
                                    backend=default_backend())
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
+    now = datetime.datetime.now(tz=datetime.UTC)
     subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, subject_cn)])
     issuer = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, issuer_cn)])
     # Pick a not_valid_before that is always strictly before not_valid_after,
@@ -76,7 +76,7 @@ class CertInfoTest(MyTestCase):
 
     def test_valid_far_future(self):
         cert = _make_cert(days_until_expiry=400)
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
+        now = datetime.datetime.now(tz=datetime.UTC)
         info = health._cert_info(cert, now)
         self.assertEqual(info["status"], "ok")
         # Allow a one-day fuzz for the boundary.
@@ -87,17 +87,17 @@ class CertInfoTest(MyTestCase):
 
     def test_warning_band(self):
         cert = _make_cert(days_until_expiry=15)
-        info = health._cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc))
+        info = health._cert_info(cert, datetime.datetime.now(tz=datetime.UTC))
         self.assertEqual(info["status"], "warning")
 
     def test_critical_band(self):
         cert = _make_cert(days_until_expiry=3)
-        info = health._cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc))
+        info = health._cert_info(cert, datetime.datetime.now(tz=datetime.UTC))
         self.assertEqual(info["status"], "critical")
 
     def test_expired(self):
         cert = _make_cert(days_until_expiry=-2)
-        info = health._cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc))
+        info = health._cert_info(cert, datetime.datetime.now(tz=datetime.UTC))
         self.assertEqual(info["status"], "expired")
         self.assertLess(info["days_remaining"], 0)
 

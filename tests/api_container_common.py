@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 from dataclasses import dataclass
-from typing import Optional
 
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.error import Error
@@ -72,8 +71,8 @@ class APIContainerTest(MyApiTestCase):
         return res.json
 
     def request_assert_error(self, status_code, url, data: dict, auth_token, method='POST',
-                             error_code: Optional[int] = None,
-                             error_message: Optional[str] = None,
+                             error_code: int | None = None,
+                             error_message: str | None = None,
                              try_unspecific: bool = False):
         if try_unspecific:
             # Exercise the hide_specific_error_message path too, and assert that it also audits the
@@ -193,19 +192,19 @@ class APIContainerAuthorization(APIContainerTest):
                     realm=self.realm1,
                     resolver=self.resolvername1)
 
-        user_str = "{0!s}".format(user)
+        user_str = f"{user!s}"
         self.assertEqual("<root.resolver1@realm1>", user_str)
 
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())
 
-        user_repr = "{0!r}".format(user)
+        user_repr = f"{user!r}"
         expected = "User(login='root', realm='realm1', resolver='resolver1')"
         self.assertEqual(expected, user_repr)
         self.authenticate_selfservice_user()
 
     def request_denied_assert_403(self, url, data: dict, auth_token, method='POST',
-                                  error_message: Optional[str] = None):
+                                  error_message: str | None = None):
         with self.app.test_request_context(url,
                                            method=method,
                                            data=data if method == 'POST' else None,

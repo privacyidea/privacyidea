@@ -3,7 +3,7 @@ import datetime
 import json
 import logging
 
-import mock
+from unittest import mock
 from dateutil.tz import tzlocal
 from testfixtures import log_capture, LogCapture
 
@@ -461,7 +461,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # now check that with a disabled remote_user policy the login fails
         set_policy(name="remote", scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.DISABLE))
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.DISABLE!s}")
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius"},
@@ -480,7 +480,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # And now check that with an enabled remote_user policy the login succeeds
         set_policy(name="remote", scope=SCOPE.WEBUI,
-                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.ACTIVE!s}")
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius"},
@@ -497,7 +497,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # check that a remote user with "@" works as well
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
-                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.ACTIVE!s}")
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius@realm1"},
@@ -515,7 +515,7 @@ class AuthApiTestCase(MyApiTestCase):
         # check that the policy remote_user=force passes the necessary hidden tag to the
         # login window
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
-                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.FORCE))
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.FORCE!s}")
         with self.app.test_request_context('/',
                                            method='GET',
                                            environ_base={"REMOTE_USER": "cornelius@realm1"}):
@@ -527,7 +527,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # bind the remote user policy to a different realm
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm2,
-                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.ACTIVE!s}")
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "cornelius@realm1"},
@@ -543,7 +543,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # check split@sign is working correctly
         set_policy(name="remote", scope=SCOPE.WEBUI, realm=self.realm1,
-                   action="{0!s}={1!s}".format(PolicyAction.REMOTE_USER, REMOTE_USER.ACTIVE))
+                   action=f"{PolicyAction.REMOTE_USER!s}={REMOTE_USER.ACTIVE!s}")
         set_privacyidea_config(SYSCONF.SPLITATSIGN, False)
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -708,7 +708,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual("Authentication failed.", error.get("message"))
 
         # set a policy to authenticate against privacyIDEA
-        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(PolicyAction.LOGINMODE))
+        set_policy("piLogin", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE!s}=privacyIDEA")
 
         # user authenticates against privacyidea but user does not exist
         with self.app.test_request_context('/auth',
@@ -1432,8 +1432,8 @@ class AuthApiTestCase(MyApiTestCase):
         # Add a fully enrolled token (no rollout_state).
         # Even though all rollout states are ignored, the user still has
         # a real token, so passthru should NOT be used.
-        tok4 = init_token({"serial": "PTIRS4", "type": "spass", "pin": "Hallo"},
-                          user=user)
+        init_token({"serial": "PTIRS4", "type": "spass", "pin": "Hallo"},
+                   user=user)
 
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -1555,8 +1555,8 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
 
         # Add a fully enrolled token -> user has a real token
-        tok4 = init_token({"serial": "PNTIRS4", "type": "spass", "pin": "Hallo"},
-                          user=user)
+        init_token({"serial": "PNTIRS4", "type": "spass", "pin": "Hallo"},
+                   user=user)
 
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -2136,8 +2136,8 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             jwt = res.json.get("result").get("value").get("token")
             verify_result = verify_auth_token(jwt)
-            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.timezone.utc)
-            expected_expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=1800)
+            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.UTC)
+            expected_expiration = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=1800)
             self.assertAlmostEqual(expected_expiration, expiration, delta=datetime.timedelta(seconds=5))
 
         # User
@@ -2149,8 +2149,8 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             jwt = res.json.get("result").get("value").get("token")
             verify_result = verify_auth_token(jwt)
-            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.timezone.utc)
-            expected_expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=1800)
+            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.UTC)
+            expected_expiration = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=1800)
             self.assertAlmostEqual(expected_expiration, expiration, delta=datetime.timedelta(seconds=5))
 
         # change to realm policy
@@ -2165,8 +2165,8 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             jwt = res.json.get("result").get("value").get("token")
             verify_result = verify_auth_token(jwt)
-            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.timezone.utc)
-            expected_expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=3600)
+            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.UTC)
+            expected_expiration = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=3600)
             self.assertAlmostEqual(expected_expiration, expiration, delta=datetime.timedelta(seconds=5))
 
         # User: takes value from policy
@@ -2178,8 +2178,8 @@ class DuplicateUserApiTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             jwt = res.json.get("result").get("value").get("token")
             verify_result = verify_auth_token(jwt)
-            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.timezone.utc)
-            expected_expiration = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=7200)
+            expiration = datetime.datetime.fromtimestamp(verify_result.get("exp"), tz=datetime.UTC)
+            expected_expiration = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=7200)
             self.assertAlmostEqual(expected_expiration, expiration, delta=datetime.timedelta(seconds=5))
 
         delete_policy("jwt_validity")
@@ -2205,11 +2205,11 @@ class EventHandlerTest(MyApiTestCase):
         set_default_realm(self.realm1)
 
         # set a policy to authenticate against privacyIDEA
-        set_policy("piLogin", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(PolicyAction.LOGINMODE))
+        set_policy("piLogin", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE!s}=privacyIDEA")
         # set a policy to for otppin=userstore
-        set_policy("otppin", scope=SCOPE.AUTH, action="{0!s}=userstore".format(PolicyAction.OTPPIN))
+        set_policy("otppin", scope=SCOPE.AUTH, action=f"{PolicyAction.OTPPIN!s}=userstore")
         # Set a policy to do C/R with HOTP tokens
-        set_policy("crhotp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy("crhotp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
 
         # Create an event handler, that creates HOTP token on /auth with default OTP key
         # TODO: this is probably a bad test case since enrolling an HOTP-Token

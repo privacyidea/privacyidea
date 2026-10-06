@@ -10,7 +10,6 @@ from sqlalchemy import select
 
 from privacyidea.models import db, MachineResolver, MachineResolverConfig
 
-HOSTSFILE = "tests/testdata/hosts"
 from .base import MyTestCase
 from privacyidea.lib.machines import BaseMachineResolver
 from privacyidea.lib.machines.hosts import HostsMachineResolver
@@ -20,6 +19,8 @@ from privacyidea.lib.machineresolver import (get_resolver_list, save_resolver,
                                      delete_resolver, get_resolver_config,
                                      get_resolver_object, pretestresolver)
 from privacyidea.lib.machine import get_machines
+
+HOSTSFILE = "tests/testdata/hosts"
 
 
 class MachineObjectTestCase(MyTestCase):
@@ -148,14 +149,14 @@ class MachineResolverTestCase(MyTestCase):
 
     def test_02_list_resolvers(self):
         # check if the resolver, we created is in the database
-        l = get_resolver_list()
-        self.assertTrue("testresolver" in l, l)
+        resolvers = get_resolver_list()
+        self.assertTrue("testresolver" in resolvers, resolvers)
 
-        l = get_resolver_list(filter_resolver_name="testresolver")
-        self.assertTrue("testresolver" in l, l)
+        resolvers = get_resolver_list(filter_resolver_name="testresolver")
+        self.assertTrue("testresolver" in resolvers, resolvers)
 
-        l = get_resolver_list(filter_resolver_type="hosts")
-        self.assertTrue("testresolver" in l, l)
+        resolvers = get_resolver_list(filter_resolver_type="hosts")
+        self.assertTrue("testresolver" in resolvers, resolvers)
 
     def test_03_get_resolver_config(self):
         c = get_resolver_config("testresolver")
@@ -188,8 +189,8 @@ class MachineResolverTestCase(MyTestCase):
     def test_99_delete_resolver(self):
         machine_id = db.session.scalars(select(MachineResolver).filter_by(name="testresolver")).first().id
         delete_resolver("testresolver")
-        l = get_resolver_list(filter_resolver_name="testresolver")
-        self.assertTrue("testresolver" not in l, l)
+        resolvers = get_resolver_list(filter_resolver_name="testresolver")
+        self.assertTrue("testresolver" not in resolvers, resolvers)
 
         # Check that also the configs are deleted
         configs = db.session.scalars(select(MachineResolverConfig)).all()

@@ -76,7 +76,7 @@ class CallList(Sequence, Sized):
         self._calls = []
 
 
-class SmtpMock(object):
+class SmtpMock:
 
     def __init__(self):
         self._calls = CallList()
@@ -150,7 +150,6 @@ class SmtpMock(object):
 
     def _on_init(self, *args, **kwargs):
         SMTP_instance = args[0]
-        host = args[1]
         if isinstance(SMTP_instance, smtplib.SMTP_SSL):
             # in case we need sth. to do with SMTL_SSL
             self.smtp_ssl = True
@@ -176,7 +175,7 @@ class SmtpMock(object):
         return None
 
     def start(self):
-        import mock
+        from unittest import mock
 
         def unbound_on_send(SMTP, sender, recipient, msg, *a, **kwargs):
             self.sent_message = msg

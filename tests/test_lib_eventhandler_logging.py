@@ -3,7 +3,7 @@ This file tests:
 
 lib/eventhandler/logging.py
 """
-from mock import mock
+from unittest import mock
 from datetime import datetime
 from werkzeug.test import EnvironBuilder
 from flask import Request, Response
@@ -145,7 +145,7 @@ class LoggingTestCase(MyTestCase):
             "response": resp,
             "handler_def": {
                 'options': {
-                    'message': ' '.join(['{0!s}={{{0!s}}}'.format(x) for x in available_tags])
+                    'message': ' '.join([f'{x!s}={{{x!s}}}' for x in available_tags])
                 }
             }
         }

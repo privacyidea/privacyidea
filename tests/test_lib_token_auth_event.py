@@ -163,7 +163,8 @@ class RequestEventPrecedenceTestCase(MyTestCase):
         # Every AuthEventType must have a precedence rank, except the conditional-access enforcement types.
         # Those classify a request rejected before any token logic ran, so they never reach reduce_request_events.
         self.assertSetEqual(set(AuthEventType) - CA_ENFORCEMENT_EVENT_TYPES, set(REQUEST_EVENT_PRECEDENCE),
-                            "Add missing AuthEventType REQUEST_EVENT_PRECEDENCE list or remove unexisting ones from it.")
+                            "Add missing AuthEventType REQUEST_EVENT_PRECEDENCE list or remove "
+                            "unexisting ones from it.")
         # No event is listed twice (which would make its rank ambiguous).
         self.assertEqual(len(REQUEST_EVENT_PRECEDENCE), len(set(REQUEST_EVENT_PRECEDENCE)),
                          "Remove duplicated entries from the REQUEST_EVENT_PRECEDENCE list.")

@@ -3,7 +3,7 @@ This file contains the tests for lib/sqlutils.py
 """
 from datetime import datetime
 
-from mock import MagicMock
+from unittest.mock import MagicMock
 import warnings
 from sqlalchemy.testing import AssertsCompiledSQL
 from privacyidea.lib.sqlutils import DeleteLimit, delete_matching_rows

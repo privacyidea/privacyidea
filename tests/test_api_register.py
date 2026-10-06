@@ -1,12 +1,12 @@
 from email import message_from_string
 
-from privacyidea.lib.resolver import delete_resolver, save_resolver
-from privacyidea.lib.realm import delete_realm, set_realm, set_default_realm
+from privacyidea.lib.resolver import save_resolver
+from privacyidea.lib.realm import set_realm, set_default_realm
 from .base import MyApiTestCase, PristineSqliteFixtures
 from privacyidea.lib.policy import SCOPE, PolicyClass, delete_policy, set_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
-from privacyidea.lib.smtpserver import delete_smtpserver, add_smtpserver
+from privacyidea.lib.smtpserver import add_smtpserver
 from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.passwordreset import create_recoverycode
@@ -40,7 +40,8 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
     usernames = ["corneliusReg", "corneliusRegFail"]
 
     def _resend_and_check_unspecific_error(self, status_code: int):
-        set_policy(name="hide_specific_error_message", scope=SCOPE.REGISTER, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
+        set_policy(name="hide_specific_error_message", scope=SCOPE.REGISTER,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
         try:
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, status_code, res)
@@ -75,8 +76,7 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
 
         # create policy
         r = set_policy(name="pol2", scope=SCOPE.REGISTER,
-                       action="{0!s}={1!s}, {2!s}={3!s}".format(PolicyAction.REALM, "register",
-                                                                PolicyAction.RESOLVER, "register"))
+                       action=f"{PolicyAction.REALM}=register, {PolicyAction.RESOLVER}=register")
 
         # Try to register, but missing parameter
         with self.app.test_request_context('/register',
@@ -108,7 +108,7 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
         # Set SMTP config and policy
         add_smtpserver("myserver", "1.2.3.4", sender="pi@localhost")
         set_policy("pol3", scope=SCOPE.REGISTER,
-                   action="{0!s}=myserver".format(PolicyAction.EMAILCONFIG))
+                   action=f"{PolicyAction.EMAILCONFIG!s}=myserver")
         with self.app.test_request_context('/register',
                                            method='POST',
                                            data={"username": "corneliusReg",
@@ -154,7 +154,7 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
         smtpmock.setdata(response={"another@privacyidea.org": (200, "OK")})
         # Drop the realm part of pol2; keep the resolver mapping.
         set_policy(name="pol2", scope=SCOPE.REGISTER,
-                   action="{0!s}={1!s}".format(PolicyAction.RESOLVER, "register"))
+                   action=f"{PolicyAction.RESOLVER}=register")
         set_default_realm("register")
         try:
             with self.app.test_request_context('/register',
@@ -170,8 +170,7 @@ class RegisterTestCase(PristineSqliteFixtures, MyApiTestCase):
         finally:
             # Restore the realm policy used by the remaining tests.
             set_policy(name="pol2", scope=SCOPE.REGISTER,
-                       action="{0!s}={1!s}, {2!s}={3!s}".format(PolicyAction.REALM, "register",
-                                                                PolicyAction.RESOLVER, "register"))
+                       action=f"{PolicyAction.REALM}=register, {PolicyAction.RESOLVER}=register")
             # Clean up the user we just created so test_99 stays idempotent.
             y = SQLResolver()
             y.loadConfig(self.parameters)

@@ -113,9 +113,9 @@ if _worker:
         if _redis_url:
             os.environ[_redis_var] = _redis_url_for_worker(_redis_url, _worker)
 
-import pytest
-from sqlalchemy import event
-from sqlalchemy.engine import Engine
+import pytest  # noqa: E402
+from sqlalchemy import event  # noqa: E402
+from sqlalchemy.engine import Engine  # noqa: E402
 
 
 @event.listens_for(Engine, "connect")
@@ -147,7 +147,7 @@ def _force_read_committed_on_mysql(dbapi_connection, connection_record):
 # Enable rich assert diffs for the plain asserts in the auth-log helper module.
 pytest.register_assert_rewrite("tests.authlog_utils")
 
-from privacyidea.lib.caconnector import save_caconnector
+from privacyidea.lib.caconnector import save_caconnector  # noqa: E402
 
 
 def _isolate_editable_testuser_db(worker):

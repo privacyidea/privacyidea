@@ -26,9 +26,9 @@ class PINChangeTestCase(MyTestCase):
     def test_00_create_realms(self):
         self.setUp_user_realms()
         # Set a policy to change the pin every 10d
-        set_policy("every10d", scope=SCOPE.ENROLL, action="{0!s}=10d".format(PolicyAction.CHANGE_PIN_EVERY))
+        set_policy("every10d", scope=SCOPE.ENROLL, action=f"{PolicyAction.CHANGE_PIN_EVERY!s}=10d")
         # set policy for chalresp
-        set_policy("chalresp", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
+        set_policy("chalresp", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
         # Change PIN via validate
         set_policy("viaValidate", scope=SCOPE.AUTH, action=PolicyAction.CHANGE_PIN_VIA_VALIDATE)
 
@@ -89,7 +89,7 @@ class PINChangeTestCase(MyTestCase):
         self.assertFalse(tok.is_pin_change())
 
         # Run an authentication with the new PIN
-        r, reply_dict = check_token_list([tok, tok2], "{0!s}{1!s}".format(newpin, self.valid_otp_values[2]),
+        r, reply_dict = check_token_list([tok, tok2], f"{newpin!s}{self.valid_otp_values[2]!s}",
                                          user=user_obj, options={"g": g})
         self.assertTrue(r)
         self.assertFalse(reply_dict.get("pin_change"))
@@ -119,7 +119,7 @@ class PINChangeTestCase(MyTestCase):
         self.assertTrue(tok.is_pin_change())
 
         # successfully authenticate, but thus trigger a PIN change
-        r, reply_dict = check_token_list([tok, tok2], "test{0!s}".format(self.valid_otp_values[1]),
+        r, reply_dict = check_token_list([tok, tok2], f"test{self.valid_otp_values[1]!s}",
                                          user=user_obj, options={"g": g})
         self.assertFalse(r)
         self.assertEqual("Please enter a new PIN", reply_dict.get("message"))
@@ -167,10 +167,10 @@ class PINChangeTestCase(MyTestCase):
         # Check it
         self.assertTrue(tok.is_pin_change())
         # Require minimum length of 5
-        set_policy("minpin", scope=SCOPE.USER, action="{0!s}=5".format(PolicyAction.OTPPINMINLEN))
+        set_policy("minpin", scope=SCOPE.USER, action=f"{PolicyAction.OTPPINMINLEN!s}=5")
 
         # successfully authenticate, but thus trigger a PIN change
-        r, reply_dict = check_token_list([tok, tok2], "test{0!s}".format(self.valid_otp_values[1]),
+        r, reply_dict = check_token_list([tok, tok2], f"test{self.valid_otp_values[1]!s}",
                                          user=user_obj, options={"g": g})
         self.assertFalse(r)
         self.assertEqual("Please enter a new PIN", reply_dict.get("message"))

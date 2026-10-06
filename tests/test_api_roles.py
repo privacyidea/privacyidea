@@ -75,8 +75,7 @@ class APIAuthTestCase(MyApiTestCase):
 
     def test_02_REMOTE_USER(self):
         # Allow remote user
-        set_policy(name="remote", scope=SCOPE.WEBUI, action="{0!s}=allowed".format(
-            PolicyAction.REMOTE_USER))
+        set_policy(name="remote", scope=SCOPE.WEBUI, action=f"{PolicyAction.REMOTE_USER!s}=allowed")
 
         # Admin remote user
         with self.app.test_request_context('/auth', method='POST',
@@ -429,8 +428,8 @@ class APIAuthChallengeResponse(MyApiTestCase):
         init_token({"type": "hotp", "serial": "hotp1", "otpkey": self.otpkey},
                    user=User(uid="1004", realm=self.realm1, resolver=self.resolvername1))
         # Define HOTP token to be challenge response
-        set_policy(name="pol_cr", scope=SCOPE.AUTH, action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE))
-        set_policy(name="webuilog", scope=SCOPE.WEBUI, action="{0!s}=privacyIDEA".format(PolicyAction.LOGINMODE))
+        set_policy(name="pol_cr", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE!s}=hotp")
+        set_policy(name="webuilog", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE!s}=privacyIDEA")
         from privacyidea.lib.token import set_pin
         set_pin("hotp1", "pin")
 
@@ -468,7 +467,7 @@ class APIAuthChallengeResponse(MyApiTestCase):
         init_token({"type": "hotp", "serial": "hotp2", "otpkey": self.otpkey},
                    user=User(uid="1004", realm=self.realm1, resolver=self.resolvername1))
         set_policy(name="pol_otppin", scope=SCOPE.AUTH,
-                   action="{0!s}={1!s}".format(PolicyAction.OTPPIN, ACTIONVALUE.USERSTORE))
+                   action=f"{PolicyAction.OTPPIN!s}={ACTIONVALUE.USERSTORE!s}")
         with self.app.test_request_context('/auth',
                                            method='POST',
                                            data={"username": "selfservice",
@@ -676,7 +675,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         self.assertEqual(tokenobject.token.first_owner.resolver, "resolver1")
 
         # user can delete his own token
-        with self.app.test_request_context('/token/{0!s}'.format(serial),
+        with self.app.test_request_context(f'/token/{serial!s}',
                                            method='DELETE',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -692,7 +691,7 @@ class APISelfserviceTestCase(MyApiTestCase):
     def test_04_user_can_not_delete_another_token(self):
         self.authenticate_selfservice_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
-        with self.app.test_request_context('/token/{0!s}'.format(self.foreign_serial),
+        with self.app.test_request_context(f'/token/{self.foreign_serial!s}',
                                            method='DELETE',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -707,8 +706,7 @@ class APISelfserviceTestCase(MyApiTestCase):
     def test_04_user_can_not_disable_another_token(self):
         self.authenticate_selfservice_user()
         assign_token(self.foreign_serial, User("cornelius", self.realm1))
-        with self.app.test_request_context('/token/disable/{0!s}'.format(
-                self.foreign_serial),
+        with self.app.test_request_context(f'/token/disable/{self.foreign_serial!s}',
                 method='POST',
                 headers={'Authorization':
                              self.at_user}):
@@ -740,8 +738,7 @@ class APISelfserviceTestCase(MyApiTestCase):
     def test_05_user_can_disable_token(self):
         self.authenticate_selfservice_user()
         # User can not disable a token, that does not belong to him.
-        with self.app.test_request_context('/token/disable/{0!s}'.format(
-                self.foreign_serial),
+        with self.app.test_request_context(f'/token/disable/{self.foreign_serial!s}',
                 method='POST',
                 headers={'Authorization':
                              self.at_user}):
@@ -754,7 +751,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         self.assertTrue(tokenobject.token.active, tokenobject.token.active)
 
         # User disables his token
-        with self.app.test_request_context('/token/disable/{0!s}'.format(self.my_serial),
+        with self.app.test_request_context(f'/token/disable/{self.my_serial!s}',
                                            method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -768,7 +765,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         self.assertFalse(tokenobject.token.active, tokenobject.token.active)
 
         # User enables his token
-        with self.app.test_request_context('/token/enable/{0!s}'.format(self.my_serial),
+        with self.app.test_request_context(f'/token/enable/{self.my_serial!s}',
                                            method='POST',
                                            headers={'Authorization':
                                                         self.at_user}):
@@ -786,8 +783,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         # Is token disabled?
         tokenobject = get_tokens(serial=self.foreign_serial)[0]
         self.assertFalse(tokenobject.token.active, tokenobject.token.active)
-        with self.app.test_request_context('/token/enable/{0!s}'.format(
-                self.foreign_serial),
+        with self.app.test_request_context(f'/token/enable/{self.foreign_serial!s}',
                 method='POST',
                 headers={'Authorization':
                              self.at_user}):
@@ -1248,7 +1244,7 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 401, res)
 
         # Can not set token realm
-        with self.app.test_request_context('/token/realm/{0!s}'.format(serial),
+        with self.app.test_request_context(f'/token/realm/{serial!s}',
                                            method="POST",
                                            data={"realms": "realm1"},
                                            headers={'Authorization':
@@ -1289,14 +1285,10 @@ class APISelfserviceTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 401, res)
 
     def test_41_webui_settings(self):
-        set_policy(name="webui1", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
-            PolicyAction.TOKENPAGESIZE, 20))
-        set_policy(name="webui2", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
-            PolicyAction.USERPAGESIZE, 20))
-        set_policy(name="webui3", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
-            PolicyAction.LOGOUTTIME, 200))
-        set_policy(name="webui4", scope=SCOPE.WEBUI, action="{0!s}={1!s}".format(
-            PolicyAction.AUDITPAGESIZE, 20))
+        set_policy(name="webui1", scope=SCOPE.WEBUI, action=f"{PolicyAction.TOKENPAGESIZE!s}={20!s}")
+        set_policy(name="webui2", scope=SCOPE.WEBUI, action=f"{PolicyAction.USERPAGESIZE!s}={20!s}")
+        set_policy(name="webui3", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGOUTTIME!s}={200!s}")
+        set_policy(name="webui4", scope=SCOPE.WEBUI, action=f"{PolicyAction.AUDITPAGESIZE!s}={20!s}")
         set_policy(name="webui5", scope=SCOPE.WEBUI, action=PolicyAction.DELETION_CONFIRMATION)
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -1333,10 +1325,10 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=2/20s".format(PolicyAction.AUTHMAXFAIL))
+                   action=f"{PolicyAction.AUTHMAXFAIL!s}=2/20s")
         set_policy(name="pol_loginmode",
                    scope=SCOPE.WEBUI,
-                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         for _ in range(2):
             with self.app.test_request_context('/auth',
                                                method='POST',
@@ -1383,10 +1375,10 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=2/20s".format(PolicyAction.AUTHMAXSUCCESS))
+                   action=f"{PolicyAction.AUTHMAXSUCCESS!s}=2/20s")
         set_policy(name="pol_loginmode",
                    scope=SCOPE.WEBUI,
-                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         for _ in range(2):
             with self.app.test_request_context('/auth',
                                                method='POST',
@@ -1522,10 +1514,10 @@ class APISelfserviceTestCase(MyApiTestCase):
 
         set_policy(name="pol_time1",
                    scope=SCOPE.AUTHZ,
-                   action="{0!s}=2/20s".format(PolicyAction.AUTHMAXFAIL))
+                   action=f"{PolicyAction.AUTHMAXFAIL!s}=2/20s")
         set_policy(name="pol_loginmode",
                    scope=SCOPE.WEBUI,
-                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         for _ in range(2):
             with self.app.test_request_context('/auth',
                                                method='POST',
@@ -1611,7 +1603,7 @@ class APISelfserviceTestCase(MyApiTestCase):
         token = init_token({"type": "hotp", "genkey": True, "pin": pin}, user=user)
         set_policy(name="pol_time1", scope=SCOPE.AUTHZ, action=f"{PolicyAction.AUTHMAXFAIL}=3/20s")
         set_policy(name="pol_loginmode", scope=SCOPE.WEBUI,
-                   action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
+                   action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         set_policy(name="challenge_response", scope=SCOPE.AUTH,
                    action=f"{PolicyAction.CHALLENGERESPONSE}=hotp")
         self.app_context.g.audit_object.clear()
@@ -1698,7 +1690,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # disabled policy: by default, login is disabled
         with self.app.test_request_context('/policy/disabled',
-                                           json={'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.DISABLE),
+                                           json={'action': f"{PolicyAction.LOGINMODE}={LOGINMODE.DISABLE}",
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 2,
@@ -1710,7 +1702,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         # userstore policy: for admins, require the userstore password
         with self.app.test_request_context('/policy/userstore',
-                                           json={'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.USERSTORE),
+                                           json={'action': f"{PolicyAction.LOGINMODE}={LOGINMODE.USERSTORE}",
                                                  'scope': SCOPE.WEBUI,
                                                  'realm': '',
                                                  'priority': 1,
@@ -1726,7 +1718,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
         # privacyidea policy: for helpdesk users, require the token PIN
         with self.app.test_request_context('/policy/privacyidea',
                                            json={
-                                               'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA),
+                                               'action': f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}",
                                                'scope': SCOPE.WEBUI,
                                                'realm': '',
                                                'priority': 1,
@@ -1800,8 +1792,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
         # if we now disable the condition on userstore and privacyidea, we get a conflicting policy error
         with self.app.test_request_context('/policy/privacyidea',
                                            json={'scope': SCOPE.WEBUI,
-                                                 'action': "{}={}".format(PolicyAction.LOGINMODE,
-                                                                          LOGINMODE.PRIVACYIDEA),
+                                                 'action': f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}",
                                                  'realm': '',
                                                  'active': True,
                                                  'conditions': [
@@ -1814,7 +1805,7 @@ class PolicyConditionsTestCase(MyApiTestCase):
 
         with self.app.test_request_context('/policy/userstore',
                                            json={'scope': SCOPE.WEBUI,
-                                                 'action': "{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.USERSTORE),
+                                                 'action': f"{PolicyAction.LOGINMODE}={LOGINMODE.USERSTORE}",
                                                  'realm': '',
                                                  'active': True,
                                                  'conditions': [

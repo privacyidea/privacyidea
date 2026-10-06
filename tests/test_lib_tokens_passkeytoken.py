@@ -333,7 +333,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         token = self._create_token()
 
         # Challenge does not exist
-        with self.assertRaises(ResourceNotFoundError) as ex:
+        with self.assertRaises(ResourceNotFoundError):
             verify_fido2_challenge("10039292755795086078", token, {})
 
         # Wrong signature
@@ -500,7 +500,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
                 'credential_id_hash': '80a8d88c16b2808e9f52b9d14354432fd5205af665ea9a0878035c2b6cdba259',
                 'device_type': 'single_device',
                 'fido2_user_id': fido2_user_id,
-                'public_key': 'pQECAyYgASFYIE_UyaQ21LqtEyHSKRJpShO-wOGDv7qDWURk30_U26xtIlgglAzzrE4UkAFqhrNdg2OToNFk6it8EAzLuZwfWM8neyc',
+                'public_key': 'pQECAyYgASFYIE_UyaQ21LqtEyHSKRJpShO-wOGDv7qDWURk30_U26xtIlgglAzzrE4UkAFqhrNdg2OToNFk6it8'
+                              'EAzLuZwfWM8neyc',
                 'relying_party_id': 'cool.nils',
                 'relying_party_name': 'cool.nils',
                 'sign_count': '4'

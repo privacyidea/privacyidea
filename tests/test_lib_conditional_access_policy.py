@@ -27,7 +27,8 @@ from privacyidea.lib.conditional_access.authentication_event_types import CA_ENF
 from privacyidea.lib.conditional_access.authentication_event_types import AuthEventType, AuthLogUserRole, CountMode
 from privacyidea.lib.conditional_access.conditions import (AUTHENTICATING_ENDPOINTS, ConditionOperator, ConditionType,
                                                            get_condition_types)
-from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction, ConditionalAccessTarget,
+from privacyidea.lib.conditional_access.engine import (ACTION_SEVERITY, ConditionalAccessAction,
+                                                       ConditionalAccessTarget,
                                                        MAX_LOCK_DURATION_SECONDS, RESTRICTION_ACTIONS)
 from privacyidea.lib.conditional_access.policy import (
     DEFAULT_ERROR_MESSAGES,
@@ -793,8 +794,10 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
             [CountMode.DISTINCT_USERS.value, CountMode.PER_ATTEMPT.value, CountMode.PER_REQUEST.value],
             constraints[ConditionalAccessTarget.SOURCE_IP.value]["count_modes"],
         )
-        self.assertIn(ConditionalAccessAction.BLOCK_IP.value, constraints[ConditionalAccessTarget.SOURCE_IP.value]["actions"])
-        self.assertIn(ConditionalAccessAction.LOCK_USER.value, constraints[ConditionalAccessTarget.USER.value]["actions"])
+        self.assertIn(ConditionalAccessAction.BLOCK_IP.value,
+                      constraints[ConditionalAccessTarget.SOURCE_IP.value]["actions"])
+        self.assertIn(ConditionalAccessAction.LOCK_USER.value,
+                      constraints[ConditionalAccessTarget.USER.value]["actions"])
         # Only the notifications repeat, and only the pairs that can actually arise for the target are served.
         self.assertListEqual([ConditionalAccessAction.EMAIL_ADMIN.value, ConditionalAccessAction.EMAIL_USER.value],
                              constraints[ConditionalAccessTarget.USER.value]["repeatable_actions"])
@@ -811,7 +814,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # its wording - a message is said off the row a restriction leaves behind, and no row records that an
         # email went out. A new action added here has to be a deliberate decision, not a surprise.
         suggestions = get_default_error_messages()
-        self.assertListEqual([ConditionalAccessAction.PERMANENT_LOCK_USER.value, ConditionalAccessAction.PERMANENT_BLOCK_IP.value,
+        self.assertListEqual([ConditionalAccessAction.PERMANENT_LOCK_USER.value,
+                              ConditionalAccessAction.PERMANENT_BLOCK_IP.value,
                               ConditionalAccessAction.LOCK_USER.value, ConditionalAccessAction.BLOCK_IP.value,
                               ConditionalAccessAction.DENY.value],
                              [entry["action_type"] for entry in suggestions])
@@ -834,9 +838,12 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
         # A stored restriction remembers its expiry and its subject, not which action wrote it. Those two
         # facts name the action exactly, which is what lets a row be described without reading the policy.
         self.assertEqual(ConditionalAccessAction.LOCK_USER, RESTRICTION_ACTIONS[(ConditionalAccessTarget.USER, False)])
-        self.assertEqual(ConditionalAccessAction.PERMANENT_LOCK_USER, RESTRICTION_ACTIONS[(ConditionalAccessTarget.USER, True)])
-        self.assertEqual(ConditionalAccessAction.BLOCK_IP, RESTRICTION_ACTIONS[(ConditionalAccessTarget.SOURCE_IP, False)])
-        self.assertEqual(ConditionalAccessAction.PERMANENT_BLOCK_IP, RESTRICTION_ACTIONS[(ConditionalAccessTarget.SOURCE_IP, True)])
+        self.assertEqual(ConditionalAccessAction.PERMANENT_LOCK_USER,
+                         RESTRICTION_ACTIONS[(ConditionalAccessTarget.USER, True)])
+        self.assertEqual(ConditionalAccessAction.BLOCK_IP,
+                         RESTRICTION_ACTIONS[(ConditionalAccessTarget.SOURCE_IP, False)])
+        self.assertEqual(ConditionalAccessAction.PERMANENT_BLOCK_IP,
+                         RESTRICTION_ACTIONS[(ConditionalAccessTarget.SOURCE_IP, True)])
         for (target, permanent), action in RESTRICTION_ACTIONS.items():
             self.assertEqual(str(default_error_message(action)),
                              str(DEFAULT_ERROR_MESSAGES[action]), f"{target}/{permanent}")
@@ -946,7 +953,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
     def test_10i_reset_on_success_round_trips(self):
         # Off is storable and readable back; the update reports it as changed only when it was sent, so a
         # PATCH of something else never silently rewrites it.
-        policy_id = create_conditional_access_policy("NoReset", 600, ["PIN_FAIL"], [_stage()], ConditionalAccessTarget.USER, 1,
+        policy_id = create_conditional_access_policy("NoReset", 600, ["PIN_FAIL"], [_stage()],
+                                                     ConditionalAccessTarget.USER, 1,
                                           reset_on_success=False)
         self.assertFalse(get_conditional_access_policy(policy_id)["reset_on_success"])
         _, changed = update_conditional_access_policy(policy_id, reset_on_success=True)
@@ -972,7 +980,8 @@ class ConditionalAccessPolicyCrudTestCase(MyTestCase):
     def test_10k_switching_to_source_ip_clears_reset_on_success(self):
         # The stored reset is not carried into a target that cannot honour it: the switch clears it and says so,
         # so the policy never claims a reset it does not perform.
-        policy_id = create_conditional_access_policy("Switcher", 600, ["PASSWORD_FAIL"], [_stage()], ConditionalAccessTarget.USER, 1)
+        policy_id = create_conditional_access_policy("Switcher", 600, ["PASSWORD_FAIL"], [_stage()],
+                                                     ConditionalAccessTarget.USER, 1)
         self.assertTrue(get_conditional_access_policy(policy_id)["reset_on_success"])
         _, changed = update_conditional_access_policy(
             policy_id, target=ConditionalAccessTarget.SOURCE_IP, count_mode=CountMode.DISTINCT_USERS,

@@ -1,9 +1,8 @@
 import copy
 import json
-from typing import Optional, Union
 from urllib.parse import quote
 
-import mock
+from unittest import mock
 import pytest
 import responses
 from requests.exceptions import SSLError
@@ -580,7 +579,8 @@ class HTTPResolverTestCase(MyTestCase):
             CONFIG_DELETE_USER: {METHOD: HTTPMethod.DELETE.value, ENDPOINT: "/users/{userid}",
                                  HAS_ERROR_HANDLER: True, ERROR_RESPONSE: '{"success": false}'},
             CONFIG_USER_AUTH: {METHOD: HTTPMethod.POST.value, ENDPOINT: "/auth",
-                               REQUEST_MAPPING: '{"grant_type": "password", "username": "{username}", "password": "{password}"}',
+                               REQUEST_MAPPING: '{"grant_type": "password", "username": "{username}", '
+                                                '"password": "{password}"}',
                                RESPONSE_MAPPING: '{"access_token": "{access_token}"}',
                                HAS_ERROR_HANDLER: True, ERROR_RESPONSE: '{"success": false}'}
         }
@@ -753,7 +753,8 @@ class HTTPResolverTestCase(MyTestCase):
         # success
         instance.loadConfig(self.advanced_config)
         responses.add(responses.GET, "https://example.com/users", status=200,
-                      body="""[{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234", "businessPhone": "+1234567890"},
+                      body="""[{"login": "testuser", "first_name": "Test", "last_name": "User",
+                                 "id": "1234", "businessPhone": "+1234567890"},
                                 {"login": "corny", "first_name": "Corny", "last_name": "Meier", "id": "5678"}]""")
         users = instance.getUserList()
         self.assertEqual(len(users), 2)
@@ -773,8 +774,9 @@ class HTTPResolverTestCase(MyTestCase):
 
         # success with defined attributes
         responses.add(responses.GET, "https://example.com/users", status=200,
-                      body="""[{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234", "businessPhone": "+1234567890"},
-                                        {"login": "corny", "first_name": "Corny", "last_name": "Meier", "id": "5678"}]""")
+                      body="""[{"login": "testuser", "first_name": "Test", "last_name": "User",
+                                 "id": "1234", "businessPhone": "+1234567890"},
+                                {"login": "corny", "first_name": "Corny", "last_name": "Meier", "id": "5678"}]""")
         users = instance.getUserList(attributes=["username", "givenname", "unknown"])
         self.assertEqual(len(users), 2)
         self.assertEqual(users[0]['username'], 'testuser')
@@ -798,7 +800,8 @@ class HTTPResolverTestCase(MyTestCase):
                                           USER_GROUPS_ATTRIBUTE: "name"}
         instance.loadConfig(config)
         responses.add(responses.GET, "https://example.com/users", status=200,
-                      body="""[{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234", "businessPhone": "+1234567890"}]""")
+                      body="""[{"login": "testuser", "first_name": "Test", "last_name": "User",
+                                 "id": "1234", "businessPhone": "+1234567890"}]""")
         responses.add(responses.GET, "https://example.com/users/1234/groups", status=200,
                       body="""[{"name": "group1"}, {"name": "group2"}]""")
 
@@ -1197,7 +1200,8 @@ class HTTPResolverTestCase(MyTestCase):
         instance = HTTPResolver()
         instance.loadConfig(self.advanced_config)
         responses.add(responses.GET, "https://example.com/users/1234", status=200,
-                      body="""{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234", "businessPhone": "+1234567890"}""")
+                      body="""{"login": "testuser", "first_name": "Test", "last_name": "User",
+                               "id": "1234", "businessPhone": "+1234567890"}""")
 
         response = instance.get_user_info('1234')
         self.assertEqual(response.get('username'), 'testuser')
@@ -1208,7 +1212,8 @@ class HTTPResolverTestCase(MyTestCase):
 
         # define attributes
         responses.add(responses.GET, "https://example.com/users/1234", status=200,
-                      body="""{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234", "businessPhone": "+1234567890"}""")
+                      body="""{"login": "testuser", "first_name": "Test", "last_name": "User",
+                               "id": "1234", "businessPhone": "+1234567890"}""")
         response = instance.get_user_info('1234', ["username", "givenname", "unknown"])
         self.assertEqual("testuser", response.get('username'))
         self.assertEqual("Test", response.get('givenname'))
@@ -1491,7 +1496,8 @@ class HTTPResolverTestCase(MyTestCase):
 
         # failed http request
         responses.add(responses.GET, "https://example.com/users/1234/groups", status=403,
-                      body="""{"error":"HTTP 403 Forbidden","error_description":"For more on this error consult the server log at the debug level."}""")
+                      body='{"error":"HTTP 403 Forbidden",'
+                           '"error_description":"For more on this error consult the server log at the debug level."}')
         groups = instance.get_user_groups(user)
         self.assertListEqual([], groups)
 
@@ -1535,7 +1541,7 @@ class HTTPResolverTestCase(MyTestCase):
 
 
 class ConfidentialClientApplicationMock:
-    def __init__(self, client_id: str, authority: str, client_credential: Union[str, dict[str, str]]):
+    def __init__(self, client_id: str, authority: str, client_credential: str | dict[str, str]):
         self.client_id = client_id
         self.authority = authority
         self.client_credential = client_credential
@@ -1563,7 +1569,7 @@ class ConfidentialClientApplicationMockError(ConfidentialClientApplicationMock):
 
 class EntraIDResolverTestCase(MyTestCase):
 
-    def set_up_resolver(self, config_update: Optional[dict] = None):
+    def set_up_resolver(self, config_update: dict | None = None):
         resolver = EntraIDResolver()
         config = {CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value,
                   CLIENT_SECRET: "secret", TENANT: "organization"}
@@ -1675,12 +1681,12 @@ class EntraIDResolverTestCase(MyTestCase):
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
                         new=ConfidentialClientApplicationMock):
             with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.open", side_effect=FileNotFoundError):
-                self.assertRaises(ParameterError, EntraIDResolver().loadConfig, {CLIENT_ID: "1234",
-                                                                                 CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
-                                                                                 CLIENT_CERTIFICATE: {
-                                                                                     PRIVATE_KEY_FILE: "tests/testdata/private.pem",
-                                                                                     CERTIFICATE_FINGERPRINT: "fingerprint"},
-                                                                                 TENANT: "organization"})
+                config = {CLIENT_ID: "1234",
+                          CLIENT_CREDENTIAL_TYPE: ClientCredentialType.CERTIFICATE.value,
+                          CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/private.pem",
+                                               CERTIFICATE_FINGERPRINT: "fingerprint"},
+                          TENANT: "organization"}
+                self.assertRaises(ParameterError, EntraIDResolver().loadConfig, config)
 
     def test_03_getResolverClassDescriptor(self):
         descriptor = EntraIDResolver().getResolverClassDescriptor()
@@ -1767,7 +1773,8 @@ class EntraIDResolverTestCase(MyTestCase):
                                     "surname": null,
                                     "userPrincipalName": "Adams@contoso.com",
                                     "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0",
-                                    "memberOf": [{"id": "1234", "displayName": "Group1"}, {"id": "5678", "displayName": "Group2"}]},
+                                    "memberOf": [{"id": "1234", "displayName": "Group1"},
+                                                 {"id": "5678", "displayName": "Group2"}]},
                                    {"businessPhones": ["425-555-0100"],
                                     "displayName": "MOD Administrator",
                                     "givenName": "MOD",
@@ -1893,7 +1900,8 @@ class EntraIDResolverTestCase(MyTestCase):
                                             "surname": null,
                                             "userPrincipalName": "Adams@contoso.com",
                                             "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0",
-                                            "memberOf": [{"id": "1234", "displayName": "Group1"}, {"id": "5678", "displayName": "Group2"}]},
+                                            "memberOf": [{"id": "1234", "displayName": "Group1"},
+                                                         {"id": "5678", "displayName": "Group2"}]},
                                            {"businessPhones": ["425-555-0100"],
                                             "displayName": "MOD Administrator",
                                             "givenName": "MOD",
@@ -1934,7 +1942,8 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # Mock an error response from the API
         responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users", status=501,
-                      body="""{"error": {"code": "NotImplemented", "message": "Property can not be returned within a user collection."}}""")
+                      body='{"error": {"code": "NotImplemented", '
+                           '"message": "Property can not be returned within a user collection."}}')
         self.assertRaises(ResolverError, resolver.getUserList)
 
         # Error response with no error code
@@ -1979,7 +1988,8 @@ class EntraIDResolverTestCase(MyTestCase):
                                            "surname": "Vance",
                                            "userPrincipalName": "AdeleV@contoso.com",
                                            "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd",
-                                           "memberOf": [{"id": "1234", "displayName": "Group1"}, {"id": "5678", "displayName": "Group2"}]
+                                           "memberOf": [{"id": "1234", "displayName": "Group1"},
+                                                        {"id": "5678", "displayName": "Group2"}]
                                         }""")
 
         # without groups
@@ -2028,8 +2038,9 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # User ID does not exists
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=404,
-                      body="""{"error": {"code": "Request_ResourceNotFound", 
-                               "message": "Resource '12345789' does not exist or one of its queried reference-property objects are not present."}}"""
+                      body='{"error": {"code": "Request_ResourceNotFound", "message": "Resource '
+                           "'12345789' does not exist or one of its queried reference-property "
+                           'objects are not present."}}'
                       )
         self.assertDictEqual({}, resolver.get_user_info(user_id))
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=404, body="{}")
@@ -2074,8 +2085,9 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # User ID does not exists
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=404,
-                      body="""{"error": {"code": "Request_ResourceNotFound", 
-                                       "message": "Resource '12345789' does not exist or one of its queried reference-property objects are not present."}}"""
+                      body='{"error": {"code": "Request_ResourceNotFound", "message": "Resource '
+                           "'12345789' does not exist or one of its queried reference-property "
+                           'objects are not present."}}'
                       )
         self.assertEqual("", resolver.getUsername(user_id))
 
@@ -2105,7 +2117,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # User ID does not exists
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{quoted_user_name}", status=404,
-                      body="""{"error": {"code": "Request_ResourceNotFound", 
+                      body="""{"error": {"code": "Request_ResourceNotFound",
                                                "message": "Resource 'AdeleV@contoso.com' does not exist."}}"""
                       )
         self.assertEqual("", resolver.getUserId(user_name))
@@ -2367,7 +2379,9 @@ class EntraIDResolverTestCase(MyTestCase):
         with mock.patch("logging.Logger.debug") as mock_log:
             search_params = resolver._get_search_params(search_dict)
             self.assertIn("$filter", search_params)
-            correct_query = "(startswith(userPrincipalName, 'test') or endswith(userPrincipalName, 'test')) and (id eq '1234') and (startswith(mail, 'test') or endswith(mail, 'test'))"
+            correct_query = ("(startswith(userPrincipalName, 'test') or endswith(userPrincipalName, 'test')) "
+                             "and (id eq '1234') "
+                             "and (startswith(mail, 'test') or endswith(mail, 'test'))")
             self.assertEqual(correct_query, search_params["$filter"])
             mock_log.assert_called_with("Search parameter 'favorite_color' not found in attribute mapping. Search "
                                         "without this parameter.")
@@ -2566,7 +2580,7 @@ class EntraIDResolverTestCase(MyTestCase):
         resolver = self.set_up_resolver()
 
         responses.add(responses.POST, "https://graph.microsoft.com/v1.0/users", status=403,
-                      body="""{"error": {"code": "Authorization_RequestDenied", 
+                      body="""{"error": {"code": "Authorization_RequestDenied",
                                "message": "Insufficient privileges to complete the operation."}}""")
 
         user_data = {"username": "AdeleV@contoso.com",
@@ -2600,7 +2614,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # No permission
         responses.add(responses.PATCH, f"https://graph.microsoft.com/v1.0/users/{uid}", status=403,
-                      body="""{"error": {"code": "Authorization_RequestDenied", 
+                      body="""{"error": {"code": "Authorization_RequestDenied",
                                "message": "Insufficient privileges to complete the operation."}}""")
         self.assertFalse(resolver.update_user(uid, new_params))
 
@@ -2629,7 +2643,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # No permission
         responses.add(responses.DELETE, f"https://graph.microsoft.com/v1.0/users/{uid}", status=403,
-                      body="""{"error": {"code": "Authorization_RequestDenied", 
+                      body="""{"error": {"code": "Authorization_RequestDenied",
                                "message": "Insufficient privileges to complete the operation."}}""")
         self.assertFalse(resolver.delete_user(uid))
 
@@ -2651,7 +2665,8 @@ class EntraIDResolverTestCase(MyTestCase):
             return 200, {}, json.dumps({"token_type": "Bearer", "access_token": "12345"})
         else:
             return 400, {}, json.dumps({"error": "invalid_grant",
-                                        "error_description": "Error validating credentials due to invalid username or password."})
+                                        "error_description": "Error validating credentials due to "
+                                                             "invalid username or password."})
 
     @responses.activate
     def test_23_check_pass_success(self):
@@ -2709,7 +2724,8 @@ class EntraIDResolverTestCase(MyTestCase):
                                          CLIENT_CERTIFICATE: {PRIVATE_KEY_FILE: "tests/testdata/private.pem",
                                                               CERTIFICATE_FINGERPRINT: "123456"}})
         with pytest.raises(ResolverError,
-                           match="User authentication with password is not supported when using a certificate for the client"):
+                           match="User authentication with password is not supported when using a "
+                                 "certificate for the client"):
             resolver.checkPass("111-aaa-333", "testpassword", "testuser")
 
     def test_25_get_user_groups(self):
@@ -2836,7 +2852,7 @@ class KeycloakResolverTestCase(MyTestCase):
 
         # Mock users API
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                 "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
                                 {"username": "albert", "firstName": "Albert", "lastName": "Einstein",
                                  "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
@@ -2867,7 +2883,7 @@ class KeycloakResolverTestCase(MyTestCase):
         # Mock users API
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users?username=eli&exact=false",
                       status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                             "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
                                             {"username": "eli", "firstName": "Elizabeth", "lastName": "Einstein",
                                              "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
@@ -2880,10 +2896,10 @@ class KeycloakResolverTestCase(MyTestCase):
         responses.add(responses.GET,
                       "http://localhost:8080/admin/realms/master/users?username=eli&firstName=Elizabeth&exact=false",
                       status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
-                                                    "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
-                                                    {"username": "eli", "firstName": "Elizabeth", "lastName": "Einstein",
-                                                     "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
+                                 "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
+                                {"username": "eli", "firstName": "Elizabeth", "lastName": "Einstein",
+                                 "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
 
         user_list = resolver.getUserList({"username": "*eli*", "givenname": "Elizabeth"})
         self.assertEqual(2, len(user_list))
@@ -2896,7 +2912,7 @@ class KeycloakResolverTestCase(MyTestCase):
         # Mock users API
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users?username=eli&exact=true",
                       status=200,
-                      body="""[{"username": "eli", "firstName": "Elizabeth", "lastName": "Einstein", 
+                      body="""[{"username": "eli", "firstName": "Elizabeth", "lastName": "Einstein",
                                 "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]""")
 
         user_list = resolver.getUserList({"username": "eli"})
@@ -2921,7 +2937,7 @@ class KeycloakResolverTestCase(MyTestCase):
 
         # Mock users API
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                     "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
         # Mock groups API
         responses.add(responses.GET,
@@ -2948,7 +2964,7 @@ class KeycloakResolverTestCase(MyTestCase):
 
         # Mock users API
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                         "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
         # Mock groups API
         responses.add(responses.GET,
@@ -2975,7 +2991,7 @@ class KeycloakResolverTestCase(MyTestCase):
         # Mock users API
         for _ in range(2):
             responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                          body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                          body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                             "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
         # Mock groups API
         responses.add(responses.GET,
@@ -3116,7 +3132,7 @@ class KeycloakResolverTestCase(MyTestCase):
         self.assertEqual("6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0", user_id)
 
         # Mock users API: found no matching user
-        responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users", status=200, body="[]")
+        responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200, body="[]")
         user_id = resolver.getUserId(user_name)
         self.assertEqual("", user_id)
 
@@ -3184,7 +3200,7 @@ class KeycloakResolverTestCase(MyTestCase):
                                callback=self.add_user_callback)
         # After creating the user we need to fetch the user id
         responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                      body="""[{"username": "ezott", "firstName": "Elizabeth", "lastName": "Zott", 
+                      body="""[{"username": "ezott", "firstName": "Elizabeth", "lastName": "Zott",
                       "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
 
         user_data = {"username": "ezott",
@@ -3395,7 +3411,7 @@ class KeycloakResolverTestCase(MyTestCase):
         # Get user by id
         responses.add(responses.GET,
                       "http://localhost:8080/admin/realms/master/users/6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0",
-                      status=200, body="""{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                      status=200, body="""{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                             "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}""")
 
         def user_list_callback(request):
