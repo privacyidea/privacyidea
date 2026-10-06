@@ -27,30 +27,65 @@
     [class.margin-bottom-16]="spaced()"
     [class.table-actions-roomy]="layout() === 'roomy'">
     <ng-content />
-    @for (action of toolbarActions(); track action.id) {
-      <button
-        (click)="action.run?.()"
-        [attr.data-overflow-pinned]="action.pinned ? '' : null"
-        [class]="buttonClass(action)"
-        [disabled]="action.disabled"
-        [matMenuTriggerFor]="action.submenu ?? null"
-        [matTooltip]="action.tooltip ?? ''"
-        mat-stroked-button>
-        <!-- The icon is a direct child of the button so Material projects it into its icon slot, beside the
-             label, instead of into the label. -->
-        @if (action.badge) {
-          <span
-            [class.icon-badge-spaced]="action.spacedBadge"
-            class="icon-badge">
+    @for (action of toolbarButtons(); track action.id) {
+      <!-- Only an action with a submenu carries the menu trigger, so a plain button is not announced as
+           collapsed. The icon is a direct child of each button so Material projects it into its icon slot,
+           beside the label, instead of into the label. -->
+      @if (action.submenu) {
+        <button
+          (click)="action.run?.()"
+          [attr.data-overflow-pinned]="action.pinned ? '' : null"
+          [class]="buttonClass(action)"
+          [disabled]="action.disabled"
+          [matMenuTriggerFor]="action.submenu"
+          [matTooltip]="action.tooltip ?? ''"
+          mat-stroked-button>
+          @if (action.badge) {
+            <span
+              [class.icon-badge-spaced]="action.spacedBadge"
+              class="icon-badge">
+              <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+          } @else {
             <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
-            <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-          </span>
-        } @else {
-          <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
-        }
-        <span>{{ action.label }}</span>
-      </button>
+          }
+          <span>{{ action.label }}</span>
+        </button>
+      } @else {
+        <button
+          (click)="action.run?.()"
+          [attr.data-overflow-pinned]="action.pinned ? '' : null"
+          [class]="buttonClass(action)"
+          [disabled]="action.disabled"
+          [matTooltip]="action.tooltip ?? ''"
+          mat-stroked-button>
+          @if (action.badge) {
+            <span
+              [class.icon-badge-spaced]="action.spacedBadge"
+              class="icon-badge">
+              <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
+              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
+            </span>
+          } @else {
+            <mat-icon [class]="buttonIconClass(action)">{{ action.icon }}</mat-icon>
+          }
+          <span>{{ action.label }}</span>
+        </button>
+      }
     }
+    <!-- Everything after the spacer is reserved right-hand content that the overflow handling keeps
+         in place. -->
+    <span class="spacer"></span>
+    @for (action of toolbarToggles(); track action.id) {
+      <mat-slide-toggle
+        (change)="action.run?.()"
+        [checked]="!!action.checked"
+        [disabled]="action.disabled">
+        {{ action.label }}
+      </mat-slide-toggle>
+    }
+    <ng-content select="[tableActionsEnd]" />
   </div>
 }
 
@@ -60,9 +95,20 @@
   @for (action of menuActions(); track action.id) {
     @if (action.submenu) {
       <button
+        [disabled]="action.disabled"
         [matMenuTriggerFor]="action.submenu"
         mat-menu-item>
         <mat-icon [class]="action.fontIcon ?? ''">{{ action.menuIcon ?? action.icon }}</mat-icon>
+        <span>{{ action.label }}</span>
+      </button>
+    } @else if (action.kind === "toggle") {
+      <button
+        (click)="action.run?.()"
+        [attr.aria-checked]="!!action.checked"
+        [disabled]="action.disabled"
+        mat-menu-item
+        role="menuitemcheckbox">
+        <mat-icon>{{ action.checked ? "check_box" : "check_box_outline_blank" }}</mat-icon>
         <span>{{ action.label }}</span>
       </button>
     } @else {

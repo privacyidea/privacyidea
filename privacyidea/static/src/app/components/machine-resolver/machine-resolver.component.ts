@@ -18,6 +18,7 @@
  **/
 
 import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { Component, computed, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -27,7 +28,6 @@ import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { MatMenuModule } from "@angular/material/menu";
 import { Router, RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -62,6 +62,7 @@ const columnKeysMap = [
   styleUrls: ["./machine-resolver.component.scss"],
   standalone: true,
   imports: [
+    TableActionsComponent,
     TableActionsTriggerComponent,
     TooltipAriaLabelDirective,
     RefocusAfterReloadDirective,
@@ -77,8 +78,7 @@ const columnKeysMap = [
     ScrollToTopDirective,
     RouterLink,
     TableStateComponent,
-    ScrollEdgesDirective,
-    MatMenuModule
+    ScrollEdgesDirective
   ]
 })
 export class MachineResolverComponent {
@@ -88,6 +88,21 @@ export class MachineResolverComponent {
 
   readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
   readonly authService: AuthServiceInterface = inject(AuthService);
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "new",
+      label: $localize`:@@machine.newMachineResolver:New Machine Resolver`,
+      tone: "primary",
+      width: "l",
+      icon: "lan",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.authService.actionAllowed("mresolverwrite"),
+      run: () => this.onNewMachineResolver()
+    }
+  ]);
+
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);

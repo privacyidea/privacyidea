@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 // Custom SVG-mask icon glyphs (.mdi--* / .ms--*) and the .icon-badge overlay
 // system. Global icon styling shared across components; pulled in via buttons.
 
@@ -140,7 +142,11 @@ mat-icon.ms--shield-list {
 }
 
 .icon-badge {
-  --mat-menu-item-spacing: 0;
+  @include mat.menu-overrides(
+    (
+      item-spacing: 0
+    )
+  );
   position: relative;
   display: inline-flex;
   align-items: center;

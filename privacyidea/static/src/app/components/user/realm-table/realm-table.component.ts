@@ -18,6 +18,7 @@
  **/
 
 import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { NgClass } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
 import {
@@ -30,6 +31,7 @@ import {
   OnInit,
   signal,
   ViewChild,
+  viewChild,
   WritableSignal
 } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -57,7 +59,7 @@ import {
   MatTableDataSource
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { MatMenuModule } from "@angular/material/menu";
+import { MatMenu, MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -114,6 +116,7 @@ const columnKeysMap = [
   selector: "app-realm-table",
   standalone: true,
   imports: [
+    TableActionsComponent,
     TableActionsTriggerComponent,
     SortByLabelPipe,
     TooltipAriaLabelDirective,
@@ -171,6 +174,21 @@ export class RealmTableComponent implements OnDestroy, OnInit {
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   // Table State Signals
   selectedNode = signal<string>(ALL_NODES_VALUE);
+  private readonly nodeMenu = viewChild.required<MatMenu>("nodeMenu");
+
+  /** The node select is projected into the toolbar; the menu reaches the same choice through a submenu. */
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "node",
+      label: $localize`:@@realm.node:Node`,
+      tone: "secondary",
+      width: "m",
+      icon: "dns",
+      placement: "menu",
+      submenu: this.nodeMenu()
+    }
+  ]);
+
   filterString = signal<string>("");
   sort = signal({ active: "name", direction: "asc" } as Sort);
 

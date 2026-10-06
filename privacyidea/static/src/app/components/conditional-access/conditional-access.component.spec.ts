@@ -409,6 +409,32 @@ describe("ConditionalAccessComponent", () => {
       expect(reorderButtons().length).toBe(6);
     });
 
+    it("should swap Reorder Priorities for pinned Save Order and Cancel, with the hint, in the toolbar", () => {
+      const toolbarLabels = (): string[] =>
+        Array.from(fixture.nativeElement.querySelectorAll("app-table-actions > div > button:not(.overflow-more-btn)")).map(
+          (button) => (button as HTMLElement).textContent!.replace(/\s+/g, " ").trim()
+        );
+      const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+      authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, rights: ["conditional_access_policy_write"] });
+      fixture.detectChanges();
+      expect(toolbarLabels().some((label) => label.includes("Reorder Priorities"))).toBe(true);
+      expect(fixture.nativeElement.querySelector("app-table-actions app-info-hint")).toBeNull();
+
+      component.startReorder();
+      fixture.detectChanges();
+
+      const labels = toolbarLabels();
+      expect(labels.some((label) => label.includes("Reorder Priorities"))).toBe(false);
+      const pinned: HTMLButtonElement[] = Array.from(
+        fixture.nativeElement.querySelectorAll("app-table-actions button[data-overflow-pinned]")
+      );
+      expect(pinned.map((button) => button.textContent!.replace(/\s+/g, " ").trim())).toEqual([
+        "saveSave Order",
+        "closeCancel"
+      ]);
+      expect(fixture.nativeElement.querySelector("app-table-actions app-info-hint")).not.toBeNull();
+    });
+
     it("should clear the row selection when entering the mode", () => {
       component.toggleRow(third);
       expect(component.policySelection().length).toBe(1);

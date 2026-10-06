@@ -20,6 +20,7 @@ import { Component, computed, input, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenu, MatMenuModule, MatMenuPanel } from "@angular/material/menu";
+import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { OverflowNavDirective } from "../directives/overflow-nav/overflow-nav.directive";
 
@@ -35,7 +36,11 @@ export interface TableAction {
   label: string;
   tone: TableActionTone;
   /** Width tier of the toolbar button (button-width-*). */
-  width: "m" | "l";
+  width: "m" | "l" | "xl";
+  /** "toggle" draws a slide toggle after the buttons and a checkbox item in the menu; defaults to "button". */
+  kind?: "button" | "toggle";
+  /** State of a toggle action. */
+  checked?: boolean;
   /** Material ligature drawn in the toolbar button and, unless menuIcon is set, in the menu item. */
   icon?: string;
   /** Ligature of the menu item where it differs from the toolbar button's. */
@@ -68,17 +73,19 @@ export interface TableAction {
  * A feature describes its actions once as TableAction[] and gets both renderings, with the layout,
  * the button styling and the overflow handling in one place. Anything that is not a plain action goes
  * into the default content slot, which projects at the start of the toolbar (e.g. a realm select).
+ * Fixed-width content marked `tableActionsEnd` projects at the end of the toolbar, after the toggle
+ * actions, as reserved right-hand content that does not fold into "More" (e.g. an info hint).
  * The mat-menu is exposed as `menu` for the trigger; feature components extend TableActionsHost to
  * pass it on.
  */
 @Component({
   selector: "app-table-actions",
-  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule, OverflowNavDirective],
+  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatSlideToggleModule, MatTooltipModule, OverflowNavDirective],
   templateUrl: "./table-actions.component.html",
   styleUrl: "./table-actions.component.scss"
 })
 export class TableActionsComponent {
-  readonly actions = input.required<TableAction[]>();
+  readonly actions = input<TableAction[]>([]);
   /** "compact" is a wrapping row with an 8px gap; "roomy" a single row with a 16px gap and centred items. */
   readonly layout = input<"compact" | "roomy">("compact");
   /** Leaves the usual space below the toolbar; off where the row that holds it provides that space. */
@@ -94,6 +101,14 @@ export class TableActionsComponent {
   protected readonly toolbarActions = computed(() =>
     this.menuActions().filter((action) => action.placement !== "menu")
   );
+  protected readonly toolbarButtons = computed(() =>
+    this.toolbarActions().filter((action) => action.kind !== "toggle")
+  );
+  protected readonly toolbarToggles = computed(() =>
+    this.toolbarActions().filter((action) => action.kind === "toggle")
+  );
+  /** Whether the menu holds any action, so a page can hide its trigger otherwise. */
+  readonly hasMenuActions = computed(() => this.menuActions().length > 0);
 
   protected buttonClass(action: TableAction): string {
     return `action-button-${action.tone} button-width-${action.width}`;

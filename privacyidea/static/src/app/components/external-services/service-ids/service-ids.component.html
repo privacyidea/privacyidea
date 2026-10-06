@@ -42,7 +42,9 @@
               placeholder="Filter by name or description" />
           </app-clearable-input>
         </mat-form-field>
-        <app-table-actions-trigger [menu]="tableActionsMenu" />
+        @if (pageActions.hasMenuActions()) {
+          <app-table-actions-trigger [menu]="pageActions.menu()" />
+        }
       </div>
       <mat-paginator
         appPaginatorCompactRange
@@ -51,35 +53,19 @@
         [pageSize]="pageSizeOptions()[1]"
         showFirstLastButtons />
     </div>
-    <div class="actions-row margin-bottom-16">
+    <div class="actions-row">
       <div class="actions-row-inner">
-        <div class="actions-container">
-          <button
-            (click)="onCreateNewServiceId()"
-            class="action-button-primary button-width-l"
-            mat-stroked-button>
-            <span class="icon-badge">
-              <mat-icon class="icon-badge-pad-3">storage</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-            </span>
-            <span i18n="@@common.createService">Create Service ID</span>
-          </button>
-          <button
-            (click)="deleteSelected()"
-            [disabled]="!selector.hasSelection()"
-            class="action-button-delete-secondary button-width-l"
-            mat-stroked-button>
-            <mat-icon>delete_sweep</mat-icon>
-            <span i18n="@@common.delete">Delete</span>
-          </button>
-
-          <p
-            class="margin-bottom-0 margin-top-0"
-            i18n="@@serviceId.serviceIdsUsed"
-            >Service IDs can be used to attach e.g. SSH keys to certain machines and services. <br />
-            To view attached tokens go to <a [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">token applications.</a></p
-          >
-        </div>
+        <app-table-actions
+          #pageActions
+          [actions]="toolbarActions()"
+          [collapseWhenEmpty]="true"
+          layout="roomy" />
+        <p
+          class="service-ids-intro"
+          i18n="@@serviceId.serviceIdsUsed"
+          >Service IDs can be used to attach e.g. SSH keys to certain machines and services. <br />
+          To view attached tokens go to <a [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">token applications.</a></p
+        >
       </div>
     </div>
 
@@ -216,19 +202,3 @@
     </app-table-state>
   }
 </div>
-
-<mat-menu #tableActionsMenu="matMenu">
-  <button
-    (click)="onCreateNewServiceId()"
-    mat-menu-item>
-    <mat-icon>storage</mat-icon>
-    <span i18n="@@common.createService">Create Service ID</span>
-  </button>
-  <button
-    (click)="deleteSelected()"
-    [disabled]="!selector.hasSelection()"
-    mat-menu-item>
-    <mat-icon>delete_sweep</mat-icon>
-    <span i18n="@@common.delete">Delete</span>
-  </button>
-</mat-menu>

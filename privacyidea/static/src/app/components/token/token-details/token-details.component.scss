@@ -1,5 +1,6 @@
 @use "styles-api" as styles;
 @use "table";
+@use "@angular/material" as mat;
 
 :host {
   display: flex;
@@ -50,7 +51,11 @@
   // this component's scoping attribute and these rules reach it directly. The compound selector
   // outranks the global .overflow-more-btn.mat-mdc-button rule in overflow.scss.
   .overflow-more-btn.mat-mdc-button {
-    --mat-button-text-label-text-color: var(--mat-sys-primary);
+    @include mat.button-overrides(
+      (
+        text-label-text-color: var(--mat-sys-primary)
+      )
+    );
     border: 1px solid var(--mat-sys-primary);
     background: var(--mat-sys-surface-container-lowest);
     box-sizing: border-box;

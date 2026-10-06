@@ -1,5 +1,11 @@
+@use "@angular/material" as mat;
+
 .pi-dialog {
-  --mat-dialog-content-padding: 0 16px 8px 16px;
+  @include mat.dialog-overrides(
+    (
+      content-padding: 0 16px 8px 16px
+    )
+  );
 
   // The panel shrink-wraps its content, so the width cap has to live in here. Without it a single
   // long line of text stretches the dialog across the viewport (#5841).

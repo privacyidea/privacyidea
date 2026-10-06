@@ -47,86 +47,30 @@
               [disabled]="reorderMode()" />
           </app-clearable-input>
         </mat-form-field>
-        @if (authService.actionAllowed("conditional_access_policy_write")) {
-          <app-table-actions-trigger [menu]="tableActionsMenu" />
+        @if (pageActions.hasMenuActions()) {
+          <app-table-actions-trigger [menu]="pageActions.menu()" />
         }
       </div>
     </div>
 
-    @if (authService.actionAllowed("conditional_access_policy_write")) {
-      <!-- The regular action buttons stay in place but disabled during reorder mode, so the toolbar keeps its shape,
-      and Save/Cancel take over the trailing slot the "Reorder Priorities" button otherwise occupies. -->
-      <div class="actions-row">
-        <div class="actions-row-inner">
-          <div class="flex-row margin-bottom-16 gap-8 ali-center">
-            <button
-              (click)="onCreatePolicy()"
-              class="action-button-primary button-width-l"
-              mat-stroked-button>
-              <span class="icon-badge">
-                <mat-icon class="icon-badge-pad-3">security</mat-icon>
-                <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-              </span>
-              <span i18n="@@common.newConditionalAccess">New Conditional Access</span>
-            </button>
-            <button
-              (click)="toggleEnabledSelected()"
-              [disabled]="policySelection().length === 0 || reorderMode()"
-              class="action-button-secondary button-width-m"
-              mat-stroked-button>
-              <mat-icon>toggle_on</mat-icon>
-              <span i18n="@@common.deActivate">(De)activate</span>
-            </button>
-            <button
-              (click)="toggleDryRunSelected()"
-              [disabled]="policySelection().length === 0 || reorderMode()"
-              class="action-button-secondary button-width-m"
-              mat-stroked-button>
-              <mat-icon>biotech</mat-icon>
-              <span i18n="@@conditionalAccess.toggleDryRun">Toggle Dry Run</span>
-            </button>
-            <button
-              (click)="deleteSelected()"
-              [disabled]="policySelection().length === 0 || reorderMode()"
-              class="action-button-delete-secondary button-width-m"
-              mat-stroked-button>
-              <mat-icon>delete_sweep</mat-icon>
-              <span i18n="@@common.delete">Delete</span>
-            </button>
-            @if (reorderMode()) {
-              <button
-                (click)="saveReorder()"
-                [disabled]="!hasOrderChanges() || reorderSaving()"
-                class="action-button-primary button-width-m"
-                mat-stroked-button>
-                <mat-icon>save</mat-icon>
-                <span i18n="@@conditionalAccess.saveOrder">Save Order</span>
-              </button>
-              <button
-                (click)="cancelReorder()"
-                [disabled]="reorderSaving()"
-                class="action-button-secondary button-width-m"
-                mat-stroked-button>
-                <mat-icon>close</mat-icon>
-                <span i18n="@@common.cancel">Cancel</span>
-              </button>
-              <app-info-hint
-                [text]="priorityReorderHint"
-                [ariaLabel]="priorityReorderHintAriaLabel" />
-            } @else {
-              <button
-                (click)="startReorder()"
-                [disabled]="totalLength() < 2"
-                class="action-button-secondary button-width-m"
-                mat-stroked-button>
-                <mat-icon>swap_vert</mat-icon>
-                <span i18n="@@conditionalAccess.reorderPriorities">Reorder Priorities</span>
-              </button>
-            }
-          </div>
-        </div>
+    <!-- The regular actions stay in place but disabled during reorder mode, so the toolbar keeps its shape, and
+    Save/Cancel take the place of "Reorder Priorities". Both are pinned, so they stay visible while the rest of the
+    row folds into "More". -->
+    <div class="actions-row">
+      <div class="actions-row-inner">
+        <app-table-actions
+          #pageActions
+          [actions]="toolbarActions()"
+          [collapseWhenEmpty]="true">
+          @if (reorderMode()) {
+            <app-info-hint
+              [text]="priorityReorderHint"
+              [ariaLabel]="priorityReorderHintAriaLabel"
+              tableActionsEnd />
+          }
+        </app-table-actions>
       </div>
-    }
+    </div>
 
     <div
       appScrollEdges
@@ -426,59 +370,3 @@
     </app-table-state>
   }
 </div>
-
-<!-- The action row's controls as menu items, for the compact trigger shown next to the filter once the
-     table is scrolled and that row is hidden. -->
-<mat-menu #tableActionsMenu="matMenu">
-  <button
-    (click)="onCreatePolicy()"
-    mat-menu-item>
-    <mat-icon>security</mat-icon>
-    <span i18n="@@common.newConditionalAccess">New Conditional Access</span>
-  </button>
-  <button
-    (click)="toggleEnabledSelected()"
-    [disabled]="policySelection().length === 0 || reorderMode()"
-    mat-menu-item>
-    <mat-icon>toggle_on</mat-icon>
-    <span i18n="@@common.deActivate">(De)activate</span>
-  </button>
-  <button
-    (click)="toggleDryRunSelected()"
-    [disabled]="policySelection().length === 0 || reorderMode()"
-    mat-menu-item>
-    <mat-icon>biotech</mat-icon>
-    <span i18n="@@conditionalAccess.toggleDryRun">Toggle Dry Run</span>
-  </button>
-  <button
-    (click)="deleteSelected()"
-    [disabled]="policySelection().length === 0 || reorderMode()"
-    mat-menu-item>
-    <mat-icon>delete_sweep</mat-icon>
-    <span i18n="@@common.delete">Delete</span>
-  </button>
-  @if (reorderMode()) {
-    <button
-      (click)="saveReorder()"
-      [disabled]="!hasOrderChanges() || reorderSaving()"
-      mat-menu-item>
-      <mat-icon>save</mat-icon>
-      <span i18n="@@conditionalAccess.saveOrder">Save Order</span>
-    </button>
-    <button
-      (click)="cancelReorder()"
-      [disabled]="reorderSaving()"
-      mat-menu-item>
-      <mat-icon>close</mat-icon>
-      <span i18n="@@common.cancel">Cancel</span>
-    </button>
-  } @else {
-    <button
-      (click)="startReorder()"
-      [disabled]="totalLength() < 2"
-      mat-menu-item>
-      <mat-icon>swap_vert</mat-icon>
-      <span i18n="@@conditionalAccess.reorderPriorities">Reorder Priorities</span>
-    </button>
-  }
-</mat-menu>

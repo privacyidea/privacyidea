@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { LiveAnnouncer } from "@angular/cdk/a11y";
 import {
   Component,
@@ -37,7 +38,6 @@ import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatSlideToggle, MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -70,6 +70,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-conditional-access",
   standalone: true,
   imports: [
+    TableActionsComponent,
     TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     MatTableModule,
@@ -86,8 +87,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatInput,
     InfoHintComponent,
     TableStateComponent,
-    ScrollEdgesDirective,
-    MatMenuModule
+    ScrollEdgesDirective
   ],
   templateUrl: "./conditional-access.component.html",
   styleUrl: "./conditional-access.component.scss"
@@ -175,6 +175,87 @@ export class ConditionalAccessComponent implements OnDestroy {
     const baseline = this.baselineOrder();
     const draft = this.draftOrder();
     return draft.length !== baseline.length || draft.some((policy, index) => policy.id !== baseline[index].id);
+  });
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => {
+    const canWrite = this.authService.actionAllowed("conditional_access_policy_write");
+    const reordering = this.reorderMode();
+    const noSelection = this.policySelection().length === 0;
+    return [
+      {
+        id: "create",
+        label: $localize`:@@common.newConditionalAccess:New Conditional Access`,
+        tone: "primary",
+        width: "l",
+        icon: "security",
+        iconClass: "icon-badge-pad-3",
+        badge: true,
+        visible: canWrite,
+        run: () => this.onCreatePolicy()
+      },
+      {
+        id: "toggle-enabled",
+        label: $localize`:@@common.deActivate:(De)activate`,
+        tone: "secondary",
+        width: "m",
+        icon: "toggle_on",
+        visible: canWrite,
+        disabled: noSelection || reordering,
+        run: () => this.toggleEnabledSelected()
+      },
+      {
+        id: "toggle-dry-run",
+        label: $localize`:@@conditionalAccess.toggleDryRun:Toggle Dry Run`,
+        tone: "secondary",
+        width: "m",
+        icon: "biotech",
+        visible: canWrite,
+        disabled: noSelection || reordering,
+        run: () => this.toggleDryRunSelected()
+      },
+      {
+        id: "delete",
+        label: $localize`:@@common.delete:Delete`,
+        tone: "delete-secondary",
+        width: "m",
+        icon: "delete_sweep",
+        visible: canWrite,
+        disabled: noSelection || reordering,
+        run: () => this.deleteSelected()
+      },
+      {
+        id: "save-order",
+        label: $localize`:@@conditionalAccess.saveOrder:Save Order`,
+        tone: "primary",
+        width: "m",
+        icon: "save",
+        pinned: true,
+        visible: canWrite && reordering,
+        disabled: !this.hasOrderChanges() || this.reorderSaving(),
+        run: () => this.saveReorder()
+      },
+      {
+        id: "cancel-reorder",
+        label: $localize`:@@common.cancel:Cancel`,
+        tone: "secondary",
+        width: "m",
+        icon: "close",
+        pinned: true,
+        visible: canWrite && reordering,
+        disabled: this.reorderSaving(),
+        run: () => this.cancelReorder()
+      },
+      {
+        id: "reorder",
+        label: $localize`:@@conditionalAccess.reorderPriorities:Reorder Priorities`,
+        tone: "secondary",
+        width: "m",
+        icon: "swap_vert",
+        visible: canWrite && !reordering,
+        disabled: this.totalLength() < 2,
+        run: () => this.startReorder()
+      }
+    ];
   });
 
   constructor() {

@@ -29,13 +29,15 @@
                 placeholder="Filter across all columns." />
             </app-clearable-input>
           </mat-form-field>
-          <app-table-actions-trigger [menu]="tableActionsMenu" />
+          <app-table-actions-trigger [menu]="pageActions.menu()" />
         </div>
       </div>
 
       <div class="actions-row">
         <div class="actions-row-inner">
-          <div class="flex-row margin-bottom-16">
+          <app-table-actions
+            #pageActions
+            [actions]="toolbarActions()">
             <mat-form-field
               class="input-width-m"
               subscriptSizing="dynamic">
@@ -51,7 +53,7 @@
                 }
               </mat-select>
             </mat-form-field>
-          </div>
+          </app-table-actions>
         </div>
       </div>
 
@@ -397,17 +399,6 @@
     }
   </div>
 </div>
-
-<!-- The node filter as a menu, for the compact trigger shown next to the filter once the table is
-     scrolled and the row holding the node selector is hidden. -->
-<mat-menu #tableActionsMenu="matMenu">
-  <button
-    [matMenuTriggerFor]="nodeMenu"
-    mat-menu-item>
-    <mat-icon>dns</mat-icon>
-    <span i18n="@@realm.node">Node</span>
-  </button>
-</mat-menu>
 
 <mat-menu #nodeMenu="matMenu">
   @for (node of nodeOptions(); track node.value) {

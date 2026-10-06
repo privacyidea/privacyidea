@@ -25,15 +25,6 @@
   @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
-.actions-container {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 16px;
-  width: 100%;
-  margin-bottom: 16px;
-}
-
 .no-indention {
   padding-left: 16px;
 }

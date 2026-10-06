@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 // Each action is a collapsible panel: the header shows the action type and its
 // one-line description, the body holds the type select and value fields.
 .ca-action-row {
@@ -17,7 +19,11 @@
 }
 
 .ca-action-item.mat-expansion-panel {
-  --mat-expansion-container-background-color: var(--mat-sys-surface-container-lowest);
+  @include mat.expansion-overrides(
+    (
+      container-background-color: var(--mat-sys-surface-container-lowest)
+    )
+  );
 }
 
 .ca-action-panel-description {

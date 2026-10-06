@@ -13,14 +13,6 @@
   @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 // Column header: label plus its filter/sort control(s) on one row.
 .header-cell {
   display: inline-flex;

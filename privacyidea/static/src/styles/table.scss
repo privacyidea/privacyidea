@@ -447,6 +447,15 @@ $filter-row-min-width: calc(616px + #{$filter-trigger-reserve} + 475px + 8px + 2
   min-width: min(max($min-width, $filter-row-min-width), 100cqw);
 }
 
+// For a table narrower than its filter/paginator row: the card takes the floor as its width, not only as its minimum.
+// Sized from that row, the card follows the paginator's range label, which changes with every filter and page, and
+// re-centring it moves the table sideways. The filter field absorbs the label's changes instead.
+@mixin paginator-range-width($min-width) {
+  $width: min(max($min-width, $filter-row-min-width), 100cqw);
+  min-width: $width;
+  width: $width;
+}
+
 // Collapses a table's own action-button row into a single "more actions" menu trigger once the
 // table has scrolled far enough that collapsing it keeps the table scrollable (controls-collapsed -
 // see ScrollEdgesDirective): the full row only fits above the table, so once scrolled it would sit

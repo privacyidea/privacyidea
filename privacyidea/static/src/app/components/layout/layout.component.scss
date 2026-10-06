@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 :host {
   --loading-indicator-color: var(--mat-sys-primary);
   --loading-indicator-opacity: 0.33;
@@ -5,10 +7,14 @@
 
 .progress-bar {
   // The `top` calc below reads these two tokens, so the bar's offset follows its height.
-  --mat-progress-bar-track-height: 14px;
-  --mat-progress-bar-active-indicator-height: 14px;
-  --mat-progress-bar-active-indicator-color: var(--loading-indicator-color);
-  --mat-progress-bar-track-color: transparent;
+  @include mat.progress-bar-overrides(
+    (
+      track-height: 14px,
+      active-indicator-height: 14px,
+      active-indicator-color: var(--loading-indicator-color),
+      track-color: transparent
+    )
+  );
 
   opacity: var(--loading-indicator-opacity);
 

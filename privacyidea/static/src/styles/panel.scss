@@ -1,11 +1,16 @@
 @use "cards";
+@use "@angular/material" as mat;
 
 // Material paints the panel from these two tokens and its shadow rule outranks a plain
 // .mat-expansion-panel selector, so the raised step is handed over as tokens. On :root, so a
 // container setting them on an ancestor still overrides them by inheritance.
 :root {
-  --mat-expansion-container-background-color: var(--surface-raised);
-  --mat-expansion-container-elevation-shadow: var(--elevation-3);
+  @include mat.expansion-overrides(
+    (
+      container-background-color: var(--surface-raised),
+      container-elevation-shadow: var(--elevation-3)
+    )
+  );
 }
 
 // The content group inside an expansion panel.
@@ -33,7 +38,11 @@
 // Keep this slot in step with --mat-expansion-container-elevation-shadow on :root above.
 .mat-expansion-panel {
   @include cards.card-raised(3);
-  --mat-expansion-container-shape: var(--border-radius);
+  @include mat.expansion-overrides(
+    (
+      container-shape: var(--border-radius)
+    )
+  );
 }
 
 // An accordion joins its panels flat and rounds only the outer corners. Material rounds a panel's

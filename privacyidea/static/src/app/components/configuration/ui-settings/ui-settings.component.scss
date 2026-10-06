@@ -19,6 +19,7 @@
 
 @use "styles-api" as styles;
 @use "table";
+@use "@angular/material" as mat;
 
 .settings-container {
   @include styles.main-component-style;
@@ -119,7 +120,11 @@ h4.settings-item-label {
 // Set as Material tokens, not as border-radius/background: Material paints the toggles from these,
 // so plain properties would depend on stylesheet order.
 mat-button-toggle-group {
-  --mat-button-toggle-shape: var(--border-radius);
-  --mat-button-toggle-selected-state-background-color: var(--mat-sys-primary-light);
-  --mat-button-toggle-selected-state-text-color: var(--mat-sys-on-primary);
+  @include mat.button-toggle-overrides(
+    (
+      shape: var(--border-radius),
+      selected-state-background-color: var(--mat-sys-primary-light),
+      selected-state-text-color: var(--mat-sys-on-primary)
+    )
+  );
 }

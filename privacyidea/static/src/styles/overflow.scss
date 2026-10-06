@@ -1,3 +1,5 @@
+@use "@angular/material" as mat;
+
 .responsive-flex-row-1310 {
   display: flex;
   flex-direction: row;
@@ -134,15 +136,19 @@
 // for when Material's rules are present, so either source paints the same button. The compound
 // selector outranks those rules for the properties no token covers.
 .overflow-more-btn.mat-mdc-button {
-  --mat-button-text-container-height: 40px;
-  --mat-button-text-container-shape: var(--border-radius, 4px);
-  --mat-button-text-horizontal-padding: 16px;
-  --mat-button-text-with-icon-horizontal-padding: 16px;
-  --mat-button-text-icon-spacing: 0;
-  --mat-button-text-icon-offset: 0;
-  --mat-button-text-label-text-color: var(--mat-sys-on-surface);
-  --mat-button-text-label-text-size: 14px;
-  --mat-button-text-label-text-weight: 500;
+  @include mat.button-overrides(
+    (
+      text-container-height: 40px,
+      text-container-shape: var(--border-radius, 4px),
+      text-horizontal-padding: 16px,
+      text-with-icon-horizontal-padding: 16px,
+      text-icon-spacing: 0,
+      text-icon-offset: 0,
+      text-label-text-color: var(--mat-sys-on-surface),
+      text-label-text-size: 14px,
+      text-label-text-weight: 500
+    )
+  );
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -162,7 +168,11 @@
   transition: background 200ms ease;
 
   &:hover {
-    --mat-button-text-label-text-color: var(--mat-sys-primary-base-active);
+    @include mat.button-overrides(
+      (
+        text-label-text-color: var(--mat-sys-primary-base-active)
+      )
+    );
   }
 
   &:focus-visible {
@@ -187,7 +197,11 @@
   }
 
   &.nav-active {
-    --mat-button-text-label-text-color: var(--mat-sys-on-primary);
+    @include mat.button-overrides(
+      (
+        text-label-text-color: var(--mat-sys-on-primary)
+      )
+    );
     background: var(--mat-sys-primary);
   }
 }

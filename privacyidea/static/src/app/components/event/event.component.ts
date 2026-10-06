@@ -18,6 +18,7 @@
  **/
 
 import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { CommonModule } from "@angular/common";
 import {
   Component,
@@ -39,7 +40,6 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { MatMenuModule } from "@angular/material/menu";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -63,6 +63,7 @@ import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
 @Component({
   selector: "app-event",
   imports: [
+    TableActionsComponent,
     TableActionsTriggerComponent,
     SortByLabelPipe,
     TooltipAriaLabelDirective,
@@ -83,8 +84,7 @@ import { SortByLabelPipe } from "@components/shared/pipes/aria-label.pipe";
     MatTooltip,
     TableStateComponent,
     ScrollEdgesDirective,
-    PaginatorCompactRangeDirective,
-    MatMenuModule
+    PaginatorCompactRangeDirective
   ],
   standalone: true,
   templateUrl: "./event.component.html",
@@ -131,6 +131,29 @@ export class EventComponent {
   });
 
   detailedView = signal(false);
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@event.createNewEvent:Create New Event Handler`,
+      tone: "primary",
+      width: "xl",
+      icon: "flag",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      visible: this.authService.actionAllowed("eventhandling_write"),
+      run: () => this.onCreateNewEventHandler()
+    },
+    {
+      id: "detailed-view",
+      label: $localize`:@@common.detailedView:Detailed View`,
+      tone: "secondary",
+      width: "m",
+      kind: "toggle",
+      checked: this.detailedView(),
+      run: () => this.toggleDetailedView()
+    }
+  ]);
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   paginator = viewChild(MatPaginator);

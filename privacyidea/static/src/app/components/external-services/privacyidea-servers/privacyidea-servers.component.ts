@@ -18,6 +18,7 @@
  **/
 
 import { TableActionsTriggerComponent } from "@components/shared/table-actions/table-actions-trigger.component";
+import { TableAction, TableActionsComponent } from "@components/shared/table-actions/table-actions.component";
 import { NgClass } from "@angular/common";
 import { Component, computed, ElementRef, inject, signal, ViewChild, viewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
@@ -34,7 +35,6 @@ import { RefocusAfterReloadDirective } from "@components/shared/directives/refoc
 import { PaginatorCompactRangeDirective } from "@components/shared/directives/paginator-compact-range.directive";
 
 import { MatIconModule } from "@angular/material/icon";
-import { MatMenuModule } from "@angular/material/menu";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -54,6 +54,7 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
   selector: "app-privacyidea-servers",
   standalone: true,
   imports: [
+    TableActionsComponent,
     TableActionsTriggerComponent,
     RefocusAfterReloadDirective,
     NgClass,
@@ -61,7 +62,6 @@ import { ScrollEdgesDirective } from "@components/shared/directives/scroll-edges
     MatPaginator,
     MatSortModule,
     MatIconModule,
-    MatMenuModule,
     MatButtonModule,
     MatCheckboxModule,
     ScrollToTopDirective,
@@ -125,6 +125,28 @@ export class PrivacyideaServersComponent {
     keyGetter: (server) => server.identifier,
     visibleRows: renderedRows(this.privacyideaDataSource)
   });
+
+  protected readonly toolbarActions = computed<TableAction[]>(() => [
+    {
+      id: "create",
+      label: $localize`:@@common.createPrivacyidea:Create PrivacyIDEA Server`,
+      tone: "primary",
+      width: "l",
+      fontIcon: "mdi--pi-logo",
+      iconClass: "icon-badge-pad-3",
+      badge: true,
+      run: () => this.openEditDialog()
+    },
+    {
+      id: "delete",
+      label: $localize`:@@common.delete:Delete`,
+      tone: "delete-secondary",
+      width: "l",
+      icon: "delete_sweep",
+      disabled: !this.selector.hasSelection(),
+      run: () => this.deleteSelected()
+    }
+  ]);
 
   openEditDialog(server?: PrivacyideaServer): void {
     if (server) {

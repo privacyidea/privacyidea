@@ -27,12 +27,11 @@
   @include table.actions-row-collapse(".actions-row", ".actions-row-inner");
 }
 
-.actions-container {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 16px;
-  width: 100%;
+// The intro text sits on its own line below the toolbar, so its width never counts toward the toolbar's overflow
+// handling, and contain: inline-size keeps its single-line width from widening the card beyond the table.
+.api-clients-intro {
+  contain: inline-size;
+  margin: 0 0 16px;
 }
 
 .status-badge {

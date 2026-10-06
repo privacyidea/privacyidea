@@ -7,8 +7,9 @@
   // transaction_id l + expiration l + otp_received s), so the empty/error state is as wide as
   // the table it stands in for, not the unrelated 44rem default. Also narrower than the default
   // paginator-range floor, or filter-actions-group (table-global.scss) would stretch the filter
-  // field into dead white space above a narrower table.
-  @include table.paginator-range-floor(table.table-width(l, m, l, l, s));
+  // field into dead white space above a narrower table. The card keeps that width, so the table
+  // stays in place while the paginator's range label changes.
+  @include table.paginator-range-width(table.table-width(l, m, l, l, s));
   @include table.page-table-state-size(table.table-width(l, m, l, l, s));
   @include table.base-table-structure(".challenges-table", ".challenges-table-filter", ".table-scroll-container");
   display: flex;

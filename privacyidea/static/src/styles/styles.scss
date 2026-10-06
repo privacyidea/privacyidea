@@ -269,18 +269,34 @@ body {
   --box-shadow-header: 4px 2px var(--blur) var(--mat-sys-shadow);
   --table-color: var(--mat-sys-surface-container-lowest);
 
-  --mat-form-field-filled-container-color: var(--mat-sys-surface-container-low);
-  --mat-tab-active-indicator-color: var(--mat-sys-primary);
-  --mat-form-field-filled-focus-active-indicator-color: var(--mat-sys-primary-light);
-  --mat-tab-active-focus-indicator-color: var(--mat-sys-primary);
-  --mat-tab-active-ripple-color: white;
-  --mat-tab-inactive-ripple-color: white;
-  --mat-select-focused-arrow-color: var(--mat-sys-primary-light);
+  @include mat.form-field-overrides(
+    (
+      filled-container-color: var(--mat-sys-surface-container-low),
+      filled-focus-active-indicator-color: var(--mat-sys-primary-light)
+    )
+  );
+  @include mat.tabs-overrides(
+    (
+      active-indicator-color: var(--mat-sys-primary),
+      active-focus-indicator-color: var(--mat-sys-primary),
+      active-ripple-color: white,
+      inactive-ripple-color: white
+    )
+  );
+  @include mat.select-overrides(
+    (
+      focused-arrow-color: var(--mat-sys-primary-light)
+    )
+  );
   --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary-light);
   --mat-sys-corner-extra-small: var(--border-radius);
   --drawer-width-self-service: 256px;
 
-  --mat-menu-container-color: var(--mat-sys-surface-container-low);
+  @include mat.menu-overrides(
+    (
+      container-color: var(--mat-sys-surface-container-low)
+    )
+  );
 }
 
 // Appearance levels the user picks in UI Settings. AppearanceService stamps one class per group

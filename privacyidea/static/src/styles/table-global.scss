@@ -1,4 +1,5 @@
 @use "table";
+@use "@angular/material" as mat;
 
 // Material gives .mat-mdc-table its own surface colour from component styles that are injected
 // after this sheet, and a bare "table" selector loses to that class. Naming the class next to
@@ -41,7 +42,11 @@ mat-paginator .mat-mdc-paginator-range-label {
 mat-paginator .mat-mdc-paginator-container {
   padding: 0 0 0 16px;
   flex-wrap: nowrap;
-  --mat-paginator-container-size: 0px;
+  @include mat.paginator-overrides(
+    (
+      container-size: 0px
+    )
+  );
 }
 
 a {
@@ -384,7 +389,11 @@ $highlight-darken: 32%;
 // Material sets border-top-color on .mat-divider itself with the same specificity, from styles
 // injected after this sheet - go through its token rather than outweigh the selector.
 .mat-divider {
-  --mat-divider-color: var(--mat-sys-color-on-surface);
+  @include mat.divider-overrides(
+    (
+      color: var(--mat-sys-color-on-surface)
+    )
+  );
 }
 
 // Fixed row heights of the key/value details tables: a value cell keeps the same height whether it
@@ -395,8 +404,12 @@ $highlight-darken: 32%;
 }
 
 mat-form-field.details-field-height {
-  --mat-form-field-container-height: 52px;
-  --mat-form-field-container-vertical-padding: 8px;
+  @include mat.form-field-overrides(
+    (
+      container-height: 52px,
+      container-vertical-padding: 8px
+    )
+  );
 }
 
 // A single-line value cell: the field plus the 1px row border.
@@ -431,6 +444,7 @@ table.mat-mdc-table {
 .table-checkbox {
   padding: 0;
   width: 72px;
+  min-width: 72px;
   max-width: 72px;
   // The checkbox's empty label reaches past the cell, and the cell's ellipsis would print a "..." beside the box.
   text-overflow: clip;
@@ -600,15 +614,23 @@ app-details-card .details-header {
   }
 
   .details-table .mat-mdc-form-field {
-    --mat-form-field-container-height: 52px;
-    --mat-form-field-container-vertical-padding: 8px;
+    @include mat.form-field-overrides(
+      (
+        container-height: 52px,
+        container-vertical-padding: 8px
+      )
+    );
   }
 
   // A multi-line field (the description textarea) opts out of the compact single-line sizing above and
   // keeps Material's default container.
   .details-table .mat-mdc-form-field.details-field-multiline {
-    --mat-form-field-container-height: 56px;
-    --mat-form-field-container-vertical-padding: 16px;
+    @include mat.form-field-overrides(
+      (
+        container-height: 56px,
+        container-vertical-padding: 16px
+      )
+    );
   }
 
   .mat-mdc-row {
@@ -637,6 +659,13 @@ app-details-card .details-header {
   padding: 6px;
   border-radius: var(--border-radius);
   margin-right: 8px;
+}
+
+// A token chip keeps its own surface tone on the option's hover and active layers, so its text stays on-surface
+// while the row's label and icon turn on-primary. :where() leaves the status chips' (.highlight-*) own white text in
+// charge.
+:where(.token-option-span) {
+  color: var(--mat-sys-on-surface);
 }
 
 .mat-mdc-option.mdc-list-item.token-option .mdc-list-item__primary-text {

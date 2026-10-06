@@ -1,8 +1,8 @@
 @use "theme";
 @use "icon";
+@use "@angular/material" as mat;
 
 $button-height: 40px;
-$button-width: 240px;
 $keyword-height: 28px;
 $keyword-padding: 2px 8px;
 $button-gap-small: 10px;
@@ -32,22 +32,6 @@ $button-low-contrast-variant: linear-gradient(
   var(--mat-sys-surface-container-highest)
 );
 
-@mixin button-base($height, $width, $background-color, $border-color, $color) {
-  height: $height;
-  width: $width;
-  cursor: pointer;
-  border-radius: var(--border-radius);
-  background-color: $background-color !important;
-  border-color: $border-color !important;
-  color: $color !important;
-  justify-content: start;
-  display: flex;
-
-  &:disabled {
-    color: var(--grey-base) !important;
-  }
-}
-
 @mixin hover-or-active($bg, $shadow, $translate: false) {
   &:hover,
   &.active {
@@ -58,16 +42,6 @@ $button-low-contrast-variant: linear-gradient(
       transform: translateY(2px);
     }
   }
-}
-
-@mixin card-button-variant($background-color, $border-color, $color) {
-  @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $background-color: $background-color,
-    $border-color: $border-color,
-    $color: $color
-  );
 }
 
 %linkish-btn {
@@ -127,64 +101,6 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.mat-mdc-outlined-button.card-button-1,
-.mat-mdc-outlined-button[class*="card-button-1"] {
-  --mat-button-outlined-state-layer-color: var(--mat-sys-surface-container-highest);
-  --mat-button-outlined-ripple-color: var(--mat-sys-surface-container-highest);
-  --mat-ripple-color: var(--mat-sys-surface-container-high);
-
-  &:hover {
-    background-color: var(--mat-sys-surface-container-high) !important;
-  }
-}
-
-.mat-mdc-outlined-button[class*="card-button-active"] {
-  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
-}
-
-.mat-mdc-outlined-button[class*="card-button-support"] {
-  --mat-button-outlined-state-layer-color: var(--mint-bg);
-  --mat-button-outlined-ripple-color: var(--mint-bg);
-  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
-
-  &:hover {
-    background-color: var(--mint-bg) !important;
-  }
-}
-
-.card-button-1 {
-  @include card-button-variant(
-    var(--mat-sys-surface-container),
-    var(--mat-sys-surface-container-highest),
-    var(--mat-sys-on-surface-variant)
-  );
-}
-
-.card-button-active {
-  @include card-button-variant(var(--sky-bg), var(--mat-sys-primary), var(--mat-sys-primary));
-}
-
-.card-button-support {
-  @include card-button-variant(
-    var(--mat-sys-surface-container-lowest),
-    var(--green-brand-light),
-    var(--green-brand-light)
-  );
-}
-
-.card-button-docs {
-  @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary), var(--mat-sys-primary));
-}
-
-.mat-unthemed.mat-mdc-button-base[class^="card-button-1"],
-.mat-unthemed.mat-mdc-button-base[class*=" card-button"] {
-  min-width: $button-width;
-
-  mat-icon.mat-icon.notranslate.material-icons {
-    font-size: 20px;
-  }
-}
-
 .keyword-button {
   @extend %keyword-chip;
   padding: $keyword-padding;
@@ -229,7 +145,6 @@ $button-low-contrast-variant: linear-gradient(
   border-radius: 50%;
   background-color: transparent;
   color: var(--mat-sys-on-surface);
-  box-shadow: none !important;
   transition: background-color 0.2s ease-in-out;
 
   &:hover {
@@ -282,7 +197,11 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .mat-mdc-outlined-button {
-  --mat-button-outlined-container-shape: var(--border-radius);
+  @include mat.button-overrides(
+    (
+      outlined-container-shape: var(--border-radius)
+    )
+  );
   border-radius: var(--border-radius);
   padding: 8px 16px;
   border: 1px solid var(--mat-sys-outline);
@@ -322,8 +241,12 @@ $button-low-contrast-variant: linear-gradient(
     cursor: not-allowed;
     opacity: 0.5;
     background-color: var(--mat-sys-surface-variant);
-    --mat-button-outlined-disabled-label-text-color: var(--mat-sys-on-surface-variant);
-    --mat-button-outlined-disabled-outline-color: var(--mat-sys-outline);
+    @include mat.button-overrides(
+      (
+        outlined-disabled-label-text-color: var(--mat-sys-on-surface-variant),
+        outlined-disabled-outline-color: var(--mat-sys-outline)
+      )
+    );
   }
 }
 
@@ -335,34 +258,55 @@ $button-low-contrast-variant: linear-gradient(
   // label and outline colours from these tokens. It has the same specificity as a plain
   // color / border-color declaration here and is injected at runtime, so the tokens (not the
   // properties) carry the colours; they work from the global sheet regardless of stylesheet order.
-  --mat-button-outlined-label-text-color: #{$color};
+  @include mat.button-overrides(
+    (
+      outlined-label-text-color: $color
+    )
+  );
   @if $border {
-    --mat-button-outlined-outline-color: #{$color};
+    @include mat.button-overrides(
+      (
+        outlined-outline-color: $color
+      )
+    );
   } @else {
-    --mat-button-outlined-outline-width: 0;
+    @include mat.button-overrides(
+      (
+        outlined-outline-width: 0
+      )
+    );
     border-width: 0;
   }
   @if $layer {
-    --mat-button-outlined-state-layer-color: #{$layer};
+    @include mat.button-overrides(
+      (
+        outlined-state-layer-color: $layer
+      )
+    );
   }
   @if $ripple {
-    --mat-button-outlined-ripple-color: #{$ripple};
+    @include mat.button-overrides(
+      (
+        outlined-ripple-color: $ripple
+      )
+    );
   }
   @if $ripple-mdc {
-    --mat-ripple-color: #{$ripple-mdc};
+    @include mat.ripple-overrides(
+      (
+        color: $ripple-mdc
+      )
+    );
   }
 
   &:not([disabled]) {
-    // The rest background is set here (not only at the top level) so it wins over
-    // Material's transparent outlined-button background; otherwise a stroked
-    // action button shows its container through and looks darker on a non-white
-    // surface (e.g. the recessed stage well) than on the white page.
-    // !important keeps the rest background through hover; the hover feedback is Material's state layer.
-    background-color: $bg !important;
-    // !important on color: inside a mat-toolbar Material re-points the label token at the toolbar text
-    // colour with a higher-specificity rule (.mat-toolbar .mat-mdc-button-base.mat-mdc-button-base.mat-unthemed),
-    // which would otherwise override the token above.
-    color: $color !important;
+    // Rules in this sheet are nested in :root, which puts this one a pseudo-class above Material's
+    // .mat-mdc-outlined-button:not(:disabled), so the rest background stays through hover (the hover feedback is
+    // Material's state layer). The label colour is also set as a property because, inside a mat-toolbar, Material
+    // re-points --mat-button-outlined-label-text-color at the toolbar text colour
+    // (.mat-toolbar .mat-mdc-button-base.mat-mdc-button-base.mat-unthemed).
+    background-color: $bg;
+    color: $color;
   }
 
   @if $primary {
@@ -433,11 +377,12 @@ $button-low-contrast-variant: linear-gradient(
   width: 24px;
   padding: 0;
   margin-left: 8px;
-
-  span.mat-mdc-button-touch-target {
-    width: 24px !important;
-    height: 24px !important;
-  }
+  // Pins Material's 48px touch target to the visible 24px box.
+  @include mat.icon-button-overrides(
+    (
+      touch-target-size: 24px
+    )
+  );
 }
 
 // Compact icon buttons that sit inline with table text (column sorting, the
@@ -453,32 +398,11 @@ $button-low-contrast-variant: linear-gradient(
   height: 24px;
   width: 24px;
   padding: 0;
-
-  span.mat-mdc-button-touch-target {
-    width: 24px !important;
-    height: 24px !important;
-  }
-}
-
-.text-button {
-  background: none !important;
-  border: none !important;
-  color: var(--mat-sys-primary) !important;
-  padding: 0 8px;
-  cursor: pointer;
-  text-transform: none;
-  font-weight: 500;
-  transition: opacity 0.2s ease-in-out;
-
-  &:hover:not(:disabled) {
-    background-color: var(--sky-bg) !important;
-    border-radius: var(--border-radius);
-  }
-
-  &:disabled {
-    color: var(--grey-light) !important;
-    cursor: default;
-  }
+  @include mat.icon-button-overrides(
+    (
+      touch-target-size: 24px
+    )
+  );
 }
 
 // .add-action-button {

@@ -1,5 +1,6 @@
 @use "sass:color";
 @use "sass:math";
+@use "@angular/material" as mat;
 
 $icon-size-sm: 18px;
 $toolbar-padding: 8px 16px;
@@ -66,7 +67,11 @@ $bar-gradient-end-dark: #464646;
   gap: 8px;
   padding: $toolbar-padding;
   // Material paints a mat-toolbar from this token, so a plain `background` here would not survive.
-  --mat-toolbar-container-background-color: var(--mat-sys-surface-variant);
+  @include mat.toolbar-overrides(
+    (
+      container-background-color: var(--mat-sys-surface-variant)
+    )
+  );
   min-height: 0;
 }
 
@@ -186,11 +191,16 @@ $bar-gradient-end-dark: #464646;
   min-height: 44px;
   // Material paints a mat-toolbar from this token with a `background` shorthand, so the gradient
   // goes here; setting `background` directly would lose to that rule.
-  --mat-toolbar-container-background-color: #{linear-gradient(
-      to right,
-      light-dark($bar-gradient-start, $bar-gradient-start-dark),
-      light-dark($bar-gradient-end, $bar-gradient-end-dark)
-    )};
+  @include mat.toolbar-overrides(
+    (
+      container-background-color:
+        linear-gradient(
+          to right,
+          light-dark($bar-gradient-start, $bar-gradient-start-dark),
+          light-dark($bar-gradient-end, $bar-gradient-end-dark)
+        )
+    )
+  );
   overflow: hidden;
   flex-wrap: nowrap;
   box-shadow: var(--elevation-5);
@@ -329,7 +339,11 @@ $bar-gradient-end-dark: #464646;
 
 .docs-button-icon,
 .translate-button {
-  --mat-icon-button-icon-color: var(--mat-sys-on-surface);
+  @include mat.icon-button-overrides(
+    (
+      icon-color: var(--mat-sys-on-surface)
+    )
+  );
 }
 
 .more-button {

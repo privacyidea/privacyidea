@@ -42,7 +42,9 @@
               placeholder="Filter by name or type" />
           </app-clearable-input>
         </mat-form-field>
-        <app-table-actions-trigger [menu]="tableActionsMenu" />
+        @if (pageActions.hasMenuActions()) {
+          <app-table-actions-trigger [menu]="pageActions.menu()" />
+        }
       </div>
       <mat-paginator
         appPaginatorCompactRange
@@ -51,28 +53,13 @@
         [pageSize]="pageSizeOptions()[1]"
         showFirstLastButtons />
     </div>
-    <div class="actions-row margin-bottom-16">
+    <div class="actions-row">
       <div class="actions-row-inner">
-        <div class="actions-container">
-          <button
-            (click)="onCreateNewServer()"
-            class="action-button-primary button-width-l"
-            mat-stroked-button>
-            <span class="icon-badge">
-              <mat-icon class="icon-badge-pad-3">vpn_lock</mat-icon>
-              <mat-icon class="icon-badge-overlay icon-badge-bold">add</mat-icon>
-            </span>
-            <span i18n="@@common.createRadiusServer">Create RADIUS Server</span>
-          </button>
-          <button
-            (click)="deleteSelected()"
-            [disabled]="!selector.hasSelection()"
-            class="action-button-delete-secondary button-width-l"
-            mat-stroked-button>
-            <mat-icon>delete_sweep</mat-icon>
-            <span i18n="@@common.delete">Delete</span>
-          </button>
-        </div>
+        <app-table-actions
+          #pageActions
+          [actions]="toolbarActions()"
+          [collapseWhenEmpty]="true"
+          layout="roomy" />
       </div>
     </div>
     <div
@@ -225,19 +212,3 @@
     </app-table-state>
   }
 </div>
-
-<mat-menu #tableActionsMenu="matMenu">
-  <button
-    (click)="onCreateNewServer()"
-    mat-menu-item>
-    <mat-icon>vpn_lock</mat-icon>
-    <span i18n="@@common.createRadiusServer">Create RADIUS Server</span>
-  </button>
-  <button
-    (click)="deleteSelected()"
-    [disabled]="!selector.hasSelection()"
-    mat-menu-item>
-    <mat-icon>delete_sweep</mat-icon>
-    <span i18n="@@common.delete">Delete</span>
-  </button>
-</mat-menu>
