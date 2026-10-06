@@ -97,7 +97,7 @@ class RadiusMock:
 
     def _on_request(self, client_instance, pkt):
         # mangle request packet
-        request = pkt.RequestPacket()
+        pkt.RequestPacket()
         if pkt.code == packet.AccessRequest:
             # This is a request
             pass

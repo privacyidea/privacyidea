@@ -61,7 +61,6 @@ class IndexedSecretTokenTestCase(MyTestCase):
         token = IndexedSecretTokenClass(db_token)
         token.update({"otpkey": my_secret})
         token.save()
-        serial = token.get_serial()
         self.assertTrue(token.token.serial == self.serial1, token)
         self.assertTrue(token.token.tokentype == "indexedsecret", token.token)
         self.assertTrue(token.type == "indexedsecret", token.type)

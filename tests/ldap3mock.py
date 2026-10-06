@@ -170,7 +170,7 @@ class Connection:
     def add(self, dn, object_class=None, attributes=None):
         # Check to see if the user exists in the directory
         try:
-            index = self._find_user(dn)
+            self._find_user(dn)
         except StopIteration:
             # If we get here the user doesn't exist so continue
             # to create an entry object for the new user
@@ -644,9 +644,8 @@ class Connection:
                 search_filter = to_unicode(search_filter)
             expr = Connection._parse_filter()
             s_filter = expr.parse_string(search_filter).as_list()[0]
-        except pyparsing.ParseBaseException as exx:
-            # Just for debugging purposes
-            s = f"{exx!s}"
+        except pyparsing.ParseBaseException:
+            pass
 
         for item in s_filter:
             if item[0] in self.operation:

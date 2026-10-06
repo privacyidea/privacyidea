@@ -150,7 +150,6 @@ class SmtpMock:
 
     def _on_init(self, *args, **kwargs):
         SMTP_instance = args[0]
-        host = args[1]
         if isinstance(SMTP_instance, smtplib.SMTP_SSL):
             # in case we need sth. to do with SMTL_SSL
             self.smtp_ssl = True

@@ -910,7 +910,6 @@ class BaseEventHandlerTestCase(MyTestCase):
 
     def test_18_compare_condition_no_int(self):
         self.setUp_user_realms()
-        user = User("cornelius", "realm1")
 
         builder = EnvironBuilder(method='POST',
                                  data={'user': "cornelius@realm1",

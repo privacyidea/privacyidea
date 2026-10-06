@@ -857,7 +857,6 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(self.user.login, offline["user"])
             self.assertIn("refilltoken", offline)
             self.assertTrue(offline["refilltoken"])
-            refill_token = offline["refilltoken"]
             self.assertIn("username", offline)
             self.assertEqual(self.user.login, offline["username"])
             self.assertIn("response", offline)

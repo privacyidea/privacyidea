@@ -333,7 +333,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         token = self._create_token()
 
         # Challenge does not exist
-        with self.assertRaises(ResourceNotFoundError) as ex:
+        with self.assertRaises(ResourceNotFoundError):
             verify_fido2_challenge("10039292755795086078", token, {})
 
         # Wrong signature

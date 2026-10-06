@@ -83,8 +83,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
         smtpmock.setdata(response={"recp@example.com": (200, "OK")},
                          support_tls=False)
 
-        tok = init_token({"serial": "SomeSerial", "description": "It works", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "SomeSerial", "description": "It works", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         g = FakeFlaskG()
         audit_object = FakeAudit()
@@ -466,8 +466,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
@@ -512,8 +512,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
@@ -539,8 +539,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=User("cornelius", "realm1"))
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=User("cornelius", "realm1"))
 
         env = builder.get_environ()
         req = Request(env)
@@ -1240,8 +1240,8 @@ class UserNotificationTestCase(PristineSqliteFixtures, MyTestCase):
                                  data={'user': "cornelius@realm1"},
                                  headers={})
 
-        tok = init_token({"serial": "oath1234", "type": "spass"},
-                         user=user)
+        init_token({"serial": "oath1234", "type": "spass"},
+                   user=user)
 
         env = builder.get_environ()
         req = Request(env)

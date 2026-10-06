@@ -1432,8 +1432,8 @@ class AuthApiTestCase(MyApiTestCase):
         # Add a fully enrolled token (no rollout_state).
         # Even though all rollout states are ignored, the user still has
         # a real token, so passthru should NOT be used.
-        tok4 = init_token({"serial": "PTIRS4", "type": "spass", "pin": "Hallo"},
-                          user=user)
+        init_token({"serial": "PTIRS4", "type": "spass", "pin": "Hallo"},
+                   user=user)
 
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -1555,8 +1555,8 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
 
         # Add a fully enrolled token -> user has a real token
-        tok4 = init_token({"serial": "PNTIRS4", "type": "spass", "pin": "Hallo"},
-                          user=user)
+        init_token({"serial": "PNTIRS4", "type": "spass", "pin": "Hallo"},
+                   user=user)
 
         with self.app.test_request_context('/auth',
                                            method='POST',

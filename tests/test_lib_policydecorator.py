@@ -1163,9 +1163,9 @@ class LibPolicyTestCase(MyTestCase):
         # Add a fully enrolled token (no rollout_state).
         # Even though all rollout states are ignored, the user still has
         # a real token, so passthru should NOT be used.
-        tok4 = init_token({"serial": "ENROLLED1",
-                           "type": "spass", "pin": "Hallo"},
-                          user=user)
+        init_token({"serial": "ENROLLED1",
+                    "type": "spass", "pin": "Hallo"},
+                   user=user)
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1315,9 +1315,9 @@ class LibPolicyTestCase(MyTestCase):
         # Add a fully enrolled token (no rollout_state).
         # Even though all rollout states are ignored, the user still has
         # a real token, so passOnNoToken should NOT trigger.
-        tok4 = init_token({"serial": "NOTOKEN_ENROLLED1",
-                           "type": "spass", "pin": "Hallo"},
-                          user=user)
+        init_token({"serial": "NOTOKEN_ENROLLED1",
+                    "type": "spass", "pin": "Hallo"},
+                   user=user)
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()

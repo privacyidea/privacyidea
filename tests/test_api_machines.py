@@ -769,7 +769,7 @@ class APIMachinesTestCase(MyApiTestCase):
     def test_35_delete_offline_token(self):
         # Delete an offline token with machine token options (Issue #4136)
         serial = "hotp01"
-        tok = init_token({"type": "hotp", "otpkey": self.otpkey, "serial": serial})
+        init_token({"type": "hotp", "otpkey": self.otpkey, "serial": serial})
         # Mark this token as "offline"
         with self.app.test_request_context('/machine/token',
                                            method='POST',

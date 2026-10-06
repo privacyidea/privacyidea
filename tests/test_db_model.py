@@ -151,7 +151,6 @@ class TokenModelTestCase(MyTestCase):
         # userid=1009
         # resolver=resolver1
         # realm=realm1
-        otpkey = "123456"
 
         # create token and also assign the user and realm
         init_token({"type": "hotp", "serial": "serial2"},
