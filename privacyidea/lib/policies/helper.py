@@ -221,7 +221,8 @@ def own_entries_scope(login: str, realm: str) -> "AuthenticationLogVisibilitySco
     return None
 
 
-def admin_granted_realms(action: str, whole_realms: bool = False) -> list[str] | None:
+def admin_granted_realms(action: str, whole_realms: bool = False,
+                         unrestricted_without_realm: bool = False) -> list[str] | None:
     """
     The realms the logged-in admin's policies grant for *action*, as the union over every applicable policy.
 
@@ -255,6 +256,8 @@ def admin_granted_realms(action: str, whole_realms: bool = False) -> list[str] |
 
     :param action: the policy action whose realm scoping to read
     :param whole_realms: only count the policies that grant every user of their realms
+    :param unrestricted_without_realm: a policy that restricts no realm is unrestricted, even if it names users or
+        resolvers, for callers whose objects are bound to realms and not to users, like policies
     :return: the granted realm names, ``None`` for unrestricted, or an empty list for "refuse"
     """
     if not g.policy_object.list_policies(scope=SCOPE.ADMIN, active=True):
@@ -268,7 +271,7 @@ def admin_granted_realms(action: str, whole_realms: bool = False) -> list[str] |
             continue
         realm_names = policy_realm_names(policy.get("realm"))
         if realm_names is None:
-            if policy.get("resolver") or policy.get("user"):
+            if not unrestricted_without_realm and (policy.get("resolver") or policy.get("user")):
                 # Scoped along a dimension a realm list cannot carry, so it contributes no realm. If no
                 # other policy names one either, the empty result refuses rather than widening to every realm.
                 continue

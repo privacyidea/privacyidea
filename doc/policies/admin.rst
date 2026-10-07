@@ -844,7 +844,8 @@ If the admin policy is bound to user realms, the administrator only sees and cha
 the policies of these realms, the same way as tokens: a policy needs one of these realms.
 A policy without a realm applies to every realm and stays out of reach. The realms a
 change sets must all be granted, so a new policy needs a realm. Importing a policy file
-skips the policies the administrator may not write.
+skips the policies the administrator may not write. An admin policy that names users or
+resolvers but no realm does not restrict the policies.
 
 .. note:: An administrator who may write policies can grant rights to themselves
    within their realms. Give ``policywrite`` only to administrators you trust with
@@ -871,7 +872,8 @@ that is part of no realm, and so a new resolver, needs a policy without a realm.
 
 Adding a resolver to a realm or removing it from a realm needs the right for the
 resolver as well. Changing or removing the default realm needs the right for the
-current default realm.
+current default realm. Deleting a realm removes all of its resolvers and, for the
+default realm, the default realm, so it needs these rights as well.
 
 .. versionchanged:: 3.14 The realm of the admin policy restricts the resolvers.
 

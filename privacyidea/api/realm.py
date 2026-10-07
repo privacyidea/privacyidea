@@ -51,7 +51,7 @@ from ..lib.realm import (set_default_realm,
                          set_realm,
                          get_realms,
                          delete_realm)
-from ..api.lib.prepolicy import prepolicy, check_base_action, realm_resolver_access, default_realm_access
+from ..api.lib.prepolicy import prepolicy, check_base_action, realm_membership_access, default_realm_access
 from ..lib.utils import reduce_realms, is_true
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import check_node_uuid_exists
@@ -75,7 +75,7 @@ defaultrealm_blueprint = Blueprint('defaultrealm_blueprint', __name__)
 @realm_blueprint.route('/<realm>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
-@prepolicy(realm_resolver_access, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(realm_membership_access, request, PolicyAction.RESOLVERWRITE)
 def set_realm_api(realm=None):
     """
     Create or reconfigure a realm. The realm is defined as a list of
@@ -417,6 +417,8 @@ def get_default_realm_api():
 @realm_blueprint.route('/<realm>', methods=['DELETE'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
+@prepolicy(realm_membership_access, request, PolicyAction.RESOLVERDELETE)
+@prepolicy(default_realm_access, request, PolicyAction.RESOLVERDELETE)
 def delete_realm_api(realm=None):
     """
     Delete a realm. The realm can only be deleted if no user from
@@ -498,7 +500,7 @@ def delete_realm_api(realm=None):
 @realm_blueprint.route('/<string:realm>/node/<string:nodeid>', methods=['POST'])
 @log_with(log)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
-@prepolicy(realm_resolver_access, request, PolicyAction.RESOLVERWRITE)
+@prepolicy(realm_membership_access, request, PolicyAction.RESOLVERWRITE)
 def set_realm_node_api(realm, nodeid):
     """
     Create or reconfigure the resolver assignment for a realm on a

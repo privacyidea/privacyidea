@@ -110,8 +110,9 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver=RESO_A)
         res = self._request(f"/realm/{REALM_A}", "POST", {"resolvers": RESO_A})
         self.assertEqual(403, res.status_code, res.json)
-        res = self._request(f"/realm/{REALM_A}", "POST", {"resolvers": f"{RESO_A},{RESO_FREE}"})
-        self.assertEqual(200, res.status_code, res.json)
+        for resolvers in (f"{RESO_A},{RESO_FREE}", f"{RESO_A}, {RESO_FREE}", f"{RESO_A},{RESO_FREE},"):
+            res = self._request(f"/realm/{REALM_A}", "POST", {"resolvers": resolvers})
+            self.assertEqual(200, res.status_code, resolvers)
 
         # Only the path names the realm and the node: a nodeid in the body or another spelling of the realm
         # does not hide the removal
@@ -259,3 +260,54 @@ class ConfigRealmScopeTestCase(MyApiTestCase):
         self.assertEqual(200, res.status_code, res.json)
         self.assertEqual(1, res.json["result"]["value"])
         self.assertEqual(["imp_a"], [p["name"] for p in get_policies() if p["name"].startswith("imp_")])
+
+    def test_09_delete_realm(self):
+        # Deleting a realm removes its resolvers, so each of them needs to be granted
+        set_realm(REALM_A, [{"name": RESO_A}, {"name": RESO_FREE}])
+        set_default_realm(REALM_B)
+        set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver=RESO_A)
+        res = self._request(f"/realm/{REALM_A}", "DELETE")
+        self.assertEqual(403, res.status_code, res.json)
+        self.assertIn(REALM_A, get_realms())
+
+        # Deleting a realm that is not the default realm does not need the right for the default realm
+        set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver="")
+        res = self._request(f"/realm/{REALM_A}", "DELETE")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertNotIn(REALM_A, get_realms())
+        self.assertEqual(REALM_B, get_default_realm())
+
+        # Deleting the default realm needs the right for the whole realm
+        set_realm(REALM_A, [{"name": RESO_A}])
+        set_default_realm(REALM_A)
+        set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver=RESO_A)
+        for spelling in (REALM_A, REALM_A.upper()):
+            res = self._request(f"/realm/{spelling}", "DELETE")
+            self.assertEqual(403, res.status_code, res.json)
+        self.assertEqual(REALM_A, get_default_realm())
+        set_policy(name="admin_realm_a", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, realm=REALM_A, resolver="")
+        res = self._request(f"/realm/{REALM_A}", "DELETE")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertNotIn(REALM_A, get_realms())
+
+    def test_10_policies_without_realm_restriction(self):
+        auth_action = PolicyAction.OTPPIN + "=userstore"
+        set_policy(name="pol_b", scope=SCOPE.AUTH, action=auth_action, realm=REALM_B)
+        set_policy(name="pol_all", scope=SCOPE.AUTH, action=auth_action)
+        # An admin policy naming resolvers or users but no realm does not restrict the policies
+        for restriction in ({"resolver": RESO_A, "user": ""}, {"resolver": "", "user": "operator"}):
+            set_policy(name="admin_no_realm", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, **restriction)
+            res = self._request("/policy/")
+            self.assertEqual(200, res.status_code, res.json)
+            self.assertEqual({"admin_no_realm", "pol_b", "pol_all"}, {p["name"] for p in res.json["result"]["value"]})
+            res = self._request("/policy/pol_b", "POST", {"scope": SCOPE.AUTH, "action": auth_action})
+            self.assertEqual(200, res.status_code, res.json)
+            res = self._request("/policy/pol_new", "POST", {"scope": SCOPE.AUTH, "action": auth_action})
+            self.assertEqual(200, res.status_code, res.json)
+            res = self._request("/policy/pol_new", "DELETE")
+            self.assertEqual(200, res.status_code, res.json)
+
+        # The resolver configuration stays restricted to the named resolver
+        set_policy(name="admin_no_realm", scope=SCOPE.ADMIN, action=CONFIG_ACTIONS, resolver=RESO_A, user="")
+        res = self._request("/resolver/")
+        self.assertEqual({RESO_A}, set(res.json["result"]["value"]))

@@ -97,7 +97,7 @@ from privacyidea.lib.policies.helper import (check_max_auth_fail, check_max_auth
                                              admin_granted_resolvers, policy_change_granted)
 from privacyidea.lib.policy import Match, PolicyClass, check_pin
 from privacyidea.lib.policy import SCOPE, REMOTE_USER
-from privacyidea.lib.realm import get_realms, split_realms
+from privacyidea.lib.realm import get_realms, split_realms, normalize_realm_name
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
                                    get_token_owner)
@@ -412,14 +412,15 @@ def resolver_config_access(request=None, action=None):
     return True
 
 
-def realm_resolver_access(request=None, action=None):
+def realm_membership_access(request=None, action=None):
     """
     Allow a request to add a resolver to a realm or to remove one from it only if the admin's policies grant that
     resolver, see :func:`~privacyidea.lib.policies.helper.admin_granted_resolvers`. Resolvers that stay in the realm
     are not checked, so an admin can keep a resolver they may not administer in a realm they may.
 
-    Covers ``POST /realm/<realm>`` (the node-less resolvers, from the ``resolvers`` parameter) and
-    ``POST /realm/<realm>/node/<nodeid>`` (the resolvers of the node, from the ``resolver`` list of the body).
+    Covers ``POST /realm/<realm>`` (the node-less resolvers, from the ``resolvers`` parameter),
+    ``POST /realm/<realm>/node/<nodeid>`` (the resolvers of the node, from the ``resolver`` list of the body) and
+    ``DELETE /realm/<realm>``, which removes every resolver of the realm on every node.
     Malformed resolver entries are left to the endpoint, which refuses them.
 
     :param request: The HTTP request
@@ -428,17 +429,22 @@ def realm_resolver_access(request=None, action=None):
     if g.logged_in_user.get("role") != ROLE.ADMIN:
         return True
     params = request.all_data
-    realm = params.get("realm").lower().strip().replace(" ", "-")
+    realm = normalize_realm_name(params.get("realm"))
     node = params.get("nodeid") if "nodeid" in request.view_args else None
-    if node:
+    deletes = request.method == "DELETE"
+    if deletes:
+        names = []
+    elif node:
         entries = params.get("resolver")
-        requested = {entry.get("name") for entry in entries if isinstance(entry, dict)} \
-            if isinstance(entries, list) else set()
+        names = [entry.get("name") for entry in entries if isinstance(entry, dict)] \
+            if isinstance(entries, list) else []
     else:
         resolvers = params.get("resolvers") or []
-        requested = set(resolvers if isinstance(resolvers, list) else resolvers.split(","))
+        names = resolvers if isinstance(resolvers, list) else resolvers.split(",")
+    # set_realm strips the names and skips empty ones, so " reso" and "reso" are the same resolver
+    requested = {name.strip() if isinstance(name, str) else name for name in names} - {""}
     current = {entry.get("name") for entry in get_realms(realm).get(realm, {}).get("resolver", [])
-               if (entry.get("node") or "") == (node or "")}
+               if deletes or (entry.get("node") or "") == (node or "")}
     changed = requested ^ current
     if not changed:
         return True
@@ -456,6 +462,7 @@ def default_realm_access(request=None, action=None):
     Allow changing or removing the default realm only if the admin's policies grant the current default realm. The
     default realm decides where users without a realm are looked up, so replacing it changes the realm of those users.
     The new default realm of ``POST /defaultrealm/<realm>`` is checked by :func:`check_base_action`.
+    ``DELETE /realm/<realm>`` only removes the default realm if it deletes that realm, so only then it is checked.
 
     :param request: The HTTP request
     :param action: The action like PolicyAction.RESOLVERDELETE
@@ -464,6 +471,9 @@ def default_realm_access(request=None, action=None):
         return True
     default_realm = get_default_realm()
     if not default_realm:
+        return True
+    deleted_realm = normalize_realm_name(request.view_args.get("realm", default_realm))
+    if request.method == "DELETE" and deleted_realm != default_realm:
         return True
     granted_realms = admin_granted_realms(action, whole_realms=True)
     if granted_realms is not None and default_realm not in granted_realms:
@@ -485,7 +495,7 @@ def policy_config_access(request=None, action=None):
     """
     if g.logged_in_user.get("role") != ROLE.ADMIN:
         return True
-    granted_realms = admin_granted_realms(action)
+    granted_realms = admin_granted_realms(action, unrestricted_without_realm=True)
     if granted_realms is None:
         return True
     params = request.all_data

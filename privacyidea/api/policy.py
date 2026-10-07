@@ -368,19 +368,16 @@ def get_policy(name=None, export=None):
     if active is not None:
         active = is_true(active)
 
-    # An admin restricted to some realms sees the policies of these realms, as with tokens
-    granted_realms = admin_granted_realms(PolicyAction.POLICYREAD)
+    granted_realms = admin_granted_realms(PolicyAction.POLICYREAD, unrestricted_without_realm=True)
     if not export:
         log.debug(f"retrieving policy name: {name!s}, realm: {realm!s}, scope: {scope!s}")
 
         policies = get_policies(name=name, realm=realm, scope=scope, active=active)
-        policies = [policy for policy in policies if realms_granted(policy.get("realm"), granted_realms)]
-        ret = send_result(policies)
     else:
         # We want to export all policies
         policies = get_policies()
-        policies = [policy for policy in policies if realms_granted(policy.get("realm"), granted_realms)]
-        ret = send_file(export_policies(policies), export, content_type='text/plain')
+    policies = [policy for policy in policies if realms_granted(policy.get("realm"), granted_realms)]
+    ret = send_file(export_policies(policies), export, content_type='text/plain') if export else send_result(policies)
 
     g.audit_object.log({"success": True,
                         'info': f"name = {name!s}, realm = {realm!s}, scope = {scope!s}"})
@@ -498,8 +495,7 @@ def import_policy_api(filename=None):
         log.error(f"Error loading/importing policy file. file {filename!s} empty!")
         raise ParameterError(_("Error loading policy. File empty!"))
 
-    # An admin restricted to some realms imports only the policies they may write, the others are skipped
-    granted_realms = admin_granted_realms(PolicyAction.POLICYWRITE)
+    granted_realms = admin_granted_realms(PolicyAction.POLICYWRITE, unrestricted_without_realm=True)
     policy_num = import_policies(file_contents=file_contents,
                                  realms_allowed=lambda policy_name, realms: policy_change_granted(
                                      policy_name, split_realms(realms), granted_realms, creates=True))
