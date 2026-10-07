@@ -465,7 +465,9 @@
   the same way. A handler that could not do what it is configured for now also records `success=False` and the reason
   in the `info` column of its audit entry instead of being audited as successful, e.g. a notification without a
   recipient, a script that exits with an error, a webhook that is answered with an HTTP error, or a token action with a
-  misconfigured option such as a token group that does not exist.
+  misconfigured option such as a token group that does not exist. With **Abort on error** such a handler also fails the
+  request, e.g. a response mangler with a JSON pointer it does not support or a request mangler whose value names more
+  groups than its match pattern has.
 
   Note that a post-event handler runs after the API function has already done its work, so aborting the request there
   reports an error for an operation that partly happened — the local token was created, only the forwarded request

@@ -8,7 +8,7 @@ from privacyidea.lib.eventhandler.customuserattributeshandler import ACTION_TYPE
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.counter import read as read_counter
-from privacyidea.lib.token import init_token, remove_token, get_one_token
+from privacyidea.lib.token import init_token, remove_token, get_one_token, get_tokens
 from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.user import User
 from privacyidea.models import Challenge
@@ -1068,6 +1068,56 @@ class EventWrapperTestCase(MyApiTestCase):
             self.assertIn('To: donut@example.com', msg)
         delete_event(r)
 
+
+
+class HandlerFailureAbortTestCase(MyApiTestCase):
+    """
+    A handler that reports that it could not do what it is configured for fails the request when its binding has
+    abort_on_error, like a handler that raises. Without the option the request continues.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.setUp_user_realms()
+        self.event_ids = []
+
+    def tearDown(self) -> None:
+        for event_id in self.event_ids:
+            delete_event(event_id)
+        for token in get_tokens():
+            remove_token(token.token.serial)
+        super().tearDown()
+
+    def _init_token(self, serial: str):
+        with self.app.test_request_context("/token/init", method="POST", data={"genkey": 1, "serial": serial},
+                                           headers={"Authorization": self.at}):
+            return self.app.full_dispatch_request()
+
+    def test_01_response_mangler_that_can_not_delete_fails_the_request(self):
+        # The JSON pointer has more parts than the handler supports
+        self.event_ids.append(set_event("strip", "token_init", "ResponseMangler", "delete", conditions={},
+                                        options={"JSON pointer": "/detail/googleurl/value/extra"}))
+        res = self._init_token("ABORTRESP")
+        self.assertNotEqual(200, res.status_code, res.json)
+        self.assertFalse(res.json["result"]["status"], res.json)
+        self.assertNotIn("googleurl", str(res.json.get("detail")))
+
+    def test_02_without_abort_on_error_the_response_is_sent(self):
+        self.event_ids.append(set_event("strip", "token_init", "ResponseMangler", "delete", conditions={},
+                                        options={"JSON pointer": "/detail/googleurl/value/extra"},
+                                        abort_on_error=False))
+        res = self._init_token("NOABORTRESP")
+        self.assertEqual(200, res.status_code, res.json)
+        self.assertIn("googleurl", res.json["detail"])
+
+    def test_03_request_mangler_with_more_groups_than_its_pattern_fails_the_request(self):
+        self.event_ids.append(set_event("describe", "token_init", "RequestMangler", "set", conditions={},
+                                        position="pre",
+                                        options={"parameter": "description", "value": "{0} {1}",
+                                                 "match_parameter": "serial", "match_pattern": "(.*)"}))
+        res = self._init_token("ABORTREQ")
+        self.assertNotEqual(200, res.status_code, res.json)
+        self.assertEqual([], get_tokens(serial="ABORTREQ"))
 
 class ContainerHandlerTestCase(MyApiTestCase):
     """
