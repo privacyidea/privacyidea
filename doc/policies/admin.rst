@@ -902,7 +902,7 @@ type: ``bool``
 Allow the administrator to configure :ref:`Event Handlers<eventhandler>`.
 
 .. note:: This action requires a policy that does not restrict its target,
-   see :ref:`admin_policies_global_configuration`.
+   see :ref:`configuration for all realms <admin_policies_global_configuration>`.
 
 .. versionadded:: 2.12
 
@@ -978,7 +978,7 @@ type: ``bool``
 Allow the administrator to write, read or delete policies.
 
 .. note:: Writing and deleting policies require a policy that does not restrict
-   its target, see :ref:`admin_policies_global_configuration`.
+   its target, see :ref:`configuration for all realms <admin_policies_global_configuration>`.
 
 .. note:: Currently the policies do not take into account resolvers
    or realms. Having the right to read policies will allow the
@@ -1193,7 +1193,7 @@ The administrators are allowed to create, edit, reorder and delete the policies
 of :ref:`conditional_access`.
 
 .. note:: This action requires a policy that does not restrict its target,
-   see :ref:`admin_policies_global_configuration`.
+   see :ref:`configuration for all realms <admin_policies_global_configuration>`.
 
 .. versionadded:: 3.14
 
@@ -1829,7 +1829,7 @@ The administrator is allowed to create API clients and generate their API key.
 The plaintext key is returned only once, on creation.
 
 .. note:: This action requires a policy that does not restrict its target,
-   see :ref:`admin_policies_global_configuration`.
+   see :ref:`configuration for all realms <admin_policies_global_configuration>`.
 
 .. versionadded:: 3.14
 
@@ -1844,7 +1844,7 @@ The administrator is allowed to modify an existing API client (display name,
 status, configuration). The API key is not affected.
 
 .. note:: This action requires a policy that does not restrict its target,
-   see :ref:`admin_policies_global_configuration`.
+   see :ref:`configuration for all realms <admin_policies_global_configuration>`.
 
 .. versionadded:: 3.14
 
@@ -1859,7 +1859,7 @@ The administrator is allowed to rotate the API key of a client. The previous key
 stops working immediately and a new plaintext key is returned once.
 
 .. note:: This action requires a policy that does not restrict its target,
-   see :ref:`admin_policies_global_configuration`.
+   see :ref:`configuration for all realms <admin_policies_global_configuration>`.
 
 .. versionadded:: 3.14
 
@@ -1874,7 +1874,7 @@ The administrator is allowed to delete an API client. Deleting a client also
 removes its remembered devices.
 
 .. note:: This action requires a policy that does not restrict its target,
-   see :ref:`admin_policies_global_configuration`.
+   see :ref:`configuration for all realms <admin_policies_global_configuration>`.
 
 .. versionadded:: 3.14
 
