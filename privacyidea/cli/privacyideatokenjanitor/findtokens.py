@@ -49,7 +49,6 @@ from flask.cli import AppGroup
 from dateutil import parser
 from dateutil.tz import tzlocal, tzutc
 
-from privacyidea.lib.error import PolicyError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.importotp import export_pskc
@@ -397,8 +396,8 @@ def export_user_data(token_list, attributes=None):
 
 @find_cli.command("find")
 @click.option('--set-description', help='set a new description')
-@click.option('--set-tokeninfo-key', help='set a new tokeninfo-key. Only a free-form key can be set, an entry '
-                                          'a token type maintains itself is written by the token and is skipped')
+@click.option('--set-tokeninfo-key', help='set a new tokeninfo-key, including an entry a token type keeps '
+                                          'there itself, e.g. hashlib or next_pin_change')
 @click.option('--set-tokeninfo-value', help='set a new tokeninfo-value')
 @click.option('--tokeninfo-value-before', metavar='DATETIME',
               help='Interpret tokeninfo values as datetimes,'
@@ -581,13 +580,8 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                         if set_tokeninfo_value and set_tokeninfo_key:
                             print(f"Setting tokeninfo for token {token_obj.token.serial!s}: "
                                   f"{set_tokeninfo_key!s}={set_tokeninfo_value!s}")
-                            try:
-                                token_obj.add_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
-                                token_obj.save()
-                            except PolicyError as error:
-                                # An entry the token type maintains itself. Report it as skipped rather than
-                                # as a failure, and keep going through the remaining tokens.
-                                print(f"Skipped tokeninfo of token {token_obj.token.serial!s}: {error!s}")
+                            token_obj.write_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
+                            token_obj.save()
                 except Exception as exx:
                     print(f"Failed to process token {token_obj.token.serial}.")
                     print(f"{exx}")

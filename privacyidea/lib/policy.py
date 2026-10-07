@@ -200,7 +200,7 @@ from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .log import log_with
-from .policies.actions import PolicyAction, PasskeyLoginButtonOptions
+from .policies.actions import PolicyAction, PasskeyLoginButtonOptions, ADMIN_ACTIONS_WITHOUT_TARGET
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
 from .policies.evaluators import EVALUATOR_FUNCTIONS
 from ..models import (Policy, db, save_config_timestamp, PolicyDescription, PolicyCondition)
@@ -1019,6 +1019,7 @@ class PolicyClass:
         :return: A list of actions
         """
         from privacyidea.lib.token import get_dynamic_policy_definitions
+        from privacyidea.lib.policies.helper import policy_target_is_unrestricted
         rights = set()
         if scope == SCOPE.ADMIN:
             # If the logged-in user is an admin, we match for username/adminrealm only
@@ -1050,6 +1051,11 @@ class PolicyClass:
                                    user_agent=user_agent)
         for pol in pols:
             for action, action_value in pol.get("action").items():
+                if (scope == SCOPE.ADMIN and action in ADMIN_ACTIONS_WITHOUT_TARGET
+                        and not policy_target_is_unrestricted(pol)):
+                    # A policy restricted to named realms, resolvers or users does not grant an action on an object
+                    # that has none of them, so the WebUI does not offer it.
+                    continue
                 if action_value:
                     rights.add(action)
                     # if the action has an actual non-boolean value, return it

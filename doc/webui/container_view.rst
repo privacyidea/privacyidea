@@ -203,7 +203,8 @@ Template Details
 ................
 
 At the top of the page, the name, the container type, and the token types that can be added to this template are
-displayed. Below is a checkbox to use the template as the default for creating new containers.
+displayed. The name of an existing template can not be changed; to save a template under another name, use *Copy* in
+the template list. Below is a checkbox to use the template as the default for creating new containers.
 For each container type, one template can be the default. Setting a template as default will remove the default setting
 from the previous default template.
 

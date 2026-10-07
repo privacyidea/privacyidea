@@ -119,8 +119,12 @@ Counting and resetting
 With **reset the count on a successful login** - the default for a ``user``
 policy - the policy counts the failures **since the user's last successful
 login**, so a legitimate user is not locked by failures from days ago. Every
-threshold of the policy counts that way, the ``DENY`` decision included, so a
-denial also lifts on a successful login and not only as the window drains.
+threshold of the policy counts that way, the ``DENY`` decision included. A
+``DENY`` in force, however, also refuses the login that would reset it - it is
+decided before the credentials are checked - so in practice a denial lifts as
+the counted entries age out of the window. With conditions, only a successful
+login the conditions cover resets the count - a policy limited to
+``/validate/check`` is not reset by a WebUI login.
 
 Turn it off to make a threshold mean *this many entries in the window* outright,
 whatever happened in between. That is what a rate limit wants: the shipped rate
@@ -146,8 +150,10 @@ lock permanently at 20. Thresholds must be unique within a policy.
 
 By default an action fires **once**, exactly when the count reaches the
 threshold: an email configured at 8 is sent on the 8th failure and not again on
-the 9th. It also fires if a single evaluation's own request is what carried the
-count from below the threshold to at or above it, even when that step skipped
+the 9th. With the count mode ``DISTINCT_USERS`` that is the request whose account
+is the 8th distinct one; a retry of an account already counted does not send the
+email again. It also fires if a single evaluation's own request is what carried
+the count from below the threshold to at or above it, even when that step skipped
 the threshold value itself - e.g. one of two concurrent failed logins, each
 committing before the other is counted. A narrower race, where several such
 requests all commit before any of them is evaluated, can still let this
@@ -226,9 +232,11 @@ Actions
 
 **DENY**
     Refuse this single request pre-authentication, without storing anything.
-    The rejection lifts by itself as the counted entries age out of the window -
-    and, on a policy that resets on success, on the next successful login.
-    Use it for a rate limit that must not leave a lock behind.
+    The rejection lifts by itself as the counted entries age out of the window.
+    Reset on success does not shorten it in practice: while the denial holds,
+    it refuses the successful login as well, see
+    :ref:`conditional_access_policies_counting`. Use it for a rate limit that
+    must not leave a lock behind.
 
 **EMAIL_USER**, **EMAIL_ADMIN**
     Notify the user, or an administrator, that the threshold was reached.
@@ -313,6 +321,12 @@ of each template's highest stage re-triggers above its threshold, as recommended
 above. The two per-IP rate limit templates are pre-set to dry run, because
 their threshold depends on how many users share an address, see
 :ref:`conditional_access_policies_dry_run`.
+
+.. note:: The MFA brute force template counts ``MFA_FAIL``: a correct first
+   factor followed by a wrong second one. With the default ``otppin=tokenpin``,
+   a token without a PIN has an empty first factor, so wrong OTP values given
+   with the login name alone count as well. Use this template where every token
+   has a PIN, or with ``otppin=userstore``.
 
 .. _conditional_access_policies_dry_run:
 

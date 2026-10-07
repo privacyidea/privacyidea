@@ -155,7 +155,9 @@ set tokeninfo
 
 Using the action ``set tokeninfo`` you can set any arbitrary tokeninfo
 attribute for the token. You need to specify the ``key`` of the
-tokeninfo and the ``value``.
+tokeninfo and the ``value``. This includes the entries a token type maintains
+itself, e.g. ``next_pin_change``, which the token info endpoints of the API do
+not write.
 
 In the value field you can use the tag ``{now}`` to set the current timestamp.
 ``{current_time}`` is a deprecated alias for ``{now}``. In addition you can append
@@ -191,6 +193,8 @@ The tokeninfo is interpreted as an integer value.
 You can use a positive or a negative value as an *increment*. An increment like "-7" will
 decrease the current tokeninfo value by 7.
 If the tokeninfo does not exist, it will be created with the increment value.
+If the current value or the increment is not an integer, the tokeninfo is left
+unchanged and the audit entry of the handler is marked as failed.
 
 set failcounter
 ...............

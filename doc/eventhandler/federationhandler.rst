@@ -58,6 +58,11 @@ will install a new top level privacyIDEA system (parent).
 Using the federation handler you can setup many other, different scenarios we
 can not think of, yet.
 
+
+A federation handler that fails, e.g. because the remote server can not be reached or the method of the request is
+not supported, fails the request when the definition has *Abort the request if the handler fails* set, see
+:ref:`event_abort_on_error`.
+
 Code
 ~~~~
 
