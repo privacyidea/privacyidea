@@ -894,7 +894,9 @@ describe("ConditionalAccessComponent", () => {
     it("renders the permitted buttons and wires their clicks to the handlers", async () => {
       const buttonLabelled = (label: string): HTMLButtonElement =>
         Array.from(
-          fixture.nativeElement.querySelectorAll<HTMLButtonElement>("app-table-actions button:not(.overflow-more-btn)")
+          (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+            "app-table-actions button:not(.overflow-more-btn)"
+          )
         ).find((button) => button.textContent!.includes(label))!;
 
       const create = buttonLabelled("New Conditional Access");
