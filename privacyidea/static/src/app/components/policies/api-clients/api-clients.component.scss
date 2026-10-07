@@ -35,15 +35,5 @@
 }
 
 .status-badge {
-  border-radius: var(--border-radius);
-  padding: 2px 8px;
   text-transform: capitalize;
-}
-
-.status-active {
-  background: var(--inline-hint-bg);
-}
-
-.status-suspended {
-  background: var(--inline-warning-bg);
 }

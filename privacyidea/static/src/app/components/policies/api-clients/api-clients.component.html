@@ -163,8 +163,8 @@
           class="col-width-s"
           mat-cell>
           <span
-            [class.status-active]="client.status === 'active'"
-            [class.status-suspended]="client.status === 'suspended'"
+            [class.highlight-false]="client.status === 'suspended'"
+            [class.highlight-true]="client.status === 'active'"
             class="status-badge">
             {{ client.status }}
           </span>
