@@ -312,9 +312,7 @@ table.mat-mdc-table.column-striped-explicit .mat-mdc-header-cell.col-stripe::bef
   display: block;
 }
 
-// The status colors, darkened enough that the chips' white text keeps 4.5:1 against every one of them in both themes.
-$highlight-darken: 32%;
-
+// The chips wear the fill colours that hold 4.5:1 under their white text.
 .highlight-true,
 .highlight-warning,
 .highlight-false,
@@ -329,21 +327,22 @@ $highlight-darken: 32%;
 
   &.highlight-true,
   &.highlight-true-clickable {
-    background-color: color-mix(in srgb, var(--green-light), black $highlight-darken);
+    background-color: var(--green-fill);
   }
 
   &.highlight-warning,
   &.highlight-warning-clickable {
-    background-color: color-mix(in srgb, var(--yellow-light-active), black $highlight-darken);
+    background-color: var(--yellow-fill);
   }
 
   &.highlight-false,
   &.highlight-false-clickable {
-    background-color: color-mix(in srgb, var(--red-light), black $highlight-darken);
+    background-color: var(--red-fill);
   }
 
   &.highlight-disabled {
-    background-color: color-mix(in srgb, var(--grey-light), black $highlight-darken);
+    // The grey stays darkened so the white text keeps 4.5:1 against it in both themes.
+    background-color: color-mix(in srgb, var(--grey-light), black 32%);
   }
 
   &.highlight-true-clickable,

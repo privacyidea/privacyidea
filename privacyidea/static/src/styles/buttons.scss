@@ -360,10 +360,10 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .action-button-warn-secondary {
-  // Orange that keeps 4.5:1 on the card in both themes.
+  // The orange of the warning ramp, set deep enough that the label keeps 4.5:1 on the card in both themes.
   @include action-button(
     var(--mat-sys-surface-container-lowest),
-    light-dark(#aa570e, #e88a3c),
+    var(--warn-base),
     $ripple: color-mix(in srgb, var(--warn-base) 20%, transparent),
     $ripple-mdc: color-mix(in srgb, var(--warn-base) 12%, transparent),
     $layer: color-mix(in srgb, var(--warn-base) 12%, transparent)

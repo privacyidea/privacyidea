@@ -43,19 +43,23 @@ html {
     --green-light-active: light-dark(hsl(120, 39%, 54%), hsl(120, 39%, 50%));
     --green-base-hover: light-dark(hsl(120, 39%, 40%), hsl(120, 39%, 30%));
 
-    --red-dark: light-dark(hsl(342, 100%, 32%), hsl(342, 100%, 44%));
-    --red-base: light-dark(hsl(342, 100%, 37%), hsl(342, 100%, 54%));
-    --red-light: light-dark(hsl(342, 100%, 42%), hsl(342, 100%, 54%));
-    --red-light-active: light-dark(hsl(342, 100%, 57%), hsl(342, 100%, 58%));
-    --red-base-hover: light-dark(hsl(342, 100%, 60%), hsl(342, 100%, 30%));
+    --red-dark: light-dark(hsl(2, 64%, 44%), hsl(2, 64%, 44%));
+    --red-base: light-dark(hsl(2, 64%, 50%), hsl(2, 64%, 54%));
+    --red-light: light-dark(hsl(2, 64%, 52%), hsl(2, 64%, 54%));
+    --red-light-active: light-dark(hsl(2, 64%, 58%), hsl(2, 64%, 58%));
+    --red-base-hover: light-dark(hsl(2, 64%, 60%), hsl(2, 64%, 30%));
 
-    --yellow-dark: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 35%));
-    --yellow-base: light-dark(hsl(28, 85%, 50%), hsl(28, 85%, 40%));
-    --yellow-light: light-dark(hsl(28, 85%, 55%), hsl(28, 85%, 45%));
-    --yellow-light-active: light-dark(hsl(28, 85%, 60%), hsl(28, 85%, 50%));
-    --yellow-base-hover: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 32%));
+    --yellow-dark: light-dark(hsl(34, 85%, 45%), hsl(34, 85%, 35%));
+    --yellow-base: light-dark(hsl(34, 85%, 50%), hsl(34, 85%, 40%));
+    --yellow-light: light-dark(hsl(34, 85%, 55%), hsl(34, 85%, 45%));
+    --yellow-light-active: light-dark(hsl(34, 85%, 60%), hsl(34, 85%, 50%));
+    --yellow-base-hover: light-dark(hsl(34, 85%, 45%), hsl(34, 85%, 32%));
     // Orange label/outline colour of warning-tone secondary actions, held clear of the surface in both modes.
-    --warn-base: light-dark(hsl(25, 81%, 43%), hsl(25, 81%, 55%));
+    --warn-base: light-dark(hsl(34, 85%, 34%), hsl(34, 85%, 58%));
+    // Fills that carry white text: each holds 4.5:1 against white in both themes, so they are the same in both.
+    --green-fill: hsl(120, 45%, 36%);
+    --yellow-fill: hsl(34, 85%, 36%);
+    --red-fill: hsl(2, 64%, 52%);
 
     --grey-dark: light-dark(hsl(0, 0%, 42%), hsl(0, 0%, 50%));
     --grey-base: light-dark(hsl(0, 0%, 50%), hsl(0, 0%, 55%));
@@ -132,18 +136,22 @@ html {
     --green-light-active: hsl(120, 39%, 54%);
     --green-base-hover: hsl(120, 39%, 40%);
 
-    --red-dark: hsl(342, 100%, 32%);
-    --red-base: hsl(342, 100%, 37%);
-    --red-light: hsl(342, 100%, 42%);
-    --red-light-active: hsl(342, 100%, 57%);
-    --red-base-hover: hsl(342, 100%, 60%);
+    --red-dark: hsl(2, 64%, 44%);
+    --red-base: hsl(2, 64%, 50%);
+    --red-light: hsl(2, 64%, 52%);
+    --red-light-active: hsl(2, 64%, 58%);
+    --red-base-hover: hsl(2, 64%, 60%);
 
-    --yellow-dark: hsl(28, 85%, 45%);
-    --yellow-base: hsl(28, 85%, 50%);
-    --yellow-light: hsl(28, 85%, 55%);
-    --yellow-light-active: hsl(28, 85%, 60%);
-    --yellow-base-hover: hsl(28, 85%, 45%);
-    --warn-base: hsl(25, 81%, 43%);
+    --yellow-dark: hsl(34, 85%, 45%);
+    --yellow-base: hsl(34, 85%, 50%);
+    --yellow-light: hsl(34, 85%, 55%);
+    --yellow-light-active: hsl(34, 85%, 60%);
+    --yellow-base-hover: hsl(34, 85%, 45%);
+    --warn-base: hsl(34, 85%, 34%);
+    // Fills that carry white text: each holds 4.5:1 against white in both themes, so they are the same in both.
+    --green-fill: hsl(120, 45%, 36%);
+    --yellow-fill: hsl(34, 85%, 36%);
+    --red-fill: hsl(2, 64%, 52%);
 
     --grey-dark: hsl(0, 0%, 42%);
     --grey-base: hsl(0, 0%, 50%);
@@ -218,18 +226,22 @@ html {
     --green-light-active: hsl(120, 39%, 50%);
     --green-base-hover: hsl(120, 39%, 30%);
 
-    --red-dark: hsl(342, 100%, 44%);
-    --red-base: hsl(342, 100%, 54%);
-    --red-light: hsl(342, 100%, 54%);
-    --red-light-active: hsl(342, 100%, 58%);
-    --red-base-hover: hsl(342, 100%, 30%);
+    --red-dark: hsl(2, 64%, 44%);
+    --red-base: hsl(2, 64%, 54%);
+    --red-light: hsl(2, 64%, 54%);
+    --red-light-active: hsl(2, 64%, 58%);
+    --red-base-hover: hsl(2, 64%, 30%);
 
-    --yellow-dark: hsl(28, 85%, 35%);
-    --yellow-base: hsl(28, 85%, 40%);
-    --yellow-light: hsl(28, 85%, 45%);
-    --yellow-light-active: hsl(28, 85%, 50%);
-    --yellow-base-hover: hsl(28, 85%, 32%);
-    --warn-base: hsl(25, 81%, 55%);
+    --yellow-dark: hsl(34, 85%, 35%);
+    --yellow-base: hsl(34, 85%, 40%);
+    --yellow-light: hsl(34, 85%, 45%);
+    --yellow-light-active: hsl(34, 85%, 50%);
+    --yellow-base-hover: hsl(34, 85%, 32%);
+    --warn-base: hsl(34, 85%, 58%);
+    // Fills that carry white text: each holds 4.5:1 against white in both themes, so they are the same in both.
+    --green-fill: hsl(120, 45%, 36%);
+    --yellow-fill: hsl(34, 85%, 36%);
+    --red-fill: hsl(2, 64%, 52%);
 
     --grey-dark: hsl(0, 0%, 50%);
     --grey-base: hsl(0, 0%, 55%);

@@ -189,27 +189,23 @@
   line-height: 1;
   font-weight: 700;
   // Paired with the dot fill rather than with the page surface: the ink stays white on the
-  // darkened fills in both themes.
+  // green and red fills in both themes.
   color: hsl(0, 0%, 100%);
 
   &.dot-good {
-    // Darkened so the white count keeps 4.5:1 against the fill in both themes.
-    background: color-mix(in srgb, var(--green-light), black 32%);
+    background: var(--green-fill);
   }
 
   &.dot-warn {
-    background: var(--yellow-light-active);
-    // The yellow is too light to read white on.
-    color: hsl(0, 0%, 12%);
+    background: var(--yellow-fill);
   }
 
   &.dot-bad {
-    // Darkened for the same reason as the green fill: the dark-theme red is 3.8:1 under white.
-    background: color-mix(in srgb, var(--red-light), black 32%);
+    background: var(--red-fill);
   }
 
   &.dot-none {
-    // Darkened like the other fills: the bare grey is 3.3:1 under white in the dark theme.
+    // Darkened because the bare grey is 3.3:1 under white in the dark theme.
     background: color-mix(in srgb, var(--grey-base), black 32%);
   }
 }

@@ -10,8 +10,7 @@
 }
 
 .lost-card {
-  // The green is darkened so the white text keeps 4.5:1 against it in both themes (the bare ramp colour reaches only 2.8:1).
-  background: color-mix(in srgb, var(--green-light), black 32%);
+  background: var(--green-fill);
   color: white;
   font-weight: bold;
   border-radius: var(--border-radius);
